@@ -58,13 +58,9 @@ cd "$APP_NAME" || {
 }
 
 # Clean up default project
-if [ -f "package.json" ]; then
-  echo "🧹 Cleaning up default project"
-  {
+    echo "N" | npm run reset-project
     rm -rf app-example
     rm -f App.js App.tsx
-  } || echo "⚠️  Cleanup partially failed - continuing anyway"
-fi
 #endregion
 
 #region Install Dependencies
@@ -135,29 +131,29 @@ echo "📁 Creating directory structure..."
 dir_structure=(
   # Root files
   ".env.local"
-  "app.json"
-  "babel.config.js"
+  # "app.json"
+  # "babel.config.js"
   # "metro.config.js"
-  "package.json"
+  # "package.json"
   # "tsconfig.json"
   
   # Source directory
-  "src/"
-  "src/app/"
-  "src/app/_layout.tsx"
-  "src/app/error.tsx"
-  "src/app/global.css"
-  "src/app/loading.tsx"
-  "src/app/not-found.tsx"
+  # "src/"
+  # "src/app/"
+  # "src/app/_layout.tsx"
+  # "src/app/error.tsx"
+  # "src/app/global.css"
+  # "src/app/loading.tsx"
+  # "src/app/not-found.tsx"
   
   # Auth route group
-  "src/app/(auth)/"
+  # "src/app/(auth)/"
   # "src/app/(auth)/_layout.tsx"
   # "src/app/(auth)/signIn.tsx"
   # "src/app/(auth)/signUp.tsx"
   
   # Tabs route group
-  "src/app/(tabs)/"
+  # "src/app/(tabs)/"
   # "src/app/(tabs)/_layout.tsx"
   # "src/app/(tabs)/index.tsx"
   # "src/app/(tabs)/create.tsx"
@@ -169,17 +165,17 @@ dir_structure=(
   # "src/app/(tabs)/profile.tsx"
   
   # Admin route group
-  "src/app/(admin)/"
+  # "src/app/(admin)/"
   # "src/app/(admin)/_layout.tsx"
   # "src/app/(admin)/index.tsx"
   
   # Additional directories
-  "src/lib/"
-  "src/lib/supabase.ts"
-  "src/store/"
-  "src/store/useAuthStore.ts"
+  # "src/lib/"
+  # "src/lib/supabase.ts"
+  # "src/store/"
+  # "src/store/useAuthStore.ts"
   # "src/store/useThemeStore.ts"
-  "src/components/"
+  # "src/components/"
 )
 
 # Create structure while ignoring comments
@@ -197,19 +193,19 @@ done
 #region Configuration Files
 echo "⚙️  Generating configuration files..."
 
-# Babel configuration
-cat > babel.config.js << EOF
-module.exports = function (api) {
-  api.cache(true);
-  return {
-    presets: ['babel-preset-expo'],
-    plugins: ['nativewind/babel'],
-  };
-};
-EOF
+# # Babel configuration
+# cat > babel.config.js << EOF
+# module.exports = function (api) {
+#   api.cache(true);
+#   return {
+#     presets: ['babel-preset-expo'],
+#     plugins: ['nativewind/babel'],
+#   };
+# };
+# EOF
 
 # Tailwind configuration
-npx tailwindcss init -p
+# npx tailwindcss init -p
 #endregion
 
 #region Final Setup
