@@ -9,11 +9,14 @@ set -eo pipefail
 # -----------------------------------------------------------------------------
 # Script Name:        expo-setup.sh
 # Description:        Non-Interactive Expo setup script for initializing an
-#                     Expo project with additional configuration for Supabase,
-#                     Zustand, Tailwind + NativeWind, etc.
+#                     Expo project with configuration for Supabase, Zustand,
+#                     Tailwind + NativeWind, React Hook Form, Yup-based
+#                     validation, and an Expo Router authentication flow
+#                     (using a Zustand store for auth state). This version
+#                     includes adjustments for testing on the web.
 # Author:             TurtleWolfe@ScriptHammer.com
 # Created:            2025-02-08
-# Version:            1.1.0
+# Version:            1.2.3
 # License:            MIT
 #
 # Best Practices:
@@ -33,12 +36,15 @@ if [ -f .env ]; then
 else
   echo "ERROR: .env file not found."
   echo "Create one with the following minimum content:"
-  echo "APP_NAME=\"my-app\""
+  echo "APP_NAME=\"ScriptHammer\""
+  echo "EXPO_PUBLIC_SUPABASE_URL=\"https://YOUR-PROJECT.supabase.co\""
+  echo "EXPO_PUBLIC_SUPABASE_ANON_KEY=\"YOUR-ANON-KEY\""
+  echo "EXPO_GOOGLE_MAPS_API_KEY=\"YOUR_GOOGLE_MAPS_API_KEY\""
   exit 1
 fi
 
 # Validate required variables
-required_vars=("APP_NAME")
+required_vars=("APP_NAME" "EXPO_PUBLIC_SUPABASE_URL" "EXPO_PUBLIC_SUPABASE_ANON_KEY" "EXPO_GOOGLE_MAPS_API_KEY")
 for var in "${required_vars[@]}"; do
   if [ -z "${!var}" ]; then
     echo "ERROR: $var is not set in the .env file"
@@ -72,9 +78,8 @@ core_deps=(
   "@supabase/supabase-js@2"
   "@react-native-async-storage/async-storage"
   "react-native-url-polyfill"
-  # "@expo/vector-icons"
-  # "expo-router"
-  # "react-native-reanimated"
+  "react-hook-form"
+  "yup"  # Added Yup for validation
 )
 
 expo_deps=(
@@ -99,14 +104,10 @@ dev_deps=(
 
 # Install function to process each dependency in the provided arrays
 install_deps() {
-  local arr_name=("$@")
-  for dep in "${arr_name[@]}"; do
+  local arr=("$@")
+  for dep in "${arr[@]}"; do
     if [[ $dep != \#* ]]; then
-      if [[ $dep == nativewind* ]]; then
-        npm install "$dep"
-      else
       npm install "$dep"
-      fi
     fi
   done
 }
@@ -147,10 +148,10 @@ dir_structure=(
   # "src/app/not-found.tsx"
   
   # Auth route group
-  # "src/app/(auth)/"
-  # "src/app/(auth)/_layout.tsx"
-  # "src/app/(auth)/signIn.tsx"
-  # "src/app/(auth)/signUp.tsx"
+  "src/app/(auth)/"
+  "src/app/(auth)/_layout.tsx"
+  "src/app/(auth)/signIn.tsx"
+  "src/app/(auth)/signUp.tsx"
   
   # Tabs route group
   "src/app/(tabs)/"
@@ -170,24 +171,228 @@ dir_structure=(
   # "src/app/(admin)/index.tsx"
   
   # Additional directories
-  # "src/lib/"
-  # "src/lib/supabase.ts"
-  # "src/store/"
-  # "src/store/useAuthStore.ts"
+  "src/lib/"
+  "src/lib/supabase.ts"
+  "src/store/"
+  "src/store/useAuthStore.ts"
   # "src/store/useThemeStore.ts"
-  # "src/components/"
+  "src/components/"
 )
 
-# Create structure while ignoring comments
+# Create structure while ignoring commented-out items
 for item in "${dir_structure[@]}"; do
-  if [[ $item != \#* ]]; then
-    if [[ $item == *"/" ]]; then
+  # If the item ends with a slash, create a directory; otherwise, create a file
+  if [[ $item == */ ]]; then
     mkdir -p "$item"
   else
+    # Create parent directory if needed
+    mkdir -p "$(dirname "$item")"
     touch "$item"
-    fi
   fi
 done
+#endregion
+
+#region Scaffold Root Layout (Conditional Auth Routing)
+echo "📝 Generating Root Layout for auth redirection at src/app/_layout.tsx..."
+
+cat > "src/app/_layout.tsx" << 'EOF'
+import { useEffect } from 'react';
+import { useRouter, usePathname, Slot } from 'expo-router';
+import { useAuthStore } from '../store/useAuthStore';
+import { ActivityIndicator, View } from 'react-native';
+
+export default function RootLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (isLoading) return;
+    // If user is not signed in and not already in an auth route, redirect to signIn
+    if (!user && pathname && !pathname.startsWith('/(auth)')) {
+      router.replace('/(auth)/signIn');
+    }
+    // If user is signed in and currently in an auth route, redirect to home (tabs)
+    if (user && pathname && pathname.startsWith('/(auth)')) {
+      router.replace('/(tabs)/index');
+    }
+  }, [user, isLoading, pathname, router]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return <Slot />;
+}
+EOF
+#endregion
+
+#region Scaffold Auth Screens Code
+echo "📝 Generating code for Auth Screens..."
+
+# Auth Layout for authentication screens
+cat > "src/app/(auth)/_layout.tsx" << 'EOF'
+import { Slot } from 'expo-router';
+
+export default function AuthLayout() {
+  return <Slot />;
+}
+EOF
+
+# Sign In Screen with Yup validation
+cat > "src/app/(auth)/signIn.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+import * as Yup from 'yup';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
+
+const signInSchema = Yup.object().shape({
+  email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
+  password: Yup.string().required('Password is required.'),
+});
+
+export default function SignInScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const { setUser } = useAuthStore();
+
+  const handleSignIn = async () => {
+    setErrorMessage('');
+    try {
+      await signInSchema.validate({ email, password }, { abortEarly: false });
+    } catch (validationError) {
+      if (validationError.inner) {
+        const messages = validationError.inner.map(err => err.message).join('\n');
+        setErrorMessage(messages);
+      }
+      return;
+    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        setErrorMessage(error.message);
+      } else if (data.session) {
+        setUser(data.session.user);
+      } else {
+        setErrorMessage('No session returned. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('An error occurred during sign in. Please try again later.');
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 16 }}>Sign In</Text>
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 12, padding: 8 }}
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 12, padding: 8 }}
+        secureTextEntry
+      />
+      {errorMessage ? (
+        <Text style={{ color: 'red', marginBottom: 12 }}>{errorMessage}</Text>
+      ) : null}
+      <Button title="Sign In" onPress={handleSignIn} />
+    </View>
+  );
+}
+EOF
+
+# Sign Up Screen with Yup validation and password strength check
+cat > "src/app/(auth)/signUp.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+import * as Yup from 'yup';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
+
+const signUpSchema = Yup.object().shape({
+  email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
+  password: Yup.string()
+    .min(8, 'Password must be at least 8 characters long.')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/, 'Password must contain uppercase, lowercase, number, and special character.')
+    .required('Password is required.'),
+});
+
+export default function SignUpScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const { setUser } = useAuthStore();
+
+  const handleSignUp = async () => {
+    setErrorMessage('');
+    try {
+      await signUpSchema.validate({ email, password }, { abortEarly: false });
+    } catch (validationError) {
+      if (validationError.inner) {
+        const messages = validationError.inner.map(err => err.message).join('\n');
+        setErrorMessage(messages);
+      }
+      return;
+    }
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      if (error) {
+        setErrorMessage(error.message);
+      } else if (data.user) {
+        setUser(data.user);
+      } else {
+        setErrorMessage('Sign up failed. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('An error occurred during sign up. Please try again later.');
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 16 }}>Sign Up</Text>
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 12, padding: 8 }}
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+      <TextInput
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        style={{ borderWidth: 1, borderColor: '#ccc', marginBottom: 12, padding: 8 }}
+        secureTextEntry
+      />
+      {errorMessage ? (
+        <Text style={{ color: 'red', marginBottom: 12 }}>{errorMessage}</Text>
+      ) : null}
+      <Button title="Sign Up" onPress={handleSignUp} />
+    </View>
+  );
+}
+EOF
 #endregion
 
 #region Scaffold Tab Screens Code
@@ -318,31 +523,141 @@ export default function ProfileScreen() {
 EOF
 #endregion
 
+#region Supabase Client
+echo "🗄  Creating Supabase client in src/lib/supabase.ts..."
+
+cat > "src/lib/supabase.ts" << 'EOF'
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+import 'react-native-url-polyfill/auto';
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
+}
+
+const detectSessionInUrl = Platform.OS === 'web';
+const storage = Platform.OS === 'web' ? undefined : AsyncStorage;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: storage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: detectSessionInUrl,
+  },
+});
+EOF
+#endregion
+
+#region Zustand Auth Store
+echo "🛠️  Creating Zustand auth store in src/store/useAuthStore.ts..."
+
+cat > "src/store/useAuthStore.ts" << 'EOF'
+import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
+
+type AuthState = {
+  user: any;
+  setUser: (user: any) => void;
+  isLoading: boolean;
+  setLoading: (loading: boolean) => void;
+};
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  isLoading: true,
+  setLoading: (loading) => set({ isLoading: loading }),
+}));
+
+// Initialize auth session on app load
+(async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error('Error fetching session:', error);
+  }
+  useAuthStore.setState({
+    user: session?.user || null,
+    isLoading: false,
+  });
+})();
+
+// Listen for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+  useAuthStore.setState({
+    user: session?.user || null,
+    isLoading: false,
+  });
+});
+EOF
+#endregion
+
 #region Configuration Files
 echo "⚙️  Generating configuration files..."
 
-# # Babel configuration
-# cat > babel.config.js << EOF
-# module.exports = function (api) {
-#   api.cache(true);
-#   return {
-#     presets: ['babel-preset-expo'],
-#     plugins: ['nativewind/babel'],
-#   };
-# };
-# EOF
+# Babel configuration for NativeWind, Expo Router, and Reanimated
+cat > babel.config.js << 'EOF'
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: [
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+      "nativewind/babel"
+    ],
+    plugins: [
+      "react-native-reanimated/plugin"
+    ],
+  };
+};
+EOF
 
-# Tailwind configuration
-# npx tailwindcss init -p
+# Metro configuration to integrate NativeWind with Expo
+cat > metro.config.js << 'EOF'
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
+
+const config = getDefaultConfig(__dirname);
+module.exports = withNativeWind(config, { input: "./global.css" });
+EOF
+
+# Tailwind configuration for NativeWind
+cat > tailwind.config.js << 'EOF'
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./App.{js,jsx,ts,tsx}",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}"
+  ],
+  theme: {
+    extend: {},
+  },
+  presets: [require("nativewind/preset")],
+  plugins: [],
+}
+EOF
+
+# Create global.css for Tailwind styles
+cat > global.css << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+EOF
 #endregion
 
 #region Final Setup
 echo "✅ Project setup complete!"
 echo "Next steps:"
-echo "1. Configure the Supabase client in src/lib/supabase.ts"
-echo "2. Set up Zustand stores in src/store/"
-echo "3. Update the Tailwind configuration for NativeWind in tailwind.config.js"
-echo "4. Add your environment variables in .env.local"
+echo "1. Configure the Supabase client in src/lib/supabase.ts if needed."
+echo "2. Verify and adjust the Zustand auth store in src/store/useAuthStore.ts as necessary."
+echo "3. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
+echo "4. Add your environment variables to .env.local."
+echo "5. Run and test the auth flow by signing in/up."
+echo "   To test on the web, use: npx expo start --web"
 
 # Start the Expo development server with a cache clear to ensure a fresh start
 echo "🚀 Starting Expo development server..."
