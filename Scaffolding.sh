@@ -58,9 +58,9 @@ cd "$APP_NAME" || {
 }
 
 # Clean up default project
-    echo "N" | npm run reset-project
-    rm -rf app-example
-    rm -f App.js App.tsx
+echo "N" | npm run reset-project
+rm -rf app-example
+rm -f App.js App.tsx
 #endregion
 
 #region Install Dependencies
@@ -97,7 +97,7 @@ dev_deps=(
   # "@types/react-native"
 )
 
-# Install function to skip commented packages
+# Install function to process each dependency in the provided arrays
 install_deps() {
   local arr_name=("$@")
   for dep in "${arr_name[@]}"; do
@@ -105,7 +105,7 @@ install_deps() {
       if [[ $dep == nativewind* ]]; then
         npm install "$dep"
       else
-        npm install "$dep"
+      npm install "$dep"
       fi
     fi
   done
@@ -127,7 +127,7 @@ install_deps "${dev_deps[@]}"
 #region CREATE DIRECTORY STRUCTURE
 echo "📁 Creating directory structure..."
 
-# Array-based structure definition with commented options
+# Array-based structure definition (with quoted paths)
 dir_structure=(
   # Root files
   ".env.local"
@@ -153,16 +153,16 @@ dir_structure=(
   # "src/app/(auth)/signUp.tsx"
   
   # Tabs route group
-  # "src/app/(tabs)/"
-  # "src/app/(tabs)/_layout.tsx"
-  # "src/app/(tabs)/index.tsx"
-  # "src/app/(tabs)/create.tsx"
-  # "src/app/(tabs)/explore.tsx"
-  # "src/app/(tabs)/groups.tsx"
-  # "src/app/(tabs)/map.tsx"
-  # "src/app/(tabs)/messages.tsx"
-  # "src/app/(tabs)/notifications.tsx"
-  # "src/app/(tabs)/profile.tsx"
+  "src/app/(tabs)/"
+  "src/app/(tabs)/_layout.tsx"
+  "src/app/(tabs)/index.tsx"
+  "src/app/(tabs)/create.tsx"
+  "src/app/(tabs)/explore.tsx"
+  "src/app/(tabs)/groups.tsx"
+  "src/app/(tabs)/map.tsx"
+  "src/app/(tabs)/messages.tsx"
+  "src/app/(tabs)/notifications.tsx"
+  "src/app/(tabs)/profile.tsx"
   
   # Admin route group
   # "src/app/(admin)/"
@@ -182,12 +182,140 @@ dir_structure=(
 for item in "${dir_structure[@]}"; do
   if [[ $item != \#* ]]; then
     if [[ $item == *"/" ]]; then
-      mkdir -p "$item"
-    else
-      touch "$item"
+    mkdir -p "$item"
+  else
+    touch "$item"
     fi
   fi
 done
+#endregion
+
+#region Scaffold Tab Screens Code
+echo "📝 Generating code for Tab Screens..."
+
+# Tab layout for tab navigation using expo-router
+cat > "src/app/(tabs)/_layout.tsx" << 'EOF'
+import { Tabs } from 'expo-router';
+
+export default function TabLayout() {
+  return (
+    <Tabs>
+      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="create" options={{ title: 'Create' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="groups" options={{ title: 'Groups' }} />
+      <Tabs.Screen name="map" options={{ title: 'Map' }} />
+      <Tabs.Screen name="messages" options={{ title: 'Messages' }} />
+      <Tabs.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+    </Tabs>
+  );
+}
+EOF
+
+# Home Screen (index.tsx)
+cat > "src/app/(tabs)/index.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function HomeScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Welcome to the Home Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Create Screen (create.tsx)
+cat > "src/app/(tabs)/create.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function CreateScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Create Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Explore Screen (explore.tsx)
+cat > "src/app/(tabs)/explore.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function ExploreScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Explore Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Groups Screen (groups.tsx)
+cat > "src/app/(tabs)/groups.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function GroupsScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Groups Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Map Screen (map.tsx)
+cat > "src/app/(tabs)/map.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function MapScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Map Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Messages Screen (messages.tsx)
+cat > "src/app/(tabs)/messages.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function MessagesScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Messages Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Notifications Screen (notifications.tsx)
+cat > "src/app/(tabs)/notifications.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function NotificationsScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Notifications Screen</Text>
+    </View>
+  );
+}
+EOF
+
+# Profile Screen (profile.tsx)
+cat > "src/app/(tabs)/profile.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function ProfileScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Profile Screen</Text>
+    </View>
+  );
+}
+EOF
 #endregion
 
 #region Configuration Files
@@ -211,12 +339,12 @@ echo "⚙️  Generating configuration files..."
 #region Final Setup
 echo "✅ Project setup complete!"
 echo "Next steps:"
-echo "1. Configure Supabase client in src/lib/supabase.ts"
+echo "1. Configure the Supabase client in src/lib/supabase.ts"
 echo "2. Set up Zustand stores in src/store/"
-echo "3. Update Tailwind config for NativeWind"
+echo "3. Update the Tailwind configuration for NativeWind in tailwind.config.js"
 echo "4. Add your environment variables in .env.local"
 
-# Start development server
+# Start the Expo development server with a cache clear to ensure a fresh start
 echo "🚀 Starting Expo development server..."
 npx expo start --clear
 #endregion
