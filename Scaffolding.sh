@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -eo pipefail
 
 ##############################################
         # Expo Setup Script Template
@@ -13,7 +13,7 @@ set -e
 #                     Zustand, Tailwind + NativeWind, etc.
 # Author:             TurtleWolfe@ScriptHammer.com
 # Created:            2025-02-08
-# Version:            1.0.0
+# Version:            1.1.0
 # License:            MIT
 #
 # Best Practices:
@@ -25,118 +25,202 @@ set -e
 #endregion
 
 #region Environment Variables and Pre-Setup
-# Load environment variables from .env file if it exists.
+# Load environment variables from .env file if it exists
 if [ -f .env ]; then
-  # Export variables defined in the .env file
   set -o allexport
   source .env
   set +o allexport
 else
-  echo "Error: .env file not found. Please create one with the necessary environment variables."
+  echo "ERROR: .env file not found."
+  echo "Create one with the following minimum content:"
+  echo "APP_NAME=\"my-app\""
   exit 1
 fi
 
-# Validate that APP_NAME is set.
-if [ -z "$APP_NAME" ]; then
-  echo "Error: APP_NAME is not set in the .env file."
-  exit 1
-fi
+# Validate required variables
+required_vars=("APP_NAME")
+for var in "${required_vars[@]}"; do
+  if [ -z "${!var}" ]; then
+    echo "ERROR: $var is not set in the .env file"
+    exit 1
+  fi
+done
 #endregion
 
 #region Create Expo App
-# Create the Expo app using the project name from APP_NAME.
+echo "🚀 Creating Expo app: $APP_NAME"
 npx create-expo-app "$APP_NAME"
 
-# Change into the project directory.
+echo "📂 Entering project directory"
 cd "$APP_NAME" || {
-  echo "Error: Failed to enter directory '$APP_NAME'. Exiting."
+  echo "ERROR: Failed to enter directory '$APP_NAME'"
   exit 1
 }
 
-# Run the reset-project command and remove any default folders.
-npm run reset-project
-rm -rf app-example
+# Clean up default project
+if [ -f "package.json" ]; then
+  echo "🧹 Cleaning up default project"
+  {
+    rm -rf app-example
+    rm -f App.js App.tsx
+  } || echo "⚠️  Cleanup partially failed - continuing anyway"
+fi
 #endregion
 
 #region Install Dependencies
-# Core Packages:
-npm install zustand
-npm install @supabase/supabase-js@2
-npm install @react-native-async-storage/async-storage
-npm install react-native-url-polyfill
+echo "📦 Installing dependencies..."
 
-# Expo Packages:
-npx expo install react-native-safe-area-context
-# npx expo install react-native-screens
-# npx expo install expo-linking
-# npx expo install expo-constants
-npx expo install expo-status-bar
-# npx expo install expo-font
-# npx expo install expo-secure-store
+# Package arrays with commented options
+core_deps=(
+  "zustand"
+  "@supabase/supabase-js@2"
+  "@react-native-async-storage/async-storage"
+  "react-native-url-polyfill"
+  # "@expo/vector-icons"
+  # "expo-router"
+  # "react-native-reanimated"
+)
 
-# UI & Styling:
-npm install nativewind
-npm install --save-dev tailwindcss@3.3.2
+expo_deps=(
+  "react-native-safe-area-context"
+  # "react-native-screens"
+  # "expo-linking"
+  # "expo-constants"
+  "expo-status-bar"
+  # "expo-font"
+  # "expo-secure-store"
+)
 
-# Additional (Optional):
-# npm install @expo/vector-icons
-# npm install expo-router
-# npm install react-native-reanimated
+ui_deps=(
+  "nativewind"
+  # "react-native-svg"
+)
+
+dev_deps=(
+  "tailwindcss@3.3.2"
+  # "@types/react-native"
+)
+
+# Install function to skip commented packages
+install_deps() {
+  local arr_name=("$@")
+  for dep in "${arr_name[@]}"; do
+    if [[ $dep != \#* ]]; then
+      if [[ $dep == nativewind* ]]; then
+        npm install "$dep"
+      else
+        npm install "$dep"
+      fi
+    fi
+  done
+}
+
+echo "📦 Installing core dependencies..."
+install_deps "${core_deps[@]}"
+
+echo "📦 Installing Expo dependencies..."
+install_deps "${expo_deps[@]}"
+
+echo "🎨 Installing UI dependencies..."
+install_deps "${ui_deps[@]}"
+
+echo "🛠️ Installing dev dependencies..."
+install_deps "${dev_deps[@]}"
 #endregion
 
+#region CREATE DIRECTORY STRUCTURE
+echo "📁 Creating directory structure..."
 
-# #region CREATE DIRECTORY STRUCTURE
-# my-app/
-# ├── .env.local                    # Environment variables (e.g., API keys, project settings)
-# ├── app.json                      # Expo configuration file
-# ├── babel.config.js               # Babel configuration (e.g., for NativeWind, Expo Router)
-# ├── metro.config.js               # Metro bundler configuration (optional, for advanced setups)
-# ├── package.json                  # Project manifest with dependencies and scripts
-# ├── tsconfig.json                 # TypeScript configuration (if you're using TypeScript)
-# └── src/
-#     └── app/
-#         ├── _layout.tsx           # Root layout for global routing and configuration
-#         ├── error.tsx             # Global error boundary for routes
-#         ├── global.css            # Global styles for the app
-#         ├── loading.tsx           # Global loading component (shown during route transitions)
-#         └── not-found.tsx         # 404 page for unmatched routes
-#         #region (auth) ROUTE GROUP
-#         ├── (auth)/
-#         │   ├── _layout.tsx       # Auth-specific layout (e.g., authentication wrappers)
-#         │   ├── signIn.tsx        # Sign In Screen
-#         │   └── signUp.tsx        # Sign Up Screen
-#         #endregion
-#         #region (tabs) ROUTE GROUP
-#         ├── (tabs)/
-#         │   ├── _layout.tsx       # Tab navigator layout (manages tab navigation)
-#         │   ├── index.tsx         # Home Screen
-#         │   ├── create.tsx        # Create Screen
-#         │   ├── explore.tsx       # Explore Screen
-#         │   ├── groups.tsx        # Groups Screen
-#         │   └── map.tsx           # Map Page for Geolocation
-#         │   ├── messages.tsx      # Messages Screen
-#         │   ├── notifications.tsx # Notifications Screen
-#         │   ├── profile.tsx       # Profile Screen
-#         #endregion
-#         #region (admin) ROUTE GROUP
-#         ├── (admin)/
-#         │   ├── _layout.tsx       # Admin-specific layout (wraps admin routes)
-#         │   └── index.tsx         # Admin Panel
-#         #endregion
-# TODO: Create essential project files such as:
-#          - Supabase client (lib/supabase.ts)
-#          - Zustand stores (store/useAuthStore.ts, store/useThemeStore.ts)
-# #endregion
+# Array-based structure definition with commented options
+dir_structure=(
+  # Root files
+  ".env.local"
+  "app.json"
+  "babel.config.js"
+  # "metro.config.js"
+  "package.json"
+  # "tsconfig.json"
+  
+  # Source directory
+  "src/"
+  "src/app/"
+  "src/app/_layout.tsx"
+  "src/app/error.tsx"
+  "src/app/global.css"
+  "src/app/loading.tsx"
+  "src/app/not-found.tsx"
+  
+  # Auth route group
+  "src/app/(auth)/"
+  # "src/app/(auth)/_layout.tsx"
+  # "src/app/(auth)/signIn.tsx"
+  # "src/app/(auth)/signUp.tsx"
+  
+  # Tabs route group
+  "src/app/(tabs)/"
+  # "src/app/(tabs)/_layout.tsx"
+  # "src/app/(tabs)/index.tsx"
+  # "src/app/(tabs)/create.tsx"
+  # "src/app/(tabs)/explore.tsx"
+  # "src/app/(tabs)/groups.tsx"
+  # "src/app/(tabs)/map.tsx"
+  # "src/app/(tabs)/messages.tsx"
+  # "src/app/(tabs)/notifications.tsx"
+  # "src/app/(tabs)/profile.tsx"
+  
+  # Admin route group
+  "src/app/(admin)/"
+  # "src/app/(admin)/_layout.tsx"
+  # "src/app/(admin)/index.tsx"
+  
+  # Additional directories
+  "src/lib/"
+  "src/lib/supabase.ts"
+  "src/store/"
+  "src/store/useAuthStore.ts"
+  # "src/store/useThemeStore.ts"
+  "src/components/"
+)
 
-#region Babel Configuration
-# TODO: Create or update babel.config.js for NativeWind and Expo Router.
+# Create structure while ignoring comments
+for item in "${dir_structure[@]}"; do
+  if [[ $item != \#* ]]; then
+    if [[ $item == *"/" ]]; then
+      mkdir -p "$item"
+    else
+      touch "$item"
+    fi
+  fi
+done
 #endregion
 
-#region Optional: Download Fonts
-# TODO: Optionally download steampunk fonts Arburtus Slab & Elite Special from Google Fonts if USE_THEME is enabled.
+#region Configuration Files
+echo "⚙️  Generating configuration files..."
+
+# Babel configuration
+cat > babel.config.js << EOF
+module.exports = function (api) {
+  api.cache(true);
+  return {
+    presets: ['babel-preset-expo'],
+    plugins: ['nativewind/babel'],
+  };
+};
+EOF
+
+# Tailwind configuration
+npx tailwindcss init -p
 #endregion
 
-#region Final Instructions and Launch
-# TODO: Print final instructions and launch the Expo app.
+#region Final Setup
+echo "✅ Project setup complete!"
+echo "Next steps:"
+echo "1. Configure Supabase client in src/lib/supabase.ts"
+echo "2. Set up Zustand stores in src/store/"
+echo "3. Update Tailwind config for NativeWind"
+echo "4. Add your environment variables in .env.local"
+
+# Start development server
+echo "🚀 Starting Expo development server..."
 npx expo start --clear
 #endregion
