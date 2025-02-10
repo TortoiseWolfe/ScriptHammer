@@ -128,9 +128,9 @@ install_deps "${dev_deps[@]}"
 #region CREATE DIRECTORY STRUCTURE
 echo "📁 Creating directory structure..."
 
-# Array-based structure definition (with quoted paths)
+# Define all required files and directories
 dir_structure=(
-  # Root files
+  # Root file(s)
   ".env.local"
   # "app.json"
   # "babel.config.js"

@@ -11,12 +11,10 @@ set -eo pipefail
 # Description:        Non-Interactive Expo setup script for initializing an
 #                     Expo project with configuration for Supabase, Zustand,
 #                     Tailwind + NativeWind, React Hook Form, Yup-based
-#                     validation, and an Expo Router authentication flow
-#                     (using a Zustand store for auth state). This version
-#                     includes adjustments for testing on the web and fixes
-#                     navigation between sign-in and sign-up.
-#                     Additionally, the Sign Up screen now provides robust
-#                     error feedback if saving a new user fails.
+#                     validation, and an Expo Router authentication flow.
+#                     This version includes adjustments for testing on the web,
+#                     fixes navigation between sign-in and sign-up, and corrects
+#                     unmatched route issues.
 # Author:             TurtleWolfe@ScriptHammer.com
 # Created:            2025-02-08
 # Version:            1.2.3
@@ -530,15 +528,63 @@ EOF
 
 # Profile Screen (profile.tsx)
 cat > "src/app/(tabs)/profile.tsx" << 'EOF'
-import { View, Text } from 'react-native';
+import React from 'react';
+import { View, Text, Image, TouchableOpacity, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '../../lib/supabase';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function ProfileScreen() {
+  const { user, setUser } = useAuthStore();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+      router.replace('/sign-in');
+    } catch (err) {
+      Alert.alert('Logout Error', err.message);
+    }
+  };
+
+  if (!user) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <Text className="text-base text-gray-700">User not logged in</Text>
+      </View>
+    );
+  }
+
+  // Use display_name or fallback to email if not provided
+  const displayName = user.display_name || user.email || 'User';
+  const avatarUrl = user.avatar_url || 'https://via.placeholder.com/150';
+
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Profile Screen</Text>
+    <View className="flex-1 bg-white p-6">
+      <View className="items-center mb-8">
+        <Image source={{ uri: avatarUrl }} className="w-32 h-32 rounded-full mb-4" />
+        <Text className="text-2xl font-bold text-gray-800">{displayName}</Text>
+      </View>
+      <View className="flex-row justify-around">
+        <TouchableOpacity
+          className="bg-blue-500 py-3 px-6 rounded-lg"
+          onPress={() => router.push('/profile/edit')}
+        >
+          <Text className="text-white text-lg">Edit Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="bg-red-500 py-3 px-6 rounded-lg"
+          onPress={handleLogout}
+        >
+          <Text className="text-white text-lg">Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
+
 EOF
 #endregion
 
