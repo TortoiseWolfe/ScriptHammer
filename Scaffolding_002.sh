@@ -2,7 +2,10 @@
 set -eo pipefail
 
 ##############################################
-# Expo Setup Script Template (TypeScript + NativeWind + Custom Button)
+# Expo Setup Script Template (TypeScript + NativeWind +
+# Steampunk Themed Global CSS, Custom Button, Global Link,
+# Input Shadow, Inverted Header/Tabs (with active tab color),
+# and Geolocation Map with Platform-Specific Map Implementations)
 ##############################################
 
 #region Metadata and Configuration
@@ -12,17 +15,26 @@ set -eo pipefail
 #                     Expo project using TypeScript with configuration for
 #                     Supabase, Zustand, Tailwind + NativeWind, React Hook Form,
 #                     Yup-based validation, and an Expo Router authentication flow.
-#                     This version includes web adjustments, a Log Out button,
-#                     a robust Profile Edit screen, a fully functional dark/light
-#                     theme toggle, and a custom button component used throughout
-#                     the app for consistent styling.
+#                     This version includes:
+#                     - Web adjustments with a functional map on web using @react-google-maps/api
+#                     - A Log Out button and Profile Edit screen
+#                     - A fully functional dark/light theme toggle using a steampunk color scheme
+#                     - A custom button component that uses a global ".btn" class defined in global CSS
+#                     - Centralized link styling via a global ".link" class
+#                     - A global input shadow class (.input-shadow) for form inputs
+#                     - A centralized background utility class (.bg-steampunk-light) for screens
+#                     - Inverted header and tabs styling in the tabs layout, with active tab color support
+#                     - Renamed tab screens: "Messages" → "Chats" and "Notifications" → "Cues"
+#                     - A Map tab that shows the user’s current geolocation (platform-specific implementations)
+#                     - A nativewind-env.d.ts for proper TypeScript support.
+#
 # Author:             TurtleWolfe@ScriptHammer.com
 # Created:            2025-02-08
-# Version:            1.2.10
+# Version:            1.2.14
 # License:            MIT
 #
 # Best Practices:
-#   - Ensure all environment variables are securely defined.
+#   - Ensure that all environment variables are securely defined.
 #   - Use meaningful variable names and consistent formatting.
 #   - Document each section thoroughly for maintainability.
 #   - Validate critical variables before proceeding.
@@ -40,11 +52,11 @@ else
   echo 'APP_NAME="ScriptHammer"'
   echo 'EXPO_PUBLIC_SUPABASE_URL="https://YOUR-PROJECT.supabase.co"'
   echo 'EXPO_PUBLIC_SUPABASE_ANON_KEY="YOUR-ANON-KEY"'
-  echo 'EXPO_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY"'
+  echo 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY"'
   exit 1
 fi
 
-required_vars=("APP_NAME" "EXPO_PUBLIC_SUPABASE_URL" "EXPO_PUBLIC_SUPABASE_ANON_KEY" "EXPO_GOOGLE_MAPS_API_KEY")
+required_vars=("APP_NAME" "EXPO_PUBLIC_SUPABASE_URL" "EXPO_PUBLIC_SUPABASE_ANON_KEY" "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
 for var in "${required_vars[@]}"; do
   if [ -z "${!var}" ]; then
     echo "ERROR: $var is not set in the .env file."
@@ -56,6 +68,7 @@ done
 #region Create Expo App (TypeScript)
 echo "🚀 Creating Expo app: $APP_NAME"
 npx create-expo-app "$APP_NAME"
+
 echo "📂 Entering project directory"
 cd "$APP_NAME" || { echo "ERROR: Failed to enter directory '$APP_NAME'"; exit 1; }
 
@@ -63,6 +76,22 @@ cd "$APP_NAME" || { echo "ERROR: Failed to enter directory '$APP_NAME'"; exit 1;
 echo "N" | npm run reset-project
 rm -rf app-example
 rm -f App.js App.tsx
+#endregion
+
+#region Check Local Expo CLI Installation
+echo "🔍 Checking for Expo CLI in local dependencies..."
+if ! npx expo --version >/dev/null 2>&1; then
+  echo "Local Expo CLI not found. Installing expo-cli as a dev dependency..."
+  npm install --save-dev expo-cli
+  if ! npx expo --version >/dev/null 2>&1; then
+    echo "ERROR: Local Expo CLI installation failed. Please check your npm setup."
+    exit 1
+  else
+    echo "Local Expo CLI installed: $(npx expo --version)"
+  fi
+else
+  echo "Local Expo CLI found: $(npx expo --version)"
+fi
 #endregion
 
 #region Install Dependencies
@@ -89,6 +118,11 @@ ui_deps=(
   "nativewind"
 )
 
+# Web mapping dependency for interactive maps on web
+web_deps=(
+  "@react-google-maps/api"
+)
+
 # Dev dependencies
 dev_deps=(
   "tailwindcss@3.3.2"
@@ -107,28 +141,33 @@ echo "📦 Installing Expo dependencies..."
 install_deps "${expo_deps[@]}"
 echo "🎨 Installing UI dependencies..."
 install_deps "${ui_deps[@]}"
+echo "🌐 Installing web mapping dependency..."
+install_deps "${web_deps[@]}"
 echo "🛠️ Installing dev dependencies..."
 install_deps "${dev_deps[@]}"
+
+# Install map dependencies (expo-location and react-native-maps) using local Expo CLI
+echo "📦 Installing map dependencies..."
+npx expo install expo-location react-native-maps
 #endregion
 
 #region CREATE DIRECTORY STRUCTURE
 echo "📁 Creating directory structure..."
 
-# Define directories and files to create.
-# Note: Profile Edit is placed at app/profileEdit.tsx (outside the tabs group)
+# Update directory structure: rename messages to chats and notifications to cues.
 dir_structure=(
   ".env.local"
-  "nativewind-env.d.ts"          # TypeScript declaration for NativeWind
+  "nativewind-env.d.ts"
   "src/lib/"
   "src/lib/supabase.ts"
   "src/store/"
   "src/store/useAuthStore.ts"
-  "src/components/"              # Will contain the CustomButton component
-  "src/context/"                 # For Theme Context
+  "src/components/"
+  "src/context/"
   "app/"
   "app/_layout.tsx"
   "app/error.tsx"
-  "app/global.css"               # Global CSS for Tailwind & NativeWind
+  "app/global.css"
   "app/loading.tsx"
   "app/not-found.tsx"
   "app/index.tsx"
@@ -143,8 +182,8 @@ dir_structure=(
   "app/(tabs)/explore.tsx"
   "app/(tabs)/groups.tsx"
   "app/(tabs)/map.tsx"
-  "app/(tabs)/messages.tsx"
-  "app/(tabs)/notifications.tsx"
+  "app/(tabs)/chats.tsx"
+  "app/(tabs)/cues.tsx"
   "app/(tabs)/profile.tsx"
   "app/profileEdit.tsx"
 )
@@ -166,25 +205,65 @@ cat > "nativewind-env.d.ts" << 'EOF'
 EOF
 #endregion
 
-#region Scaffold Global CSS
+#region Scaffold Global CSS with Steampunk Theme and Centralized Background Utility
 echo "📝 Generating Global CSS at app/global.css..."
 cat > "app/global.css" << 'EOF'
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Global Styles for Visual Clarity */
+:root {
+  --bg-light: #f0e6d2; /* Warm beige */
+  --text-light: #3b302a; /* Dark brown */
+  --bg-dark: #3c2e2b;   /* Dark rusty */
+  --text-dark: #d4bfa3; /* Light copper */
+  --text-active: #5a4a42; /* Dark metal for active elements */
+}
+
+/* Steampunk Light Theme */
 html, body {
-  @apply bg-white text-black;
+  background-color: var(--bg-light);
+  color: var(--text-light);
 }
 
+/* Steampunk Dark Theme */
 .dark html, .dark body {
-  @apply bg-black text-white;
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
 }
 
-/* Example custom class for demonstration */
+/* Centralized background utility for screens */
+.bg-steampunk-light {
+  background-color: var(--bg-light);
+}
+.dark .bg-steampunk-light {
+  background-color: var(--bg-dark);
+}
+
+/* Global button class with steampunk styling */
 .btn {
-  @apply px-4 py-2 rounded bg-blue-500 text-white;
+  @apply px-4 py-2 rounded-lg font-medium;
+  /* Light theme - Brass/Copper colors */
+  @apply bg-[#c0a080] text-[#3b302a] border-2 border-[#3b302a];
+  /* Dark theme - Dark metal colors */
+  @apply dark:bg-[#5a4a42] dark:text-[#d4bfa3] dark:border-[#d4bfa3];
+  @apply active:opacity-80 active:scale-95 transition-all;
+}
+
+/* Global link styling */
+.link {
+  @apply underline;
+  color: var(--text-light);
+}
+.dark .link {
+  color: var(--text-dark);
+}
+
+/* Global input styling with inset drop shadow */
+.input-shadow {
+  -webkit-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+  -moz-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+  box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
 }
 EOF
 #endregion
@@ -194,14 +273,25 @@ echo "📝 Generating Tailwind configuration at tailwind.config.js..."
 cat > "tailwind.config.js" << 'EOF'
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: 'class', // Enable dark mode using the 'dark' class
+  darkMode: 'class',
   content: [
     "./App.{js,jsx,ts,tsx}",
     "./app/**/*.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}"
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        light: {
+          primary: '#c0a080',
+          secondary: '#3b302a',
+        },
+        dark: {
+          primary: '#5a4a42',
+          secondary: '#d4bfa3',
+        },
+      },
+    },
   },
   presets: [require("nativewind/preset")],
   plugins: [],
@@ -209,13 +299,25 @@ module.exports = {
 EOF
 #endregion
 
-#region Scaffold Metro Config
+#region Scaffold Metro Config with Custom Resolver for Maps on Web
 echo "📝 Generating Metro configuration at metro.config.js..."
 cat > "metro.config.js" << 'EOF'
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
+
+// Add custom resolver for react-native-maps on web
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'react-native-maps' && platform === 'web') {
+    return {
+      filePath: './src/components/MapViewWrapper.web.tsx',
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = withNativeWind(config, { input: "./app/global.css" });
 EOF
 #endregion
@@ -238,28 +340,72 @@ module.exports = function(api) {
 EOF
 #endregion
 
-#region Scaffold Custom Button Component
+#region Scaffold Custom Button Component with Global CSS Usage
 echo "📝 Generating Custom Button component at src/components/CustomButton.tsx..."
 cat > "src/components/CustomButton.tsx" << 'EOF'
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
+// Global CSS is imported in the layouts so styles are applied globally.
 
+// CustomButton component using the global ".btn" class defined in global.css
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
 }
 
 export function CustomButton({ title, onPress }: CustomButtonProps) {
+  // Use the global "btn" class defined in global.css for theming.
   return (
-    <TouchableOpacity 
-      onPress={onPress}
-      className="px-4 py-2 bg-blue-500 rounded"
-    >
-      <Text className="text-white text-center font-bold">
-        {title}
-      </Text>
+    <TouchableOpacity onPress={onPress} className="btn">
+      <Text className="font-bold text-center">{title}</Text>
     </TouchableOpacity>
   );
+}
+EOF
+#endregion
+
+#region Scaffold Platform-Specific MapViewWrapper Components
+echo "📝 Generating MapViewWrapper.native.tsx for native platforms at src/components/MapViewWrapper.native.tsx..."
+cat > "src/components/MapViewWrapper.native.tsx" << 'EOF'
+import MapView from 'react-native-maps';
+
+// MapViewWrapper for native (iOS/Android)
+export default function MapViewWrapper(props: any) {
+  return <MapView {...props} />;
+}
+
+// Marker for native platforms using react-native-maps
+export function Marker(props: any) {
+  return <MapView.Marker {...props} />;
+}
+EOF
+
+echo "📝 Generating MapViewWrapper.web.tsx for web at src/components/MapViewWrapper.web.tsx..."
+cat > "src/components/MapViewWrapper.web.tsx" << 'EOF'
+import React from 'react';
+import { GoogleMap, LoadScript, Marker as GMarker } from '@react-google-maps/api';
+
+// MapViewWrapper for web using Google Maps API
+export default function MapViewWrapper(props: any) {
+  return (
+    <LoadScript googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={{
+          lat: props.initialRegion?.latitude || 0,
+          lng: props.initialRegion?.longitude || 0,
+        }}
+        zoom={15}
+      >
+        {props.children}
+      </GoogleMap>
+    </LoadScript>
+  );
+}
+
+// Marker component for web using Google Maps API
+export function Marker(props: any) {
+  return <GMarker position={{ lat: props.coordinate.latitude, lng: props.coordinate.longitude }} />;
 }
 EOF
 #endregion
@@ -270,6 +416,7 @@ cat > "src/context/ThemeContext.tsx" << 'EOF'
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance, Platform } from 'react-native';
 
+// Create a ThemeContext for dark/light mode
 const ThemeContext = createContext<{ theme: string; toggleTheme: () => void } | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -287,16 +434,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
-  // For web, update the <html> element with the 'dark' class
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-  }, [theme]);
+  // For web, update the root element's class list
+  if (Platform.OS === 'web') {
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
@@ -321,8 +463,9 @@ import { useRouter, usePathname, Slot } from 'expo-router';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { ActivityIndicator, View } from 'react-native';
 import { ThemeProvider } from '../src/context/ThemeContext';
-import "./global.css"; // Import global CSS
+import "./global.css";
 
+// RootLayout wraps the app with ThemeProvider and handles authentication redirection.
 export default function RootLayout() {
   const router = useRouter();
   const pathname = usePathname();
@@ -359,30 +502,50 @@ EOF
 echo "📝 Generating Auth Layout at app/(auth)/_layout.tsx..."
 cat > "app/(auth)/_layout.tsx" << 'EOF'
 import { Slot } from 'expo-router';
-import "../global.css"; // Import global CSS
+import "../global.css";
 
+// AuthLayout simply renders its child screens.
 export default function AuthLayout() {
   return <Slot />;
 }
 EOF
 #endregion
 
-#region Scaffold Tabs Layout (Import Global CSS)
+#region Scaffold Tabs Layout with Active Tab Colors
 echo "📝 Generating Tabs Layout at app/(tabs)/_layout.tsx..."
 cat > "app/(tabs)/_layout.tsx" << 'EOF'
 import { Tabs } from 'expo-router';
-import "../global.css"; // Import global CSS for tabs
+import { useTheme } from '../../src/context/ThemeContext';
+import "../global.css";
 
+// TabLayout inverts header and tab bar styling based on the current theme
+// and applies active/inactive tint colors based on global CSS variables.
 export default function TabLayout() {
+  const { theme } = useTheme();
+  // Invert background color for header/tab bar relative to the body:
+  const headerBackground = theme === 'light' ? 'var(--bg-dark)' : 'var(--bg-light)';
+  // Inactive text color uses the standard text color:
+  const inactiveColor = theme === 'light' ? 'var(--text-dark)' : 'var(--text-light)';
+  // Active tab text color uses the custom active color defined in global CSS:
+  const activeColor = 'var(--text-active)';
+
   return (
-    <Tabs>
+    <Tabs
+      screenOptions={{
+        headerStyle: { backgroundColor: headerBackground },
+        headerTintColor: inactiveColor,
+        tabBarStyle: { backgroundColor: headerBackground },
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
+      }}
+    >
       <Tabs.Screen name="home" options={{ title: 'Home' }} />
       <Tabs.Screen name="create" options={{ title: 'Create' }} />
       <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
       <Tabs.Screen name="groups" options={{ title: 'Groups' }} />
       <Tabs.Screen name="map" options={{ title: 'Map' }} />
-      <Tabs.Screen name="messages" options={{ title: 'Messages' }} />
-      <Tabs.Screen name="notifications" options={{ title: 'Notifications' }} />
+      <Tabs.Screen name="chats" options={{ title: 'Chats' }} />
+      <Tabs.Screen name="cues" options={{ title: 'Cues' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
@@ -396,6 +559,7 @@ cat > "app/index.tsx" << 'EOF'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
+// Index screen redirects immediately to /home once the app is mounted.
 export default function Index() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -422,6 +586,7 @@ cat > "app/error.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// ErrorScreen is displayed when an error occurs.
 export default function ErrorScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -435,6 +600,7 @@ cat > "app/loading.tsx" << 'EOF'
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
+// LoadingScreen is displayed while the app is loading.
 export default function LoadingScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -448,6 +614,7 @@ cat > "app/not-found.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// NotFoundScreen is displayed for unmatched routes.
 export default function NotFoundScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -461,7 +628,6 @@ EOF
 #region Scaffold Auth Screens Code
 echo "📝 Generating Auth Screens..."
 
-# Sign In Screen
 cat > "app/(auth)/signIn.tsx" << 'EOF'
 import React, { useState } from 'react';
 import { View, Text, TextInput } from 'react-native';
@@ -471,6 +637,7 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CustomButton } from '../../src/components/CustomButton';
 
+// Validation schema for sign in
 const signInSchema = Yup.object().shape({
   email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
   password: Yup.string().required('Password is required.'),
@@ -479,7 +646,7 @@ const signInSchema = Yup.object().shape({
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const { setUser } = useAuthStore();
   const router = useRouter();
@@ -489,9 +656,9 @@ export default function SignInScreen() {
     setServerError('');
     try {
       await signInSchema.validate({ email, password }, { abortEarly: false });
-    } catch (validationError: any) {
+    } catch (validationError) {
       if (validationError.inner) {
-        const newErrors: { [key: string]: string } = {};
+        const newErrors = {};
         validationError.inner.forEach((err: any) => {
           if (err.path) newErrors[err.path] = err.message;
         });
@@ -527,6 +694,7 @@ export default function SignInScreen() {
           style={{ borderWidth: 1, borderColor: errors.email ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
           autoCapitalize="none"
           keyboardType="email-address"
+          className="input-shadow"
         />
         {errors.email && <Text style={{ color: 'red', marginTop: 4 }}>{errors.email}</Text>}
       </View>
@@ -540,12 +708,13 @@ export default function SignInScreen() {
           }}
           style={{ borderWidth: 1, borderColor: errors.password ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
           secureTextEntry
+          className="input-shadow"
         />
         {errors.password && <Text style={{ color: 'red', marginTop: 4 }}>{errors.password}</Text>}
       </View>
       {serverError && <Text style={{ color: 'red', marginBottom: 12 }}>{serverError}</Text>}
       <CustomButton title="Sign In" onPress={handleSignIn} />
-      <Text onPress={() => router.push('/signUp')} style={{ color: 'blue', marginTop: 16, textAlign: 'center' }}>
+      <Text onPress={() => router.push('/signUp')} className="link mt-4 text-center">
         Don't have an account? Sign Up
       </Text>
     </View>
@@ -562,6 +731,7 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CustomButton } from '../../src/components/CustomButton';
 
+// Validation schema for sign up
 const signUpSchema = Yup.object().shape({
   email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
   password: Yup.string()
@@ -573,7 +743,7 @@ const signUpSchema = Yup.object().shape({
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const { setUser } = useAuthStore();
 
@@ -582,9 +752,9 @@ export default function SignUpScreen() {
     setServerError('');
     try {
       await signUpSchema.validate({ email, password }, { abortEarly: false });
-    } catch (validationError: any) {
+    } catch (validationError) {
       if (validationError.inner) {
-        const newErrors: { [key: string]: string } = {};
+        const newErrors = {};
         validationError.inner.forEach((err: any) => {
           if (err.path) newErrors[err.path] = err.message;
         });
@@ -620,6 +790,7 @@ export default function SignUpScreen() {
           style={{ borderWidth: 1, borderColor: errors.email ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
           autoCapitalize="none"
           keyboardType="email-address"
+          className="input-shadow"
         />
         {errors.email && <Text style={{ color: 'red', marginTop: 4 }}>{errors.email}</Text>}
       </View>
@@ -633,6 +804,7 @@ export default function SignUpScreen() {
           }}
           style={{ borderWidth: 1, borderColor: errors.password ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
           secureTextEntry
+          className="input-shadow"
         />
         {errors.password && <Text style={{ color: 'red', marginTop: 4 }}>{errors.password}</Text>}
       </View>
@@ -647,15 +819,16 @@ EOF
 #region Scaffold Tab Screens Code
 echo "📝 Generating code for Tab Screens..."
 
-# Home Screen (with visible dark mode changes)
+# Home Screen – use centralized background utility
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// Home screen using centralized background utility
 export default function HomeScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white text-lg font-bold">
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-lg font-bold">
         Welcome to the Home Screen
       </Text>
     </View>
@@ -669,10 +842,11 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { CustomButton } from '../../src/components/CustomButton';
 
+// Create screen with a sample action button
 export default function CreateScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white mb-4">Create Screen</Text>
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-4">Create Screen</Text>
       <CustomButton title="Action" onPress={() => {}} />
     </View>
   );
@@ -684,10 +858,11 @@ cat > "app/(tabs)/explore.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// Explore screen
 export default function ExploreScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white">Explore Screen</Text>
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Explore Screen</Text>
     </View>
   );
 }
@@ -698,58 +873,124 @@ cat > "app/(tabs)/groups.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// Groups screen
 export default function GroupsScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white">Groups Screen</Text>
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Groups Screen</Text>
     </View>
   );
 }
 EOF
 
-# Map Screen
+# Map Screen with Geolocation using expo-location and react-native-maps
 cat > "app/(tabs)/map.tsx" << 'EOF'
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+// Import MapView and Marker from our platform-specific implementation.
+import MapView, { Marker } from '../../src/components/MapViewWrapper';
+import * as Location from 'expo-location';
 
 export default function MapScreen() {
+  const [location, setLocation] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      // Request location permissions
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+      // Fetch current location
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
+    })();
+  }, []);
+
+  if (errorMsg) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{errorMsg}</Text>
+      </View>
+    );
+  }
+
+  if (!location) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.infoText}>Fetching location...</Text>
+      </View>
+    );
+  }
+
+  const { latitude, longitude } = location.coords;
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white">Map Screen</Text>
+    <MapView
+      style={styles.map}
+      initialRegion={{
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }}
+    >
+      <Marker coordinate={{ latitude, longitude }} title="You are here" />
+    </MapView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0e6d2', // Steampunk light background (matches global theme)
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  map: {
+    flex: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+  },
+  infoText: {
+    color: '#3b302a',
+    fontSize: 16,
+  },
+});
+EOF
+
+# Chats Screen (formerly "Messages")
+cat > "app/(tabs)/chats.tsx" << 'EOF'
+import { View, Text } from 'react-native';
+
+export default function ChatsScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Chats</Text>
     </View>
   );
 }
 EOF
 
-# Messages Screen
-cat > "app/(tabs)/messages.tsx" << 'EOF'
+# Cues Screen (formerly "Notifications")
+cat > "app/(tabs)/cues.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
-export default function MessagesScreen() {
+// Cues screen (formerly "Notifications")
+export default function CuesScreen() {
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white">Messages Screen</Text>
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Cues</Text>
     </View>
   );
 }
 EOF
 
-# Notifications Screen
-cat > "app/(tabs)/notifications.tsx" << 'EOF'
-import React from 'react';
-import { View, Text } from 'react-native';
-
-export default function NotificationsScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black">
-      <Text className="text-black dark:text-white">Notifications Screen</Text>
-    </View>
-  );
-}
-EOF
-
-# Profile Screen with Log Out, Edit Profile, and Theme Toggle using CustomButton
+# Profile Screen with Log Out, Edit Profile, and Theme Toggle using CustomButton and Link styling
 cat > "app/(tabs)/profile.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -759,6 +1000,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
 import { CustomButton } from '../../src/components/CustomButton';
 
+// Profile screen with Log Out, Edit Profile, and theme toggle
 export default function ProfileScreen() {
   const { setUser, user } = useAuthStore();
   const { theme, toggleTheme } = useTheme();
@@ -775,18 +1017,15 @@ export default function ProfileScreen() {
   };
 
   return (
-    <View className="flex-1 items-center justify-center bg-white dark:bg-black p-4">
-      <Text className="text-black dark:text-white text-2xl mb-4">Profile</Text>
+    <View className="flex-1 items-center justify-center bg-steampunk-light p-4">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-2xl mb-4">Profile</Text>
       {user && (
         <>
-          <Text className="text-black dark:text-white mb-2">Email: {user.email}</Text>
+          <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-2">Email: {user.email}</Text>
         </>
       )}
       <CustomButton title="Log Out" onPress={handleLogout} />
-      <Text
-        onPress={() => router.push('/profileEdit')}
-        className="text-blue-500 mt-4 text-center"
-      >
+      <Text onPress={() => router.push('/profileEdit')} className="link mt-4 text-center">
         Edit Profile
       </Text>
       <CustomButton title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`} onPress={toggleTheme} />
@@ -806,6 +1045,7 @@ import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { CustomButton } from '../src/components/CustomButton';
 
+// ProfileEditScreen allows the user to edit their profile details.
 export default function ProfileEditScreen() {
   const { user, setUser } = useAuthStore();
   const [avatar, setAvatar] = useState('');
@@ -853,27 +1093,15 @@ export default function ProfileEditScreen() {
   };
 
   return (
-    <View className="flex-1 p-4 bg-white dark:bg-black">
-      <Text className="text-2xl mb-4 text-black dark:text-white">Edit Profile</Text>
+    <View className="flex-1 p-4 bg-steampunk-light">
+      <Text className="text-2xl mb-4 text-[#3b302a] dark:text-[#d4bfa3]">Edit Profile</Text>
       {error && <Text className="text-red-500 mb-3">{error}</Text>}
-      <Text className="text-black dark:text-white mb-1">Avatar URL:</Text>
-      <TextInput
-        value={avatar}
-        onChangeText={setAvatar}
-        className="border border-gray-300 p-2 rounded mb-3"
-      />
-      <Text className="text-black dark:text-white mb-1">Display Name:</Text>
-      <TextInput
-        value={displayName}
-        onChangeText={setDisplayName}
-        className="border border-gray-300 p-2 rounded mb-3"
-      />
-      <Text className="text-black dark:text-white mb-1">Bio:</Text>
-      <TextInput
-        value={bio}
-        onChangeText={setBio}
-        className="border border-gray-300 p-2 rounded mb-3"
-      />
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Avatar URL:</Text>
+      <TextInput value={avatar} onChangeText={setAvatar} className="border border-gray-300 p-2 rounded mb-3 input-shadow" />
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Display Name:</Text>
+      <TextInput value={displayName} onChangeText={setDisplayName} className="border border-gray-300 p-2 rounded mb-3 input-shadow" />
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Bio:</Text>
+      <TextInput value={bio} onChangeText={setBio} className="border border-gray-300 p-2 rounded mb-3 input-shadow" />
       <CustomButton title="Save" onPress={handleSave} />
       <CustomButton title="Cancel" onPress={() => router.back()} />
     </View>
@@ -890,6 +1118,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 
+// Initialize Supabase client using environment variables
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -916,7 +1145,9 @@ echo "🛠️  Creating Zustand auth store in src/store/useAuthStore.ts..."
 cat > "src/store/useAuthStore.ts" << 'EOF'
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+// Define the authentication state type
 
+// Define the authentication state type
 type AuthState = {
   user: any;
   setUser: (user: any) => void;
@@ -924,6 +1155,7 @@ type AuthState = {
   setLoading: (loading: boolean) => void;
 };
 
+// Create Zustand store for authentication
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   setUser: (user) => set({ user }),
@@ -931,6 +1163,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ isLoading: loading }),
 }));
 
+// Immediately fetch session on load
 (async () => {
   const { data: { session }, error } = await supabase.auth.getSession();
   if (error) {
@@ -942,6 +1175,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   });
 })();
 
+// Listen for auth state changes
 supabase.auth.onAuthStateChange((event, session) => {
   useAuthStore.setState({
     user: session?.user || null,
@@ -954,10 +1188,10 @@ EOF
 #region Final Setup
 echo "✅ Project setup complete!"
 echo "Next steps:"
-echo "1. Adjust the Supabase client in src/lib/supabase.ts if needed."
-echo "2. Verify the Zustand auth store in src/store/useAuthStore.ts."
-echo "3. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
-echo "4. Populate .env.local with your environment variables."
+echo "1. Ensure your .env file uses the prefix 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY' for the Google Maps API key."
+echo "2. Adjust the Supabase client in src/lib/supabase.ts if needed."
+echo "3. Verify the Zustand auth store in src/store/useAuthStore.ts."
+echo "4. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
 echo "5. Run and test the auth flow by signing in/up. For web, use: npx expo start --clear"
 echo "🚀 Starting Expo development server..."
 npx expo start --clear

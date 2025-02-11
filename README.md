@@ -1,7 +1,5 @@
 # ScriptHammer
 
-Got it! I will generate an optimized SQL script for Supabase to create a comprehensive social network backend. This will include:
-
 - **Database Schema** with users, posts, comments, likes, follows, messages, and other essential entities.
 - **Authentication** using Supabase Auth with extended metadata like display names, avatars, and more.
 - **Role-Based Access** where the first user is an admin, and others default to regular users.
@@ -9,9 +7,24 @@ Got it! I will generate an optimized SQL script for Supabase to create a compreh
 - **Functions & Triggers** to handle cascading deletes, audit logs, and other automation for data integrity.
 - **Indexes & Performance Optimizations** based on best practices for scalability and efficiency.
 
-I will put everything together and let you know when the script is ready.
+  The script is a bit long, but it’s mostly just creating files and directories. The most important parts are the environment variables at the top and the final setup section at the bottom.
+  The script creates a new Expo project using the TypeScript template and then installs the necessary dependencies. It then creates the directory structure, global CSS, Tailwind configuration, Metro configuration, Babel configuration, and a custom button component.
+  The script also creates a theme context, root layout, auth layout, tabs layout, and screens for sign-in, sign-up, home, create, explore, groups, map, messages, notifications, profile, profile edit, error, loading, and not found.
+  Finally, the script creates a Supabase client and a Zustand auth store.
+  To run the script, save it to a file named  expo-setup.sh  and make it executable with  chmod +x expo-setup.sh . Then run the script with  ./expo-setup.sh .
+  The script will create a new Expo project with the specified configuration.
+  Conclusion
+  In this article, we created a non-interactive Expo setup script for initializing an Expo project using TypeScript with configuration for Supabase, Zustand, Tailwind + NativeWind, React Hook Form, Yup-based validation, and an Expo Router authentication flow.
+  We also added web adjustments, a log out button and profile edit screen, a fully functional dark/light theme toggle using a steampunk color scheme, a custom button component that responds to theming, and a TypeScript declaration for NativeWind.
+  The script is a template that you can customize to fit your needs. You can add more screens, components, or libraries to the script to automate the setup of your Expo projects.
+  The post  Expo Setup Script Template (TypeScript + NativeWind + Custom Button with Steampunk Theming) appeared firstjson on  ScriptHammer.
+  ]]>
+  
+  In this article, we’ll create a non-interactive Expo setup script for initializing an Expo project using TypeScript with configuration for Supabase, Zustand, Tailwind + NativeWind, React Hook Form, Yup-based validation, and an Expo Router authentication flow.
+  We’ll also add web adjustments, a log out button and profile edit screen, a fully functional dark/light theme toggle using a steampunk color scheme, a custom button component that responds to theming, and a TypeScript declaration for NativeWind.
+  The script is a template that you can customize to fit your needs. You can add more screens, components, or libraries to the script to automate the setup of your Expo projects.
 
-# Supabase Social Network Schema Setup
+## Supabase Social Network Schema Setup
 
 Below is a comprehensive SQL script (with explanations) to create a social network backend on Supabase. It defines the database schema, authentication integration, storage buckets, triggers, functions, and security policies following best practices for security and scalability.
 
@@ -171,7 +184,7 @@ All relationships use **ON DELETE CASCADE** for automatic cleanup ([Cascade Dele
 
 ## 2. Authentication & Role-Based Access
 
-Supabase provides a built-in **Auth** system. We integrate it by using the `auth.users` table as the source of truth for user accounts. Our `public.users` profile table references `auth.users`, as shown above, to keep profile info and roles in sync ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=Make%20sure%20to%20protect%20the,table%20might%20look%20like%20this)) ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=id%20uuid%20not%20null%20references,users%20on%20delete%20cascade)). 
+Supabase provides a built-in **Auth** system. We integrate it by using the `auth.users` table as the source of truth for user accounts. Our `public.users` profile table references `auth.users`, as shown above, to keep profile info and roles in sync ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=Make%20sure%20to%20protect%20the,table%20might%20look%20like%20this)) ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=id%20uuid%20not%20null%20references,users%20on%20delete%20cascade)).
 
 **Supabase Auth and Profile Setup:**
 
@@ -347,6 +360,7 @@ FOR DELETE USING ( auth.uid() = user_id );
 **Note:** The above policies are examples. In a real setup, you would tailor them to your sharing model (public vs private content). Also, for admin/moderator, we used an `EXISTS` subquery to check the role in the `users` table. This is functional but could be optimized (e.g., using `auth.role()` if you set up a custom JWT claim for the role). Supabase allows adding custom claims (like a `role` claim) to JWT at login, which can greatly simplify role checks in policies ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=_%2010)) ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=using%20%28%20%28select%20auth,complies%20with%20the%20policy%20expression)).
 
 With these RLS policies, we ensure **data privacy and integrity**:
+
 - Users only perform actions on data they own or are allowed to see.
 - Malicious or unauthorized requests are blocked at the database level by default (since RLS denies anything not explicitly allowed).
 - Administrators can be given override capabilities through specialized policies or by using the Supabase **Service Role** (which bypasses RLS entirely when using the service key in requests ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=))).
@@ -354,15 +368,18 @@ With these RLS policies, we ensure **data privacy and integrity**:
 ## 3. Storage Setup for Profiles and Media
 
 Supabase includes an integrated **Storage** system (S3-like object storage) for files. We will set up two buckets:
+
 - **avatars** – for user profile pictures.
 - **post_media** – for images or media attached to posts.
 
 **Bucket Creation:** In Supabase, you can create buckets via the Dashboard or using the SQL API. For example, via code or the REST API:
+
 ```js
 // (Example JS - for reference, not executed here)
 await supabase.storage.createBucket('avatars', { public: false });
 await supabase.storage.createBucket('post_media', { public: false });
 ```
+
 *(If using SQL, Supabase provides storage helper functions, but using the JS/CLI is common ([Creating Buckets | Supabase Docs](https://supabase.com/docs/guides/storage/buckets/creating-buckets#:~:text=%2F%2F%20Use%20the%20JS%20library,to%20create%20a%20bucket)).)*
 
 We'll assume these buckets are created. We set them to **private** (`public: false`), meaning by default no one can read or write files without authorization. This is more secure; we will define policies to allow appropriate access.
@@ -370,6 +387,7 @@ We'll assume these buckets are created. We set them to **private** (`public: fal
 **Storage Security Policies:** Supabase Storage uses the same RLS mechanism on a special table `storage.objects` that stores object metadata ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=Supabase%20Storage%20is%20designed%20to,RLS)) ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=You%20selectively%20allow%20certain%20operations,table)). We can create RLS policies on `storage.objects` to control who can upload or download files in our buckets ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=By%20default%20Storage%20does%20not,table)) ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=For%20example%2C%20the%20only%20RLS,table)). By default, no actions are allowed until we add policies ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=By%20default%20Storage%20does%20not,table)).
 
 For our social network:
+
 - Only authenticated users should upload files (no anonymous uploads).
 - Users can upload files to the **avatars** bucket, but ideally only for their own profile (we can enforce that they upload to a folder matching their user ID, for example).
 - Users can upload files to the **post_media** bucket for their posts (e.g., in a folder per user or per post).
@@ -437,7 +455,7 @@ USING (
 );
 ```
 
-In these policies, we're using Supabase's storage helper function `storage.foldername(name)` which returns an array of folder names in the object's path ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=_%2010)) ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)). We enforce that the first folder in the file path matches the user's UID for uploads. For example, a user with ID `abcd-1234-...` must upload their avatar to a path like `abcd-1234-.../profile.jpg` in the `avatars` bucket. This way, we know the file “belongs” to that user, and our policy allows them to manage it ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)). 
+In these policies, we're using Supabase's storage helper function `storage.foldername(name)` which returns an array of folder names in the object's path ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=_%2010)) ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)). We enforce that the first folder in the file path matches the user's UID for uploads. For example, a user with ID `abcd-1234-...` must upload their avatar to a path like `abcd-1234-.../profile.jpg` in the `avatars` bucket. This way, we know the file “belongs” to that user, and our policy allows them to manage it ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)).
 
 We allow any authenticated user to read files from these buckets (you could tighten this to only allow users to read others' avatars/post media if you want to enforce friendship or privacy, but in a typical social network, profile pictures and post images are visible to others by design). If we wanted to open it further (public internet access without a token), we could mark the buckets `public: true` or add `TO anon` (unauthenticated) select policies ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=)), but here we stick to authenticated access.
 
@@ -527,6 +545,7 @@ FOR EACH ROW EXECUTE PROCEDURE public.log_audit();
 We can do this for other tables like `likes`, `followers`, etc., depending on what level of auditing is desired. (It might be overkill to audit every single like/unlike, but it's possible.)
 
 **How it works:** On any change, an entry is written to `audit_logs` containing:
+
 - `table_name`: e.g. "posts".
 - `action`: e.g. "UPDATE".
 - `record_id`: e.g. the post ID that was changed.
@@ -572,6 +591,7 @@ Now, whenever a row in `users`, `posts`, or `comments` is updated, the `updated_
 ### Additional Triggers (Optional)
 
 Depending on your app's needs, you could add triggers to automatically create notifications. For example:
+
 - After a new `likes` insert, create a notification for the post owner that someone liked their post.
 - After a new `comments` insert, create a notification for the post owner that someone commented.
 - After a new `followers` insert, notify the target that they have a new follower.
@@ -614,7 +634,7 @@ CREATE INDEX idx_messages_sender_id ON public.messages(sender_id);
 CREATE INDEX idx_notifications_user_id ON public.notifications(user_id);
 ```
 
-Each of these indexes will improve lookup speed in the corresponding common queries. For example, `idx_posts_user_id` makes fetching all posts by a given user fast (O(log n) search through the index rather than full table scan) ([Managing Indexes in PostgreSQL | Supabase Docs](https://supabase.com/docs/guides/database/postgres/indexes#:~:text=Here%20is%20a%20simplified%20diagram,have%20more%20than%20two%20children)) ([Supabase foreign key example — Restack](https://www.restack.io/docs/supabase-knowledge-supabase-foreign-key-example#:~:text=,columns%20to%20improve%20query%20performance)). The descending index on `created_at` in posts is useful for retrieving the newest posts quickly (as many feeds do). 
+Each of these indexes will improve lookup speed in the corresponding common queries. For example, `idx_posts_user_id` makes fetching all posts by a given user fast (O(log n) search through the index rather than full table scan) ([Managing Indexes in PostgreSQL | Supabase Docs](https://supabase.com/docs/guides/database/postgres/indexes#:~:text=Here%20is%20a%20simplified%20diagram,have%20more%20than%20two%20children)) ([Supabase foreign key example — Restack](https://www.restack.io/docs/supabase-knowledge-supabase-foreign-key-example#:~:text=,columns%20to%20improve%20query%20performance)). The descending index on `created_at` in posts is useful for retrieving the newest posts quickly (as many feeds do).
 
 **Scalability considerations:**
 
@@ -624,13 +644,13 @@ Each of these indexes will improve lookup speed in the corresponding common quer
 - **Connection limits and scaling:** Supabase scales Postgres under the hood; using connection pooling and handling N+1 queries at the application level is important. The schema itself is not a bottleneck if indexed properly.
 - **Full-text search:** If you need to search post content or user bios, consider adding a tsvector column and an index (Supabase has PG full-text search capabilities).
 
-By following these practices, we maintain **data integrity** (through foreign keys and cascades) and **performance** (through indexes and careful RLS policy design) ([Supabase foreign key example — Restack](https://www.restack.io/docs/supabase-knowledge-supabase-foreign-key-example#:~:text=,columns%20to%20improve%20query%20performance)). 
+By following these practices, we maintain **data integrity** (through foreign keys and cascades) and **performance** (through indexes and careful RLS policy design) ([Supabase foreign key example — Restack](https://www.restack.io/docs/supabase-knowledge-supabase-foreign-key-example#:~:text=,columns%20to%20improve%20query%20performance)).
 
 ## Conclusion
 
-This SQL script sets up a robust schema for a social network on Supabase. We leveraged Supabase Auth for user management, linking it to a profiles table with a trigger to auto-create profiles and assign roles (making the first user an admin) ([Creating an Admin Account in Supabase | AuthGPTs](https://docs.authgpts.com/supabas/creating-an-admin-account-in-supabase#:~:text=,table)). We've defined all the core tables with proper relationships, implemented **Row-Level Security** for fine-grained access control on each table (so users can only affect their own data) ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=create%20policy%20,their%20own%20profile)) ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=using%20%28%20%28select%20auth,complies%20with%20the%20policy%20expression)), and set up storage buckets with security rules for user-uploaded content ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)). 
+This SQL script sets up a robust schema for a social network on Supabase. We leveraged Supabase Auth for user management, linking it to a profiles table with a trigger to auto-create profiles and assign roles (making the first user an admin) ([Creating an Admin Account in Supabase | AuthGPTs](https://docs.authgpts.com/supabas/creating-an-admin-account-in-supabase#:~:text=,table)). We've defined all the core tables with proper relationships, implemented **Row-Level Security** for fine-grained access control on each table (so users can only affect their own data) ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=create%20policy%20,their%20own%20profile)) ([Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security#:~:text=using%20%28%20%28select%20auth,complies%20with%20the%20policy%20expression)), and set up storage buckets with security rules for user-uploaded content ([Storage Access Control | Supabase Docs](https://supabase.com/docs/guides/storage/security/access-control#:~:text=bucket_id%20%3D%20%27my_bucket_id%27%20and)).
 
-Using database-side rules (constraints, cascades, triggers, and RLS policies) ensures that security and business logic are enforced consistently, no matter how the data is accessed ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=Make%20sure%20to%20protect%20the,table%20might%20look%20like%20this)) ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=_%2010)). This minimizes the risk of a client bypassing rules and helps scale the application securely. 
+Using database-side rules (constraints, cascades, triggers, and RLS policies) ensures that security and business logic are enforced consistently, no matter how the data is accessed ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=Make%20sure%20to%20protect%20the,table%20might%20look%20like%20this)) ([User Management | Supabase Docs](https://supabase.com/docs/guides/auth/managing-user-data#:~:text=_%2010)). This minimizes the risk of a client bypassing rules and helps scale the application securely.
 
 **References:**
 
