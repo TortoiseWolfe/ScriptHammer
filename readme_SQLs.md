@@ -1,4 +1,6 @@
-# original setup:
+# ScriptHammer
+
+## Updated Script 1: Backend Schema Initialization
 
 ```sql
 -- =============================================================================
@@ -151,7 +153,7 @@ DROP POLICY IF EXISTS "Profiles update policy" ON public.profiles;
 CREATE POLICY "Profiles update policy" ON public.profiles
 FOR UPDATE WITH CHECK (auth.uid() = id);
 
--- For posts (if used).
+-- For posts.
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Posts select policy" ON public.posts;
 CREATE POLICY "Posts select policy" ON public.posts
@@ -194,14 +196,16 @@ FOR INSERT WITH CHECK (
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;  -- Added posts table for realtime
 
 -- =============================================================================
 -- End of Script 1
 -- =============================================================================
-
 ```
 
-## testing data
+---
+
+### Script 2: Seed Sample Testers, Create Conversations with Admin, and Insert Initial Messages
 
 ```sql
 -- =============================================================================
@@ -327,5 +331,6 @@ END $$;
 -- =============================================================================
 -- End of Script 2
 -- =============================================================================
-
 ```
+
+---
