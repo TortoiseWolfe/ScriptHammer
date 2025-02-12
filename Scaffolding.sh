@@ -751,23 +751,115 @@ export default function SignUpScreen() {
 EOF
 #endregion
 
-#region Scaffold Tab Screens
+#region HOME SCREEN
 cat > "app/(tabs)/home.tsx" << 'EOF'
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { supabase } from '../../src/lib/supabase';
+
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+}
 
 export default function HomeScreen() {
-  return (
-    <View className="flex-1 items-center justify-center bg-steampunk-light">
-      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-lg font-bold">
-        Welcome to the Home Screen
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  // Function to fetch posts from Supabase
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching posts:', error);
+      } else {
+        setPosts(data as Post[]);
+      }
+    } catch (err: any) {
+      console.error('Unexpected error fetching posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch posts on component mount
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Set up realtime subscription to update posts when a new post is inserted.
+  useEffect(() => {
+    const subscription = supabase
+      .channel('posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+        },
+        (payload) => {
+          console.log('New post received:', payload.new);
+          // Prepend the new post to the existing posts list.
+          setPosts((prevPosts) => [payload.new, ...prevPosts]);
+        }
+      )
+      .subscribe();
+
+    // Cleanup the subscription on unmount to maintain code integrity.
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
+  // Handler for pull-to-refresh functionality
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+  };
+
+  // Render a single post item
+  const renderPost = ({ item }: { item: Post }) => (
+    <View className="p-4 border-b border-gray-300">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">
+        {item.content}
       </Text>
+      <Text className="text-xs text-gray-600 mt-1">
+        {new Date(item.created_at).toLocaleString()}
+      </Text>
+    </View>
+  );
+
+  return (
+    <View className="flex-1 bg-steampunk-light">
+      {loading && posts.length === 0 ? (
+        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPost}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      )}
     </View>
   );
 }
 EOF
+#endregion
 
-# Updated Create Screen with "Create Post" functionality
+#region CREATE SCREEN
 cat > "app/(tabs)/create.tsx" << 'EOF'
 import React, { useState } from 'react';
 import { View, Text, TextInput, Alert } from 'react-native';
@@ -825,7 +917,9 @@ export default function CreateScreen() {
   );
 }
 EOF
+#endregion
 
+#region EXPLORE SCREEN
 cat > "app/(tabs)/explore.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -838,7 +932,9 @@ export default function ExploreScreen() {
   );
 }
 EOF
+#endregion
 
+#region GROUPS SCREEN
 cat > "app/(tabs)/groups.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -851,7 +947,9 @@ export default function GroupsScreen() {
   );
 }
 EOF
+#endregion
 
+#region MAP SCREEN
 cat > "app/(tabs)/map.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -926,7 +1024,9 @@ const styles = StyleSheet.create({
   },
 });
 EOF
+#endregion
 
+#region CHATS SCREEN
 cat > "app/(tabs)/chats.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text } from 'react-native';
@@ -994,55 +1094,54 @@ export default function ChatsScreen() {
   }, [selectedContact, user]);
 
   // Fetch messages for the current conversation.
-useEffect(() => {
-  if (!conversationId) return;
-  async function fetchMessages() {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-    if (error) {
-      console.error('Error fetching messages:', error);
-    } else {
-      setMessages(data);
-    }
-  }
-  fetchMessages();
-
-  // Subscribe to realtime changes for messages in the conversation.
-  const channel = supabase
-    .channel(`conversation-${conversationId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `conversation_id=eq.${conversationId}`,
-      },
-      (payload) => {
-        console.log('Realtime event received:', payload);
-        if (payload.eventType === 'INSERT') {
-          setMessages((prev) => [...prev, payload.new]);
-        } else if (payload.eventType === 'UPDATE') {
-          setMessages((prev) =>
-            prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
-          );
-        } else if (payload.eventType === 'DELETE') {
-          setMessages((prev) =>
-            prev.filter((msg) => msg.id !== payload.old.id)
-          );
-        }
+  useEffect(() => {
+    if (!conversationId) return;
+    async function fetchMessages() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Error fetching messages:', error);
+      } else {
+        setMessages(data);
       }
-    )
-    .subscribe();
+    }
+    fetchMessages();
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [conversationId]);
+    // Subscribe to realtime changes for messages in the conversation.
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          console.log('Realtime event received:', payload);
+          if (payload.eventType === 'INSERT') {
+            setMessages((prev) => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setMessages((prev) =>
+              prev.filter((msg) => msg.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
 
   // Function to send a new message.
   const sendMessage = async (text: string) => {
@@ -1105,7 +1204,7 @@ useEffect(() => {
 EOF
 #endregion
 
-#region Scaffold Cues Screen
+#region CUES SCREEN
 cat > "app/(tabs)/cues.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -1120,7 +1219,7 @@ export default function CuesScreen() {
 EOF
 #endregion
 
-#region Scaffold Profile Screen
+#region PROFILE SCREEN
 cat > "app/(tabs)/profile.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
