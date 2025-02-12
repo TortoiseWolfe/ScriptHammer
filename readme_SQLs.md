@@ -151,7 +151,9 @@ CREATE POLICY "Profiles insert policy" ON public.profiles
 FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Profiles update policy" ON public.profiles;
 CREATE POLICY "Profiles update policy" ON public.profiles
-FOR UPDATE WITH CHECK (auth.uid() = id);
+FOR UPDATE
+USING (auth.uid() = id)
+WITH CHECK (auth.uid() = id);
 
 -- For posts.
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
