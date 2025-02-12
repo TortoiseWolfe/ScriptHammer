@@ -5,7 +5,8 @@ set -eo pipefail
 # Expo Setup Script Template (TypeScript + NativeWind +
 # Steampunk Themed Global CSS, Custom Button, Global Link,
 # Input Shadow, Inverted Header/Tabs (with active tab color),
-# and Geolocation Map with Platform-Specific Map Implementations)
+# Geolocation Map with Platform-Specific Map Implementations,
+# and Complete Direct Messenger Integration)
 ##############################################
 
 #region Metadata and Configuration
@@ -28,10 +29,14 @@ set -eo pipefail
 #                     - Renamed tab screens: "Messages" → "Chats" and "Notifications" → "Cues"
 #                     - A Map tab that shows the user’s current geolocation (platform-specific implementations)
 #                     - A nativewind-env.d.ts for proper TypeScript support.
+#                     - **New:** Complete direct messenger system with an integrated
+#                       cross‑platform dropdown contact selector (using react-native-picker-select)
+#                       on the chat screen so users can choose a recipient, create/retrieve a conversation,
+#                       and chat in one screen.
 #
 # Author:             TurtleWolfe@ScriptHammer.com
 # Created:            2025-02-08
-# Version:            1.2.14
+# Version:            1.2.14 + Messenger (v1.2.0)
 # License:            MIT
 #
 # Best Practices:
@@ -119,6 +124,11 @@ ui_deps=(
   "nativewind"
 )
 
+# Use react-native-picker-select for cross-platform dropdown
+picker_deps=(
+  "react-native-picker-select"
+)
+
 # Web mapping dependency for interactive maps on web
 web_deps=(
   "@react-google-maps/api"
@@ -142,12 +152,14 @@ echo "📦 Installing Expo dependencies..."
 install_deps "${expo_deps[@]}"
 echo "🎨 Installing UI dependencies..."
 install_deps "${ui_deps[@]}"
+echo "📦 Installing Picker dependency (react-native-picker-select)..."
+install_deps "${picker_deps[@]}"
 echo "🌐 Installing web mapping dependency..."
 install_deps "${web_deps[@]}"
 echo "🛠️ Installing dev dependencies..."
 install_deps "${dev_deps[@]}"
 
-# Install map dependencies (expo-location and react-native-maps) using local Expo CLI
+# Install map dependencies using Expo CLI
 echo "📦 Installing map dependencies..."
 npx expo install expo-location react-native-maps
 #endregion
@@ -155,7 +167,6 @@ npx expo install expo-location react-native-maps
 #region CREATE DIRECTORY STRUCTURE
 echo "📁 Creating directory structure..."
 
-# Update directory structure: rename messages to chats and notifications to cues.
 dir_structure=(
   ".env.local"
   "nativewind-env.d.ts"
@@ -187,6 +198,10 @@ dir_structure=(
   "app/(tabs)/cues.tsx"
   "app/(tabs)/profile.tsx"
   "app/profileEdit.tsx"
+  # New files for the Messenger feature:
+  "supabase/messaging.sql"
+  "src/components/ChatMessage.tsx"
+  "src/components/MessageInput.tsx"
 )
 
 for item in "${dir_structure[@]}"; do
@@ -345,6 +360,7 @@ cat > "src/components/CustomButton.tsx" << 'EOF'
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 
+// CustomButton component using the global ".btn" class defined in global.css
 interface CustomButtonProps {
   title: string;
   onPress: () => void;
@@ -412,6 +428,7 @@ cat > "src/context/ThemeContext.tsx" << 'EOF'
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance, Platform } from 'react-native';
 
+// Create a ThemeContext for dark/light mode
 const ThemeContext = createContext<{ theme: string; toggleTheme: () => void } | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
@@ -429,6 +446,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.remove();
   }, []);
 
+  // For web, update the root element's class list
   if (Platform.OS === 'web') {
     const root = document.documentElement;
     root.classList.toggle('dark', theme === 'dark');
@@ -601,6 +619,7 @@ cat > "app/index.tsx" << 'EOF'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 
+// Index screen redirects immediately to /home once the app is mounted.
 export default function Index() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -627,6 +646,7 @@ cat > "app/error.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// ErrorScreen is displayed when an error occurs.
 export default function ErrorScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -640,6 +660,7 @@ cat > "app/loading.tsx" << 'EOF'
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
+// LoadingScreen is displayed while the app is loading.
 export default function LoadingScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -653,6 +674,7 @@ cat > "app/not-found.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
+// NotFoundScreen is displayed for unmatched routes.
 export default function NotFoundScreen() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -858,7 +880,7 @@ EOF
 #region Scaffold Tab Screens Code
 echo "📝 Generating code for Tab Screens..."
 
-# Home Screen – use centralized background utility
+# Home Screen
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -922,12 +944,10 @@ export default function GroupsScreen() {
 }
 EOF
 
-# Map Screen with Geolocation using expo-location and react-native-maps
+# Map Screen
 cat > "app/(tabs)/map.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-// Import MapView and Marker from our platform-specific implementation.
-// (Leave the map code and comments as they are.)
 import MapView, { Marker } from '../../src/components/MapViewWrapper';
 import * as Location from 'expo-location';
 
@@ -1002,27 +1022,176 @@ const styles = StyleSheet.create({
 });
 EOF
 
-# Chats Screen (formerly "Messages")
+# Updated Chats Screen using react-native-picker-select for cross-platform support
 cat > "app/(tabs)/chats.tsx" << 'EOF'
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, FlatList, Text } from 'react-native';
+import RNPickerSelect from 'react-native-picker-select';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { ChatMessage } from '../../src/components/ChatMessage';
+import { MessageInput } from '../../src/components/MessageInput';
 
-// Chats screen (formerly "Messages")
 export default function ChatsScreen() {
+  const { user } = useAuthStore();
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [conversationId, setConversationId] = useState<string>('');
+  const [messages, setMessages] = useState<any[]>([]);
+
+  // Fetch contacts (all users except current)
+  useEffect(() => {
+    async function fetchContacts() {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) {
+        console.error('Error fetching contacts:', error);
+      } else {
+        const otherUsers = data.filter((u: any) => u.id !== user.id);
+        setContacts(otherUsers);
+      }
+    }
+    fetchContacts();
+  }, [user]);
+
+  // When a contact is selected, fetch or create conversation.
+  useEffect(() => {
+    if (!selectedContact) return;
+    async function fetchOrCreateConversation() {
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(
+          `and(user1.eq.${user.id},user2.eq.${selectedContact.id}),and(user1.eq.${selectedContact.id},user2.eq.${user.id})`
+        )
+        .maybeSingle();
+      let convId = '';
+      if (existingConversation) {
+        convId = existingConversation.id;
+      } else {
+        const { data: newConversation, error: insertError } = await supabase
+          .from('conversations')
+          .insert({
+            user1: user.id,
+            user2: selectedContact.id
+          })
+          .select('*')
+          .maybeSingle();
+        if (insertError) {
+          console.error('Error creating conversation:', insertError);
+          return;
+        }
+        convId = newConversation.id;
+      }
+      setConversationId(convId);
+    }
+    fetchOrCreateConversation();
+  }, [selectedContact, user]);
+
+  // Fetch messages for selected conversation.
+  useEffect(() => {
+    if (!conversationId) return;
+    async function fetchMessages() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Error fetching messages:', error);
+      } else {
+        setMessages(data);
+      }
+    }
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setMessages((prev) => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setMessages((prev) =>
+              prev.filter((msg) => msg.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  const sendMessage = async (text: string) => {
+    if (!conversationId || text.trim() === '') return;
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: text,
+    });
+    if (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
   return (
-    <View className="flex-1 items-center justify-center bg-steampunk-light">
-      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Chats</Text>
+    <View className="flex-1 bg-steampunk-light">
+      <RNPickerSelect
+        onValueChange={(value) => {
+          const contact = contacts.find(c => c.id === value);
+          setSelectedContact(contact);
+        }}
+        value={selectedContact ? selectedContact.id : ''}
+        placeholder={{ label: "Select a contact", value: "" }}
+        items={contacts.map(contact => ({
+          label: contact.display_name || contact.email,
+          value: contact.id,
+        }))}
+        style={{
+          inputIOS: { backgroundColor: '#fff', padding: 12, margin: 8 },
+          inputAndroid: { backgroundColor: '#fff', padding: 12, margin: 8 },
+          inputWeb: { backgroundColor: '#fff', padding: 12, margin: 8 }
+        }}
+      />
+
+      {selectedContact && (
+        <View className="p-4 border-b border-gray-300">
+          <Text className="text-lg font-bold text-[#3b302a] dark:text-[#d4bfa3]">
+            Chat with {selectedContact.display_name || selectedContact.email}
+          </Text>
+        </View>
+      )}
+
+      <FlatList
+        data={messages}
+        renderItem={({ item }) => (
+          <ChatMessage message={item} isOwnMessage={item.sender_id === user.id} />
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 10 }}
+      />
+
+      <MessageInput onSend={sendMessage} />
     </View>
   );
 }
 EOF
+#endregion
 
-# Cues Screen (formerly "Notifications")
+#region Scaffold Cues Screen
+echo "📝 Generating Cues Screen at app/(tabs)/cues.tsx..."
 cat > "app/(tabs)/cues.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
 
-// Cues screen (formerly "Notifications")
 export default function CuesScreen() {
   return (
     <View className="flex-1 items-center justify-center bg-steampunk-light">
@@ -1031,8 +1200,10 @@ export default function CuesScreen() {
   );
 }
 EOF
+#endregion
 
-# Profile Screen with Log Out, Edit Profile, and Theme Toggle using CustomButton and Link styling
+#region Scaffold Profile Screen
+echo "📝 Generating Profile Screen at app/(tabs)/profile.tsx..."
 cat > "app/(tabs)/profile.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -1042,7 +1213,6 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/context/ThemeContext';
 import { CustomButton } from '../../src/components/CustomButton';
 
-// Profile screen with Log Out, Edit Profile, and theme toggle
 export default function ProfileScreen() {
   const { setUser, user } = useAuthStore();
   const { theme, toggleTheme } = useTheme();
@@ -1087,7 +1257,6 @@ import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { CustomButton } from '../src/components/CustomButton';
 
-// ProfileEditScreen allows the user to edit their profile details.
 export default function ProfileEditScreen() {
   const { user, setUser } = useAuthStore();
   const [avatar, setAvatar] = useState('');
@@ -1152,6 +1321,131 @@ export default function ProfileEditScreen() {
 EOF
 #endregion
 
+#region Add Missing Component Implementations
+echo "📝 Generating ChatMessage component at src/components/ChatMessage.tsx..."
+cat > "src/components/ChatMessage.tsx" << 'EOF'
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useAuthStore } from '../store/useAuthStore';
+
+interface ChatMessageProps {
+  message: any;
+  isOwnMessage: boolean;
+}
+
+export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
+  const { user } = useAuthStore();
+  
+  return (
+    <View style={[styles.messageContainer, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
+      <Text style={styles.messageContent}>
+        {message.content}{message.updated_at ? ' (edited)' : ''}
+      </Text>
+      <Text style={styles.timestamp}>
+        {new Date(message.created_at).toLocaleTimeString()}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  messageContainer: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  ownMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#c0a080',
+    borderColor: '#3b302a',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e0d0c0',
+    borderColor: '#5a4a42',
+  },
+  messageContent: {
+    fontSize: 16,
+    color: '#3b302a',
+  },
+  timestamp: {
+    fontSize: 10,
+    color: '#5a4a42',
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+});
+EOF
+
+echo "📝 Generating MessageInput component at src/components/MessageInput.tsx..."
+cat > "src/components/MessageInput.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, TextInput, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+interface MessageInputProps {
+  onSend: (text: string) => void;
+}
+
+export function MessageInput({ onSend }: MessageInputProps) {
+  const [message, setMessage] = useState('');
+
+  const handleSend = () => {
+    if (message.trim()) {
+      onSend(message);
+      setMessage('');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        value={message}
+        onChangeText={setMessage}
+        placeholder="Type a message..."
+        placeholderTextColor="#5a4a42"
+        multiline
+      />
+      <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+        <Ionicons name="send" size={24} color="#3b302a" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = {
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0e6d2',
+    borderTopWidth: 1,
+    borderColor: '#3b302a',
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#3b302a',
+    marginRight: 8,
+    color: '#3b302a',
+  },
+  sendButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#c0a080',
+  },
+};
+EOF
+#endregion
+
 #region Supabase Client
 echo "🗄  Creating Supabase client in src/lib/supabase.ts..."
 cat > "src/lib/supabase.ts" << 'EOF'
@@ -1160,7 +1454,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 
-// Initialize Supabase client using environment variables
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -1222,6 +1515,125 @@ supabase.auth.onAuthStateChange((event, session) => {
 EOF
 #endregion
 
+#region Scaffold Supabase Messaging SQL Script
+echo "🗄 Generating Supabase messaging SQL script at supabase/messaging.sql..."
+cat > "supabase/messaging.sql" << 'EOF'
+-- Enable UUID extension for UUID generation (if not already enabled)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Conversations table: represents a private chat between two users
+CREATE TABLE public.conversations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user1 UUID NOT NULL,
+  user2 UUID NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user1_last_read TIMESTAMPTZ,
+  user2_last_read TIMESTAMPTZ
+);
+
+-- Ensure a unique conversation per user pair
+ALTER TABLE public.conversations 
+  ADD CONSTRAINT unique_pair UNIQUE (
+    LEAST(user1, user2), GREATEST(user1, user2)
+  );
+
+-- Messages table: stores messages within conversations
+CREATE TABLE public.messages (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+  sender_id UUID NOT NULL,
+  content TEXT,
+  image_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ,
+  is_deleted BOOLEAN DEFAULT FALSE,
+  reply_to UUID NULL,
+  CONSTRAINT fk_sender FOREIGN KEY(sender_id) REFERENCES auth.users(id)
+);
+
+-- Index for efficient retrieval of messages
+CREATE INDEX idx_messages_conversation_time ON public.messages(conversation_id, created_at);
+
+-- Message edits table: stores history of message edits
+CREATE TABLE public.message_edits (
+  id BIGSERIAL PRIMARY KEY,
+  message_id UUID REFERENCES public.messages(id) ON DELETE CASCADE,
+  old_content TEXT,
+  edited_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  edited_by UUID
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.message_edits ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy: Only participants can read their conversations
+CREATE POLICY "Allow conversation participants to read" 
+  ON public.conversations
+  FOR SELECT
+  USING (
+    auth.uid() = user1 OR auth.uid() = user2
+  );
+
+-- RLS Policy: Only allow conversation creation by participants
+CREATE POLICY "Allow users to start conversation" 
+  ON public.conversations
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = user1 OR auth.uid() = user2
+  );
+
+-- RLS Policy: Only allow participants to read messages
+CREATE POLICY "Allow only participants to read messages" 
+  ON public.messages
+  FOR SELECT
+  USING (
+    conversation_id IN (
+      SELECT id FROM public.conversations 
+      WHERE user1 = auth.uid() OR user2 = auth.uid()
+    )
+  );
+
+-- RLS Policy: Only participants can send messages
+CREATE POLICY "Allow participants to send messages" 
+  ON public.messages
+  FOR INSERT
+  WITH CHECK (
+    auth.uid() = sender_id 
+    AND conversation_id IN (
+      SELECT id FROM public.conversations 
+      WHERE user1 = auth.uid() OR user2 = auth.uid()
+    )
+  );
+
+-- RLS Policy: Only the sender can edit their message
+CREATE POLICY "Allow sender to edit message" 
+  ON public.messages
+  FOR UPDATE
+  USING (auth.uid() = sender_id)
+  WITH CHECK (auth.uid() = sender_id);
+
+-- RLS Policy: Only the sender can delete their message
+CREATE POLICY "Allow sender to delete message" 
+  ON public.messages
+  FOR DELETE
+  USING (auth.uid() = sender_id);
+
+-- Optional: Policy to only show messages from the last 6 months
+CREATE POLICY "Hide old messages (6mo)" 
+  ON public.messages
+  FOR SELECT
+  USING (
+    created_at > (now() - interval '6 months')
+    AND conversation_id IN (
+         SELECT id FROM public.conversations 
+         WHERE user1 = auth.uid() OR user2 = auth.uid()
+    )
+  );
+EOF
+#endregion
+
 #region Final Setup
 echo "✅ Project setup complete!"
 echo "Next steps:"
@@ -1229,7 +1641,8 @@ echo "1. Ensure your .env file uses the prefix 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY'
 echo "2. Adjust the Supabase client in src/lib/supabase.ts if needed."
 echo "3. Verify the Zustand auth store in src/store/useAuthStore.ts."
 echo "4. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
-echo "5. Run and test the auth flow by signing in/up. For web, use: npx expo start --clear"
+echo "5. Review the new messaging feature files (supabase/messaging.sql, ChatMessage.tsx, MessageInput.tsx, and the updated chats.tsx with integrated contact selector using react-native-picker-select)."
+echo "6. Run and test the auth and messenger flow by signing in/up. For web, use: npx expo start --clear"
 echo "🚀 Starting Expo development server..."
 npx expo start --clear
 #endregion
