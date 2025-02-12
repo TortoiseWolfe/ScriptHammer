@@ -943,12 +943,15 @@ export default function ChatsScreen() {
   const [conversationId, setConversationId] = useState<string>('');
   const [messages, setMessages] = useState<any[]>([]);
 
+  // Fetch contacts from the public "users" view.
+  // Note: We use the displayName property (camelCase) as defined in your view.
   useEffect(() => {
     async function fetchContacts() {
       const { data, error } = await supabase.from('users').select('*');
       if (error) {
         console.error('Error fetching contacts:', error);
       } else {
+        // Filter out the current user.
         const otherUsers = data.filter((u: any) => u.id !== user.id);
         setContacts(otherUsers);
       }
@@ -956,6 +959,7 @@ export default function ChatsScreen() {
     fetchContacts();
   }, [user]);
 
+  // When a contact is selected, fetch (or create) the conversation.
   useEffect(() => {
     if (!selectedContact) return;
     async function fetchOrCreateConversation() {
@@ -974,7 +978,7 @@ export default function ChatsScreen() {
           .from('conversations')
           .insert({
             user1: user.id,
-            user2: selectedContact.id
+            user2: selectedContact.id,
           })
           .select('*')
           .maybeSingle();
@@ -989,48 +993,58 @@ export default function ChatsScreen() {
     fetchOrCreateConversation();
   }, [selectedContact, user]);
 
-  useEffect(() => {
-    if (!conversationId) return;
-    async function fetchMessages() {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-      if (error) {
-        console.error('Error fetching messages:', error);
-      } else {
-        setMessages(data);
-      }
+  // Fetch messages for the current conversation.
+useEffect(() => {
+  if (!conversationId) return;
+  async function fetchMessages() {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+    if (error) {
+      console.error('Error fetching messages:', error);
+    } else {
+      setMessages(data);
     }
-    fetchMessages();
+  }
+  fetchMessages();
 
-    const channel = supabase
-      .channel(`conversation-${conversationId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setMessages((prev) => [...prev, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setMessages((prev) =>
-              prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setMessages((prev) =>
-              prev.filter((msg) => msg.id !== payload.old.id)
-            );
-          }
+  // Subscribe to realtime changes for messages in the conversation.
+  const channel = supabase
+    .channel(`conversation-${conversationId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversationId}`,
+      },
+      (payload) => {
+        console.log('Realtime event received:', payload);
+        if (payload.eventType === 'INSERT') {
+          setMessages((prev) => [...prev, payload.new]);
+        } else if (payload.eventType === 'UPDATE') {
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          setMessages((prev) =>
+            prev.filter((msg) => msg.id !== payload.old.id)
+          );
         }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [conversationId]);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [conversationId]);
 
+
+  // Function to send a new message.
   const sendMessage = async (text: string) => {
     if (!conversationId || text.trim() === '') return;
     const { error } = await supabase.from('messages').insert({
@@ -1045,32 +1059,35 @@ export default function ChatsScreen() {
 
   return (
     <View className="flex-1 bg-steampunk-light">
+      {/* Dropdown to select a contact */}
       <RNPickerSelect
         onValueChange={(value) => {
-          const contact = contacts.find(c => c.id === value);
+          const contact = contacts.find((c) => c.id === value);
           setSelectedContact(contact);
         }}
         value={selectedContact ? selectedContact.id : ''}
-        placeholder={{ label: "Select a contact", value: "" }}
-        items={contacts.map(contact => ({
-          label: contact.display_name || contact.email,
+        placeholder={{ label: 'Select a contact', value: '' }}
+        items={contacts.map((contact) => ({
+          label: contact.displayName || contact.email,
           value: contact.id,
         }))}
         style={{
           inputIOS: { backgroundColor: '#fff', padding: 12, margin: 8 },
           inputAndroid: { backgroundColor: '#fff', padding: 12, margin: 8 },
-          inputWeb: { backgroundColor: '#fff', padding: 12, margin: 8 }
+          inputWeb: { backgroundColor: '#fff', padding: 12, margin: 8 },
         }}
       />
 
+      {/* Header indicating which contact is currently selected */}
       {selectedContact && (
         <View className="p-4 border-b border-gray-300">
           <Text className="text-lg font-bold text-[#3b302a] dark:text-[#d4bfa3]">
-            Chat with {selectedContact.display_name || selectedContact.email}
+            Chat with {selectedContact.displayName || selectedContact.email}
           </Text>
         </View>
       )}
 
+      {/* Chat messages list */}
       <FlatList
         data={messages}
         renderItem={({ item }) => (
@@ -1080,6 +1097,7 @@ export default function ChatsScreen() {
         contentContainerStyle={{ padding: 10 }}
       />
 
+      {/* Message input to send new messages */}
       <MessageInput onSend={sendMessage} />
     </View>
   );
