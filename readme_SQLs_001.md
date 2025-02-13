@@ -8,11 +8,15 @@
 -- This script sets up:
 --   • The pgcrypto extension for UUID generation.
 --   • Tables: profiles (with a role column), posts, conversations, messages.
+--   • Extended tables: comments, post_reactions, message_reactions,
+--     friend_requests, friend_blocks, reports, groups, group_members, events,
+--     event_invitations, media_attachments.
 --   • Indexes for performance.
---   • Trigger functions and triggers to auto-update updated_at,
---     and a trigger to designate the very first profile as admin.
+--   • Trigger functions and triggers to auto-update updated_at columns.
+--     (and a trigger to designate the very first profile as admin)
 --   • A public "users" view (joining auth.users with profiles).
---   • RLS policies on all tables with RBAC (using auth.uid()).
+--   • Row Level Security (RLS) policies on all tables for SELECT, INSERT, UPDATE, DELETE
+--     so users can manage (edit and delete) their own rows.
 --   • Explicit publication of the realtime tables.
 -- =============================================================================
 
@@ -33,7 +37,7 @@ CREATE TABLE public.profiles (
 );
 
 -- 2a. Create a trigger function to set the role automatically.
---      The very first profile inserted will be set as 'admin'; all others default to 'user'
+--     The very first profile inserted will be set as 'admin'; all others default to 'user'
 CREATE OR REPLACE FUNCTION public.set_role_if_first()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -55,7 +59,7 @@ BEFORE INSERT ON public.profiles
 FOR EACH ROW
 EXECUTE PROCEDURE public.set_role_if_first();
 
--- 3. Create the posts table (optional, for user posts)
+-- 3. Create the posts table (for user posts)
 CREATE TABLE public.posts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
@@ -99,7 +103,7 @@ CREATE INDEX idx_messages_conversation_id ON public.messages(conversation_id);
 CREATE INDEX idx_messages_sender_id ON public.messages(sender_id);
 
 ---------------------------------------------------------------
--- Additional Tables (Extended Features)
+-- Extended Tables
 ---------------------------------------------------------------
 
 -- 6a. Comments on posts
@@ -223,12 +227,14 @@ CREATE INDEX idx_group_members_group_id ON public.group_members(group_id);
 CREATE INDEX idx_group_members_member_id ON public.group_members(member_id);
 
 -- 6i. Events (for scheduling and invitations)
+-- Note: Added a 'cancelled_at' column for soft deletion / cancellation.
 CREATE TABLE public.events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     description text,
     event_date timestamptz NOT NULL,
     created_by uuid NOT NULL,
+    cancelled_at timestamptz,  -- If non-null, event is cancelled (soft delete)
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_events_created_by FOREIGN KEY (created_by)
@@ -263,9 +269,35 @@ CREATE TABLE public.media_attachments (
 CREATE INDEX idx_media_attachments_content ON public.media_attachments(content_type, content_id);
 
 ---------------------------------------------------------------
--- Extra Trigger Functions for Additional Tables
+-- 7. Create trigger function to update updated_at columns
 ---------------------------------------------------------------
--- (Assumes the update_updated_at_column() function from below)
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create triggers for profiles, posts, and messages (original).
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+CREATE TRIGGER update_posts_updated_at
+BEFORE UPDATE ON public.posts
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+CREATE TRIGGER update_messages_updated_at
+BEFORE UPDATE ON public.messages
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+---------------------------------------------------------------
+-- Extended: Attach triggers for additional tables.
+---------------------------------------------------------------
 CREATE TRIGGER update_comments_updated_at
 BEFORE UPDATE ON public.comments
 FOR EACH ROW
@@ -287,33 +319,8 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
 ---------------------------------------------------------------
--- 7. Create trigger function to update updated_at columns (Original)
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- Create triggers for profiles, posts, and messages to auto-update updated_at.
-CREATE TRIGGER update_profiles_updated_at
-BEFORE UPDATE ON public.profiles
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
-CREATE TRIGGER update_posts_updated_at
-BEFORE UPDATE ON public.posts
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
-CREATE TRIGGER update_messages_updated_at
-BEFORE UPDATE ON public.messages
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
----------------------------------------------------------------
 -- 8. Create the public "users" view (joins auth.users with profiles)
+---------------------------------------------------------------
 CREATE OR REPLACE VIEW public.users AS
 SELECT
     u.id,
@@ -334,26 +341,28 @@ LEFT JOIN public.profiles p ON u.id = p.id;
 -- For profiles.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Profiles select policy" ON public.profiles;
-CREATE POLICY "Profiles select policy" ON public.profiles
-FOR SELECT USING (true);
+CREATE POLICY "Profiles select policy" ON public.profiles FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Profiles insert policy" ON public.profiles;
-CREATE POLICY "Profiles insert policy" ON public.profiles
-FOR INSERT WITH CHECK (true);
+CREATE POLICY "Profiles insert policy" ON public.profiles FOR INSERT WITH CHECK (true);
 DROP POLICY IF EXISTS "Profiles update policy" ON public.profiles;
-CREATE POLICY "Profiles update policy" ON public.profiles
-FOR UPDATE USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+CREATE POLICY "Profiles update policy" ON public.profiles FOR UPDATE USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Profiles delete policy" ON public.profiles;
+CREATE POLICY "Profiles delete policy" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 -- For posts.
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Posts select policy" ON public.posts;
-CREATE POLICY "Posts select policy" ON public.posts
-FOR SELECT USING (true);
+CREATE POLICY "Posts select policy" ON public.posts FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Posts insert policy" ON public.posts;
-CREATE POLICY "Posts insert policy" ON public.posts
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Posts insert policy" ON public.posts FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Posts update policy" ON public.posts;
+CREATE POLICY "Posts update policy" ON public.posts FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Posts delete policy" ON public.posts;
+CREATE POLICY "Posts delete policy" ON public.posts FOR DELETE USING (auth.uid() = user_id);
 
--- For conversations: only participants may view or insert.
+-- For conversations: only participants may view, insert, update, or delete.
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Conversations select policy" ON public.conversations;
 CREATE POLICY "Conversations select policy" ON public.conversations
@@ -361,8 +370,15 @@ FOR SELECT USING (auth.uid() = user1 OR auth.uid() = user2);
 DROP POLICY IF EXISTS "Conversations insert policy" ON public.conversations;
 CREATE POLICY "Conversations insert policy" ON public.conversations
 FOR INSERT WITH CHECK (auth.uid() = user1 OR auth.uid() = user2);
+DROP POLICY IF EXISTS "Conversations update policy" ON public.conversations;
+CREATE POLICY "Conversations update policy" ON public.conversations
+FOR UPDATE USING (auth.uid() = user1 OR auth.uid() = user2)
+  WITH CHECK (auth.uid() = user1 OR auth.uid() = user2);
+DROP POLICY IF EXISTS "Conversations delete policy" ON public.conversations;
+CREATE POLICY "Conversations delete policy" ON public.conversations
+FOR DELETE USING (auth.uid() = user1 OR auth.uid() = user2);
 
--- For messages: only users in the conversation may SELECT, and sender must match on INSERT.
+-- For messages: only users in the conversation may select, and sender must match on insert, update, or delete.
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Messages select policy" ON public.messages;
 CREATE POLICY "Messages select policy" ON public.messages
@@ -376,117 +392,121 @@ FOR SELECT USING (
 DROP POLICY IF EXISTS "Messages insert policy" ON public.messages;
 CREATE POLICY "Messages insert policy" ON public.messages
 FOR INSERT WITH CHECK (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "Messages update policy" ON public.messages;
+CREATE POLICY "Messages update policy" ON public.messages
+FOR UPDATE USING (auth.uid() = sender_id)
+  WITH CHECK (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "Messages delete policy" ON public.messages;
+CREATE POLICY "Messages delete policy" ON public.messages
+FOR DELETE USING (auth.uid() = sender_id);
 
 -- For comments.
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Comments select policy" ON public.comments;
-CREATE POLICY "Comments select policy" ON public.comments
-FOR SELECT USING (true);
+CREATE POLICY "Comments select policy" ON public.comments FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Comments insert policy" ON public.comments;
-CREATE POLICY "Comments insert policy" ON public.comments
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Comments insert policy" ON public.comments FOR INSERT WITH CHECK (auth.uid() = user_id);
 DROP POLICY IF EXISTS "Comments update policy" ON public.comments;
-CREATE POLICY "Comments update policy" ON public.comments
-FOR UPDATE USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Comments update policy" ON public.comments FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Comments delete policy" ON public.comments;
+CREATE POLICY "Comments delete policy" ON public.comments FOR DELETE USING (auth.uid() = user_id);
 
 -- For post reactions.
 ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "PostReactions select policy" ON public.post_reactions;
-CREATE POLICY "PostReactions select policy" ON public.post_reactions
-FOR SELECT USING (true);
+CREATE POLICY "PostReactions select policy" ON public.post_reactions FOR SELECT USING (true);
 DROP POLICY IF EXISTS "PostReactions insert policy" ON public.post_reactions;
-CREATE POLICY "PostReactions insert policy" ON public.post_reactions
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "PostReactions insert policy" ON public.post_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "PostReactions delete policy" ON public.post_reactions;
+CREATE POLICY "PostReactions delete policy" ON public.post_reactions FOR DELETE USING (auth.uid() = user_id);
 
 -- For message reactions.
 ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "MessageReactions select policy" ON public.message_reactions;
-CREATE POLICY "MessageReactions select policy" ON public.message_reactions
-FOR SELECT USING (true);
+CREATE POLICY "MessageReactions select policy" ON public.message_reactions FOR SELECT USING (true);
 DROP POLICY IF EXISTS "MessageReactions insert policy" ON public.message_reactions;
-CREATE POLICY "MessageReactions insert policy" ON public.message_reactions
-FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "MessageReactions insert policy" ON public.message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "MessageReactions delete policy" ON public.message_reactions;
+CREATE POLICY "MessageReactions delete policy" ON public.message_reactions FOR DELETE USING (auth.uid() = user_id);
 
 -- For friend requests.
 ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendRequests select policy" ON public.friend_requests;
-CREATE POLICY "FriendRequests select policy" ON public.friend_requests
-FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
+CREATE POLICY "FriendRequests select policy" ON public.friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 DROP POLICY IF EXISTS "FriendRequests insert policy" ON public.friend_requests;
-CREATE POLICY "FriendRequests insert policy" ON public.friend_requests
-FOR INSERT WITH CHECK (auth.uid() = sender_id);
+CREATE POLICY "FriendRequests insert policy" ON public.friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
+DROP POLICY IF EXISTS "FriendRequests delete policy" ON public.friend_requests;
+CREATE POLICY "FriendRequests delete policy" ON public.friend_requests FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
 -- For friend blocks.
 ALTER TABLE public.friend_blocks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendBlocks select policy" ON public.friend_blocks;
-CREATE POLICY "FriendBlocks select policy" ON public.friend_blocks
-FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
+CREATE POLICY "FriendBlocks select policy" ON public.friend_blocks FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
 DROP POLICY IF EXISTS "FriendBlocks insert policy" ON public.friend_blocks;
-CREATE POLICY "FriendBlocks insert policy" ON public.friend_blocks
-FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+CREATE POLICY "FriendBlocks insert policy" ON public.friend_blocks FOR INSERT WITH CHECK (auth.uid() = blocker_id);
+DROP POLICY IF EXISTS "FriendBlocks delete policy" ON public.friend_blocks;
+CREATE POLICY "FriendBlocks delete policy" ON public.friend_blocks FOR DELETE USING (auth.uid() = blocker_id);
 
 -- For reports.
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Reports select policy" ON public.reports;
-CREATE POLICY "Reports select policy" ON public.reports
-FOR SELECT USING (true);
+CREATE POLICY "Reports select policy" ON public.reports FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Reports insert policy" ON public.reports;
-CREATE POLICY "Reports insert policy" ON public.reports
-FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+CREATE POLICY "Reports insert policy" ON public.reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
+DROP POLICY IF EXISTS "Reports delete policy" ON public.reports;
+CREATE POLICY "Reports delete policy" ON public.reports FOR DELETE USING (auth.uid() = reporter_id);
 
 -- For groups.
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Groups select policy" ON public.groups;
-CREATE POLICY "Groups select policy" ON public.groups
-FOR SELECT USING (true);
+CREATE POLICY "Groups select policy" ON public.groups FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Groups insert policy" ON public.groups;
-CREATE POLICY "Groups insert policy" ON public.groups
-FOR INSERT WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Groups insert policy" ON public.groups FOR INSERT WITH CHECK (auth.uid() = created_by);
 DROP POLICY IF EXISTS "Groups update policy" ON public.groups;
-CREATE POLICY "Groups update policy" ON public.groups
-FOR UPDATE USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Groups update policy" ON public.groups FOR UPDATE USING (auth.uid() = created_by)
+  WITH CHECK (auth.uid() = created_by);
+DROP POLICY IF EXISTS "Groups delete policy" ON public.groups;
+CREATE POLICY "Groups delete policy" ON public.groups FOR DELETE USING (auth.uid() = created_by);
 
 -- For group members.
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "GroupMembers select policy" ON public.group_members;
-CREATE POLICY "GroupMembers select policy" ON public.group_members
-FOR SELECT USING (auth.uid() = member_id);
+CREATE POLICY "GroupMembers select policy" ON public.group_members FOR SELECT USING (auth.uid() = member_id);
 DROP POLICY IF EXISTS "GroupMembers insert policy" ON public.group_members;
-CREATE POLICY "GroupMembers insert policy" ON public.group_members
-FOR INSERT WITH CHECK (auth.uid() = member_id);
+CREATE POLICY "GroupMembers insert policy" ON public.group_members FOR INSERT WITH CHECK (auth.uid() = member_id);
+DROP POLICY IF EXISTS "GroupMembers delete policy" ON public.group_members;
+CREATE POLICY "GroupMembers delete policy" ON public.group_members FOR DELETE USING (auth.uid() = member_id);
 
 -- For events.
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Events select policy" ON public.events;
-CREATE POLICY "Events select policy" ON public.events
-FOR SELECT USING (true);
+CREATE POLICY "Events select policy" ON public.events FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Events insert policy" ON public.events;
-CREATE POLICY "Events insert policy" ON public.events
-FOR INSERT WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Events insert policy" ON public.events FOR INSERT WITH CHECK (auth.uid() = created_by);
 DROP POLICY IF EXISTS "Events update policy" ON public.events;
-CREATE POLICY "Events update policy" ON public.events
-FOR UPDATE USING (auth.uid() = created_by)
-WITH CHECK (auth.uid() = created_by);
+CREATE POLICY "Events update policy" ON public.events FOR UPDATE USING (auth.uid() = created_by)
+  WITH CHECK (auth.uid() = created_by);
+DROP POLICY IF EXISTS "Events delete policy" ON public.events;
+CREATE POLICY "Events delete policy" ON public.events FOR DELETE USING (auth.uid() = created_by);
 
 -- For event invitations.
 ALTER TABLE public.event_invitations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "EventInvitations select policy" ON public.event_invitations;
-CREATE POLICY "EventInvitations select policy" ON public.event_invitations
-FOR SELECT USING (auth.uid() = invitee_id);
+CREATE POLICY "EventInvitations select policy" ON public.event_invitations FOR SELECT USING (auth.uid() = invitee_id);
 DROP POLICY IF EXISTS "EventInvitations insert policy" ON public.event_invitations;
-CREATE POLICY "EventInvitations insert policy" ON public.event_invitations
-FOR INSERT WITH CHECK (auth.uid() = invitee_id);
+CREATE POLICY "EventInvitations insert policy" ON public.event_invitations FOR INSERT WITH CHECK (auth.uid() = invitee_id);
+DROP POLICY IF EXISTS "EventInvitations delete policy" ON public.event_invitations;
+CREATE POLICY "EventInvitations delete policy" ON public.event_invitations FOR DELETE USING (auth.uid() = invitee_id);
 
 -- For media attachments.
 ALTER TABLE public.media_attachments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "MediaAttachments select policy" ON public.media_attachments;
-CREATE POLICY "MediaAttachments select policy" ON public.media_attachments
-FOR SELECT USING (true);
+CREATE POLICY "MediaAttachments select policy" ON public.media_attachments FOR SELECT USING (true);
 DROP POLICY IF EXISTS "MediaAttachments insert policy" ON public.media_attachments;
-CREATE POLICY "MediaAttachments insert policy" ON public.media_attachments
-FOR INSERT WITH CHECK (true);
+CREATE POLICY "MediaAttachments insert policy" ON public.media_attachments FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "MediaAttachments delete policy" ON public.media_attachments;
+CREATE POLICY "MediaAttachments delete policy" ON public.media_attachments FOR DELETE USING (true);
 
 ---------------------------------------------------------------
 -- 10. Publish tables for realtime subscriptions.
