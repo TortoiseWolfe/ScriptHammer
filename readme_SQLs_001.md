@@ -2,38 +2,38 @@
 
 ```sql
 -- =============================================================================
--- Script 1: Expanded Backend Schema Initialization for Supabase
+-- Script 1: Backend Schema Initialization for SupaBase with Realtime Chat Messaging and Role Support
 -- =============================================================================
+-- Run this script before any user (including the admin) is created.
 -- This script sets up:
 --   • The pgcrypto extension for UUID generation.
---   • Tables: profiles, posts, conversations, messages.
---   • Additional tables: comments, post_reactions, message_reactions,
---     friend_requests, friend_blocks, reports, groups, group_members, events,
---     event_invitations, media_attachments.
+--   • Tables: profiles (with a role column), posts, conversations, messages.
 --   • Indexes for performance.
---   • Trigger functions and triggers to auto-update updated_at columns.
+--   • Trigger functions and triggers to auto-update updated_at,
+--     and a trigger to designate the very first profile as admin.
 --   • A public "users" view (joining auth.users with profiles).
---   • Row Level Security (RLS) policies on all tables using auth.uid().
---   • Publication of tables for realtime subscriptions.
+--   • RLS policies on all tables with RBAC (using auth.uid()).
+--   • Explicit publication of the realtime tables.
 -- =============================================================================
 
 -- 1. Enable pgcrypto extension (for gen_random_uuid())
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2. Create the profiles table (user details with role support)
+-- 2. Create the profiles table (stores user details) with a role column.
 CREATE TABLE public.profiles (
     id uuid PRIMARY KEY,
     avatar text,
     "displayName" text,
     bio text,
-    role text NOT NULL DEFAULT 'user',  -- Roles: 'admin', 'moderator', 'editor', or 'user'
+    role text NOT NULL DEFAULT 'user',  -- 'admin', 'moderator', 'editor', or 'user'
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_profiles_users FOREIGN KEY (id)
         REFERENCES auth.users (id) ON DELETE CASCADE
 );
 
--- 2a. Trigger function to set the role automatically (first profile becomes 'admin')
+-- 2a. Create a trigger function to set the role automatically.
+--      The very first profile inserted will be set as 'admin'; all others default to 'user'
 CREATE OR REPLACE FUNCTION public.set_role_if_first()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -48,14 +48,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2b. Attach the trigger to profiles
+-- 2b. Attach the trigger function to profiles.
 DROP TRIGGER IF EXISTS set_role_if_first_trigger ON public.profiles;
 CREATE TRIGGER set_role_if_first_trigger
 BEFORE INSERT ON public.profiles
 FOR EACH ROW
 EXECUTE PROCEDURE public.set_role_if_first();
 
--- 3. Create the posts table (for user posts)
+-- 3. Create the posts table (optional, for user posts)
 CREATE TABLE public.posts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
@@ -98,7 +98,9 @@ CREATE TABLE public.messages (
 CREATE INDEX idx_messages_conversation_id ON public.messages(conversation_id);
 CREATE INDEX idx_messages_sender_id ON public.messages(sender_id);
 
--- 6. Create additional tables for expanded features
+---------------------------------------------------------------
+-- Additional Tables (Extended Features)
+---------------------------------------------------------------
 
 -- 6a. Comments on posts
 CREATE TABLE public.comments (
@@ -260,31 +262,10 @@ CREATE TABLE public.media_attachments (
 );
 CREATE INDEX idx_media_attachments_content ON public.media_attachments(content_type, content_id);
 
--- 7. Create trigger function to update updated_at columns
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 7a. Attach triggers to tables that have an updated_at column
-CREATE TRIGGER update_profiles_updated_at
-BEFORE UPDATE ON public.profiles
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
-CREATE TRIGGER update_posts_updated_at
-BEFORE UPDATE ON public.posts
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
-CREATE TRIGGER update_messages_updated_at
-BEFORE UPDATE ON public.messages
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
+---------------------------------------------------------------
+-- Extra Trigger Functions for Additional Tables
+---------------------------------------------------------------
+-- (Assumes the update_updated_at_column() function from below)
 CREATE TRIGGER update_comments_updated_at
 BEFORE UPDATE ON public.comments
 FOR EACH ROW
@@ -305,6 +286,33 @@ BEFORE UPDATE ON public.events
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
+---------------------------------------------------------------
+-- 7. Create trigger function to update updated_at columns (Original)
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create triggers for profiles, posts, and messages to auto-update updated_at.
+CREATE TRIGGER update_profiles_updated_at
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+CREATE TRIGGER update_posts_updated_at
+BEFORE UPDATE ON public.posts
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+CREATE TRIGGER update_messages_updated_at
+BEFORE UPDATE ON public.messages
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_updated_at_column();
+
+---------------------------------------------------------------
 -- 8. Create the public "users" view (joins auth.users with profiles)
 CREATE OR REPLACE VIEW public.users AS
 SELECT
@@ -319,9 +327,11 @@ SELECT
 FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id;
 
+---------------------------------------------------------------
 -- 9. Enable Row Level Security (RLS) and define policies
+---------------------------------------------------------------
 
--- Profiles
+-- For profiles.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Profiles select policy" ON public.profiles;
 CREATE POLICY "Profiles select policy" ON public.profiles
@@ -334,7 +344,7 @@ CREATE POLICY "Profiles update policy" ON public.profiles
 FOR UPDATE USING (auth.uid() = id)
 WITH CHECK (auth.uid() = id);
 
--- Posts
+-- For posts.
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Posts select policy" ON public.posts;
 CREATE POLICY "Posts select policy" ON public.posts
@@ -343,7 +353,7 @@ DROP POLICY IF EXISTS "Posts insert policy" ON public.posts;
 CREATE POLICY "Posts insert policy" ON public.posts
 FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Conversations
+-- For conversations: only participants may view or insert.
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Conversations select policy" ON public.conversations;
 CREATE POLICY "Conversations select policy" ON public.conversations
@@ -352,7 +362,7 @@ DROP POLICY IF EXISTS "Conversations insert policy" ON public.conversations;
 CREATE POLICY "Conversations insert policy" ON public.conversations
 FOR INSERT WITH CHECK (auth.uid() = user1 OR auth.uid() = user2);
 
--- Messages
+-- For messages: only users in the conversation may SELECT, and sender must match on INSERT.
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Messages select policy" ON public.messages;
 CREATE POLICY "Messages select policy" ON public.messages
@@ -367,7 +377,7 @@ DROP POLICY IF EXISTS "Messages insert policy" ON public.messages;
 CREATE POLICY "Messages insert policy" ON public.messages
 FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
--- Comments
+-- For comments.
 ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Comments select policy" ON public.comments;
 CREATE POLICY "Comments select policy" ON public.comments
@@ -380,7 +390,7 @@ CREATE POLICY "Comments update policy" ON public.comments
 FOR UPDATE USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
--- Post Reactions
+-- For post reactions.
 ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "PostReactions select policy" ON public.post_reactions;
 CREATE POLICY "PostReactions select policy" ON public.post_reactions
@@ -389,7 +399,7 @@ DROP POLICY IF EXISTS "PostReactions insert policy" ON public.post_reactions;
 CREATE POLICY "PostReactions insert policy" ON public.post_reactions
 FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Message Reactions
+-- For message reactions.
 ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "MessageReactions select policy" ON public.message_reactions;
 CREATE POLICY "MessageReactions select policy" ON public.message_reactions
@@ -398,7 +408,7 @@ DROP POLICY IF EXISTS "MessageReactions insert policy" ON public.message_reactio
 CREATE POLICY "MessageReactions insert policy" ON public.message_reactions
 FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Friend Requests
+-- For friend requests.
 ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendRequests select policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests select policy" ON public.friend_requests
@@ -407,7 +417,7 @@ DROP POLICY IF EXISTS "FriendRequests insert policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests insert policy" ON public.friend_requests
 FOR INSERT WITH CHECK (auth.uid() = sender_id);
 
--- Friend Blocks
+-- For friend blocks.
 ALTER TABLE public.friend_blocks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendBlocks select policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks select policy" ON public.friend_blocks
@@ -416,16 +426,16 @@ DROP POLICY IF EXISTS "FriendBlocks insert policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks insert policy" ON public.friend_blocks
 FOR INSERT WITH CHECK (auth.uid() = blocker_id);
 
--- Reports
+-- For reports.
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Reports insert policy" ON public.reports;
-CREATE POLICY "Reports insert policy" ON public.reports
-FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 DROP POLICY IF EXISTS "Reports select policy" ON public.reports;
 CREATE POLICY "Reports select policy" ON public.reports
 FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Reports insert policy" ON public.reports;
+CREATE POLICY "Reports insert policy" ON public.reports
+FOR INSERT WITH CHECK (auth.uid() = reporter_id);
 
--- Groups
+-- For groups.
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Groups select policy" ON public.groups;
 CREATE POLICY "Groups select policy" ON public.groups
@@ -438,7 +448,7 @@ CREATE POLICY "Groups update policy" ON public.groups
 FOR UPDATE USING (auth.uid() = created_by)
 WITH CHECK (auth.uid() = created_by);
 
--- Group Members
+-- For group members.
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "GroupMembers select policy" ON public.group_members;
 CREATE POLICY "GroupMembers select policy" ON public.group_members
@@ -447,7 +457,7 @@ DROP POLICY IF EXISTS "GroupMembers insert policy" ON public.group_members;
 CREATE POLICY "GroupMembers insert policy" ON public.group_members
 FOR INSERT WITH CHECK (auth.uid() = member_id);
 
--- Events
+-- For events.
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Events select policy" ON public.events;
 CREATE POLICY "Events select policy" ON public.events
@@ -460,7 +470,7 @@ CREATE POLICY "Events update policy" ON public.events
 FOR UPDATE USING (auth.uid() = created_by)
 WITH CHECK (auth.uid() = created_by);
 
--- Event Invitations
+-- For event invitations.
 ALTER TABLE public.event_invitations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "EventInvitations select policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations select policy" ON public.event_invitations
@@ -469,7 +479,7 @@ DROP POLICY IF EXISTS "EventInvitations insert policy" ON public.event_invitatio
 CREATE POLICY "EventInvitations insert policy" ON public.event_invitations
 FOR INSERT WITH CHECK (auth.uid() = invitee_id);
 
--- Media Attachments
+-- For media attachments.
 ALTER TABLE public.media_attachments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "MediaAttachments select policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments select policy" ON public.media_attachments
@@ -478,11 +488,12 @@ DROP POLICY IF EXISTS "MediaAttachments insert policy" ON public.media_attachmen
 CREATE POLICY "MediaAttachments insert policy" ON public.media_attachments
 FOR INSERT WITH CHECK (true);
 
+---------------------------------------------------------------
 -- 10. Publish tables for realtime subscriptions.
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.post_reactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.message_reactions;
@@ -502,24 +513,24 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.media_attachments;
 
 ---
 
-## Script 2: Seed Sample Testers, Create Conversations, and Insert Initial Messages
+## Script 2: Seed Sample Testers, Create Conversations with Admin, and Insert Initial Messages
 
 ```sql
 -- =============================================================================
 -- Script 2: Seed Sample Testers, Create Conversations with Admin, and Insert Initial Messages
 -- =============================================================================
 -- Run this script after the admin account is created.
--- This script performs the following steps:
+-- This script does the following:
 --   1. Retrieves the admin user using the specified admin email.
 --   2. Ensures the admin has a profile in public.profiles.
 --   3. For each sample tester (Jon Doe, Jane Doe, Test User):
 --        a. Inserts the tester into auth.users if not already present.
 --        b. Inserts a corresponding profile into public.profiles.
---           (Since the admin is already present, these will have the default role 'user'.)
+--           (Since the admin is already present, these will be marked as role 'user'.)
 --        c. Checks for an existing conversation between the tester and the admin.
 --           - If none exists, creates a new conversation.
 --        d. Inserts an initial message from the tester to the admin.
---        e. Seeds a friend request from the tester to the admin.
+--        e. (Extended Feature) Seeds a friend request from the tester to the admin.
 --
 -- IMPORTANT:
 --   - Update the admin_email variable with your real admin's email.
@@ -625,7 +636,7 @@ BEGIN
             'Hello Admin, this is ' || tester.displayName || '!'
         );
         
-        -- Seed a friend request from the tester to the admin.
+        -- (Extended Feature) Seed a friend request from the tester to the admin.
         INSERT INTO public.friend_requests (sender_id, receiver_id, status, created_at, updated_at)
         VALUES (
             tester_id,

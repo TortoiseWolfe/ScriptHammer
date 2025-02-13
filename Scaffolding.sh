@@ -60,28 +60,31 @@ fi
 #region Install Dependencies
 echo "📦 Installing dependencies..."
 
-# Define production dependencies (installed via npm install)
-core_deps=( "zustand" "@supabase/supabase-js@2" "@react-native-async-storage/async-storage" "react-native-url-polyfill" "react-hook-form" "yup" )
-expo_deps=( "react-native-safe-area-context" "expo-status-bar" )
-ui_deps=( "nativewind" )
-picker_deps=( "react-native-picker-select" )
-web_deps=( "@react-google-maps/api" )
+# Define production dependencies (to be installed via Expo CLI)
+prod_deps=(
+  "zustand"
+  "@supabase/supabase-js@2"
+  "@react-native-async-storage/async-storage"
+  "react-native-url-polyfill"
+  "react-hook-form"
+  "yup"
+  "react-native-safe-area-context"
+  "expo-status-bar"
+  "nativewind"
+  "react-native-picker-select"
+  "@react-google-maps/api"
+  "expo-location"
+  "react-native-maps"
+)
 
-# Define dev dependencies (installed via npm install --save-dev)
+# Define dev dependencies (Expo CLI doesn't support installing dev dependencies, so we use npm)
 dev_deps=( "tailwindcss@3.3.2" )
 
-# Combine production dependencies into one array
-all_prod_deps=( "${core_deps[@]}" "${expo_deps[@]}" "${ui_deps[@]}" "${picker_deps[@]}" "${web_deps[@]}" )
+echo "Installing production dependencies with Expo CLI..."
+npx expo install "${prod_deps[@]}"
 
-echo "Installing production dependencies..."
-npm install "${all_prod_deps[@]}"
-
-echo "Installing dev dependencies..."
+echo "Installing dev dependencies using npm..."
 npm install --save-dev "${dev_deps[@]}"
-
-# Install native modules using Expo CLI
-echo "Installing native map dependencies using Expo CLI..."
-npx expo install expo-location react-native-maps
 #endregion
 
 #region Create Directory Structure
