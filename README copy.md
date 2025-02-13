@@ -1,4 +1,4 @@
-### Script 1: Expanded Backend Schema Initialization
+## Script 1: Expanded Backend Schema Initialization
 
 ```sql
 -- =============================================================================
@@ -11,12 +11,6 @@
 --   • Extended tables: comments, post_reactions, message_reactions,
 --     friend_requests, friend_blocks, reports, groups, group_members, events,
 --     event_invitations, media_attachments.
---   • Additional Phase 1 tables and columns for social engagement:
---         - Posts: an "edited" column.
---         - Messages: "edited" and "is_deleted" columns.
---         - Comments: a "parent_comment_id" column for threaded replies.
---         - Post shares: a new table to support content sharing/reposting.
---         - Notifications: a new table to support in-app alerts.
 --   • Indexes for performance.
 --   • Trigger functions and triggers to auto-update updated_at columns.
 --     (and a trigger to designate the very first profile as admin)
@@ -77,10 +71,6 @@ CREATE TABLE public.posts (
 );
 CREATE INDEX idx_posts_user_id ON public.posts(user_id);
 
--- Additional column for Phase 1: Edit indicator for posts.
-ALTER TABLE public.posts 
-ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false;
-
 -- 4. Create the conversations table (chat sessions between two users)
 CREATE TABLE public.conversations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -112,12 +102,6 @@ CREATE TABLE public.messages (
 CREATE INDEX idx_messages_conversation_id ON public.messages(conversation_id);
 CREATE INDEX idx_messages_sender_id ON public.messages(sender_id);
 
--- Additional columns for Phase 1: Edit and soft delete indicators for messages.
-ALTER TABLE public.messages 
-ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false;
-ALTER TABLE public.messages 
-ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;
-
 ---------------------------------------------------------------
 -- Extended Tables
 ---------------------------------------------------------------
@@ -137,27 +121,6 @@ CREATE TABLE public.comments (
 );
 CREATE INDEX idx_comments_post_id ON public.comments(post_id);
 CREATE INDEX idx_comments_user_id ON public.comments(user_id);
-
--- Additional column for Phase 1: Threaded comments support.
-ALTER TABLE public.comments 
-ADD COLUMN IF NOT EXISTS parent_comment_id uuid NULL;
-
--- Since PostgreSQL does not support "IF NOT EXISTS" for adding constraints,
--- use a DO block to add the self-referencing constraint if it doesn't exist.
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint 
-        WHERE conname = 'fk_comments_parent' 
-          AND conrelid = 'public.comments'::regclass
-    ) THEN
-        ALTER TABLE public.comments
-        ADD CONSTRAINT fk_comments_parent FOREIGN KEY (parent_comment_id)
-        REFERENCES public.comments (id)
-        ON DELETE CASCADE;
-    END IF;
-END
-$$;
 
 -- 6b. Post reactions (e.g., likes, emojis)
 CREATE TABLE public.post_reactions (
@@ -306,37 +269,6 @@ CREATE TABLE public.media_attachments (
 CREATE INDEX idx_media_attachments_content ON public.media_attachments(content_type, content_id);
 
 ---------------------------------------------------------------
--- New Tables for Phase 1 Social Engagement Features
----------------------------------------------------------------
-
--- 6l. Post shares (Content sharing / reposting)
-CREATE TABLE public.post_shares (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL,
-    original_post_id uuid NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_post_shares_user FOREIGN KEY (user_id)
-        REFERENCES public.profiles (id) ON DELETE CASCADE,
-    CONSTRAINT fk_post_shares_post FOREIGN KEY (original_post_id)
-        REFERENCES public.posts (id) ON DELETE CASCADE
-);
-CREATE INDEX IF NOT EXISTS idx_post_shares_user_id ON public.post_shares(user_id);
-CREATE INDEX IF NOT EXISTS idx_post_shares_original_post_id ON public.post_shares(original_post_id);
-
--- 6m. Notifications (in-app alerts for social interactions)
-CREATE TABLE public.notifications (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id uuid NOT NULL,           -- Recipient of the notification
-    type text NOT NULL,              -- e.g., 'like', 'comment', 'friend_request', 'message'
-    reference_id uuid,               -- Reference to the related post, comment, etc.
-    message text,                    -- Optional message content for the notification
-    read boolean NOT NULL DEFAULT false,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
-
----------------------------------------------------------------
 -- 7. Create trigger function to update updated_at columns
 ---------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
@@ -385,41 +317,6 @@ CREATE TRIGGER update_events_updated_at
 BEFORE UPDATE ON public.events
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
-
----------------------------------------------------------------
--- Trigger and RLS for Notifications
----------------------------------------------------------------
-
--- Trigger function to update updated_at column on notifications
-CREATE OR REPLACE FUNCTION public.update_notifications_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS update_notifications_updated_at_trigger ON public.notifications;
-CREATE TRIGGER update_notifications_updated_at_trigger
-BEFORE UPDATE ON public.notifications
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_notifications_updated_at();
-
--- Enable Row Level Security (RLS) for notifications and define policies
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Notifications select policy" ON public.notifications;
-CREATE POLICY "Notifications select policy" ON public.notifications
-FOR SELECT USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications insert policy" ON public.notifications;
-CREATE POLICY "Notifications insert policy" ON public.notifications
-FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications update policy" ON public.notifications;
-CREATE POLICY "Notifications update policy" ON public.notifications
-FOR UPDATE USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications delete policy" ON public.notifications;
-CREATE POLICY "Notifications delete policy" ON public.notifications
-FOR DELETE USING (auth.uid() = user_id);
 
 ---------------------------------------------------------------
 -- 8. Create the public "users" view (joins auth.users with profiles)
@@ -625,17 +522,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.group_members;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.events;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.event_invitations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.media_attachments;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.post_shares;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 
 -- =============================================================================
 -- End of Script 1
 -- =============================================================================
 ```
 
----
-
-### Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and Add a Sample Post
+## Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and Add a Sample Post
 
 ```sql
 DO $$
