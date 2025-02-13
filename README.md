@@ -528,34 +528,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.media_attachments;
 -- =============================================================================
 ```
 
----
-
-## Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and a Sample Post
+## Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and Add a Sample Post
 
 ```sql
--- =============================================================================
--- Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and Add a Sample Post
--- =============================================================================
--- Run this script after the admin account is created.
--- This script does the following:
---   1. Retrieves the admin user using the specified admin email.
---   2. Ensures the admin has a profile in public.profiles.
---   3. For each sample tester (Jon Doe, Jane Doe, Test User):
---        a. Inserts the tester into auth.users if not already present.
---        b. Inserts a corresponding profile into public.profiles.
---           (These profiles are marked as role 'user'.)
---        c. Checks for an existing conversation between the tester and the admin.
---           If none exists, creates a new conversation.
---        d. Inserts an initial message from the tester to the admin.
---        e. Seeds a friend request from the tester to the admin.
---   4. Inserts a sample post from one of the test users.
---
--- IMPORTANT:
---   - Replace the admin_email with your real admin's email.
---   - This script assumes the admin already exists in auth.users.
---   - The password hashes correspond to "password123" (bcrypt); adjust if needed.
--- =============================================================================
-
 DO $$
 DECLARE
     admin_email text := 'admin@yourdomain.com';  -- Replace with your real admin email
@@ -563,6 +538,7 @@ DECLARE
     tester record;
     tester_id uuid;
     conv_id uuid;
+    sample_post_user_id uuid;
 BEGIN
     -- Retrieve the admin user's ID from auth.users.
     SELECT id INTO admin_id
@@ -575,14 +551,7 @@ BEGIN
     
     -- Ensure the admin has a profile in public.profiles.
     INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-    VALUES (
-        admin_id,
-        NULL,
-        admin_email,
-        '',
-        now(),
-        now()
-    )
+    VALUES (admin_id, NULL, admin_email, '', now(), now())
     ON CONFLICT (id) DO NOTHING;
     
     -- Loop over each sample tester.
@@ -600,28 +569,13 @@ BEGIN
         
         IF tester_id IS NULL THEN
             INSERT INTO auth.users (id, aud, role, email, encrypted_password, created_at, updated_at)
-            VALUES (
-                gen_random_uuid(),
-                'authenticated',
-                'authenticated',
-                tester.email,
-                tester.encrypted_password,
-                now(),
-                now()
-            )
+            VALUES (gen_random_uuid(), 'authenticated', 'authenticated', tester.email, tester.encrypted_password, now(), now())
             RETURNING id INTO tester_id;
         END IF;
         
-        -- Ensure tester has a profile in public.profiles.
+        -- Ensure the tester has a profile in public.profiles.
         INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-        VALUES (
-            tester_id,
-            NULL,
-            tester.displayName,
-            '',
-            now(),
-            now()
-        )
+        VALUES (tester_id, NULL, tester.displayName, '', now(), now())
         ON CONFLICT (id) DO NOTHING;
         
         -- Check for an existing conversation between admin and tester.
@@ -639,48 +593,29 @@ BEGIN
         
         -- Insert an initial message from tester to admin.
         INSERT INTO public.messages (conversation_id, sender_id, content)
-        VALUES (
-            conv_id,
-            tester_id,
-            'Hello Admin, this is ' || tester.displayName || '!'
-        );
+        VALUES (conv_id, tester_id, 'Hello Admin, this is ' || tester.displayName || '!');
         
         -- Seed a friend request from tester to admin.
         INSERT INTO public.friend_requests (sender_id, receiver_id, status, created_at, updated_at)
-        VALUES (
-            tester_id,
-            admin_id,
-            'pending',
-            now(),
-            now()
-        )
+        VALUES (tester_id, admin_id, 'pending', now(), now())
         ON CONFLICT DO NOTHING;
     END LOOP;
     
-    -- Insert a sample post from one of the test users.
-    -- For this example, we use 'testuser@example.com'
-    DECLARE sample_post_user_id uuid;
-    BEGIN
-        SELECT id INTO sample_post_user_id FROM auth.users WHERE email = 'testuser@example.com';
-        IF sample_post_user_id IS NULL THEN
-            RAISE EXCEPTION 'Test user not found';
-        END IF;
-        -- Ensure the profile exists (should already be there from earlier).
-        INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-        VALUES (
-            sample_post_user_id,
-            NULL,
-            'Test User',
-            '',
-            now(),
-            now()
-        )
-        ON CONFLICT (id) DO NOTHING;
-        -- Insert the post.
-        INSERT INTO public.posts (user_id, content)
-        VALUES (
-            sample_post_user_id,
-            $$Hey there! Meet **ScriptHammer**—a handy bash script that sets up a complete Expo app with everything you need right out of the box.
+    -- Insert a sample post from the test user.
+    SELECT id INTO sample_post_user_id FROM auth.users WHERE email = 'testuser@example.com';
+    IF sample_post_user_id IS NULL THEN
+        RAISE EXCEPTION 'Test user not found';
+    END IF;
+    
+    INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
+    VALUES (sample_post_user_id, NULL, 'Test User', '', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+    
+    INSERT INTO public.posts (user_id, content)
+    VALUES (
+        sample_post_user_id,
+        $POST$
+Hey there! Meet **ScriptHammer**—a handy bash script that sets up a complete Expo app with everything you need right out of the box.
 
 ### What It Does
 - **Loads Your Environment:** It starts by checking your `.env` file for essential keys like your app name, Supabase URL & anon key, and Google Maps API key.
@@ -688,17 +623,9 @@ BEGIN
 - **Installs Dependencies:** It adds libraries for state management (Zustand), styling (Tailwind, NativeWind), authentication, maps, forms, and even realtime messaging with Supabase.
 - **Sets Up Project Structure:** Creates folders and starter files for authentication, routing, theming (light/dark mode), and features like posts and chats.
 - **Local CLI & Configs:** Checks and installs the local Expo CLI, and sets up configs for Metro, Babel, and Tailwind.
-
-### Why You'll Love It
-- **Saves Time:** No more tedious manual setup—just run the script and start coding!
-- **Modern Tech Stack:** Leverages Expo, Supabase, and React Native, so you're using the latest and greatest.
-- **Ready to Roll:** With built-in features for authentication, realtime data, and maps, you can prototype or even build production apps faster.
-- **Customizable:** The clear project structure makes it easy to tweak and extend as your project grows.
-
-Get started by setting up your `.env` file, run the script, and let ScriptHammer do the heavy lifting. Happy coding!$$
-        ;
-    END;
+- **Why You'll Love It:** Saves time, uses a modern tech stack, is ready to roll, and is easily customizable.
+Get started by setting up your `.env` file, run the script, and let ScriptHammer do the heavy lifting. Happy coding!
+$POST$
+    );
 END $$;
--- =============================================================================
--- End of Script 2
 ```
