@@ -3,7 +3,7 @@ set -eo pipefail
 
 ##############################################
 # Expo Setup Script Template with Combined Create/Edit Post Draft,
-# Home Screen, Realtime UI, and Inline Error Handling.
+# Home Screen, Realtime UI, Inline Error Handling, and Updated CommentsSection Styling.
 #
 # NOTE:
 #  - Run your backend SQL scripts (Schema Initialization & Seed Data)
@@ -105,6 +105,7 @@ dir_structure=(
   "src/store/useAuthStore.ts"
   "src/components/"
   "src/context/"
+  "src/utils/"
   "app/"
   "app/_layout.tsx"
   "app/error.tsx"
@@ -130,7 +131,6 @@ dir_structure=(
   "src/components/ChatMessage.tsx"
   "src/components/MessageInput.tsx"
 )
-
 for item in "${dir_structure[@]}"; do
   if [[ $item == */ ]]; then
     mkdir -p "$item"
@@ -197,6 +197,15 @@ html, body {
   -webkit-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
   -moz-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
   box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+}
+
+/* Updated comment meta styles with increased specificity */
+html body .comment-meta {
+  color: #4B5563 !important;  /* Tailwind gray-600 */
+  font-size: 0.75rem !important; /* text-xs */
+}
+.dark html body .comment-meta {
+  color: #D1D5DB !important;  /* Tailwind gray-300 */
 }
 EOF
 #endregion
@@ -282,7 +291,7 @@ interface CustomButtonProps {
 export function CustomButton({ title, onPress }: CustomButtonProps) {
   return (
     <TouchableOpacity onPress={onPress} className="btn">
-      <Text className="font-bold text-center">{title}</Text>
+      <Text className="text-center">{title}</Text>
     </TouchableOpacity>
   );
 }
@@ -761,7 +770,245 @@ export default function SignUpScreen() {
 EOF
 #endregion
 
+#region Scaffold Utils - Supabase Helpers
+cat > "src/utils/supabaseHelpers.ts" << 'EOF'
+import { supabase } from '../lib/supabase';
 
+/**
+ * Fetches the profile for a given post if the displayName is missing.
+ * This helper ensures that the post object has the joined profile data.
+ */
+export async function fetchProfileForPost(post: any): Promise<any> {
+  if (!post.profiles || !post.profiles.displayName) {
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('displayName')
+      .eq('id', post.user_id)
+      .maybeSingle();
+    if (!error && profileData) {
+      post.profiles = profileData;
+    }
+  }
+  return post;
+}
+EOF
+#endregion
+
+#region Scaffold CommentsSection Component
+cat > "src/components/CommentsSection.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+import { CustomButton } from './CustomButton';
+
+interface Comment {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  parent_comment_id?: string | null;
+  profiles?: { displayName: string };
+}
+
+interface CommentsSectionProps {
+  postId: string;
+}
+
+export function CommentsSection({ postId }: CommentsSectionProps) {
+  const { user } = useAuthStore();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fetchComments = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*, profiles!inner(displayName)')
+        .eq('post_id', postId)
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Error fetching comments:', error);
+      } else {
+        setComments(data as Comment[]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching comments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+  }, [postId]);
+
+  const handleSubmitComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const payload = {
+        post_id: postId,
+        user_id: user.id,
+        content: newComment,
+        parent_comment_id: replyTo ? replyTo.id : null,
+      };
+      const { error } = await supabase.from('comments').insert([payload]).single();
+      if (error) {
+        console.error('Error submitting comment:', error);
+      } else {
+        setNewComment('');
+        setReplyTo(null);
+        fetchComments();
+      }
+    } catch (err) {
+      console.error('Unexpected error submitting comment:', err);
+    }
+  };
+
+  const renderCommentItem = (comment: Comment, level: number = 0) => {
+    return (
+      <View key={comment.id} style={{ marginLeft: level * 16 }} className="mt-1">
+        {/* Render comment content first */}
+        <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
+          {comment.content}
+        </Text>
+        {/* Render meta information (author's name and timestamp) below content */}
+        <Text className="comment-meta">
+          {comment.profiles?.displayName || 'Unknown'} • {new Date(comment.created_at).toLocaleString()}
+        </Text>
+        {user && (
+          <TouchableOpacity onPress={() => setReplyTo(comment)}>
+            <Text className="text-xs text-blue-500 dark:text-blue-400 mt-1">Reply</Text>
+          </TouchableOpacity>
+        )}
+        {comments
+          .filter((c) => c.parent_comment_id === comment.id)
+          .map((reply) => renderCommentItem(reply, level + 1))}
+      </View>
+    );
+  };
+
+  return (
+    <View className="p-4 border-t border-gray-300 dark:border-gray-600 mt-2">
+      <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3] mb-2">Comments</Text>
+      {loading ? (
+        <Text className="text-xs text-gray-600 dark:text-gray-300">Loading comments...</Text>
+      ) : (
+        <FlatList
+          data={comments.filter((c) => !c.parent_comment_id)}
+          renderItem={({ item }) => renderCommentItem(item)}
+          keyExtractor={(item) => item.id}
+        />
+      )}
+      {replyTo && (
+        <View className="bg-gray-100 dark:bg-gray-700 p-2 my-2">
+          <Text className="comment-meta">Replying to: {replyTo.content}</Text>
+          <TouchableOpacity onPress={() => setReplyTo(null)}>
+            <Text className="text-xs text-red-500">Cancel Reply</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      <View className="flex-row items-center mt-2">
+        <TextInput
+          value={newComment}
+          onChangeText={setNewComment}
+          placeholder="Write a comment..."
+          className="flex-1 border border-gray-300 dark:border-gray-500 p-2 rounded mr-2"
+          placeholderTextColor="#888"
+        />
+        <CustomButton title="Submit" onPress={handleSubmitComment} />
+      </View>
+    </View>
+  );
+}
+export default CommentsSection;
+EOF
+#endregion
+
+#region Scaffold LikeButton Component
+cat > "src/components/LikeButton.tsx" << 'EOF'
+import React, { useState, useEffect } from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+
+interface LikeButtonProps { postId: string; }
+
+export function LikeButton({ postId }: LikeButtonProps) {
+  const { user } = useAuthStore();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
+  const fetchLikes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reactions')
+        .select('*')
+        .eq('post_id', postId);
+      if (error) {
+        console.error('Error fetching likes:', error);
+      } else {
+        setLikeCount(data.length);
+        const userLike = data.find((r: any) => r.user_id === user.id);
+        setLiked(!!userLike);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching likes:', err);
+    }
+  };
+
+  useEffect(() => { fetchLikes(); }, [postId]);
+
+  const toggleLike = async () => {
+    if (!user) return;
+    try {
+      if (liked) {
+        const { error } = await supabase
+          .from('reactions')
+          .delete()
+          .match({ post_id: postId, user_id: user.id });
+        if (error) {
+          console.error('Error unliking post:', error);
+        } else {
+          setLiked(false);
+          setLikeCount((prev) => prev - 1);
+        }
+      } else {
+        const { error } = await supabase
+          .from('reactions')
+          .insert([{ post_id: postId, user_id: user.id, reaction: 'like' }]);
+        if (error) {
+          console.error('Error liking post:', error);
+        } else {
+          setLiked(true);
+          setLikeCount((prev) => prev + 1);
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error toggling like:', err);
+    }
+  };
+
+  return (
+    <TouchableOpacity style={styles.button} onPress={toggleLike}>
+      <Text style={[styles.text, liked && styles.liked]}>
+        {liked ? '👍 Liked' : '👍 Like'} ({likeCount})
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: { padding: 6, backgroundColor: '#fff', borderRadius: 4, borderWidth: 1, borderColor: '#ccc', marginTop: 10 },
+  text: { fontSize: 14, color: '#333' },
+  liked: { color: '#007AFF' },
+});
+EOF
+#endregion
 
 #region HOME SCREEN
 cat > "app/(tabs)/home.tsx" << 'EOF'
@@ -773,6 +1020,9 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { CustomButton } from '../../src/components/CustomButton';
 import { ChatMessage } from '../../src/components/ChatMessage';
 import { MessageInput } from '../../src/components/MessageInput';
+import { fetchProfileForPost } from '../../src/utils/supabaseHelpers';
+import { CommentsSection } from '../../src/components/CommentsSection';
+import { LikeButton } from '../../src/components/LikeButton';
 
 interface Post {
   id: string;
@@ -781,8 +1031,6 @@ interface Post {
   updated_at: string;
   edited: boolean;
   user_id: string;
-  // Initially fetched posts include the joined profile data,
-  // but realtime events may not include it.
   profiles?: { displayName: string };
 }
 
@@ -794,7 +1042,6 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
 
-  // Fetch posts with the inner join on profiles for displayName
   const fetchPosts = async () => {
     setLoading(true);
     try {
@@ -818,22 +1065,6 @@ export default function HomeScreen() {
     fetchPosts();
   }, []);
 
-  // Helper to fetch profile data for a post if missing
-  const fetchProfileForPost = async (post: Post): Promise<Post> => {
-    if (!post.profiles || !post.profiles.displayName) {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('displayName')
-        .eq('id', post.user_id)
-        .maybeSingle();
-      if (!error && profileData) {
-        post.profiles = profileData;
-      }
-    }
-    return post;
-  };
-
-  // Realtime subscription for post events
   useEffect(() => {
     const subscription = supabase
       .channel('posts')
@@ -843,7 +1074,6 @@ export default function HomeScreen() {
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const postData: Post = payload.new;
-            // If the joined profile data is missing, fetch it.
             fetchProfileForPost(postData).then((updatedPost) => {
               setPosts((prevPosts) => {
                 let updatedPosts: Post[] = [];
@@ -881,10 +1111,8 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  // Delete handler with inline error feedback and platform-specific confirmation
   const handleDeletePost = async (postId: string) => {
     if (Platform.OS === 'web') {
-      // Use window.confirm for web platforms
       if (!window.confirm('Are you sure you want to delete this post?')) return;
       console.log('Delete button pressed for post:', postId);
       try {
@@ -908,7 +1136,6 @@ export default function HomeScreen() {
         setPostErrors((prev) => ({ ...prev, [postId]: message }));
       }
     } else {
-      // Use Alert for native platforms
       Alert.alert(
         'Delete Post',
         'Are you sure you want to delete this post?',
@@ -947,7 +1174,6 @@ export default function HomeScreen() {
     }
   };
 
-  // Render a post with inline Edit/Delete buttons, poster displayName, and timestamp.
   const renderPost = ({ item }: { item: Post }) => {
     const posterName =
       item.profiles && item.profiles.displayName ? item.profiles.displayName : 'Unknown';
@@ -967,8 +1193,10 @@ export default function HomeScreen() {
             <CustomButton title="Delete" onPress={() => handleDeletePost(item.id)} />
           </View>
         )}
+        <LikeButton postId={item.id} />
+        <CommentsSection postId={item.id} />
         {postErrors[item.id] && (
-          <Text style={{ color: 'red', marginTop: 4, fontWeight: 'bold' }}>
+          <Text style={{ color: 'red', marginTop: 4, fontWeight: 'normal' }}>
             {postErrors[item.id]}
           </Text>
         )}
@@ -978,7 +1206,6 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-steampunk-light">
-      {/* New Post Button */}
       <View style={{ padding: 16, alignItems: 'center' }}>
         <CustomButton title="New Post" onPress={() => router.push('/create')} />
       </View>
@@ -999,8 +1226,6 @@ export default function HomeScreen() {
 EOF
 #endregion
 
-
-
 #region Combined CREATE/EDIT SCREEN
 cat > "app/(tabs)/create.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
@@ -1011,7 +1236,6 @@ import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
 export default function CreateEditPostScreen() {
-  // If an "id" query parameter exists, we are in edit mode.
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -1019,7 +1243,6 @@ export default function CreateEditPostScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // If editing, fetch the existing post.
   useEffect(() => {
     async function fetchPost() {
       if (id) {
@@ -1047,7 +1270,6 @@ export default function CreateEditPostScreen() {
     setLoading(true);
     setError('');
     if (id) {
-      // Edit mode: update the post and mark as edited.
       const { error } = await supabase
         .from('posts')
         .update({ content, edited: true })
@@ -1065,7 +1287,6 @@ export default function CreateEditPostScreen() {
         }
       }
     } else {
-      // Create mode: insert a new post.
       const { data, error } = await supabase
         .from('posts')
         .insert([{ user_id: user.id, content }])
@@ -1571,7 +1792,7 @@ export default function ProfileEditScreen() {
 EOF
 #endregion
 
-#region Add Missing Component Implementations
+#region Add Missing Component Implementations (ChatMessage)
 cat > "src/components/ChatMessage.tsx" << 'EOF'
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -1664,32 +1885,9 @@ export function MessageInput({ onSend }: MessageInputProps) {
 }
 
 const styles = {
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 8,
-    backgroundColor: '#f0e6d2',
-    borderTopWidth: 1,
-    borderColor: '#3b302a',
-  },
-  input: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#3b302a',
-    marginRight: 8,
-    color: '#3b302a',
-  },
-  sendButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#c0a080',
-  },
+  container: { flexDirection: 'row', alignItems: 'center', padding: 8, backgroundColor: '#f0e6d2', borderTopWidth: 1, borderColor: '#3b302a' },
+  input: { flex: 1, minHeight: 40, maxHeight: 100, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#ffffff', borderRadius: 20, borderWidth: 1, borderColor: '#3b302a', marginRight: 8, color: '#3b302a' },
+  sendButton: { padding: 8, borderRadius: 20, backgroundColor: '#c0a080' },
 };
 EOF
 #endregion
