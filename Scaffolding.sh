@@ -2,7 +2,14 @@
 set -eo pipefail
 
 ##############################################
-# Expo Setup Script Template with Create Post Draft
+# Expo Setup Script Template with Combined Create/Edit Post Draft,
+# Home Screen, Realtime UI, and Inline Error Handling.
+#
+# NOTE:
+#  - Run your backend SQL scripts (Schema Initialization & Seed Data)
+#    separately in your Supabase SQL editor.
+#  - This script assumes backend tables/views are named:
+#      profiles, posts, conversations, messages, and users (view).
 ##############################################
 
 #region Environment Variables and Pre-Setup
@@ -60,7 +67,7 @@ fi
 #region Install Dependencies
 echo "📦 Installing dependencies..."
 
-# Define production dependencies (to be installed via Expo CLI)
+# Define production dependencies (installed via Expo CLI)
 prod_deps=(
   "zustand"
   "@supabase/supabase-js@2"
@@ -77,7 +84,7 @@ prod_deps=(
   "react-native-maps"
 )
 
-# Define dev dependencies (Expo CLI doesn't support installing dev dependencies, so we use npm)
+# Define dev dependencies (installed via npm)
 dev_deps=( "tailwindcss@3.3.2" )
 
 echo "Installing production dependencies with Expo CLI..."
@@ -757,29 +764,40 @@ EOF
 #region HOME SCREEN
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { CustomButton } from '../../src/components/CustomButton';
+import { ChatMessage } from '../../src/components/ChatMessage';
+import { MessageInput } from '../../src/components/MessageInput';
 
 interface Post {
   id: string;
   content: string;
   created_at: string;
+  updated_at: string;
+  edited: boolean;
   user_id: string;
+  profiles: { displayName: string };
 }
 
 export default function HomeScreen() {
+  const { user } = useAuthStore();
+  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
 
-  // Function to fetch posts from Supabase
+  // Fetch posts ordered by updated_at descending (most recent at top) including poster's displayName.
   const fetchPosts = async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*, profiles!inner(displayName)')
+        .order('updated_at', { ascending: false });
       if (error) {
         console.error('Error fetching posts:', error);
       } else {
@@ -792,57 +810,125 @@ export default function HomeScreen() {
     }
   };
 
-  // Fetch posts on component mount
   useEffect(() => {
     fetchPosts();
   }, []);
 
-  // Set up realtime subscription to update posts when a new post is inserted.
+  // Realtime subscription for post events
   useEffect(() => {
     const subscription = supabase
       .channel('posts')
       .on(
         'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'posts',
-        },
+        { event: '*', schema: 'public', table: 'posts' },
         (payload) => {
-          console.log('New post received:', payload.new);
-          // Prepend the new post to the existing posts list.
-          setPosts((prevPosts) => [payload.new, ...prevPosts]);
+          if (payload.eventType === 'INSERT') {
+            setPosts((prevPosts) =>
+              [...prevPosts, payload.new].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+            );
+          } else if (payload.eventType === 'UPDATE') {
+            setPosts((prevPosts) =>
+              prevPosts
+                .map((post) => (post.id === payload.new.id ? payload.new : post))
+                .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setPosts((prevPosts) =>
+              prevPosts
+                .filter((post) => post.id !== payload.old.id)
+                .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+            );
+          }
         }
       )
       .subscribe();
-
-    // Cleanup the subscription on unmount to maintain code integrity.
     return () => {
       supabase.removeChannel(subscription);
     };
   }, []);
 
-  // Handler for pull-to-refresh functionality
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchPosts();
     setRefreshing(false);
   };
 
-  // Render a single post item
-  const renderPost = ({ item }: { item: Post }) => (
-    <View className="p-4 border-b border-gray-300">
-      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">
-        {item.content}
-      </Text>
-      <Text className="text-xs text-gray-600 mt-1">
-        {new Date(item.created_at).toLocaleString()}
-      </Text>
-    </View>
-  );
+  // Delete handler with inline error feedback
+  const handleDeletePost = async (postId: string) => {
+    Alert.alert(
+      'Delete Post',
+      'Are you sure you want to delete this post?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('posts')
+                .delete()
+                .match({ id: postId, user_id: user?.id });
+              if (error) {
+                Alert.alert('Deletion Failed', error.message);
+                setPostErrors((prev) => ({ ...prev, [postId]: error.message }));
+              } else {
+                setPostErrors((prev) => {
+                  const updated = { ...prev };
+                  delete updated[postId];
+                  return updated;
+                });
+              }
+            } catch (err: any) {
+              const message = err.message || 'Deletion failed.';
+              Alert.alert('Deletion Failed', message);
+              setPostErrors((prev) => ({ ...prev, [postId]: message }));
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  // Render a post with inline Edit/Delete buttons, poster displayName, and timestamp.
+  const renderPost = ({ item }: { item: Post }) => {
+    const posterName = item.profiles && item.profiles.displayName ? item.profiles.displayName : "Unknown";
+    const timestamp = item.edited
+      ? `${new Date(item.updated_at).toLocaleString()} (edited)`
+      : new Date(item.created_at).toLocaleString();
+
+    return (
+      <View className="p-4 border-b border-gray-300">
+        <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">
+          {item.content}
+        </Text>
+        <Text className="text-xs text-gray-600 mt-1">
+          Posted by: {posterName}
+        </Text>
+        <Text className="text-xs text-gray-600 mt-1">{timestamp}</Text>
+        {user && item.user_id === user.id && (
+          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+            <CustomButton title="Edit" onPress={() => router.push(`/create?id=${item.id}`)} />
+            <View style={{ width: 16 }} />
+            <CustomButton title="Delete" onPress={() => handleDeletePost(item.id)} />
+          </View>
+        )}
+        {postErrors[item.id] && (
+          <Text style={{ color: 'red', marginTop: 4, fontWeight: 'bold' }}>
+            {postErrors[item.id]}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View className="flex-1 bg-steampunk-light">
+      {/* New Post Button */}
+      <View style={{ padding: 16, alignItems: 'center' }}>
+        <CustomButton title="New Post" onPress={() => router.push('/create')} />
+      </View>
       {loading && posts.length === 0 ? (
         <ActivityIndicator size="large" style={{ marginTop: 20 }} />
       ) : (
@@ -850,9 +936,7 @@ export default function HomeScreen() {
           data={posts}
           keyExtractor={(item) => item.id}
           renderItem={renderPost}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
@@ -862,60 +946,120 @@ export default function HomeScreen() {
 EOF
 #endregion
 
-#region CREATE SCREEN
+#region Combined CREATE/EDIT SCREEN
 cat > "app/(tabs)/create.tsx" << 'EOF'
-import React, { useState } from 'react';
-import { View, Text, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Alert, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CustomButton } from '../../src/components/CustomButton';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
-export default function CreateScreen() {
+export default function CreateEditPostScreen() {
+  // If an "id" query parameter exists, we are in edit mode.
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
   const { user } = useAuthStore();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleCreatePost = async () => {
+  // If editing, fetch the existing post.
+  useEffect(() => {
+    async function fetchPost() {
+      if (id) {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
+        if (error) {
+          setError(error.message);
+        } else {
+          setContent(data.content);
+        }
+      }
+    }
+    fetchPost();
+  }, [id, user]);
+
+  const handleSave = async () => {
     if (!content.trim()) {
       setError('Please enter some content for your post.');
       return;
     }
     setLoading(true);
     setError('');
-    try {
-      const { data, error: insertError } = await supabase
+    if (id) {
+      // Edit mode: update the post and mark as edited.
+      const { error } = await supabase
+        .from('posts')
+        .update({ content, edited: true })
+        .match({ id, user_id: user.id });
+      if (error) {
+        setError(error.message);
+      } else {
+        if (Platform.OS === 'web') {
+          window.alert('Post Updated: Your post has been updated successfully.');
+          router.back();
+        } else {
+          Alert.alert('Post Updated', 'Your post has been updated successfully.', [
+            { text: 'OK', onPress: () => router.back() }
+          ]);
+        }
+      }
+    } else {
+      // Create mode: insert a new post.
+      const { data, error } = await supabase
         .from('posts')
         .insert([{ user_id: user.id, content }])
         .single();
-
-      if (insertError) {
-        setError(insertError.message);
+      if (error) {
+        setError(error.message);
       } else {
-        setContent('');
-        Alert.alert('Post Created', 'Your post has been successfully created.');
+        if (Platform.OS === 'web') {
+          window.alert('Post Created: Your post has been created successfully.');
+          router.back();
+        } else {
+          Alert.alert('Post Created', 'Your post has been created successfully.', [
+            { text: 'OK', onPress: () => router.back() }
+          ]);
+        }
       }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred while creating the post.');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   return (
-    <View className="flex-1 p-4 bg-steampunk-light">
-      <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-2xl mb-4">Create a New Post</Text>
-      {error ? <Text className="text-red-500 mb-2">{error}</Text> : null}
+    <View style={{ flex: 1, padding: 16, backgroundColor: '#f0e6d2' }}>
+      <Text style={{ fontSize: 24, marginBottom: 16, color: '#3b302a' }}>
+        {id ? 'Edit Your Post' : 'Compose New Post'}
+      </Text>
+      {error ? <Text style={{ color: 'red', marginBottom: 8 }}>{error}</Text> : null}
       <TextInput
         value={content}
         onChangeText={setContent}
         placeholder="What's on your mind?"
         placeholderTextColor="#5a4a42"
-        className="border border-gray-300 p-2 rounded mb-4 input-shadow"
+        style={{
+          borderWidth: 1,
+          borderColor: '#ccc',
+          padding: 8,
+          borderRadius: 4,
+          marginBottom: 16,
+          backgroundColor: '#fff',
+          color: '#3b302a',
+          minHeight: 100,
+          textAlignVertical: 'top'
+        }}
         multiline
-        style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
-      <CustomButton title={loading ? 'Posting...' : 'Submit Post'} onPress={handleCreatePost} />
+      <CustomButton
+        title={loading ? (id ? 'Saving Changes...' : 'Posting...') : (id ? 'Save Changes' : 'Submit Post')}
+        onPress={handleSave}
+      />
+      <CustomButton title="Cancel" onPress={() => router.back()} />
     </View>
   );
 }
@@ -1046,15 +1190,12 @@ export default function ChatsScreen() {
   const [conversationId, setConversationId] = useState<string>('');
   const [messages, setMessages] = useState<any[]>([]);
 
-  // Fetch contacts from the public "users" view.
-  // Note: We use the displayName property (camelCase) as defined in your view.
   useEffect(() => {
     async function fetchContacts() {
       const { data, error } = await supabase.from('users').select('*');
       if (error) {
         console.error('Error fetching contacts:', error);
       } else {
-        // Filter out the current user.
         const otherUsers = data.filter((u: any) => u.id !== user.id);
         setContacts(otherUsers);
       }
@@ -1062,7 +1203,6 @@ export default function ChatsScreen() {
     fetchContacts();
   }, [user]);
 
-  // When a contact is selected, fetch (or create) the conversation.
   useEffect(() => {
     if (!selectedContact) return;
     async function fetchOrCreateConversation() {
@@ -1096,7 +1236,6 @@ export default function ChatsScreen() {
     fetchOrCreateConversation();
   }, [selectedContact, user]);
 
-  // Fetch messages for the current conversation.
   useEffect(() => {
     if (!conversationId) return;
     async function fetchMessages() {
@@ -1113,7 +1252,6 @@ export default function ChatsScreen() {
     }
     fetchMessages();
 
-    // Subscribe to realtime changes for messages in the conversation.
     const channel = supabase
       .channel(`conversation-${conversationId}`)
       .on(
@@ -1125,7 +1263,6 @@ export default function ChatsScreen() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          console.log('Realtime event received:', payload);
           if (payload.eventType === 'INSERT') {
             setMessages((prev) => [...prev, payload.new]);
           } else if (payload.eventType === 'UPDATE') {
@@ -1146,7 +1283,6 @@ export default function ChatsScreen() {
     };
   }, [conversationId]);
 
-  // Function to send a new message.
   const sendMessage = async (text: string) => {
     if (!conversationId || text.trim() === '') return;
     const { error } = await supabase.from('messages').insert({
@@ -1161,7 +1297,6 @@ export default function ChatsScreen() {
 
   return (
     <View className="flex-1 bg-steampunk-light">
-      {/* Dropdown to select a contact */}
       <RNPickerSelect
         onValueChange={(value) => {
           const contact = contacts.find((c) => c.id === value);
@@ -1180,7 +1315,6 @@ export default function ChatsScreen() {
         }}
       />
 
-      {/* Header indicating which contact is currently selected */}
       {selectedContact && (
         <View className="p-4 border-b border-gray-300">
           <Text className="text-lg font-bold text-[#3b302a] dark:text-[#d4bfa3]">
@@ -1189,7 +1323,6 @@ export default function ChatsScreen() {
         </View>
       )}
 
-      {/* Chat messages list */}
       <FlatList
         data={messages}
         renderItem={({ item }) => (
@@ -1199,7 +1332,6 @@ export default function ChatsScreen() {
         contentContainerStyle={{ padding: 10 }}
       />
 
-      {/* Message input to send new messages */}
       <MessageInput onSend={sendMessage} />
     </View>
   );
@@ -1241,7 +1373,6 @@ export default function ProfileScreen() {
   useEffect(() => {
     async function fetchProfile() {
       if (user) {
-        // Query the "users" view to get displayName, email, and bio
         const { data, error } = await supabase
           .from('users')
           .select('*')
@@ -1269,7 +1400,6 @@ export default function ProfileScreen() {
 
   return (
     <View className="flex-1 bg-steampunk-light p-4 justify-between">
-      {/* Profile Information Section */}
       <View>
         {profile ? (
           <View className="mb-6 space-y-3">
@@ -1297,7 +1427,6 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      {/* Action Buttons Section */}
       <View className="space-y-4">
         <Text onPress={() => router.push('/profileEdit')} className="link text-center text-sm">
           Edit Profile
@@ -1581,10 +1710,10 @@ EOF
 echo "✅ Project setup complete!"
 echo "Next steps:"
 echo "1. Ensure your .env file uses the prefix 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY' for the Google Maps API key."
-echo "2. Adjust the Supabase client in src/lib/supabase.ts if needed."
+echo "2. Run your backend SQL schema initialization and seed scripts in your Supabase SQL editor."
 echo "3. Verify the Zustand auth store in src/store/useAuthStore.ts."
 echo "4. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
-echo "5. Review the new messaging and post feature files."
+echo "5. Review the new messaging, post, and combined create/edit post feature files."
 echo "6. Run and test the auth, messenger, and post flow. For web: npx expo start --clear"
 echo "🚀 Starting Expo development server..."
 npx expo start --clear
