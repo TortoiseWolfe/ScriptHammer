@@ -761,10 +761,12 @@ export default function SignUpScreen() {
 EOF
 #endregion
 
+
+
 #region HOME SCREEN
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -779,7 +781,9 @@ interface Post {
   updated_at: string;
   edited: boolean;
   user_id: string;
-  profiles: { displayName: string };
+  // Initially fetched posts include the joined profile data,
+  // but realtime events may not include it.
+  profiles?: { displayName: string };
 }
 
 export default function HomeScreen() {
@@ -790,7 +794,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
 
-  // Fetch posts ordered by updated_at descending (most recent at top) including poster's displayName.
+  // Fetch posts with the inner join on profiles for displayName
   const fetchPosts = async () => {
     setLoading(true);
     try {
@@ -814,6 +818,21 @@ export default function HomeScreen() {
     fetchPosts();
   }, []);
 
+  // Helper to fetch profile data for a post if missing
+  const fetchProfileForPost = async (post: Post): Promise<Post> => {
+    if (!post.profiles || !post.profiles.displayName) {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('displayName')
+        .eq('id', post.user_id)
+        .maybeSingle();
+      if (!error && profileData) {
+        post.profiles = profileData;
+      }
+    }
+    return post;
+  };
+
   // Realtime subscription for post events
   useEffect(() => {
     const subscription = supabase
@@ -822,21 +841,30 @@ export default function HomeScreen() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'posts' },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setPosts((prevPosts) =>
-              [...prevPosts, payload.new].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-            );
-          } else if (payload.eventType === 'UPDATE') {
-            setPosts((prevPosts) =>
-              prevPosts
-                .map((post) => (post.id === payload.new.id ? payload.new : post))
-                .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
-            );
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const postData: Post = payload.new;
+            // If the joined profile data is missing, fetch it.
+            fetchProfileForPost(postData).then((updatedPost) => {
+              setPosts((prevPosts) => {
+                let updatedPosts: Post[] = [];
+                if (payload.eventType === 'INSERT') {
+                  updatedPosts = [...prevPosts, updatedPost];
+                } else if (payload.eventType === 'UPDATE') {
+                  updatedPosts = prevPosts.map((post) =>
+                    post.id === updatedPost.id ? updatedPost : post
+                  );
+                }
+                return updatedPosts.sort(
+                  (a, b) =>
+                    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+                );
+              });
+            });
           } else if (payload.eventType === 'DELETE') {
             setPosts((prevPosts) =>
               prevPosts
                 .filter((post) => post.id !== payload.old.id)
-                .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
             );
           }
         }
@@ -853,59 +881,84 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  // Delete handler with inline error feedback
+  // Delete handler with inline error feedback and platform-specific confirmation
   const handleDeletePost = async (postId: string) => {
-    Alert.alert(
-      'Delete Post',
-      'Are you sure you want to delete this post?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const { error } = await supabase
-                .from('posts')
-                .delete()
-                .match({ id: postId, user_id: user?.id });
-              if (error) {
-                Alert.alert('Deletion Failed', error.message);
-                setPostErrors((prev) => ({ ...prev, [postId]: error.message }));
-              } else {
-                setPostErrors((prev) => {
-                  const updated = { ...prev };
-                  delete updated[postId];
-                  return updated;
-                });
+    if (Platform.OS === 'web') {
+      // Use window.confirm for web platforms
+      if (!window.confirm('Are you sure you want to delete this post?')) return;
+      console.log('Delete button pressed for post:', postId);
+      try {
+        const { error } = await supabase
+          .from('posts')
+          .delete()
+          .match({ id: postId, user_id: user?.id });
+        if (error) {
+          alert('Deletion Failed: ' + error.message);
+          setPostErrors((prev) => ({ ...prev, [postId]: error.message }));
+        } else {
+          setPostErrors((prev) => {
+            const updated = { ...prev };
+            delete updated[postId];
+            return updated;
+          });
+        }
+      } catch (err: any) {
+        const message = err.message || 'Deletion failed.';
+        alert('Deletion Failed: ' + message);
+        setPostErrors((prev) => ({ ...prev, [postId]: message }));
+      }
+    } else {
+      // Use Alert for native platforms
+      Alert.alert(
+        'Delete Post',
+        'Are you sure you want to delete this post?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              console.log('Delete button pressed for post:', postId);
+              try {
+                const { error } = await supabase
+                  .from('posts')
+                  .delete()
+                  .match({ id: postId, user_id: user?.id });
+                if (error) {
+                  Alert.alert('Deletion Failed', error.message);
+                  setPostErrors((prev) => ({ ...prev, [postId]: error.message }));
+                } else {
+                  setPostErrors((prev) => {
+                    const updated = { ...prev };
+                    delete updated[postId];
+                    return updated;
+                  });
+                }
+              } catch (err: any) {
+                const message = err.message || 'Deletion failed.';
+                Alert.alert('Deletion Failed', message);
+                setPostErrors((prev) => ({ ...prev, [postId]: message }));
               }
-            } catch (err: any) {
-              const message = err.message || 'Deletion failed.';
-              Alert.alert('Deletion Failed', message);
-              setPostErrors((prev) => ({ ...prev, [postId]: message }));
-            }
+            },
           },
-        },
-      ],
-      { cancelable: true }
-    );
+        ],
+        { cancelable: true }
+      );
+    }
   };
 
   // Render a post with inline Edit/Delete buttons, poster displayName, and timestamp.
   const renderPost = ({ item }: { item: Post }) => {
-    const posterName = item.profiles && item.profiles.displayName ? item.profiles.displayName : "Unknown";
+    const posterName =
+      item.profiles && item.profiles.displayName ? item.profiles.displayName : 'Unknown';
     const timestamp = item.edited
       ? `${new Date(item.updated_at).toLocaleString()} (edited)`
       : new Date(item.created_at).toLocaleString();
 
     return (
       <View className="p-4 border-b border-gray-300">
-        <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">
-          {item.content}
-        </Text>
-        <Text className="text-xs text-gray-600 mt-1">
-          Posted by: {posterName}
-        </Text>
+        <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">{item.content}</Text>
+        <Text className="text-xs text-gray-600 mt-1">Posted by: {posterName}</Text>
         <Text className="text-xs text-gray-600 mt-1">{timestamp}</Text>
         {user && item.user_id === user.id && (
           <View style={{ flexDirection: 'row', marginTop: 8 }}>
@@ -945,6 +998,8 @@ export default function HomeScreen() {
 }
 EOF
 #endregion
+
+
 
 #region Combined CREATE/EDIT SCREEN
 cat > "app/(tabs)/create.tsx" << 'EOF'
