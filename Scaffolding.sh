@@ -2,18 +2,10 @@
 set -eo pipefail
 
 ##############################################
-# Expo Setup Script Template with Combined Create/Edit Post Draft,
-# Home Screen, Realtime UI, Inline Error Handling, and Updated Like/Comments Functionality.
-#
-# NOTE:
-#  - Run your backend SQL scripts (Schema Initialization & Seed Data)
-#    separately in your Supabase SQL editor.
-#  - This script assumes backend tables/views are named:
-#      profiles, posts, conversations, messages, comments,
-#      post_reactions, message_reactions, and users (view).
+# Script 2: Expo Setup with Unified "contents" Table
 ##############################################
 
-#region Environment Variables and Pre-Setup
+# --- Region: Environment Variables and Pre-Setup ---
 if [ -f .env ]; then
   set -o allexport
   source .env
@@ -35,9 +27,8 @@ for var in "${required_vars[@]}"; do
     exit 1
   fi
 done
-#endregion
 
-#region Create Expo App (TypeScript)
+# --- Region: Create Expo App (TypeScript) ---
 echo "🚀 Creating Expo app: $APP_NAME"
 npx create-expo-app "$APP_NAME"
 
@@ -47,9 +38,8 @@ cd "$APP_NAME" || { echo "ERROR: Failed to enter directory '$APP_NAME'"; exit 1;
 echo "N" | npm run reset-project
 rm -rf app-example
 rm -f App.js App.tsx
-#endregion
 
-#region Check Local Expo CLI Installation
+# --- Region: Check Local Expo CLI Installation ---
 echo "🔍 Checking for Expo CLI in local dependencies..."
 if ! npx expo --version >/dev/null 2>&1; then
   echo "Local Expo CLI not found. Installing expo-cli as a dev dependency..."
@@ -63,12 +53,10 @@ if ! npx expo --version >/dev/null 2>&1; then
 else
   echo "Local Expo CLI found: $(npx expo --version)"
 fi
-#endregion
 
-#region Install Dependencies
+# --- Region: Install Dependencies ---
 echo "📦 Installing dependencies..."
 
-# Define production dependencies (installed via Expo CLI)
 prod_deps=(
   "zustand"
   "@supabase/supabase-js@2"
@@ -84,18 +72,15 @@ prod_deps=(
   "expo-location"
   "react-native-maps"
 )
-
-# Define dev dependencies (installed via npm)
-dev_deps=( "tailwindcss@3.3.2" )
+dev_deps=("tailwindcss@3.3.2")
 
 echo "Installing production dependencies with Expo CLI..."
 npx expo install "${prod_deps[@]}"
 
 echo "Installing dev dependencies using npm..."
 npm install --save-dev "${dev_deps[@]}"
-#endregion
 
-#region Create Directory Structure
+# --- Region: Create Directory Structure ---
 echo "📁 Creating directory structure..."
 dir_structure=(
   ".env.local"
@@ -140,15 +125,13 @@ for item in "${dir_structure[@]}"; do
     touch "$item"
   fi
 done
-#endregion
 
-#region Create nativewind-env.d.ts
+# --- Region: Create nativewind-env.d.ts ---
 cat > "nativewind-env.d.ts" << 'EOF'
 /// <reference types="nativewind/types" />
 EOF
-#endregion
 
-#region Scaffold Global CSS
+# --- Region: Scaffold Global CSS ---
 cat > "app/global.css" << 'EOF'
 @tailwind base;
 @tailwind components;
@@ -202,16 +185,15 @@ html, body {
 
 /* Updated comment meta styles with increased specificity */
 html body .comment-meta {
-  color: #4B5563 !important;  /* Tailwind gray-600 */
-  font-size: 0.75rem !important; /* text-xs */
+  color: #4B5563 !important;
+  font-size: 0.75rem !important;
 }
 .dark html body .comment-meta {
-  color: #D1D5DB !important;  /* Tailwind gray-300 */
+  color: #D1D5DB !important;
 }
 EOF
-#endregion
 
-#region Scaffold Tailwind Config
+# --- Region: Scaffold Tailwind Config ---
 cat > "tailwind.config.js" << 'EOF'
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -239,9 +221,8 @@ module.exports = {
   plugins: [],
 }
 EOF
-#endregion
 
-#region Scaffold Metro Config
+# --- Region: Scaffold Metro Config ---
 cat > "metro.config.js" << 'EOF'
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
@@ -260,9 +241,8 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 
 module.exports = withNativeWind(config, { input: "./app/global.css" });
 EOF
-#endregion
 
-#region Scaffold Babel Config
+# --- Region: Scaffold Babel Config ---
 cat > "babel.config.js" << 'EOF'
 module.exports = function(api) {
   api.cache(true);
@@ -277,9 +257,8 @@ module.exports = function(api) {
   };
 };
 EOF
-#endregion
 
-#region Scaffold Custom Button Component
+# --- Region: Scaffold Custom Button Component ---
 cat > "src/components/CustomButton.tsx" << 'EOF'
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
@@ -297,9 +276,8 @@ export function CustomButton({ title, onPress }: CustomButtonProps) {
   );
 }
 EOF
-#endregion
 
-#region Scaffold MapViewWrapper Components
+# --- Region: Scaffold MapViewWrapper Components ---
 cat > "src/components/MapViewWrapper.native.tsx" << 'EOF'
 import MapView from 'react-native-maps';
 
@@ -337,9 +315,8 @@ export function Marker(props: any) {
   return <GMarker position={{ lat: props.coordinate.latitude, lng: props.coordinate.longitude }} />;
 }
 EOF
-#endregion
 
-#region Scaffold Theme Context
+# --- Region: Scaffold Theme Context ---
 cat > "src/context/ThemeContext.tsx" << 'EOF'
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Appearance, Platform } from 'react-native';
@@ -379,9 +356,8 @@ export function useTheme() {
   return context;
 }
 EOF
-#endregion
 
-#region Scaffold Root Layout
+# --- Region: Scaffold Root Layout ---
 cat > "app/_layout.tsx" << 'EOF'
 import React, { useEffect } from 'react';
 import { useRouter, usePathname, Slot } from 'expo-router';
@@ -420,9 +396,8 @@ export default function RootLayout() {
   );
 }
 EOF
-#endregion
 
-#region Scaffold Auth Layout
+# --- Region: Scaffold Auth Layout ---
 cat > "app/(auth)/_layout.tsx" << 'EOF'
 import { Slot } from 'expo-router';
 import "../global.css";
@@ -431,9 +406,8 @@ export default function AuthLayout() {
   return <Slot />;
 }
 EOF
-#endregion
 
-#region Scaffold Tabs Layout
+# --- Region: Scaffold Tabs Layout ---
 cat > "app/(tabs)/_layout.tsx" << 'EOF'
 import React from 'react';
 import { Tabs } from 'expo-router';
@@ -518,9 +492,8 @@ export default function TabLayout() {
   );
 }
 EOF
-#endregion
 
-#region Scaffold Root Index Screen
+# --- Region: Scaffold Root Index Screen ---
 cat > "app/index.tsx" << 'EOF'
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -542,9 +515,8 @@ export default function Index() {
   return null;
 }
 EOF
-#endregion
 
-#region Scaffold Additional Screens
+# --- Region: Scaffold Additional Screens ---
 cat > "app/error.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -583,9 +555,8 @@ export default function NotFoundScreen() {
   );
 }
 EOF
-#endregion
 
-#region Scaffold Auth Screens
+# --- Region: Scaffold Auth Screens ---
 cat > "app/(auth)/signIn.tsx" << 'EOF'
 import React, { useState } from 'react';
 import { View, Text, TextInput } from 'react-native';
@@ -613,9 +584,9 @@ export default function SignInScreen() {
     setServerError('');
     try {
       await signInSchema.validate({ email, password }, { abortEarly: false });
-    } catch (validationError) {
+    } catch (validationError: any) {
       if (validationError.inner) {
-        const newErrors = {};
+        const newErrors: any = {};
         validationError.inner.forEach((err: any) => {
           if (err.path) newErrors[err.path] = err.message;
         });
@@ -707,9 +678,9 @@ export default function SignUpScreen() {
     setServerError('');
     try {
       await signUpSchema.validate({ email, password }, { abortEarly: false });
-    } catch (validationError) {
+    } catch (validationError: any) {
       if (validationError.inner) {
-        const newErrors = {};
+        const newErrors: any = {};
         validationError.inner.forEach((err: any) => {
           if (err.path) newErrors[err.path] = err.message;
         });
@@ -771,13 +742,13 @@ export default function SignUpScreen() {
 EOF
 #endregion
 
-#region Utils - Supabase Helpers
+# --- Region: Utils - Supabase Helpers ---
 cat > "src/utils/supabaseHelpers.ts" << 'EOF'
 import { supabase } from '../lib/supabase';
 
 /**
  * Fetches the profile for a given post if the displayName is missing.
- * This helper ensures that the post object has the joined profile data.
+ * Ensures the post object has the joined profile data.
  */
 export async function fetchProfileForPost(post: any): Promise<any> {
   if (!post.profiles || !post.profiles.displayName) {
@@ -795,7 +766,7 @@ export async function fetchProfileForPost(post: any): Promise<any> {
 EOF
 #endregion
 
-#region CommentsSection Component
+# --- Region: Scaffold CommentsSection Component ---
 cat > "src/components/CommentsSection.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, Alert, Platform } from 'react-native';
@@ -991,9 +962,7 @@ export function CommentsSection({ postId, hidePostReply = false }: CommentsSecti
             </View>
           </View>
         )}
-        {comments
-          .filter((c) => c.parent_comment_id === comment.id)
-          .map((reply) => renderCommentItem(reply, level + 1))}
+        {comments.filter((c) => c.parent_comment_id === comment.id).map((reply) => renderCommentItem(reply, level + 1))}
       </View>
     );
   };
@@ -1043,8 +1012,7 @@ export default CommentsSection;
 EOF
 #endregion
 
-#region LikeButton Component
-# Updated LikeButton to use the proper backend table names based on the entityType.
+# --- Region: Scaffold LikeButton Component ---
 cat > "src/components/LikeButton.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
@@ -1060,15 +1028,15 @@ export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
   const { user } = useAuthStore();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-  // Determine the table name based on entityType.
-  const tableName = entityType === "message" ? "message_reactions" : "post_reactions";
+  // For posts, use "content_reactions" (instead of "post_reactions")
+  const tableName = entityType === "message" ? "message_reactions" : "content_reactions";
 
   const fetchLikes = async () => {
     try {
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
-        .eq('post_id', entityId); // For posts and comments, use post_id.
+        .eq('post_id', entityId); // For posts, use post_id
       if (error) {
         console.error('Error fetching likes:', error);
         return;
@@ -1098,10 +1066,8 @@ export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
       showError('You must be logged in to like this item.');
       return;
     }
-
     try {
       if (liked) {
-        // UNLIKE
         const { error } = await supabase
           .from(tableName)
           .delete()
@@ -1114,7 +1080,6 @@ export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
           setLikeCount((prev) => prev - 1);
         }
       } else {
-        // LIKE
         const { error } = await supabase
           .from(tableName)
           .insert([{ post_id: entityId, user_id: user.id, reaction: 'like' }]);
@@ -1163,8 +1128,8 @@ const styles = StyleSheet.create({
 EOF
 #endregion
 
-#region HOME SCREEN
-# Removed the "New Post" button at the top.
+# --- Region: Scaffold Home Screen ---
+# Note: Updated to use the unified "contents" table.
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform, TouchableOpacity, TextInput } from 'react-native';
@@ -1199,12 +1164,12 @@ export default function HomeScreen() {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('posts')
+        .from('contents')
         .select('*, profiles!inner(displayName)')
         .order('updated_at', { ascending: false });
       if (error) {
         console.error('Error fetching posts:', error);
-      } else {
+      } else if (data) {
         setPosts(data as Post[]);
       }
     } catch (err: any) {
@@ -1220,10 +1185,10 @@ export default function HomeScreen() {
 
   useEffect(() => {
     const subscription = supabase
-      .channel('posts')
+      .channel('contents')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'posts' },
+        { event: '*', schema: 'public', table: 'contents' },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             const postData: Post = payload.new;
@@ -1238,16 +1203,13 @@ export default function HomeScreen() {
                   );
                 }
                 return updatedPosts.sort(
-                  (a, b) =>
-                    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+                  (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
                 );
               });
             });
           } else if (payload.eventType === 'DELETE') {
             setPosts((prevPosts) =>
-              prevPosts
-                .filter((post) => post.id !== payload.old.id)
-                .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+              prevPosts.filter((post) => post.id !== payload.old.id)
             );
           }
         }
@@ -1269,7 +1231,7 @@ export default function HomeScreen() {
       if (!window.confirm('Are you sure you want to delete this post?')) return;
       try {
         const { error } = await supabase
-          .from('posts')
+          .from('contents')
           .delete()
           .match({ id: postId, user_id: user?.id });
         if (error) {
@@ -1299,7 +1261,7 @@ export default function HomeScreen() {
             onPress: async () => {
               try {
                 const { error } = await supabase
-                  .from('posts')
+                  .from('contents')
                   .delete()
                   .match({ id: postId, user_id: user?.id });
                 if (error) {
@@ -1348,8 +1310,7 @@ export default function HomeScreen() {
   };
 
   const renderPost = ({ item }: { item: Post }) => {
-    const posterName =
-      item.profiles && item.profiles.displayName ? item.profiles.displayName : 'Unknown';
+    const posterName = item.profiles?.displayName || 'Unknown';
     const timestamp = item.edited
       ? `${new Date(item.updated_at).toLocaleString()} (edited)`
       : new Date(item.created_at).toLocaleString();
@@ -1424,7 +1385,7 @@ export default function HomeScreen() {
 EOF
 #endregion
 
-#region Combined CREATE/EDIT SCREEN
+# --- Region: Scaffold Create/Edit Screen ---
 cat > "app/(tabs)/create.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Alert, Platform } from 'react-native';
@@ -1445,7 +1406,7 @@ export default function CreateEditPostScreen() {
     async function fetchPost() {
       if (id) {
         const { data, error } = await supabase
-          .from('posts')
+          .from('contents')
           .select('*')
           .eq('id', id)
           .eq('user_id', user.id)
@@ -1469,7 +1430,7 @@ export default function CreateEditPostScreen() {
     setError('');
     if (id) {
       const { error } = await supabase
-        .from('posts')
+        .from('contents')
         .update({ content, edited: true })
         .match({ id, user_id: user.id });
       if (error) {
@@ -1485,9 +1446,9 @@ export default function CreateEditPostScreen() {
         }
       }
     } else {
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([{ user_id: user.id, content }])
+      const { error } = await supabase
+        .from('contents')
+        .insert([{ user_id: user.id, content, parent_id: null }])
         .single();
       if (error) {
         setError(error.message);
@@ -1510,9 +1471,7 @@ export default function CreateEditPostScreen() {
       <Text className="text-xl mb-4 text-[#3b302a] dark:text-[#d4bfa3]">
         {id ? 'Edit Your Post' : 'Compose New Post'}
       </Text>
-      {error ? (
-        <Text className="text-red-500 mb-3">{error}</Text>
-      ) : null}
+      {error ? <Text className="text-red-500 mb-3">{error}</Text> : null}
       <TextInput
         value={content}
         onChangeText={setContent}
@@ -1533,7 +1492,7 @@ export default function CreateEditPostScreen() {
 EOF
 #endregion
 
-#region EXPLORE SCREEN
+# --- Region: Scaffold Explore Screen ---
 cat > "app/(tabs)/explore.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -1548,7 +1507,7 @@ export default function ExploreScreen() {
 EOF
 #endregion
 
-#region GROUPS SCREEN
+# --- Region: Scaffold Groups Screen ---
 cat > "app/(tabs)/groups.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -1563,7 +1522,7 @@ export default function GroupsScreen() {
 EOF
 #endregion
 
-#region MAP SCREEN
+# --- Region: Scaffold Map Screen ---
 cat > "app/(tabs)/map.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -1576,12 +1535,12 @@ export default function MapScreen() {
 
   useEffect(() => {
     (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
+      const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
         return;
       }
-      let currentLocation = await Location.getCurrentPositionAsync({});
+      const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
     })();
   }, []);
@@ -1640,7 +1599,7 @@ const styles = StyleSheet.create({
 EOF
 #endregion
 
-#region CHATS SCREEN
+# --- Region: Scaffold Chats Screen ---
 cat > "app/(tabs)/chats.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, Text } from 'react-native';
@@ -1804,7 +1763,7 @@ export default function ChatsScreen() {
 EOF
 #endregion
 
-#region CUES SCREEN
+# --- Region: Scaffold Cues Screen ---
 cat > "app/(tabs)/cues.tsx" << 'EOF'
 import React from 'react';
 import { View, Text } from 'react-native';
@@ -1819,7 +1778,7 @@ export default function CuesScreen() {
 EOF
 #endregion
 
-#region PROFILE SCREEN
+# --- Region: Scaffold Profile Screen ---
 cat > "app/(tabs)/profile.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text } from 'react-native';
@@ -1908,7 +1867,7 @@ export default function ProfileScreen() {
 EOF
 #endregion
 
-#region Profile Edit Screen
+# --- Region: Scaffold Profile Edit Screen ---
 cat > "app/profileEdit.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput } from 'react-native';
@@ -1918,7 +1877,7 @@ import { useAuthStore } from '../src/store/useAuthStore';
 import { CustomButton } from '../src/components/CustomButton';
 
 export default function ProfileEditScreen() {
-  const { user, setUser } = useAuthStore();
+  const { user } = useAuthStore();
   const [avatar, setAvatar] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
@@ -1981,7 +1940,7 @@ export default function ProfileEditScreen() {
 EOF
 #endregion
 
-#region ChatMessage Component
+# --- Region: Scaffold ChatMessage Component ---
 cat > "src/components/ChatMessage.tsx" << 'EOF'
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -2038,7 +1997,7 @@ const styles = StyleSheet.create({
 EOF
 #endregion
 
-#region MessageInput Component
+# --- Region: Scaffold MessageInput Component ---
 cat > "src/components/MessageInput.tsx" << 'EOF'
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
@@ -2083,7 +2042,7 @@ const styles = {
 EOF
 #endregion
 
-#region Supabase Client
+# --- Region: Scaffold Supabase Client ---
 cat > "src/lib/supabase.ts" << 'EOF'
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -2111,7 +2070,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 EOF
 #endregion
 
-#region Zustand Auth Store
+# --- Region: Scaffold Zustand Auth Store ---
 cat > "src/store/useAuthStore.ts" << 'EOF'
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
@@ -2150,15 +2109,15 @@ supabase.auth.onAuthStateChange((event, session) => {
 EOF
 #endregion
 
-#region Final Setup
+# --- Region: Final Setup ---
 echo "✅ Project setup complete!"
 echo "Next steps:"
 echo "1. Ensure your .env file uses the prefix 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY' for the Google Maps API key."
 echo "2. Run your backend SQL schema initialization and seed scripts in your Supabase SQL editor."
-echo "3. **Add a UNIQUE constraint** on (post_id, user_id) in your 'post_reactions' table and on (message_id, user_id) in 'message_reactions' to prevent duplicate likes."
+echo "3. Add UNIQUE constraints on (content_id, user_id) in 'content_reactions' and on (message_id, user_id) in 'message_reactions' if not already present."
 echo "4. Verify the Zustand auth store in src/store/useAuthStore.ts."
 echo "5. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
-echo "6. Review the new messaging, post, and combined create/edit post feature files."
+echo "6. Review the messaging, post, and create/edit post feature files."
 echo "7. Run and test the auth, messenger, and post flow. For web: npx expo start --clear"
 echo "🚀 Starting Expo development server..."
 npx expo start --clear
