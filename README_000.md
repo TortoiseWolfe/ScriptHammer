@@ -1,14 +1,16 @@
-Below are **three** complete scripts that work together for a unified “contents” model:
+Below are **three** complete scripts, **in the order** you requested—first the **SQL** to initialize your unified backend schema, second the **Bash** to scaffold the Expo front end, and third the **SQL** to seed your sample data (including a dummy post).  
 
-1. **Script 1 (SQL)**: Backend Schema Initialization  
-2. **Script 2 (SQL)**: Seed Sample Data (including a dummy post)  
-3. **Script 3 (Bash)**: The Expo front-end setup (with references to `contents`)
+With these scripts, you’ll have:
 
-After running **Script 1** and **Script 2** in your Supabase SQL editor, the dummy post(s) should appear in your **Home** screen, assuming your `.env` Supabase URL/keys match the same project.
+1. **Script 1 (SQL)**: Creates the unified `contents` table (for top-level posts and replies), sets up `content_reactions`, and configures row-level security (RLS).  
+2. **Script 2 (Bash)**: Sets up your Expo + TypeScript front end, referencing `contents` for posts.  
+3. **Script 3 (SQL)**: Inserts sample users (admin, testers), plus dummy posts into `contents`.  
+
+Make sure your `.env` (in the Expo app) matches the same Supabase project where you run Scripts 1 and 3. Then sign in as one of the testers (e.g., `testuser@example.com`) to see the dummy posts on the Home screen.
 
 ---
 
-## Script 1: Backend Schema Initialization (SQL)
+## Script 1: **SQL** – Backend Schema Initialization
 
 ```sql
 -- =============================================================================
@@ -16,10 +18,10 @@ After running **Script 1** and **Script 2** in your Supabase SQL editor, the
 -- Role Support, and Unified Content/Reaction System.
 -- =============================================================================
 
--- 1. Enable pgcrypto extension (for gen_random_uuid)
+-- 1. Enable pgcrypto extension (for gen_random_uuid())
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- 2. Create the profiles table (stores user details) with a role column.
+-- 2. Create the profiles table
 CREATE TABLE public.profiles (
     id uuid PRIMARY KEY,
     avatar text,
@@ -32,7 +34,7 @@ CREATE TABLE public.profiles (
         REFERENCES auth.users (id) ON DELETE CASCADE
 );
 
--- 2a. Create a trigger function to set the role automatically.
+-- 2a. Trigger function to set the role automatically (first user => admin)
 CREATE OR REPLACE FUNCTION public.set_role_if_first()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -54,13 +56,13 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.set_role_if_first();
 
 ---------------------------------------------------------------
--- 3. Create unified contents table (for posts/comments)
+-- 3. Create unified contents table (for top-level posts/comments)
 ---------------------------------------------------------------
 CREATE TABLE public.contents (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
     content text NOT NULL,
-    parent_id uuid NULL,  -- if NULL => top-level post; otherwise => a comment/reply
+    parent_id uuid NULL,  -- if NULL => top-level post; else => a comment/reply
     edited boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
@@ -255,9 +257,7 @@ CREATE TABLE public.media_attachments (
 );
 CREATE INDEX idx_media_attachments_content ON public.media_attachments(content_type, content_id);
 
----------------------------------------------------------------
--- Content shares (replacing post_shares)
----------------------------------------------------------------
+-- Content shares
 CREATE TABLE public.content_shares (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
@@ -285,7 +285,7 @@ CREATE TABLE public.notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
 
 ---------------------------------------------------------------
--- 7. Trigger functions to auto-update updated_at columns
+-- 9. Trigger functions to auto-update updated_at columns
 ---------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -341,7 +341,7 @@ FOR EACH ROW
 EXECUTE PROCEDURE public.update_notifications_updated_at();
 
 ---------------------------------------------------------------
--- 8. Create the public "users" view
+-- 10. Create the public "users" view
 ---------------------------------------------------------------
 CREATE OR REPLACE VIEW public.users AS
 SELECT
@@ -357,55 +357,39 @@ FROM auth.users u
 LEFT JOIN public.profiles p ON u.id = p.id;
 
 ---------------------------------------------------------------
--- 9. Enable Row Level Security (RLS) and define policies
+-- 11. Enable Row Level Security (RLS) and define policies
 ---------------------------------------------------------------
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Profiles select policy" ON public.profiles;
 CREATE POLICY "Profiles select policy" ON public.profiles FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Profiles insert policy" ON public.profiles;
 CREATE POLICY "Profiles insert policy" ON public.profiles FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "Profiles update policy" ON public.profiles;
 CREATE POLICY "Profiles update policy" ON public.profiles FOR UPDATE USING (auth.uid() = id)
   WITH CHECK (auth.uid() = id);
-DROP POLICY IF EXISTS "Profiles delete policy" ON public.profiles;
 CREATE POLICY "Profiles delete policy" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
 ALTER TABLE public.contents ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Contents select policy" ON public.contents;
 CREATE POLICY "Contents select policy" ON public.contents FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Contents insert policy" ON public.contents;
 CREATE POLICY "Contents insert policy" ON public.contents FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Contents update policy" ON public.contents;
 CREATE POLICY "Contents update policy" ON public.contents FOR UPDATE USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Contents delete policy" ON public.contents;
 CREATE POLICY "Contents delete policy" ON public.contents FOR DELETE USING (auth.uid() = user_id);
 
 ALTER TABLE public.content_reactions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "ContentReactions select policy" ON public.content_reactions;
 CREATE POLICY "ContentReactions select policy" ON public.content_reactions FOR SELECT USING (true);
-DROP POLICY IF EXISTS "ContentReactions insert policy" ON public.content_reactions;
 CREATE POLICY "ContentReactions insert policy" ON public.content_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "ContentReactions delete policy" ON public.content_reactions;
 CREATE POLICY "ContentReactions delete policy" ON public.content_reactions FOR DELETE USING (auth.uid() = user_id);
 
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Conversations select policy" ON public.conversations;
 CREATE POLICY "Conversations select policy" ON public.conversations
 FOR SELECT USING (auth.uid() = user1 OR auth.uid() = user2);
-DROP POLICY IF EXISTS "Conversations insert policy" ON public.conversations;
 CREATE POLICY "Conversations insert policy" ON public.conversations
 FOR INSERT WITH CHECK (auth.uid() = user1 OR auth.uid() = user2);
-DROP POLICY IF EXISTS "Conversations update policy" ON public.conversations;
 CREATE POLICY "Conversations update policy" ON public.conversations
 FOR UPDATE USING (auth.uid() = user1 OR auth.uid() = user2)
   WITH CHECK (auth.uid() = user1 OR auth.uid() = user2);
-DROP POLICY IF EXISTS "Conversations delete policy" ON public.conversations;
 CREATE POLICY "Conversations delete policy" ON public.conversations
 FOR DELETE USING (auth.uid() = user1 OR auth.uid() = user2);
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Messages select policy" ON public.messages;
 CREATE POLICY "Messages select policy" ON public.messages
 FOR SELECT USING (
   EXISTS (
@@ -414,113 +398,74 @@ FOR SELECT USING (
       AND (c.user1 = auth.uid() OR c.user2 = auth.uid())
   )
 );
-DROP POLICY IF EXISTS "Messages insert policy" ON public.messages;
 CREATE POLICY "Messages insert policy" ON public.messages FOR INSERT WITH CHECK (auth.uid() = sender_id);
-DROP POLICY IF EXISTS "Messages update policy" ON public.messages;
 CREATE POLICY "Messages update policy" ON public.messages FOR UPDATE USING (auth.uid() = sender_id)
   WITH CHECK (auth.uid() = sender_id);
-DROP POLICY IF EXISTS "Messages delete policy" ON public.messages;
 CREATE POLICY "Messages delete policy" ON public.messages FOR DELETE USING (auth.uid() = sender_id);
 
 ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "FriendRequests select policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests select policy" ON public.friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
-DROP POLICY IF EXISTS "FriendRequests insert policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests insert policy" ON public.friend_requests FOR INSERT WITH CHECK (auth.uid() = sender_id);
-DROP POLICY IF EXISTS "FriendRequests delete policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests delete policy" ON public.friend_requests FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
 ALTER TABLE public.friend_blocks ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "FriendBlocks select policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks select policy" ON public.friend_blocks FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
-DROP POLICY IF EXISTS "FriendBlocks insert policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks insert policy" ON public.friend_blocks FOR INSERT WITH CHECK (auth.uid() = blocker_id);
-DROP POLICY IF EXISTS "FriendBlocks delete policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks delete policy" ON public.friend_blocks FOR DELETE USING (auth.uid() = blocker_id);
 
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Reports select policy" ON public.reports;
 CREATE POLICY "Reports select policy" ON public.reports FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Reports insert policy" ON public.reports;
 CREATE POLICY "Reports insert policy" ON public.reports FOR INSERT WITH CHECK (auth.uid() = reporter_id);
-DROP POLICY IF EXISTS "Reports delete policy" ON public.reports;
 CREATE POLICY "Reports delete policy" ON public.reports FOR DELETE USING (auth.uid() = reporter_id);
 
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Groups select policy" ON public.groups;
 CREATE POLICY "Groups select policy" ON public.groups FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Groups insert policy" ON public.groups;
 CREATE POLICY "Groups insert policy" ON public.groups FOR INSERT WITH CHECK (auth.uid() = created_by);
-DROP POLICY IF EXISTS "Groups update policy" ON public.groups;
 CREATE POLICY "Groups update policy" ON public.groups FOR UPDATE USING (auth.uid() = created_by)
   WITH CHECK (auth.uid() = created_by);
-DROP POLICY IF EXISTS "Groups delete policy" ON public.groups;
 CREATE POLICY "Groups delete policy" ON public.groups FOR DELETE USING (auth.uid() = created_by);
 
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "GroupMembers select policy" ON public.group_members;
 CREATE POLICY "GroupMembers select policy" ON public.group_members FOR SELECT USING (auth.uid() = member_id);
-DROP POLICY IF EXISTS "GroupMembers insert policy" ON public.group_members;
 CREATE POLICY "GroupMembers insert policy" ON public.group_members FOR INSERT WITH CHECK (auth.uid() = member_id);
-DROP POLICY IF EXISTS "GroupMembers delete policy" ON public.group_members;
 CREATE POLICY "GroupMembers delete policy" ON public.group_members FOR DELETE USING (auth.uid() = member_id);
 
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Events select policy" ON public.events;
 CREATE POLICY "Events select policy" ON public.events FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Events insert policy" ON public.events;
 CREATE POLICY "Events insert policy" ON public.events FOR INSERT WITH CHECK (auth.uid() = created_by);
-DROP POLICY IF EXISTS "Events update policy" ON public.events;
 CREATE POLICY "Events update policy" ON public.events FOR UPDATE USING (auth.uid() = created_by)
   WITH CHECK (auth.uid() = created_by);
-DROP POLICY IF EXISTS "Events delete policy" ON public.events;
 CREATE POLICY "Events delete policy" ON public.events FOR DELETE USING (auth.uid() = created_by);
 
 ALTER TABLE public.event_invitations ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "EventInvitations select policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations select policy" ON public.event_invitations FOR SELECT USING (auth.uid() = invitee_id);
-DROP POLICY IF EXISTS "EventInvitations insert policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations insert policy" ON public.event_invitations FOR INSERT WITH CHECK (auth.uid() = invitee_id);
-DROP POLICY IF EXISTS "EventInvitations delete policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations delete policy" ON public.event_invitations FOR DELETE USING (auth.uid() = invitee_id);
 
 ALTER TABLE public.media_attachments ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "MediaAttachments select policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments select policy" ON public.media_attachments FOR SELECT USING (true);
-DROP POLICY IF EXISTS "MediaAttachments insert policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments insert policy" ON public.media_attachments FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "MediaAttachments delete policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments delete policy" ON public.media_attachments FOR DELETE USING (true);
 
 ALTER TABLE public.content_shares ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "ContentShares select policy" ON public.content_shares;
 CREATE POLICY "ContentShares select policy" ON public.content_shares FOR SELECT USING (true);
-DROP POLICY IF EXISTS "ContentShares insert policy" ON public.content_shares;
 CREATE POLICY "ContentShares insert policy" ON public.content_shares FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "ContentShares delete policy" ON public.content_shares;
 CREATE POLICY "ContentShares delete policy" ON public.content_shares FOR DELETE USING (auth.uid() = user_id);
 
 ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "MessageReactions select policy" ON public.message_reactions;
 CREATE POLICY "MessageReactions select policy" ON public.message_reactions FOR SELECT USING (true);
-DROP POLICY IF EXISTS "MessageReactions insert policy" ON public.message_reactions;
 CREATE POLICY "MessageReactions insert policy" ON public.message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "MessageReactions delete policy" ON public.message_reactions;
 CREATE POLICY "MessageReactions delete policy" ON public.message_reactions FOR DELETE USING (auth.uid() = user_id);
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Notifications select policy" ON public.notifications;
 CREATE POLICY "Notifications select policy" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications insert policy" ON public.notifications;
 CREATE POLICY "Notifications insert policy" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications update policy" ON public.notifications;
 CREATE POLICY "Notifications update policy" ON public.notifications FOR UPDATE USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Notifications delete policy" ON public.notifications;
 CREATE POLICY "Notifications delete policy" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
 
 ---------------------------------------------------------------
--- 10. Publish tables for realtime
+-- 12. Publish tables for realtime
 ---------------------------------------------------------------
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
@@ -546,138 +491,23 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 
 ---
 
-## Script 2: Seed Sample Data (SQL)
+## Script 2: **Bash** – Expo Front-End Setup (Unified `contents` Model)
 
-```sql
-DO $$
-DECLARE
-    admin_email text := 'admin@yourdomain.com';  -- Replace with your real admin email
-    admin_id uuid;
-    tester record;
-    tester_id uuid;
-    conv_id uuid;
-    sample_content_user_id uuid;
-    new_content_id uuid;
-BEGIN
-    -- Retrieve the admin user's ID from auth.users.
-    SELECT id INTO admin_id
-    FROM auth.users
-    WHERE email = admin_email;
-    
-    IF admin_id IS NULL THEN
-        RAISE EXCEPTION 'Admin user not found with email: %', admin_email;
-    END IF;
-    
-    -- Ensure the admin has a profile in public.profiles.
-    INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-    VALUES (admin_id, NULL, admin_email, '', now(), now())
-    ON CONFLICT (id) DO NOTHING;
-    
-    -- Loop over each sample tester.
-    FOR tester IN
-      SELECT * FROM (VALUES
-         ('jon@example.com', 'Jon Doe', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W'),
-         ('jane@example.com', 'Jane Doe', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W'),
-         ('testuser@example.com', 'Test User', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W')
-      ) AS t(email, displayName, encrypted_password)
-    LOOP
-        -- Check if the tester exists in auth.users.
-        SELECT id INTO tester_id
-        FROM auth.users
-        WHERE email = tester.email;
-        
-        IF tester_id IS NULL THEN
-            INSERT INTO auth.users (id, aud, role, email, encrypted_password, created_at, updated_at)
-            VALUES (gen_random_uuid(), 'authenticated', 'authenticated', tester.email, tester.encrypted_password, now(), now())
-            RETURNING id INTO tester_id;
-        END IF;
-        
-        -- Ensure the tester has a profile in public.profiles.
-        INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-        VALUES (tester_id, NULL, tester.displayName, '', now(), now())
-        ON CONFLICT (id) DO NOTHING;
-        
-        -- For each tester, insert a top-level content record (post).
-        INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
-        VALUES (tester_id, 'This is a sample post from ' || tester.displayName, NULL, now(), now())
-        RETURNING id INTO new_content_id;
-        
-        -- Check for an existing conversation between admin and tester.
-        SELECT id INTO conv_id
-        FROM public.conversations
-        WHERE (user1 = admin_id AND user2 = tester_id)
-           OR (user1 = tester_id AND user2 = admin_id)
-        LIMIT 1;
-        
-        IF conv_id IS NULL THEN
-            INSERT INTO public.conversations (user1, user2)
-            VALUES (admin_id, tester_id)
-            RETURNING id INTO conv_id;
-        END IF;
-        
-        -- Insert an initial message from the tester to admin.
-        INSERT INTO public.messages (conversation_id, sender_id, content, created_at, updated_at)
-        VALUES (conv_id, tester_id, 'Hello Admin, this is ' || tester.displayName || '!', now(), now());
-        
-        -- Seed a friend request from tester to admin.
-        INSERT INTO public.friend_requests (sender_id, receiver_id, status, created_at, updated_at)
-        VALUES (tester_id, admin_id, 'pending', now(), now())
-        ON CONFLICT DO NOTHING;
-    END LOOP;
-    
-    -- Insert a sample top-level post (content) from the test user.
-    SELECT id INTO sample_content_user_id FROM auth.users WHERE email = 'testuser@example.com';
-    IF sample_content_user_id IS NULL THEN
-        RAISE EXCEPTION 'Test user not found';
-    END IF;
-    
-    INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-    VALUES (sample_content_user_id, NULL, 'Test User', '', now(), now())
-    ON CONFLICT (id) DO NOTHING;
-    
-    -- Insert a multi-line sample post using a dollar-quoted string
-    INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
-    VALUES (
-        sample_content_user_id,
-        $BODY$
-Hey there! Meet **ScriptHammer**—a handy bash script that sets up a complete Expo app with everything you need right out of the box.
+Save this as `setup.sh` (or similar), make it executable (`chmod +x setup.sh`), and run it from your project root. It will:
 
-### What It Does
-- **Loads Your Environment:** It checks your `.env` file for essential keys (app name, Supabase URL, anon key, etc.).
-- **Creates an Expo App:** Runs `npx create-expo-app` (TypeScript) and cleans up unneeded files.
-- **Installs Dependencies:** Adds libraries for state management (Zustand), styling (Tailwind, NativeWind), auth, maps, forms, and realtime messaging with Supabase.
-- **Sets Up Project Structure:** Folders and starter files for authentication, routing, theming (light/dark mode), posts, and chats.
-- **Local CLI & Configs:** Installs the local Expo CLI, plus config for Metro, Babel, and Tailwind.
-- **Why You'll Love It:** Saves time, uses a modern tech stack, and is easily customizable.
-$BODY$,
-        NULL,
-        now(),
-        now()
-    );
-END $$;
-```
+- Create a new Expo app (TypeScript)
+- Install dependencies (Zustand, Supabase JS v2, etc.)
+- Scaffold screens referencing the `contents` table for top-level posts (`parent_id` = null)
+- Set up row-level security-friendly queries
 
-**After running Script 2**, you should have multiple top-level posts in `public.contents` with `parent_id = null` (one from each tester, plus the sample multi-line post from `testuser@example.com`).
-
----
-
-## Script 3: Front-End Bash Setup (Expo + Unified “contents” Model)
-
-Below is an **all-in-one** example for an Expo + TypeScript project referencing `contents` for top-level posts (`parent_id = null`). This script:
-
-1. Creates an Expo app.
-2. Installs dependencies.
-3. Scaffolds the `home.tsx` screen to load from `contents`.
-4. Shows top-level posts in a flat list.
-
-Save as something like `setup.sh` (make it executable) and run. Then fill in your `.env` with the correct Supabase URL/anon key matching the project where you ran Scripts 1 & 2.
+Make sure your `.env` has `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` matching the same project where you ran Script 1.
 
 ```bash
 #!/usr/bin/env bash
 set -eo pipefail
 
 ##############################################
-# Script 3: Expo Setup with Unified "contents" Table
+# Script 2: Expo Setup with Unified "contents" Table
 ##############################################
 
 #region Environment Variables and Pre-Setup
@@ -735,7 +565,7 @@ fi
 #region Install Dependencies
 echo "📦 Installing dependencies..."
 
-# Define production dependencies (installed via Expo CLI)
+# Production dependencies (installed via Expo CLI)
 prod_deps=(
   "zustand"
   "@supabase/supabase-js@2"
@@ -752,7 +582,7 @@ prod_deps=(
   "react-native-maps"
 )
 
-# Define dev dependencies (installed via npm)
+# Dev dependencies (installed via npm)
 dev_deps=( "tailwindcss@3.3.2" )
 
 echo "Installing production dependencies with Expo CLI..."
@@ -1445,7 +1275,7 @@ import { supabase } from '../lib/supabase';
 
 /**
  * Fetches the profile for a given content record if the displayName is missing.
- * This helper ensures that the content record has the joined profile data.
+ * This ensures that the content object has a joined 'profiles' field with at least displayName.
  */
 export async function fetchProfileForContent(content: any): Promise<any> {
   if (!content.profiles || !content.profiles.displayName) {
@@ -1481,7 +1311,7 @@ interface Comment {
 }
 
 interface CommentsSectionProps {
-  postId: string; // ID of the top-level content
+  postId: string; // top-level content ID
   hidePostReply?: boolean;
 }
 
@@ -1490,12 +1320,12 @@ export function CommentsSection({ postId, hidePostReply = false }: CommentsSecti
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingContent, setEditingContent] = useState<string>('');
-  const [showInput, setShowInput] = useState<boolean>(false);
+  const [editingContent, setEditingContent] = useState('');
+  const [showInput, setShowInput] = useState(false);
 
-  // Fetch all comments for this post. (parent_id not null => comment; but we also filter by parent_id = postId or deeper).
+  // Fetch all contents that have parent_id != null (comments), then we filter them in code.
   const fetchComments = async () => {
     setLoading(true);
     try {
@@ -1506,11 +1336,10 @@ export function CommentsSection({ postId, hidePostReply = false }: CommentsSecti
       if (error) {
         console.error('Error fetching comments:', error);
       } else if (data) {
-        // We'll keep them all, then filter to build a thread structure.
         setComments(data as Comment[]);
       }
     } catch (err) {
-      console.error('Unexpected error fetching comments:', err);
+      console.error('Unexpected error:', err);
     } finally {
       setLoading(false);
     }
@@ -1590,8 +1419,8 @@ export function CommentsSection({ postId, hidePostReply = false }: CommentsSecti
     }
   };
 
-  // Recursively render a comment + any replies.
-  const renderCommentItem = (comment: Comment, level = 0) => {
+  // Recursive function to render a comment and its replies
+  const renderCommentItem = (comment: Comment, level: number = 0) => {
     const replies = comments.filter((c) => c.parent_id === comment.id);
     return (
       <View key={comment.id} style={{ marginLeft: level * 16 }} className="mt-1">
@@ -1715,14 +1544,15 @@ export function LikeButton({ entityId, entityType = 'content' }: LikeButtonProps
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
 
-  const tableName = entityType === 'message' ? 'message_reactions' : 'content_reactions';
+  const tableName = (entityType === 'message') ? 'message_reactions' : 'content_reactions';
+  const columnName = (entityType === 'message') ? 'message_id' : 'content_id';
 
   const fetchLikes = async () => {
     try {
       const { data, error } = await supabase
         .from(tableName)
         .select('*')
-        .eq(entityType === 'message' ? 'message_id' : 'content_id', entityId);
+        .eq(columnName, entityId);
       if (error) {
         console.error('Error fetching likes:', error);
         return;
@@ -1755,13 +1585,10 @@ export function LikeButton({ entityId, entityType = 'content' }: LikeButtonProps
     try {
       if (liked) {
         // Unlike
-        const matchObj = entityType === 'message'
-          ? { message_id: entityId, user_id: user.id }
-          : { content_id: entityId, user_id: user.id };
         const { error } = await supabase
           .from(tableName)
           .delete()
-          .match(matchObj);
+          .match({ [columnName]: entityId, user_id: user.id });
         if (error) {
           console.error('Error unliking:', error);
           showError(error.message);
@@ -1771,12 +1598,14 @@ export function LikeButton({ entityId, entityType = 'content' }: LikeButtonProps
         }
       } else {
         // Like
-        const insertObj = entityType === 'message'
-          ? { message_id: entityId, user_id: user.id, reaction: 'like' }
-          : { content_id: entityId, user_id: user.id, reaction: 'like' };
+        const newReaction = {
+          user_id: user.id,
+          reaction: 'like',
+        };
+        newReaction[columnName] = entityId;
         const { error } = await supabase
           .from(tableName)
-          .insert([insertObj]);
+          .insert([newReaction]);
         if (error) {
           console.error('Error liking:', error);
           showError(error.message);
@@ -1847,8 +1676,8 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
   const [activePostReplyId, setActivePostReplyId] = useState<string | null>(null);
   const [postReplyContent, setPostReplyContent] = useState('');
@@ -1856,15 +1685,18 @@ export default function HomeScreen() {
   const fetchPosts = async () => {
     setLoading(true);
     try {
+      // Fetch only top-level posts (parent_id is null)
       const { data, error } = await supabase
         .from('contents')
         .select('*, profiles!inner(displayName)')
-        .eq('parent_id', null)
+        .is('parent_id', null)  -- only top-level
         .order('updated_at', { ascending: false });
       if (error) {
         console.error('Error fetching posts:', error);
       } else if (data) {
-        const enriched = await Promise.all(data.map((post: Post) => fetchProfileForContent(post)));
+        const enriched = await Promise.all(
+          data.map((post: Post) => fetchProfileForContent(post))
+        );
         setPosts(enriched);
       }
     } catch (err: any) {
@@ -1881,32 +1713,35 @@ export default function HomeScreen() {
   // Realtime subscription for new/updated/deleted top-level posts
   useEffect(() => {
     const channel = supabase
-      .channel('contents')
+      .channel('contents-feed')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'contents', filter: 'parent_id=is.null' },
+        { event: '*', schema: 'public', table: 'contents' },
         (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const postData = payload.new as Post;
-            fetchProfileForContent(postData).then((updatedPost) => {
-              setPosts((prevPosts) => {
-                let updatedPosts: Post[] = [];
-                if (payload.eventType === 'INSERT') {
-                  updatedPosts = [...prevPosts, updatedPost];
-                } else {
-                  updatedPosts = prevPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p));
-                }
-                return updatedPosts.sort(
-                  (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as Post;
+            // Only add if it's top-level
+            if (newRow.parent_id === null) {
+              fetchProfileForContent(newRow).then((updatedPost) => {
+                setPosts((prev) => [updatedPost, ...prev]);
+              });
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedRow = payload.new as Post;
+            if (updatedRow.parent_id === null) {
+              fetchProfileForContent(updatedRow).then((enrichedRow) => {
+                setPosts((prev) =>
+                  prev.map((p) => (p.id === enrichedRow.id ? enrichedRow : p))
                 );
               });
-            });
+            }
           } else if (payload.eventType === 'DELETE') {
-            setPosts((prevPosts) =>
-              prevPosts.filter((p) => p.id !== payload.old.id).sort(
-                (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-              )
-            );
+            // The "old" field has the deleted row
+            if (payload.old.parent_id === null) {
+              setPosts((prev) =>
+                prev.filter((p) => p.id !== payload.old.id)
+              );
+            }
           }
         }
       )
@@ -1965,13 +1800,16 @@ export default function HomeScreen() {
         content: postReplyContent,
         parent_id: activePostReplyId,
       };
-      const { error } = await supabase.from('contents').insert([payload]).single();
+      const { error } = await supabase
+        .from('contents')
+        .insert([payload])
+        .single();
       if (error) {
         console.error('Error submitting post reply:', error);
       } else {
         setPostReplyContent('');
         setActivePostReplyId(null);
-        fetchPosts();
+        fetchPosts(); // re-fetch to show new comment
       }
     } catch (err) {
       console.error('Unexpected error submitting post reply:', err);
@@ -2629,7 +2467,6 @@ EOF
 cat > "src/components/ChatMessage.tsx" << 'EOF'
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useAuthStore } from '../store/useAuthStore';
 
 interface ChatMessageProps {
   message: any;
@@ -2818,27 +2655,148 @@ EOF
 #region Final Setup
 echo "✅ Project setup complete!"
 echo "Next steps:"
-echo "1. Update .env with your real Supabase URL & anon key matching the project where you ran Scripts 1 & 2."
-echo "2. npx expo start --clear (or run on your device/emulator)."
-echo "3. Sign in as 'testuser@example.com' (password: same from your seed script) or create an account."
-echo "4. You should see the dummy posts on the Home screen. Then test create/edit, replies, etc."
-echo "🚀 Done!"
+echo "1. Update your .env with EXPO_PUBLIC_SUPABASE_URL/ANON_KEY from the same project you used for Script 1."
+echo "2. Run the script below (Script 3) in your Supabase SQL editor to seed sample data."
+echo "3. Then do 'npx expo start --clear' in this folder."
+echo "4. Sign in as e.g. 'testuser@example.com' (with your seeded password) or create a new account."
+echo "5. Check the Home screen for dummy posts from the 'contents' table."
 #endregion
 ```
 
 ---
 
-### Final Notes
+## Script 3: **SQL** – Seed Sample Data (Insert Admin, Testers, and Dummy Post)
 
-1. **Run Script 1** in your Supabase SQL editor first (with no existing users).  
-2. **Run Script 2** to create sample users (`jon@example.com`, `jane@example.com`, `testuser@example.com`, plus `admin@yourdomain.com`) and insert dummy posts in the `contents` table.  
-3. **Then** set up the front-end by running **Script 3** (the Bash script). Provide your correct `.env` with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.  
-4. **Launch** the Expo app. On the `home` screen, you should see your top-level posts (including the multi-line sample from “Test User”).  
+Finally, run this **after** Script 1. It inserts:
 
-If you still see **zero posts** on the Home screen:
+- An admin user (`admin@yourdomain.com`)  
+- Three testers (`jon@example.com`, `jane@example.com`, `testuser@example.com`)  
+- A conversation between each tester and the admin  
+- A multi-line sample post from `testuser@example.com` in `public.contents`  
 
-- Double-check that the front-end `.env` points to the same Supabase project.  
-- Confirm RLS policies are correct (`Contents select policy` => `USING (true)`).  
-- Look for console logs or errors in `fetchPosts`.
+```sql
+DO $$
+DECLARE
+    admin_email text := 'admin@yourdomain.com';  -- Replace with your admin email
+    admin_id uuid;
+    tester record;
+    tester_id uuid;
+    conv_id uuid;
+    sample_content_user_id uuid;
+    new_content_id uuid;
+BEGIN
+    -- Retrieve the admin user's ID from auth.users
+    SELECT id INTO admin_id
+    FROM auth.users
+    WHERE email = admin_email;
+    
+    IF admin_id IS NULL THEN
+        RAISE EXCEPTION 'Admin user not found with email: %', admin_email;
+    END IF;
+    
+    -- Ensure the admin has a profile
+    INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
+    VALUES (admin_id, NULL, admin_email, '', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+    
+    -- Loop over sample testers
+    FOR tester IN
+      SELECT * FROM (VALUES
+         ('jon@example.com', 'Jon Doe', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W'),
+         ('jane@example.com', 'Jane Doe', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W'),
+         ('testuser@example.com', 'Test User', '$2b$10$CwTycUXWue0Thq9StjUM0uJ8h6zLCQ1MPv6Uo/Mz7KblIwd4ZpP4W')
+      ) AS t(email, displayName, encrypted_password)
+    LOOP
+        -- Check if the tester exists in auth.users
+        SELECT id INTO tester_id
+        FROM auth.users
+        WHERE email = tester.email;
+        
+        IF tester_id IS NULL THEN
+            INSERT INTO auth.users (id, aud, role, email, encrypted_password, created_at, updated_at)
+            VALUES (gen_random_uuid(), 'authenticated', 'authenticated', tester.email, tester.encrypted_password, now(), now())
+            RETURNING id INTO tester_id;
+        END IF;
+        
+        -- Ensure the tester has a profile
+        INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
+        VALUES (tester_id, NULL, tester.displayName, '', now(), now())
+        ON CONFLICT (id) DO NOTHING;
+        
+        -- Insert a top-level post (parent_id = NULL)
+        INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
+        VALUES (tester_id, 'This is a sample post from ' || tester.displayName, NULL, now(), now())
+        RETURNING id INTO new_content_id;
+        
+        -- Check for an existing conversation between admin and this tester
+        SELECT id INTO conv_id
+        FROM public.conversations
+        WHERE (user1 = admin_id AND user2 = tester_id)
+           OR (user1 = tester_id AND user2 = admin_id)
+        LIMIT 1;
+        
+        IF conv_id IS NULL THEN
+            INSERT INTO public.conversations (user1, user2)
+            VALUES (admin_id, tester_id)
+            RETURNING id INTO conv_id;
+        END IF;
+        
+        -- Insert an initial message from tester to admin
+        INSERT INTO public.messages (conversation_id, sender_id, content, created_at, updated_at)
+        VALUES (conv_id, tester_id, 'Hello Admin, this is ' || tester.displayName || '!', now(), now());
+        
+        -- Seed a friend request from tester to admin
+        INSERT INTO public.friend_requests (sender_id, receiver_id, status, created_at, updated_at)
+        VALUES (tester_id, admin_id, 'pending', now(), now())
+        ON CONFLICT DO NOTHING;
+    END LOOP;
+    
+    -- Insert a sample top-level post from the test user
+    SELECT id INTO sample_content_user_id 
+    FROM auth.users 
+    WHERE email = 'testuser@example.com';
+    
+    IF sample_content_user_id IS NULL THEN
+        RAISE EXCEPTION 'Test user not found';
+    END IF;
+    
+    INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
+    VALUES (sample_content_user_id, NULL, 'Test User', '', now(), now())
+    ON CONFLICT (id) DO NOTHING;
+    
+    -- Multi-line post from 'Test User'
+    INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
+    VALUES (
+        sample_content_user_id,
+        $BODY$
+Hey there! Meet **ScriptHammer**—a handy bash script that sets up a complete Expo app with everything you need right out of the box.
 
-That’s it! This **all-in-one** solution should give you dummy posts on the Home page with a unified `contents` model.
+### What It Does
+- **Loads Your Environment:** It checks your `.env` file for essential keys like your app name, Supabase URL & anon key, and Google Maps API key.
+- **Creates an Expo App:** Runs `npx create-expo-app` (with TypeScript) and cleans up unneeded files.
+- **Installs Dependencies:** Adds libraries for state management (Zustand), styling (Tailwind, NativeWind), auth, maps, forms, and realtime messaging with Supabase.
+- **Sets Up Project Structure:** Folders and starter files for authentication, routing, theming (light/dark mode), posts, and chats.
+- **Local CLI & Configs:** Installs the local Expo CLI, plus config for Metro, Babel, and Tailwind.
+- **Why You'll Love It:** Saves time, uses a modern tech stack, and is easily customizable.
+$BODY$,
+        NULL,
+        now(),
+        now()
+    );
+END $$;
+```
+
+---
+
+### Usage
+
+1. **Script 1**: Run in Supabase SQL editor (or as a migration). It creates the new `contents` table, `content_reactions`, merges your schema, sets RLS, and publishes for realtime.  
+2. **Script 2**: Run locally in your shell to scaffold the new Expo front-end with references to the `contents` table for top-level posts. Adjust `.env` to your actual `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.  
+3. **Script 3**: Run in Supabase SQL editor to seed sample data (admin, testers, a multi-line post from `testuser@example.com`).  
+
+**Afterwards**:  
+- Sign in as `testuser@example.com` (or `jon@example.com`, etc.) using the password you see in the script (`$2b$10...` is a bcrypt hash for `some default password` if that’s how you set it).  
+- Check the Home screen: you should see your dummy posts from the `contents` table (with `parent_id = null`).  
+- If you still see no content, open dev tools and verify the query results, check RLS policy usage, or confirm your `.env` is pointing to the correct Supabase project.  
+
+With these **3 scripts**—**SQL, Bash, SQL**—your top-level posts should appear on the home page, and you can create/edit new posts in the unified `contents` table. Enjoy!
