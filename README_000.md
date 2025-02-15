@@ -1,26 +1,22 @@
-## Script 1: Expanded Backend Schema Initialization
+Below are **three** complete scripts that work together for a unified “contents” model:
+
+1. **Script 1 (SQL)**: Backend Schema Initialization  
+2. **Script 2 (SQL)**: Seed Sample Data (including a dummy post)  
+3. **Script 3 (Bash)**: The Expo front-end setup (with references to `contents`)
+
+After running **Script 1** and **Script 2** in your Supabase SQL editor, the dummy post(s) should appear in your **Home** screen, assuming your `.env` Supabase URL/keys match the same project.
+
+---
+
+## Script 1: Backend Schema Initialization (SQL)
 
 ```sql
 -- =============================================================================
--- Script 1: Backend Schema Initialization for SupaBase with Realtime Chat Messaging and Role Support
--- =============================================================================
--- Run this script before any user (including the admin) is created.
--- This script sets up:
---   • The pgcrypto extension for UUID generation.
---   • Tables: profiles (with a role column), posts, conversations, messages.
---   • Extended tables: comments, post_reactions, message_reactions,
---     friend_requests, friend_blocks, reports, groups, group_members, events,
---     event_invitations, media_attachments.
---   • Indexes for performance.
---   • Trigger functions and triggers to auto-update updated_at columns.
---     (and a trigger to designate the very first profile as admin)
---   • A public "users" view (joining auth.users with profiles).
---   • Row Level Security (RLS) policies on all tables for SELECT, INSERT, UPDATE, DELETE,
---     so users can manage (edit and delete) their own data.
---   • Publication of the realtime tables.
+-- Script 1: Backend Schema Initialization for SupaBase with Realtime Chat Messaging,
+-- Role Support, and Unified Content/Reaction System.
 -- =============================================================================
 
--- 1. Enable pgcrypto extension (for gen_random_uuid())
+-- 1. Enable pgcrypto extension (for gen_random_uuid)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 -- 2. Create the profiles table (stores user details) with a role column.
@@ -37,7 +33,6 @@ CREATE TABLE public.profiles (
 );
 
 -- 2a. Create a trigger function to set the role automatically.
---     The very first profile inserted will be set as 'admin'; all others default to 'user'
 CREATE OR REPLACE FUNCTION public.set_role_if_first()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -52,26 +47,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 2b. Attach the trigger function to profiles.
 DROP TRIGGER IF EXISTS set_role_if_first_trigger ON public.profiles;
 CREATE TRIGGER set_role_if_first_trigger
 BEFORE INSERT ON public.profiles
 FOR EACH ROW
 EXECUTE PROCEDURE public.set_role_if_first();
 
--- 3. Create the posts table (for user posts)
-CREATE TABLE public.posts (
+---------------------------------------------------------------
+-- 3. Create unified contents table (for posts/comments)
+---------------------------------------------------------------
+CREATE TABLE public.contents (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id uuid NOT NULL,
     content text NOT NULL,
+    parent_id uuid NULL,  -- if NULL => top-level post; otherwise => a comment/reply
+    edited boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_posts_user FOREIGN KEY (user_id)
-        REFERENCES public.profiles (id) ON DELETE CASCADE
+    CONSTRAINT fk_contents_user FOREIGN KEY (user_id)
+        REFERENCES public.profiles (id) ON DELETE CASCADE,
+    CONSTRAINT fk_contents_parent FOREIGN KEY (parent_id)
+        REFERENCES public.contents (id) ON DELETE CASCADE
 );
-CREATE INDEX idx_posts_user_id ON public.posts(user_id);
+CREATE INDEX idx_contents_user_id ON public.contents(user_id);
+CREATE INDEX idx_contents_parent_id ON public.contents(parent_id);
 
--- 4. Create the conversations table (chat sessions between two users)
+---------------------------------------------------------------
+-- 4. Create conversations table (chat sessions)
+---------------------------------------------------------------
 CREATE TABLE public.conversations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     user1 uuid NOT NULL,
@@ -86,7 +89,9 @@ CREATE TABLE public.conversations (
 CREATE INDEX idx_conversations_user1 ON public.conversations(user1);
 CREATE INDEX idx_conversations_user2 ON public.conversations(user2);
 
--- 5. Create the messages table (individual messages in a conversation)
+---------------------------------------------------------------
+-- 5. Create messages table
+---------------------------------------------------------------
 CREATE TABLE public.messages (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id uuid NOT NULL,
@@ -102,42 +107,30 @@ CREATE TABLE public.messages (
 CREATE INDEX idx_messages_conversation_id ON public.messages(conversation_id);
 CREATE INDEX idx_messages_sender_id ON public.messages(sender_id);
 
----------------------------------------------------------------
--- Extended Tables
----------------------------------------------------------------
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS edited boolean NOT NULL DEFAULT false;
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;
 
--- 6a. Comments on posts
-CREATE TABLE public.comments (
+---------------------------------------------------------------
+-- 6. Create unified content_reactions table
+---------------------------------------------------------------
+CREATE TABLE public.content_reactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    post_id uuid NOT NULL,
-    user_id uuid NOT NULL,
-    content text NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_comments_post FOREIGN KEY (post_id)
-        REFERENCES public.posts (id) ON DELETE CASCADE,
-    CONSTRAINT fk_comments_user FOREIGN KEY (user_id)
-        REFERENCES public.profiles (id) ON DELETE CASCADE
-);
-CREATE INDEX idx_comments_post_id ON public.comments(post_id);
-CREATE INDEX idx_comments_user_id ON public.comments(user_id);
-
--- 6b. Post reactions (e.g., likes, emojis)
-CREATE TABLE public.post_reactions (
-    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    post_id uuid NOT NULL,
+    content_id uuid NOT NULL,
     user_id uuid NOT NULL,
     reaction text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_post_reactions_post FOREIGN KEY (post_id)
-        REFERENCES public.posts (id) ON DELETE CASCADE,
-    CONSTRAINT fk_post_reactions_user FOREIGN KEY (user_id)
-        REFERENCES public.profiles (id) ON DELETE CASCADE
+    CONSTRAINT fk_content_reactions_content FOREIGN KEY (content_id)
+        REFERENCES public.contents (id) ON DELETE CASCADE,
+    CONSTRAINT fk_content_reactions_user FOREIGN KEY (user_id)
+        REFERENCES public.profiles (id) ON DELETE CASCADE,
+    CONSTRAINT unique_content_reaction UNIQUE (content_id, user_id)
 );
-CREATE INDEX idx_post_reactions_post_id ON public.post_reactions(post_id);
-CREATE INDEX idx_post_reactions_user_id ON public.post_reactions(user_id);
+CREATE INDEX idx_content_reactions_content_id ON public.content_reactions(content_id);
+CREATE INDEX idx_content_reactions_user_id ON public.content_reactions(user_id);
 
--- 6c. Message reactions (emoji reactions in chats)
+---------------------------------------------------------------
+-- 7. Create message_reactions table (unchanged)
+---------------------------------------------------------------
 CREATE TABLE public.message_reactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     message_id uuid NOT NULL,
@@ -152,12 +145,14 @@ CREATE TABLE public.message_reactions (
 CREATE INDEX idx_message_reactions_message_id ON public.message_reactions(message_id);
 CREATE INDEX idx_message_reactions_user_id ON public.message_reactions(user_id);
 
--- 6d. Friend requests (for connecting users)
+---------------------------------------------------------------
+-- 8. Other Extended Tables (friend_requests, friend_blocks, etc.)
+---------------------------------------------------------------
 CREATE TABLE public.friend_requests (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     sender_id uuid NOT NULL,
     receiver_id uuid NOT NULL,
-    status text NOT NULL DEFAULT 'pending',  -- 'pending', 'accepted', 'rejected'
+    status text NOT NULL DEFAULT 'pending',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_friend_requests_sender FOREIGN KEY (sender_id)
@@ -169,7 +164,6 @@ CREATE TABLE public.friend_requests (
 CREATE INDEX idx_friend_requests_sender ON public.friend_requests(sender_id);
 CREATE INDEX idx_friend_requests_receiver ON public.friend_requests(receiver_id);
 
--- 6e. Friend blocks (to block users)
 CREATE TABLE public.friend_blocks (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     blocker_id uuid NOT NULL,
@@ -184,11 +178,10 @@ CREATE TABLE public.friend_blocks (
 CREATE INDEX idx_friend_blocks_blocker ON public.friend_blocks(blocker_id);
 CREATE INDEX idx_friend_blocks_blocked ON public.friend_blocks(blocked_id);
 
--- 6f. Reports (for content moderation)
 CREATE TABLE public.reports (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     reporter_id uuid NOT NULL,
-    content_type text NOT NULL,  -- 'post', 'comment', 'message', 'profile'
+    content_type text NOT NULL,
     content_id uuid NOT NULL,
     reason text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
@@ -197,7 +190,6 @@ CREATE TABLE public.reports (
 );
 CREATE INDEX idx_reports_reporter ON public.reports(reporter_id);
 
--- 6g. Groups (communities)
 CREATE TABLE public.groups (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
@@ -210,12 +202,11 @@ CREATE TABLE public.groups (
 );
 CREATE INDEX idx_groups_created_by ON public.groups(created_by);
 
--- 6h. Group members (membership within groups)
 CREATE TABLE public.group_members (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     group_id uuid NOT NULL,
     member_id uuid NOT NULL,
-    role text NOT NULL DEFAULT 'member',  -- 'admin', 'moderator', or 'member'
+    role text NOT NULL DEFAULT 'member',
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_group_members_group FOREIGN KEY (group_id)
         REFERENCES public.groups (id) ON DELETE CASCADE,
@@ -226,15 +217,13 @@ CREATE TABLE public.group_members (
 CREATE INDEX idx_group_members_group_id ON public.group_members(group_id);
 CREATE INDEX idx_group_members_member_id ON public.group_members(member_id);
 
--- 6i. Events (for scheduling and invitations)
--- Note: Added a 'cancelled_at' column for soft deletion/cancellation.
 CREATE TABLE public.events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     name text NOT NULL,
     description text,
     event_date timestamptz NOT NULL,
     created_by uuid NOT NULL,
-    cancelled_at timestamptz,  -- if non-null, event is cancelled (soft delete)
+    cancelled_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_events_created_by FOREIGN KEY (created_by)
@@ -242,12 +231,11 @@ CREATE TABLE public.events (
 );
 CREATE INDEX idx_events_created_by ON public.events(created_by);
 
--- 6j. Event invitations
 CREATE TABLE public.event_invitations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     event_id uuid NOT NULL,
     invitee_id uuid NOT NULL,
-    status text NOT NULL DEFAULT 'pending',  -- 'pending', 'accepted', 'declined'
+    status text NOT NULL DEFAULT 'pending',
     created_at timestamptz NOT NULL DEFAULT now(),
     CONSTRAINT fk_event_invitations_event FOREIGN KEY (event_id)
         REFERENCES public.events (id) ON DELETE CASCADE,
@@ -258,10 +246,9 @@ CREATE TABLE public.event_invitations (
 CREATE INDEX idx_event_invitations_event_id ON public.event_invitations(event_id);
 CREATE INDEX idx_event_invitations_invitee_id ON public.event_invitations(invitee_id);
 
--- 6k. Media attachments (for posts and messages)
 CREATE TABLE public.media_attachments (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    content_type text NOT NULL,  -- 'post' or 'message'
+    content_type text NOT NULL,
     content_id uuid NOT NULL,
     media_url text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now()
@@ -269,7 +256,36 @@ CREATE TABLE public.media_attachments (
 CREATE INDEX idx_media_attachments_content ON public.media_attachments(content_type, content_id);
 
 ---------------------------------------------------------------
--- 7. Create trigger function to update updated_at columns
+-- Content shares (replacing post_shares)
+---------------------------------------------------------------
+CREATE TABLE public.content_shares (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    content_id uuid NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    CONSTRAINT fk_content_shares_user FOREIGN KEY (user_id)
+        REFERENCES public.profiles (id) ON DELETE CASCADE,
+    CONSTRAINT fk_content_shares_content FOREIGN KEY (content_id)
+        REFERENCES public.contents (id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_content_shares_user_id ON public.content_shares(user_id);
+CREATE INDEX IF NOT EXISTS idx_content_shares_content_id ON public.content_shares(content_id);
+
+-- Notifications
+CREATE TABLE public.notifications (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    type text NOT NULL,
+    reference_id uuid,
+    message text,
+    read boolean NOT NULL DEFAULT false,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
+
+---------------------------------------------------------------
+-- 7. Trigger functions to auto-update updated_at columns
 ---------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -279,27 +295,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create triggers for profiles, posts, and messages (original).
 CREATE TRIGGER update_profiles_updated_at
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
-CREATE TRIGGER update_posts_updated_at
-BEFORE UPDATE ON public.posts
+CREATE TRIGGER update_contents_updated_at
+BEFORE UPDATE ON public.contents
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
 CREATE TRIGGER update_messages_updated_at
 BEFORE UPDATE ON public.messages
-FOR EACH ROW
-EXECUTE PROCEDURE public.update_updated_at_column();
-
----------------------------------------------------------------
--- Extended: Attach triggers for additional tables.
----------------------------------------------------------------
-CREATE TRIGGER update_comments_updated_at
-BEFORE UPDATE ON public.comments
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
@@ -318,8 +325,23 @@ BEFORE UPDATE ON public.events
 FOR EACH ROW
 EXECUTE PROCEDURE public.update_updated_at_column();
 
+-- Notifications update trigger
+CREATE OR REPLACE FUNCTION public.update_notifications_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_notifications_updated_at_trigger ON public.notifications;
+CREATE TRIGGER update_notifications_updated_at_trigger
+BEFORE UPDATE ON public.notifications
+FOR EACH ROW
+EXECUTE PROCEDURE public.update_notifications_updated_at();
+
 ---------------------------------------------------------------
--- 8. Create the public "users" view (joins auth.users with profiles)
+-- 8. Create the public "users" view
 ---------------------------------------------------------------
 CREATE OR REPLACE VIEW public.users AS
 SELECT
@@ -337,8 +359,6 @@ LEFT JOIN public.profiles p ON u.id = p.id;
 ---------------------------------------------------------------
 -- 9. Enable Row Level Security (RLS) and define policies
 ---------------------------------------------------------------
-
--- For profiles.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Profiles select policy" ON public.profiles;
 CREATE POLICY "Profiles select policy" ON public.profiles FOR SELECT USING (true);
@@ -350,19 +370,25 @@ CREATE POLICY "Profiles update policy" ON public.profiles FOR UPDATE USING (auth
 DROP POLICY IF EXISTS "Profiles delete policy" ON public.profiles;
 CREATE POLICY "Profiles delete policy" ON public.profiles FOR DELETE USING (auth.uid() = id);
 
--- For posts.
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Posts select policy" ON public.posts;
-CREATE POLICY "Posts select policy" ON public.posts FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Posts insert policy" ON public.posts;
-CREATE POLICY "Posts insert policy" ON public.posts FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "Posts update policy" ON public.posts;
-CREATE POLICY "Posts update policy" ON public.posts FOR UPDATE USING (auth.uid() = user_id)
+ALTER TABLE public.contents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Contents select policy" ON public.contents;
+CREATE POLICY "Contents select policy" ON public.contents FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Contents insert policy" ON public.contents;
+CREATE POLICY "Contents insert policy" ON public.contents FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Contents update policy" ON public.contents;
+CREATE POLICY "Contents update policy" ON public.contents FOR UPDATE USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Posts delete policy" ON public.posts;
-CREATE POLICY "Posts delete policy" ON public.posts FOR DELETE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Contents delete policy" ON public.contents;
+CREATE POLICY "Contents delete policy" ON public.contents FOR DELETE USING (auth.uid() = user_id);
 
--- For conversations: only participants may view, insert, update, or delete.
+ALTER TABLE public.content_reactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ContentReactions select policy" ON public.content_reactions;
+CREATE POLICY "ContentReactions select policy" ON public.content_reactions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "ContentReactions insert policy" ON public.content_reactions;
+CREATE POLICY "ContentReactions insert policy" ON public.content_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "ContentReactions delete policy" ON public.content_reactions;
+CREATE POLICY "ContentReactions delete policy" ON public.content_reactions FOR DELETE USING (auth.uid() = user_id);
+
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Conversations select policy" ON public.conversations;
 CREATE POLICY "Conversations select policy" ON public.conversations
@@ -378,7 +404,6 @@ DROP POLICY IF EXISTS "Conversations delete policy" ON public.conversations;
 CREATE POLICY "Conversations delete policy" ON public.conversations
 FOR DELETE USING (auth.uid() = user1 OR auth.uid() = user2);
 
--- For messages: only users in the conversation may select, and sender must match on insert, update, or delete.
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Messages select policy" ON public.messages;
 CREATE POLICY "Messages select policy" ON public.messages
@@ -397,37 +422,6 @@ CREATE POLICY "Messages update policy" ON public.messages FOR UPDATE USING (auth
 DROP POLICY IF EXISTS "Messages delete policy" ON public.messages;
 CREATE POLICY "Messages delete policy" ON public.messages FOR DELETE USING (auth.uid() = sender_id);
 
--- For comments.
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Comments select policy" ON public.comments;
-CREATE POLICY "Comments select policy" ON public.comments FOR SELECT USING (true);
-DROP POLICY IF EXISTS "Comments insert policy" ON public.comments;
-CREATE POLICY "Comments insert policy" ON public.comments FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Comments update policy" ON public.comments;
-CREATE POLICY "Comments update policy" ON public.comments FOR UPDATE USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "Comments delete policy" ON public.comments;
-CREATE POLICY "Comments delete policy" ON public.comments FOR DELETE USING (auth.uid() = user_id);
-
--- For post reactions.
-ALTER TABLE public.post_reactions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "PostReactions select policy" ON public.post_reactions;
-CREATE POLICY "PostReactions select policy" ON public.post_reactions FOR SELECT USING (true);
-DROP POLICY IF EXISTS "PostReactions insert policy" ON public.post_reactions;
-CREATE POLICY "PostReactions insert policy" ON public.post_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "PostReactions delete policy" ON public.post_reactions;
-CREATE POLICY "PostReactions delete policy" ON public.post_reactions FOR DELETE USING (auth.uid() = user_id);
-
--- For message reactions.
-ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "MessageReactions select policy" ON public.message_reactions;
-CREATE POLICY "MessageReactions select policy" ON public.message_reactions FOR SELECT USING (true);
-DROP POLICY IF EXISTS "MessageReactions insert policy" ON public.message_reactions;
-CREATE POLICY "MessageReactions insert policy" ON public.message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
-DROP POLICY IF EXISTS "MessageReactions delete policy" ON public.message_reactions;
-CREATE POLICY "MessageReactions delete policy" ON public.message_reactions FOR DELETE USING (auth.uid() = user_id);
-
--- For friend requests.
 ALTER TABLE public.friend_requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendRequests select policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests select policy" ON public.friend_requests FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
@@ -436,7 +430,6 @@ CREATE POLICY "FriendRequests insert policy" ON public.friend_requests FOR INSER
 DROP POLICY IF EXISTS "FriendRequests delete policy" ON public.friend_requests;
 CREATE POLICY "FriendRequests delete policy" ON public.friend_requests FOR DELETE USING (auth.uid() = sender_id OR auth.uid() = receiver_id);
 
--- For friend blocks.
 ALTER TABLE public.friend_blocks ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "FriendBlocks select policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks select policy" ON public.friend_blocks FOR SELECT USING (auth.uid() = blocker_id OR auth.uid() = blocked_id);
@@ -445,7 +438,6 @@ CREATE POLICY "FriendBlocks insert policy" ON public.friend_blocks FOR INSERT WI
 DROP POLICY IF EXISTS "FriendBlocks delete policy" ON public.friend_blocks;
 CREATE POLICY "FriendBlocks delete policy" ON public.friend_blocks FOR DELETE USING (auth.uid() = blocker_id);
 
--- For reports.
 ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Reports select policy" ON public.reports;
 CREATE POLICY "Reports select policy" ON public.reports FOR SELECT USING (true);
@@ -454,7 +446,6 @@ CREATE POLICY "Reports insert policy" ON public.reports FOR INSERT WITH CHECK (a
 DROP POLICY IF EXISTS "Reports delete policy" ON public.reports;
 CREATE POLICY "Reports delete policy" ON public.reports FOR DELETE USING (auth.uid() = reporter_id);
 
--- For groups.
 ALTER TABLE public.groups ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Groups select policy" ON public.groups;
 CREATE POLICY "Groups select policy" ON public.groups FOR SELECT USING (true);
@@ -466,7 +457,6 @@ CREATE POLICY "Groups update policy" ON public.groups FOR UPDATE USING (auth.uid
 DROP POLICY IF EXISTS "Groups delete policy" ON public.groups;
 CREATE POLICY "Groups delete policy" ON public.groups FOR DELETE USING (auth.uid() = created_by);
 
--- For group members.
 ALTER TABLE public.group_members ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "GroupMembers select policy" ON public.group_members;
 CREATE POLICY "GroupMembers select policy" ON public.group_members FOR SELECT USING (auth.uid() = member_id);
@@ -475,7 +465,6 @@ CREATE POLICY "GroupMembers insert policy" ON public.group_members FOR INSERT WI
 DROP POLICY IF EXISTS "GroupMembers delete policy" ON public.group_members;
 CREATE POLICY "GroupMembers delete policy" ON public.group_members FOR DELETE USING (auth.uid() = member_id);
 
--- For events.
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Events select policy" ON public.events;
 CREATE POLICY "Events select policy" ON public.events FOR SELECT USING (true);
@@ -487,7 +476,6 @@ CREATE POLICY "Events update policy" ON public.events FOR UPDATE USING (auth.uid
 DROP POLICY IF EXISTS "Events delete policy" ON public.events;
 CREATE POLICY "Events delete policy" ON public.events FOR DELETE USING (auth.uid() = created_by);
 
--- For event invitations.
 ALTER TABLE public.event_invitations ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "EventInvitations select policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations select policy" ON public.event_invitations FOR SELECT USING (auth.uid() = invitee_id);
@@ -496,7 +484,6 @@ CREATE POLICY "EventInvitations insert policy" ON public.event_invitations FOR I
 DROP POLICY IF EXISTS "EventInvitations delete policy" ON public.event_invitations;
 CREATE POLICY "EventInvitations delete policy" ON public.event_invitations FOR DELETE USING (auth.uid() = invitee_id);
 
--- For media attachments.
 ALTER TABLE public.media_attachments ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "MediaAttachments select policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments select policy" ON public.media_attachments FOR SELECT USING (true);
@@ -505,14 +492,41 @@ CREATE POLICY "MediaAttachments insert policy" ON public.media_attachments FOR I
 DROP POLICY IF EXISTS "MediaAttachments delete policy" ON public.media_attachments;
 CREATE POLICY "MediaAttachments delete policy" ON public.media_attachments FOR DELETE USING (true);
 
+ALTER TABLE public.content_shares ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "ContentShares select policy" ON public.content_shares;
+CREATE POLICY "ContentShares select policy" ON public.content_shares FOR SELECT USING (true);
+DROP POLICY IF EXISTS "ContentShares insert policy" ON public.content_shares;
+CREATE POLICY "ContentShares insert policy" ON public.content_shares FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "ContentShares delete policy" ON public.content_shares;
+CREATE POLICY "ContentShares delete policy" ON public.content_shares FOR DELETE USING (auth.uid() = user_id);
+
+ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "MessageReactions select policy" ON public.message_reactions;
+CREATE POLICY "MessageReactions select policy" ON public.message_reactions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "MessageReactions insert policy" ON public.message_reactions;
+CREATE POLICY "MessageReactions insert policy" ON public.message_reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "MessageReactions delete policy" ON public.message_reactions;
+CREATE POLICY "MessageReactions delete policy" ON public.message_reactions FOR DELETE USING (auth.uid() = user_id);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Notifications select policy" ON public.notifications;
+CREATE POLICY "Notifications select policy" ON public.notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notifications insert policy" ON public.notifications;
+CREATE POLICY "Notifications insert policy" ON public.notifications FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notifications update policy" ON public.notifications;
+CREATE POLICY "Notifications update policy" ON public.notifications FOR UPDATE USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Notifications delete policy" ON public.notifications;
+CREATE POLICY "Notifications delete policy" ON public.notifications FOR DELETE USING (auth.uid() = user_id);
+
 ---------------------------------------------------------------
--- 10. Publish tables for realtime subscriptions.
+-- 10. Publish tables for realtime
+---------------------------------------------------------------
 ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.posts;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.comments;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.post_reactions;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.contents;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.content_reactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.message_reactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.friend_requests;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.friend_blocks;
@@ -522,13 +536,17 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.group_members;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.events;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.event_invitations;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.media_attachments;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.content_shares;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 
 -- =============================================================================
 -- End of Script 1
 -- =============================================================================
 ```
 
-## Script 2: Seed Sample Testers, Create Conversations with Admin, Insert Initial Messages, and Add a Sample Post
+---
+
+## Script 2: Seed Sample Data (SQL)
 
 ```sql
 DO $$
@@ -538,7 +556,8 @@ DECLARE
     tester record;
     tester_id uuid;
     conv_id uuid;
-    sample_post_user_id uuid;
+    sample_content_user_id uuid;
+    new_content_id uuid;
 BEGIN
     -- Retrieve the admin user's ID from auth.users.
     SELECT id INTO admin_id
@@ -578,6 +597,11 @@ BEGIN
         VALUES (tester_id, NULL, tester.displayName, '', now(), now())
         ON CONFLICT (id) DO NOTHING;
         
+        -- For each tester, insert a top-level content record (post).
+        INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
+        VALUES (tester_id, 'This is a sample post from ' || tester.displayName, NULL, now(), now())
+        RETURNING id INTO new_content_id;
+        
         -- Check for an existing conversation between admin and tester.
         SELECT id INTO conv_id
         FROM public.conversations
@@ -591,9 +615,9 @@ BEGIN
             RETURNING id INTO conv_id;
         END IF;
         
-        -- Insert an initial message from tester to admin.
-        INSERT INTO public.messages (conversation_id, sender_id, content)
-        VALUES (conv_id, tester_id, 'Hello Admin, this is ' || tester.displayName || '!');
+        -- Insert an initial message from the tester to admin.
+        INSERT INTO public.messages (conversation_id, sender_id, content, created_at, updated_at)
+        VALUES (conv_id, tester_id, 'Hello Admin, this is ' || tester.displayName || '!', now(), now());
         
         -- Seed a friend request from tester to admin.
         INSERT INTO public.friend_requests (sender_id, receiver_id, status, created_at, updated_at)
@@ -601,31 +625,2220 @@ BEGIN
         ON CONFLICT DO NOTHING;
     END LOOP;
     
-    -- Insert a sample post from the test user.
-    SELECT id INTO sample_post_user_id FROM auth.users WHERE email = 'testuser@example.com';
-    IF sample_post_user_id IS NULL THEN
+    -- Insert a sample top-level post (content) from the test user.
+    SELECT id INTO sample_content_user_id FROM auth.users WHERE email = 'testuser@example.com';
+    IF sample_content_user_id IS NULL THEN
         RAISE EXCEPTION 'Test user not found';
     END IF;
     
     INSERT INTO public.profiles (id, avatar, "displayName", bio, created_at, updated_at)
-    VALUES (sample_post_user_id, NULL, 'Test User', '', now(), now())
+    VALUES (sample_content_user_id, NULL, 'Test User', '', now(), now())
     ON CONFLICT (id) DO NOTHING;
     
-    INSERT INTO public.posts (user_id, content)
+    -- Insert a multi-line sample post using a dollar-quoted string
+    INSERT INTO public.contents (user_id, content, parent_id, created_at, updated_at)
     VALUES (
-        sample_post_user_id,
-        $POST$
+        sample_content_user_id,
+        $BODY$
 Hey there! Meet **ScriptHammer**—a handy bash script that sets up a complete Expo app with everything you need right out of the box.
 
 ### What It Does
-- **Loads Your Environment:** It starts by checking your `.env` file for essential keys like your app name, Supabase URL & anon key, and Google Maps API key.
-- **Creates an Expo App:** Automatically runs `npx create-expo-app` (with TypeScript) and cleans up unneeded files.
-- **Installs Dependencies:** It adds libraries for state management (Zustand), styling (Tailwind, NativeWind), authentication, maps, forms, and even realtime messaging with Supabase.
-- **Sets Up Project Structure:** Creates folders and starter files for authentication, routing, theming (light/dark mode), and features like posts and chats.
-- **Local CLI & Configs:** Checks and installs the local Expo CLI, and sets up configs for Metro, Babel, and Tailwind.
-- **Why You'll Love It:** Saves time, uses a modern tech stack, is ready to roll, and is easily customizable.
-Get started by setting up your `.env` file, run the script, and let ScriptHammer do the heavy lifting. Happy coding!
-$POST$
+- **Loads Your Environment:** It checks your `.env` file for essential keys (app name, Supabase URL, anon key, etc.).
+- **Creates an Expo App:** Runs `npx create-expo-app` (TypeScript) and cleans up unneeded files.
+- **Installs Dependencies:** Adds libraries for state management (Zustand), styling (Tailwind, NativeWind), auth, maps, forms, and realtime messaging with Supabase.
+- **Sets Up Project Structure:** Folders and starter files for authentication, routing, theming (light/dark mode), posts, and chats.
+- **Local CLI & Configs:** Installs the local Expo CLI, plus config for Metro, Babel, and Tailwind.
+- **Why You'll Love It:** Saves time, uses a modern tech stack, and is easily customizable.
+$BODY$,
+        NULL,
+        now(),
+        now()
     );
 END $$;
 ```
+
+**After running Script 2**, you should have multiple top-level posts in `public.contents` with `parent_id = null` (one from each tester, plus the sample multi-line post from `testuser@example.com`).
+
+---
+
+## Script 3: Front-End Bash Setup (Expo + Unified “contents” Model)
+
+Below is an **all-in-one** example for an Expo + TypeScript project referencing `contents` for top-level posts (`parent_id = null`). This script:
+
+1. Creates an Expo app.
+2. Installs dependencies.
+3. Scaffolds the `home.tsx` screen to load from `contents`.
+4. Shows top-level posts in a flat list.
+
+Save as something like `setup.sh` (make it executable) and run. Then fill in your `.env` with the correct Supabase URL/anon key matching the project where you ran Scripts 1 & 2.
+
+```bash
+#!/usr/bin/env bash
+set -eo pipefail
+
+##############################################
+# Script 3: Expo Setup with Unified "contents" Table
+##############################################
+
+#region Environment Variables and Pre-Setup
+if [ -f .env ]; then
+  set -o allexport
+  source .env
+  set +o allexport
+else
+  echo "ERROR: .env file not found."
+  echo "Please create one with at least the following content:"
+  echo 'APP_NAME="ScriptHammer"'
+  echo 'EXPO_PUBLIC_SUPABASE_URL="https://YOUR-PROJECT.supabase.co"'
+  echo 'EXPO_PUBLIC_SUPABASE_ANON_KEY="YOUR-ANON-KEY"'
+  echo 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY="YOUR_GOOGLE_MAPS_API_KEY"'
+  exit 1
+fi
+
+required_vars=("APP_NAME" "EXPO_PUBLIC_SUPABASE_URL" "EXPO_PUBLIC_SUPABASE_ANON_KEY" "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY")
+for var in "${required_vars[@]}"; do
+  if [ -z "${!var}" ]; then
+    echo "ERROR: $var is not set in the .env file."
+    exit 1
+  fi
+done
+#endregion
+
+#region Create Expo App (TypeScript)
+echo "🚀 Creating Expo app: $APP_NAME"
+npx create-expo-app "$APP_NAME"
+
+echo "📂 Entering project directory"
+cd "$APP_NAME" || { echo "ERROR: Failed to enter directory '$APP_NAME'"; exit 1; }
+
+echo "N" | npm run reset-project
+rm -rf app-example
+rm -f App.js App.tsx
+#endregion
+
+#region Check Local Expo CLI Installation
+echo "🔍 Checking for Expo CLI in local dependencies..."
+if ! npx expo --version >/dev/null 2>&1; then
+  echo "Local Expo CLI not found. Installing expo-cli as a dev dependency..."
+  npm install --save-dev expo-cli
+  if ! npx expo --version >/dev/null 2>&1; then
+    echo "ERROR: Local Expo CLI installation failed. Please check your npm setup."
+    exit 1
+  else
+    echo "Local Expo CLI installed: $(npx expo --version)"
+  fi
+else
+  echo "Local Expo CLI found: $(npx expo --version)"
+fi
+#endregion
+
+#region Install Dependencies
+echo "📦 Installing dependencies..."
+
+# Define production dependencies (installed via Expo CLI)
+prod_deps=(
+  "zustand"
+  "@supabase/supabase-js@2"
+  "@react-native-async-storage/async-storage"
+  "react-native-url-polyfill"
+  "react-hook-form"
+  "yup"
+  "react-native-safe-area-context"
+  "expo-status-bar"
+  "nativewind"
+  "react-native-picker-select"
+  "@react-google-maps/api"
+  "expo-location"
+  "react-native-maps"
+)
+
+# Define dev dependencies (installed via npm)
+dev_deps=( "tailwindcss@3.3.2" )
+
+echo "Installing production dependencies with Expo CLI..."
+npx expo install "${prod_deps[@]}"
+
+echo "Installing dev dependencies using npm..."
+npm install --save-dev "${dev_deps[@]}"
+#endregion
+
+#region Create Directory Structure
+echo "📁 Creating directory structure..."
+dir_structure=(
+  ".env.local"
+  "nativewind-env.d.ts"
+  "src/lib/"
+  "src/lib/supabase.ts"
+  "src/store/"
+  "src/store/useAuthStore.ts"
+  "src/components/"
+  "src/context/"
+  "src/utils/"
+  "app/"
+  "app/_layout.tsx"
+  "app/error.tsx"
+  "app/global.css"
+  "app/loading.tsx"
+  "app/not-found.tsx"
+  "app/index.tsx"
+  "app/(auth)/"
+  "app/(auth)/_layout.tsx"
+  "app/(auth)/signIn.tsx"
+  "app/(auth)/signUp.tsx"
+  "app/(tabs)/"
+  "app/(tabs)/_layout.tsx"
+  "app/(tabs)/home.tsx"
+  "app/(tabs)/create.tsx"
+  "app/(tabs)/explore.tsx"
+  "app/(tabs)/groups.tsx"
+  "app/(tabs)/map.tsx"
+  "app/(tabs)/chats.tsx"
+  "app/(tabs)/cues.tsx"
+  "app/(tabs)/profile.tsx"
+  "app/profileEdit.tsx"
+  "src/components/ChatMessage.tsx"
+  "src/components/MessageInput.tsx"
+)
+for item in "${dir_structure[@]}"; do
+  if [[ $item == */ ]]; then
+    mkdir -p "$item"
+  else
+    mkdir -p "$(dirname "$item")"
+    touch "$item"
+  fi
+done
+#endregion
+
+#region Create nativewind-env.d.ts
+cat > "nativewind-env.d.ts" << 'EOF'
+/// <reference types="nativewind/types" />
+EOF
+#endregion
+
+#region Scaffold Global CSS
+cat > "app/global.css" << 'EOF'
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Steampunk-ish color variables */
+:root {
+  --bg-light: #f0e6d2;
+  --text-light: #3b302a;
+  --bg-dark: #3c2e2b;
+  --text-dark: #d4bfa3;
+  --text-active: #5a4a42;
+}
+
+html, body {
+  background-color: var(--bg-light);
+  color: var(--text-light);
+}
+
+.dark html, .dark body {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+.bg-steampunk-light {
+  background-color: var(--bg-light);
+}
+.dark .bg-steampunk-light {
+  background-color: var(--bg-dark);
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium;
+  @apply bg-[#c0a080] text-[#3b302a] border-2 border-[#3b302a];
+  @apply dark:bg-[#5a4a42] dark:text-[#d4bfa3] dark:border-[#d4bfa3];
+  @apply active:opacity-80 active:scale-95 transition-all;
+}
+
+.link {
+  @apply underline;
+  color: var(--text-light);
+}
+.dark .link {
+  color: var(--text-dark);
+}
+
+.input-shadow {
+  -webkit-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+  -moz-box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+  box-shadow: inset -8px -10px 39px 5px rgba(0,0,0,0.75);
+}
+
+/* Updated comment meta styles with increased specificity */
+html body .comment-meta {
+  color: #4B5563 !important;  /* Tailwind gray-600 */
+  font-size: 0.75rem !important; /* text-xs */
+}
+.dark html body .comment-meta {
+  color: #D1D5DB !important;  /* Tailwind gray-300 */
+}
+EOF
+#endregion
+
+#region Scaffold Tailwind Config
+cat > "tailwind.config.js" << 'EOF'
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  darkMode: 'class',
+  content: [
+    "./App.{js,jsx,ts,tsx}",
+    "./app/**/*.{js,jsx,ts,tsx}",
+    "./src/**/*.{js,jsx,ts,tsx}"
+  ],
+  theme: {
+    extend: {
+      colors: {
+        light: {
+          primary: '#c0a080',
+          secondary: '#3b302a',
+        },
+        dark: {
+          primary: '#5a4a42',
+          secondary: '#d4bfa3',
+        },
+      },
+    },
+  },
+  presets: [require("nativewind/preset")],
+  plugins: [],
+}
+EOF
+#endregion
+
+#region Scaffold Metro Config
+cat > "metro.config.js" << 'EOF'
+const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
+
+const config = getDefaultConfig(__dirname);
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'react-native-maps' && platform === 'web') {
+    return {
+      filePath: './src/components/MapViewWrapper.web.tsx',
+      type: 'sourceFile',
+    };
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
+module.exports = withNativeWind(config, { input: "./app/global.css" });
+EOF
+#endregion
+
+#region Scaffold Babel Config
+cat > "babel.config.js" << 'EOF'
+module.exports = function(api) {
+  api.cache(true);
+  return {
+    presets: [
+      ["babel-preset-expo", { jsxImportSource: "nativewind" }],
+      "nativewind/babel"
+    ],
+    plugins: [
+      "react-native-reanimated/plugin"
+    ],
+  };
+};
+EOF
+#endregion
+
+#region Scaffold Custom Button Component
+cat > "src/components/CustomButton.tsx" << 'EOF'
+import React from 'react';
+import { TouchableOpacity, Text } from 'react-native';
+
+interface CustomButtonProps {
+  title: string;
+  onPress: () => void;
+}
+
+export function CustomButton({ title, onPress }: CustomButtonProps) {
+  return (
+    <TouchableOpacity onPress={onPress} className="btn">
+      <Text className="text-center">{title}</Text>
+    </TouchableOpacity>
+  );
+}
+EOF
+#endregion
+
+#region Scaffold MapViewWrapper Components
+cat > "src/components/MapViewWrapper.native.tsx" << 'EOF'
+import MapView from 'react-native-maps';
+
+export default function MapViewWrapper(props: any) {
+  return <MapView {...props} />;
+}
+
+export function Marker(props: any) {
+  return <MapView.Marker {...props} />;
+}
+EOF
+
+cat > "src/components/MapViewWrapper.web.tsx" << 'EOF'
+import React from 'react';
+import { GoogleMap, LoadScript, Marker as GMarker } from '@react-google-maps/api';
+
+export default function MapViewWrapper(props: any) {
+  return (
+    <LoadScript googleMapsApiKey={process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || ''}>
+      <GoogleMap
+        mapContainerStyle={{ width: '100%', height: '100%' }}
+        center={{
+          lat: props.initialRegion?.latitude || 0,
+          lng: props.initialRegion?.longitude || 0,
+        }}
+        zoom={15}
+      >
+        {props.children}
+      </GoogleMap>
+    </LoadScript>
+  );
+}
+
+export function Marker(props: any) {
+  return <GMarker position={{ lat: props.coordinate.latitude, lng: props.coordinate.longitude }} />;
+}
+EOF
+#endregion
+
+#region Scaffold Theme Context
+cat > "src/context/ThemeContext.tsx" << 'EOF'
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Appearance, Platform } from 'react-native';
+
+const ThemeContext = createContext<{ theme: string; toggleTheme: () => void } | undefined>(undefined);
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const systemColorScheme = Appearance.getColorScheme() || 'light';
+  const [theme, setTheme] = useState(systemColorScheme);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  useEffect(() => {
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setTheme(colorScheme || 'light');
+    });
+    return () => subscription.remove();
+  }, []);
+
+  if (Platform.OS === 'web') {
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+  }
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+export function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error("useTheme must be used within a ThemeProvider");
+  return context;
+}
+EOF
+#endregion
+
+#region Scaffold Root Layout
+cat > "app/_layout.tsx" << 'EOF'
+import React, { useEffect } from 'react';
+import { useRouter, usePathname, Slot } from 'expo-router';
+import { useAuthStore } from '../src/store/useAuthStore';
+import { ActivityIndicator, View } from 'react-native';
+import { ThemeProvider } from '../src/context/ThemeContext';
+import "./global.css";
+
+export default function RootLayout() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user && pathname && !pathname.startsWith('/signIn') && !pathname.startsWith('/signUp')) {
+      router.replace('/signIn');
+    }
+    if (user && pathname && (pathname.startsWith('/signIn') || pathname.startsWith('/signUp'))) {
+      router.replace('/home');
+    }
+  }, [user, isLoading, pathname, router]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  return (
+    <ThemeProvider>
+      <Slot />
+    </ThemeProvider>
+  );
+}
+EOF
+#endregion
+
+#region Scaffold Auth Layout
+cat > "app/(auth)/_layout.tsx" << 'EOF'
+import { Slot } from 'expo-router';
+import "../global.css";
+
+export default function AuthLayout() {
+  return <Slot />;
+}
+EOF
+#endregion
+
+#region Scaffold Tabs Layout
+cat > "app/(tabs)/_layout.tsx" << 'EOF'
+import React from 'react';
+import { Tabs } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
+import { Ionicons } from '@expo/vector-icons';
+import "../global.css";
+
+export default function TabLayout() {
+  const { theme } = useTheme();
+  const headerBackground = theme === 'light' ? 'var(--bg-dark)' : 'var(--bg-light)';
+  const headerText = theme === 'light' ? 'var(--text-dark)' : 'var(--text-light)';
+  const inactiveColor = theme === 'light' ? 'var(--text-dark)' : 'var(--text-light)';
+  const activeColor = 'var(--text-active)';
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerStyle: { backgroundColor: headerBackground },
+        headerTintColor: headerText,
+        tabBarStyle: { backgroundColor: headerBackground },
+        tabBarActiveTintColor: activeColor,
+        tabBarInactiveTintColor: inactiveColor,
+      }}
+    >
+      <Tabs.Screen 
+        name="home" 
+        options={{ 
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="create" 
+        options={{ 
+          title: 'Create',
+          tabBarIcon: ({ color, size }) => <Ionicons name="add-circle-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="explore" 
+        options={{ 
+          title: 'Explore',
+          tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="groups" 
+        options={{ 
+          title: 'Groups',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="map" 
+        options={{ 
+          title: 'Map',
+          tabBarIcon: ({ color, size }) => <Ionicons name="location-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="chats" 
+        options={{ 
+          title: 'Chats',
+          tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="cues" 
+        options={{ 
+          title: 'Cues',
+          tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={size} />,
+        }} 
+      />
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" color={color} size={size} />,
+        }} 
+      />
+    </Tabs>
+  );
+}
+EOF
+#endregion
+
+#region Scaffold Root Index Screen
+cat > "app/index.tsx" << 'EOF'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+
+export default function Index() {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      router.replace('/home');
+    }
+  }, [mounted, router]);
+
+  return null;
+}
+EOF
+#endregion
+
+#region Scaffold Additional Screens
+cat > "app/error.tsx" << 'EOF'
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function ErrorScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>An error occurred.</Text>
+    </View>
+  );
+}
+EOF
+
+cat > "app/loading.tsx" << 'EOF'
+import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
+
+export default function LoadingScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
+}
+EOF
+
+cat > "app/not-found.tsx" << 'EOF'
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function NotFoundScreen() {
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text>Page not found.</Text>
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region Scaffold Auth Screens
+cat > "app/(auth)/signIn.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, Text, TextInput } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as Yup from 'yup';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { CustomButton } from '../../src/components/CustomButton';
+
+const signInSchema = Yup.object().shape({
+  email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
+  password: Yup.string().required('Password is required.'),
+});
+
+export default function SignInScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<any>({});
+  const [serverError, setServerError] = useState('');
+  const { setUser } = useAuthStore();
+  const router = useRouter();
+
+  const handleSignIn = async () => {
+    setErrors({});
+    setServerError('');
+    try {
+      await signInSchema.validate({ email, password }, { abortEarly: false });
+    } catch (validationError: any) {
+      if (validationError.inner) {
+        const newErrors: any = {};
+        validationError.inner.forEach((err: any) => {
+          if (err.path) newErrors[err.path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return;
+    }
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setServerError(error.message);
+      } else if (data.session) {
+        setUser(data.session.user);
+      } else {
+        setServerError('No session returned. Please try again.');
+      }
+    } catch (err) {
+      setServerError('An error occurred during sign in. Please try again later.');
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 16 }}>Sign In</Text>
+      <View style={{ marginBottom: 12 }}>
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (errors.email) setErrors((prev: any) => ({ ...prev, email: undefined }));
+          }}
+          style={{ borderWidth: 1, borderColor: errors.email ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          className="input-shadow"
+        />
+        {errors.email && <Text style={{ color: 'red', marginTop: 4 }}>{errors.email}</Text>}
+      </View>
+      <View style={{ marginBottom: 12 }}>
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (errors.password) setErrors((prev: any) => ({ ...prev, password: undefined }));
+          }}
+          style={{ borderWidth: 1, borderColor: errors.password ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
+          secureTextEntry
+          className="input-shadow"
+        />
+        {errors.password && <Text style={{ color: 'red', marginTop: 4 }}>{errors.password}</Text>}
+      </View>
+      {serverError ? <Text style={{ color: 'red', marginBottom: 12 }}>{serverError}</Text> : null}
+      <CustomButton title="Sign In" onPress={handleSignIn} />
+      <Text onPress={() => router.push('/signUp')} className="link mt-4 text-center">
+        Don't have an account? Sign Up
+      </Text>
+    </View>
+  );
+}
+EOF
+
+cat > "app/(auth)/signUp.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, Text, TextInput } from 'react-native';
+import * as Yup from 'yup';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { CustomButton } from '../../src/components/CustomButton';
+
+const signUpSchema = Yup.object().shape({
+  email: Yup.string().email('Please enter a valid email address.').required('Email is required.'),
+  password: Yup.string()
+    .min(8, 'Password must be at least 8 characters long.')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).+$/, 'Password must contain uppercase, lowercase, number, and special character.')
+    .required('Password is required.'),
+});
+
+export default function SignUpScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<any>({});
+  const [serverError, setServerError] = useState('');
+  const { setUser } = useAuthStore();
+
+  const handleSignUp = async () => {
+    setErrors({});
+    setServerError('');
+    try {
+      await signUpSchema.validate({ email, password }, { abortEarly: false });
+    } catch (validationError: any) {
+      if (validationError.inner) {
+        const newErrors: any = {};
+        validationError.inner.forEach((err: any) => {
+          if (err.path) newErrors[err.path] = err.message;
+        });
+        setErrors(newErrors);
+      }
+      return;
+    }
+    try {
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setServerError(error.message);
+      } else if (data.user) {
+        setUser(data.user);
+      } else {
+        setServerError('Sign up failed. Please try again.');
+      }
+    } catch (err) {
+      setServerError('An error occurred during sign up. Please try again later.');
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24, marginBottom: 16 }}>Sign Up</Text>
+      <View style={{ marginBottom: 12 }}>
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            if (errors.email) setErrors((prev: any) => ({ ...prev, email: undefined }));
+          }}
+          style={{ borderWidth: 1, borderColor: errors.email ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          className="input-shadow"
+        />
+        {errors.email && <Text style={{ color: 'red', marginTop: 4 }}>{errors.email}</Text>}
+      </View>
+      <View style={{ marginBottom: 12 }}>
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={(text) => {
+            setPassword(text);
+            if (errors.password) setErrors((prev: any) => ({ ...prev, password: undefined }));
+          }}
+          style={{ borderWidth: 1, borderColor: errors.password ? 'red' : '#ccc', padding: 8, borderRadius: 4 }}
+          secureTextEntry
+          className="input-shadow"
+        />
+        {errors.password && <Text style={{ color: 'red', marginTop: 4 }}>{errors.password}</Text>}
+      </View>
+      {serverError ? <Text style={{ color: 'red', marginBottom: 12 }}>{serverError}</Text> : null}
+      <CustomButton title="Sign Up" onPress={handleSignUp} />
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region Utils - Supabase Helpers
+cat > "src/utils/supabaseHelpers.ts" << 'EOF'
+import { supabase } from '../lib/supabase';
+
+/**
+ * Fetches the profile for a given content record if the displayName is missing.
+ * This helper ensures that the content record has the joined profile data.
+ */
+export async function fetchProfileForContent(content: any): Promise<any> {
+  if (!content.profiles || !content.profiles.displayName) {
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('displayName')
+      .eq('id', content.user_id)
+      .maybeSingle();
+    if (!error && profileData) {
+      content.profiles = profileData;
+    }
+  }
+  return content;
+}
+EOF
+#endregion
+
+#region CommentsSection Component
+cat > "src/components/CommentsSection.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Alert, Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+import { LikeButton } from './LikeButton';
+
+interface Comment {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+  parent_id?: string | null;
+  profiles?: { displayName: string };
+}
+
+interface CommentsSectionProps {
+  postId: string; // ID of the top-level content
+  hidePostReply?: boolean;
+}
+
+export function CommentsSection({ postId, hidePostReply = false }: CommentsSectionProps) {
+  const { user } = useAuthStore();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+  const [showInput, setShowInput] = useState<boolean>(false);
+
+  // Fetch all comments for this post. (parent_id not null => comment; but we also filter by parent_id = postId or deeper).
+  const fetchComments = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('contents')
+        .select('*, profiles!inner(displayName)')
+        .neq('parent_id', null);
+      if (error) {
+        console.error('Error fetching comments:', error);
+      } else if (data) {
+        // We'll keep them all, then filter to build a thread structure.
+        setComments(data as Comment[]);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching comments:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComments();
+  }, [postId]);
+
+  const handleSubmitComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const payload = {
+        user_id: user.id,
+        content: newComment,
+        parent_id: replyTo ? replyTo.id : postId,
+      };
+      const { error } = await supabase.from('contents').insert([payload]).single();
+      if (error) {
+        console.error('Error submitting comment:', error);
+      } else {
+        setNewComment('');
+        setReplyTo(null);
+        setShowInput(false);
+        fetchComments();
+      }
+    } catch (err) {
+      console.error('Unexpected error submitting comment:', err);
+    }
+  };
+
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editingContent.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('contents')
+        .update({ content: editingContent })
+        .match({ id: commentId });
+      if (error) {
+        console.error('Error updating comment:', error);
+        Alert.alert('Update Error', error.message);
+      } else {
+        setEditingCommentId(null);
+        setEditingContent('');
+        fetchComments();
+      }
+    } catch (err) {
+      console.error('Unexpected error updating comment:', err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    }
+    try {
+      const { error } = await supabase
+        .from('contents')
+        .delete()
+        .match({ id: commentId, user_id: user.id });
+      if (error) {
+        if (Platform.OS === 'web') {
+          alert('Deletion Failed: ' + error.message);
+        } else {
+          Alert.alert('Delete Error', error.message);
+        }
+      } else {
+        fetchComments();
+      }
+    } catch (err: any) {
+      const message = err.message || 'Deletion failed.';
+      if (Platform.OS === 'web') {
+        alert('Deletion Failed: ' + message);
+      } else {
+        Alert.alert('Deletion Failed', message);
+      }
+    }
+  };
+
+  // Recursively render a comment + any replies.
+  const renderCommentItem = (comment: Comment, level = 0) => {
+    const replies = comments.filter((c) => c.parent_id === comment.id);
+    return (
+      <View key={comment.id} style={{ marginLeft: level * 16 }} className="mt-1">
+        {editingCommentId === comment.id ? (
+          <View>
+            <TextInput
+              value={editingContent}
+              onChangeText={setEditingContent}
+              style={{ borderWidth: 1, borderColor: '#ccc', padding: 4, borderRadius: 4 }}
+              multiline
+            />
+            <View style={{ flexDirection: 'row', marginTop: 4 }}>
+              <TouchableOpacity onPress={() => handleSaveEdit(comment.id)}>
+                <Text className="text-xs text-blue-500">Save</Text>
+              </TouchableOpacity>
+              <Text style={{ marginHorizontal: 8 }}>|</Text>
+              <TouchableOpacity onPress={() => { setEditingCommentId(null); setEditingContent(''); }}>
+                <Text className="text-xs text-red-500">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View>
+            {user && comment.user_id === user.id ? (
+              <TouchableOpacity onPress={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }}>
+                <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
+                  {comment.content}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
+                {comment.content}
+              </Text>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <LikeButton entityId={comment.id} entityType="content" />
+              <Text className="comment-meta" style={{ marginLeft: 4 }}>
+                {comment.profiles?.displayName || 'Unknown'} • {new Date(comment.created_at).toLocaleString()}
+              </Text>
+              {user && comment.user_id === user.id && (
+                <>
+                  <Text style={{ marginHorizontal: 8 }}>|</Text>
+                  <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+                    <Text className="text-xs text-blue-500">Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+              <Text style={{ marginHorizontal: 8 }}>|</Text>
+              <TouchableOpacity onPress={() => { setReplyTo(comment); setShowInput(true); }}>
+                <Text className="text-xs text-blue-500 dark:text-blue-400">Reply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+        {replies.map((reply) => renderCommentItem(reply, level + 1))}
+      </View>
+    );
+  };
+
+  const topLevelComments = comments.filter((c) => c.parent_id === postId);
+
+  return (
+    <View className="p-4 border-t border-gray-300 dark:border-gray-600 mt-2">
+      {loading ? (
+        <Text className="text-xs text-gray-600 dark:text-gray-300">Loading comments...</Text>
+      ) : (
+        <FlatList
+          data={topLevelComments}
+          renderItem={({ item }) => renderCommentItem(item)}
+          keyExtractor={(item) => item.id}
+        />
+      )}
+      {!hidePostReply && !showInput && (
+        <TouchableOpacity onPress={() => setShowInput(true)}>
+          <Text className="text-xs text-blue-500 mt-2">Reply</Text>
+        </TouchableOpacity>
+      )}
+      {showInput && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {replyTo && (
+            <View style={{ marginRight: 8 }}>
+              <Text className="comment-meta">Replying to: {replyTo.content}</Text>
+            </View>
+          )}
+          <TextInput
+            value={newComment}
+            onChangeText={setNewComment}
+            placeholder="Write a comment..."
+            className="flex-1 border border-gray-300 dark:border-gray-500 p-2 rounded mr-2"
+            placeholderTextColor="#888"
+          />
+          <TouchableOpacity onPress={handleSubmitComment}>
+            <Text className="text-blue-500 text-xs">Submit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setShowInput(false); setReplyTo(null); }}>
+            <Text className="text-xs text-red-500" style={{ marginLeft: 8 }}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+}
+export default CommentsSection;
+EOF
+#endregion
+
+#region LikeButton Component
+cat > "src/components/LikeButton.tsx" << 'EOF'
+import React, { useState, useEffect } from 'react';
+import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../store/useAuthStore';
+
+interface LikeButtonProps {
+  entityId: string;
+  entityType?: 'message' | 'content';
+}
+
+export function LikeButton({ entityId, entityType = 'content' }: LikeButtonProps) {
+  const { user } = useAuthStore();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+
+  const tableName = entityType === 'message' ? 'message_reactions' : 'content_reactions';
+
+  const fetchLikes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .eq(entityType === 'message' ? 'message_id' : 'content_id', entityId);
+      if (error) {
+        console.error('Error fetching likes:', error);
+        return;
+      }
+      setLikeCount(data.length);
+      const userLike = data.find((r: any) => r.user_id === user?.id);
+      setLiked(!!userLike);
+    } catch (err) {
+      console.error('Unexpected error fetching likes:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLikes();
+  }, [entityId, entityType]);
+
+  const showError = (message: string) => {
+    if (Platform.OS === 'web') {
+      alert(message);
+    } else {
+      Alert.alert('Like Error', message);
+    }
+  };
+
+  const toggleLike = async () => {
+    if (!user) {
+      showError('You must be logged in to like this item.');
+      return;
+    }
+    try {
+      if (liked) {
+        // Unlike
+        const matchObj = entityType === 'message'
+          ? { message_id: entityId, user_id: user.id }
+          : { content_id: entityId, user_id: user.id };
+        const { error } = await supabase
+          .from(tableName)
+          .delete()
+          .match(matchObj);
+        if (error) {
+          console.error('Error unliking:', error);
+          showError(error.message);
+        } else {
+          setLiked(false);
+          setLikeCount((prev) => prev - 1);
+        }
+      } else {
+        // Like
+        const insertObj = entityType === 'message'
+          ? { message_id: entityId, user_id: user.id, reaction: 'like' }
+          : { content_id: entityId, user_id: user.id, reaction: 'like' };
+        const { error } = await supabase
+          .from(tableName)
+          .insert([insertObj]);
+        if (error) {
+          console.error('Error liking:', error);
+          showError(error.message);
+        } else {
+          setLiked(true);
+          setLikeCount((prev) => prev + 1);
+        }
+      }
+    } catch (err) {
+      console.error('Unexpected error toggling like:', err);
+      showError('An unexpected error occurred while toggling like.');
+    }
+  };
+
+  return (
+    <TouchableOpacity style={styles.button} onPress={toggleLike}>
+      <Text style={[styles.text, liked && styles.liked]}>
+        {liked ? '👍' : '👍'} {likeCount}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginTop: 0,
+    alignSelf: 'flex-start',
+  },
+  text: {
+    fontSize: 12,
+    color: '#333',
+  },
+  liked: {
+    color: '#007AFF',
+  },
+});
+EOF
+#endregion
+
+#region HOME SCREEN
+cat > "app/(tabs)/home.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform, TouchableOpacity, TextInput } from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { fetchProfileForContent } from '../../src/utils/supabaseHelpers';
+import { CommentsSection } from '../../src/components/CommentsSection';
+import { LikeButton } from '../../src/components/LikeButton';
+
+interface Post {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  edited: boolean;
+  user_id: string;
+  profiles?: { displayName: string };
+}
+
+export default function HomeScreen() {
+  const { user } = useAuthStore();
+  const router = useRouter();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
+  const [activePostReplyId, setActivePostReplyId] = useState<string | null>(null);
+  const [postReplyContent, setPostReplyContent] = useState('');
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('contents')
+        .select('*, profiles!inner(displayName)')
+        .eq('parent_id', null)
+        .order('updated_at', { ascending: false });
+      if (error) {
+        console.error('Error fetching posts:', error);
+      } else if (data) {
+        const enriched = await Promise.all(data.map((post: Post) => fetchProfileForContent(post)));
+        setPosts(enriched);
+      }
+    } catch (err: any) {
+      console.error('Unexpected error fetching posts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  // Realtime subscription for new/updated/deleted top-level posts
+  useEffect(() => {
+    const channel = supabase
+      .channel('contents')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contents', filter: 'parent_id=is.null' },
+        (payload) => {
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const postData = payload.new as Post;
+            fetchProfileForContent(postData).then((updatedPost) => {
+              setPosts((prevPosts) => {
+                let updatedPosts: Post[] = [];
+                if (payload.eventType === 'INSERT') {
+                  updatedPosts = [...prevPosts, updatedPost];
+                } else {
+                  updatedPosts = prevPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p));
+                }
+                return updatedPosts.sort(
+                  (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+                );
+              });
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setPosts((prevPosts) =>
+              prevPosts.filter((p) => p.id !== payload.old.id).sort(
+                (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to delete this post?')) return;
+    }
+    try {
+      const { error } = await supabase
+        .from('contents')
+        .delete()
+        .match({ id: postId, user_id: user?.id });
+      if (error) {
+        if (Platform.OS === 'web') {
+          alert('Deletion Failed: ' + error.message);
+        } else {
+          Alert.alert('Deletion Failed', error.message);
+        }
+        setPostErrors((prev) => ({ ...prev, [postId]: error.message }));
+      } else {
+        setPostErrors((prev) => {
+          const updated = { ...prev };
+          delete updated[postId];
+          return updated;
+        });
+      }
+    } catch (err: any) {
+      const message = err.message || 'Deletion failed.';
+      if (Platform.OS === 'web') {
+        alert('Deletion Failed: ' + message);
+      } else {
+        Alert.alert('Deletion Failed', message);
+      }
+      setPostErrors((prev) => ({ ...prev, [postId]: message }));
+    }
+  };
+
+  const handleSubmitPostReply = async () => {
+    if (!postReplyContent.trim()) return;
+    try {
+      const payload = {
+        user_id: user.id,
+        content: postReplyContent,
+        parent_id: activePostReplyId,
+      };
+      const { error } = await supabase.from('contents').insert([payload]).single();
+      if (error) {
+        console.error('Error submitting post reply:', error);
+      } else {
+        setPostReplyContent('');
+        setActivePostReplyId(null);
+        fetchPosts();
+      }
+    } catch (err) {
+      console.error('Unexpected error submitting post reply:', err);
+    }
+  };
+
+  const renderPost = ({ item }: { item: Post }) => {
+    const posterName = item.profiles?.displayName || 'Unknown';
+    const timestamp = item.edited
+      ? `${new Date(item.updated_at).toLocaleString()} (edited)`
+      : new Date(item.created_at).toLocaleString();
+
+    return (
+      <View className="p-4 border-b border-gray-300">
+        <Text className="text-[#3b302a] dark:text-[#d4bfa3] text-base">{item.content}</Text>
+        <Text className="text-xs text-gray-600 mt-1">Posted by: {posterName}</Text>
+        <Text className="text-xs text-gray-600 mt-1">{timestamp}</Text>
+        {user && item.user_id === user.id && (
+          <View style={{ flexDirection: 'row', marginTop: 4, alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => router.push(`/create?id=${item.id}`)}>
+              <Text className="text-xs text-blue-500">Edit</Text>
+            </TouchableOpacity>
+            <Text style={{ marginHorizontal: 8 }}>|</Text>
+            <TouchableOpacity onPress={() => handleDeletePost(item.id)}>
+              <Text className="text-xs text-blue-500">Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {user && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <LikeButton entityId={item.id} entityType="content" />
+            <TouchableOpacity
+              onPress={() => setActivePostReplyId(item.id === activePostReplyId ? null : item.id)}
+            >
+              <Text style={{ fontSize: 12, color: '#007AFF', marginLeft: 8 }}>Reply</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {activePostReplyId === item.id && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <TextInput
+              value={postReplyContent}
+              onChangeText={setPostReplyContent}
+              placeholder="Write a reply..."
+              style={{ flex: 1, borderWidth: 1, borderColor: '#ccc', padding: 8, borderRadius: 4, marginRight: 8 }}
+              placeholderTextColor="#888"
+            />
+            <TouchableOpacity onPress={handleSubmitPostReply}>
+              <Text style={{ fontSize: 12, color: '#007AFF' }}>Submit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setActivePostReplyId(null); setPostReplyContent(''); }}>
+              <Text style={{ fontSize: 12, color: 'red', marginLeft: 8 }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <CommentsSection postId={item.id} hidePostReply={true} />
+        {postErrors[item.id] && (
+          <Text style={{ color: 'red', marginTop: 4 }}>
+            {postErrors[item.id]}
+          </Text>
+        )}
+      </View>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-steampunk-light">
+      {loading && posts.length === 0 ? (
+        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+      ) : (
+        <FlatList
+          data={posts}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPost}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        />
+      )}
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region Combined CREATE/EDIT SCREEN
+cat > "app/(tabs)/create.tsx" << 'EOF'
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Alert, Platform } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { CustomButton } from '../../src/components/CustomButton';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+
+export default function CreateEditPostScreen() {
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    async function fetchPost() {
+      if (id) {
+        const { data, error } = await supabase
+          .from('contents')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
+        if (error) {
+          setError(error.message);
+        } else if (data) {
+          setContent(data.content);
+        }
+      }
+    }
+    fetchPost();
+  }, [id, user]);
+
+  const handleSave = async () => {
+    if (!content.trim()) {
+      setError('Please enter some content for your post.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    if (id) {
+      // Editing existing post
+      const { error } = await supabase
+        .from('contents')
+        .update({ content, edited: true })
+        .match({ id, user_id: user.id });
+      if (error) {
+        setError(error.message);
+      } else {
+        if (Platform.OS === 'web') {
+          window.alert('Post Updated: Your post has been updated successfully.');
+          router.back();
+        } else {
+          Alert.alert('Post Updated', 'Your post has been updated successfully.', [
+            { text: 'OK', onPress: () => router.back() }
+          ]);
+        }
+      }
+    } else {
+      // Creating a new post
+      const { error } = await supabase
+        .from('contents')
+        .insert([{ user_id: user.id, content, parent_id: null }])
+        .single();
+      if (error) {
+        setError(error.message);
+      } else {
+        if (Platform.OS === 'web') {
+          window.alert('Post Created: Your post has been created successfully.');
+          router.back();
+        } else {
+          Alert.alert('Post Created', 'Your post has been created successfully.', [
+            { text: 'OK', onPress: () => router.back() }
+          ]);
+        }
+      }
+    }
+    setLoading(false);
+  };
+
+  return (
+    <View className="flex-1 bg-steampunk-light p-4">
+      <Text className="text-xl mb-4 text-[#3b302a] dark:text-[#d4bfa3]">
+        {id ? 'Edit Your Post' : 'Compose New Post'}
+      </Text>
+      {error ? <Text className="text-red-500 mb-3">{error}</Text> : null}
+      <TextInput
+        value={content}
+        onChangeText={setContent}
+        placeholder="What's on your mind?"
+        placeholderTextColor="#5a4a42"
+        className="border border-gray-300 dark:border-gray-600 p-2 rounded mb-4 text-[#3b302a] dark:text-[#d4bfa3]"
+        style={{ minHeight: 100, textAlignVertical: 'top' }}
+        multiline
+      />
+      <CustomButton
+        title={loading ? (id ? 'Saving Changes...' : 'Posting...') : (id ? 'Save Changes' : 'Submit Post')}
+        onPress={handleSave}
+      />
+      <CustomButton title="Cancel" onPress={() => router.back()} />
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region EXPLORE SCREEN
+cat > "app/(tabs)/explore.tsx" << 'EOF'
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function ExploreScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Explore Screen</Text>
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region GROUPS SCREEN
+cat > "app/(tabs)/groups.tsx" << 'EOF'
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function GroupsScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Groups Screen</Text>
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region MAP SCREEN
+cat > "app/(tabs)/map.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import MapView, { Marker } from '../../src/components/MapViewWrapper';
+import * as Location from 'expo-location';
+
+export default function MapScreen() {
+  const [location, setLocation] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
+    })();
+  }, []);
+
+  if (errorMsg) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>{errorMsg}</Text>
+      </View>
+    );
+  }
+
+  if (!location) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.infoText}>Fetching location...</Text>
+      </View>
+    );
+  }
+
+  const { latitude, longitude } = location.coords;
+  return (
+    <MapView
+      style={styles.map}
+      initialRegion={{
+        latitude,
+        longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }}
+    >
+      <Marker coordinate={{ latitude, longitude }} title="You are here" />
+    </MapView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f0e6d2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  map: {
+    flex: 1,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+  },
+  infoText: {
+    color: '#3b302a',
+    fontSize: 16,
+  },
+});
+EOF
+#endregion
+
+#region CHATS SCREEN
+cat > "app/(tabs)/chats.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, FlatList, Text } from 'react-native';
+import RNPickerSelect from 'react-native-picker-select';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { ChatMessage } from '../../src/components/ChatMessage';
+import { MessageInput } from '../../src/components/MessageInput';
+
+export default function ChatsScreen() {
+  const { user } = useAuthStore();
+  const [contacts, setContacts] = useState<any[]>([]);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [conversationId, setConversationId] = useState<string>('');
+  const [messages, setMessages] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchContacts() {
+      const { data, error } = await supabase.from('users').select('*');
+      if (error) {
+        console.error('Error fetching contacts:', error);
+      } else if (data) {
+        const otherUsers = data.filter((u: any) => u.id !== user.id);
+        setContacts(otherUsers);
+      }
+    }
+    fetchContacts();
+  }, [user]);
+
+  useEffect(() => {
+    if (!selectedContact) return;
+    async function fetchOrCreateConversation() {
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('*')
+        .or(`and(user1.eq.${user.id},user2.eq.${selectedContact.id}),and(user1.eq.${selectedContact.id},user2.eq.${user.id})`)
+        .maybeSingle();
+      let convId = '';
+      if (existingConversation) {
+        convId = existingConversation.id;
+      } else {
+        const { data: newConversation, error: insertError } = await supabase
+          .from('conversations')
+          .insert({
+            user1: user.id,
+            user2: selectedContact.id,
+          })
+          .select('*')
+          .maybeSingle();
+        if (insertError) {
+          console.error('Error creating conversation:', insertError);
+          return;
+        }
+        convId = newConversation.id;
+      }
+      setConversationId(convId);
+    }
+    fetchOrCreateConversation();
+  }, [selectedContact, user]);
+
+  useEffect(() => {
+    if (!conversationId) return;
+    async function fetchMessages() {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+      if (error) {
+        console.error('Error fetching messages:', error);
+      } else if (data) {
+        setMessages(data);
+      }
+    }
+    fetchMessages();
+
+    const channel = supabase
+      .channel(`conversation-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setMessages((prev) => [...prev, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === payload.new.id ? payload.new : msg))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setMessages((prev) =>
+              prev.filter((msg) => msg.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
+
+  const sendMessage = async (text: string) => {
+    if (!conversationId || text.trim() === '') return;
+    const { error } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: text,
+    });
+    if (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-steampunk-light">
+      <RNPickerSelect
+        onValueChange={(value) => {
+          const contact = contacts.find((c) => c.id === value);
+          setSelectedContact(contact);
+        }}
+        value={selectedContact ? selectedContact.id : ''}
+        placeholder={{ label: 'Select a contact', value: '' }}
+        items={contacts.map((contact) => ({
+          label: contact.displayName || contact.email,
+          value: contact.id,
+        }))}
+        style={{
+          inputIOS: { backgroundColor: '#fff', padding: 12, margin: 8 },
+          inputAndroid: { backgroundColor: '#fff', padding: 12, margin: 8 },
+          inputWeb: { backgroundColor: '#fff', padding: 12, margin: 8 },
+        }}
+      />
+
+      {selectedContact && (
+        <View className="p-4 border-b border-gray-300">
+          <Text className="text-lg font-bold text-[#3b302a] dark:text-[#d4bfa3]">
+            Chat with {selectedContact.displayName || selectedContact.email}
+          </Text>
+        </View>
+      )}
+
+      <FlatList
+        data={messages}
+        renderItem={({ item }) => (
+          <ChatMessage message={item} isOwnMessage={item.sender_id === user.id} />
+        )}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ padding: 10 }}
+      />
+
+      <MessageInput onSend={sendMessage} />
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region CUES SCREEN
+cat > "app/(tabs)/cues.tsx" << 'EOF'
+import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function CuesScreen() {
+  return (
+    <View className="flex-1 items-center justify-center bg-steampunk-light">
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3]">Cues</Text>
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region PROFILE SCREEN
+cat > "app/(tabs)/profile.tsx" << 'EOF'
+import React, { useEffect, useState } from 'react';
+import { View, Text } from 'react-native';
+import { supabase } from '../../src/lib/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { useRouter } from 'expo-router';
+import { useTheme } from '../../src/context/ThemeContext';
+import { CustomButton } from '../../src/components/CustomButton';
+
+export default function ProfileScreen() {
+  const { setUser, user } = useAuthStore();
+  const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      if (user) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error('Error fetching profile:', error);
+        } else if (data) {
+          setProfile(data);
+        }
+      }
+    }
+    fetchProfile();
+  }, [user]);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (!error) {
+      setUser(null);
+      router.replace('/signIn');
+    } else {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  return (
+    <View className="flex-1 bg-steampunk-light p-4 justify-between">
+      <View>
+        {profile ? (
+          <View className="mb-6 space-y-3">
+            <View>
+              <Text className="text-sm text-[#3b302a] dark:text-[#d4bfa3]">Display Name:</Text>
+              <Text className="text-lg text-[#3b302a] dark:text-[#d4bfa3]">
+                {profile.displayName || 'N/A'}
+              </Text>
+            </View>
+            <View>
+              <Text className="text-sm text-[#3b302a] dark:text-[#d4bfa3]">Email:</Text>
+              <Text className="text-lg text-[#3b302a] dark:text-[#d4bfa3]">
+                {profile.email}
+              </Text>
+            </View>
+            <View>
+              <Text className="text-sm text-[#3b302a] dark:text-[#d4bfa3]">Bio:</Text>
+              <Text className="text-lg text-[#3b302a] dark:text-[#d4bfa3]">
+                {profile.bio || 'No bio available.'}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3] mb-6">Loading profile...</Text>
+        )}
+      </View>
+
+      <View className="space-y-4">
+        <Text onPress={() => router.push('/profileEdit')} className="link text-center text-sm">
+          Edit Profile
+        </Text>
+        <CustomButton
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          onPress={toggleTheme}
+        />
+        <CustomButton title="Log Out" onPress={handleLogout} />
+      </View>
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region Profile Edit Screen
+cat > "app/profileEdit.tsx" << 'EOF'
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput } from 'react-native';
+import { useRouter } from 'expo-router';
+import { supabase } from '../src/lib/supabase';
+import { useAuthStore } from '../src/store/useAuthStore';
+import { CustomButton } from '../src/components/CustomButton';
+
+export default function ProfileEditScreen() {
+  const { user } = useAuthStore();
+  const [avatar, setAvatar] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [error, setError] = useState('');
+  const router = useRouter();
+
+  useEffect(() => {
+    async function fetchProfile() {
+      if (user) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        if (error) {
+          console.error('Error fetching profile:', error);
+        } else if (data) {
+          setAvatar(data.avatar || '');
+          setDisplayName(data.displayName || '');
+          setBio(data.bio || '');
+        }
+      }
+    }
+    fetchProfile();
+  }, [user]);
+
+  const handleSave = async () => {
+    setError('');
+    const updates = {
+      avatar,
+      displayName,
+      bio,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({ id: user.id, ...updates }, { returning: 'minimal' });
+    if (error) {
+      setError(error.message);
+    } else {
+      router.back();
+    }
+  };
+
+  return (
+    <View className="flex-1 p-4 bg-steampunk-light">
+      <Text className="text-2xl mb-4 text-[#3b302a] dark:text-[#d4bfa3]">Edit Profile</Text>
+      {error && <Text className="text-red-500 mb-3">{error}</Text>}
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Avatar URL:</Text>
+      <TextInput
+        value={avatar}
+        onChangeText={setAvatar}
+        className="border border-gray-300 p-2 rounded mb-3 input-shadow"
+      />
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Display Name:</Text>
+      <TextInput
+        value={displayName}
+        onChangeText={setDisplayName}
+        className="border border-gray-300 p-2 rounded mb-3 input-shadow"
+      />
+      <Text className="text-[#3b302a] dark:text-[#d4bfa3] mb-1">Bio:</Text>
+      <TextInput
+        value={bio}
+        onChangeText={setBio}
+        className="border border-gray-300 p-2 rounded mb-3 input-shadow"
+      />
+      <CustomButton title="Save" onPress={handleSave} />
+      <CustomButton title="Cancel" onPress={() => router.back()} />
+    </View>
+  );
+}
+EOF
+#endregion
+
+#region ChatMessage Component
+cat > "src/components/ChatMessage.tsx" << 'EOF'
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { useAuthStore } from '../store/useAuthStore';
+
+interface ChatMessageProps {
+  message: any;
+  isOwnMessage: boolean;
+}
+
+export function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
+  return (
+    <View style={[styles.messageContainer, isOwnMessage ? styles.ownMessage : styles.otherMessage]}>
+      <Text style={styles.messageContent}>
+        {message.content}{message.updated_at ? ' (edited)' : ''}
+      </Text>
+      <Text style={styles.timestamp}>
+        {new Date(message.created_at).toLocaleTimeString()}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  messageContainer: {
+    maxWidth: '80%',
+    padding: 12,
+    borderRadius: 8,
+    marginVertical: 4,
+  },
+  ownMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#c0a080',
+    borderColor: '#3b302a',
+  },
+  otherMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e0d0c0',
+    borderColor: '#5a4a42',
+  },
+  messageContent: {
+    fontSize: 16,
+    color: '#3b302a',
+  },
+  timestamp: {
+    fontSize: 10,
+    color: '#5a4a42',
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+});
+EOF
+#endregion
+
+#region MessageInput Component
+cat > "src/components/MessageInput.tsx" << 'EOF'
+import React, { useState } from 'react';
+import { View, TextInput, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+interface MessageInputProps {
+  onSend: (text: string) => void;
+}
+
+export function MessageInput({ onSend }: MessageInputProps) {
+  const [message, setMessage] = useState('');
+
+  const handleSend = () => {
+    if (message.trim()) {
+      onSend(message);
+      setMessage('');
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        value={message}
+        onChangeText={setMessage}
+        placeholder="Type a message..."
+        placeholderTextColor="#5a4a42"
+        multiline
+      />
+      <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+        <Ionicons name="send" size={24} color="#3b302a" />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = {
+  container: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    backgroundColor: '#f0e6d2',
+    borderTopWidth: 1,
+    borderColor: '#3b302a'
+  },
+  input: {
+    flex: 1,
+    minHeight: 40,
+    maxHeight: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#3b302a',
+    marginRight: 8,
+    color: '#3b302a'
+  },
+  sendButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#c0a080'
+  },
+};
+EOF
+#endregion
+
+#region Supabase Client
+cat > "src/lib/supabase.ts" << 'EOF'
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createClient } from '@supabase/supabase-js';
+import 'react-native-url-polyfill/auto';
+
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL or EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
+}
+
+const detectSessionInUrl = Platform.OS === 'web';
+const storage = Platform.OS === 'web' ? undefined : AsyncStorage;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: storage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: detectSessionInUrl,
+  },
+});
+EOF
+#endregion
+
+#region Zustand Auth Store
+cat > "src/store/useAuthStore.ts" << 'EOF'
+import { create } from 'zustand';
+import { supabase } from '../lib/supabase';
+
+type AuthState = {
+  user: any;
+  setUser: (user: any) => void;
+  isLoading: boolean;
+  setLoading: (loading: boolean) => void;
+};
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  isLoading: true,
+  setLoading: (loading) => set({ isLoading: loading }),
+}));
+
+(async () => {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error('Error fetching session:', error);
+  }
+  useAuthStore.setState({
+    user: session?.user || null,
+    isLoading: false,
+  });
+})();
+
+supabase.auth.onAuthStateChange((event, session) => {
+  useAuthStore.setState({
+    user: session?.user || null,
+    isLoading: false,
+  });
+});
+EOF
+#endregion
+
+#region Final Setup
+echo "✅ Project setup complete!"
+echo "Next steps:"
+echo "1. Update .env with your real Supabase URL & anon key matching the project where you ran Scripts 1 & 2."
+echo "2. npx expo start --clear (or run on your device/emulator)."
+echo "3. Sign in as 'testuser@example.com' (password: same from your seed script) or create an account."
+echo "4. You should see the dummy posts on the Home screen. Then test create/edit, replies, etc."
+echo "🚀 Done!"
+#endregion
+```
+
+---
+
+### Final Notes
+
+1. **Run Script 1** in your Supabase SQL editor first (with no existing users).  
+2. **Run Script 2** to create sample users (`jon@example.com`, `jane@example.com`, `testuser@example.com`, plus `admin@yourdomain.com`) and insert dummy posts in the `contents` table.  
+3. **Then** set up the front-end by running **Script 3** (the Bash script). Provide your correct `.env` with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`.  
+4. **Launch** the Expo app. On the `home` screen, you should see your top-level posts (including the multi-line sample from “Test User”).  
+
+If you still see **zero posts** on the Home screen:
+
+- Double-check that the front-end `.env` points to the same Supabase project.  
+- Confirm RLS policies are correct (`Contents select policy` => `USING (true)`).  
+- Look for console logs or errors in `fetchPosts`.
+
+That’s it! This **all-in-one** solution should give you dummy posts on the Home page with a unified `contents` model.
