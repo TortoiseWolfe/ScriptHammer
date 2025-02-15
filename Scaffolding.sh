@@ -9,7 +9,8 @@ set -eo pipefail
 #  - Run your backend SQL scripts (Schema Initialization & Seed Data)
 #    separately in your Supabase SQL editor.
 #  - This script assumes backend tables/views are named:
-#      profiles, posts, conversations, messages, reactions, and users (view).
+#      profiles, posts, conversations, messages, comments,
+#      post_reactions, message_reactions, and users (view).
 ##############################################
 
 #region Environment Variables and Pre-Setup
@@ -971,7 +972,7 @@ export function CommentsSection({ postId, hidePostReply = false }: CommentsSecti
               </Text>
             )}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-              <LikeButton entityId={comment.id} entityType="comment" />
+              <LikeButton entityId={comment.id} entityType="post" />
               <Text className="comment-meta" style={{ marginLeft: 4 }}>
                 {comment.profiles?.displayName || 'Unknown'} • {new Date(comment.created_at).toLocaleString()}
               </Text>
@@ -1043,63 +1044,83 @@ EOF
 #endregion
 
 #region LikeButton Component
+# Updated LikeButton to use the proper backend table names based on the entityType.
 cat > "src/components/LikeButton.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, Alert, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface LikeButtonProps {
   entityId: string;
-  entityType?: string;
+  entityType?: string; // "post" or "message"
 }
 
 export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
   const { user } = useAuthStore();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  // Determine the table name based on entityType.
+  const tableName = entityType === "message" ? "message_reactions" : "post_reactions";
 
   const fetchLikes = async () => {
     try {
       const { data, error } = await supabase
-        .from('reactions')
+        .from(tableName)
         .select('*')
-        .eq('entity_id', entityId)
-        .eq('entity_type', entityType);
+        .eq('post_id', entityId); // For posts and comments, use post_id.
       if (error) {
         console.error('Error fetching likes:', error);
-      } else {
-        setLikeCount(data.length);
-        const userLike = data.find((r: any) => r.user_id === user.id);
-        setLiked(!!userLike);
+        return;
       }
+      setLikeCount(data.length);
+      const userLike = data.find((r: any) => r.user_id === user?.id);
+      setLiked(!!userLike);
     } catch (err) {
       console.error('Unexpected error fetching likes:', err);
     }
   };
 
-  useEffect(() => { fetchLikes(); }, [entityId, entityType]);
+  useEffect(() => {
+    fetchLikes();
+  }, [entityId, entityType]);
+
+  const showError = (message: string) => {
+    if (Platform.OS === 'web') {
+      alert(message);
+    } else {
+      Alert.alert('Like Error', message);
+    }
+  };
 
   const toggleLike = async () => {
-    if (!user) return;
+    if (!user) {
+      showError('You must be logged in to like this item.');
+      return;
+    }
+
     try {
       if (liked) {
+        // UNLIKE
         const { error } = await supabase
-          .from('reactions')
+          .from(tableName)
           .delete()
-          .match({ entity_id: entityId, entity_type: entityType, user_id: user.id });
+          .match({ post_id: entityId, user_id: user.id });
         if (error) {
           console.error('Error unliking:', error);
+          showError(error.message);
         } else {
           setLiked(false);
           setLikeCount((prev) => prev - 1);
         }
       } else {
+        // LIKE
         const { error } = await supabase
-          .from('reactions')
-          .insert([{ entity_id: entityId, entity_type: entityType, user_id: user.id, reaction: 'like' }]);
+          .from(tableName)
+          .insert([{ post_id: entityId, user_id: user.id, reaction: 'like' }]);
         if (error) {
           console.error('Error liking:', error);
+          showError(error.message);
         } else {
           setLiked(true);
           setLikeCount((prev) => prev + 1);
@@ -1107,6 +1128,7 @@ export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
       }
     } catch (err) {
       console.error('Unexpected error toggling like:', err);
+      showError('An unexpected error occurred while toggling like.');
     }
   };
 
@@ -1142,14 +1164,13 @@ EOF
 #endregion
 
 #region HOME SCREEN
-# Streamlined inline "Edit" and "Delete" links and using smaller buttons for post actions.
+# Removed the "New Post" button at the top.
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { CustomButton } from '../../src/components/CustomButton';
 import { fetchProfileForPost } from '../../src/utils/supabaseHelpers';
 import { CommentsSection } from '../../src/components/CommentsSection';
 import { LikeButton } from '../../src/components/LikeButton';
@@ -1351,7 +1372,7 @@ export default function HomeScreen() {
         )}
         {user && (
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-            <LikeButton entityId={item.id} />
+            <LikeButton entityId={item.id} entityType="post" />
             <TouchableOpacity onPress={() => setActivePostReplyId(item.id === activePostReplyId ? null : item.id)}>
               <Text style={{ fontSize: 12, color: '#007AFF', marginLeft: 8 }}>Reply</Text>
             </TouchableOpacity>
@@ -1369,6 +1390,9 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={handleSubmitPostReply}>
               <Text style={{ fontSize: 12, color: '#007AFF' }}>Submit</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setActivePostReplyId(null); setPostReplyContent(''); }}>
+              <Text style={{ fontSize: 12, color: 'red', marginLeft: 8 }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         )}
         <CommentsSection postId={item.id} hidePostReply={true} />
@@ -1383,9 +1407,6 @@ export default function HomeScreen() {
 
   return (
     <View className="flex-1 bg-steampunk-light">
-      <View style={{ padding: 16, alignItems: 'center' }}>
-        <CustomButton title="New Post" onPress={() => router.push('/create')} />
-      </View>
       {loading && posts.length === 0 ? (
         <ActivityIndicator size="large" style={{ marginTop: 20 }} />
       ) : (
@@ -1431,7 +1452,7 @@ export default function CreateEditPostScreen() {
           .single();
         if (error) {
           setError(error.message);
-        } else {
+        } else if (data) {
           setContent(data.content);
         }
       }
@@ -1485,27 +1506,20 @@ export default function CreateEditPostScreen() {
   };
 
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: '#f0e6d2' }}>
-      <Text style={{ fontSize: 24, marginBottom: 16, color: '#3b302a' }}>
+    <View className="flex-1 bg-steampunk-light p-4">
+      <Text className="text-xl mb-4 text-[#3b302a] dark:text-[#d4bfa3]">
         {id ? 'Edit Your Post' : 'Compose New Post'}
       </Text>
-      {error ? <Text style={{ color: 'red', marginBottom: 8 }}>{error}</Text> : null}
+      {error ? (
+        <Text className="text-red-500 mb-3">{error}</Text>
+      ) : null}
       <TextInput
         value={content}
         onChangeText={setContent}
         placeholder="What's on your mind?"
         placeholderTextColor="#5a4a42"
-        style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          padding: 8,
-          borderRadius: 4,
-          marginBottom: 16,
-          backgroundColor: '#fff',
-          color: '#3b302a',
-          minHeight: 100,
-          textAlignVertical: 'top'
-        }}
+        className="border border-gray-300 dark:border-gray-600 p-2 rounded mb-4 text-[#3b302a] dark:text-[#d4bfa3]"
+        style={{ minHeight: 100, textAlignVertical: 'top' }}
         multiline
       />
       <CustomButton
@@ -2141,10 +2155,11 @@ echo "✅ Project setup complete!"
 echo "Next steps:"
 echo "1. Ensure your .env file uses the prefix 'EXPO_PUBLIC_GOOGLE_MAPS_API_KEY' for the Google Maps API key."
 echo "2. Run your backend SQL schema initialization and seed scripts in your Supabase SQL editor."
-echo "3. Verify the Zustand auth store in src/store/useAuthStore.ts."
-echo "4. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
-echo "5. Review the new messaging, post, and combined create/edit post feature files."
-echo "6. Run and test the auth, messenger, and post flow. For web: npx expo start --clear"
+echo "3. **Add a UNIQUE constraint** on (post_id, user_id) in your 'post_reactions' table and on (message_id, user_id) in 'message_reactions' to prevent duplicate likes."
+echo "4. Verify the Zustand auth store in src/store/useAuthStore.ts."
+echo "5. Update Tailwind and NativeWind configurations in tailwind.config.js if required."
+echo "6. Review the new messaging, post, and combined create/edit post feature files."
+echo "7. Run and test the auth, messenger, and post flow. For web: npx expo start --clear"
 echo "🚀 Starting Expo development server..."
 npx expo start --clear
 #endregion
