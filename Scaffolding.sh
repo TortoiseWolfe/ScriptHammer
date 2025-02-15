@@ -3,13 +3,13 @@ set -eo pipefail
 
 ##############################################
 # Expo Setup Script Template with Combined Create/Edit Post Draft,
-# Home Screen, Realtime UI, Inline Error Handling, and Updated CommentsSection Styling.
+# Home Screen, Realtime UI, Inline Error Handling, and Updated Like/Comments Functionality.
 #
 # NOTE:
 #  - Run your backend SQL scripts (Schema Initialization & Seed Data)
 #    separately in your Supabase SQL editor.
 #  - This script assumes backend tables/views are named:
-#      profiles, posts, conversations, messages, and users (view).
+#      profiles, posts, conversations, messages, reactions, and users (view).
 ##############################################
 
 #region Environment Variables and Pre-Setup
@@ -770,7 +770,7 @@ export default function SignUpScreen() {
 EOF
 #endregion
 
-#region Scaffold Utils - Supabase Helpers
+#region Utils - Supabase Helpers
 cat > "src/utils/supabaseHelpers.ts" << 'EOF'
 import { supabase } from '../lib/supabase';
 
@@ -794,13 +794,13 @@ export async function fetchProfileForPost(post: any): Promise<any> {
 EOF
 #endregion
 
-#region Scaffold CommentsSection Component
+#region CommentsSection Component
 cat > "src/components/CommentsSection.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, Alert, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
-import { CustomButton } from './CustomButton';
+import { LikeButton } from './LikeButton';
 
 interface Comment {
   id: string;
@@ -814,14 +814,18 @@ interface Comment {
 
 interface CommentsSectionProps {
   postId: string;
+  hidePostReply?: boolean;
 }
 
-export function CommentsSection({ postId }: CommentsSectionProps) {
+export function CommentsSection({ postId, hidePostReply = false }: CommentsSectionProps) {
   const { user } = useAuthStore();
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+  const [showInput, setShowInput] = useState<boolean>(false);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -862,6 +866,7 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
       } else {
         setNewComment('');
         setReplyTo(null);
+        setShowInput(false);
         fetchComments();
       }
     } catch (err) {
@@ -869,21 +874,121 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
     }
   };
 
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editingContent.trim()) return;
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ content: editingContent })
+        .match({ id: commentId });
+      if (error) {
+        console.error('Error updating comment:', error);
+        Alert.alert('Update Error', error.message);
+      } else {
+        setEditingCommentId(null);
+        setEditingContent('');
+        fetchComments();
+      }
+    } catch (err) {
+      console.error('Unexpected error updating comment:', err);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (Platform.OS === 'web') {
+      if (!window.confirm('Are you sure you want to delete this comment?')) return;
+      try {
+        const { error } = await supabase.from('comments').delete().match({ id: commentId, user_id: user.id });
+        if (error) {
+          alert('Deletion Failed: ' + error.message);
+        } else {
+          fetchComments();
+        }
+      } catch (err) {
+        const message = err.message || 'Deletion failed.';
+        alert('Deletion Failed: ' + message);
+      }
+    } else {
+      Alert.alert(
+        'Delete Comment',
+        'Are you sure you want to delete this comment?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                const { error } = await supabase.from('comments').delete().match({ id: commentId, user_id: user.id });
+                if (error) {
+                  Alert.alert('Delete Error', error.message);
+                } else {
+                  fetchComments();
+                }
+              } catch (err) {
+                console.error('Unexpected error deleting comment:', err);
+              }
+            },
+          },
+        ],
+        { cancelable: true }
+      );
+    }
+  };
+
   const renderCommentItem = (comment: Comment, level: number = 0) => {
     return (
       <View key={comment.id} style={{ marginLeft: level * 16 }} className="mt-1">
-        {/* Render comment content first */}
-        <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
-          {comment.content}
-        </Text>
-        {/* Render meta information (author's name and timestamp) below content */}
-        <Text className="comment-meta">
-          {comment.profiles?.displayName || 'Unknown'} • {new Date(comment.created_at).toLocaleString()}
-        </Text>
-        {user && (
-          <TouchableOpacity onPress={() => setReplyTo(comment)}>
-            <Text className="text-xs text-blue-500 dark:text-blue-400 mt-1">Reply</Text>
-          </TouchableOpacity>
+        {editingCommentId === comment.id ? (
+          <View>
+            <TextInput
+              value={editingContent}
+              onChangeText={setEditingContent}
+              style={{ borderWidth: 1, borderColor: '#ccc', padding: 4, borderRadius: 4 }}
+              multiline
+            />
+            <View style={{ flexDirection: 'row', marginTop: 4 }}>
+              <TouchableOpacity onPress={() => handleSaveEdit(comment.id)}>
+                <Text className="text-xs text-blue-500">Save</Text>
+              </TouchableOpacity>
+              <Text style={{ marginHorizontal: 8 }}>|</Text>
+              <TouchableOpacity onPress={() => { setEditingCommentId(null); setEditingContent(''); }}>
+                <Text className="text-xs text-red-500">Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View>
+            {user && comment.user_id === user.id ? (
+              <TouchableOpacity onPress={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }}>
+                <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
+                  {comment.content}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3]">
+                {comment.content}
+              </Text>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+              <LikeButton entityId={comment.id} entityType="comment" />
+              <Text className="comment-meta" style={{ marginLeft: 4 }}>
+                {comment.profiles?.displayName || 'Unknown'} • {new Date(comment.created_at).toLocaleString()}
+              </Text>
+              {user && comment.user_id === user.id && (
+                <>
+                  <Text style={{ marginHorizontal: 8 }}>|</Text>
+                  <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+                    <Text className="text-xs text-blue-500">Delete</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+              <Text style={{ marginHorizontal: 8 }}>|</Text>
+              <TouchableOpacity onPress={() => { setReplyTo(comment); setShowInput(true); }}>
+                <Text className="text-xs text-blue-500 dark:text-blue-400">Reply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
         {comments
           .filter((c) => c.parent_comment_id === comment.id)
@@ -894,7 +999,6 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
 
   return (
     <View className="p-4 border-t border-gray-300 dark:border-gray-600 mt-2">
-      <Text className="text-base text-[#3b302a] dark:text-[#d4bfa3] mb-2">Comments</Text>
       {loading ? (
         <Text className="text-xs text-gray-600 dark:text-gray-300">Loading comments...</Text>
       ) : (
@@ -904,24 +1008,33 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
           keyExtractor={(item) => item.id}
         />
       )}
-      {replyTo && (
-        <View className="bg-gray-100 dark:bg-gray-700 p-2 my-2">
-          <Text className="comment-meta">Replying to: {replyTo.content}</Text>
-          <TouchableOpacity onPress={() => setReplyTo(null)}>
-            <Text className="text-xs text-red-500">Cancel Reply</Text>
+      {!hidePostReply && !showInput && (
+        <TouchableOpacity onPress={() => setShowInput(true)}>
+          <Text className="text-xs text-blue-500 mt-2">Reply</Text>
+        </TouchableOpacity>
+      )}
+      {showInput && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {replyTo && (
+            <View style={{ marginRight: 8 }}>
+              <Text className="comment-meta">Replying to: {replyTo.content}</Text>
+            </View>
+          )}
+          <TextInput
+            value={newComment}
+            onChangeText={setNewComment}
+            placeholder="Write a comment..."
+            className="flex-1 border border-gray-300 dark:border-gray-500 p-2 rounded mr-2"
+            placeholderTextColor="#888"
+          />
+          <TouchableOpacity onPress={handleSubmitComment}>
+            <Text className="text-blue-500 text-xs">Submit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setShowInput(false); setReplyTo(null); }}>
+            <Text className="text-xs text-red-500" style={{ marginLeft: 8 }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       )}
-      <View className="flex-row items-center mt-2">
-        <TextInput
-          value={newComment}
-          onChangeText={setNewComment}
-          placeholder="Write a comment..."
-          className="flex-1 border border-gray-300 dark:border-gray-500 p-2 rounded mr-2"
-          placeholderTextColor="#888"
-        />
-        <CustomButton title="Submit" onPress={handleSubmitComment} />
-      </View>
     </View>
   );
 }
@@ -929,16 +1042,19 @@ export default CommentsSection;
 EOF
 #endregion
 
-#region Scaffold LikeButton Component
+#region LikeButton Component
 cat > "src/components/LikeButton.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 
-interface LikeButtonProps { postId: string; }
+interface LikeButtonProps {
+  entityId: string;
+  entityType?: string;
+}
 
-export function LikeButton({ postId }: LikeButtonProps) {
+export function LikeButton({ entityId, entityType = "post" }: LikeButtonProps) {
   const { user } = useAuthStore();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -948,7 +1064,8 @@ export function LikeButton({ postId }: LikeButtonProps) {
       const { data, error } = await supabase
         .from('reactions')
         .select('*')
-        .eq('post_id', postId);
+        .eq('entity_id', entityId)
+        .eq('entity_type', entityType);
       if (error) {
         console.error('Error fetching likes:', error);
       } else {
@@ -961,7 +1078,7 @@ export function LikeButton({ postId }: LikeButtonProps) {
     }
   };
 
-  useEffect(() => { fetchLikes(); }, [postId]);
+  useEffect(() => { fetchLikes(); }, [entityId, entityType]);
 
   const toggleLike = async () => {
     if (!user) return;
@@ -970,9 +1087,9 @@ export function LikeButton({ postId }: LikeButtonProps) {
         const { error } = await supabase
           .from('reactions')
           .delete()
-          .match({ post_id: postId, user_id: user.id });
+          .match({ entity_id: entityId, entity_type: entityType, user_id: user.id });
         if (error) {
-          console.error('Error unliking post:', error);
+          console.error('Error unliking:', error);
         } else {
           setLiked(false);
           setLikeCount((prev) => prev - 1);
@@ -980,9 +1097,9 @@ export function LikeButton({ postId }: LikeButtonProps) {
       } else {
         const { error } = await supabase
           .from('reactions')
-          .insert([{ post_id: postId, user_id: user.id, reaction: 'like' }]);
+          .insert([{ entity_id: entityId, entity_type: entityType, user_id: user.id, reaction: 'like' }]);
         if (error) {
-          console.error('Error liking post:', error);
+          console.error('Error liking:', error);
         } else {
           setLiked(true);
           setLikeCount((prev) => prev + 1);
@@ -996,30 +1113,43 @@ export function LikeButton({ postId }: LikeButtonProps) {
   return (
     <TouchableOpacity style={styles.button} onPress={toggleLike}>
       <Text style={[styles.text, liked && styles.liked]}>
-        {liked ? '👍 Liked' : '👍 Like'} ({likeCount})
+        {liked ? '👍' : '👍'} {likeCount}
       </Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  button: { padding: 6, backgroundColor: '#fff', borderRadius: 4, borderWidth: 1, borderColor: '#ccc', marginTop: 10 },
-  text: { fontSize: 14, color: '#333' },
-  liked: { color: '#007AFF' },
+  button: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginTop: 0,
+    alignSelf: 'flex-start',
+  },
+  text: {
+    fontSize: 12,
+    color: '#333',
+  },
+  liked: {
+    color: '#007AFF',
+  },
 });
 EOF
 #endregion
 
 #region HOME SCREEN
+# Streamlined inline "Edit" and "Delete" links and using smaller buttons for post actions.
 cat > "app/(tabs)/home.tsx" << 'EOF'
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, RefreshControl, Alert, Platform, TouchableOpacity, TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CustomButton } from '../../src/components/CustomButton';
-import { ChatMessage } from '../../src/components/ChatMessage';
-import { MessageInput } from '../../src/components/MessageInput';
 import { fetchProfileForPost } from '../../src/utils/supabaseHelpers';
 import { CommentsSection } from '../../src/components/CommentsSection';
 import { LikeButton } from '../../src/components/LikeButton';
@@ -1041,6 +1171,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [postErrors, setPostErrors] = useState<{ [key: string]: string }>({});
+  const [activePostReplyId, setActivePostReplyId] = useState<string | null>(null);
+  const [postReplyContent, setPostReplyContent] = useState('');
 
   const fetchPosts = async () => {
     setLoading(true);
@@ -1114,7 +1246,6 @@ export default function HomeScreen() {
   const handleDeletePost = async (postId: string) => {
     if (Platform.OS === 'web') {
       if (!window.confirm('Are you sure you want to delete this post?')) return;
-      console.log('Delete button pressed for post:', postId);
       try {
         const { error } = await supabase
           .from('posts')
@@ -1145,7 +1276,6 @@ export default function HomeScreen() {
             text: 'Delete',
             style: 'destructive',
             onPress: async () => {
-              console.log('Delete button pressed for post:', postId);
               try {
                 const { error } = await supabase
                   .from('posts')
@@ -1174,6 +1304,28 @@ export default function HomeScreen() {
     }
   };
 
+  const handleSubmitPostReply = async () => {
+    if (!postReplyContent.trim()) return;
+    try {
+      const payload = {
+        post_id: activePostReplyId,
+        user_id: user.id,
+        content: postReplyContent,
+        parent_comment_id: null,
+      };
+      const { error } = await supabase.from('comments').insert([payload]).single();
+      if (error) {
+        console.error('Error submitting post reply:', error);
+      } else {
+        setPostReplyContent('');
+        setActivePostReplyId(null);
+        fetchPosts();
+      }
+    } catch (err) {
+      console.error('Unexpected error submitting post reply:', err);
+    }
+  };
+
   const renderPost = ({ item }: { item: Post }) => {
     const posterName =
       item.profiles && item.profiles.displayName ? item.profiles.displayName : 'Unknown';
@@ -1187,14 +1339,39 @@ export default function HomeScreen() {
         <Text className="text-xs text-gray-600 mt-1">Posted by: {posterName}</Text>
         <Text className="text-xs text-gray-600 mt-1">{timestamp}</Text>
         {user && item.user_id === user.id && (
-          <View style={{ flexDirection: 'row', marginTop: 8 }}>
-            <CustomButton title="Edit" onPress={() => router.push(`/create?id=${item.id}`)} />
-            <View style={{ width: 16 }} />
-            <CustomButton title="Delete" onPress={() => handleDeletePost(item.id)} />
+          <View style={{ flexDirection: 'row', marginTop: 4, alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => router.push(`/create?id=${item.id}`)}>
+              <Text className="text-xs text-blue-500">Edit</Text>
+            </TouchableOpacity>
+            <Text style={{ marginHorizontal: 8 }}>|</Text>
+            <TouchableOpacity onPress={() => handleDeletePost(item.id)}>
+              <Text className="text-xs text-blue-500">Delete</Text>
+            </TouchableOpacity>
           </View>
         )}
-        <LikeButton postId={item.id} />
-        <CommentsSection postId={item.id} />
+        {user && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <LikeButton entityId={item.id} />
+            <TouchableOpacity onPress={() => setActivePostReplyId(item.id === activePostReplyId ? null : item.id)}>
+              <Text style={{ fontSize: 12, color: '#007AFF', marginLeft: 8 }}>Reply</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {activePostReplyId === item.id && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+            <TextInput
+              value={postReplyContent}
+              onChangeText={setPostReplyContent}
+              placeholder="Write a reply..."
+              style={{ flex: 1, borderWidth: 1, borderColor: '#ccc', padding: 8, borderRadius: 4, marginRight: 8 }}
+              placeholderTextColor="#888"
+            />
+            <TouchableOpacity onPress={handleSubmitPostReply}>
+              <Text style={{ fontSize: 12, color: '#007AFF' }}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <CommentsSection postId={item.id} hidePostReply={true} />
         {postErrors[item.id] && (
           <Text style={{ color: 'red', marginTop: 4, fontWeight: 'normal' }}>
             {postErrors[item.id]}
@@ -1485,9 +1662,7 @@ export default function ChatsScreen() {
       const { data: existingConversation } = await supabase
         .from('conversations')
         .select('*')
-        .or(
-          `and(user1.eq.${user.id},user2.eq.${selectedContact.id}),and(user1.eq.${selectedContact.id},user2.eq.${user.id})`
-        )
+        .or(`and(user1.eq.${user.id},user2.eq.${selectedContact.id}),and(user1.eq.${selectedContact.id},user2.eq.${user.id})`)
         .maybeSingle();
       let convId = '';
       if (existingConversation) {
@@ -1719,7 +1894,7 @@ export default function ProfileScreen() {
 EOF
 #endregion
 
-#region Scaffold Profile Edit Screen
+#region Profile Edit Screen
 cat > "app/profileEdit.tsx" << 'EOF'
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput } from 'react-native';
@@ -1792,7 +1967,7 @@ export default function ProfileEditScreen() {
 EOF
 #endregion
 
-#region Add Missing Component Implementations (ChatMessage)
+#region ChatMessage Component
 cat > "src/components/ChatMessage.tsx" << 'EOF'
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
@@ -1847,7 +2022,9 @@ const styles = StyleSheet.create({
   },
 });
 EOF
+#endregion
 
+#region MessageInput Component
 cat > "src/components/MessageInput.tsx" << 'EOF'
 import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
