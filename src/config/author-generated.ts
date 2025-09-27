@@ -8,7 +8,7 @@ export const authorConfig = {
   name: 'TurtleWolfe',
   github: 'TortoiseWolfe',
   role: 'Full Stack Developer',
-  bio: 'Building modern web applications.',
+  bio: 'Software Craftsman',
   avatar:
     'https://static-cdn.jtvnw.net/jtv_user_pictures/8c7c5224-3e74-428c-9674-99cba6de21df-profile_image-300x300.png',
   social: {
