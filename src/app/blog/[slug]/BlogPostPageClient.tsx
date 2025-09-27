@@ -24,6 +24,7 @@ interface BlogPostPageClientProps {
     text: string;
     url: string;
   };
+  disqusShortname?: string;
 }
 
 export default function BlogPostPageClient({
@@ -34,6 +35,7 @@ export default function BlogPostPageClient({
   seoScore,
   seoAnalysis,
   shareOptions,
+  disqusShortname,
 }: BlogPostPageClientProps) {
   const [showSeoDetails, setShowSeoDetails] = useState(false);
 
@@ -184,6 +186,7 @@ export default function BlogPostPageClient({
         slug={post.slug}
         title={post.title}
         url={shareOptions.url}
+        shortname={disqusShortname}
       />
     </article>
   );
