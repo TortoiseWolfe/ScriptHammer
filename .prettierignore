@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Next.js
+.next
+out
+build
+
+# Testing
+coverage
+*.lcov
+
+# Storybook
+storybook-static
+
+# Production
+dist
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env*.local
+
+# Editor directories
+.vscode
+.idea
+
+# Generated files
+public/TASKS.md
+
+# Template files (Handlebars)
+*.hbs
+plop-templates/**
+
+# Spec files that may have complex formatting
+specs/**/*.yaml
+
+# Generated files that shouldn't be formatted
+src/config/project-detected.json
+src/config/project-detected.ts
+src/lib/blog/blog-data.json
+public/feed.json
+public/manifest.json
+public/blog-manifest.json

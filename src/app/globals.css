@@ -1,0 +1,336 @@
+@import 'tailwindcss';
+@import '../styles/colorblind-patterns.css';
+@import '../styles/prism-vscode-dark.css';
+@plugin "daisyui" {
+  themes:
+    light, dark, cupcake, bumblebee, emerald, corporate, synthwave, retro,
+    cyberpunk, valentine, halloween, garden, forest, aqua, lofi, pastel,
+    fantasy, wireframe, black, luxury, dracula, cmyk, autumn, business, acid,
+    lemonade, night, coffee, winter, dim, nord, sunset;
+}
+
+/* Font Loading Optimization */
+@font-face {
+  font-family: 'Geist';
+  font-display: swap;
+  size-adjust: 100%;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  font-display: swap;
+  size-adjust: 100%;
+}
+
+/* Accessibility Font Scaling System */
+:root {
+  /* Base scale factor - controlled by accessibility settings */
+  --font-scale-factor: 1;
+
+  /* Font loading optimization to reduce CLS */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Scaled text sizes */
+  --text-xs: calc(0.75rem * var(--font-scale-factor));
+  --text-sm: calc(0.875rem * var(--font-scale-factor));
+  --text-base: calc(1rem * var(--font-scale-factor));
+  --text-lg: calc(1.125rem * var(--font-scale-factor));
+  --text-xl: calc(1.25rem * var(--font-scale-factor));
+  --text-2xl: calc(1.5rem * var(--font-scale-factor));
+  --text-3xl: calc(1.875rem * var(--font-scale-factor));
+  --text-4xl: calc(2.25rem * var(--font-scale-factor));
+  --text-5xl: calc(3rem * var(--font-scale-factor));
+  --text-6xl: calc(3.75rem * var(--font-scale-factor));
+  --text-7xl: calc(4.5rem * var(--font-scale-factor));
+  --text-8xl: calc(6rem * var(--font-scale-factor));
+  --text-9xl: calc(8rem * var(--font-scale-factor));
+}
+
+/* Subtle Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* Override Tailwind text size classes to use CSS variables */
+.text-xs {
+  font-size: var(--text-xs) !important;
+}
+.text-sm {
+  font-size: var(--text-sm) !important;
+}
+.text-base {
+  font-size: var(--text-base) !important;
+}
+.text-lg {
+  font-size: var(--text-lg) !important;
+}
+.text-xl {
+  font-size: var(--text-xl) !important;
+}
+.text-2xl {
+  font-size: var(--text-2xl) !important;
+}
+.text-3xl {
+  font-size: var(--text-3xl) !important;
+}
+.text-4xl {
+  font-size: var(--text-4xl) !important;
+}
+.text-5xl {
+  font-size: var(--text-5xl) !important;
+}
+.text-6xl {
+  font-size: var(--text-6xl) !important;
+}
+.text-7xl {
+  font-size: var(--text-7xl) !important;
+}
+.text-8xl {
+  font-size: var(--text-8xl) !important;
+}
+.text-9xl {
+  font-size: var(--text-9xl) !important;
+}
+
+/* Also scale heading elements that don't have explicit classes */
+h1:not([class*='text-']) {
+  font-size: var(--text-4xl);
+}
+h2:not([class*='text-']) {
+  font-size: var(--text-3xl);
+}
+h3:not([class*='text-']) {
+  font-size: var(--text-2xl);
+}
+h4:not([class*='text-']) {
+  font-size: var(--text-xl);
+}
+h5:not([class*='text-']) {
+  font-size: var(--text-lg);
+}
+h6:not([class*='text-']) {
+  font-size: var(--text-base);
+}
+p:not([class*='text-']) {
+  font-size: var(--text-base);
+}
+
+/* Spinning Logo Animations */
+@keyframes spin-clockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-counter-clockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Pause animation on hover */
+.pause-on-hover:hover {
+  animation-play-state: paused !important;
+}
+
+/* Leaflet Map Styles */
+/* Note: Leaflet CSS is imported in map components that use it */
+
+/* Fix Leaflet container sizing */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+  font-family: inherit;
+}
+
+/* Fix Leaflet controls for dark mode */
+[data-theme='dark'] .leaflet-control,
+[data-theme='dracula'] .leaflet-control,
+[data-theme='synthwave'] .leaflet-control,
+[data-theme='halloween'] .leaflet-control,
+[data-theme='forest'] .leaflet-control,
+[data-theme='black'] .leaflet-control,
+[data-theme='luxury'] .leaflet-control,
+[data-theme='night'] .leaflet-control,
+[data-theme='coffee'] .leaflet-control,
+[data-theme='dim'] .leaflet-control,
+[data-theme='sunset'] .leaflet-control {
+  background-color: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme='dark'] .leaflet-control a,
+[data-theme='dracula'] .leaflet-control a,
+[data-theme='synthwave'] .leaflet-control a,
+[data-theme='halloween'] .leaflet-control a,
+[data-theme='forest'] .leaflet-control a,
+[data-theme='black'] .leaflet-control a,
+[data-theme='luxury'] .leaflet-control a,
+[data-theme='night'] .leaflet-control a,
+[data-theme='coffee'] .leaflet-control a,
+[data-theme='dim'] .leaflet-control a,
+[data-theme='sunset'] .leaflet-control a {
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* Fix popup styles for themes */
+.leaflet-popup-content-wrapper {
+  @apply bg-base-100 text-base-content;
+  border-radius: var(--rounded-box, 1rem);
+}
+
+.leaflet-popup-tip {
+  @apply bg-base-100;
+}
+
+/* Accessibility improvements */
+.leaflet-control-zoom a {
+  @apply transition-colors;
+}
+
+.leaflet-control-zoom a:hover {
+  @apply bg-base-300;
+}
+
+.leaflet-control-zoom a:focus {
+  @apply ring-primary ring-2 outline-none;
+}
+
+/* Fix marker positioning */
+.leaflet-marker-icon {
+  transition: none !important;
+}
+
+/* Custom location marker styles */
+.user-location-marker {
+  @apply bg-primary;
+  border: 3px solid white;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.user-location-accuracy {
+  @apply fill-primary opacity-20;
+  stroke: theme('colors.primary.DEFAULT');
+  stroke-width: 1;
+  stroke-opacity: 0.5;
+}
+
+/* ===== Syntax Highlighting Styles ===== */
+/* Line numbers styles */
+[data-theme] .line-number {
+  @apply text-base-content/30 select-none;
+  display: inline-block;
+  width: 3rem;
+  text-align: right;
+  padding-right: 1rem;
+  margin-right: 1rem;
+  border-right: 1px solid;
+  @apply border-base-300;
+}
+
+[data-theme] .code-line {
+  display: block;
+}
+
+/* Token colors that work with all themes */
+[data-theme] .token.comment,
+[data-theme] .token.prolog,
+[data-theme] .token.doctype,
+[data-theme] .token.cdata {
+  color: #6a9955; /* Green comments */
+}
+
+[data-theme] .token.punctuation {
+  color: #d4d4d4; /* Light gray */
+}
+
+[data-theme] .token.property,
+[data-theme] .token.tag,
+[data-theme] .token.constant,
+[data-theme] .token.symbol,
+[data-theme] .token.deleted {
+  color: #ce9178; /* Orange */
+}
+
+[data-theme] .token.boolean,
+[data-theme] .token.number {
+  color: #b5cea8; /* Light green */
+}
+
+[data-theme] .token.selector,
+[data-theme] .token.attr-name,
+[data-theme] .token.string,
+[data-theme] .token.char,
+[data-theme] .token.builtin,
+[data-theme] .token.inserted {
+  color: #ce9178; /* Orange for strings */
+}
+
+[data-theme] .token.operator,
+[data-theme] .token.entity,
+[data-theme] .token.url,
+[data-theme] .language-css .token.string,
+[data-theme] .style .token.string,
+[data-theme] .token.variable {
+  color: #d4d4d4; /* Light gray */
+}
+
+[data-theme] .token.atrule,
+[data-theme] .token.attr-value,
+[data-theme] .token.function,
+[data-theme] .token.class-name {
+  color: #dcdcaa; /* Yellow */
+}
+
+[data-theme] .token.keyword {
+  color: #569cd6; /* Blue */
+}
+
+[data-theme] .token.regex,
+[data-theme] .token.important {
+  color: #d16969; /* Red */
+}
+
+[data-theme] .token.important,
+[data-theme] .token.bold {
+  font-weight: bold;
+}
+
+[data-theme] .token.italic {
+  font-style: italic;
+}
+
+[data-theme] .token.entity {
+  cursor: help;
+}
+
+/* Code block container adjustments */
+[data-theme] pre[class*='language-'] {
+  @apply bg-base-200 text-base-content my-4 rounded-lg p-4;
+  overflow-x: auto;
+}
+
+[data-theme] code[class*='language-'] {
+  @apply font-mono text-sm;
+}

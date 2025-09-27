@@ -1,0 +1,251 @@
+openapi: 3.0.0
+info:
+  title: E2E Test Execution API
+  version: 1.0.0
+  description: API for executing and managing Playwright E2E tests
+
+paths:
+  /tests/run:
+    post:
+      summary: Execute test suite
+      operationId: runTests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestRunRequest'
+      responses:
+        '200':
+          description: Test execution started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestRunResponse'
+        '400':
+          description: Invalid request
+        '500':
+          description: Server error
+
+  /tests/status/{runId}:
+    get:
+      summary: Get test run status
+      operationId: getTestStatus
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Test run status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestStatus'
+        '404':
+          description: Run not found
+
+  /tests/report/{runId}:
+    get:
+      summary: Get test report
+      operationId: getTestReport
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [html, json, junit]
+            default: json
+      responses:
+        '200':
+          description: Test report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestReport'
+            text/html:
+              schema:
+                type: string
+            application/xml:
+              schema:
+                type: string
+        '404':
+          description: Report not found
+
+components:
+  schemas:
+    TestRunRequest:
+      type: object
+      required:
+        - project
+      properties:
+        project:
+          type: string
+          enum: [chromium, firefox, webkit, all]
+          description: Browser project to run
+        tests:
+          type: array
+          items:
+            type: string
+          description: Specific test files to run
+        grep:
+          type: string
+          description: Filter tests by title pattern
+        timeout:
+          type: integer
+          description: Maximum test duration in milliseconds
+          default: 300000
+        workers:
+          type: integer
+          description: Number of parallel workers
+          default: 4
+        retries:
+          type: integer
+          description: Number of retries for failed tests
+          default: 2
+        headed:
+          type: boolean
+          description: Run tests in headed mode
+          default: false
+        debug:
+          type: boolean
+          description: Enable debug mode
+          default: false
+
+    TestRunResponse:
+      type: object
+      properties:
+        runId:
+          type: string
+          description: Unique test run identifier
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        startTime:
+          type: string
+          format: date-time
+        estimatedDuration:
+          type: integer
+          description: Estimated duration in seconds
+
+    TestStatus:
+      type: object
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, completed, failed]
+        progress:
+          type: object
+          properties:
+            total:
+              type: integer
+            completed:
+              type: integer
+            passed:
+              type: integer
+            failed:
+              type: integer
+            skipped:
+              type: integer
+        currentTest:
+          type: string
+          description: Currently executing test
+        duration:
+          type: integer
+          description: Elapsed time in milliseconds
+        estimatedRemaining:
+          type: integer
+          description: Estimated remaining time in milliseconds
+
+    TestReport:
+      type: object
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum: [passed, failed, interrupted]
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            passed:
+              type: integer
+            failed:
+              type: integer
+            skipped:
+              type: integer
+            duration:
+              type: integer
+        browsers:
+          type: array
+          items:
+            type: string
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TestResult'
+        artifacts:
+          type: object
+          properties:
+            screenshots:
+              type: array
+              items:
+                type: string
+            videos:
+              type: array
+              items:
+                type: string
+            traces:
+              type: array
+              items:
+                type: string
+
+    TestResult:
+      type: object
+      properties:
+        testId:
+          type: string
+        title:
+          type: string
+        file:
+          type: string
+        browser:
+          type: string
+        status:
+          type: string
+          enum: [passed, failed, skipped, timedOut]
+        duration:
+          type: integer
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            stack:
+              type: string
+            screenshot:
+              type: string
+            video:
+              type: string
+        steps:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              duration:
+                type: integer
+              status:
+                type: string

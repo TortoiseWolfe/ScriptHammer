@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+  <!-- Terminal Background -->
+  <rect width="800" height="500" fill="#1a1b26"/>
+
+  <!-- Terminal Header -->
+  <rect width="800" height="30" fill="#24283b"/>
+  <circle cx="20" cy="15" r="6" fill="#f7768e"/>
+  <circle cx="40" cy="15" r="6" fill="#e0af68"/>
+  <circle cx="60" cy="15" r="6" fill="#9ece6a"/>
+  <text x="380" y="20" font-family="monospace" font-size="12" text-anchor="middle" fill="#a9b1d6">
+    Terminal - pnpm test:suite
+  </text>
+
+  <!-- Test Output -->
+  <text x="20" y="60" font-family="monospace" font-size="13" fill="#9ece6a">
+    ✓ Running test suite...
+  </text>
+
+  <text x="20" y="90" font-family="monospace" font-size="13" fill="#7aa2f7">
+    🧪 Unit Tests (Vitest)
+  </text>
+  <text x="40" y="110" font-family="monospace" font-size="12" fill="#9ece6a">✓ src/components (215 tests)</text>
+  <text x="40" y="130" font-family="monospace" font-size="12" fill="#9ece6a">✓ src/utils (89 tests)</text>
+  <text x="40" y="150" font-family="monospace" font-size="12" fill="#9ece6a">✓ src/services (156 tests)</text>
+  <text x="40" y="170" font-family="monospace" font-size="12" fill="#9ece6a">✓ src/hooks (45 tests)</text>
+
+  <text x="20" y="210" font-family="monospace" font-size="13" fill="#7aa2f7">
+    🎭 E2E Tests (Playwright)
+  </text>
+  <text x="40" y="230" font-family="monospace" font-size="12" fill="#9ece6a">✓ navigation.spec.ts (8 passed)</text>
+  <text x="40" y="250" font-family="monospace" font-size="12" fill="#9ece6a">✓ theme-switcher.spec.ts (12 passed)</text>
+  <text x="40" y="270" font-family="monospace" font-size="12" fill="#9ece6a">✓ accessibility.spec.ts (15 passed)</text>
+  <text x="40" y="290" font-family="monospace" font-size="12" fill="#9ece6a">✓ forms.spec.ts (9 passed)</text>
+
+  <text x="20" y="330" font-family="monospace" font-size="13" fill="#7aa2f7">
+    ♿ Accessibility Tests (Pa11y)
+  </text>
+  <text x="40" y="350" font-family="monospace" font-size="12" fill="#9ece6a">✓ No WCAG 2.1 AA violations found</text>
+
+  <!-- Summary Box -->
+  <rect x="20" y="380" width="760" height="100" rx="4" fill="#24283b" stroke="#414868" stroke-width="1"/>
+
+  <text x="40" y="410" font-family="monospace" font-size="14" font-weight="bold" fill="#9ece6a">
+    ✅ All tests passed!
+  </text>
+
+  <text x="40" y="435" font-family="monospace" font-size="12" fill="#a9b1d6">
+    Test Files: 96 passed | Tests: 1122 passed | Coverage: 58.3%
+  </text>
+
+  <text x="40" y="460" font-family="monospace" font-size="12" fill="#565f89">
+    Duration: 18.96s | Start: 14:59:19
+  </text>
+</svg>

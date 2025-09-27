@@ -1,0 +1,70 @@
+{
+  "date": "2025-09-12",
+  "metrics": {
+    "webVitals": {
+      "FCP": {
+        "value": 1200,
+        "unit": "ms",
+        "rating": "good",
+        "target": 1800
+      },
+      "LCP": {
+        "value": 2100,
+        "unit": "ms",
+        "rating": "good",
+        "target": 2500
+      },
+      "CLS": {
+        "value": 0.05,
+        "unit": "score",
+        "rating": "good",
+        "target": 0.1
+      },
+      "TTFB": {
+        "value": 150,
+        "unit": "ms",
+        "rating": "good",
+        "target": 800
+      },
+      "INP": {
+        "value": 180,
+        "unit": "ms",
+        "rating": "good",
+        "target": 200
+      }
+    },
+    "lighthouse": {
+      "performance": 92,
+      "accessibility": 98,
+      "bestPractices": 95,
+      "seo": 100,
+      "pwa": 92
+    },
+    "bundle": {
+      "totalSize": "450KB",
+      "jsSize": "320KB",
+      "cssSize": "45KB",
+      "imageSize": "85KB",
+      "firstLoadJS": "88KB"
+    },
+    "coverage": {
+      "statements": 58,
+      "branches": 45,
+      "functions": 52,
+      "lines": 58
+    }
+  },
+  "environment": {
+    "nextVersion": "15.5.2",
+    "reactVersion": "19.1.0",
+    "nodeVersion": "20.x",
+    "deployment": "GitHub Pages"
+  },
+  "improvements": {
+    "since_sprint_1": {
+      "testCoverage": "+48%",
+      "lighthouseScore": "+5",
+      "bundleSize": "-20KB"
+    }
+  }
+}

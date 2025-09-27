@@ -1,0 +1,27 @@
+import React from 'react';
+
+{{#if hasProps}}
+export interface {{pascalCase name}}Props {
+  /** Optional children elements */
+  children?: React.ReactNode;
+  /** Additional CSS classes */
+  className?: string;
+}
+{{/if}}
+
+/**
+ * {{pascalCase name}} component
+ *
+ * @category {{category}}
+ */
+export default function {{pascalCase name}}({{#if hasProps}}{ children, className = '' }: {{pascalCase name}}Props{{/if}}) {
+  return (
+    <div className={`{{dashCase name}}${className ? ` ${className}` : ''}`}>
+      {{#if hasProps}}
+      {children}
+      {{else}}
+      <p>{{pascalCase name}} component</p>
+      {{/if}}
+    </div>
+  );
+}

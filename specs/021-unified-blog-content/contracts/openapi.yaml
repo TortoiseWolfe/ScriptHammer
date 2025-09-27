@@ -1,0 +1,376 @@
+openapi: 3.0.3
+info:
+  title: Unified Blog Content API
+  description: API for blog content synchronization and processing
+  version: 1.0.0
+
+paths:
+  /api/blog/sync:
+    post:
+      summary: Synchronize offline changes
+      operationId: syncPosts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - changes
+              properties:
+                changes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SyncChange'
+      responses:
+        '200':
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+        '409':
+          description: Conflicts detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictResponse'
+
+  /api/blog/posts:
+    get:
+      summary: Retrieve blog posts with caching
+      operationId: getPosts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, scheduled]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Posts retrieved successfully
+          headers:
+            ETag:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BlogPost'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+
+  /api/blog/validate:
+    post:
+      summary: Validate post frontmatter
+      operationId: validateFrontmatter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostMetadata'
+      responses:
+        '200':
+          description: Validation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+
+  /api/blog/process:
+    post:
+      summary: Process markdown to HTML
+      operationId: processMarkdown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                options:
+                  type: object
+                  properties:
+                    generateToc:
+                      type: boolean
+                    syntaxHighlight:
+                      type: boolean
+      responses:
+        '200':
+          description: Processing successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  html:
+                    type: string
+                  toc:
+                    $ref: '#/components/schemas/TableOfContents'
+                  readTime:
+                    type: integer
+
+  /api/blog/conflicts:
+    get:
+      summary: Retrieve conflict list
+      operationId: getConflicts
+      responses:
+        '200':
+          description: Conflicts retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConflictResolution'
+
+  /api/blog/resolve:
+    post:
+      summary: Resolve content conflict
+      operationId: resolveConflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - conflictId
+                - resolution
+              properties:
+                conflictId:
+                  type: string
+                resolution:
+                  type: string
+                  enum: [local, remote, merged]
+                mergedContent:
+                  type: string
+      responses:
+        '200':
+          description: Conflict resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  post:
+                    $ref: '#/components/schemas/BlogPost'
+
+components:
+  schemas:
+    BlogPost:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - content
+        - author
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        title:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+        processedContent:
+          type: string
+        excerpt:
+          type: string
+          maxLength: 500
+        author:
+          type: string
+        status:
+          type: string
+          enum: [draft, published, scheduled]
+        publishDate:
+          type: string
+          format: date-time
+        scheduledDate:
+          type: string
+          format: date-time
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        featured:
+          type: boolean
+        viewCount:
+          type: integer
+        readTime:
+          type: integer
+        version:
+          type: integer
+        hash:
+          type: string
+        showToc:
+          type: boolean
+        ogImage:
+          type: string
+          format: uri
+
+    PostMetadata:
+      type: object
+      required:
+        - title
+        - author
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        publishDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [draft, published, scheduled]
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        excerpt:
+          type: string
+        featured:
+          type: boolean
+        showToc:
+          type: boolean
+        ogImage:
+          type: string
+          format: uri
+
+    SyncChange:
+      type: object
+      required:
+        - operation
+        - postId
+        - version
+      properties:
+        operation:
+          type: string
+          enum: [create, update, delete]
+        postId:
+          type: string
+        content:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/PostMetadata'
+        version:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+    SyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        synced:
+          type: array
+          items:
+            type: string
+        failed:
+          type: array
+          items:
+            type: object
+            properties:
+              postId:
+                type: string
+              error:
+                type: string
+
+    ConflictResponse:
+      type: object
+      properties:
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictResolution'
+
+    ConflictResolution:
+      type: object
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        detectedAt:
+          type: string
+          format: date-time
+        localVersion:
+          type: object
+        remoteVersion:
+          type: object
+        baseVersion:
+          type: object
+
+    TableOfContents:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TocItem'
+
+    TocItem:
+      type: object
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        level:
+          type: integer
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/TocItem'

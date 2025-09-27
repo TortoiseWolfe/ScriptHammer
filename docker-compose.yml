@@ -1,0 +1,48 @@
+services:
+  scripthammer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - '3000:3000'
+      - '6006:6006'
+      - '24678:24678' # Next.js HMR websocket
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - /app/.next
+    env_file:
+      - .env
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - scripthammer-network
+
+  # Future services can be added here
+  # db:
+  #   image: postgres:16-alpine
+  #   environment:
+  #     POSTGRES_DB: scripthammer
+  #     POSTGRES_USER: scripthammer
+  #     POSTGRES_PASSWORD: scripthammer
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - scripthammer-network
+
+networks:
+  scripthammer-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  node_modules:

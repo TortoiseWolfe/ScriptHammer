@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="600" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="900" height="600" fill="#f8fafc"/>
+
+  <!-- Title -->
+  <text x="450" y="40" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+    Docker-First Development Architecture
+  </text>
+
+  <!-- Host Machine -->
+  <rect x="50" y="80" width="800" height="480" rx="8" fill="white" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="70" y="105" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#64748b">
+    Host Machine (Your Computer)
+  </text>
+
+  <!-- Docker Engine -->
+  <rect x="100" y="130" width="700" height="380" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+  <g transform="translate(120, 145)">
+    <rect x="0" y="0" width="660" height="40" rx="4" fill="#0284c7"/>
+    <text x="20" y="26" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="white">
+      🐳 Docker Engine
+    </text>
+  </g>
+
+  <!-- Container -->
+  <rect x="150" y="210" width="600" height="270" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="170" y="235" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#92400e">
+    📦 Scripthammer Container
+  </text>
+
+  <!-- Container Components -->
+  <!-- Node.js -->
+  <rect x="180" y="260" width="160" height="80" rx="6" fill="#10b981" opacity="0.1" stroke="#10b981" stroke-width="2"/>
+  <text x="260" y="285" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#065f46">
+    Node.js 22
+  </text>
+  <text x="260" y="305" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#065f46">
+    Runtime Environment
+  </text>
+  <text x="260" y="325" font-family="Arial, sans-serif" font-size="20" text-anchor="middle">⚡</text>
+
+  <!-- pnpm -->
+  <rect x="360" y="260" width="160" height="80" rx="6" fill="#f97316" opacity="0.1" stroke="#f97316" stroke-width="2"/>
+  <text x="440" y="285" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#7c2d12">
+    pnpm 10
+  </text>
+  <text x="440" y="305" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#7c2d12">
+    Package Manager
+  </text>
+  <text x="440" y="325" font-family="Arial, sans-serif" font-size="20" text-anchor="middle">📦</text>
+
+  <!-- Next.js -->
+  <rect x="540" y="260" width="180" height="80" rx="6" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="630" y="285" font-family="Arial, sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="#4c1d95">
+    Next.js 15.5
+  </text>
+  <text x="630" y="305" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#4c1d95">
+    Dev Server
+  </text>
+  <text x="630" y="325" font-family="Arial, sans-serif" font-size="20" text-anchor="middle">🚀</text>
+
+  <!-- Volume Mounts -->
+  <rect x="180" y="360" width="540" height="90" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3,3"/>
+  <text x="200" y="380" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1e40af">
+    Volume Mounts:
+  </text>
+  <text x="200" y="400" font-family="monospace" font-size="11" fill="#1e40af">
+    ./src → /app/src (Your code - synced in real-time)
+  </text>
+  <text x="200" y="418" font-family="monospace" font-size="11" fill="#1e40af">
+    ./public → /app/public (Static assets)
+  </text>
+  <text x="200" y="436" font-family="monospace" font-size="11" fill="#1e40af">
+    ./.next → Anonymous Volume (Build cache - isolated)
+  </text>
+
+  <!-- Ports -->
+  <g transform="translate(770, 300)">
+    <rect x="0" y="0" width="100" height="120" rx="4" fill="#e5e7eb" stroke="#6b7280" stroke-width="1"/>
+    <text x="50" y="20" font-family="Arial, sans-serif" font-size="12" font-weight="bold" text-anchor="middle" fill="#374151">
+      Exposed Ports
+    </text>
+    <text x="10" y="40" font-family="monospace" font-size="11" fill="#4b5563">:3000 → App</text>
+    <text x="10" y="60" font-family="monospace" font-size="11" fill="#4b5563">:6006 → Story</text>
+    <text x="10" y="80" font-family="monospace" font-size="11" fill="#4b5563">:24678 → HMR</text>
+  </g>
+
+  <!-- Benefits -->
+  <text x="100" y="540" font-family="Arial, sans-serif" font-size="12" fill="#059669">
+    ✅ Consistent environment across all developers
+  </text>
+  <text x="350" y="540" font-family="Arial, sans-serif" font-size="12" fill="#059669">
+    ✅ No local Node.js needed
+  </text>
+  <text x="580" y="540" font-family="Arial, sans-serif" font-size="12" fill="#059669">
+    ✅ Isolated dependencies
+  </text>
+</svg>

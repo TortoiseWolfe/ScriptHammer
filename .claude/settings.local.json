@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose:*)",
+      "Bash(pnpm run:*)",
+      "Bash(curl:*)",
+      "Bash(chmod:*)",
+      "mcp__filesystem__search_files",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__create_directory",
+      "Bash(/home/turtle_wolfe/repos/000/create-components.sh:*)",
+      "Bash(find:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,203 @@
+openapi: 3.0.0
+info:
+  title: Blog Social Media Features API
+  version: 1.0.0
+  description: API contracts for blog social sharing and author features
+
+paths:
+  /api/authors/{authorId}:
+    get:
+      summary: Get author profile
+      parameters:
+        - name: authorId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Author profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+        '404':
+          description: Author not found
+
+  /api/authors:
+    get:
+      summary: List all authors
+      responses:
+        '200':
+          description: List of authors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+
+  /api/share/event:
+    post:
+      summary: Track share event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareEventRequest'
+      responses:
+        '201':
+          description: Event tracked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareEvent'
+        '403':
+          description: Consent not given
+
+  /api/share/url:
+    post:
+      summary: Generate share URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                platform:
+                  type: string
+                content:
+                  $ref: '#/components/schemas/ShareableContent'
+      responses:
+        '200':
+          description: Generated share URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  platform:
+                    type: string
+
+components:
+  schemas:
+    Author:
+      type: object
+      required:
+        - id
+        - name
+        - role
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        bio:
+          type: string
+          maxLength: 500
+        avatar:
+          type: string
+        social:
+          $ref: '#/components/schemas/AuthorSocialLinks'
+        preferences:
+          $ref: '#/components/schemas/AuthorPreferences'
+
+    AuthorSocialLinks:
+      type: object
+      properties:
+        github:
+          type: string
+          format: uri
+        twitter:
+          type: string
+          format: uri
+        linkedin:
+          type: string
+          format: uri
+        website:
+          type: string
+          format: uri
+        email:
+          type: string
+          format: email
+
+    AuthorPreferences:
+      type: object
+      properties:
+        showSocialLinks:
+          type: boolean
+        showEmail:
+          type: boolean
+        showBio:
+          type: boolean
+
+    ShareableContent:
+      type: object
+      required:
+        - url
+        - title
+      properties:
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+          format: uri
+        tags:
+          type: array
+          items:
+            type: string
+        author:
+          type: string
+
+    ShareEvent:
+      type: object
+      required:
+        - id
+        - platform
+        - contentUrl
+        - contentType
+        - timestamp
+        - consentGiven
+      properties:
+        id:
+          type: string
+        platform:
+          type: string
+        contentUrl:
+          type: string
+        contentType:
+          type: string
+          enum: [blog-post, page, component]
+        timestamp:
+          type: string
+          format: date-time
+        sessionId:
+          type: string
+        consentGiven:
+          type: boolean
+
+    ShareEventRequest:
+      type: object
+      required:
+        - platform
+        - contentUrl
+        - contentType
+      properties:
+        platform:
+          type: string
+        contentUrl:
+          type: string
+        contentType:
+          type: string
+          enum: [blog-post, page, component]

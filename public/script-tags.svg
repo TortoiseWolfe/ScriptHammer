@@ -1,0 +1,169 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="400" height="400" viewBox="0 0 400 400"
+ preserveAspectRatio="xMidYMid meet">
+
+  <defs>
+    <!-- Metallic gradient for brackets (bronze/copper steampunk colors) -->
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
+      <stop offset="15%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="45%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="55%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="85%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFDF00;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Alternative gradient for depth -->
+    <linearGradient id="bracketGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Enhanced shadow filter for metallic effect -->
+    <filter id="metalShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="3" dy="3" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.6"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Inner shadow for depth -->
+    <filter id="innerShadow">
+      <feOffset dx="0" dy="1"/>
+      <feGaussianBlur stdDeviation="1" result="offset-blur"/>
+      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+      <feFlood flood-color="#000000" flood-opacity="0.4" result="color"/>
+      <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+      <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- Script Tags (Code Brackets) centered and sized to fit within gear -->
+  <g transform="translate(200, 200)">
+    <!-- Left bracket < -->
+    <g transform="translate(-75, 0)">
+      <!-- Shadow layer -->
+      <path d="M 45 -120 L -45 0 L 45 120" 
+            stroke="#8B4513" 
+            stroke-width="18" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.4"
+            transform="translate(3, 3)"/>
+      <!-- Main bracket -->
+      <path d="M 45 -120 L -45 0 L 45 120" 
+            stroke="url(#metalGradient)" 
+            stroke-width="18" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+      <!-- Inner line for depth -->
+      <path d="M 45 -120 L -45 0 L 45 120" 
+            stroke="url(#bracketGradient)" 
+            stroke-width="10" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.7"/>
+      <!-- Highlight -->
+      <path d="M 42 -115 L -40 0 L 42 115" 
+            stroke="#FFDF00" 
+            stroke-width="3" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.5"/>
+    </g>
+    
+    <!-- Right bracket > -->
+    <g transform="translate(75, 0)">
+      <!-- Shadow layer -->
+      <path d="M -45 -120 L 45 0 L -45 120" 
+            stroke="#8B4513" 
+            stroke-width="18" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.4"
+            transform="translate(3, 3)"/>
+      <!-- Main bracket -->
+      <path d="M -45 -120 L 45 0 L -45 120" 
+            stroke="url(#metalGradient)" 
+            stroke-width="18" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+      <!-- Inner line for depth -->
+      <path d="M -45 -120 L 45 0 L -45 120" 
+            stroke="url(#bracketGradient)" 
+            stroke-width="10" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.7"/>
+      <!-- Highlight -->
+      <path d="M -42 -115 L 40 0 L -42 115" 
+            stroke="#FFDF00" 
+            stroke-width="3" 
+            fill="none" 
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.5"/>
+    </g>
+  </g>
+  
+  <!-- Optional: Add rotating animation class -->
+  <style>
+    @keyframes pulse {
+      0% {
+        opacity: 0.8;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.8;
+      }
+    }
+    
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Uncomment to enable pulsing animation */
+    /* svg {
+      animation: pulse 2s ease-in-out infinite;
+    } */
+    
+    /* Or rotation */
+    /* svg {
+      animation: rotate 20s linear infinite;
+    } */
+  </style>
+</svg>

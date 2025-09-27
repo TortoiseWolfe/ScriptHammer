@@ -1,0 +1,252 @@
+openapi: 3.0.0
+info:
+  title: Google Analytics 4 Integration API
+  description: Contract for GA4 analytics tracking and event management
+  version: 1.0.0
+  contact:
+    name: CRUDkit Team
+    url: https://github.com/TortoiseWolfe/CRUDkit
+
+servers:
+  - url: https://www.google-analytics.com
+    description: Google Analytics Collection Endpoint
+  - url: https://analytics.google.com
+    description: Google Analytics API
+  - url: https://www.googletagmanager.com
+    description: Google Tag Manager
+
+paths:
+  /g/collect:
+    post:
+      summary: Send event to Google Analytics
+      description: Measurement Protocol endpoint for sending events
+      operationId: sendEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - tid
+                - en
+              properties:
+                tid:
+                  type: string
+                  description: Measurement ID (G-XXXXXXXXXX)
+                  example: G-ABC123DEF4
+                en:
+                  type: string
+                  description: Event name
+                  example: page_view
+                ep:
+                  type: object
+                  description: Event parameters
+                  additionalProperties: true
+      responses:
+        '204':
+          description: Event successfully received
+        '400':
+          description: Invalid request
+
+  /gtag/js:
+    get:
+      summary: Load Google Analytics JavaScript library
+      description: Retrieves the gtag.js library for client-side tracking
+      operationId: loadGtagJs
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Measurement ID
+      responses:
+        '200':
+          description: JavaScript library content
+          content:
+            application/javascript:
+              schema:
+                type: string
+
+components:
+  schemas:
+    AnalyticsEvent:
+      type: object
+      required:
+        - action
+        - category
+      properties:
+        action:
+          type: string
+          description: Event action
+          maxLength: 100
+          pattern: '^[a-zA-Z0-9_]+$'
+          example: click
+        category:
+          type: string
+          description: Event category
+          maxLength: 100
+          example: UI
+        label:
+          type: string
+          description: Event label for additional context
+          maxLength: 500
+          example: header_nav
+        value:
+          type: integer
+          description: Numeric value associated with event
+          minimum: 0
+          example: 1
+
+    WebVitalMetric:
+      type: object
+      required:
+        - name
+        - value
+        - rating
+      properties:
+        name:
+          type: string
+          enum: [FCP, LCP, CLS, FID, TTFB, INP]
+          description: Web Vital metric name
+        value:
+          type: number
+          description: Metric value
+          example: 1234.5
+        rating:
+          type: string
+          enum: [good, needs-improvement, poor]
+          description: Performance rating
+        delta:
+          type: number
+          description: Change from previous value
+        id:
+          type: string
+          description: Unique metric ID
+        navigationType:
+          type: string
+          description: Type of navigation
+
+    PageViewEvent:
+      type: object
+      required:
+        - page_path
+        - page_title
+      properties:
+        page_path:
+          type: string
+          description: URL path of the page
+          pattern: '^/'
+          example: /home
+        page_title:
+          type: string
+          description: Title of the page
+          example: Home - CRUDkit
+        page_location:
+          type: string
+          format: uri
+          description: Full URL of the page
+        page_referrer:
+          type: string
+          format: uri
+          description: Previous page URL
+
+    ConsentState:
+      type: object
+      required:
+        - analytics
+      properties:
+        analytics:
+          type: boolean
+          description: Whether analytics tracking is consented
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix timestamp of consent
+
+    GtagConfig:
+      type: object
+      properties:
+        send_page_view:
+          type: boolean
+          default: false
+          description: Automatically send page views
+        debug_mode:
+          type: boolean
+          default: false
+          description: Enable debug mode
+        anonymize_ip:
+          type: boolean
+          default: true
+          description: Anonymize IP addresses
+        cookie_domain:
+          type: string
+          description: Cookie domain setting
+        cookie_expires:
+          type: integer
+          description: Cookie expiration in seconds
+        cookie_flags:
+          type: string
+          description: Cookie flags (SameSite, Secure)
+
+    EventBatch:
+      type: object
+      required:
+        - events
+        - batchId
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalyticsEvent'
+          maxItems: 25
+          description: Batch of events to send
+        batchId:
+          type: string
+          format: uuid
+          description: Unique batch identifier
+        timestamp:
+          type: integer
+          format: int64
+          description: Batch creation timestamp
+
+    ErrorEvent:
+      allOf:
+        - $ref: '#/components/schemas/AnalyticsEvent'
+        - type: object
+          required:
+            - fatal
+          properties:
+            action:
+              type: string
+              const: exception
+            category:
+              type: string
+              const: Errors
+            fatal:
+              type: boolean
+              description: Whether error is fatal
+            stackTrace:
+              type: string
+              description: Error stack trace (dev only)
+
+  securitySchemes:
+    consentToken:
+      type: apiKey
+      in: cookie
+      name: consent_state
+      description: User consent state cookie
+
+security:
+  - consentToken: []
+
+tags:
+  - name: Events
+    description: Event tracking operations
+  - name: Configuration
+    description: GA4 configuration
+  - name: WebVitals
+    description: Performance metrics
+  - name: Consent
+    description: Privacy and consent management

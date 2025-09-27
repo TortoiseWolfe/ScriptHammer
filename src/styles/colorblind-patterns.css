@@ -1,0 +1,380 @@
+/**
+ * Pattern overlays for colorblind mode
+ * Provides additional visual distinction beyond color
+ * Patterns are subtle (0.05 opacity) to avoid distraction
+ */
+
+/* Apply patterns when colorblind mode is active with patterns enabled */
+.colorblind-patterns {
+  /* Success/Error Distinction - Icons for critical states */
+  .alert-success::before {
+    content: '✓';
+    position: absolute;
+    left: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .alert-error::before,
+  .alert-danger::before {
+    content: '✗';
+    position: absolute;
+    left: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .alert-warning::before {
+    content: '⚠';
+    position: absolute;
+    left: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .alert-info::before {
+    content: 'ⓘ';
+    position: absolute;
+    left: 1rem;
+    font-size: 1.5rem;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Button State Patterns - Different patterns for different button types */
+  .btn-primary {
+    position: relative;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 20px
+    );
+  }
+
+  .btn-secondary {
+    position: relative;
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(0, 0, 0, 0.05) 10px,
+      rgba(0, 0, 0, 0.05) 20px
+    );
+  }
+
+  .btn-accent {
+    position: relative;
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.05) 10px,
+      rgba(255, 255, 255, 0.05) 20px
+    );
+  }
+
+  .btn-success {
+    position: relative;
+    background-image: radial-gradient(
+      circle at 2px 2px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 10px 10px;
+  }
+
+  .btn-error,
+  .btn-danger {
+    position: relative;
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(255, 255, 255, 0.05) 5px,
+        rgba(255, 255, 255, 0.05) 10px
+      ),
+      repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 5px,
+        rgba(255, 255, 255, 0.05) 5px,
+        rgba(255, 255, 255, 0.05) 10px
+      );
+  }
+
+  .btn-warning {
+    position: relative;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 10px,
+      rgba(0, 0, 0, 0.05) 10px,
+      rgba(0, 0, 0, 0.05) 20px
+    );
+  }
+
+  /* Badge Patterns - Small, distinct patterns for badges */
+  .badge-primary {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 5px,
+      rgba(255, 255, 255, 0.1) 5px,
+      rgba(255, 255, 255, 0.1) 10px
+    );
+  }
+
+  .badge-secondary {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 5px,
+      rgba(0, 0, 0, 0.1) 5px,
+      rgba(0, 0, 0, 0.1) 10px
+    );
+  }
+
+  .badge-success {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px
+    );
+    background-size: 5px 5px;
+  }
+
+  .badge-error,
+  .badge-danger {
+    background-image: linear-gradient(
+      45deg,
+      transparent 25%,
+      rgba(255, 255, 255, 0.1) 25%,
+      rgba(255, 255, 255, 0.1) 75%,
+      transparent 75%
+    );
+    background-size: 10px 10px;
+  }
+
+  .badge-warning {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 5px,
+      rgba(0, 0, 0, 0.1) 5px,
+      rgba(0, 0, 0, 0.1) 10px
+    );
+  }
+
+  .badge-info {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 5px,
+      rgba(255, 255, 255, 0.1) 5px,
+      rgba(255, 255, 255, 0.1) 10px
+    );
+  }
+
+  /* Progress and Status Indicators */
+  .progress-success .progress-bar {
+    background-image: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    );
+  }
+
+  .progress-error .progress-bar,
+  .progress-danger .progress-bar {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    );
+  }
+
+  .progress-warning .progress-bar {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 10px,
+      rgba(0, 0, 0, 0.1) 10px,
+      rgba(0, 0, 0, 0.1) 20px
+    );
+  }
+
+  /* Form Validation States */
+  .input-success,
+  .select-success,
+  .textarea-success {
+    background-image: radial-gradient(
+      circle at 2px 2px,
+      rgba(0, 255, 0, 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 20px 20px;
+    background-position: right center;
+    background-repeat: no-repeat;
+  }
+
+  .input-error,
+  .select-error,
+  .textarea-error {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 0, 0, 0.05) 10px,
+      rgba(255, 0, 0, 0.05) 15px
+    );
+    background-position: right center;
+    background-repeat: no-repeat;
+  }
+
+  .input-warning,
+  .select-warning,
+  .textarea-warning {
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 165, 0, 0.05) 10px,
+      rgba(255, 165, 0, 0.05) 15px
+    );
+    background-position: right center;
+    background-repeat: no-repeat;
+  }
+
+  /* Stats and Metrics - Additional distinction for data visualization */
+  .stat-primary {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 20px,
+      rgba(255, 255, 255, 0.03) 20px,
+      rgba(255, 255, 255, 0.03) 40px
+    );
+  }
+
+  .stat-secondary {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 20px,
+      rgba(0, 0, 0, 0.03) 20px,
+      rgba(0, 0, 0, 0.03) 40px
+    );
+  }
+
+  /* Tabs and Navigation */
+  .tab-active,
+  .tab[aria-selected='true'] {
+    background-image: linear-gradient(
+      to bottom,
+      transparent 90%,
+      rgba(0, 0, 0, 0.1) 90%
+    );
+  }
+
+  .breadcrumbs li:not(:last-child)::after {
+    opacity: 0.8;
+    font-weight: bold;
+  }
+
+  /* Cards and Containers */
+  .card-bordered {
+    border-style: solid;
+    border-width: 2px;
+  }
+
+  .card.bg-primary {
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent,
+      transparent 30px,
+      rgba(255, 255, 255, 0.03) 30px,
+      rgba(255, 255, 255, 0.03) 60px
+    );
+  }
+
+  .card.bg-secondary {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 30px,
+      rgba(0, 0, 0, 0.03) 30px,
+      rgba(0, 0, 0, 0.03) 60px
+    );
+  }
+
+  /* Tooltips and Popovers */
+  .tooltip::before {
+    border-style: dotted;
+    border-width: 1px;
+  }
+
+  /* Loading States */
+  .loading-spinner {
+    border-style: dashed;
+  }
+
+  /* Additional Visual Cues for Links */
+  a:not(.btn):not(.tab):not(.menu-item) {
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  a:not(.btn):not(.tab):not(.menu-item):hover {
+    text-decoration-style: solid;
+  }
+
+  /* Ensure patterns don't interfere with text readability */
+  * {
+    background-attachment: fixed;
+  }
+}
+
+/* High contrast mode compatibility */
+@media (prefers-contrast: high) {
+  .colorblind-patterns {
+    .btn-primary,
+    .btn-secondary,
+    .btn-accent,
+    .btn-success,
+    .btn-error,
+    .btn-danger,
+    .btn-warning {
+      background-image: none;
+      border: 2px solid currentColor;
+    }
+  }
+}
+
+/* Reduced motion compatibility */
+@media (prefers-reduced-motion: reduce) {
+  .colorblind-patterns {
+    * {
+      background-image: none !important;
+    }
+
+    /* Keep only essential patterns */
+    .alert-success::before,
+    .alert-error::before,
+    .alert-danger::before,
+    .alert-warning::before,
+    .alert-info::before {
+      opacity: 0.5;
+    }
+  }
+}

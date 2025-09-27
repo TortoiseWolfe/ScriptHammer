@@ -1,0 +1,142 @@
+# Forking Guide - Auto-Configured Project Name
+
+## Automatic Project Detection 🎯
+
+When you fork this repository, the project name and configuration are **automatically detected** from your git remote URL. No manual configuration needed!
+
+### How It Works
+
+1. **Fork the repository** on GitHub
+2. **Clone your fork** locally
+3. **Run the project** - it automatically detects:
+   - Your GitHub username
+   - Your repository name
+   - Generates appropriate paths for GitHub Pages
+
+### What Gets Auto-Configured
+
+The following are automatically updated based on your fork:
+
+- Project name in all UI components
+- Page titles and metadata
+- PWA manifest
+- Service Worker paths
+- GitHub Pages base paths
+- Email templates
+- All branding references
+
+### Quick Start After Forking
+
+```bash
+# Clone your fork
+git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
+cd YOUR_REPO_NAME
+
+# Create .env file with your user ID
+echo "UID=$(id -u)" > .env
+echo "GID=$(id -g)" >> .env
+
+# Start Docker development (auto-detects project info)
+docker compose up
+```
+
+**NOTE**: This project REQUIRES Docker for development. Local pnpm/npm is NOT supported.
+
+The project will automatically use your repository name everywhere "CRUDkit" appeared before.
+
+### Manual Override (Optional)
+
+If you want to override the auto-detected values, create a `.env.local` file:
+
+```env
+NEXT_PUBLIC_PROJECT_NAME=MyCustomName
+NEXT_PUBLIC_PROJECT_OWNER=MyUsername
+NEXT_PUBLIC_BASE_PATH=/my-custom-path
+```
+
+### How Detection Works
+
+The `scripts/detect-project.js` script:
+
+1. Checks git remote URL (`git remote get-url origin`)
+2. Parses username and repository name
+3. Generates configuration at build time
+4. Falls back to "CRUDkit" if no git remote is found
+
+### Supported Git Hosts
+
+- GitHub (primary support)
+- GitLab (detected, may need manual config)
+- Bitbucket (detected, may need manual config)
+- Custom git servers (detected, may need manual config)
+
+### GitHub Pages Deployment
+
+When deploying to GitHub Pages, the base path is automatically set:
+
+- **Development**: No base path (runs on `localhost:3000`)
+- **Production**: `/YOUR_REPO_NAME` (for `username.github.io/YOUR_REPO_NAME`)
+
+### Troubleshooting
+
+If auto-detection isn't working:
+
+1. **Check git remote**:
+
+   ```bash
+   git remote get-url origin
+   ```
+
+   Should show your forked repository URL
+
+2. **Run detection manually**:
+
+   ```bash
+   docker compose exec scripthammer node scripts/detect-project.js
+   ```
+
+   This will show what was detected
+
+3. **Check generated config**:
+
+   ```bash
+   docker compose exec scripthammer cat src/config/project-detected.json
+   ```
+
+4. **Clear and regenerate**:
+   ```bash
+   docker compose exec scripthammer rm -rf src/config/project-detected.*
+   docker compose restart
+   ```
+
+### Advanced Configuration
+
+The project configuration is managed in three layers (priority order):
+
+1. **Environment Variables** (highest priority) - `.env.local`
+2. **Auto-detected Config** - from git remote
+3. **Default Values** - fallback to "CRUDkit"
+
+### API Endpoints
+
+- `/api/manifest` - Dynamically generated PWA manifest with your project name
+
+### Files That Auto-Update
+
+All these files now use dynamic configuration:
+
+- `src/app/layout.tsx` - Page metadata
+- `src/components/PWAInstall.tsx` - Service worker paths
+- `public/manifest.json` - Now generated dynamically
+- `src/utils/email/providers/*.ts` - Email templates
+- `next.config.ts` - Base paths for production
+
+### For Template Users
+
+This is designed to be a **zero-configuration** experience:
+
+1. Fork the repo with your desired name
+2. Clone and run - it just works!
+3. Deploy to GitHub Pages - paths are handled automatically
+
+No more searching and replacing "CRUDkit" across 100+ files! 🎉
