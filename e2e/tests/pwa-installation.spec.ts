@@ -31,11 +31,11 @@ test.describe('PWA Installation', () => {
     const manifestLink = page.locator('link[rel="manifest"]');
     await expect(manifestLink).toHaveAttribute(
       'href',
-      '/CRUDkit/manifest.json'
+      '/ScriptHammer/manifest.json'
     );
 
     // Verify manifest can be loaded
-    const response = await page.request.get('/CRUDkit/manifest.json');
+    const response = await page.request.get('/ScriptHammer/manifest.json');
     expect(response.status()).toBe(200);
 
     // Verify manifest content
@@ -59,7 +59,7 @@ test.describe('PWA Installation', () => {
   });
 
   test('manifest contains required PWA fields', async ({ page }) => {
-    const response = await page.request.get('/CRUDkit/manifest.json');
+    const response = await page.request.get('/ScriptHammer/manifest.json');
     const manifest = await response.json();
 
     // Check required PWA fields
@@ -160,7 +160,7 @@ test.describe('PWA Installation', () => {
     const metaColor = await themeColorMeta.getAttribute('content');
 
     // Get theme color from manifest
-    const response = await page.request.get('/CRUDkit/manifest.json');
+    const response = await page.request.get('/ScriptHammer/manifest.json');
     const manifest = await response.json();
 
     // They should match
@@ -168,7 +168,7 @@ test.describe('PWA Installation', () => {
   });
 
   test('maskable icon is provided for Android', async ({ page }) => {
-    const response = await page.request.get('/CRUDkit/manifest.json');
+    const response = await page.request.get('/ScriptHammer/manifest.json');
     const manifest = await response.json();
 
     // Check for maskable icon (recommended for Android)
@@ -184,7 +184,7 @@ test.describe('PWA Installation', () => {
   });
 
   test('shortcuts are defined in manifest', async ({ page }) => {
-    const response = await page.request.get('/CRUDkit/manifest.json');
+    const response = await page.request.get('/ScriptHammer/manifest.json');
     const manifest = await response.json();
 
     // Check if shortcuts are defined (optional PWA feature)

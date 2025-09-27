@@ -1,8 +1,8 @@
 {
-  "projectName": "CRUDkit",
+  "projectName": "ScriptHammer",
   "projectOwner": "TortoiseWolfe",
   "projectHost": "github.com",
-  "projectUrl": "https://github.com/TortoiseWolfe/CRUDkit",
+  "projectUrl": "https://github.com/TortoiseWolfe/ScriptHammer",
   "basePath": "",
   "isGitHub": true,
   "detectionSource": "default",

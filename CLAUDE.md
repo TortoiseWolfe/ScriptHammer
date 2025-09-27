@@ -131,8 +131,26 @@ src/
 
 1. ~~Update `/src/config/project-status.json` with your project info~~ Auto-detected from git remote
 2. ~~Replace GitHub Pages URLs in configs~~ Auto-configured
-3. Create `.env` file with UID/GID for Docker (still required)
+3. Copy `.env.example` to `.env` and set your UID/GID (required for Docker)
 4. ~~Update `basePath` in `next.config.ts` if needed~~ Auto-detected
+
+### Environment Setup
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Get your system's UID and GID
+echo "UID=$(id -u)" >> .env
+echo "GID=$(id -g)" >> .env
+```
+
+See `.env.example` for all available environment variables including:
+
+- Google Analytics, EmailJS, Web3Forms integration
+- Calendar providers (Calendly/Cal.com)
+- Author information and social links
+- Project overrides for special deployment scenarios
 
 See `/docs/FORKING-GUIDE.md` for details on the auto-configuration system.
 
@@ -163,11 +181,16 @@ pnpm run docker:clean  # Clean start if needed
 
 ### Docker UID/GID Setup
 
-Create `.env` file:
+The `.env` file with UID/GID is now created from `.env.example`:
 
-```
-UID=1000
-GID=1000
+```bash
+# Quick setup
+cp .env.example .env
+# The default values (UID=1000, GID=1000) work for most Linux/WSL systems
+
+# Or set your specific values
+echo "UID=$(id -u)" > .env
+echo "GID=$(id -g)" >> .env
 ```
 
 ### Port 3000 In Use

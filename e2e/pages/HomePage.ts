@@ -8,11 +8,11 @@ export class HomePage extends BasePage {
   // Selectors
   readonly selectors = {
     // Header elements
-    logo: 'a:has-text("CRUDkit")',
+    logo: 'a:has-text("ScriptHammer")',
     skipLink: 'a[href="#game-demo"], a[href="#main"]',
 
     // Hero section
-    heroTitle: 'h1:has-text("CRUDkit")',
+    heroTitle: 'h1:has-text("ScriptHammer")',
     heroDescription: 'text=/Next.js.*starter/i',
     progressBadge: '.badge.badge-success',
 

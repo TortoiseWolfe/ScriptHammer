@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { BlogPost } from '@/types/blog';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 import { getProjectConfig } from '@/config/project.config';
+import TagBadge from '@/components/atomic/TagBadge';
 
 export interface BlogPostCardProps {
   /** Blog post data */
@@ -101,10 +102,13 @@ export default function BlogPostCard({
         <div className="card-actions mt-4 items-center justify-between">
           <div className="flex flex-wrap gap-2">
             {post.metadata?.tags?.slice(0, 3).map((tag) => (
-              <span key={tag} className="badge badge-outline badge-sm">
-                {tag}
-              </span>
+              <TagBadge key={tag} tag={tag} size="sm" variant="default" />
             ))}
+            {post.metadata?.tags && post.metadata.tags.length > 3 && (
+              <span className="badge badge-ghost badge-sm">
+                +{post.metadata.tags.length - 3} more
+              </span>
+            )}
           </div>
 
           <div className="text-base-content/60 flex gap-3 text-sm">

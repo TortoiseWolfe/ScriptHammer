@@ -27,7 +27,7 @@ export function CalComProvider({
       // Listen for Cal.com events
       cal('on', {
         action: 'bookingSuccessful',
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         callback: (e: any) => {
           console.log('Calendar scheduled - Cal.com', e.detail?.name);
         },

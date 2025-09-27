@@ -98,7 +98,7 @@ else
   echo -e "${YELLOW}Running tests locally...${NC}"
 
   # Check if app is running
-  if ! curl -s http://localhost:3000/CRUDkit > /dev/null; then
+  if ! curl -s http://localhost:3000/scripthammer > /dev/null; then
     echo -e "${YELLOW}Starting development server...${NC}"
     pnpm run dev &
     DEV_PID=$!

@@ -14,7 +14,7 @@ const projectConfigPath = path.join(
   '../src/config/project-detected.json'
 );
 let projectConfig = {
-  projectName: 'CRUDkit',
+  projectName: 'ScriptHammer',
   projectOwner: 'TortoiseWolfe',
   basePath: '',
 };

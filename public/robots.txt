@@ -1,5 +1,5 @@
-# CRUDkit Robots.txt
+# ScriptHammer Robots.txt
 User-agent: *
 Allow: /
 
-Sitemap: https://tortoisewolfe.github.io/CRUDkit/sitemap.xml
+Sitemap: https://tortoisewolfe.github.io/ScriptHammer/sitemap.xml

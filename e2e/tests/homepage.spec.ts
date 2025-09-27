@@ -6,11 +6,11 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('homepage loads with correct title', async ({ page }) => {
-    // Check the page title contains CRUDkit
-    await expect(page).toHaveTitle(/CRUDkit/);
+    // Check the page title contains ScriptHammer
+    await expect(page).toHaveTitle(/ScriptHammer/);
 
     // Check the main heading is visible
-    const heading = page.locator('h1').filter({ hasText: 'CRUDkit' });
+    const heading = page.locator('h1').filter({ hasText: 'ScriptHammer' });
     await expect(heading).toBeVisible();
   });
 

@@ -124,7 +124,7 @@ export default function Home() {
                   Read Blog
                 </Link>
                 <a
-                  href="https://tortoisewolfe.github.io/CRUDkit/storybook/"
+                  href="https://tortoisewolfe.github.io/ScriptHammer/storybook/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn btn-primary btn-md sm:btn-md md:btn-lg group w-full sm:w-auto"
@@ -234,7 +234,7 @@ export default function Home() {
                   •
                 </span>
                 <a
-                  href="https://github.com/TortoiseWolfe/CRUDkit/fork"
+                  href="https://github.com/TortoiseWolfe/ScriptHammer/fork"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"

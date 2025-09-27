@@ -42,7 +42,7 @@ docker compose up
 
 **NOTE**: This project REQUIRES Docker for development. Local pnpm/npm is NOT supported.
 
-The project will automatically use your repository name everywhere "CRUDkit" appeared before.
+The project will automatically use your repository name everywhere "ScriptHammer" appeared before.
 
 ### Manual Override (Optional)
 
@@ -61,7 +61,7 @@ The `scripts/detect-project.js` script:
 1. Checks git remote URL (`git remote get-url origin`)
 2. Parses username and repository name
 3. Generates configuration at build time
-4. Falls back to "CRUDkit" if no git remote is found
+4. Falls back to "ScriptHammer" if no git remote is found
 
 ### Supported Git Hosts
 
@@ -115,7 +115,7 @@ The project configuration is managed in three layers (priority order):
 
 1. **Environment Variables** (highest priority) - `.env.local`
 2. **Auto-detected Config** - from git remote
-3. **Default Values** - fallback to "CRUDkit"
+3. **Default Values** - fallback to "ScriptHammer"
 
 ### API Endpoints
 
@@ -139,4 +139,4 @@ This is designed to be a **zero-configuration** experience:
 2. Clone and run - it just works!
 3. Deploy to GitHub Pages - paths are handled automatically
 
-No more searching and replacing "CRUDkit" across 100+ files! 🎉
+No more searching and replacing "ScriptHammer" across 100+ files! 🎉

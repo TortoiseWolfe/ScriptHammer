@@ -56,7 +56,7 @@ export function useFormValidation<T extends z.ZodType>(
 ) {
   const {
     debounceMs = 300,
-    validateOnMount = false, // eslint-disable-line @typescript-eslint/no-unused-vars
+    validateOnMount = false,
     validateOnBlur = true,
     validateOnChange = true,
     showErrorsImmediately = false,

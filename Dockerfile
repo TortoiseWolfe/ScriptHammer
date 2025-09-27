@@ -1,4 +1,4 @@
-# Development Dockerfile for CRUDkit
+# Development Dockerfile for ScriptHammer
 FROM node:22-slim AS base
 
 # Install pnpm and configure store
