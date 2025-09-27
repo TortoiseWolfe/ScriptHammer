@@ -47,7 +47,14 @@ export default function DisqusComments({
   }, [shortname]);
 
   useEffect(() => {
-    if (!isVisible || isLoaded || !shortname) return;
+    if (!isVisible || isLoaded || !shortname) {
+      if (isVisible && !shortname) {
+        console.warn('[DisqusComments] Visible but no shortname provided');
+      }
+      return;
+    }
+
+    console.log('[DisqusComments] Loading Disqus with shortname:', shortname);
 
     // Disqus configuration
     const disqusConfig = function (this: any) {
@@ -58,6 +65,7 @@ export default function DisqusComments({
 
     // Check if Disqus is already loaded
     if ((window as any).DISQUS) {
+      console.log('[DisqusComments] DISQUS already loaded, resetting...');
       (window as any).DISQUS.reset({
         reload: true,
         config: disqusConfig,
@@ -65,6 +73,10 @@ export default function DisqusComments({
       setIsLoaded(true);
     } else {
       // Load Disqus
+      console.log(
+        '[DisqusComments] Loading Disqus script from:',
+        `https://${shortname}.disqus.com/embed.js`
+      );
       (window as any).disqus_config = disqusConfig;
 
       const script = document.createElement('script');
@@ -72,7 +84,14 @@ export default function DisqusComments({
       script.setAttribute('data-timestamp', Date.now().toString());
       script.async = true;
 
-      script.onload = () => setIsLoaded(true);
+      script.onload = () => {
+        console.log('[DisqusComments] Disqus script loaded successfully');
+        setIsLoaded(true);
+      };
+
+      script.onerror = (error) => {
+        console.error('[DisqusComments] Failed to load Disqus script:', error);
+      };
 
       document.body.appendChild(script);
     }
