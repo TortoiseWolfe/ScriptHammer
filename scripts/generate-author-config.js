@@ -22,6 +22,28 @@ if (fs.existsSync(envLocalPath)) {
   dotenv.config({ path: envLocalPath });
 }
 
+// Check if author-generated.ts already exists and has real content
+const outputPath = path.join(
+  process.cwd(),
+  'src',
+  'config',
+  'author-generated.ts'
+);
+
+// If the file already exists and doesn't have default values, skip generation
+if (fs.existsSync(outputPath)) {
+  const existingContent = fs.readFileSync(outputPath, 'utf8');
+  if (
+    !existingContent.includes('"Your Name"') &&
+    !existingContent.includes('default.jpg')
+  ) {
+    console.log(
+      '✅ Author configuration already exists with real data, skipping generation'
+    );
+    process.exit(0);
+  }
+}
+
 // Generate the author configuration
 const authorConfig = {
   name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'Your Name',
@@ -64,13 +86,7 @@ export const authorConfig = ${JSON.stringify(authorConfig, null, 2)} as const;
 export type AuthorConfig = typeof authorConfig;
 `;
 
-// Write to file
-const outputPath = path.join(
-  process.cwd(),
-  'src',
-  'config',
-  'author-generated.ts'
-);
+// Write to file (outputPath already defined at the top)
 fs.writeFileSync(outputPath, fileContent);
 
 console.log('✅ Author configuration generated from .env');
