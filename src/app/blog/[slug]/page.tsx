@@ -180,6 +180,16 @@ export default async function BlogPostPage({
   // Generate JSON-LD structured data
   const jsonLd = generateArticleJsonLd(post, baseUrl, imageUrl);
 
+  // Get Disqus shortname from author config
+  let disqusShortname = '';
+  try {
+    const { authorConfig } = require('@/config/author-generated');
+    disqusShortname = authorConfig.disqus?.shortname || '';
+  } catch {
+    // Fallback if generated config doesn't exist
+    disqusShortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME || '';
+  }
+
   return (
     <>
       <script
@@ -194,6 +204,7 @@ export default async function BlogPostPage({
         seoScore={seoScore}
         seoAnalysis={seoAnalysis}
         shareOptions={shareOptions}
+        disqusShortname={disqusShortname}
       />
     </>
   );

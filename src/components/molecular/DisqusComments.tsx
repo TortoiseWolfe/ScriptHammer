@@ -6,26 +6,18 @@ interface DisqusCommentsProps {
   slug: string;
   title: string;
   url: string;
+  shortname?: string;
 }
 
 export default function DisqusComments({
   slug,
   title,
   url,
+  shortname = '',
 }: DisqusCommentsProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Get shortname from generated config (created at build time from .env)
-  let shortname = '';
-  try {
-    const generatedConfig = require('@/config/author-generated');
-    shortname = generatedConfig.authorConfig.disqus.shortname;
-  } catch {
-    // Fallback for dev mode before first build
-    shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME || '';
-  }
 
   useEffect(() => {
     if (!shortname) return;
