@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import type { Author } from '@/types/author';
+import SocialIcon from '@/components/atomic/SocialIcon';
 
 export interface AuthorProfileProps {
   /** Author data */
@@ -156,13 +157,9 @@ export default function AuthorProfile({
                   rel="noopener noreferrer"
                   className="btn btn-circle btn-ghost"
                   aria-label={`${author.name} on ${link.platform}`}
+                  title={link.platform}
                 >
-                  <span className="text-xl">
-                    {link.platform === 'twitter' && '𝕏'}
-                    {link.platform === 'github' && '⚡'}
-                    {link.platform === 'linkedin' && '💼'}
-                    {link.platform === 'website' && '🌐'}
-                  </span>
+                  <SocialIcon platform={link.platform} />
                 </a>
               ))}
           </div>
