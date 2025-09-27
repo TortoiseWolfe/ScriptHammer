@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import type { BlogPost } from '@/types/blog';
 import type { TOCItem } from '@/types/metadata';
 import BlogContent from '../BlogContent/BlogContent';
@@ -330,11 +331,16 @@ export default function BlogPostViewer({
       {/* Featured Image */}
       {featuredImageSrc && (
         <figure className="mb-10">
-          <img
-            src={featuredImageSrc}
-            alt={post.metadata?.featuredImageAlt || post.title}
-            className="w-full rounded-lg shadow-lg"
-          />
+          <div className="relative h-96 w-full">
+            <Image
+              src={featuredImageSrc}
+              alt={post.metadata?.featuredImageAlt || post.title}
+              fill
+              className="rounded-lg object-cover shadow-lg"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              priority
+            />
+          </div>
           {post.metadata?.featuredImageAlt && (
             <figcaption className="text-base-content/60 mt-2 text-center text-sm">
               {post.metadata.featuredImageAlt}
@@ -357,11 +363,15 @@ export default function BlogPostViewer({
         <footer className="border-base-300 mt-12 border-t pt-8">
           <div className="flex items-center gap-4">
             {post.author.avatar && (
-              <img
-                src={post.author.avatar}
-                alt={post.author.name}
-                className="h-16 w-16 rounded-full"
-              />
+              <div className="relative h-16 w-16">
+                <Image
+                  src={post.author.avatar}
+                  alt={post.author.name}
+                  fill
+                  className="rounded-full object-cover"
+                  sizes="64px"
+                />
+              </div>
             )}
             <div>
               <h2 className="text-lg font-semibold">{post.author.name}</h2>

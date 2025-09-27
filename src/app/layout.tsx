@@ -10,6 +10,7 @@ import { CookieConsent } from '@/components/privacy/CookieConsent';
 import { ConsentModal } from '@/components/privacy/ConsentModal';
 import GoogleAnalytics from '@/components/atomic/GoogleAnalytics';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import PWAInstall from '@/components/PWAInstall';
 import { projectConfig } from '@/config/project.config';
 import {
   generateMetadata,
@@ -116,6 +117,7 @@ export default function RootLayout({
           <AccessibilityProvider>
             <GlobalNav />
             <ErrorBoundary level="page">{children}</ErrorBoundary>
+            <PWAInstall />
             <CookieConsent />
             <ConsentModal />
           </AccessibilityProvider>
