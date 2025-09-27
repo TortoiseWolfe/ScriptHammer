@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import type { BlogPost } from '@/types/blog';
 import type { TOCItem } from '@/types/metadata';
 import BlogContent from '../BlogContent/BlogContent';
+import TagBadge from '@/components/atomic/TagBadge';
 import { getProjectConfig } from '@/config/project.config';
 
 export interface BlogPostViewerProps {
@@ -320,9 +321,7 @@ export default function BlogPostViewer({
         {post.metadata?.tags && post.metadata.tags.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {post.metadata.tags.map((tag) => (
-              <span key={tag} className="badge badge-primary badge-outline">
-                {tag}
-              </span>
+              <TagBadge key={tag} tag={tag} size="sm" variant="default" />
             ))}
           </div>
         )}

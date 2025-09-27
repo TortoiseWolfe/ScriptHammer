@@ -1,7 +1,7 @@
-// CRUDkit Service Worker v1.0.0
+// ScriptHammer Service Worker v1.0.0
 // Provides offline support, caching, and background sync
 
-const CACHE_VERSION = 'crudkit-v1.0.0';
+const CACHE_VERSION = 'scripthammer-v1.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -49,7 +49,7 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((cacheName) => {
               return (
-                cacheName.startsWith('crudkit-') &&
+                cacheName.startsWith('scripthammer-') &&
                 cacheName !== STATIC_CACHE &&
                 cacheName !== DYNAMIC_CACHE &&
                 cacheName !== IMAGE_CACHE
@@ -222,7 +222,7 @@ self.addEventListener('message', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((cacheName) => cacheName.startsWith('crudkit-'))
+            .filter((cacheName) => cacheName.startsWith('scripthammer-'))
             .map((cacheName) => caches.delete(cacheName))
         );
       })
@@ -244,7 +244,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('CRUDkit Notification', options)
+    self.registration.showNotification('ScriptHammer Notification', options)
   );
 });
 

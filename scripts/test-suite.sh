@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Test Suite Runner for CRUDkit
+# Test Suite Runner for ScriptHammer
 # Runs all tests with clear feedback and actionable results
 
 # Colors for output
@@ -66,7 +66,7 @@ START_TIME=$(date +%s)
 # Main header
 echo ""
 echo -e "${BLUE}${BOLD}╔══════════════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}${BOLD}║                     CRUDkit Comprehensive Test Suite                 ║${NC}"
+echo -e "${BLUE}${BOLD}║                  ScriptHammer Comprehensive Test Suite               ║${NC}"
 echo -e "${BLUE}${BOLD}╚══════════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}Running all tests to ensure code quality and functionality...${NC}"

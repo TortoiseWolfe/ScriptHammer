@@ -33,18 +33,27 @@ export interface TaskProgress {
 export async function parseTasksFile(): Promise<TaskProgress> {
   try {
     // Fetch from public folder (copied during build) - use dynamic basePath
-    const projectName = process.env.NEXT_PUBLIC_PROJECT_NAME || 'CRUDkit';
+    const projectName = process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer';
     const baseUrl =
       window.location.hostname === 'localhost' ? '' : `/${projectName}`;
 
     // Add cache-busting timestamp to ensure fresh data
-    const url = `${baseUrl}/TASKS.md?t=${Date.now()}`;
+    // Look for current sprint tasks in specs folder
+    const url = `${baseUrl}/specs/016-sprint-3-5/tasks.md?t=${Date.now()}`;
     const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error('Failed to fetch TASKS.md');
-    }
+    let content = '';
 
-    const content = await response.text();
+    if (!response.ok) {
+      // Fallback to root TASKS.md if it exists
+      const fallbackUrl = `${baseUrl}/TASKS.md?t=${Date.now()}`;
+      const fallbackResponse = await fetch(fallbackUrl);
+      if (!fallbackResponse.ok) {
+        throw new Error('Failed to fetch tasks file');
+      }
+      content = await fallbackResponse.text();
+    } else {
+      content = await response.text();
+    }
 
     // Also fetch archived Sprint 1 TASKS.md for phase completion markers
     let archivedSprint1Content = '';
@@ -84,37 +93,34 @@ export async function parseTasksFile(): Promise<TaskProgress> {
       status: 'completed',
     });
 
-    // Sprint 3 - New format with S3T prefix
-    const sprint3HeaderMatch = content.match(/Sprint 3[^:]*:/);
-    if (sprint3HeaderMatch) {
-      // Count S3T tasks
-      const s3tMatches = content.match(/S3T\d{3}/g) || [];
-      const totalS3Tasks = s3tMatches.length;
+    // Sprint 3.5 - Technical Debt Reduction format with T prefix
+    const sprint35HeaderMatch = content.match(
+      /Sprint 3\.5[^:]*:|Tasks: Sprint 3\.5/
+    );
+    if (sprint35HeaderMatch) {
+      // Count T tasks (T001, T002, etc.)
+      const taskMatches = content.match(/T\d{3}/g) || [];
+      const totalTasks = taskMatches.length;
 
-      // Count completed S3T tasks (look for [x] on the third line after task ID)
-      let completedS3Tasks = 0;
-      for (const taskId of s3tMatches) {
-        // Pattern: Task ID on line 1, skip line 2, checkbox [x] on line 3
-        const taskPattern = new RegExp(
-          `${taskId}[^\\n]*\\n[^\\n]*\\n[^\\n]*\\[x\\]`,
-          's'
-        );
+      // Count completed tasks (look for [x] pattern)
+      let completedTasks = 0;
+      for (const taskId of taskMatches) {
+        // Pattern: - [x] T001 (completed checkbox pattern)
+        const taskPattern = new RegExp(`\\[x\\]\\s*${taskId}`, 'i');
         if (taskPattern.test(content)) {
-          completedS3Tasks++;
+          completedTasks++;
         }
       }
 
-      const s3Percentage =
-        totalS3Tasks > 0
-          ? Math.round((completedS3Tasks / totalS3Tasks) * 100)
-          : 0;
+      const percentage =
+        totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
       sprints.push({
-        name: 'Sprint 3: Complete the Constitutional Vision',
-        completedTasks: completedS3Tasks,
-        totalTasks: totalS3Tasks,
-        percentage: s3Percentage,
-        status: completedS3Tasks > 0 ? 'in-progress' : 'not-started',
+        name: 'Sprint 3.5: Technical Debt Reduction',
+        completedTasks: completedTasks,
+        totalTasks: totalTasks,
+        percentage: percentage,
+        status: completedTasks > 0 ? 'in-progress' : 'not-started',
       });
     }
 

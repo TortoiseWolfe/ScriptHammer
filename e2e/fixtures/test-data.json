@@ -54,7 +54,7 @@
   },
   "navigation": {
     "pages": [
-      { "name": "Home", "path": "/", "title": "CRUDkit" },
+      { "name": "Home", "path": "/", "title": "ScriptHammer" },
       { "name": "Themes", "path": "/themes", "title": "Theme" },
       { "name": "Components", "path": "/components", "title": "Component" },
       {
@@ -91,9 +91,9 @@
   },
   "pwa": {
     "manifest": {
-      "name": "CRUDkit",
-      "short_name": "CRUDkit",
-      "start_url": "/CRUDkit/",
+      "name": "ScriptHammer",
+      "short_name": "ScriptHammer",
+      "start_url": "/ScriptHammer/",
       "display": "standalone",
       "theme_color": "#3b82f6",
       "background_color": "#ffffff"

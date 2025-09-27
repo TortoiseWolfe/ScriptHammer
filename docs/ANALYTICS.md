@@ -2,7 +2,7 @@
 
 ## Overview
 
-CRUDkit includes a privacy-conscious Google Analytics 4 (GA4) integration that respects user consent and provides comprehensive tracking capabilities for understanding user behavior.
+ScriptHammer includes a privacy-conscious Google Analytics 4 (GA4) integration that respects user consent and provides comprehensive tracking capabilities for understanding user behavior.
 
 ## Features
 

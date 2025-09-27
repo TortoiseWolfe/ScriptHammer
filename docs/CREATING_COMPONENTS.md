@@ -1,6 +1,6 @@
 # Creating Components Guide
 
-This guide explains how to create new components in CRUDkit following our enforced component structure standards.
+This guide explains how to create new components in ScriptHammer following our enforced component structure standards.
 
 ## Quick Start
 

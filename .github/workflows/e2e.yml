@@ -78,8 +78,8 @@ jobs:
           curl -s http://localhost:3000 | grep -o '<title>[^<]*</title>' || echo "No title found"
           echo "=== Checking for progress badge ==="
           curl -s http://localhost:3000 | grep -o 'badge.*badge-success' || echo "No progress badge found"
-          echo "=== Checking for CRUDkit text ==="
-          curl -s http://localhost:3000 | grep -o 'CRUDkit' | head -5 || echo "No CRUDkit text found"
+          echo "=== Checking for ScriptHammer text ==="
+          curl -s http://localhost:3000 | grep -o 'ScriptHammer' | head -5 || echo "No ScriptHammer text found"
 
       - name: Run E2E tests - ${{ matrix.browser }}
         run: pnpm test:e2e --project=${{ matrix.browser }} --reporter=list --trace=on-first-retry

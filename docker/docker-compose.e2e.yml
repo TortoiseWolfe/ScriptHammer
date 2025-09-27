@@ -1,6 +1,6 @@
 services:
   # Main application service
-  crudkit:
+  scripthammer:
     build:
       context: .
       dockerfile: Dockerfile
@@ -17,7 +17,7 @@ services:
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/CRUDkit']
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/ScriptHammer']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -31,14 +31,14 @@ services:
       context: .
       dockerfile: Dockerfile.e2e
     depends_on:
-      crudkit:
+      scripthammer:
         condition: service_healthy
     volumes:
       - ./e2e:/app/e2e
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report
     environment:
-      - BASE_URL=http://crudkit:3000/CRUDkit
+      - BASE_URL=http://scripthammer:3000/ScriptHammer
       - CI=false
       - PWDEBUG=${PWDEBUG:-0}
     networks:
@@ -51,7 +51,7 @@ services:
       context: .
       dockerfile: Dockerfile.e2e
     depends_on:
-      crudkit:
+      scripthammer:
         condition: service_healthy
     ports:
       - '9323:9323' # Playwright UI port
@@ -60,7 +60,7 @@ services:
       - ./test-results:/app/test-results
       - ./playwright-report:/app/playwright-report
     environment:
-      - BASE_URL=http://crudkit:3000/CRUDkit
+      - BASE_URL=http://scripthammer:3000/ScriptHammer
       - DISPLAY=:99
     networks:
       - e2e-network

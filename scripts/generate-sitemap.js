@@ -6,7 +6,7 @@ const matter = require('gray-matter');
 
 const BLOG_DIR = path.join(process.cwd(), 'blog');
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const SITE_URL = 'https://tortoisewolfe.github.io/CRUDkit';
+const SITE_URL = 'https://tortoisewolfe.github.io/ScriptHammer';
 
 // Static pages in the application
 const staticPages = [
@@ -88,7 +88,7 @@ ${blogPosts
 
 // Generate robots.txt
 function generateRobotsTxt() {
-  const robotsTxt = `# CRUDkit Robots.txt
+  const robotsTxt = `# ScriptHammer Robots.txt
 User-agent: *
 Allow: /
 

@@ -6,7 +6,7 @@ const matter = require('gray-matter');
 
 const BLOG_DIR = path.join(process.cwd(), 'blog');
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const SITE_URL = 'https://tortoisewolfe.github.io/CRUDkit';
+const SITE_URL = 'https://tortoisewolfe.github.io/ScriptHammer';
 
 function escapeXml(unsafe) {
   return unsafe
@@ -38,7 +38,7 @@ function generateRSSFeed() {
             title: data.title,
             description: data.excerpt,
             url: `/blog/${data.slug || file.replace('.md', '')}`,
-            author: data.author || 'CRUDkit Team',
+            author: data.author || 'ScriptHammer Team',
             pubDate: new Date(data.publishDate || new Date()).toUTCString(),
             categories: data.categories || [],
             content: content.substring(0, 500) + '...', // First 500 chars
@@ -54,8 +54,8 @@ function generateRSSFeed() {
   const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
-    <title>CRUDkit Blog</title>
-    <description>Building the future of web development with CRUDkit - Next.js production template with 33+ integrated features</description>
+    <title>ScriptHammer Blog</title>
+    <description>Opinionated Next.js PWA Template with 32 themes and comprehensive tooling</description>
     <link>${SITE_URL}/blog</link>
     <language>en-US</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
@@ -88,10 +88,10 @@ ${post.categories.map((cat) => `      <category>${escapeXml(cat)}</category>`).j
   // Also generate a simple JSON feed for modern readers
   const jsonFeed = {
     version: 'https://jsonfeed.org/version/1.1',
-    title: 'CRUDkit Blog',
+    title: 'ScriptHammer Blog',
     home_page_url: `${SITE_URL}/blog`,
     feed_url: `${SITE_URL}/feed.json`,
-    description: 'Building the future of web development with CRUDkit',
+    description: 'Opinionated Next.js PWA Template',
     items: blogPosts.map((post) => ({
       id: `${SITE_URL}${post.url}`,
       url: `${SITE_URL}${post.url}`,

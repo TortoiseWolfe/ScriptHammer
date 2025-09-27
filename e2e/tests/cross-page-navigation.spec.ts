@@ -74,7 +74,7 @@ test.describe('Cross-Page Navigation', () => {
 
       // Check key navigation links are present
       const homeLink = page
-        .locator('a:has-text("Home"), a:has-text("CRUDkit")')
+        .locator('a:has-text("Home"), a:has-text("ScriptHammer")')
         .first();
       await expect(homeLink).toBeVisible();
 
@@ -127,7 +127,7 @@ test.describe('Cross-Page Navigation', () => {
     // Check for 404 content or redirect to home
     const has404Content =
       (await page.locator('text=/404|not found/i').count()) > 0;
-    const isHomePage = await page.url().includes('/CRUDkit');
+    const isHomePage = await page.url().includes('/ScriptHammer');
 
     expect(has404Content || isHomePage).toBe(true);
   });
@@ -166,7 +166,7 @@ test.describe('Cross-Page Navigation', () => {
 
     // Find external links
     const externalLinks = page.locator(
-      'a[href^="http"]:not([href*="localhost"]):not([href*="CRUDkit"])'
+      'a[href^="http"]:not([href*="localhost"]):not([href*="ScriptHammer"])'
     );
     const linkCount = await externalLinks.count();
 

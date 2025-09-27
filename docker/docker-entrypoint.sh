@@ -1,10 +1,10 @@
 #!/bin/sh
 set -e
 
-# Docker entrypoint for CRUDkit
+# Docker entrypoint for ScriptHammer
 # Handles .next directory permissions to prevent Docker/host conflicts
 
-echo "🚀 Initializing CRUDkit container..."
+echo "🚀 Initializing ScriptHammer container..."
 
 # .next directory is mounted as tmpfs - ensure proper permissions
 echo "🔧 Setting up tmpfs .next directory..."
