@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { BlogPost } from '@/types/blog';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 import { getProjectConfig } from '@/config/project.config';
@@ -59,11 +60,13 @@ export default function BlogPostCard({
       onClick={onClick}
     >
       {featuredImageSrc && (
-        <figure>
-          <img
+        <figure className="relative h-48 w-full">
+          <Image
             src={featuredImageSrc}
             alt={post.metadata?.featuredImageAlt || post.title}
-            className="h-48 w-full object-cover"
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         </figure>
       )}

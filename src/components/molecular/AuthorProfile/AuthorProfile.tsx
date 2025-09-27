@@ -1,4 +1,5 @@
 import React from 'react';
+import Image from 'next/image';
 import type { Author } from '@/types/author';
 
 export interface AuthorProfileProps {
@@ -37,8 +38,14 @@ export default function AuthorProfile({
         <div className="mb-4 flex items-center gap-4">
           {author.avatar && (
             <div className="avatar">
-              <div className="h-20 w-20 rounded-full">
-                <img src={author.avatar} alt={author.name} />
+              <div className="relative h-20 w-20 overflow-hidden rounded-full">
+                <Image
+                  src={author.avatar}
+                  alt={author.name}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
               </div>
             </div>
           )}
