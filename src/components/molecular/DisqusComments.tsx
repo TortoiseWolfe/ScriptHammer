@@ -16,17 +16,23 @@ export default function DisqusComments({
   shortname = '',
 }: DisqusCommentsProps) {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Ensure component is mounted in browser
   useEffect(() => {
-    if (!shortname || isLoaded) {
-      if (!shortname) {
-        console.warn('[DisqusComments] No shortname provided');
-      }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only run in browser after mount
+    if (!isMounted || typeof window === 'undefined') {
       return;
     }
 
-    console.log('[DisqusComments] Loading Disqus with shortname:', shortname);
+    if (!shortname || isLoaded) {
+      return;
+    }
 
     // Disqus configuration
     const disqusConfig = function (this: any) {
@@ -37,7 +43,6 @@ export default function DisqusComments({
 
     // Check if Disqus is already loaded
     if ((window as any).DISQUS) {
-      console.log('[DisqusComments] DISQUS already loaded, resetting...');
       (window as any).DISQUS.reset({
         reload: true,
         config: disqusConfig,
@@ -45,10 +50,6 @@ export default function DisqusComments({
       setIsLoaded(true);
     } else {
       // Load Disqus
-      console.log(
-        '[DisqusComments] Loading Disqus script from:',
-        `https://${shortname}.disqus.com/embed.js`
-      );
       (window as any).disqus_config = disqusConfig;
 
       const script = document.createElement('script');
@@ -57,19 +58,24 @@ export default function DisqusComments({
       script.async = true;
 
       script.onload = () => {
-        console.log('[DisqusComments] Disqus script loaded successfully');
-        setIsLoaded(true);
+        // Add small delay to ensure DISQUS is fully initialized
+        setTimeout(() => {
+          if ((window as any).DISQUS) {
+            setIsLoaded(true);
+          }
+        }, 100);
       };
 
-      script.onerror = (error) => {
-        console.error('[DisqusComments] Failed to load Disqus script:', error);
+      script.onerror = () => {
+        // Silently fail if script doesn't load
       };
 
       document.body.appendChild(script);
     }
-  }, [isLoaded, shortname, slug, title, url]);
+  }, [isMounted, isLoaded, shortname, slug, title, url]);
 
-  if (!shortname) {
+  // Don't render until mounted in browser
+  if (!isMounted || !shortname) {
     return null;
   }
 
