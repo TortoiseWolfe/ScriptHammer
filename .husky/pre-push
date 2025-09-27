@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Run full CI validation before pushing to catch all issues
+echo "🚀 Running CI validation before push..."
+
+# Quick validation by default (faster)
+# For full validation including coverage and Storybook, use: git push --no-verify && ./scripts/validate-ci.sh
+./scripts/validate-ci.sh --quick
+
+if [ $? -ne 0 ]; then
+    echo "❌ CI validation failed. Please fix issues before pushing."
+    echo "Run './scripts/validate-ci.sh' for full validation"
+    exit 1
+fi

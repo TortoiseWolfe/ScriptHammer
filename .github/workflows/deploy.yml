@@ -1,0 +1,94 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js app
+        run: pnpm run build
+
+      - name: Build Storybook
+        run: pnpm run build-storybook
+
+      - name: Add cache busting and merge outputs
+        run: |
+          # Create merged output directory
+          mkdir -p merged-output
+
+          # Check if Next.js build output exists and copy it
+          if [ -d "out" ]; then
+            echo "Copying Next.js build from 'out' directory..."
+            cp -r out/* merged-output/
+          else
+            echo "Warning: 'out' directory not found. The Next.js build may have failed."
+            # Create a minimal index.html to prevent complete failure
+            echo "<html><body><h1>Build Error</h1><p>The Next.js build did not complete successfully.</p></body></html>" > merged-output/index.html
+          fi
+
+          # Check if Storybook build exists and copy it
+          if [ -d "storybook-static" ]; then
+            echo "Copying Storybook build..."
+            cp -r storybook-static merged-output/storybook
+            # Add build timestamp to force cache refresh
+            echo "Build: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" > merged-output/storybook/BUILD_TIME.txt
+          else
+            echo "Warning: 'storybook-static' directory not found. Storybook build may have failed."
+          fi
+
+          # Create _headers file for cache control (GitHub Pages doesn't use it but good practice)
+          cat > merged-output/_headers << EOF
+          /storybook/*
+            Cache-Control: no-cache, no-store, must-revalidate
+            Pragma: no-cache
+            Expires: 0
+
+          /storybook/static/*
+            Cache-Control: public, max-age=31536000, immutable
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./merged-output
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

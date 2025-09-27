@@ -1,0 +1,54 @@
+name: Accessibility Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  accessibility:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        run: pnpm run build
+
+      - name: Run accessibility tests
+        run: pnpm run test:a11y:ci
+
+      - name: Run component accessibility tests
+        run: pnpm test -- --run Button.accessibility Card.accessibility Text.accessibility
+
+      - name: Upload Pa11y screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pa11y-screenshots
+          path: .pa11y-screenshots/
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Accessibility tests failed. Please check the [workflow logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+            })

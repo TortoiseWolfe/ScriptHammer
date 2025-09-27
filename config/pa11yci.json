@@ -1,0 +1,44 @@
+{
+  "// Note": "Pa11y requires Chromium to be installed. In Docker, update Dockerfile to include chromium package",
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 30000,
+    "wait": 2000,
+    "viewport": {
+      "width": 1280,
+      "height": 1024
+    },
+    "runners": ["axe", "htmlcs"],
+    "hideElements": "",
+    "ignore": ["color-contrast"],
+    "chromeLaunchConfig": {
+      "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+      ],
+      "executablePath": "/usr/bin/chromium"
+    },
+    "headers": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+    }
+  },
+  "urls": [
+    {
+      "url": "http://localhost:3000/",
+      "screenCapture": ".pa11y-screenshots/home.png"
+    },
+    {
+      "url": "http://localhost:3000/themes",
+      "screenCapture": ".pa11y-screenshots/themes.png"
+    },
+    {
+      "url": "http://localhost:3000/accessibility",
+      "screenCapture": ".pa11y-screenshots/accessibility.png"
+    },
+    {
+      "url": "http://localhost:3000/status",
+      "screenCapture": ".pa11y-screenshots/status.png"
+    }
+  ]
+}

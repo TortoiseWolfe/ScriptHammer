@@ -1,0 +1,366 @@
+openapi: 3.0.0
+info:
+  title: Component Structure CLI API
+  version: 1.0.0
+  description: Command-line interface for component structure validation and migration
+
+paths:
+  /audit:
+    post:
+      summary: Audit component structure compliance
+      operationId: auditComponents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Root path to scan for components
+                  default: 'src/components'
+                format:
+                  type: string
+                  enum: [json, markdown, console]
+                  default: console
+                includeIgnored:
+                  type: boolean
+                  default: false
+                verbose:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Audit report generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditReport'
+        '400':
+          description: Invalid path or parameters
+        '500':
+          description: Internal error during audit
+
+  /migrate:
+    post:
+      summary: Migrate non-compliant components
+      operationId: migrateComponents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  description: Root path for migration
+                  default: 'src/components'
+                dryRun:
+                  type: boolean
+                  description: Preview changes without applying
+                  default: false
+                backup:
+                  type: boolean
+                  description: Create backup before migration
+                  default: true
+                components:
+                  type: array
+                  items:
+                    type: string
+                  description: Specific components to migrate (empty = all)
+      responses:
+        '200':
+          description: Migration completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationResult'
+        '400':
+          description: Invalid parameters
+        '500':
+          description: Migration failed
+
+  /validate:
+    post:
+      summary: Validate component structure for CI
+      operationId: validateStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                path:
+                  type: string
+                  default: 'src/components'
+                failFast:
+                  type: boolean
+                  description: Stop on first error
+                  default: false
+                strict:
+                  type: boolean
+                  description: Enforce all rules including warnings
+                  default: false
+      responses:
+        '200':
+          description: All components valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '422':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationReport'
+        '500':
+          description: Internal error during validation
+
+  /scaffold:
+    post:
+      summary: Generate new component with proper structure
+      operationId: scaffoldComponent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - category
+              properties:
+                name:
+                  type: string
+                  description: Component name in PascalCase
+                  pattern: '^[A-Z][a-zA-Z0-9]+$'
+                category:
+                  type: string
+                  enum: [subatomic, atomic, molecular, organisms, templates]
+                  description: Atomic design category
+                hasProps:
+                  type: boolean
+                  default: true
+                  description: Include props interface
+                withHooks:
+                  type: boolean
+                  default: false
+                  description: Include custom hooks
+                path:
+                  type: string
+                  description: Custom path (overrides category)
+      responses:
+        '201':
+          description: Component created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScaffoldResult'
+        '400':
+          description: Invalid component name or parameters
+        '409':
+          description: Component already exists
+        '500':
+          description: Failed to create component
+
+components:
+  schemas:
+    AuditReport:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        summary:
+          $ref: '#/components/schemas/AuditSummary'
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentStructure'
+        nonCompliant:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComponentIssue'
+
+    AuditSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        compliant:
+          type: integer
+        nonCompliant:
+          type: integer
+        complianceRate:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+        missingFiles:
+          type: object
+          properties:
+            index:
+              type: integer
+            test:
+              type: integer
+            story:
+              type: integer
+            component:
+              type: integer
+
+    ComponentStructure:
+      type: object
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+        category:
+          type: string
+          enum: [subatomic, atomic, molecular, organisms, templates]
+        files:
+          $ref: '#/components/schemas/ComponentFiles'
+        status:
+          type: string
+          enum: [compliant, non_compliant, ignored]
+
+    ComponentFiles:
+      type: object
+      properties:
+        index:
+          $ref: '#/components/schemas/FileStatus'
+        component:
+          $ref: '#/components/schemas/FileStatus'
+        test:
+          $ref: '#/components/schemas/FileStatus'
+        story:
+          $ref: '#/components/schemas/FileStatus'
+
+    FileStatus:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        path:
+          type: string
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+
+    ComponentIssue:
+      type: object
+      properties:
+        component:
+          type: string
+        path:
+          type: string
+        missing:
+          type: array
+          items:
+            type: string
+        fixable:
+          type: boolean
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 3
+
+    MigrationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        migrated:
+          type: integer
+        failed:
+          type: integer
+        skipped:
+          type: integer
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/MigrationDetail'
+        backupPath:
+          type: string
+
+    MigrationDetail:
+      type: object
+      properties:
+        component:
+          type: string
+        status:
+          type: string
+          enum: [success, failed, skipped]
+        filesCreated:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
+
+    ValidationReport:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        total:
+          type: integer
+        passed:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationWarning'
+
+    ValidationError:
+      type: object
+      properties:
+        component:
+          type: string
+        rule:
+          type: string
+        message:
+          type: string
+        file:
+          type: string
+
+    ValidationWarning:
+      type: object
+      properties:
+        component:
+          type: string
+        rule:
+          type: string
+        message:
+          type: string
+        suggestion:
+          type: string
+
+    ScaffoldResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        component:
+          type: string
+        path:
+          type: string
+        filesCreated:
+          type: array
+          items:
+            type: string
+        message:
+          type: string

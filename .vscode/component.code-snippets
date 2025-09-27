@@ -1,0 +1,116 @@
+{
+  "React Component with 4-File Structure": {
+    "prefix": "rfc4",
+    "body": [
+      "// ${1:ComponentName}.tsx",
+      "import React from 'react';",
+      "",
+      "export interface ${1:ComponentName}Props {",
+      "  children?: React.ReactNode;",
+      "  className?: string;",
+      "}",
+      "",
+      "export default function ${1:ComponentName}({ children, className = '' }: ${1:ComponentName}Props) {",
+      "  return (",
+      "    <div className={`${2:component-class}$${className ? ` $${className}` : ''}`}>",
+      "      {children}",
+      "    </div>",
+      "  );",
+      "}"
+    ],
+    "description": "Create a React component following 4-file pattern"
+  },
+
+  "Component Index Export": {
+    "prefix": "rcindex",
+    "body": [
+      "export { default } from './${1:ComponentName}';",
+      "export type { ${1:ComponentName}Props } from './${1:ComponentName}';"
+    ],
+    "description": "Create index.tsx barrel export"
+  },
+
+  "Component Test File": {
+    "prefix": "rctest",
+    "body": [
+      "import { render, screen } from '@testing-library/react';",
+      "import { describe, it, expect } from 'vitest';",
+      "import ${1:ComponentName} from './${1:ComponentName}';",
+      "",
+      "describe('${1:ComponentName}', () => {",
+      "  it('renders without crashing', () => {",
+      "    render(<${1:ComponentName} />);",
+      "    expect(screen.getByRole('generic')).toBeInTheDocument();",
+      "  });",
+      "",
+      "  it('renders children when provided', () => {",
+      "    const testContent = 'Test Content';",
+      "    render(<${1:ComponentName}>{testContent}</${1:ComponentName}>);",
+      "    expect(screen.getByText(testContent)).toBeInTheDocument();",
+      "  });",
+      "",
+      "  it('applies custom className', () => {",
+      "    const customClass = 'custom-class';",
+      "    const { container } = render(<${1:ComponentName} className={customClass} />);",
+      "    expect(container.firstChild).toHaveClass(customClass);",
+      "  });",
+      "});"
+    ],
+    "description": "Create component test file"
+  },
+
+  "Component Story File": {
+    "prefix": "rcstory",
+    "body": [
+      "import type { Meta, StoryObj } from '@storybook/react';",
+      "import ${1:ComponentName} from './${1:ComponentName}';",
+      "",
+      "const meta: Meta<typeof ${1:ComponentName}> = {",
+      "  title: 'Components/${2:Category}/${1:ComponentName}',",
+      "  component: ${1:ComponentName},",
+      "  parameters: {",
+      "    layout: 'centered',",
+      "  },",
+      "  tags: ['autodocs'],",
+      "  argTypes: {",
+      "    children: {",
+      "      control: 'text',",
+      "      description: 'Content to display',",
+      "    },",
+      "    className: {",
+      "      control: 'text',",
+      "      description: 'Additional CSS classes',",
+      "    },",
+      "  },",
+      "};",
+      "",
+      "export default meta;",
+      "type Story = StoryObj<typeof meta>;",
+      "",
+      "export const Default: Story = {",
+      "  args: {",
+      "    children: 'Default ${1:ComponentName}',",
+      "  },",
+      "};",
+      "",
+      "export const WithCustomClass: Story = {",
+      "  args: {",
+      "    children: 'Styled ${1:ComponentName}',",
+      "    className: 'p-4 bg-primary text-white rounded',",
+      "  },",
+      "};"
+    ],
+    "description": "Create component story file"
+  },
+
+  "Quick Component Scaffold": {
+    "prefix": "rcquick",
+    "body": [
+      "// Run this command to generate the component:",
+      "// pnpm run generate:component",
+      "// Component Name: ${1:ComponentName}",
+      "// Category: ${2|subatomic,atomic,molecular,organisms,templates|}"
+    ],
+    "description": "Reminder to use Plop generator"
+  }
+}

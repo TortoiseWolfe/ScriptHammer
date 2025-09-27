@@ -1,0 +1,237 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="512" height="512" viewBox="0 0 512 512"
+ preserveAspectRatio="xMidYMid meet">
+
+  <defs>
+    <!-- Wood grain pattern from printing-mallet.svg -->
+    <pattern id="oakGrain" x="0" y="0" width="100" height="200" patternUnits="userSpaceOnUse">
+      <rect width="100" height="200" fill="#8B6F47"/>
+      <path d="M0,10 Q25,8 50,10 T100,10" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,25 Q30,23 60,25 T100,25" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,40 Q35,38 70,40 T100,40" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,55 Q20,53 40,55 T100,55" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,70 Q25,68 50,70 T100,70" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,85 Q30,83 60,85 T100,85" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,100 Q35,98 70,100 T100,100" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,115 Q20,113 40,115 T100,115" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,130 Q25,128 50,130 T100,130" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,145 Q30,143 60,145 T100,145" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,160 Q35,158 70,160 T100,160" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,175 Q20,173 40,175 T100,175" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+      <path d="M0,190 Q25,188 50,190 T100,190" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+    </pattern>
+
+    <!-- Darker oak for shading from printing-mallet.svg -->
+    <pattern id="oakGrainDark" x="0" y="0" width="100" height="200" patternUnits="userSpaceOnUse">
+      <rect width="100" height="200" fill="#6B5637"/>
+      <path d="M0,10 Q25,8 50,10 T100,10" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,30 Q30,28 60,30 T100,30" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,50 Q35,48 70,50 T100,50" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,70 Q20,68 40,70 T100,70" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,90 Q25,88 50,90 T100,90" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,110 Q30,108 60,110 T100,110" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,130 Q35,128 70,130 T100,130" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,150 Q20,148 40,150 T100,150" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,170 Q25,168 50,170 T100,170" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+      <path d="M0,190 Q30,188 60,190 T100,190" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+    </pattern>
+
+    <!-- Iron band gradient from printing-mallet.svg -->
+    <linearGradient id="ironGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5A5A5A;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7A7A7A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A4A4A;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Linseed oil sheen from printing-mallet.svg -->
+    <linearGradient id="oilSheen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.1" />
+      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.05" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </linearGradient>
+
+    <!-- Metallic gradient from script-tags.svg -->
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
+      <stop offset="15%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="45%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="55%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="85%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFDF00;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Bracket gradient from script-tags.svg -->
+    <linearGradient id="bracketGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFD700;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Script Tags from script-tags.svg (behind mallet) -->
+  <g transform="translate(256, 256) scale(0.8)">
+    <!-- Left bracket < -->
+    <g transform="translate(-75, 0)">
+      <!-- Shadow layer -->
+      <path d="M 45 -120 L -45 0 L 45 120"
+            stroke="#8B4513"
+            stroke-width="18"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.4"
+            transform="translate(3, 3)"/>
+      <!-- Main bracket -->
+      <path d="M 45 -120 L -45 0 L 45 120"
+            stroke="url(#metalGradient)"
+            stroke-width="18"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+      <!-- Inner line for depth -->
+      <path d="M 45 -120 L -45 0 L 45 120"
+            stroke="url(#bracketGradient)"
+            stroke-width="10"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.7"/>
+      <!-- Highlight -->
+      <path d="M 42 -115 L -40 0 L 42 115"
+            stroke="#FFDF00"
+            stroke-width="3"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.5"/>
+    </g>
+
+    <!-- Right bracket > -->
+    <g transform="translate(75, 0)">
+      <!-- Shadow layer -->
+      <path d="M -45 -120 L 45 0 L -45 120"
+            stroke="#8B4513"
+            stroke-width="18"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.4"
+            transform="translate(3, 3)"/>
+      <!-- Main bracket -->
+      <path d="M -45 -120 L 45 0 L -45 120"
+            stroke="url(#metalGradient)"
+            stroke-width="18"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+      <!-- Inner line for depth -->
+      <path d="M -45 -120 L 45 0 L -45 120"
+            stroke="url(#bracketGradient)"
+            stroke-width="10"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.7"/>
+      <!-- Highlight -->
+      <path d="M -42 -115 L 40 0 L -42 115"
+            stroke="#FFDF00"
+            stroke-width="3"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            opacity="0.5"/>
+    </g>
+  </g>
+
+  <!-- Printing Mallet from printing-mallet.svg (scaled to fit) -->
+  <g transform="translate(216, 296) rotate(42) scale(0.85)">
+
+    <!-- Mallet Head (cylindrical) -->
+    <g id="malletHead">
+      <!-- Top face of cylinder -->
+      <ellipse cx="0" cy="-120" rx="70" ry="20" fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
+
+      <!-- Main cylindrical body -->
+      <rect x="-70" y="-120" width="140" height="85" fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
+
+      <!-- Bottom face of cylinder (visible edge) -->
+      <ellipse cx="0" cy="-35" rx="70" ry="20" fill="url(#oakGrainDark)" stroke="#5B4637" stroke-width="1.5"/>
+
+      <!-- Iron reinforcement bands -->
+      <rect x="-75" y="-110" width="150" height="8" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="0.5"/>
+      <rect x="-75" y="-53" width="150" height="8" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="0.5"/>
+
+      <!-- Hammer marks and wear on striking surfaces -->
+      <ellipse cx="-20" cy="-80" rx="8" ry="3" fill="#6B5637" opacity="0.3"/>
+      <ellipse cx="10" cy="-90" rx="6" ry="2" fill="#6B5637" opacity="0.3"/>
+      <ellipse cx="-5" cy="-65" rx="7" ry="3" fill="#6B5637" opacity="0.3"/>
+      <ellipse cx="20" cy="-75" rx="5" ry="2" fill="#6B5637" opacity="0.3"/>
+
+      <!-- Wood grain details on head -->
+      <path d="M-60,-100 Q0,-98 60,-100" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
+      <path d="M-65,-80 Q0,-78 65,-80" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
+      <path d="M-60,-60 Q0,-58 60,-60" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
+    </g>
+
+    <!-- Handle -->
+    <g id="handle">
+      <!-- Mortise joint area where handle meets head -->
+      <rect x="-10" y="-35" width="20" height="25" fill="url(#oakGrainDark)" stroke="#5B4637" stroke-width="1"/>
+
+      <!-- Main handle shaft with taper -->
+      <path d="M-8,-10 L-9,140 L9,140 L8,-10 Z"
+            fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
+
+      <!-- Handle taper detail (wider at top, narrower at bottom) -->
+      <path d="M-8,-10 Q-10,65 -12,140 L-9,140 Z"
+            fill="url(#oakGrainDark)" opacity="0.5"/>
+      <path d="M8,-10 Q10,65 12,140 L9,140 Z"
+            fill="url(#oakGrainDark)" opacity="0.5"/>
+
+      <!-- Grip area with wear patina -->
+      <ellipse cx="0" cy="90" rx="7" ry="18" fill="#6B5637" opacity="0.2"/>
+
+      <!-- Wood grain lines on handle -->
+      <line x1="-6" y1="-5" x2="-7" y2="135" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+      <line x1="-3" y1="-8" x2="-4" y2="138" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+      <line x1="0" y1="-10" x2="0" y2="140" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+      <line x1="3" y1="-8" x2="4" y2="138" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+      <line x1="6" y1="-5" x2="7" y2="135" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+
+      <!-- Wooden wedge in mortise joint -->
+      <path d="M-5,-30 L-2,-15 L2,-15 L5,-30 Z"
+            fill="#9B8667" stroke="#5B4637" stroke-width="0.5"/>
+    </g>
+
+    <!-- Surface details and aging -->
+    <g id="aging" opacity="0.3">
+      <!-- Scratches and dings on head -->
+      <line x1="-50" y1="-105" x2="-35" y2="-102" stroke="#4B3627" stroke-width="0.5"/>
+      <line x1="40" y1="-70" x2="52" y2="-72" stroke="#4B3627" stroke-width="0.5"/>
+      <line x1="-40" y1="-55" x2="-25" y2="-57" stroke="#4B3627" stroke-width="0.5"/>
+
+      <!-- Scratches on handle -->
+      <line x1="-5" y1="30" x2="-2" y2="60" stroke="#4B3627" stroke-width="0.5"/>
+      <line x1="2" y1="80" x2="4" y2="110" stroke="#4B3627" stroke-width="0.5"/>
+
+      <!-- Age spots -->
+      <circle cx="-30" cy="-60" r="2" fill="#5B4637" opacity="0.4"/>
+      <circle cx="30" cy="-95" r="1.5" fill="#5B4637" opacity="0.4"/>
+      <circle cx="-4" cy="50" r="1" fill="#5B4637" opacity="0.4"/>
+      <circle cx="3" cy="100" r="1.2" fill="#5B4637" opacity="0.4"/>
+    </g>
+
+    <!-- Linseed oil sheen overlay -->
+    <g id="sheen" opacity="0.15">
+      <rect x="-70" y="-120" width="140" height="85" fill="url(#oilSheen)"/>
+      <path d="M-8,-10 L-9,140 L9,140 L8,-10 Z" fill="url(#oilSheen)"/>
+    </g>
+
+  </g>
+</svg>

@@ -1,0 +1,500 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="400" height="400" viewBox="0 0 400 400"
+ preserveAspectRatio="xMidYMid meet">
+
+  <defs>
+    <!-- Metallic gradient for main logo (bronze/copper steampunk colors) -->
+    <linearGradient id="metalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
+      <stop offset="15%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="45%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="55%" style="stop-color:#B87333;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#CD853F;stop-opacity:1" />
+      <stop offset="85%" style="stop-color:#FFC125;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFDF00;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Darker metallic gradient for shadows -->
+    <linearGradient id="darkMetalGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8B4513;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A0522D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#CD853F;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Highlight gradient for rings -->
+    <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFDF00;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#DAA520;stop-opacity:1" />
+      <stop offset="35%" style="stop-color:#B8860B;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#704214;stop-opacity:1" />
+      <stop offset="65%" style="stop-color:#B8860B;stop-opacity:1" />
+      <stop offset="80%" style="stop-color:#DAA520;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFDF00;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Gradient for circle background -->
+    <radialGradient id="circleGradient">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Enhanced shadow filter for metallic effect -->
+    <filter id="metalShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.5"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Inner glow for metallic shine -->
+    <filter id="metalGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feComposite in="coloredBlur" in2="SourceGraphic" operator="over"/>
+      <feSpecularLighting result="specOut" specularExponent="20" lighting-color="white">
+        <fePointLight x="-50" y="30" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut2"/>
+      <feComposite in="specOut2" in2="SourceGraphic" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <!-- Bevel effect for depth -->
+    <filter id="bevel">
+      <feGaussianBlur in="SourceAlpha" result="blur" stdDeviation="3"/>
+      <feSpecularLighting result="specOut" in="blur" specularConstant="1.5" specularExponent="10" lighting-color="white">
+        <fePointLight x="-50" y="60" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="specOut" in2="SourceAlpha" operator="in" result="specOut"/>
+      <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    
+    <!-- Shadow filter for circle -->
+    <filter id="circleShadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4"
+          flood-color="#8B4513" flood-opacity="0.3"/>
+    </filter>
+    
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Texture pattern for metallic effect -->
+    <pattern id="metalTexture" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse">
+      <rect width="4" height="4" fill="#8B4513" opacity="0.1"/>
+      <circle cx="2" cy="2" r="0.5" fill="#CD853F" opacity="0.2"/>
+    </pattern>
+    
+    <!-- Original shadow filter from your logo -->
+    <filter id="shadow2">
+      <feDropShadow dx="0" dy="0" stdDeviation="0.5"
+          flood-color="cyan"/>
+    </filter>
+  </defs>
+
+  <!-- Remove subtle textured background overlay for full transparency -->
+
+  <!-- Outer gear/cog ring (hollow center) -->
+  <g transform="translate(200, 200)">
+    <!-- Gear teeth - larger trapezoid shapes that connect to the rim -->
+    <g fill="url(#metalGradient)" stroke="url(#darkMetalGradient)" stroke-width="0.5" filter="url(#metalShadow)">
+      <!-- Create 20 larger gear teeth around the circle -->
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(0)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(18)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(36)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(54)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(72)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(90)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(108)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(126)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(144)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(162)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(180)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(198)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(216)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(234)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(252)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(270)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(288)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(306)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(324)"/>
+      <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(342)"/>
+    </g>
+    
+    <!-- Outer gear rim ring -->
+    <circle cx="0" cy="0" r="183" 
+            fill="none" 
+            stroke="url(#darkMetalGradient)" 
+            stroke-width="1"
+            opacity="0.7"/>
+    
+    <!-- Main gear rim (thick ring, no fill) -->
+    <circle cx="0" cy="0" r="175" 
+            fill="none" 
+            stroke="url(#ringGradient)" 
+            stroke-width="10"
+            filter="url(#metalShadow)"/>
+    
+    <!-- Inner edge of gear rim -->
+    <circle cx="0" cy="0" r="165" 
+            fill="none" 
+            stroke="url(#darkMetalGradient)" 
+            stroke-width="2"
+            opacity="0.8"/>
+    
+    <!-- Inner highlight -->
+    <circle cx="0" cy="0" r="162" 
+            fill="none" 
+            stroke="url(#metalGradient)" 
+            stroke-width="0.5"
+            opacity="0.6"/>
+  </g>
+
+  <!-- Decorative rivets for steampunk aesthetic on the gear rim -->
+  <g transform="translate(200, 200)">
+    <!-- Rivets positioned between each pair of gear teeth (every 36 degrees) -->
+    <g transform="rotate(9)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(27)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(45)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(63)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(81)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(99)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(117)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(135)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(153)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(171)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(189)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(207)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(225)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(243)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(261)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(279)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(297)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(315)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(333)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+    <g transform="rotate(351)">
+      <circle cx="0" cy="-171" r="2.5" fill="url(#darkMetalGradient)" filter="url(#metalShadow)"/>
+      <circle cx="0" cy="-171" r="1" fill="url(#metalGradient)"/>
+    </g>
+  </g>
+  
+  <!-- Container group for centering -->
+  <g transform="translate(200, 200)">
+    <!-- Your ScriptHammer logo with correct orientation and larger scale -->
+    <g transform="scale(0.36) translate(-600, -600)">
+      <g transform="translate(0.000000,1200.000000) scale(0.100000,-0.100000)"
+         fill="url(#metalGradient)" stroke="none" filter="url(#metalShadow)">
+        
+        <!-- All your original logo paths -->
+        <path d="M5150 10288 c-124 -27 -149 -38 -166 -70 -12 -24 -14 -36 -5 -54 9
+-20 18 -24 56 -24 l45 0 0 -85 c0 -79 -2 -86 -22 -94 -51 -21 -229 -63 -236
+-56 -4 3 -9 43 -10 88 l-4 82 36 13 c46 17 73 64 57 98 -14 32 -51 31 -160 -2
+-100 -29 -134 -58 -129 -108 2 -25 9 -33 36 -41 18 -5 32 -16 32 -25 0 -8 14
+-114 30 -235 27 -201 28 -221 13 -230 -41 -25 -54 -46 -51 -82 5 -59 24 -63
+138 -24 110 37 130 53 130 99 0 41 -23 63 -60 56 -27 -6 -29 -4 -34 37 -4 24
+-7 64 -9 88 -2 50 -18 41 148 85 49 14 93 22 97 20 4 -3 8 -43 8 -89 0 -79 -1
+-83 -24 -89 -35 -9 -56 -33 -56 -66 0 -68 17 -72 151 -40 88 22 129 51 129 91
+0 30 -36 60 -64 53 l-23 -5 5 242 4 243 34 31 c37 35 43 65 18 89 -17 18 -46
+19 -114 4z"/>
+        <path d="M5605 10181 c-137 -37 -165 -55 -165 -106 0 -57 17 -62 135 -32 162
+41 225 35 225 -23 l0 -30 -52 6 c-107 12 -240 -31 -312 -101 -98 -97 -100
+-230 -4 -282 51 -27 157 -23 237 10 40 16 69 23 76 17 5 -4 48 -6 95 -3 70 5
+88 10 107 29 13 13 23 19 23 14 0 -5 7 -16 16 -24 12 -12 37 -16 110 -16 87 0
+97 2 119 25 34 33 32 62 -5 83 -16 9 -30 22 -30 27 0 23 61 239 71 251 6 7 30
+20 54 29 49 19 90 7 81 -23 -8 -26 -96 -388 -96 -395 0 -13 111 -19 140 -7 47
+20 55 86 12 105 -12 5 -22 12 -21 15 0 3 19 59 42 125 l42 120 48 24 c41 20
+52 22 74 12 31 -14 33 -4 -47 -239 -35 -100 -61 -185 -58 -187 2 -2 34 -7 71
+-11 59 -6 67 -5 62 9 -8 19 21 77 38 77 6 0 2 8 -9 18 l-22 17 60 138 c66 153
+74 201 42 244 -45 61 -125 78 -203 43 l-43 -20 -39 35 c-33 29 -47 35 -85 35
+-25 0 -59 -7 -77 -16 -21 -12 -32 -13 -35 -5 -2 7 -35 11 -92 11 -84 0 -90 -1
+-109 -26 -12 -15 -21 -34 -21 -44 0 -19 30 -50 48 -50 16 0 17 3 -20 -153 -31
+-134 -33 -139 -64 -152 -17 -7 -34 -18 -38 -23 -4 -7 -16 -1 -31 14 -13 13
+-36 24 -50 24 -21 0 -25 4 -20 23 19 84 45 239 45 273 0 47 -25 86 -72 110
+-48 25 -170 27 -253 5z m173 -316 c1 -1 -1 -16 -4 -33 -5 -27 -16 -37 -68 -62
+-114 -56 -216 -59 -216 -7 0 43 62 93 131 106 36 6 147 4 157 -4z"/>
+        <path d="M6870 10077 c-13 -7 -31 -25 -40 -40 -14 -27 -14 -29 14 -53 l29 -25
+-58 -135 c-51 -117 -61 -134 -82 -134 -19 0 -23 -5 -23 -30 0 -17 -9 -39 -21
+-51 -27 -27 -20 -32 83 -54 72 -15 81 -16 103 -1 48 32 56 83 16 102 -18 8
+-16 17 34 124 44 95 59 118 87 132 41 22 91 23 109 2 11 -13 0 -42 -79 -200
+-51 -101 -92 -188 -92 -193 0 -9 105 -41 136 -41 49 0 85 87 47 109 -16 9 -12
+21 42 125 64 125 77 136 157 136 73 0 68 -14 -83 -271 -38 -64 -69 -121 -69
+-126 0 -14 127 -53 147 -46 33 11 53 36 53 65 0 16 -6 31 -15 34 -8 4 -15 10
+-15 15 0 5 37 65 82 135 66 102 82 134 85 172 8 90 -61 149 -161 139 -28 -2
+-59 -8 -68 -12 -12 -5 -21 1 -32 23 -8 16 -27 37 -43 47 -29 19 -103 25 -140
+12 -17 -6 -23 -5 -23 6 0 13 -17 18 -135 43 -11 2 -31 -2 -45 -9z"/>
+        <path d="M3975 9874 c-30 -32 -30 -45 -8 -131 l18 -66 -25 -16 c-71 -46 -87
+-88 -51 -132 l19 -24 47 23 c26 13 49 22 50 20 2 -2 24 -69 49 -149 50 -158
+73 -193 134 -205 75 -15 218 57 302 153 48 55 58 87 39 122 -23 42 -44 37
+-113 -28 -68 -63 -149 -111 -189 -111 -15 0 -28 8 -34 23 -22 47 -76 261 -67
+264 5 2 61 30 124 61 123 61 149 86 136 135 -12 48 -43 45 -177 -18 -67 -31
+-122 -55 -124 -53 -1 2 -10 32 -19 68 -10 36 -23 71 -28 78 -17 20 -57 14 -83
+-14z"/>
+        <path d="M7688 9741 c-107 -35 -161 -81 -204 -174 -52 -115 -19 -230 85 -296
+86 -56 273 -116 322 -104 58 14 79 70 37 97 -13 8 -52 22 -88 32 -130 35 -207
+79 -235 134 -17 33 -20 80 -5 80 6 0 104 -49 217 -110 114 -60 210 -110 213
+-110 15 0 74 86 92 133 47 123 -29 251 -182 311 -68 27 -183 30 -252 7z m188
+-117 c76 -31 135 -113 119 -164 -6 -19 -18 -15 -165 62 -87 45 -156 86 -153
+91 18 29 139 36 199 11z"/>
+        <path d="M3627 9466 c-70 -25 -141 -93 -177 -169 -26 -54 -29 -57 -40 -38 -11
+21 -13 20 -75 -31 -34 -29 -71 -68 -81 -86 -17 -30 -17 -35 -4 -60 18 -31 60
+-41 80 -18 7 9 18 16 24 16 8 0 268 -431 284 -471 2 -5 -6 -21 -17 -35 -25
+-32 -27 -61 -5 -92 27 -40 59 -28 153 54 47 42 90 87 95 100 12 30 -2 72 -30
+90 -19 13 -25 11 -63 -17 -24 -17 -45 -28 -48 -25 -3 3 -27 43 -53 88 l-48 83
+52 6 c64 7 101 27 158 81 99 97 135 251 88 378 -24 64 -77 125 -127 146 -41
+18 -116 17 -166 0z m128 -142 c88 -41 86 -199 -3 -281 -34 -32 -95 -63 -123
+-63 -74 0 -137 83 -125 163 13 81 77 159 151 185 43 15 62 14 100 -4z"/>
+        <path d="M8357 9392 c-27 -29 -20 -57 19 -89 l36 -29 -112 -102 c-108 -98
+-113 -102 -134 -87 -11 8 -36 23 -53 32 -31 16 -35 16 -68 0 -28 -13 -35 -22
+-35 -46 0 -26 17 -42 156 -146 85 -64 166 -121 179 -127 34 -15 83 6 92 40 6
+26 -13 49 -112 129 l-40 32 65 60 c63 58 67 60 121 61 68 0 164 -17 201 -36
+21 -11 29 -24 34 -55 10 -63 76 -85 127 -41 32 28 17 104 -31 155 -43 46 -57
+51 -221 83 l-24 5 22 23 c11 12 21 25 21 28 0 8 -118 101 -147 117 -32 17 -78
+13 -96 -7z"/>
+        <path d="M2792 9037 l-52 -52 38 -57 38 -58 40 43 c71 75 70 71 34 127 -18 27
+-35 50 -39 50 -4 0 -30 -24 -59 -53z"/>
+        <path d="M2897 8810 c-97 -110 -110 -140 -77 -183 12 -15 29 -27 38 -27 9 0
+40 26 68 57 29 31 55 55 57 53 23 -29 165 -219 171 -229 5 -7 -14 -38 -48 -80
+-64 -78 -71 -113 -31 -151 19 -18 29 -21 44 -14 11 5 88 87 170 182 122 139
+151 178 151 202 0 33 -30 70 -57 70 -10 0 -45 -30 -79 -66 l-62 -66 -69 99
+c-39 54 -94 133 -123 176 -30 42 -57 77 -60 77 -3 -1 -44 -45 -93 -100z"/>
+        <path d="M8695 8525 c-33 -32 -32 -65 3 -98 38 -37 102 -38 137 -2 33 32 31
+60 -4 96 -39 39 -100 41 -136 4z"/>
+        <path d="M2619 8467 c-62 -32 -98 -104 -103 -207 -2 -41 -4 -79 -5 -84 -1 -6
+-14 3 -30 18 l-29 27 -51 -88 c-56 -97 -64 -140 -31 -173 33 -33 50 -27 98 38
+l17 23 95 -81 c148 -127 136 -109 106 -168 -30 -58 -25 -89 19 -118 22 -14 28
+-14 45 -3 22 15 220 353 220 375 0 45 -47 85 -83 71 -8 -3 -32 -36 -55 -74
+-23 -37 -46 -74 -51 -82 -7 -11 -24 0 -80 50 l-71 63 0 107 c0 132 10 164 56
+179 46 15 64 35 64 71 0 34 -39 79 -68 79 -10 0 -39 -10 -63 -23z"/>
+        <path d="M9216 8236 c-104 -44 -159 -114 -160 -206 -2 -180 262 -446 349 -350
+25 28 8 63 -43 89 -50 26 -94 76 -133 154 -57 112 -38 177 61 210 72 24 140
+11 200 -40 49 -42 90 -121 90 -175 0 -29 -6 -41 -30 -58 -35 -25 -39 -61 -10
+-90 11 -11 31 -20 44 -20 40 0 159 30 184 46 34 22 26 64 -14 84 -28 13 -32
+21 -36 62 -11 104 -106 231 -213 284 -50 24 -75 29 -145 32 -72 2 -94 -1 -144
+-22z"/>
+        <path d="M2224 7822 c-23 -15 -35 -51 -24 -71 8 -16 4 -25 -22 -53 -17 -18
+-45 -62 -62 -98 -25 -54 -31 -80 -34 -155 -5 -111 16 -176 83 -252 118 -135
+298 -152 393 -37 59 72 110 251 96 341 -12 82 -70 135 -110 102 -12 -10 -14
+-27 -9 -83 6 -64 4 -80 -24 -156 -39 -106 -78 -150 -133 -150 -65 0 -125 44
+-163 119 -26 52 -17 153 20 215 39 66 64 81 110 66 31 -10 39 -10 56 6 11 10
+19 30 19 49 0 34 -25 62 -114 128 -50 38 -63 42 -82 29z"/>
+        <path d="M9534 7604 c-101 -37 -170 -140 -162 -240 6 -76 57 -172 121 -230 75
+-68 143 -96 247 -101 79 -5 89 -3 140 24 121 64 157 204 89 348 -30 64 -120
+154 -184 185 -64 30 -190 37 -251 14z m204 -123 c101 -52 152 -168 113 -255
+-23 -53 -61 -76 -126 -76 -138 0 -258 169 -200 281 35 66 136 90 213 50z"/>
+        <path d="M1768 7115 c-8 -18 -8 -31 1 -54 11 -26 10 -34 -14 -71 -34 -53 -58
+-167 -49 -229 4 -25 15 -68 25 -96 50 -136 180 -201 283 -142 41 23 57 48 138
+222 39 83 70 102 115 69 37 -28 56 -87 49 -157 -10 -97 -52 -157 -111 -157
+-24 0 -37 -6 -45 -19 -17 -33 -12 -68 14 -89 35 -27 153 -65 182 -58 28 7 41
+45 25 75 -10 17 -6 31 19 79 80 154 45 350 -76 431 -78 51 -156 53 -213 6 -16
+-14 -44 -57 -62 -97 -73 -154 -84 -173 -112 -186 -101 -48 -150 185 -58 277
+15 15 34 21 69 21 54 0 72 12 72 50 0 42 -28 70 -113 111 -95 46 -123 49 -139
+14z"/>
+        <path d="M9964 6985 c-8 -13 -13 -28 -10 -33 10 -16 -34 -22 -170 -22 -106 0
+-133 3 -137 14 -18 45 -95 57 -116 17 -10 -18 7 -115 30 -173 23 -57 119 -60
+119 -3 l0 25 133 0 c145 0 164 -6 192 -60 20 -39 19 -67 -2 -71 -10 -2 -108
+-2 -218 1 -110 3 -202 4 -204 3 -9 -5 23 -136 38 -152 26 -30 67 -35 91 -11
+11 11 20 26 20 34 0 11 15 13 68 10 182 -12 193 -14 223 -46 34 -38 45 -76 27
+-94 -11 -11 -42 -10 -173 1 -88 8 -182 17 -209 21 l-49 6 6 -73 c5 -63 10 -77
+32 -96 14 -13 33 -23 41 -23 27 0 54 20 54 40 0 25 5 25 172 0 182 -26 232
+-13 259 67 16 49 4 110 -32 161 l-31 42 21 43 c12 24 21 48 21 53 0 28 -24 87
+-46 114 -14 16 -20 30 -14 30 24 0 -10 141 -43 178 -28 30 -72 29 -93 -3z"/>
+        <path d="M2268 5729 c-10 -5 -18 -19 -18 -29 0 -25 -5 -25 -177 0 -119 18
+-145 19 -178 8 -56 -19 -80 -57 -80 -128 0 -50 5 -64 33 -104 l34 -46 -21 -43
+c-12 -24 -21 -48 -21 -53 0 -28 24 -87 46 -114 14 -16 20 -30 14 -30 -8 0 -10
+-13 -5 -42 16 -106 48 -158 96 -158 30 0 61 33 53 55 -8 19 30 25 172 25 106
+0 133 -3 137 -14 18 -45 95 -57 116 -17 10 18 -7 115 -30 173 -23 57 -119 60
+-119 3 l0 -25 -136 0 -136 0 -28 29 c-32 32 -48 77 -32 93 10 10 380 12 406 2
+23 -9 28 13 15 77 -13 68 -31 94 -71 103 -29 7 -68 -21 -68 -48 0 -11 -15 -13
+-67 -10 -183 12 -194 14 -224 46 -34 38 -45 76 -27 94 11 11 42 10 173 -1 88
+-8 182 -17 209 -21 l49 -6 -6 73 c-7 78 -21 103 -67 113 -14 3 -33 1 -42 -5z"/>
+        <path d="M9626 5654 c-18 -18 -20 -38 -6 -64 8 -15 3 -32 -20 -77 -80 -154
+-45 -351 76 -432 78 -51 156 -53 213 -6 16 14 44 57 62 97 73 154 84 173 112
+186 24 12 32 11 53 -3 67 -44 73 -189 11 -270 -11 -14 -31 -21 -73 -25 -53 -5
+-60 -8 -68 -33 -17 -47 8 -76 103 -124 46 -24 94 -43 107 -43 34 0 51 39 35
+79 -11 26 -10 34 14 71 34 53 58 167 49 229 -4 25 -15 69 -25 96 -50 136 -180
+201 -284 142 -41 -23 -64 -60 -138 -226 -46 -101 -108 -108 -149 -14 -47 107
+10 263 97 263 37 0 55 20 55 63 0 33 -26 54 -105 82 -79 29 -98 31 -119 9z"/>
+        <path d="M2120 4943 c-160 -84 -165 -299 -10 -453 71 -72 134 -102 226 -108
+174 -11 306 105 291 257 -8 78 -57 170 -120 227 -75 68 -143 96 -247 101 -79
+5 -89 3 -140 -24z m238 -112 c107 -56 162 -186 112 -268 -65 -108 -246 -72
+-313 62 -39 80 -23 169 37 206 41 25 116 25 164 0z"/>
+        <path d="M9508 4900 c-54 -29 -94 -84 -126 -175 -35 -96 -46 -160 -36 -220 12
+-84 70 -138 110 -104 12 10 14 27 9 83 -6 64 -4 80 24 156 39 106 78 150 133
+150 65 0 125 -44 163 -119 36 -72 -1 -225 -68 -274 -22 -17 -29 -18 -62 -7
+-31 10 -39 10 -56 -6 -30 -27 -25 -75 14 -110 81 -76 141 -111 163 -96 23 15
+35 51 24 71 -8 16 -4 25 22 53 17 18 45 62 62 98 29 60 31 73 31 170 0 86 -4
+113 -21 150 -55 116 -176 200 -288 200 -40 -1 -73 -7 -98 -20z"/>
+        <path d="M9247 4348 c-19 -15 -217 -356 -217 -375 0 -44 47 -84 83 -70 8 3 32
+36 55 74 23 37 46 74 51 82 7 11 24 0 80 -50 l71 -63 0 -107 c0 -132 -10 -164
+-56 -179 -19 -7 -41 -18 -49 -27 -42 -42 8 -131 67 -119 92 18 145 98 152 227
+2 41 4 78 5 83 1 6 14 -3 30 -18 l29 -27 51 88 c56 97 64 140 31 173 -33 33
+-50 27 -98 -38 l-17 -23 -95 81 c-146 126 -135 108 -106 169 27 59 25 83 -12
+111 -29 23 -33 24 -55 8z"/>
+        <path d="M2595 4320 c-25 -28 -8 -63 43 -89 50 -26 94 -76 133 -154 57 -112
+38 -177 -61 -210 -72 -24 -140 -11 -200 40 -49 42 -90 121 -90 175 0 29 6 41
+30 58 35 25 39 61 10 90 -11 11 -31 20 -44 20 -39 0 -159 -30 -183 -46 -35
+-22 -30 -61 11 -85 28 -16 34 -26 38 -64 12 -104 107 -228 215 -282 115 -56
+280 -39 368 39 92 80 104 168 41 291 -88 174 -249 286 -311 217z"/>
+        <path d="M8862 3753 c-11 -10 -83 -91 -161 -181 -151 -174 -164 -199 -121
+-242 31 -31 50 -24 111 40 31 33 61 60 66 60 6 0 64 -77 129 -170 65 -94 121
+-169 124 -168 24 10 181 201 186 224 6 33 -26 84 -54 84 -9 0 -40 -26 -68 -57
+-29 -31 -55 -55 -57 -53 -23 29 -165 219 -171 229 -5 7 14 38 48 80 63 77 71
+113 33 149 -28 27 -39 27 -65 5z"/>
+        <path d="M3165 3575 c-33 -32 -31 -60 4 -96 39 -39 100 -41 136 -4 32 31 32
+62 -2 97 -36 38 -102 40 -138 3z"/>
+        <path d="M8230 3463 c-47 -42 -89 -86 -94 -99 -12 -30 2 -72 30 -90 19 -13 25
+-11 63 17 24 17 45 28 48 25 3 -3 27 -43 53 -88 l48 -83 -52 -6 c-65 -8 -103
+-27 -159 -84 -120 -120 -142 -308 -52 -444 103 -153 344 -102 436 93 21 43 30
+55 35 43 3 -9 11 -17 16 -17 19 0 126 95 145 128 16 30 16 35 3 60 -18 31 -60
+41 -80 18 -7 -9 -18 -16 -24 -16 -9 0 -270 433 -284 471 -2 5 6 21 17 35 25
+32 27 61 5 92 -28 40 -61 28 -154 -55z m227 -487 c17 -19 35 -50 38 -69 21
+-109 -90 -242 -202 -242 -35 0 -49 6 -75 32 -27 27 -32 41 -36 91 -5 66 15
+116 64 166 76 75 155 84 211 22z"/>
+        <path d="M3592 3198 c-12 -6 -25 -23 -29 -36 -6 -27 15 -51 112 -129 l40 -33
+-65 -59 c-63 -58 -67 -60 -121 -61 -68 0 -164 17 -201 36 -21 11 -29 24 -34
+55 -10 63 -76 85 -126 41 -33 -28 -18 -104 30 -155 43 -46 57 -51 221 -83 l24
+-5 -22 -23 c-11 -12 -21 -25 -21 -28 0 -8 118 -101 147 -117 51 -27 113 -2
+113 46 0 12 -16 34 -36 50 l-36 29 112 102 c108 98 113 102 134 87 11 -8 36
+-23 54 -32 30 -16 34 -16 67 0 28 13 35 22 35 46 0 25 -17 42 -153 143 -198
+149 -197 149 -245 126z"/>
+        <path d="M9139 3083 c-66 -71 -65 -67 -29 -123 18 -27 35 -50 39 -50 4 0 30
+24 59 53 l52 52 -35 53 c-20 28 -39 52 -43 52 -4 0 -24 -17 -43 -37z"/>
+        <path d="M4105 2833 c-54 -13 -73 -71 -32 -97 12 -8 51 -22 87 -32 130 -35
+207 -79 235 -134 17 -33 20 -80 5 -80 -9 0 -125 60 -383 198 l-47 25 -35 -39
+c-131 -148 -72 -333 130 -410 72 -27 201 -25 276 4 125 50 205 165 197 286 -7
+107 -71 174 -223 232 -62 23 -172 55 -185 52 -3 0 -14 -3 -25 -5z m70 -357
+c76 -41 141 -79 143 -85 11 -33 -132 -42 -200 -12 -71 30 -136 123 -113 161
+11 17 26 12 170 -64z"/>
+        <path d="M7700 2799 c-86 -26 -242 -158 -257 -217 -7 -30 15 -75 39 -80 10 -2
+45 22 82 57 65 61 149 111 185 111 11 0 27 -10 35 -22 20 -33 81 -261 70 -265
+-5 -2 -61 -30 -124 -61 -123 -61 -149 -86 -136 -135 12 -48 43 -45 177 18 67
+31 122 55 123 53 2 -2 11 -34 22 -72 10 -38 27 -74 36 -80 24 -15 66 3 86 36
+15 25 15 33 -3 104 l-19 77 24 16 c71 46 87 88 51 132 l-19 24 -47 -23 c-26
+-13 -49 -22 -50 -20 -2 2 -24 69 -49 149 -54 169 -76 199 -148 205 -24 2 -59
+-2 -78 -7z"/>
+        <path d="M4670 2593 c-48 -17 -65 -70 -34 -104 14 -15 8 -27 -67 -144 -67
+-103 -83 -135 -86 -173 -8 -90 61 -149 161 -139 28 2 59 8 68 12 12 5 21 -1
+32 -23 8 -16 27 -37 43 -47 29 -19 103 -25 141 -12 16 6 22 5 22 -6 0 -9 25
+-19 76 -31 87 -19 117 -11 144 37 14 27 14 29 -14 53 l-29 25 58 135 c51 117
+61 134 82 134 19 0 23 5 23 29 0 15 9 40 20 54 l21 26 -38 10 c-140 38 -166
+36 -199 -14 -18 -28 -12 -58 15 -71 18 -8 16 -17 -34 -124 -44 -95 -59 -118
+-87 -132 -41 -22 -91 -23 -109 -2 -11 13 1 43 81 204 52 104 92 192 89 194 -3
+3 -35 13 -72 23 -65 17 -67 17 -94 -3 -35 -26 -43 -72 -16 -92 17 -12 15 -19
+-42 -128 -54 -103 -64 -116 -95 -125 -50 -15 -104 -8 -108 14 -2 9 42 96 97
+193 56 96 101 178 101 182 0 4 -21 15 -47 24 -69 23 -86 27 -103 21z"/>
+        <path d="M7180 2558 c-101 -36 -120 -50 -120 -94 0 -43 23 -65 60 -58 27 6 29
+4 34 -37 4 -24 7 -64 9 -88 l2 -44 -119 -33 c-65 -19 -123 -31 -127 -28 -5 3
+-9 43 -9 90 0 64 3 84 14 84 27 0 66 41 66 70 0 45 -10 60 -39 60 -47 0 -199
+-42 -215 -59 -40 -44 -23 -105 30 -106 l29 0 -3 -239 -4 -239 -34 -32 c-37
+-35 -43 -65 -18 -89 20 -20 31 -20 142 4 111 23 126 31 141 69 20 47 1 71 -54
+71 l-45 0 0 85 c0 79 2 86 23 95 45 19 228 62 235 55 4 -4 9 -43 10 -88 l4
+-82 -36 -13 c-46 -17 -73 -64 -57 -98 14 -32 51 -31 160 2 100 29 134 58 129
+108 -2 25 -9 33 -35 41 -19 5 -33 16 -33 25 0 8 -14 114 -30 235 -27 201 -28
+221 -13 230 37 23 53 46 53 78 0 66 -26 70 -150 25z"/>
+        <path d="M5342 2399 c8 -20 -18 -79 -34 -79 -8 0 -4 -8 8 -18 l22 -17 -60
+-138 c-66 -153 -74 -201 -42 -244 45 -61 125 -78 203 -43 l43 20 39 -35 c33
+-29 47 -35 85 -35 25 0 59 7 77 16 21 12 32 13 35 5 2 -7 35 -11 92 -11 84 0
+90 1 109 26 12 15 21 34 21 44 0 19 -30 50 -48 50 -16 0 -17 -3 20 153 31 134
+33 139 64 152 17 7 34 18 38 23 4 7 16 1 31 -14 13 -13 36 -24 50 -24 21 0 25
+-4 20 -22 -19 -85 -45 -240 -45 -274 0 -131 179 -170 410 -89 59 21 80 42 80
+80 0 57 -17 61 -135 31 -160 -40 -231 -32 -223 25 3 22 6 24 54 21 112 -7 238
+35 308 103 98 97 100 230 4 282 -51 27 -157 23 -237 -10 -42 -17 -69 -23 -76
+-17 -7 6 -47 7 -95 3 -69 -5 -88 -10 -107 -29 -13 -13 -23 -19 -23 -14 0 5 -7
+16 -16 24 -12 12 -37 16 -110 16 -87 0 -97 -2 -119 -25 -34 -33 -32 -62 5 -83
+16 -9 30 -21 30 -27 0 -23 -61 -239 -71 -251 -6 -7 -30 -20 -54 -29 -49 -19
+-90 -7 -81 23 17 56 97 395 93 398 -2 2 -30 7 -63 10 -51 5 -63 3 -87 -16 -35
+-28 -35 -79 1 -95 12 -5 22 -12 21 -15 0 -3 -19 -59 -42 -125 -42 -120 -42
+-120 -88 -143 -38 -19 -51 -21 -74 -12 -33 13 -36 1 45 238 35 100 60 185 58
+188 -3 2 -36 7 -73 11 -58 5 -67 4 -63 -8z m1142 -129 c18 -6 26 -17 26 -33 0
+-27 -52 -81 -95 -98 -29 -11 -182 -15 -192 -5 -3 2 -2 18 2 35 9 43 107 91
+227 110 4 1 18 -3 32 -9z"/>
+      </g>
+    </g>
+  </g>
+  
+  <!-- Optional: Add rotating animation class -->
+  <style>
+    @keyframes rotate {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+    
+    /* Uncomment to enable rotation */
+    /* svg {
+      animation: rotate 20s linear infinite;
+    } */
+  </style>
+</svg>
