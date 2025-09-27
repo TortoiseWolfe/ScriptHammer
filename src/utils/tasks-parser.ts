@@ -32,10 +32,20 @@ export interface TaskProgress {
 
 export async function parseTasksFile(): Promise<TaskProgress> {
   try {
-    // Fetch from public folder (copied during build) - use dynamic basePath
-    const projectName = process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer';
-    const baseUrl =
-      window.location.hostname === 'localhost' ? '' : `/${projectName}`;
+    // Determine the base URL based on the current location
+    // For custom domains (like scripthammer.com), use root
+    // For GitHub Pages, use the project name as subdirectory
+    // For localhost, use root
+    let baseUrl = '';
+
+    // Check if we're on GitHub Pages (*.github.io)
+    if (window.location.hostname.endsWith('.github.io')) {
+      const projectName =
+        process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer';
+      baseUrl = `/${projectName}`;
+    }
+    // For localhost and custom domains, use root
+    // (scripthammer.com, localhost, etc.)
 
     // Add cache-busting timestamp to ensure fresh data
     // Look for current sprint tasks in specs folder
