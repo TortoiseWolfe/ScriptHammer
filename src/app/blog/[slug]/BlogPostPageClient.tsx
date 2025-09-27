@@ -1,12 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import BlogPostViewer from '@/components/molecular/BlogPostViewer';
 import SocialShareButtons from '@/components/molecular/SocialShareButtons';
 import SEOAnalysisPanel from '@/components/molecular/SEOAnalysisPanel';
-import DisqusComments from '@/components/molecular/DisqusComments';
 import SocialIcon from '@/components/atomic/SocialIcon';
+
+// Dynamic import with SSR disabled for Disqus
+const DisqusComments = dynamic(
+  () => import('@/components/molecular/DisqusComments'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="border-base-300 mt-8 border-t pt-6">
+        <h2 className="mb-4 text-xl font-semibold">Discussion</h2>
+        <div className="flex items-center justify-center py-8">
+          <span className="loading loading-spinner loading-md"></span>
+          <span className="ml-2">Loading comments...</span>
+        </div>
+      </div>
+    ),
+  }
+);
 import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import type { TOCItem } from '@/types/metadata';
@@ -39,9 +56,6 @@ export default function BlogPostPageClient({
 }: BlogPostPageClientProps) {
   const [showSeoDetails, setShowSeoDetails] = useState(false);
 
-  console.log('BlogPostPageClient - seoScore:', seoScore);
-  console.log('BlogPostPageClient - showSeoDetails:', showSeoDetails);
-
   return (
     <article className="container mx-auto max-w-5xl px-4 py-8">
       {/* Main Post Content - Now full width */}
@@ -53,12 +67,6 @@ export default function BlogPostPageClient({
         showAuthor={false} // We'll show custom author section
         seoScore={seoScore}
         onSeoClick={() => {
-          console.log(
-            'SEO badge clicked, toggling from',
-            showSeoDetails,
-            'to',
-            !showSeoDetails
-          );
           setShowSeoDetails(!showSeoDetails);
         }}
       />
@@ -181,8 +189,9 @@ export default function BlogPostPageClient({
         </div>
       </div>
 
-      {/* Disqus Comments */}
+      {/* Disqus Comments - key prop forces remount on navigation */}
       <DisqusComments
+        key={`disqus-${post.slug}`}
         slug={post.slug}
         title={post.title}
         url={shareOptions.url}
