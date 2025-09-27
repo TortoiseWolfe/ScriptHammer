@@ -105,8 +105,6 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        {/* Manual manifest link for dev mode - Next.js metadata doesn't inject it in dev */}
-        <link rel="manifest" href="/manifest.json" />
         <JsonLdScript data={generateJsonLd()} />
       </head>
       <body
