@@ -16,40 +16,12 @@ export default function DisqusComments({
   shortname = '',
 }: DisqusCommentsProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!shortname) return;
-
-    // Set up intersection observer for lazy loading
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    const element = containerRef.current;
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => {
-      if (element) {
-        observer.unobserve(element);
-      }
-    };
-  }, [shortname]);
-
-  useEffect(() => {
-    if (!isVisible || isLoaded || !shortname) {
-      if (isVisible && !shortname) {
-        console.warn('[DisqusComments] Visible but no shortname provided');
+    if (!shortname || isLoaded) {
+      if (!shortname) {
+        console.warn('[DisqusComments] No shortname provided');
       }
       return;
     }
@@ -95,7 +67,7 @@ export default function DisqusComments({
 
       document.body.appendChild(script);
     }
-  }, [isVisible, isLoaded, shortname, slug, title, url]);
+  }, [isLoaded, shortname, slug, title, url]);
 
   if (!shortname) {
     return null;
@@ -104,7 +76,7 @@ export default function DisqusComments({
   return (
     <div ref={containerRef} className="border-base-300 mt-8 border-t pt-6">
       <h2 className="mb-4 text-xl font-semibold">Discussion</h2>
-      {!isLoaded && isVisible && (
+      {!isLoaded && (
         <div className="flex items-center justify-center py-8">
           <span className="loading loading-spinner loading-md"></span>
           <span className="ml-2">Loading comments...</span>
