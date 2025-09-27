@@ -17,7 +17,15 @@ export default function DisqusComments({
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME;
+  // Get shortname from generated config (created at build time from .env)
+  let shortname = '';
+  try {
+    const generatedConfig = require('@/config/author-generated');
+    shortname = generatedConfig.authorConfig.disqus.shortname;
+  } catch {
+    // Fallback for dev mode before first build
+    shortname = process.env.NEXT_PUBLIC_DISQUS_SHORTNAME || '';
+  }
 
   useEffect(() => {
     if (!shortname) return;

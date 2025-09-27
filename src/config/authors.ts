@@ -90,34 +90,48 @@ export const validateAuthor = (author: Author): string[] => {
   return errors;
 };
 
-// Helper function to get social links from environment variables
-const getAuthorSocialFromEnv = (): AuthorSocialLinks => {
+// Import the generated author config (created at build time from .env)
+let authorConfigData: any = {
+  name: 'Your Name',
+  role: 'Developer',
+  bio: 'Building modern web applications.',
+  avatar: '/images/authors/default.jpg',
+  social: {},
+  disqus: {},
+};
+
+try {
+  // Try to import the generated config
+  const generatedConfig = require('./author-generated');
+  authorConfigData = generatedConfig.authorConfig;
+} catch {
+  // Fallback if generated config doesn't exist (will be created on next build)
+  console.warn(
+    'Author config not generated yet. Run build to generate from .env'
+  );
+}
+
+// Helper function to get social links from generated config
+const getAuthorSocialFromConfig = (): AuthorSocialLinks => {
   const social: AuthorSocialLinks = {};
 
-  // Read from environment variables with empty defaults
-  if (process.env.NEXT_PUBLIC_AUTHOR_GITHUB) {
-    social.github = `https://github.com/${process.env.NEXT_PUBLIC_AUTHOR_GITHUB}`;
+  if (authorConfigData.social.github) {
+    social.github = authorConfigData.social.github;
   }
-  if (process.env.NEXT_PUBLIC_AUTHOR_TWITTER) {
-    social.twitter = `https://twitter.com/${process.env.NEXT_PUBLIC_AUTHOR_TWITTER}`;
+  if (authorConfigData.social.twitter) {
+    social.twitter = authorConfigData.social.twitter;
   }
-  if (process.env.NEXT_PUBLIC_AUTHOR_LINKEDIN) {
-    social.linkedin = `https://linkedin.com/in/${process.env.NEXT_PUBLIC_AUTHOR_LINKEDIN}`;
+  if (authorConfigData.social.linkedin) {
+    social.linkedin = authorConfigData.social.linkedin;
   }
-  if (process.env.NEXT_PUBLIC_AUTHOR_WEBSITE) {
-    social.website = process.env.NEXT_PUBLIC_AUTHOR_WEBSITE;
+  if (authorConfigData.social.website) {
+    social.website = authorConfigData.social.website;
   }
-  if (process.env.NEXT_PUBLIC_AUTHOR_EMAIL) {
-    social.email = process.env.NEXT_PUBLIC_AUTHOR_EMAIL;
+  if (authorConfigData.social.email) {
+    social.email = authorConfigData.social.email;
   }
-  if (process.env.NEXT_PUBLIC_AUTHOR_MASTODON) {
-    social.mastodon = process.env.NEXT_PUBLIC_AUTHOR_MASTODON;
-  }
-  if (process.env.NEXT_PUBLIC_AUTHOR_BLUESKY) {
-    social.bluesky = process.env.NEXT_PUBLIC_AUTHOR_BLUESKY;
-  }
-  if (process.env.NEXT_PUBLIC_AUTHOR_TWITCH) {
-    social.twitch = `https://twitch.tv/${process.env.NEXT_PUBLIC_AUTHOR_TWITCH}`;
+  if (authorConfigData.social.twitch) {
+    social.twitch = authorConfigData.social.twitch;
   }
 
   return social;
@@ -127,13 +141,11 @@ const getAuthorSocialFromEnv = (): AuthorSocialLinks => {
 export const authors: Record<string, Author> = {
   default: {
     id: 'default',
-    name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'Your Name',
-    role: process.env.NEXT_PUBLIC_AUTHOR_ROLE || 'Developer',
-    bio:
-      process.env.NEXT_PUBLIC_AUTHOR_BIO || 'Building modern web applications.',
-    avatar:
-      process.env.NEXT_PUBLIC_AUTHOR_AVATAR || '/images/authors/default.jpg',
-    social: getAuthorSocialFromEnv(),
+    name: authorConfigData.name,
+    role: authorConfigData.role,
+    bio: authorConfigData.bio,
+    avatar: authorConfigData.avatar,
+    social: getAuthorSocialFromConfig(),
     preferences: {
       showSocialLinks: true,
       showEmail: false,
@@ -142,15 +154,11 @@ export const authors: Record<string, Author> = {
   },
   TurtleWolfe: {
     id: 'turtlewolfe',
-    name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'TurtleWolfe',
-    role: process.env.NEXT_PUBLIC_AUTHOR_ROLE || 'Full Stack Developer',
-    bio:
-      process.env.NEXT_PUBLIC_AUTHOR_BIO ||
-      'Building modern web applications with Next.js and TypeScript. Passionate about clean code, performance, and developer experience.',
-    avatar:
-      process.env.NEXT_PUBLIC_AUTHOR_AVATAR ||
-      '/images/authors/turtlewolfe.jpg',
-    social: getAuthorSocialFromEnv(),
+    name: authorConfigData.name,
+    role: authorConfigData.role,
+    bio: authorConfigData.bio,
+    avatar: authorConfigData.avatar,
+    social: getAuthorSocialFromConfig(),
     preferences: {
       showSocialLinks: true,
       showEmail: false,
@@ -160,15 +168,11 @@ export const authors: Record<string, Author> = {
   // Legacy alias for backwards compatibility
   TortoiseWolfe: {
     id: 'tortoisewolfe',
-    name: process.env.NEXT_PUBLIC_AUTHOR_NAME || 'TurtleWolfe',
-    role: process.env.NEXT_PUBLIC_AUTHOR_ROLE || 'Full Stack Developer',
-    bio:
-      process.env.NEXT_PUBLIC_AUTHOR_BIO ||
-      'Building modern web applications with Next.js and TypeScript. Passionate about clean code, performance, and developer experience.',
-    avatar:
-      process.env.NEXT_PUBLIC_AUTHOR_AVATAR ||
-      '/images/authors/turtlewolfe.jpg',
-    social: getAuthorSocialFromEnv(),
+    name: authorConfigData.name,
+    role: authorConfigData.role,
+    bio: authorConfigData.bio,
+    avatar: authorConfigData.avatar,
+    social: getAuthorSocialFromConfig(),
     preferences: {
       showSocialLinks: true,
       showEmail: false,
