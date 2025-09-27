@@ -29,26 +29,93 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 
 async function getAuthor(id: string): Promise<Author | null> {
   try {
-    // Use auto-detected project owner information
+    // Import author config
+    const { getAuthorByName } = await import('@/config/authors');
+    const authorConfig = getAuthorByName(id);
+
+    if (!authorConfig) {
+      // Fallback to auto-detected project owner information
+      return {
+        id: id,
+        username: detectedConfig.projectOwner.toLowerCase(),
+        name: detectedConfig.projectOwner,
+        email: `${detectedConfig.projectOwner.toLowerCase()}@${detectedConfig.projectHost}`,
+        bio: `${detectedConfig.projectName} project owner and content creator.`,
+        avatar: '/avatar-placeholder.png',
+        website: detectedConfig.projectUrl,
+        socialLinks: [
+          {
+            platform: 'github',
+            url: detectedConfig.projectUrl,
+            displayOrder: 0,
+          },
+        ],
+        joinedAt: new Date().toISOString(),
+        postsCount: 1,
+        permissions: [],
+        preferences: { publicProfile: true },
+      };
+    }
+
+    // Convert from config author to blog author format
+    const socialLinks: any[] = [];
+    let displayOrder = 0;
+
+    if (authorConfig.social.github) {
+      socialLinks.push({
+        platform: 'github',
+        url: authorConfig.social.github,
+        displayOrder: displayOrder++,
+      });
+    }
+    if (authorConfig.social.twitter) {
+      socialLinks.push({
+        platform: 'twitter',
+        url: authorConfig.social.twitter,
+        displayOrder: displayOrder++,
+      });
+    }
+    if (authorConfig.social.linkedin) {
+      socialLinks.push({
+        platform: 'linkedin',
+        url: authorConfig.social.linkedin,
+        displayOrder: displayOrder++,
+      });
+    }
+    if (authorConfig.social.website) {
+      socialLinks.push({
+        platform: 'website',
+        url: authorConfig.social.website,
+        displayOrder: displayOrder++,
+      });
+    }
+    if (authorConfig.social.twitch) {
+      socialLinks.push({
+        platform: 'twitch',
+        url: authorConfig.social.twitch,
+        displayOrder: displayOrder++,
+      });
+    }
+
     return {
-      id: id,
-      username: detectedConfig.projectOwner.toLowerCase(),
-      name: detectedConfig.projectOwner,
-      email: `${detectedConfig.projectOwner.toLowerCase()}@${detectedConfig.projectHost}`,
-      bio: `${detectedConfig.projectName} project owner and content creator.`,
-      avatar: '/avatar-placeholder.png',
-      website: detectedConfig.projectUrl,
-      socialLinks: [
-        {
-          platform: 'github',
-          url: detectedConfig.projectUrl,
-          displayOrder: 0,
-        },
-      ],
+      id: authorConfig.id,
+      username: authorConfig.id,
+      name: authorConfig.name,
+      email:
+        authorConfig.social.email ||
+        `${authorConfig.id}@${detectedConfig.projectHost}`,
+      bio: authorConfig.bio,
+      avatar: authorConfig.avatar,
+      website: authorConfig.social.website,
+      socialLinks,
       joinedAt: new Date().toISOString(),
       postsCount: 1,
       permissions: [],
-      preferences: { publicProfile: true },
+      preferences: {
+        publicProfile: authorConfig.preferences.showSocialLinks,
+        showEmail: authorConfig.preferences.showEmail,
+      },
+      hideSocial: !authorConfig.preferences.showSocialLinks,
     };
   } catch (error) {
     console.error('Error fetching author:', error);

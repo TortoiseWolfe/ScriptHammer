@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import BlogPostViewer from '@/components/molecular/BlogPostViewer';
-import AuthorProfile from '@/components/molecular/AuthorProfile';
 import SocialShareButtons from '@/components/molecular/SocialShareButtons';
 import SEOAnalysisPanel from '@/components/molecular/SEOAnalysisPanel';
+import DisqusComments from '@/components/molecular/DisqusComments';
+import SocialIcon from '@/components/atomic/SocialIcon';
 import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import type { TOCItem } from '@/types/metadata';
@@ -108,37 +109,82 @@ export default function BlogPostPageClient({
         </div>
       )}
 
-      {/* Share Buttons */}
-      <div className="border-base-300 my-8 border-t py-8">
-        <h3 className="mb-4 text-lg font-semibold">Share this post</h3>
-        <SocialShareButtons
-          shareOptions={shareOptions}
-          showLabels={true}
-          size="md"
-        />
-      </div>
+      {/* Compact Footer - Author + Share in one tight section */}
+      <div className="border-base-300 mt-6 border-t pt-4">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Author info */}
+          {author && (
+            <div className="flex items-center gap-3">
+              {/* Avatar */}
+              {author.avatar && (
+                <div className="avatar">
+                  <div className="h-10 w-10 overflow-hidden rounded-full">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={author.avatar}
+                      alt={author.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
 
-      {/* Author Profile */}
-      {author && (
-        <div className="my-8">
-          <h3 className="mb-4 text-lg font-semibold">About the Author</h3>
-          <AuthorProfile author={author} showSocial={true} showStats={true} />
-        </div>
-      )}
+              {/* Name and bio */}
+              <div className="flex-1">
+                <div className="font-semibold">{author.name}</div>
+                {author.bio && (
+                  <div className="text-base-content/60 line-clamp-1 text-sm">
+                    {author.bio}
+                  </div>
+                )}
+              </div>
 
-      {/* Related Posts */}
-      <div className="border-base-300 my-12 border-t py-8">
-        <h3 className="mb-6 text-2xl font-semibold">Related Posts</h3>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <div className="card bg-base-200">
-            <div className="card-body">
-              <p className="text-base-content/60">
-                Related posts coming soon...
-              </p>
+              {/* Author social links - compact */}
+              {author.socialLinks && author.socialLinks.length > 0 && (
+                <div className="flex items-center gap-1">
+                  {author.socialLinks
+                    .sort((a, b) => a.displayOrder - b.displayOrder)
+                    .map((link) => (
+                      <a
+                        key={link.platform}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:text-primary p-1"
+                        aria-label={`${author.name} on ${link.platform}`}
+                      >
+                        <SocialIcon
+                          platform={link.platform}
+                          className="h-5 w-5"
+                        />
+                      </a>
+                    ))}
+                </div>
+              )}
             </div>
+          )}
+
+          {/* Right: Share buttons - compact */}
+          <div className="flex items-center gap-2">
+            <span className="text-base-content/40 border-base-300 hidden border-r pr-2 text-sm sm:inline">
+              Share
+            </span>
+            <SocialShareButtons
+              shareOptions={shareOptions}
+              showLabels={false}
+              size="sm"
+              className="!gap-1"
+            />
           </div>
         </div>
       </div>
+
+      {/* Disqus Comments */}
+      <DisqusComments
+        slug={post.slug}
+        title={post.title}
+        url={shareOptions.url}
+      />
     </article>
   );
 }

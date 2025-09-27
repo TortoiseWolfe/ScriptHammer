@@ -9,6 +9,7 @@ export type SocialPlatform =
   | 'mastodon'
   | 'bluesky'
   | 'threads'
+  | 'twitch'
   | 'website';
 
 export interface Author {
