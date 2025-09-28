@@ -1,29 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import BlogPostViewer from '@/components/molecular/BlogPostViewer';
 import SocialShareButtons from '@/components/molecular/SocialShareButtons';
 import SEOAnalysisPanel from '@/components/molecular/SEOAnalysisPanel';
 import SocialIcon from '@/components/atomic/SocialIcon';
-
-// Dynamic import with SSR disabled for Disqus
-const DisqusComments = dynamic(
-  () => import('@/components/molecular/DisqusComments'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="border-base-300 mt-8 border-t pt-6">
-        <h2 className="mb-4 text-xl font-semibold">Discussion</h2>
-        <div className="flex items-center justify-center py-8">
-          <span className="loading loading-spinner loading-md"></span>
-          <span className="ml-2">Loading comments...</span>
-        </div>
-      </div>
-    ),
-  }
-);
+import DisqusComments from '@/components/molecular/DisqusComments';
 import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import type { TOCItem } from '@/types/metadata';
@@ -189,9 +172,8 @@ export default function BlogPostPageClient({
         </div>
       </div>
 
-      {/* Disqus Comments - key prop forces remount on navigation */}
+      {/* Disqus Comments */}
       <DisqusComments
-        key={`disqus-${post.slug}`}
         slug={post.slug}
         title={post.title}
         url={shareOptions.url}
