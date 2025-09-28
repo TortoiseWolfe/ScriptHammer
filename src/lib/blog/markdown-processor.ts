@@ -389,10 +389,6 @@ export class MarkdownProcessor {
     // Convert italic (single asterisks not at start of line)
     html = html.replace(/(?<!^)\*([^*\n]+)\*/gm, '<em>$1</em>');
 
-    // Convert underscore italics BUT avoid triple underscores (placeholders)
-    // Only match single underscores that aren't part of ___
-    html = html.replace(/(?<!_)_(?!__)([^_\n]+?)(?<!__)_(?!_)/g, '<em>$1</em>');
-
     // Convert images (MUST be before links!)
     html = html.replace(
       /!\[([^\]]*)\]\(([^)]+)\)/g,
@@ -431,13 +427,7 @@ export class MarkdownProcessor {
     // Restore code blocks from placeholders
     let finalHtml = result;
     codeBlocks.forEach((codeBlock, index) => {
-      // Use global replace to ensure all instances are replaced
-      const placeholder = `${CODE_PLACEHOLDER}${index}`;
-      const regex = new RegExp(
-        placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
-        'g'
-      );
-      finalHtml = finalHtml.replace(regex, codeBlock);
+      finalHtml = finalHtml.replace(`${CODE_PLACEHOLDER}${index}`, codeBlock);
     });
 
     return finalHtml;

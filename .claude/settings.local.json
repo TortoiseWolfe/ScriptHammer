@@ -10,7 +10,8 @@
       "mcp__filesystem__read_text_file",
       "mcp__filesystem__create_directory",
       "Bash(/home/turtle_wolfe/repos/000/create-components.sh:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:scripthammer.com)"
     ],
     "deny": [],
     "ask": []
