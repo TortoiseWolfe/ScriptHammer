@@ -125,7 +125,7 @@ src/
 - **Visual**: Chromatic package installed
 - **Coverage**: Currently 58%, target 60%
 
-## Configuration After Forking
+## Configuration After Using Template
 
 **NEW: Auto-Configuration!** The project name is now automatically detected from your GitHub fork!
 
@@ -152,7 +152,7 @@ See `.env.example` for all available environment variables including:
 - Author information and social links
 - Project overrides for special deployment scenarios
 
-See `/docs/FORKING-GUIDE.md` for details on the auto-configuration system.
+See `/docs/TEMPLATE-GUIDE.md` for details on the auto-configuration system.
 
 ## Common Issues & Solutions
 

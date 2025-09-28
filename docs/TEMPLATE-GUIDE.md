@@ -1,13 +1,13 @@
-# Forking Guide - Auto-Configured Project Name
+# Template Guide - Auto-Configured Project Name
 
 ## Automatic Project Detection 🎯
 
-When you fork this repository, the project name and configuration are **automatically detected** from your git remote URL. No manual configuration needed!
+When you create a new repository from this template, the project name and configuration are **automatically detected** from your git remote URL. No manual configuration needed!
 
 ### How It Works
 
-1. **Fork the repository** on GitHub
-2. **Clone your fork** locally
+1. **Use this template** on GitHub (click the green "Use this template" button)
+2. **Clone your new repository** locally
 3. **Run the project** - it automatically detects:
    - Your GitHub username
    - Your repository name
@@ -15,7 +15,7 @@ When you fork this repository, the project name and configuration are **automati
 
 ### What Gets Auto-Configured
 
-The following are automatically updated based on your fork:
+The following are automatically updated based on your new repository:
 
 - Project name in all UI components
 - Page titles and metadata
@@ -25,10 +25,10 @@ The following are automatically updated based on your fork:
 - Email templates
 - All branding references
 
-### Quick Start After Forking
+### Quick Start After Creating From Template
 
 ```bash
-# Clone your fork
+# Clone your new repository
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
 cd YOUR_REPO_NAME
 
@@ -105,6 +105,13 @@ The `scripts/detect-project.js` script:
 3. Generates configuration at build time
 4. Falls back to "ScriptHammer" if no git remote is found
 
+### Why Use Template Instead of Fork?
+
+- **Clean History**: Start with a fresh commit history
+- **No Connection**: No link back to the original repository
+- **Your Own Project**: This is YOUR project from day one
+- **GitHub Insights**: Your commits count toward your GitHub contributions
+
 ### Supported Git Hosts
 
 - GitHub (primary support)
@@ -177,7 +184,7 @@ All these files now use dynamic configuration:
 
 This is designed to be a **zero-configuration** experience:
 
-1. Fork the repo with your desired name
+1. Click "Use this template" and choose your project name
 2. Clone and run - it just works!
 3. Deploy to GitHub Pages - paths are handled automatically
 

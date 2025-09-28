@@ -1,7 +1,7 @@
 ---
-title: 'Auto-Configuration: Fork and Start Building'
+title: 'Auto-Configuration: Use Template and Start Building'
 slug: 'auto-configuration-system'
-excerpt: "ScriptHammer's auto-configuration eliminates setup friction. Fork the repo, run Docker, and watch your project automatically adapt with zero manual config."
+excerpt: "ScriptHammer's auto-configuration eliminates setup friction. Use the template, run Docker, and watch your project automatically adapt with zero manual config."
 author: Development Team
 date: 2025-09-27
 status: scheduled
@@ -16,25 +16,25 @@ tags:
   - developer-experience
 readTime: '5 min read'
 featuredImage: /blog-images/auto-config/featured.svg
-featuredImageAlt: Auto-Configuration System - Zero Config Magic for Your Fork
+featuredImageAlt: Auto-Configuration System - Zero Config Magic for Your New Project
 ogImage: /blog-images/auto-config/featured-og.png
 ---
 
-# Auto-Configuration: Fork and Start Building
+# Auto-Configuration: Use Template and Start Building
 
-ScriptHammer automatically configures itself based on your GitHub fork. Fork the repository, and everything adapts to your project name and settings—no manual configuration required.
+ScriptHammer automatically configures itself based on your new repository created from the template. Use this template, and everything adapts to your project name and settings—no manual configuration required.
 
 ## Quick Start (2 minutes)
 
-### 1. Fork on GitHub
+### 1. Use Template on GitHub
 
-Fork [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) with any name you like.
+Click "Use this template" on [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) and create your repository with any name you like.
 
 ### 2. Clone and Run
 
 ```bash
-git clone https://github.com/YourUsername/your-fork-name.git
-cd your-fork-name
+git clone https://github.com/YourUsername/your-new-repo.git
+cd your-new-repo
 docker compose up
 ```
 
@@ -44,7 +44,7 @@ That's it! Your project is configured and running at `http://localhost:3000`.
 
 ## What Gets Auto-Configured
 
-When you fork and clone, ScriptHammer automatically detects and configures:
+When you create from template and clone, ScriptHammer automatically detects and configures:
 
 - **Project Name**: From your repository name
 - **Owner Info**: From your GitHub username (not "Admin" or generic names)

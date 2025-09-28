@@ -1,7 +1,7 @@
 # ScriptHammer - Modern Next.js Starter with PWA
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/TortoiseWolfe/ScriptHammer)
-[![Fork](https://img.shields.io/github/forks/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer/fork)
+[![Use Template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge)](https://github.com/TortoiseWolfe/ScriptHammer/generate)
 [![Stars](https://img.shields.io/github/stars/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer)
 
 A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, component gallery, and extensive testing infrastructure.
@@ -37,8 +37,8 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 This project **REQUIRES Docker** for development to ensure consistency across all environments.
 
 ```bash
-# 1. Fork on GitHub (your project name is auto-detected!)
-# 2. Clone YOUR fork
+# 1. Use this template on GitHub (your project name is auto-detected!)
+# 2. Clone YOUR new repository
 git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME.git
 cd YOUR_PROJECT_NAME
 
@@ -104,7 +104,7 @@ See [docs/prp-docs/PRP-STATUS.md](./docs/prp-docs/PRP-STATUS.md) for detailed pr
 
 ## 🤝 Contributing
 
-1. Fork the repository
+1. Click "Use this template" on GitHub
 2. Create your feature branch (`git checkout -b feature/amazing`)
 3. Run tests in Docker (`docker compose exec scripthammer pnpm test`)
 4. Commit changes (`git commit -m 'Add feature'`)
@@ -116,4 +116,4 @@ MIT - See [LICENSE](./LICENSE) for details
 
 ---
 
-**For Forkers**: Your project name is automatically detected from your GitHub fork! No manual configuration needed. See [docs/FORKING-GUIDE.md](./docs/FORKING-GUIDE.md) for details.
+**For Template Users**: Your project name is automatically detected from your new repository! No manual configuration needed. See [docs/TEMPLATE-GUIDE.md](./docs/TEMPLATE-GUIDE.md) for details.
