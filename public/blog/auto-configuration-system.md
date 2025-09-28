@@ -26,9 +26,11 @@ ScriptHammer automatically configures itself based on your new repository. Use t
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- **Docker and Docker Compose installed (MANDATORY)**
 - Git configured with a remote repository
 - Basic familiarity with terminal commands
+
+**⚠️ IMPORTANT**: This project REQUIRES Docker. Local npm/pnpm commands are NOT supported. All development MUST use Docker containers.
 
 ## Quick Start (10-15 minutes first time)
 
@@ -56,7 +58,7 @@ echo "UID=$(id -u)" > .env
 echo "GID=$(id -g)" >> .env
 ```
 
-### 4. Start Docker
+### 4. Start Docker (MANDATORY - No Local Development)
 
 ```bash
 docker compose up
@@ -64,9 +66,18 @@ docker compose up
 
 Note: First run will take 5-10 minutes to build the Docker image and install dependencies.
 
+**⚠️ DO NOT attempt to run `npm install` or `pnpm install` locally - it WILL NOT WORK.**
+
 ### 5. Access Your Project
 
 Your project is now running at `http://localhost:3000` with your repository name automatically detected!
+
+All commands MUST be run inside Docker:
+
+```bash
+# ❌ WRONG: pnpm run dev
+# ✅ RIGHT: docker compose exec scripthammer pnpm run dev
+```
 
 ## What Gets Auto-Configured
 
@@ -135,11 +146,12 @@ With ScriptHammer:
 - ✅ Most configuration detected automatically from git
 - ⚠️ Some components may still have hardcoded values (being improved)
 
-## Common Tasks
+## Common Tasks (All Require Docker)
 
 ### Deploy to GitHub Pages
 
 ```bash
+# MUST use Docker - local commands won't work
 docker compose exec scripthammer pnpm run build
 docker compose exec scripthammer pnpm run deploy
 # Automatically configured for your repository
@@ -148,9 +160,11 @@ docker compose exec scripthammer pnpm run deploy
 ### Use Custom Settings
 
 ```bash
-# Override with environment variables
+# Override with environment variables (still requires Docker)
 NEXT_PUBLIC_PROJECT_NAME=CustomName docker compose exec scripthammer pnpm run dev
 ```
+
+**⚠️ REMINDER**: Every single command in this project MUST be prefixed with `docker compose exec scripthammer`. There are NO exceptions.
 
 ### Check Current Config
 
