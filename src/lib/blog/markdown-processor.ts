@@ -430,7 +430,13 @@ export class MarkdownProcessor {
     // Restore code blocks from placeholders
     let finalHtml = result;
     codeBlocks.forEach((codeBlock, index) => {
-      finalHtml = finalHtml.replace(`${CODE_PLACEHOLDER}${index}`, codeBlock);
+      // Use global replace to ensure all instances are replaced
+      const placeholder = `${CODE_PLACEHOLDER}${index}`;
+      const regex = new RegExp(
+        placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+        'g'
+      );
+      finalHtml = finalHtml.replace(regex, codeBlock);
     });
 
     return finalHtml;
