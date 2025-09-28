@@ -177,40 +177,75 @@ export default function DisqusComments({
   }, [shortname]);
 
   // Inject CSS to override OKLCH colors that Disqus can't parse
+  // This MUST happen BEFORE Disqus loads to prevent parseColor errors
   useEffect(() => {
     if (!isVisible) return;
 
+    // Add a class to body to indicate Disqus is loading
+    document.body.classList.add('disqus-loading');
+
     const style = document.createElement('style');
     style.textContent = `
-      #disqus_thread {
-        /* Provide fallback colors for Disqus since it can't parse OKLCH */
-        color: #333333 !important;
+      /* CRITICAL FIX for Disqus OKLCH parsing error */
+      /* Only apply when Disqus is loading to avoid affecting entire page */
+      body.disqus-loading {
+        /* Override computed styles with hex colors Disqus can parse */
+        background-color: rgb(255, 255, 255) !important;
+        color: rgb(15, 23, 42) !important;
       }
-      #disqus_thread a {
-        /* Fallback link color that Disqus can parse */
-        color: #2563eb !important;
+
+      /* Override all CSS custom properties that might contain OKLCH */
+      body.disqus-loading * {
+        --p: 259.12 83.79% 57.65% !important; /* Primary in HSL */
+        --s: 314.27 70.45% 69.02% !important; /* Secondary in HSL */
+        --a: 174.14 60.15% 51.18% !important; /* Accent in HSL */
+        --n: 213.75 13.79% 15.1% !important; /* Neutral in HSL */
+        --b1: 0 0% 100% !important; /* Base 1 in HSL */
+        --b2: 0 0% 96.08% !important; /* Base 2 in HSL */
+        --b3: 0 0% 92.16% !important; /* Base 3 in HSL */
+        --bc: 215 15.69% 17.25% !important; /* Base content in HSL */
+        --pc: 259.12 83.79% 91.53% !important; /* Primary content in HSL */
+        --sc: 314.27 70.45% 13.8% !important; /* Secondary content in HSL */
+        --ac: 174.14 60.15% 10.24% !important; /* Accent content in HSL */
+        --nc: 213.75 13.79% 83.02% !important; /* Neutral content in HSL */
       }
-      #disqus_thread a:hover {
-        color: #1d4ed8 !important;
+
+      /* Ensure Disqus container uses compatible colors */
+      body.disqus-loading #disqus_thread,
+      body.disqus-loading #disqus_thread * {
+        background-color: rgb(255, 255, 255) !important;
+        color: rgb(51, 51, 51) !important;
       }
-      /* Dark mode fallbacks */
-      html[data-theme] #disqus_thread,
-      .dark #disqus_thread {
-        color: #e5e5e5 !important;
+
+      body.disqus-loading #disqus_thread a {
+        color: rgb(37, 99, 235) !important;
       }
-      html[data-theme] #disqus_thread a,
-      .dark #disqus_thread a {
-        color: #60a5fa !important;
+
+      /* Dark theme overrides */
+      body.disqus-loading[data-theme="dark"],
+      html[data-theme="dark"] body.disqus-loading {
+        background-color: rgb(2, 6, 23) !important;
+        color: rgb(248, 250, 252) !important;
       }
-      html[data-theme] #disqus_thread a:hover,
-      .dark #disqus_thread a:hover {
-        color: #93bbfc !important;
+
+      body.disqus-loading[data-theme="dark"] #disqus_thread,
+      html[data-theme="dark"] body.disqus-loading #disqus_thread {
+        background-color: rgb(15, 23, 41) !important;
+        color: rgb(229, 229, 229) !important;
       }
     `;
+    style.setAttribute('data-disqus-override', 'true');
     document.head.appendChild(style);
 
     return () => {
-      document.head.removeChild(style);
+      // Clean up
+      document.body.classList.remove('disqus-loading');
+      const styleToRemove = document.querySelector(
+        'style[data-disqus-override="true"]'
+      );
+      if (styleToRemove) {
+        document.head.removeChild(styleToRemove);
+      }
     };
   }, [isVisible]);
 
