@@ -49,6 +49,15 @@ cd your-new-repo
 
 **IMPORTANT**: This step is required for Docker to run with proper permissions.
 
+First, check your User ID and Group ID:
+
+```bash
+id -u  # Shows your UID (often 1000)
+id -g  # Shows your GID (often 1000)
+```
+
+Then create your .env file:
+
 ```bash
 # Copy the example file (contains all available options)
 cp .env.example .env
@@ -57,9 +66,11 @@ cp .env.example .env
 Now **EDIT the .env file** to add your configuration:
 
 ```bash
-# Required for Docker (usually already correct)
-UID=1000
-GID=1000
+# Required for Docker - check your actual values:
+# Run: id -u  (to get your UID)
+# Run: id -g  (to get your GID)
+UID=1000  # Replace if your 'id -u' shows different
+GID=1000  # Replace if your 'id -g' shows different
 
 # Optional - Add your service credentials:
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX        # Google Analytics
