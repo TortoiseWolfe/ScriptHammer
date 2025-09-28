@@ -132,131 +132,72 @@ export default function DisqusComments({
     };
   }, [shortname]);
 
-  // Inject CSS to override OKLCH colors that Disqus can't parse
+  // Inject minimal CSS to fix OKLCH parsing without conflicts
   useEffect(() => {
     if (!isVisible) return;
 
-    // Add a class to body to indicate Disqus is loading
-    document.body.classList.add('disqus-loading');
+    // Get computed styles to determine if we're in a dark theme
+    const isDarkTheme = () => {
+      const theme = document.documentElement.getAttribute('data-theme');
+      return (
+        theme &&
+        [
+          'dark',
+          'night',
+          'dracula',
+          'synthwave',
+          'halloween',
+          'forest',
+          'black',
+          'luxury',
+          'business',
+          'coffee',
+          'dim',
+          'sunset',
+        ].includes(theme)
+      );
+    };
+
+    const dark = isDarkTheme();
 
     const style = document.createElement('style');
     style.textContent = `
-      /* Fix for Disqus OKLCH color parsing error
-         See: https://github.com/disqus/disqus-react/issues/153
-         Override OKLCH with RGB fallbacks for Disqus compatibility */
+      /* Minimal override for Disqus OKLCH compatibility
+         Only set what's absolutely necessary to prevent conflicts */
 
-      /* Light theme defaults */
-      body.disqus-loading {
-        /* These get read by Disqus iframe */
-        background-color: rgb(255, 255, 255) !important;
-        color: rgb(31, 41, 55) !important;
+      :root {
+        /* Override CSS variables with RGB fallbacks for Disqus */
+        --disqus-bg: ${dark ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)'};
+        --disqus-text: ${dark ? 'rgb(243, 244, 246)' : 'rgb(31, 41, 55)'};
+        --disqus-link: ${dark ? 'rgb(147, 197, 253)' : 'rgb(59, 130, 246)'};
       }
 
       #disqus_thread {
-        /* Match DaisyUI base styles */
+        /* Use the fallback variables */
+        background-color: var(--disqus-bg) !important;
+        color: var(--disqus-text) !important;
         padding: 1rem;
         border-radius: var(--rounded-box, 1rem);
-        background-color: rgb(255, 255, 255) !important;
       }
 
-      #disqus_thread,
       #disqus_thread * {
-        /* Use RGB colors that Disqus can parse */
-        color: rgb(31, 41, 55) !important;
+        /* Let children inherit, don't force colors */
+        background-color: transparent !important;
+        color: inherit !important;
       }
 
       #disqus_thread a {
-        color: rgb(59, 130, 246) !important;
+        color: var(--disqus-link) !important;
       }
 
-      /* Dark theme support - check for common dark theme selectors */
-      [data-theme="dark"] body.disqus-loading,
-      [data-theme="night"] body.disqus-loading,
-      [data-theme="dracula"] body.disqus-loading,
-      [data-theme="synthwave"] body.disqus-loading,
-      [data-theme="halloween"] body.disqus-loading,
-      [data-theme="forest"] body.disqus-loading,
-      [data-theme="black"] body.disqus-loading,
-      [data-theme="luxury"] body.disqus-loading,
-      [data-theme="business"] body.disqus-loading,
-      [data-theme="coffee"] body.disqus-loading,
-      [data-theme="dim"] body.disqus-loading,
-      [data-theme="sunset"] body.disqus-loading {
-        background-color: rgb(15, 23, 42) !important;
-        color: rgb(226, 232, 240) !important;
-      }
-
-      [data-theme="dark"] #disqus_thread,
-      [data-theme="night"] #disqus_thread,
-      [data-theme="dracula"] #disqus_thread,
-      [data-theme="synthwave"] #disqus_thread,
-      [data-theme="halloween"] #disqus_thread,
-      [data-theme="forest"] #disqus_thread,
-      [data-theme="black"] #disqus_thread,
-      [data-theme="luxury"] #disqus_thread,
-      [data-theme="business"] #disqus_thread,
-      [data-theme="coffee"] #disqus_thread,
-      [data-theme="dim"] #disqus_thread,
-      [data-theme="sunset"] #disqus_thread {
-        /* Darker background for better contrast */
-        background-color: rgb(17, 24, 39) !important;
-      }
-
-      [data-theme="dark"] #disqus_thread,
-      [data-theme="night"] #disqus_thread,
-      [data-theme="dracula"] #disqus_thread,
-      [data-theme="synthwave"] #disqus_thread,
-      [data-theme="halloween"] #disqus_thread,
-      [data-theme="forest"] #disqus_thread,
-      [data-theme="black"] #disqus_thread,
-      [data-theme="luxury"] #disqus_thread,
-      [data-theme="business"] #disqus_thread,
-      [data-theme="coffee"] #disqus_thread,
-      [data-theme="dim"] #disqus_thread,
-      [data-theme="sunset"] #disqus_thread {
-        /* Light text for dark themes */
-        color: rgb(243, 244, 246) !important;
-      }
-
-      [data-theme="dark"] #disqus_thread *,
-      [data-theme="night"] #disqus_thread *,
-      [data-theme="dracula"] #disqus_thread *,
-      [data-theme="synthwave"] #disqus_thread *,
-      [data-theme="halloween"] #disqus_thread *,
-      [data-theme="forest"] #disqus_thread *,
-      [data-theme="black"] #disqus_thread *,
-      [data-theme="luxury"] #disqus_thread *,
-      [data-theme="business"] #disqus_thread *,
-      [data-theme="coffee"] #disqus_thread *,
-      [data-theme="dim"] #disqus_thread *,
-      [data-theme="sunset"] #disqus_thread * {
-        /* Transparent background to inherit, bright text for readability */
-        background-color: transparent !important;
-        color: rgb(243, 244, 246) !important;
-      }
-
-      [data-theme="dark"] #disqus_thread a,
-      [data-theme="night"] #disqus_thread a,
-      [data-theme="dracula"] #disqus_thread a,
-      [data-theme="synthwave"] #disqus_thread a,
-      [data-theme="halloween"] #disqus_thread a,
-      [data-theme="forest"] #disqus_thread a,
-      [data-theme="black"] #disqus_thread a,
-      [data-theme="luxury"] #disqus_thread a,
-      [data-theme="business"] #disqus_thread a,
-      [data-theme="coffee"] #disqus_thread a,
-      [data-theme="dim"] #disqus_thread a,
-      [data-theme="sunset"] #disqus_thread a {
-        /* Brighter blue for better contrast on dark background */
-        color: rgb(147, 197, 253) !important;
+      #disqus_thread a:hover {
+        opacity: 0.8;
       }
     `;
     style.setAttribute('data-disqus-override', 'true');
     document.head.appendChild(style);
 
     return () => {
-      // Clean up
-      document.body.classList.remove('disqus-loading');
       const styleToRemove = document.querySelector(
         'style[data-disqus-override="true"]'
       );
