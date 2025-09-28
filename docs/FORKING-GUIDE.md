@@ -44,6 +44,48 @@ docker compose up
 
 The project will automatically use your repository name everywhere "ScriptHammer" appeared before.
 
+### GitHub Actions Configuration (For Production)
+
+While the project auto-detects your repository name, you'll need to add personal configuration as GitHub Secrets for production features to work properly.
+
+#### Required GitHub Secrets
+
+Go to your repository **Settings → Secrets and variables → Actions** and add these secrets:
+
+**Essential for Features:**
+
+- `NEXT_PUBLIC_DISQUS_SHORTNAME` - Your Disqus shortname (for blog comments)
+- `NEXT_PUBLIC_CALENDAR_PROVIDER` - Either `calendly` or `calcom`
+- `NEXT_PUBLIC_CALENDAR_URL` - Your calendar booking URL
+
+**Author Information:**
+
+- `NEXT_PUBLIC_AUTHOR_NAME` - Your display name
+- `NEXT_PUBLIC_AUTHOR_ROLE` - Your professional role
+- `NEXT_PUBLIC_AUTHOR_BIO` - Short bio/tagline
+- `NEXT_PUBLIC_AUTHOR_AVATAR` - URL to your avatar image
+- `NEXT_PUBLIC_AUTHOR_GITHUB` - Your GitHub username
+
+**Optional Social Links:**
+
+- `NEXT_PUBLIC_AUTHOR_TWITTER` - Twitter/X handle
+- `NEXT_PUBLIC_AUTHOR_LINKEDIN` - LinkedIn username
+- `NEXT_PUBLIC_AUTHOR_TWITCH` - Twitch username
+- `NEXT_PUBLIC_SITE_URL` - Your custom domain (if not using GitHub Pages)
+
+**Email Services (Optional):**
+
+- `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` - Web3Forms API key
+- `NEXT_PUBLIC_EMAILJS_SERVICE_ID` - EmailJS service ID
+- `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID` - EmailJS template ID
+- `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` - EmailJS public key
+
+**Analytics (Optional):**
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` - Google Analytics ID (format: G-XXXXXXXXXX)
+
+Without these secrets, your production site will build but won't have personalized content or working features like comments, calendar booking, or contact forms.
+
 ### Manual Override (Optional)
 
 If you want to override the auto-detected values, create a `.env.local` file:
