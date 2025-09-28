@@ -27,7 +27,7 @@ Scripthammer is an opinionated Next.js template that comes batteries-included wi
 ## What's Actually In This Template
 
 ![Scripthammer Dashboard](/blog-images/scripthammer-intro/dashboard-overview.svg)
-The Scripthammer dashboard showing the theme switcher and component structure
+_The Scripthammer dashboard showing the theme switcher and component structure_
 
 ### Core Technologies
 
@@ -61,7 +61,7 @@ Theme switching is instant and persisted across sessions.
 #### 🧪 Testing That Actually Runs
 
 ![Testing Suite Output](/blog-images/scripthammer-intro/testing-output.svg)
-Comprehensive test suite with unit, E2E (End-to-End), and accessibility testing
+_Comprehensive test suite with unit, E2E (End-to-End), and accessibility testing_
 
 ```bash
 docker compose exec scripthammer pnpm run test:suite
@@ -84,7 +84,7 @@ docker compose exec scripthammer pnpm run test:suite
 ## Docker Development Environment (MANDATORY)
 
 ![Docker Architecture](/blog-images/scripthammer-intro/docker-architecture.svg)
-Docker-first development environment with isolated containers
+_Docker-first development environment with isolated containers_
 
 **⚠️ CRITICAL**: ScriptHammer is Docker-only. Local npm/pnpm commands are NOT supported and WILL NOT WORK.
 
