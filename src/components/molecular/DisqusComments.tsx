@@ -176,11 +176,43 @@ export default function DisqusComments({
     };
   }, [shortname]);
 
-  // Don't render if no shortname
-  if (!shortname) {
-    console.warn('[Disqus Debug] No shortname provided, not rendering');
-    return null;
-  }
+  // Inject CSS to override OKLCH colors that Disqus can't parse
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #disqus_thread {
+        /* Provide fallback colors for Disqus since it can't parse OKLCH */
+        color: #333333 !important;
+      }
+      #disqus_thread a {
+        /* Fallback link color that Disqus can parse */
+        color: #2563eb !important;
+      }
+      #disqus_thread a:hover {
+        color: #1d4ed8 !important;
+      }
+      /* Dark mode fallbacks */
+      html[data-theme] #disqus_thread,
+      .dark #disqus_thread {
+        color: #e5e5e5 !important;
+      }
+      html[data-theme] #disqus_thread a,
+      .dark #disqus_thread a {
+        color: #60a5fa !important;
+      }
+      html[data-theme] #disqus_thread a:hover,
+      .dark #disqus_thread a:hover {
+        color: #93bbfc !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, [isVisible]);
 
   return (
     <div ref={containerRef} className="border-base-300 mt-8 border-t pt-6">
