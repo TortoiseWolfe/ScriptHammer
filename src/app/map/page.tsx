@@ -153,7 +153,7 @@ export default function MapPage() {
   return (
     <main className="container mx-auto p-4">
       <header className="prose mb-6 max-w-none">
-        <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
+        <h1 className="!text-2xl font-bold sm:!text-4xl md:!text-5xl">
           Interactive Map
         </h1>
         <p>

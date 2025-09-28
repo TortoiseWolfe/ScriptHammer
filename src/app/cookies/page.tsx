@@ -14,7 +14,7 @@ export default function CookiePolicyPage() {
   return (
     <main className="container mx-auto max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
-        <h1 className="mb-6 text-3xl font-bold sm:mb-8 sm:text-4xl md:text-5xl">
+        <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
           Cookie Policy
         </h1>
       </header>
