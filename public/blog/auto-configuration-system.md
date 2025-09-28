@@ -303,14 +303,14 @@ Supports multiple formats:
 ## Visual Overview
 
 ![Auto-Configuration Flow Diagram](/blog-images/auto-config/config-flow.svg)
-_The auto-configuration process: Use Template → Clone → Ready in 3 simple steps_
+The auto-configuration process: Use Template → Clone → Ready in 3 simple steps
 
 The magic happens through our detection script that runs at build time, analyzing your git remote to extract project information and automatically generating all configuration files.
 
 ## Traditional Setup vs ScriptHammer
 
 ![Before and After Comparison](/blog-images/auto-config/before-after.svg)
-_Save 30-60 minutes of manual configuration with every new project_
+Save 30-60 minutes of manual configuration with every new project
 
 While traditional templates require editing 22+ files and configuration points, ScriptHammer handles everything automatically. No more hunting for hardcoded values or broken references after using the template.
 
@@ -350,4 +350,4 @@ ScriptHammer significantly reduces setup friction compared to traditional templa
 
 ---
 
-_P.S. - Check out `/scripts/detect-project.js` to see the complete auto-configuration implementation. It's a pragmatic solution that handles 90% of configuration automatically._
+P.S. - Check out `/scripts/detect-project.js` to see the complete auto-configuration implementation. It's a pragmatic solution that handles 90% of configuration automatically.
