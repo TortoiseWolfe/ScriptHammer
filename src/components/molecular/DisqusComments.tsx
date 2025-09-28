@@ -133,33 +133,57 @@ export default function DisqusComments({
   }, [shortname]);
 
   // Inject CSS to override OKLCH colors that Disqus can't parse
+  // Uses DaisyUI CSS variables converted to HSL (Disqus compatible)
   useEffect(() => {
     if (!isVisible) return;
 
     const style = document.createElement('style');
     style.textContent = `
       /* Fix for Disqus OKLCH color parsing error
-         See: https://github.com/disqus/disqus-react/issues/153 */
-      #disqus_thread,
+         See: https://github.com/disqus/disqus-react/issues/153
+         Uses DaisyUI theme colors in HSL format (Disqus compatible) */
+
+      #disqus_thread {
+        /* Use base-100 for background, base-content for text */
+        background-color: hsl(var(--b1)) !important;
+        color: hsl(var(--bc)) !important;
+        padding: 1rem;
+        border-radius: var(--rounded-box, 1rem);
+      }
+
       #disqus_thread * {
-        /* Override with RGB colors that Disqus can parse */
-        background-color: rgb(255, 255, 255) !important;
-        color: rgb(51, 51, 51) !important;
+        /* Inherit theme colors */
+        background-color: transparent !important;
+        color: inherit !important;
       }
 
       #disqus_thread a {
-        color: rgb(37, 99, 235) !important;
+        /* Use primary color for links */
+        color: hsl(var(--p)) !important;
       }
 
-      /* Dark theme support */
-      [data-theme="dark"] #disqus_thread,
-      [data-theme="dark"] #disqus_thread * {
-        background-color: rgb(15, 23, 41) !important;
-        color: rgb(229, 229, 229) !important;
+      #disqus_thread a:hover {
+        /* Use primary-focus for hover */
+        color: hsl(var(--pf, var(--p))) !important;
       }
 
-      [data-theme="dark"] #disqus_thread a {
-        color: rgb(96, 165, 250) !important;
+      /* Disqus form inputs */
+      #disqus_thread input,
+      #disqus_thread textarea,
+      #disqus_thread select {
+        background-color: hsl(var(--b2)) !important;
+        color: hsl(var(--bc)) !important;
+        border-color: hsl(var(--bc) / 0.2) !important;
+      }
+
+      /* Disqus buttons */
+      #disqus_thread button {
+        background-color: hsl(var(--p)) !important;
+        color: hsl(var(--pc)) !important;
+      }
+
+      #disqus_thread button:hover {
+        background-color: hsl(var(--pf, var(--p))) !important;
       }
     `;
     style.setAttribute('data-disqus-override', 'true');
