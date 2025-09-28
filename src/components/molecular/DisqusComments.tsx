@@ -41,6 +41,11 @@ export default function DisqusComments({
       return url;
     }
 
+    // Use the configured site URL if available
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      return `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${slug}`;
+    }
+
     // Otherwise, generate the correct production URL
     const baseUrl = detectedConfig.isGitHub
       ? `https://${detectedConfig.projectOwner.toLowerCase()}.github.io/${detectedConfig.projectName}`
