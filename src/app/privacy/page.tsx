@@ -12,9 +12,11 @@ export default function PrivacyPolicyPage() {
   const lastUpdated = '2025-09-15';
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-8">
+    <main className="container mx-auto max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
-        <h1 className="mb-8 text-4xl font-bold">Privacy Policy</h1>
+        <h1 className="mb-6 text-3xl font-bold sm:mb-8 sm:text-4xl md:text-5xl">
+          Privacy Policy
+        </h1>
       </header>
 
       {/* Quick Actions - Client Component */}

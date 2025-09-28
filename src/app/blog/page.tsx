@@ -59,11 +59,13 @@ export default async function BlogPage() {
   const { posts } = await getPosts(1, 100); // Get up to 100 posts
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
       {/* Page Header */}
-      <header className="mb-12 text-center">
-        <h1 className="mb-4 text-4xl font-bold">Blog</h1>
-        <p className="text-base-content/70 text-lg">
+      <header className="mb-8 text-center sm:mb-10 md:mb-12">
+        <h1 className="mb-4 text-3xl font-bold sm:text-4xl md:text-5xl">
+          Blog
+        </h1>
+        <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
           Thoughts, ideas, and insights from our team
         </p>
       </header>
