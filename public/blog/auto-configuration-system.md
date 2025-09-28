@@ -185,6 +185,72 @@ docker compose exec scripthammer pnpm run deploy
 # Automatically configured for your repository
 ```
 
+### Configure Production Environment Variables
+
+**IMPORTANT**: Your local `.env` file is NOT used in GitHub Actions. You must add your configuration as GitHub Secrets for production features to work.
+
+#### Setting Up GitHub Secrets
+
+1. **Navigate to your repository settings**:
+   - Go to your GitHub repository
+   - Click **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
+
+2. **Add your environment variables as secrets**:
+
+   Copy each value from your `.env` file and add it as a GitHub Secret with the SAME name:
+
+   ```bash
+   # Essential Services (without these, features won't work in production)
+   NEXT_PUBLIC_GA_MEASUREMENT_ID        # Google Analytics tracking
+   NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY     # Contact form submissions
+   NEXT_PUBLIC_EMAILJS_SERVICE_ID       # Email service
+   NEXT_PUBLIC_EMAILJS_TEMPLATE_ID      # Email template
+   NEXT_PUBLIC_EMAILJS_PUBLIC_KEY       # EmailJS public key
+
+   # Calendar Integration
+   NEXT_PUBLIC_CALENDAR_PROVIDER        # 'calendly' or 'calcom'
+   NEXT_PUBLIC_CALENDAR_URL             # Your booking page URL
+
+   # Author Information (personalizes your site)
+   NEXT_PUBLIC_AUTHOR_NAME             # Your display name
+   NEXT_PUBLIC_AUTHOR_GITHUB           # Your GitHub username
+   NEXT_PUBLIC_AUTHOR_TWITTER          # Your Twitter/X handle
+   NEXT_PUBLIC_AUTHOR_LINKEDIN         # Your LinkedIn username
+   ```
+
+3. **How to add a secret**:
+   - **Name**: Enter the exact variable name (e.g., `NEXT_PUBLIC_GA_MEASUREMENT_ID`)
+   - **Value**: Paste your key/value from `.env` (e.g., `G-XXXXXXXXXX`)
+   - Click **Add secret**
+
+4. **Verify secrets are configured**:
+   - After adding, you'll see them listed (values are hidden)
+   - The deploy workflow will automatically use these during build
+   - Check your deployed site to confirm features are working
+
+#### Important Notes
+
+- **No UID/GID needed**: GitHub Actions doesn't need Docker user permissions
+- **Secrets are encrypted**: GitHub encrypts and hides secret values
+- **Build-time injection**: Secrets are injected during `pnpm run build` in CI/CD
+- **Without secrets**: Your site will deploy but features like analytics, forms, and calendars won't function
+
+#### Updating the Deploy Workflow (Optional)
+
+If you need to use additional environment variables, update `.github/workflows/deploy.yml`:
+
+```yaml
+- name: Build Next.js app
+  run: pnpm run build
+  env:
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+    NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
+    # Add more secrets as needed
+```
+
+**Note**: The current workflow doesn't explicitly list env variables, but Next.js automatically reads `NEXT_PUBLIC_*` secrets during build if they're available in the GitHub Actions environment.
+
 ### Run Tests Inside Docker
 
 ```bash
