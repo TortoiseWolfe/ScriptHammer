@@ -103,7 +103,7 @@ Traditional templates require editing multiple files:
 
 With ScriptHammer:
 
-- ✅ Fork with any name
+- ✅ Use template with any name
 - ✅ Clone and run
 - ✅ Everything configured automatically
 
@@ -130,7 +130,7 @@ Look at `src/config/project-detected.ts` after running the build—it shows your
 
 ## Key Benefits
 
-- **Instant Setup**: Fork and start coding in under 2 minutes
+- **Instant Setup**: Use template and start coding in under 2 minutes
 - **No Configuration Files**: Everything auto-detects from git
 - **Works Everywhere**: Local, Docker, CI/CD—all automatic
 - **Always Correct**: No manual edits means no mistakes
@@ -212,8 +212,8 @@ docker compose exec scripthammer pnpm run build  # Uses git remote info
 
 ## Try It Now
 
-1. **Fork** [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) (30 seconds)
-2. **Clone** your fork (30 seconds)
+1. **Use Template** [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) (30 seconds)
+2. **Clone** your new repository (30 seconds)
 3. **Run** `docker compose up` (1 minute)
 4. **Check** `http://localhost:3000` - your project is ready!
 
@@ -260,7 +260,7 @@ Supports multiple formats:
 ## Visual Overview
 
 ![Auto-Configuration Flow Diagram](/blog-images/auto-config/config-flow.svg)
-_The auto-configuration process: Fork → Clone → Ready in 3 simple steps_
+_The auto-configuration process: Use Template → Clone → Ready in 3 simple steps_
 
 The magic happens through our detection script that runs at build time, analyzing your git remote to extract project information and automatically generating all configuration files.
 
@@ -269,13 +269,13 @@ The magic happens through our detection script that runs at build time, analyzin
 ![Before and After Comparison](/blog-images/auto-config/before-after.svg)
 _Save 30-60 minutes of manual configuration with every new project_
 
-While traditional templates require editing 22+ files and configuration points, ScriptHammer handles everything automatically. No more hunting for hardcoded values or broken references after forking.
+While traditional templates require editing 22+ files and configuration points, ScriptHammer handles everything automatically. No more hunting for hardcoded values or broken references after using the template.
 
 ## The Bottom Line
 
-ScriptHammer eliminates setup friction. Fork it, name it whatever you want, and start building immediately. The configuration handles itself.
+ScriptHammer eliminates setup friction. Use the template, name it whatever you want, and start building immediately. The configuration handles itself.
 
-**No configuration. No setup. Just fork and build.**
+**No configuration. No setup. Just use template and build.**
 
 ---
 
