@@ -81,21 +81,27 @@ docker compose exec scripthammer pnpm run test:suite
 - App manifest for installability
 - Push notification ready
 
-## Docker Development Environment
+## Docker Development Environment (MANDATORY)
 
 ![Docker Architecture](/blog-images/scripthammer-intro/docker-architecture.svg)
 _Docker-first development environment with isolated containers_
 
-Everything runs in [Docker](https://www.docker.com/). No "works on my machine" problems:
+**⚠️ CRITICAL**: ScriptHammer is Docker-only. Local npm/pnpm commands are NOT supported and WILL NOT WORK.
+
+Everything MUST run in [Docker](https://www.docker.com/). No "works on my machine" problems:
 
 ```bash
-# Start development
+# Start development (REQUIRED - no local alternative)
 docker compose up
 
-# Run any command
+# ALL commands must use docker compose exec:
 docker compose exec scripthammer pnpm run dev
 docker compose exec scripthammer pnpm test
 docker compose exec scripthammer pnpm run generate:component
+
+# ❌ NEVER run locally:
+# pnpm install  # WILL NOT WORK
+# npm run dev   # WILL NOT WORK
 ```
 
 ## Component Generator
@@ -198,7 +204,9 @@ docker compose exec scripthammer pnpm run test:coverage
 4. **TypeScript First** - Comprehensive typing with strict mode enabled
 5. **Well Tested** - Full test suite with unit, E2E, and accessibility testing
 
-## Getting Started
+## Getting Started (Docker Required)
+
+**⚠️ PREREQUISITE**: Docker and Docker Compose MUST be installed. This project does NOT support local development.
 
 ```bash
 # Use the template on GitHub first
@@ -206,16 +214,20 @@ docker compose exec scripthammer pnpm run test:coverage
 git clone https://github.com/YourUsername/your-new-repo.git
 cd your-new-repo
 
-# Create required .env file
+# Create required .env file (MANDATORY)
 cp .env.example .env
 
-# Start Docker (first build takes 5-10 minutes)
-docker compose up
+# Start Docker (ONLY way to run this project)
+docker compose up  # First build takes 5-10 minutes
 
 # Open http://localhost:3000
 ```
 
-Quick setup with minimal configuration. No npm install locally, no version conflicts.
+**Remember**:
+
+- ✅ `docker compose exec scripthammer pnpm install` - Correct
+- ❌ `pnpm install` - Will NOT work
+- ❌ `npm install` - Will NOT work
 
 ## What's Next?
 
