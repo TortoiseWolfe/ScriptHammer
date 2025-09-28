@@ -50,7 +50,7 @@ if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
 const manifest = {
   name: projectConfig.projectName,
   short_name: projectConfig.projectName.substring(0, 12),
-  description: `${projectConfig.projectName} - Modern Next.js starter with PWA, theming, and interactive components`,
+  description: `${projectConfig.projectName} - Modern Next.js template with PWA, theming, and interactive components`,
   theme_color: '#2563eb',
   background_color: '#ffffff',
   display: 'standalone',

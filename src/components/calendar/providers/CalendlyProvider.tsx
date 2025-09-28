@@ -102,8 +102,8 @@ export function CalendlyProvider({
       prefill={prefill}
       pageSettings={pageSettings}
       styles={{
-        height: styles?.height || '700px',
-        minHeight: styles?.minHeight || '500px',
+        height: styles?.height || '1200px',
+        minHeight: styles?.minHeight || '1000px',
         ...styles,
       }}
     />
