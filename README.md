@@ -104,7 +104,7 @@ See [docs/prp-docs/PRP-STATUS.md](./docs/prp-docs/PRP-STATUS.md) for detailed pr
 
 ## 🤝 Contributing
 
-1. Click "Use this template" on GitHub
+1. Fork the repository (for contributing back to ScriptHammer)
 2. Create your feature branch (`git checkout -b feature/amazing`)
 3. Run tests in Docker (`docker compose exec scripthammer pnpm test`)
 4. Commit changes (`git commit -m 'Add feature'`)
