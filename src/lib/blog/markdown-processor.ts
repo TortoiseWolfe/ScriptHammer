@@ -389,6 +389,9 @@ export class MarkdownProcessor {
     // Convert italic (single asterisks not at start of line)
     html = html.replace(/(?<!^)\*([^*\n]+)\*/gm, '<em>$1</em>');
 
+    // Also convert underscore italics (common in markdown)
+    html = html.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
     // Convert images (MUST be before links!)
     html = html.replace(
       /!\[([^\]]*)\]\(([^)]+)\)/g,
