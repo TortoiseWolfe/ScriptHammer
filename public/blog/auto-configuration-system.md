@@ -257,15 +257,8 @@ The script (under 180 lines) handles:
 Currently supported:
 
 - **GitHub Actions CI** - Automatically configures for GitHub Pages
-- **Local Docker Development** - Consistent development environment
-- **Local Development** - Standard local configuration
-
-Coming Soon (Sprint 4):
-
-- **Vercel Deployment** - Platform-specific optimization
-- **Netlify Deployment** - Automatic configuration
-- **AWS/Azure/GCP** - Cloud platform detection
-- **Kubernetes/Docker Swarm** - Container orchestration
+- **Docker Development** - Consistent development environment (REQUIRED)
+- **Environment Variables** - Override auto-detection with custom values
 
 ### Multiple Environments
 
