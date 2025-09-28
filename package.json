@@ -1,7 +1,7 @@
 {
   "name": "scripthammer",
-  "version": "0.3.5",
-  "description": "ScriptHammer - Modern Next.js starter with PWA, theming, and interactive components",
+  "version": "0.0.1",
+  "description": "ScriptHammer - Modern Next.js template with PWA, theming, and interactive components",
   "packageManager": "pnpm@10.16.1",
   "keywords": [
     "nextjs",

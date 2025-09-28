@@ -386,8 +386,8 @@ export class MarkdownProcessor {
     // Convert bold (must be done before italic)
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
-    // Convert italic (single asterisks not at start of line)
-    html = html.replace(/(?<!^)\*([^*\n]+)\*/gm, '<em>$1</em>');
+    // Convert italic (single asterisks)
+    html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
 
     // Convert images (MUST be before links!)
     html = html.replace(

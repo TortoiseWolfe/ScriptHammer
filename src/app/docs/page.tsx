@@ -5,7 +5,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Documentation - ScriptHammer',
   description:
-    'Comprehensive documentation for ScriptHammer - Modern Next.js starter with PWA, testing, and more.',
+    'Comprehensive documentation for ScriptHammer - Modern Next.js template with PWA, testing, and more.',
 };
 
 export default function DocsPage() {

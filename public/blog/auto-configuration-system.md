@@ -185,11 +185,11 @@ docker compose exec scripthammer pnpm run deploy
 # Automatically configured for your repository
 ```
 
-### Use Custom Settings
+### Run Tests Inside Docker
 
 ```bash
-# Override with environment variables (still requires Docker)
-NEXT_PUBLIC_PROJECT_NAME=CustomName docker compose exec scripthammer pnpm run dev
+# Run the comprehensive test suite (all tests must run in Docker)
+docker compose exec scripthammer pnpm run test:suite
 ```
 
 **⚠️ REMINDER**: Every single command in this project MUST be prefixed with `docker compose exec scripthammer`. There are NO exceptions.
@@ -260,18 +260,18 @@ Currently supported:
 - **Docker Development** - Consistent development environment (REQUIRED)
 - **Environment Variables** - Override auto-detection with custom values
 
-### Multiple Environments
+### Development vs Production
 
 ```bash
-# Development
+# Development - Local testing with hot reload at http://localhost:3000
 docker compose exec scripthammer pnpm run dev
 
-# Staging
-NEXT_PUBLIC_PROJECT_NAME=staging-app docker compose exec scripthammer pnpm run build
-
-# Production
-docker compose exec scripthammer pnpm run build  # Uses git remote info
+# Production Build - Creates static files for GitHub Pages deployment
+docker compose exec scripthammer pnpm run build
+docker compose exec scripthammer pnpm run deploy
 ```
+
+The project auto-detects your configuration from git, so you don't need different settings for different environments.
 
 ## Try It Now
 

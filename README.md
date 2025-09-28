@@ -1,4 +1,4 @@
-# ScriptHammer - Modern Next.js Starter with PWA
+# ScriptHammer - Modern Next.js Template with PWA
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/TortoiseWolfe/ScriptHammer)
 [![Use Template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge)](https://github.com/TortoiseWolfe/ScriptHammer/generate)

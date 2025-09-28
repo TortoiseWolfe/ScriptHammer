@@ -1,7 +1,7 @@
 {
   "name": "ScriptHammer",
   "short_name": "ScriptHammer",
-  "description": "ScriptHammer - Modern Next.js starter with PWA, theming, and interactive components",
+  "description": "ScriptHammer - Modern Next.js template with PWA, theming, and interactive components",
   "theme_color": "#2563eb",
   "background_color": "#ffffff",
   "display": "standalone",
