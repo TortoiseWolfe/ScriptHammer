@@ -77,6 +77,44 @@ This document tracks known technical issues, workarounds, and future concerns th
 
 ## Current Issues
 
+### 7. Disqus Theme Integration
+
+**Date Added**: 2025-09-28
+**Severity**: Low
+**Impact**: UX - Comments section doesn't fully match DaisyUI themes
+
+**Issue**: Disqus comments component only supports basic light/dark theme detection, not the full range of 32 DaisyUI themes. Attempts to read actual theme colors using computed styles cause Disqus to fail loading.
+
+**Current Workaround**: Simplified to basic light/dark detection with hardcoded RGB colors that Disqus can parse.
+
+**Proper Solution**:
+
+- Investigate alternative methods to pass theme colors to Disqus iframe
+- Consider using CSS custom properties that Disqus can interpret
+- Possibly implement a theme color mapping system
+
+**Files Affected**:
+
+- `/src/components/molecular/DisqusComments.tsx`
+
+### 8. Next.js Dynamic Params Warning
+
+**Date Added**: 2025-09-28
+**Severity**: Low
+**Impact**: Dev warnings only, no production impact
+
+**Issue**: Next.js 15 shows warnings about using `params.slug` without awaiting params first in blog pages.
+
+**Current State**: Non-breaking warning in development logs.
+
+**Proper Solution**: Update blog page components to properly await params before accessing properties per Next.js 15 best practices.
+
+**Files Affected**:
+
+- `/src/app/blog/[slug]/page.tsx`
+
+## Resolved Issues
+
 ### ~~6. lint-staged Git Stash Issues in Docker~~ ✅ RESOLVED
 
 **Date Added**: 2025-09-19
