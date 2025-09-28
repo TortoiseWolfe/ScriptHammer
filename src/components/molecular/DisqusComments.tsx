@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import { detectedConfig } from '@/config/project-detected';
 
 interface DisqusCommentsProps {
   slug: string;
@@ -41,17 +40,8 @@ export default function DisqusComments({
       return url;
     }
 
-    // Use the configured site URL if available
-    if (process.env.NEXT_PUBLIC_SITE_URL) {
-      return `${process.env.NEXT_PUBLIC_SITE_URL}/blog/${slug}`;
-    }
-
-    // Otherwise, generate the correct production URL
-    const baseUrl = detectedConfig.isGitHub
-      ? `https://${detectedConfig.projectOwner.toLowerCase()}.github.io/${detectedConfig.projectName}`
-      : detectedConfig.projectUrl;
-
-    return `${baseUrl}/blog/${slug}`;
+    // HARDCODED: Your site uses scripthammer.com
+    return `https://scripthammer.com/blog/${slug}`;
   };
 
   const productionUrl = getProductionUrl();
