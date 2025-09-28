@@ -45,18 +45,35 @@ git clone https://github.com/YourUsername/your-new-repo.git
 cd your-new-repo
 ```
 
-### 3. Create Required .env File
+### 3. Create and Configure .env File
 
 **IMPORTANT**: This step is required for Docker to run with proper permissions.
 
 ```bash
-# Copy the example file
+# Copy the example file (contains all available options)
 cp .env.example .env
-
-# Or create it manually with your system's user ID
-echo "UID=$(id -u)" > .env
-echo "GID=$(id -g)" >> .env
 ```
+
+Now **EDIT the .env file** to add your configuration:
+
+```bash
+# Required for Docker (usually already correct)
+UID=1000
+GID=1000
+
+# Optional - Add your service credentials:
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX        # Google Analytics
+NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY=your-key-here    # Contact form
+NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_xxx        # Email service
+NEXT_PUBLIC_CALENDAR_URL=your-calendly-url        # Scheduling
+
+# Optional - Customize author info:
+NEXT_PUBLIC_AUTHOR_NAME=Your Name
+NEXT_PUBLIC_AUTHOR_GITHUB=yourusername
+NEXT_PUBLIC_AUTHOR_TWITTER=yourhandle
+```
+
+**Note**: All these are OPTIONAL except UID/GID. The app works without them, but features like analytics and contact forms won't function until configured.
 
 ### 4. Start Docker (MANDATORY - No Local Development)
 
