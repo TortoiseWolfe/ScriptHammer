@@ -47,11 +47,15 @@ This project **REQUIRES Docker** for development to ensure consistency across al
 git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME.git
 cd YOUR_PROJECT_NAME
 
-# 3. Create .env file (REQUIRED for Docker permissions)
+# 3. Create and configure .env file (REQUIRED)
 cp .env.example .env
-# Or manually create with your user ID:
-echo "UID=$(id -u)" > .env
-echo "GID=$(id -g)" >> .env
+
+# Edit .env to add your services (all optional except UID/GID):
+# - Google Analytics ID
+# - EmailJS/Web3Forms credentials
+# - Calendar integration URLs
+# - Author information
+# See .env.example for all available options
 
 # 4. Start Docker development environment
 docker compose up     # Start everything (first build takes 5-10 minutes)
