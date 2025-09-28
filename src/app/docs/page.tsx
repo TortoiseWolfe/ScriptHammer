@@ -154,15 +154,17 @@ export default function DocsPage() {
   ];
 
   return (
-    <main className="container mx-auto px-4 py-8">
-      <header className="mb-12 text-center">
-        <h1 className="mb-4 text-5xl font-bold">Documentation</h1>
-        <p className="text-base-content/70 text-xl">
+    <main className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
+      <header className="mb-8 text-center sm:mb-10 md:mb-12">
+        <h1 className="mb-4 text-3xl font-bold sm:text-4xl md:text-5xl">
+          Documentation
+        </h1>
+        <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
           Everything you need to know about ScriptHammer
         </p>
       </header>
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:gap-8 md:grid-cols-2 lg:grid-cols-3">
         {docSections.map((section, index) => (
           <div
             key={index}

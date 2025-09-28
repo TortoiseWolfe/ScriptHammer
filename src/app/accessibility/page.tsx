@@ -10,9 +10,11 @@ export default function AccessibilityPage() {
 
   return (
     <main className="bg-base-100 min-h-screen">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-8 text-4xl font-bold">Accessibility Controls</h1>
+          <h1 className="mb-6 text-3xl font-bold sm:mb-8 sm:text-4xl md:text-5xl">
+            Accessibility Controls
+          </h1>
           <p className="text-base-content/70 mb-8 text-lg">
             Customize the reading experience to suit your preferences
           </p>

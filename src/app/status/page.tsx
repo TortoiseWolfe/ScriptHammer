@@ -731,10 +731,10 @@ export default function StatusPage() {
         <div className="mb-8">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="mb-2 text-4xl font-bold">
+              <h1 className="mb-2 text-3xl font-bold sm:text-4xl md:text-5xl">
                 {projectConfig.project.name} Status Dashboard
               </h1>
-              <p className="text-base-content/70">
+              <p className="text-base-content/70 text-sm sm:text-base">
                 Real-time deployment and performance metrics • Connection:{' '}
                 {isOnline ? '🟢 Online' : '🔴 Offline'}
               </p>

@@ -12,9 +12,11 @@ export default function CommentPolicyPage() {
   const lastUpdated = '2025-01-27';
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-8">
+    <main className="container mx-auto max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
-        <h1 className="mb-8 text-4xl font-bold">Comment Policy</h1>
+        <h1 className="mb-6 text-3xl font-bold sm:mb-8 sm:text-4xl md:text-5xl">
+          Comment Policy
+        </h1>
       </header>
 
       <article className="prose prose-lg max-w-none">
@@ -23,7 +25,7 @@ export default function CommentPolicyPage() {
         </p>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
             Welcome to Our Community
           </h2>
           <p className="mb-4">
@@ -35,7 +37,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">What We Encourage</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            What We Encourage
+          </h2>
           <ul className="mb-4 list-disc pl-6">
             <li>Constructive feedback and respectful disagreement</li>
             <li>Relevant questions and thoughtful insights</li>
@@ -46,7 +50,7 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
             What&apos;s Not Allowed
           </h2>
           <p className="mb-4">
@@ -86,7 +90,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">Moderation Process</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            Moderation Process
+          </h2>
           <p className="mb-4">All comments are subject to moderation:</p>
           <ul className="mb-4 list-disc pl-6">
             <li>
@@ -105,7 +111,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">User Accounts</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            User Accounts
+          </h2>
           <p className="mb-4">
             Comments are managed through Disqus. To comment, you&apos;ll need:
           </p>
@@ -117,7 +125,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">Privacy & Data</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            Privacy & Data
+          </h2>
           <p className="mb-4">When you comment:</p>
           <ul className="mb-4 list-disc pl-6">
             <li>Your comment and username are publicly visible</li>
@@ -135,7 +145,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">Enforcement</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            Enforcement
+          </h2>
           <p className="mb-4">Violations are handled as follows:</p>
           <ol className="mb-4 list-decimal pl-6">
             <li>
@@ -156,7 +168,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">Appeals & Contact</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            Appeals & Contact
+          </h2>
           <p className="mb-4">
             If you believe your comment was removed in error or wish to appeal a
             moderation decision, please{' '}
@@ -174,7 +188,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-4 text-2xl font-semibold">Policy Updates</h2>
+          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
+            Policy Updates
+          </h2>
           <p className="mb-4">
             We may update this policy periodically. Continued commenting after
             changes indicates acceptance of the updated policy. Major changes
