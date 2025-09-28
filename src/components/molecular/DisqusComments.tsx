@@ -198,7 +198,24 @@ export default function DisqusComments({
       [data-theme="coffee"] #disqus_thread,
       [data-theme="dim"] #disqus_thread,
       [data-theme="sunset"] #disqus_thread {
-        background-color: rgb(30, 41, 59) !important;
+        /* Darker background for better contrast */
+        background-color: rgb(17, 24, 39) !important;
+      }
+
+      [data-theme="dark"] #disqus_thread,
+      [data-theme="night"] #disqus_thread,
+      [data-theme="dracula"] #disqus_thread,
+      [data-theme="synthwave"] #disqus_thread,
+      [data-theme="halloween"] #disqus_thread,
+      [data-theme="forest"] #disqus_thread,
+      [data-theme="black"] #disqus_thread,
+      [data-theme="luxury"] #disqus_thread,
+      [data-theme="business"] #disqus_thread,
+      [data-theme="coffee"] #disqus_thread,
+      [data-theme="dim"] #disqus_thread,
+      [data-theme="sunset"] #disqus_thread {
+        /* Light text for dark themes */
+        color: rgb(243, 244, 246) !important;
       }
 
       [data-theme="dark"] #disqus_thread *,
@@ -213,8 +230,9 @@ export default function DisqusComments({
       [data-theme="coffee"] #disqus_thread *,
       [data-theme="dim"] #disqus_thread *,
       [data-theme="sunset"] #disqus_thread * {
+        /* Transparent background to inherit, bright text for readability */
         background-color: transparent !important;
-        color: rgb(226, 232, 240) !important;
+        color: rgb(243, 244, 246) !important;
       }
 
       [data-theme="dark"] #disqus_thread a,
@@ -229,7 +247,8 @@ export default function DisqusComments({
       [data-theme="coffee"] #disqus_thread a,
       [data-theme="dim"] #disqus_thread a,
       [data-theme="sunset"] #disqus_thread a {
-        color: rgb(96, 165, 250) !important;
+        /* Brighter blue for better contrast on dark background */
+        color: rgb(147, 197, 253) !important;
       }
     `;
     style.setAttribute('data-disqus-override', 'true');
