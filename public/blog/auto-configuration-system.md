@@ -22,25 +22,51 @@ ogImage: /blog-images/auto-config/featured-og.png
 
 # Auto-Configuration: Use Template and Start Building
 
-ScriptHammer automatically configures itself based on your new repository. Use this template, and everything adapts to your project name and settings—no manual configuration required.
+ScriptHammer automatically configures itself based on your new repository. Use this template, and everything adapts to your project name and settings with minimal setup.
 
-## Quick Start (2 minutes)
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Git configured with a remote repository
+- Basic familiarity with terminal commands
+
+## Quick Start (10-15 minutes first time)
 
 ### 1. Use Template on GitHub
 
 Click "Use this template" on [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) and create your repository with any name you like.
 
-### 2. Clone and Run
+### 2. Clone Your New Repository
 
 ```bash
 git clone https://github.com/YourUsername/your-new-repo.git
 cd your-new-repo
+```
+
+### 3. Create Required .env File
+
+**IMPORTANT**: This step is required for Docker to run with proper permissions.
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Or create it manually with your system's user ID
+echo "UID=$(id -u)" > .env
+echo "GID=$(id -g)" >> .env
+```
+
+### 4. Start Docker
+
+```bash
 docker compose up
 ```
 
-### 3. Start Building
+Note: First run will take 5-10 minutes to build the Docker image and install dependencies.
 
-That's it! Your project is configured and running at `http://localhost:3000`.
+### 5. Access Your Project
+
+Your project is now running at `http://localhost:3000` with your repository name automatically detected!
 
 ## What Gets Auto-Configured
 
@@ -92,20 +118,22 @@ export async function GET() {
 }
 ```
 
-## Zero Manual Setup
+## Minimal Manual Setup
 
 Traditional templates require editing multiple files:
 
-- ❌ Update package.json
-- ❌ Change configuration files
+- ❌ Update package.json with project name
+- ❌ Change configuration files in multiple locations
 - ❌ Modify deployment scripts
 - ❌ Edit PWA manifests
+- ❌ Update hardcoded references throughout codebase
 
 With ScriptHammer:
 
 - ✅ Use template with any name
-- ✅ Clone and run
-- ✅ Everything configured automatically
+- ✅ Create `.env` file (one-time, 30 seconds)
+- ✅ Most configuration detected automatically from git
+- ⚠️ Some components may still have hardcoded values (being improved)
 
 ## Common Tasks
 
@@ -130,10 +158,10 @@ Look at `src/config/project-detected.ts` after running the build—it shows your
 
 ## Key Benefits
 
-- **Instant Setup**: Use template and start coding in under 2 minutes
-- **No Configuration Files**: Everything auto-detects from git
-- **Works Everywhere**: Local, Docker, CI/CD—all automatic
-- **Always Correct**: No manual edits means no mistakes
+- **Quick Setup**: Use template and start coding in 10-15 minutes
+- **Minimal Configuration**: Only `.env` file required, rest auto-detects
+- **Works in Most Environments**: Local Docker, GitHub Actions CI/CD
+- **Reduced Errors**: Fewer manual edits means fewer mistakes
 
 ## How It Works
 
@@ -214,8 +242,9 @@ docker compose exec scripthammer pnpm run build  # Uses git remote info
 
 1. **Use Template** [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) (30 seconds)
 2. **Clone** your new repository (30 seconds)
-3. **Run** `docker compose up` (1 minute)
-4. **Check** `http://localhost:3000` - your project is ready!
+3. **Create .env** with `cp .env.example .env` (30 seconds)
+4. **Run** `docker compose up` (5-10 minutes first build)
+5. **Check** `http://localhost:3000` - your project is ready!
 
 ### What You'll See
 
@@ -271,12 +300,40 @@ _Save 30-60 minutes of manual configuration with every new project_
 
 While traditional templates require editing 22+ files and configuration points, ScriptHammer handles everything automatically. No more hunting for hardcoded values or broken references after using the template.
 
+## Troubleshooting
+
+### Common Issues
+
+**Docker permission errors:**
+
+- Make sure your `.env` file contains correct UID/GID values
+- Run `id -u` and `id -g` to get your system values
+- Ensure Docker daemon is running
+
+**Auto-detection not working:**
+
+- Verify you have a git remote: `git remote -v`
+- If no remote, add one: `git remote add origin https://github.com/YourUsername/your-repo.git`
+- The detection reads from git remote origin URL
+
+**Project name not updating:**
+
+- Auto-detection runs at BUILD time, not runtime
+- Run `docker compose exec scripthammer pnpm run build` to regenerate
+- Check `src/config/project-detected.ts` for detected values
+
+**Hardcoded values still showing "ScriptHammer":**
+
+- Some components may still have hardcoded values
+- This is a known limitation being addressed
+- Main configuration files ARE auto-detected correctly
+
 ## The Bottom Line
 
-ScriptHammer eliminates setup friction. Use the template, name it whatever you want, and start building immediately. The configuration handles itself.
+ScriptHammer significantly reduces setup friction compared to traditional templates. While not completely "zero-config," it automates most configuration through git detection, requiring only minimal setup (creating the `.env` file).
 
-**No configuration. No setup. Just use template and build.**
+**Minimal configuration. Quick setup. Use template and build.**
 
 ---
 
-_P.S. - Check out `/scripts/detect-project.js` to see the complete auto-configuration implementation. It's refreshingly simple for something so powerful._
+_P.S. - Check out `/scripts/detect-project.js` to see the complete auto-configuration implementation. It's a pragmatic solution that handles 90% of configuration automatically._

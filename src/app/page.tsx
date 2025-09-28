@@ -45,7 +45,7 @@ export default function Home() {
               {/* Main Title with Animation */}
               <h1 className="mb-4 sm:mb-6">
                 <AnimatedLogo
-                  text="ScriptHammer.com"
+                  text={detectedConfig.projectName}
                   className="!text-lg font-bold min-[400px]:!text-xl min-[480px]:!text-2xl sm:!text-5xl md:!text-6xl lg:!text-7xl"
                   animationSpeed="normal"
                 />
