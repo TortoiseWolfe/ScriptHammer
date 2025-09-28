@@ -177,7 +177,7 @@
     {
       "name": "Markdown-First Blog System",
       "completed": true,
-      "description": "Full-featured blog with markdown support, SEO optimization (94% score), offline capabilities, and mobile-responsive design"
+      "description": "Full-featured blog with markdown support, SEO analyzer, offline capabilities, and mobile-responsive design"
     }
   ],
   "lighthouse": {

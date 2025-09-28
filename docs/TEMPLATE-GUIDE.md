@@ -182,10 +182,12 @@ All these files now use dynamic configuration:
 
 ### For Template Users
 
-This is designed to be a **zero-configuration** experience:
+This is designed to be a **minimal-configuration** experience:
 
 1. Click "Use this template" and choose your project name
-2. Clone and run - it just works!
-3. Deploy to GitHub Pages - paths are handled automatically
+2. Clone your new repository
+3. Create `.env` file: `cp .env.example .env` (required for Docker)
+4. Run `docker compose up` to start development
+5. Deploy to GitHub Pages - paths are handled automatically
 
-No more searching and replacing "ScriptHammer" across 100+ files! 🎉
+No more searching and replacing "ScriptHammer" across 100+ files! The auto-configuration system handles most settings based on your git repository. 🎉

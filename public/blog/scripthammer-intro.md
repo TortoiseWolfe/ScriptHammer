@@ -116,19 +116,19 @@ This creates the required 5-file structure:
 
 ## Project Configuration
 
-The project auto-detects configuration from your Git repository:
+The project auto-detects most configuration from your Git repository:
 
 ```typescript
-// Auto-configured from git remote
+// Auto-configured from git remote at build time
 const projectConfig = {
-  name: 'Scripthammer',
+  name: 'YourRepoName', // Detected from repository
   owner: 'YourGitHubUsername',
-  basePath: '/',
-  repository: 'https://github.com/YourUsername/Scripthammer',
+  basePath: '/', // Configured for GitHub Pages
+  repository: 'https://github.com/YourUsername/YourRepoName',
 };
 ```
 
-No manual configuration needed - it just works.
+Minimal setup required - just create your `.env` file and the rest is detected automatically.
 
 ## Current Features in Production
 
@@ -192,25 +192,30 @@ docker compose exec scripthammer pnpm run test:coverage
 
 ## Why Scripthammer?
 
-1. **It Actually Works** - Clone, docker compose up, and you're running
-2. **No Configuration Hell** - Opinionated choices that make sense
-3. **Production Ready** - Not a toy, this is what we use in production
-4. **Fully Typed** - TypeScript everywhere with strict mode
-5. **Tested** - Real tests that actually catch bugs
+1. **Quick Setup** - Create `.env`, run `docker compose up`, and you're developing
+2. **Reduced Configuration** - Opinionated choices with auto-detection from git
+3. **Production Features** - Battle-tested components and patterns
+4. **TypeScript First** - Comprehensive typing with strict mode enabled
+5. **Well Tested** - Full test suite with unit, E2E, and accessibility testing
 
 ## Getting Started
 
 ```bash
-# Clone the repo
-git clone https://github.com/YourUsername/Scripthammer.git
+# Use the template on GitHub first
+# Then clone YOUR new repository
+git clone https://github.com/YourUsername/your-new-repo.git
+cd your-new-repo
 
-# Start Docker
+# Create required .env file
+cp .env.example .env
+
+# Start Docker (first build takes 5-10 minutes)
 docker compose up
 
 # Open http://localhost:3000
 ```
 
-That's it. No npm install, no version conflicts, no setup guides.
+Quick setup with minimal configuration. No npm install locally, no version conflicts.
 
 ## What's Next?
 

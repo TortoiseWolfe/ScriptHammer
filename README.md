@@ -19,7 +19,7 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 - 🧩 **Component Library** - Atomic design with Storybook documentation
 - ♿ **Accessibility** - WCAG AA compliant, colorblind assistance
 - 🔒 **Privacy Compliance** - GDPR-ready cookie consent system
-- 🧪 **Testing Suite** - 680+ unit tests, 40+ E2E tests, 58% coverage
+- 🧪 **Testing Suite** - Comprehensive unit tests with 58% coverage, E2E test suite, accessibility testing
 - 📊 **Real-time Monitoring** - Web Vitals, Lighthouse scores, health checks
 - 🚀 **CI/CD Pipeline** - GitHub Actions with automated deployment
 
@@ -32,6 +32,11 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+- Docker and Docker Compose installed
+- Git configured
+
 ### Docker Development (MANDATORY)
 
 This project **REQUIRES Docker** for development to ensure consistency across all environments.
@@ -42,12 +47,14 @@ This project **REQUIRES Docker** for development to ensure consistency across al
 git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME.git
 cd YOUR_PROJECT_NAME
 
-# 3. Create .env file with your user ID
+# 3. Create .env file (REQUIRED for Docker permissions)
+cp .env.example .env
+# Or manually create with your user ID:
 echo "UID=$(id -u)" > .env
 echo "GID=$(id -g)" >> .env
 
 # 4. Start Docker development environment
-docker compose up     # Start everything in containers
+docker compose up     # Start everything (first build takes 5-10 minutes)
 
 # Development is now running at http://localhost:3000
 ```
@@ -66,6 +73,21 @@ docker compose up --build
 ```
 
 **NOTE**: Local pnpm/npm commands are NOT supported. All development MUST use Docker.
+
+## ⚙️ Auto-Configuration
+
+The project automatically detects your repository name and owner from git remote URL at build time:
+
+- **Project name**: Detected from repository name
+- **Owner**: Detected from GitHub username
+- **Base path**: Configured for GitHub Pages deployment
+- **PWA manifest**: Generated with your project name
+
+**Troubleshooting**:
+
+- If auto-detection fails, ensure you have a git remote: `git remote -v`
+- Override with environment variables in `.env` if needed
+- Check `src/config/project-detected.ts` after build to see detected values
 
 ## 📚 Documentation
 
