@@ -22,7 +22,7 @@ ogImage: /blog-images/auto-config/featured-og.png
 
 # Auto-Configuration: Use Template and Start Building
 
-ScriptHammer automatically configures itself based on your new repository created from the template. Use this template, and everything adapts to your project name and settings—no manual configuration required.
+ScriptHammer automatically configures itself based on your new repository. Use this template, and everything adapts to your project name and settings—no manual configuration required.
 
 ## Quick Start (2 minutes)
 
