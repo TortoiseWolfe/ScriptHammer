@@ -1275,353 +1275,342 @@ export default function StatusPage() {
                   </div>
 
                   {/* All Sprints Display - Unified */}
-                  {taskProgress?.sprints &&
-                    taskProgress.sprints.map((sprint, index) => {
-                      const isComplete = sprint.status === 'completed';
-                      const isActive = sprint.status === 'in-progress';
-                      const sprintNumber = index + 1;
+                  {taskProgress?.sprints?.map((sprint, index) => {
+                    const isComplete = sprint.status === 'completed';
+                    const isActive = sprint.status === 'in-progress';
+                    const sprintNumber = index + 1;
 
-                      return (
-                        <details
-                          key={`sprint-${sprintNumber}`}
-                          className="collapse-arrow bg-base-200 collapse mb-4 overflow-visible"
-                        >
-                          <summary className="collapse-title text-sm font-medium">
-                            <span>
-                              {sprintNumber === 3 ? (
-                                <>
-                                  Sprint 3: PRP Methodology ✅ (12/14 PRPs -
-                                  86%)
-                                </>
-                              ) : (
-                                <>
-                                  {sprint.name}{' '}
-                                  {isComplete ? '✅' : isActive ? '🚀' : '⏳'} (
-                                  {sprint.completedTasks}/{sprint.totalTasks}{' '}
-                                  tasks - {sprint.percentage}%)
-                                </>
-                              )}
-                            </span>
-                          </summary>
-                          <div className="collapse-content">
-                            <div className="space-y-2 pt-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-base-content/70 text-xs">
-                                  Progress
-                                </span>
-                                <span className="text-xs font-medium">
-                                  {sprint.percentage}%
-                                </span>
-                              </div>
-                              <progress
-                                className="progress progress-primary"
-                                value={sprint.percentage}
-                                max="100"
-                              />
-                              <div className="text-base-content/70 text-xs">
-                                {sprint.completedTasks} of {sprint.totalTasks}{' '}
-                                tasks completed
-                              </div>
+                    return (
+                      <details
+                        key={`sprint-${sprintNumber}`}
+                        className="collapse-arrow bg-base-200 collapse mb-4 overflow-visible"
+                      >
+                        <summary className="collapse-title text-sm font-medium">
+                          <span>
+                            {sprintNumber === 3 ? (
+                              <>
+                                Sprint 3: PRP Methodology ✅ (12/14 PRPs - 86%)
+                              </>
+                            ) : (
+                              <>
+                                {sprint.name}{' '}
+                                {isComplete ? '✅' : isActive ? '🚀' : '⏳'} (
+                                {sprint.completedTasks}/{sprint.totalTasks}{' '}
+                                tasks - {sprint.percentage}%)
+                              </>
+                            )}
+                          </span>
+                        </summary>
+                        <div className="collapse-content">
+                          <div className="space-y-2 pt-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base-content/70 text-xs">
+                                Progress
+                              </span>
+                              <span className="text-xs font-medium">
+                                {sprint.percentage}%
+                              </span>
+                            </div>
+                            <progress
+                              className="progress progress-primary"
+                              value={sprint.percentage}
+                              max="100"
+                            />
+                            <div className="text-base-content/70 text-xs">
+                              {sprint.completedTasks} of {sprint.totalTasks}{' '}
+                              tasks completed
+                            </div>
 
-                              {/* Sprint-specific phase details */}
-                              {sprintNumber === 1 && taskProgress.phases && (
+                            {/* Sprint-specific phase details */}
+                            {sprintNumber === 1 && taskProgress?.phases && (
+                              <div className="mt-4 space-y-2">
+                                <div className="text-base-content/70 text-xs font-medium">
+                                  Sprint 1 Phases:
+                                </div>
+                                {Object.entries(taskProgress?.phases || {}).map(
+                                  ([phase, info]) => {
+                                    const phaseTooltips: Record<
+                                      string,
+                                      {
+                                        title: string;
+                                        description: string;
+                                        whyItMatters: string;
+                                        howToImprove?: string;
+                                      }
+                                    > = {
+                                      'Phase 0': {
+                                        title: 'Next.js Deployment Foundation',
+                                        description:
+                                          'Established Next.js 15.5.2 with TypeScript, configured static export for GitHub Pages, set up CI/CD pipeline with GitHub Actions, and created the deployment infrastructure that powers continuous delivery.',
+                                        whyItMatters:
+                                          'Without solid deployment from day one, development would be slower and riskier. This phase ensured every commit could be automatically tested and deployed.',
+                                      },
+                                      'Phase 1': {
+                                        title:
+                                          'Storybook Component Documentation',
+                                        description:
+                                          'Integrated Storybook 9.1.5 for isolated component development, created the first Text component with full documentation, configured automatic prop detection and interactive controls.',
+                                        whyItMatters:
+                                          'Component-driven development means building UI in isolation before integration. This created a living style guide accessible at /storybook.',
+                                      },
+                                      'Phase 2': {
+                                        title: '32-Theme Customization System',
+                                        description:
+                                          'Implemented DaisyUI beta with 32 themes (16 light + 16 dark), localStorage persistence, zero-flash theme loading with ThemeScript, and smooth CSS transitions.',
+                                        whyItMatters:
+                                          'Extreme customization demonstrates architectural flexibility. Users can personalize their experience across 32 different visual themes.',
+                                      },
+                                      'Phase 3': {
+                                        title: 'Atomic Component Architecture',
+                                        description:
+                                          'Built component hierarchy from sub-atomic (Text, Button) to atomic (Card, Modal) to molecular (Dice, DiceTray), following atomic design principles with TypeScript interfaces.',
+                                        whyItMatters:
+                                          'Scalable design system where complex features are composed from simple, well-tested parts. Every component works with all 32 themes.',
+                                      },
+                                      'Phase 4': {
+                                        title:
+                                          'Progressive Web App Transformation',
+                                        description:
+                                          'Implemented Service Worker with cache-first strategy, Web App Manifest for installability, offline support, background sync for forms, and achieved 92/100 PWA score.',
+                                        whyItMatters:
+                                          'Transformed the website into an installable app that works offline. Users can install it on desktop/mobile and use it without internet.',
+                                      },
+                                    };
+
+                                    const tooltipInfo = phaseTooltips[
+                                      phase
+                                    ] || {
+                                      title: phase,
+                                      description: info.description,
+                                      whyItMatters:
+                                        'Part of the core implementation sprint.',
+                                    };
+
+                                    return (
+                                      <div
+                                        key={phase}
+                                        className="flex items-center gap-2 pl-2 text-xs"
+                                      >
+                                        <span
+                                          className={
+                                            info.complete
+                                              ? 'text-success'
+                                              : 'text-base-content/50'
+                                          }
+                                        >
+                                          {info.complete ? '✅' : '⭕'}
+                                        </span>
+                                        <span>
+                                          {phase}: {info.description}
+                                        </span>
+                                        <InfoTooltip
+                                          title={tooltipInfo.title}
+                                          description={tooltipInfo.description}
+                                          whyItMatters={
+                                            tooltipInfo.whyItMatters
+                                          }
+                                          position="top"
+                                          size="compact"
+                                        />
+                                      </div>
+                                    );
+                                  }
+                                )}
+                              </div>
+                            )}
+
+                            {sprintNumber === 2 &&
+                              taskProgress?.sprint2Phases && (
                                 <div className="mt-4 space-y-2">
                                   <div className="text-base-content/70 text-xs font-medium">
-                                    Sprint 1 Phases:
+                                    Sprint 2 Phases:
                                   </div>
-                                  {Object.entries(taskProgress.phases).map(
-                                    ([phase, info]) => {
-                                      const phaseTooltips: Record<
-                                        string,
-                                        {
-                                          title: string;
-                                          description: string;
-                                          whyItMatters: string;
-                                          howToImprove?: string;
-                                        }
-                                      > = {
-                                        'Phase 0': {
-                                          title:
-                                            'Next.js Deployment Foundation',
-                                          description:
-                                            'Established Next.js 15.5.2 with TypeScript, configured static export for GitHub Pages, set up CI/CD pipeline with GitHub Actions, and created the deployment infrastructure that powers continuous delivery.',
-                                          whyItMatters:
-                                            'Without solid deployment from day one, development would be slower and riskier. This phase ensured every commit could be automatically tested and deployed.',
-                                        },
-                                        'Phase 1': {
-                                          title:
-                                            'Storybook Component Documentation',
-                                          description:
-                                            'Integrated Storybook 9.1.5 for isolated component development, created the first Text component with full documentation, configured automatic prop detection and interactive controls.',
-                                          whyItMatters:
-                                            'Component-driven development means building UI in isolation before integration. This created a living style guide accessible at /storybook.',
-                                        },
-                                        'Phase 2': {
-                                          title:
-                                            '32-Theme Customization System',
-                                          description:
-                                            'Implemented DaisyUI beta with 32 themes (16 light + 16 dark), localStorage persistence, zero-flash theme loading with ThemeScript, and smooth CSS transitions.',
-                                          whyItMatters:
-                                            'Extreme customization demonstrates architectural flexibility. Users can personalize their experience across 32 different visual themes.',
-                                        },
-                                        'Phase 3': {
-                                          title:
-                                            'Atomic Component Architecture',
-                                          description:
-                                            'Built component hierarchy from sub-atomic (Text, Button) to atomic (Card, Modal) to molecular (Dice, DiceTray), following atomic design principles with TypeScript interfaces.',
-                                          whyItMatters:
-                                            'Scalable design system where complex features are composed from simple, well-tested parts. Every component works with all 32 themes.',
-                                        },
-                                        'Phase 4': {
-                                          title:
-                                            'Progressive Web App Transformation',
-                                          description:
-                                            'Implemented Service Worker with cache-first strategy, Web App Manifest for installability, offline support, background sync for forms, and achieved 92/100 PWA score.',
-                                          whyItMatters:
-                                            'Transformed the website into an installable app that works offline. Users can install it on desktop/mobile and use it without internet.',
-                                        },
-                                      };
-
-                                      const tooltipInfo = phaseTooltips[
-                                        phase
-                                      ] || {
-                                        title: phase,
-                                        description: info.description,
+                                  {Object.entries(
+                                    taskProgress?.sprint2Phases || {}
+                                  ).map(([phase, info]) => {
+                                    const phaseTooltips: Record<
+                                      string,
+                                      {
+                                        title: string;
+                                        description: string;
+                                        whyItMatters: string;
+                                        howToImprove?: string;
+                                      }
+                                    > = {
+                                      'Phase 1': {
+                                        title: 'Testing Foundation with Vitest',
+                                        description:
+                                          'Established Vitest test runner with React Testing Library, configured coverage reporting, implemented Husky pre-commit hooks, created GitHub Actions for CI testing. Wrote 111+ tests achieving 58% coverage.',
                                         whyItMatters:
-                                          'Part of the core implementation sprint.',
-                                      };
+                                          'Comprehensive testing enables fearless refactoring. The safety net catches regressions before they reach production.',
+                                      },
+                                      'Phase 2': {
+                                        title:
+                                          'Developer Experience Enhancement',
+                                        description:
+                                          'Configured Prettier 3.6.2 with Tailwind plugin, set up Husky and lint-staged for automation, implemented Dependabot for dependencies, added error boundaries for graceful failures.',
+                                        whyItMatters:
+                                          'Great DX translates to velocity and quality. Automated formatting and linting lets developers focus on features.',
+                                      },
+                                      'Phase 3': {
+                                        title:
+                                          'Captain Ship & Crew Game Feature',
+                                        description:
+                                          'Built complete dice game with drag-and-drop mechanics, three AI difficulty levels, player persistence, animated dice rolls, and full game state management.',
+                                        whyItMatters:
+                                          'Validated the entire architecture by building something complex and interactive. If we could build this, we could build anything.',
+                                      },
+                                      'Phase 4': {
+                                        title: 'Security & Validation Baseline',
+                                        description:
+                                          'Integrated Zod 4.1.8 for runtime validation, configured Content Security Policy headers, created security.txt, implemented input sanitization, established coverage thresholds.',
+                                        whyItMatters:
+                                          'Security and data integrity are foundational. Every future feature inherits robust validation and security by default.',
+                                      },
+                                      'Phase 5': {
+                                        title:
+                                          'Accessibility & Performance Metrics',
+                                        description:
+                                          'Integrated Pa11y for accessibility testing, implemented Web Vitals 5.1.0 monitoring, created status dashboard with real-time metrics, integrated Lighthouse API, established ADRs.',
+                                        whyItMatters:
+                                          "Can't improve what you don't measure. This phase gave visibility into performance and accessibility metrics.",
+                                      },
+                                    };
 
-                                      return (
-                                        <div
-                                          key={phase}
-                                          className="flex items-center gap-2 pl-2 text-xs"
+                                    const tooltipInfo = phaseTooltips[
+                                      phase
+                                    ] || {
+                                      title: phase,
+                                      description: info.description,
+                                      whyItMatters:
+                                        'Part of the foundation improvement sprint.',
+                                    };
+
+                                    return (
+                                      <div
+                                        key={phase}
+                                        className="flex items-center gap-2 pl-2 text-xs"
+                                      >
+                                        <span
+                                          className={
+                                            info.complete
+                                              ? 'text-success'
+                                              : 'text-base-content/50'
+                                          }
                                         >
-                                          <span
-                                            className={
-                                              info.complete
-                                                ? 'text-success'
-                                                : 'text-base-content/50'
-                                            }
-                                          >
-                                            {info.complete ? '✅' : '⭕'}
-                                          </span>
-                                          <span>
-                                            {phase}: {info.description}
-                                          </span>
-                                          <InfoTooltip
-                                            title={tooltipInfo.title}
-                                            description={
-                                              tooltipInfo.description
-                                            }
-                                            whyItMatters={
-                                              tooltipInfo.whyItMatters
-                                            }
-                                            position="top"
-                                            size="compact"
-                                          />
-                                        </div>
-                                      );
-                                    }
-                                  )}
+                                          {info.complete ? '✅' : '⭕'}
+                                        </span>
+                                        <span>
+                                          {phase}: {info.description}
+                                        </span>
+                                        <InfoTooltip
+                                          title={tooltipInfo.title}
+                                          description={tooltipInfo.description}
+                                          whyItMatters={
+                                            tooltipInfo.whyItMatters
+                                          }
+                                          position="top"
+                                          size="compact"
+                                        />
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
 
-                              {sprintNumber === 2 &&
-                                taskProgress.sprint2Phases && (
-                                  <div className="mt-4 space-y-2">
-                                    <div className="text-base-content/70 text-xs font-medium">
-                                      Sprint 2 Phases:
-                                    </div>
-                                    {Object.entries(
-                                      taskProgress.sprint2Phases
-                                    ).map(([phase, info]) => {
-                                      const phaseTooltips: Record<
-                                        string,
-                                        {
-                                          title: string;
-                                          description: string;
-                                          whyItMatters: string;
-                                          howToImprove?: string;
-                                        }
-                                      > = {
-                                        'Phase 1': {
-                                          title:
-                                            'Testing Foundation with Vitest',
-                                          description:
-                                            'Established Vitest test runner with React Testing Library, configured coverage reporting, implemented Husky pre-commit hooks, created GitHub Actions for CI testing. Wrote 111+ tests achieving 58% coverage.',
-                                          whyItMatters:
-                                            'Comprehensive testing enables fearless refactoring. The safety net catches regressions before they reach production.',
-                                        },
-                                        'Phase 2': {
-                                          title:
-                                            'Developer Experience Enhancement',
-                                          description:
-                                            'Configured Prettier 3.6.2 with Tailwind plugin, set up Husky and lint-staged for automation, implemented Dependabot for dependencies, added error boundaries for graceful failures.',
-                                          whyItMatters:
-                                            'Great DX translates to velocity and quality. Automated formatting and linting lets developers focus on features.',
-                                        },
-                                        'Phase 3': {
-                                          title:
-                                            'Captain Ship & Crew Game Feature',
-                                          description:
-                                            'Built complete dice game with drag-and-drop mechanics, three AI difficulty levels, player persistence, animated dice rolls, and full game state management.',
-                                          whyItMatters:
-                                            'Validated the entire architecture by building something complex and interactive. If we could build this, we could build anything.',
-                                        },
-                                        'Phase 4': {
-                                          title:
-                                            'Security & Validation Baseline',
-                                          description:
-                                            'Integrated Zod 4.1.8 for runtime validation, configured Content Security Policy headers, created security.txt, implemented input sanitization, established coverage thresholds.',
-                                          whyItMatters:
-                                            'Security and data integrity are foundational. Every future feature inherits robust validation and security by default.',
-                                        },
-                                        'Phase 5': {
-                                          title:
-                                            'Accessibility & Performance Metrics',
-                                          description:
-                                            'Integrated Pa11y for accessibility testing, implemented Web Vitals 5.1.0 monitoring, created status dashboard with real-time metrics, integrated Lighthouse API, established ADRs.',
-                                          whyItMatters:
-                                            "Can't improve what you don't measure. This phase gave visibility into performance and accessibility metrics.",
-                                        },
-                                      };
-
-                                      const tooltipInfo = phaseTooltips[
-                                        phase
-                                      ] || {
-                                        title: phase,
-                                        description: info.description,
-                                        whyItMatters:
-                                          'Part of the foundation improvement sprint.',
-                                      };
-
-                                      return (
-                                        <div
-                                          key={phase}
-                                          className="flex items-center gap-2 pl-2 text-xs"
-                                        >
-                                          <span
-                                            className={
-                                              info.complete
-                                                ? 'text-success'
-                                                : 'text-base-content/50'
-                                            }
-                                          >
-                                            {info.complete ? '✅' : '⭕'}
-                                          </span>
-                                          <span>
-                                            {phase}: {info.description}
-                                          </span>
-                                          <InfoTooltip
-                                            title={tooltipInfo.title}
-                                            description={
-                                              tooltipInfo.description
-                                            }
-                                            whyItMatters={
-                                              tooltipInfo.whyItMatters
-                                            }
-                                            position="top"
-                                            size="compact"
-                                          />
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-
-                              {sprintNumber === 3 && (
-                                <div className="mt-4 space-y-3">
-                                  <div className="text-base-content/70 text-xs">
-                                    <strong>
-                                      Sprint 3 pivoted to PRP methodology:
-                                    </strong>
-                                    <br />
-                                    Original S3T tasks were superseded by
-                                    Product Requirements Prompts (PRPs)
-                                  </div>
-                                  <div className="space-y-2 pl-2">
-                                    <div className="flex items-start gap-2">
-                                      <span className="text-xs font-medium">
-                                        v0.3.0 PRPs:
+                            {sprintNumber === 3 && (
+                              <div className="mt-4 space-y-3">
+                                <div className="text-base-content/70 text-xs">
+                                  <strong>
+                                    Sprint 3 pivoted to PRP methodology:
+                                  </strong>
+                                  <br />
+                                  Original S3T tasks were superseded by Product
+                                  Requirements Prompts (PRPs)
+                                </div>
+                                <div className="space-y-2 pl-2">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-xs font-medium">
+                                      v0.3.0 PRPs:
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="text-xs">
+                                        12 of 14 PRPs completed ✅
                                       </span>
-                                      <div className="flex-1">
-                                        <span className="text-xs">
-                                          12 of 14 PRPs completed ✅
-                                        </span>
-                                        <InfoTooltip
-                                          title="PRP Methodology Implementation"
-                                          description="Component Structure (PRP-002), E2E Testing (PRP-003), WCAG Compliance (PRP-004), Colorblind Mode (PRP-005), Font Switcher (PRP-006), Cookie Consent (PRP-007), Google Analytics (PRP-008), Web3Forms (PRP-009), EmailJS (PRP-010), PWA Sync (PRP-011), Calendar (PRP-013), Geolocation (PRP-014)"
-                                          whyItMatters="PRPs provide structured, deliverable-focused development. Each PRP is a complete feature with tests, documentation, and production readiness."
-                                          position="top"
-                                          size="compact"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                      <span className="text-xs font-medium">
-                                        Sprint 3.5:
-                                      </span>
-                                      <div className="flex-1">
-                                        <span className="text-xs">
-                                          Technical Debt Eliminated ✨
-                                        </span>
-                                        <InfoTooltip
-                                          title="46 Technical Debt Tasks Completed"
-                                          description="Fixed Next.js 15.5 build issues, Husky Docker detection, lint-staged git stash problems, font loading optimization for CLS, and documented all remaining TODOs."
-                                          whyItMatters="Zero workarounds needed, clean build process, 793 tests passing, 100% Storybook coverage. Ready for v0.4.0 development."
-                                          position="top"
-                                          size="compact"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                      <span className="text-xs font-medium">
-                                        Deferred PRPs:
-                                      </span>
-                                      <div className="flex-1">
-                                        <span className="text-xs">
-                                          PRP-001 (Methodology), PRP-012 (Visual
-                                          Regression)
-                                        </span>
-                                        <InfoTooltip
-                                          title="Future Implementation"
-                                          description="PRP-001 will document the successful PRP methodology. PRP-012 (Visual Regression Testing) deferred until UI is stable."
-                                          whyItMatters="Documentation comes after implementation proves successful. Visual regression needs stable UI baseline."
-                                          position="top"
-                                          size="compact"
-                                        />
-                                      </div>
-                                    </div>
-                                    <div className="flex items-start gap-2">
-                                      <span className="text-xs font-medium">
-                                        Metrics:
-                                      </span>
-                                      <div className="flex-1">
-                                        <span className="text-xs">
-                                          58% test coverage, 793+ tests, 32
-                                          features
-                                        </span>
-                                        <InfoTooltip
-                                          title="Quality Metrics"
-                                          description="Unit tests: 750+, E2E tests: 40+, Test coverage: 58% overall, Bundle size: 102KB First Load JS, Lighthouse: 92/100 Performance"
-                                          whyItMatters="Production-ready template with comprehensive testing and optimized performance."
-                                          position="top"
-                                          size="compact"
-                                        />
-                                      </div>
+                                      <InfoTooltip
+                                        title="PRP Methodology Implementation"
+                                        description="Component Structure (PRP-002), E2E Testing (PRP-003), WCAG Compliance (PRP-004), Colorblind Mode (PRP-005), Font Switcher (PRP-006), Cookie Consent (PRP-007), Google Analytics (PRP-008), Web3Forms (PRP-009), EmailJS (PRP-010), PWA Sync (PRP-011), Calendar (PRP-013), Geolocation (PRP-014)"
+                                        whyItMatters="PRPs provide structured, deliverable-focused development. Each PRP is a complete feature with tests, documentation, and production readiness."
+                                        position="top"
+                                        size="compact"
+                                      />
                                     </div>
                                   </div>
-                                  <div className="text-base-content/50 pl-2 text-xs italic">
-                                    See /docs/prp-docs/PRP-STATUS.md for full
-                                    details
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-xs font-medium">
+                                      Sprint 3.5:
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="text-xs">
+                                        Technical Debt Eliminated ✨
+                                      </span>
+                                      <InfoTooltip
+                                        title="46 Technical Debt Tasks Completed"
+                                        description="Fixed Next.js 15.5 build issues, Husky Docker detection, lint-staged git stash problems, font loading optimization for CLS, and documented all remaining TODOs."
+                                        whyItMatters="Zero workarounds needed, clean build process, 793 tests passing, 100% Storybook coverage. Ready for v0.4.0 development."
+                                        position="top"
+                                        size="compact"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-xs font-medium">
+                                      Deferred PRPs:
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="text-xs">
+                                        PRP-001 (Methodology), PRP-012 (Visual
+                                        Regression)
+                                      </span>
+                                      <InfoTooltip
+                                        title="Future Implementation"
+                                        description="PRP-001 will document the successful PRP methodology. PRP-012 (Visual Regression Testing) deferred until UI is stable."
+                                        whyItMatters="Documentation comes after implementation proves successful. Visual regression needs stable UI baseline."
+                                        position="top"
+                                        size="compact"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-xs font-medium">
+                                      Metrics:
+                                    </span>
+                                    <div className="flex-1">
+                                      <span className="text-xs">
+                                        58% test coverage, 793+ tests, 32
+                                        features
+                                      </span>
+                                      <InfoTooltip
+                                        title="Quality Metrics"
+                                        description="Unit tests: 750+, E2E tests: 40+, Test coverage: 58% overall, Bundle size: 102KB First Load JS, Lighthouse: 92/100 Performance"
+                                        whyItMatters="Production-ready template with comprehensive testing and optimized performance."
+                                        position="top"
+                                        size="compact"
+                                      />
+                                    </div>
                                   </div>
                                 </div>
-                              )}
-                            </div>
+                                <div className="text-base-content/50 pl-2 text-xs italic">
+                                  See /docs/prp-docs/PRP-STATUS.md for full
+                                  details
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        </details>
-                      );
-                    })}
+                        </div>
+                      </details>
+                    );
+                  })}
 
                   {/* Legacy Sprint 1 Phases - Removed, now in unified display above */}
                   {false && (
