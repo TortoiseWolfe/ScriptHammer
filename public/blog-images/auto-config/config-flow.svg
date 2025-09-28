@@ -22,11 +22,11 @@
     Auto-Configuration Flow
   </text>
 
-  <!-- Step 1: Fork -->
+  <!-- Step 1: Use Template -->
   <g transform="translate(100, 100)">
     <rect x="0" y="0" width="160" height="80" rx="8" fill="url(#gitGrad)" filter="url(#shadow)"/>
     <text x="80" y="35" font-family="system-ui" font-size="16" font-weight="600" text-anchor="middle" fill="white">
-      1. Fork Repo
+      1. Use Template
     </text>
     <text x="80" y="55" font-family="system-ui" font-size="13" text-anchor="middle" fill="white">
       Any name works!
