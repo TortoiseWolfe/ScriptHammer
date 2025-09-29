@@ -202,11 +202,11 @@ docker compose exec scripthammer pnpm run deploy
 
    ```bash
    # Essential Services (without these, features won't work in production)
-   NEXT_PUBLIC_GA_MEASUREMENT_ID        # Google Analytics tracking
-   NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY     # Contact form submissions (Web3Forms)
+   NEXT_PUBLIC_EMAILJS_PUBLIC_KEY       # EmailJS public key
    NEXT_PUBLIC_EMAILJS_SERVICE_ID       # Email service (EmailJS alternative)
    NEXT_PUBLIC_EMAILJS_TEMPLATE_ID      # Email template ID
-   NEXT_PUBLIC_EMAILJS_PUBLIC_KEY       # EmailJS public key
+   NEXT_PUBLIC_GA_MEASUREMENT_ID        # Google Analytics tracking
+   NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY     # Contact form submissions (Web3Forms)
 
    # Calendar Integration
    NEXT_PUBLIC_CALENDAR_PROVIDER        # 'calendly' or 'calcom'
@@ -216,24 +216,24 @@ docker compose exec scripthammer pnpm run deploy
    NEXT_PUBLIC_DISQUS_SHORTNAME        # Disqus comments for blog posts
 
    # Author Information (personalizes your site)
+   NEXT_PUBLIC_AUTHOR_AVATAR           # Avatar image URL
+   NEXT_PUBLIC_AUTHOR_BIO              # Short biography
+   NEXT_PUBLIC_AUTHOR_BLUESKY          # Bluesky handle
+   NEXT_PUBLIC_AUTHOR_EMAIL            # Contact email
+   NEXT_PUBLIC_AUTHOR_GITHUB           # Your GitHub username
+   NEXT_PUBLIC_AUTHOR_LINKEDIN         # Your LinkedIn username
+   NEXT_PUBLIC_AUTHOR_MASTODON         # Mastodon handle (with instance)
    NEXT_PUBLIC_AUTHOR_NAME             # Your display name
    NEXT_PUBLIC_AUTHOR_ROLE             # Your professional role/title
-   NEXT_PUBLIC_AUTHOR_BIO              # Short biography
-   NEXT_PUBLIC_AUTHOR_AVATAR           # Avatar image URL
-   NEXT_PUBLIC_AUTHOR_GITHUB           # Your GitHub username
-   NEXT_PUBLIC_AUTHOR_TWITTER          # Your Twitter/X handle
-   NEXT_PUBLIC_AUTHOR_LINKEDIN         # Your LinkedIn username
-   NEXT_PUBLIC_AUTHOR_WEBSITE          # Your personal website
-   NEXT_PUBLIC_AUTHOR_EMAIL            # Contact email
-   NEXT_PUBLIC_AUTHOR_MASTODON         # Mastodon handle (with instance)
-   NEXT_PUBLIC_AUTHOR_BLUESKY          # Bluesky handle
    NEXT_PUBLIC_AUTHOR_TWITCH           # Twitch username
+   NEXT_PUBLIC_AUTHOR_TWITTER          # Your Twitter/X handle
+   NEXT_PUBLIC_AUTHOR_WEBSITE          # Your personal website
 
    # Site Configuration (optional overrides)
-   NEXT_PUBLIC_SITE_URL                # Custom domain (if not GitHub Pages)
+   NEXT_PUBLIC_BASE_PATH               # Override deployment base path
    NEXT_PUBLIC_PROJECT_NAME            # Override auto-detected project name
    NEXT_PUBLIC_PROJECT_OWNER           # Override auto-detected owner
-   NEXT_PUBLIC_BASE_PATH               # Override deployment base path
+   NEXT_PUBLIC_SITE_URL                # Custom domain (if not GitHub Pages)
    ```
 
 3. **How to add a secret**:
@@ -262,11 +262,11 @@ If you need to use additional environment variables, update `.github/workflows/d
   run: pnpm run build
   env:
     # Analytics & Forms
-    NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
-    NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
+    NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
     NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
     NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID }}
-    NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
+    NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+    NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
     # Calendar & Comments
     NEXT_PUBLIC_CALENDAR_PROVIDER: ${{ secrets.NEXT_PUBLIC_CALENDAR_PROVIDER }}
     NEXT_PUBLIC_CALENDAR_URL: ${{ secrets.NEXT_PUBLIC_CALENDAR_URL }}
