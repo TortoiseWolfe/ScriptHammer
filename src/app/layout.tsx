@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScript from '@/components/ThemeScript';
 import { GlobalNav } from '@/components/GlobalNav';
+import { Footer } from '@/components/Footer';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
 import { ColorblindFilters } from '@/components/atomic/ColorblindFilters';
 import { ConsentProvider } from '@/contexts/ConsentContext';
@@ -107,7 +108,7 @@ export default function RootLayout({
         <JsonLdScript data={generateJsonLd()} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
         suppressHydrationWarning
       >
         <ColorblindFilters />
@@ -115,7 +116,10 @@ export default function RootLayout({
           <GoogleAnalytics />
           <AccessibilityProvider>
             <GlobalNav />
-            <ErrorBoundary level="page">{children}</ErrorBoundary>
+            <ErrorBoundary level="page">
+              <main className="flex-1">{children}</main>
+            </ErrorBoundary>
+            <Footer />
             <CookieConsent />
             <ConsentModal />
           </AccessibilityProvider>
