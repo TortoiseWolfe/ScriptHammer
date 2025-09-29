@@ -59,10 +59,10 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 
 **Email Services (Choose one or both):**
 
-- `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` - Web3Forms API key for contact forms
+- `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` - EmailJS public key
 - `NEXT_PUBLIC_EMAILJS_SERVICE_ID` - EmailJS service ID
 - `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID` - EmailJS template ID
-- `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` - EmailJS public key
+- `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` - Web3Forms API key for contact forms
 
 **Calendar Integration:**
 
@@ -75,28 +75,28 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 
 **Author Information:**
 
+- `NEXT_PUBLIC_AUTHOR_AVATAR` - URL to your avatar image
+- `NEXT_PUBLIC_AUTHOR_BIO` - Short bio/tagline
+- `NEXT_PUBLIC_AUTHOR_EMAIL` - Contact email address
 - `NEXT_PUBLIC_AUTHOR_NAME` - Your display name
 - `NEXT_PUBLIC_AUTHOR_ROLE` - Your professional role
-- `NEXT_PUBLIC_AUTHOR_BIO` - Short bio/tagline
-- `NEXT_PUBLIC_AUTHOR_AVATAR` - URL to your avatar image
-- `NEXT_PUBLIC_AUTHOR_EMAIL` - Contact email address
 - `NEXT_PUBLIC_AUTHOR_WEBSITE` - Personal website URL
 
 **Social Media Profiles:**
 
-- `NEXT_PUBLIC_AUTHOR_GITHUB` - GitHub username
-- `NEXT_PUBLIC_AUTHOR_TWITTER` - Twitter/X handle
-- `NEXT_PUBLIC_AUTHOR_LINKEDIN` - LinkedIn username
-- `NEXT_PUBLIC_AUTHOR_TWITCH` - Twitch username
-- `NEXT_PUBLIC_AUTHOR_MASTODON` - Mastodon handle (include instance)
 - `NEXT_PUBLIC_AUTHOR_BLUESKY` - Bluesky handle
+- `NEXT_PUBLIC_AUTHOR_GITHUB` - GitHub username
+- `NEXT_PUBLIC_AUTHOR_LINKEDIN` - LinkedIn username
+- `NEXT_PUBLIC_AUTHOR_MASTODON` - Mastodon handle (include instance)
+- `NEXT_PUBLIC_AUTHOR_TWITCH` - Twitch username
+- `NEXT_PUBLIC_AUTHOR_TWITTER` - Twitter/X handle
 
 **Site Configuration (Optional Overrides):**
 
-- `NEXT_PUBLIC_SITE_URL` - Your custom domain (if not using GitHub Pages)
+- `NEXT_PUBLIC_BASE_PATH` - Override deployment base path
 - `NEXT_PUBLIC_PROJECT_NAME` - Override auto-detected project name
 - `NEXT_PUBLIC_PROJECT_OWNER` - Override auto-detected owner
-- `NEXT_PUBLIC_BASE_PATH` - Override deployment base path
+- `NEXT_PUBLIC_SITE_URL` - Your custom domain (if not using GitHub Pages)
 
 Without these secrets, your production site will build but won't have personalized content or working features like comments, calendar booking, or contact forms.
 
