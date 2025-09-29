@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
+import { detectedConfig } from '@/config/project-detected';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -151,7 +152,7 @@ export function GlobalNav() {
                 />
               </div>
               <span className="hidden text-xl font-bold sm:block">
-                ScriptHammer
+                {detectedConfig.projectName}
               </span>
             </Link>
           </div>

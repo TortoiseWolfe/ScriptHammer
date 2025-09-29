@@ -8,12 +8,12 @@ export class HomePage extends BasePage {
   // Selectors
   readonly selectors = {
     // Header elements
-    logo: 'a:has-text("ScriptHammer")',
+    logo: 'a[href="/"]',
     skipLink: 'a[href="#game-demo"], a[href="#main"]',
 
     // Hero section
-    heroTitle: 'h1:has-text("ScriptHammer")',
-    heroDescription: 'text=/Next.js.*starter/i',
+    heroTitle: 'h1',
+    heroDescription: 'text=/Next.js.*template/i',
     progressBadge: '.badge.badge-success',
 
     // Navigation buttons
