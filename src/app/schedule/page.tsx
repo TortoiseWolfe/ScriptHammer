@@ -57,6 +57,39 @@ export default function SchedulePage() {
                   </ul>
                 </div>
 
+                <div className="bg-primary/10 border-primary/20 rounded-lg border p-4">
+                  <h2 className="mb-2 flex items-center text-lg font-semibold">
+                    <span className="mr-2">💡</span>
+                    Prepare for the meeting:
+                  </h2>
+                  <p className="mb-3 text-sm">
+                    In the meeting notes section, please include:
+                  </p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>
+                        <strong>Your GitHub repository link</strong> - This
+                        helps us review your code beforehand
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>Brief project description</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-2">•</span>
+                      <span>
+                        Specific questions or challenges you&apos;re facing
+                      </span>
+                    </li>
+                  </ul>
+                  <p className="text-base-content/70 mt-3 text-xs">
+                    This information helps us make the most of our time
+                    together.
+                  </p>
+                </div>
+
                 <div>
                   <h2 className="mb-2 text-lg font-semibold">Time zones:</h2>
                   <p className="text-base-content/70 text-sm">
