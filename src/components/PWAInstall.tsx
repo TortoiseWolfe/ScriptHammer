@@ -201,7 +201,7 @@ export default function PWAInstall() {
         <button
           onClick={handleExpand}
           className="btn btn-circle btn-info btn-sm shadow-lg transition-all hover:scale-110"
-          aria-label="Install ScriptHammer as Progressive Web App"
+          aria-label="Install Progressive Web App"
           title="Progressive Web App (PWA) - An app that works offline, can be installed like a native app, and loads instantly"
         >
           <svg
