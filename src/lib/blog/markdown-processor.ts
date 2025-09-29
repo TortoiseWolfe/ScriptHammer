@@ -383,11 +383,26 @@ export class MarkdownProcessor {
       return `<ul>\n${match}</ul>`;
     });
 
+    // Temporarily replace the CODE_PLACEHOLDER to protect it from underscore processing
+    const TEMP_PLACEHOLDER = '§§§CODEBLOCKPLACEHOLDER§§§';
+    html = html.replace(
+      new RegExp(CODE_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      TEMP_PLACEHOLDER
+    );
+
     // Convert bold (must be done before italic)
     html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
 
-    // Convert italic (single asterisks)
+    // Convert italic (single asterisks and underscores)
     html = html.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+    html = html.replace(/_([^_\n]+)_/g, '<em>$1</em>');
+
+    // Restore the CODE_PLACEHOLDER
+    html = html.replace(
+      new RegExp(TEMP_PLACEHOLDER.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+      CODE_PLACEHOLDER
+    );
 
     // Convert images (MUST be before links!)
     html = html.replace(
