@@ -28,7 +28,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="from-base-200 via-base-100 to-base-200 min-h-[calc(100vh-4rem)] bg-gradient-to-br">
+    <main className="from-base-200 via-base-100 to-base-200 flex h-[calc(100vh-10rem)] flex-col overflow-x-hidden overflow-y-auto bg-gradient-to-br">
       {/* Skip to main content for accessibility */}
       <a
         href="#main-content"
@@ -41,7 +41,7 @@ export default function Home() {
       <section
         id="main-content"
         aria-label="Welcome hero"
-        className="hero relative min-h-[50vh]"
+        className="hero relative flex-1"
       >
         <div className="hero-content py-6 sm:py-8 md:py-10">
           <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16">
@@ -260,15 +260,15 @@ export default function Home() {
       </section>
 
       {/* Feature Cards Section */}
-      <section aria-label="Key features" className="px-4 py-8">
+      <section aria-label="Key features" className="flex-shrink-0 px-4 py-4">
         <div className="container mx-auto">
           <h2 className="sr-only">Key Features</h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 lg:gap-4">
             <Link
               href="/themes"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="card-body items-center p-5 text-center">
+              <div className="card-body items-center p-4 text-center">
                 <div
                   className="mb-3 text-3xl"
                   role="img"
@@ -287,7 +287,7 @@ export default function Home() {
               href="/docs/pwa"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="card-body items-center p-5 text-center">
+              <div className="card-body items-center p-4 text-center">
                 <div
                   className="mb-3 text-3xl"
                   role="img"
@@ -306,7 +306,7 @@ export default function Home() {
               href="/accessibility"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="card-body items-center p-5 text-center">
+              <div className="card-body items-center p-4 text-center">
                 <div
                   className="mb-3 text-3xl"
                   role="img"
@@ -325,7 +325,7 @@ export default function Home() {
               href="/status"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="card-body items-center p-5 text-center">
+              <div className="card-body items-center p-4 text-center">
                 <div
                   className="mb-3 text-3xl"
                   role="img"
