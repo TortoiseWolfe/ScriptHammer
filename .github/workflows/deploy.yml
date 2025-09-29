@@ -38,14 +38,6 @@ jobs:
       - name: Build Next.js app
         run: pnpm run build
         env:
-          # Calendar Integration
-          NEXT_PUBLIC_CALENDAR_PROVIDER: ${{ secrets.NEXT_PUBLIC_CALENDAR_PROVIDER }}
-          NEXT_PUBLIC_CALENDAR_URL: ${{ secrets.NEXT_PUBLIC_CALENDAR_URL }}
-
-          # Blog Comments
-          NEXT_PUBLIC_DISQUS_SHORTNAME: ${{ secrets.NEXT_PUBLIC_DISQUS_SHORTNAME }}
-
-          # Author Information
           NEXT_PUBLIC_AUTHOR_AVATAR: ${{ secrets.NEXT_PUBLIC_AUTHOR_AVATAR }}
           NEXT_PUBLIC_AUTHOR_BIO: ${{ secrets.NEXT_PUBLIC_AUTHOR_BIO }}
           NEXT_PUBLIC_AUTHOR_BLUESKY: ${{ secrets.NEXT_PUBLIC_AUTHOR_BLUESKY }}
@@ -58,20 +50,19 @@ jobs:
           NEXT_PUBLIC_AUTHOR_TWITCH: ${{ secrets.NEXT_PUBLIC_AUTHOR_TWITCH }}
           NEXT_PUBLIC_AUTHOR_TWITTER: ${{ secrets.NEXT_PUBLIC_AUTHOR_TWITTER }}
           NEXT_PUBLIC_AUTHOR_WEBSITE: ${{ secrets.NEXT_PUBLIC_AUTHOR_WEBSITE }}
-
-          # Site Configuration
           NEXT_PUBLIC_BASE_PATH: ${{ secrets.NEXT_PUBLIC_BASE_PATH }}
           NEXT_PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL }}
-          NEXT_PUBLIC_PROJECT_NAME: ${{ secrets.NEXT_PUBLIC_PROJECT_NAME }}
-          NEXT_PUBLIC_PROJECT_OWNER: ${{ secrets.NEXT_PUBLIC_PROJECT_OWNER }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-          NEXT_PUBLIC_SOCIAL_PLATFORMS: ${{ secrets.NEXT_PUBLIC_SOCIAL_PLATFORMS }}
-
-          # Analytics & Forms (if configured)
+          NEXT_PUBLIC_CALENDAR_PROVIDER: ${{ secrets.NEXT_PUBLIC_CALENDAR_PROVIDER }}
+          NEXT_PUBLIC_CALENDAR_URL: ${{ secrets.NEXT_PUBLIC_CALENDAR_URL }}
+          NEXT_PUBLIC_DISQUS_SHORTNAME: ${{ secrets.NEXT_PUBLIC_DISQUS_SHORTNAME }}
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
           NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
           NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: ${{ secrets.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID }}
           NEXT_PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+          NEXT_PUBLIC_PROJECT_NAME: ${{ secrets.NEXT_PUBLIC_PROJECT_NAME }}
+          NEXT_PUBLIC_PROJECT_OWNER: ${{ secrets.NEXT_PUBLIC_PROJECT_OWNER }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_SOCIAL_PLATFORMS: ${{ secrets.NEXT_PUBLIC_SOCIAL_PLATFORMS }}
           NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
 
       - name: Build Storybook
