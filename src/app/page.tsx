@@ -7,11 +7,23 @@ import { detectedConfig } from '@/config/project-detected';
 import { useEffect } from 'react';
 
 export default function Home() {
-  // Apply overflow-hidden only to home page
+  // Apply overflow-hidden only on desktop (screens >= 768px)
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768; // md breakpoint
+      document.body.style.overflow = isMobile ? '' : 'hidden';
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Listen for resize events
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup
     return () => {
       document.body.style.overflow = '';
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
 
