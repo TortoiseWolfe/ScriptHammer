@@ -63,7 +63,7 @@ export const CountdownBanner = () => {
 
   return (
     <div
-      className="bg-warning text-warning-content fixed top-20 right-6 z-50 max-w-sm rounded-lg p-4 shadow-2xl max-sm:top-16 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
+      className="bg-warning text-warning-content fixed top-40 right-4 z-50 max-w-xs rounded-lg p-3 shadow-xl max-sm:top-56 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
       role="banner"
       aria-live="polite"
     >

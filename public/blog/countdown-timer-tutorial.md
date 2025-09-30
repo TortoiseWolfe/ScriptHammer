@@ -102,7 +102,9 @@ docker compose exec scripthammer pnpm run generate:component
 ```
 
 <details>
-<summary><strong>Alternative: CLI Arguments</strong> (for scripting/automation)</summary>
+<summary>▶️ 💡 <strong>CLICK HERE: Pro Tip - CLI Arguments for Automation</strong></summary>
+
+**For scripting and automation:**
 
 ```bash
 docker compose exec scripthammer pnpm run generate:component -- \
@@ -112,7 +114,7 @@ docker compose exec scripthammer pnpm run generate:component -- \
   --withHooks false
 ```
 
-Categories: `subatomic`, `atomic`, `molecular`, `organisms`, `templates`
+**Available categories:** `subatomic`, `atomic`, `molecular`, `organisms`, `templates`
 
 </details>
 
@@ -254,7 +256,7 @@ export const CountdownBanner = () => {
 
   return (
     <div
-      className="bg-warning text-warning-content fixed top-20 right-6 z-50 max-w-sm rounded-lg p-4 shadow-2xl max-sm:top-16 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
+      className="bg-warning text-warning-content fixed top-40 right-4 z-50 max-w-xs rounded-lg p-3 shadow-xl max-sm:top-56 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
       role="banner"
       aria-live="polite"
     >
@@ -300,6 +302,8 @@ export const CountdownBanner = () => {
   );
 };
 ```
+
+> **UI Layout Note**: The banner uses `top-40 right-4` to stack vertically below blog SEO/TOC controls (at `top-20 right-4`), preventing overlap. All UI elements align to the right edge with clear hierarchy: functional controls → promotional content.
 
 **Integration** (`src/app/layout.tsx`):
 
