@@ -535,12 +535,14 @@ export default function StatusPage() {
 
           if (staticAge < fortyEightHours) {
             // Use static data - it's fresh enough
+            // Handle both old format (flat) and new format (desktop/mobile)
+            const mobileScores = staticData.mobile || staticData;
             const scores = {
-              performance: staticData.performance || 0,
-              accessibility: staticData.accessibility || 0,
-              bestPractices: staticData.bestPractices || 0,
-              seo: staticData.seo || 0,
-              pwa: staticData.pwa || 0,
+              performance: mobileScores.performance || 0,
+              accessibility: mobileScores.accessibility || 0,
+              bestPractices: mobileScores.bestPractices || 0,
+              seo: mobileScores.seo || 0,
+              pwa: mobileScores.pwa || 0,
               timestamp: staticData.timestamp,
               url: staticData.url || 'https://scripthammer.com/',
               isDefault: false,
