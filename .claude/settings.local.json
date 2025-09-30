@@ -12,7 +12,8 @@
       "Bash(/home/turtle_wolfe/repos/000/create-components.sh:*)",
       "Bash(find:*)",
       "WebFetch(domain:scripthammer.com)",
-      "WebFetch(domain:www.scripthammer.com)"
+      "WebFetch(domain:www.scripthammer.com)",
+      "WebFetch(domain:www.googleapis.com)"
     ],
     "deny": [],
     "ask": []
