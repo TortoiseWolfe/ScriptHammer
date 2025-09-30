@@ -1,0 +1,24 @@
+{
+  "desktop": {
+    "performance": 99,
+    "accessibility": 0,
+    "bestPractices": 100,
+    "seo": 100
+  },
+  "mobile": {
+    "performance": 74,
+    "accessibility": 100,
+    "bestPractices": 100,
+    "seo": 100,
+    "pwa": null
+  },
+  "timestamp": "2025-09-29T20:00:00Z",
+  "url": "https://scripthammer.com/",
+  "source": "manual-testing-after-seo-fixes",
+  "notes": [
+    "Desktop accessibility 0 due to color contrast issues",
+    "SEO improved from 92 to 100 on both platforms",
+    "Fixed by changing 'More' link text to 'Options'/'More Options'",
+    "Performance improved from 92 to 99 on desktop"
+  ]
+}
