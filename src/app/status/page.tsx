@@ -327,8 +327,9 @@ export default function StatusPage() {
       },
     },
     pwa: {
-      score: lighthouseScores.pwa,
-      description: 'App capabilities',
+      score: null, // PWA scoring deprecated in Lighthouse 12.0 (May 2024)
+      description:
+        'App capabilities (PWA scoring removed from Lighthouse 12.0)',
       details: {
         passing: [
           '✅ Service Worker registered',
@@ -341,6 +342,11 @@ export default function StatusPage() {
           '✅ Background sync enabled',
           '✅ App shortcuts defined',
           '✅ Responsive viewport',
+        ],
+        notes: [
+          'ℹ️ PWA audits removed from Lighthouse 12.0+ (May 2024)',
+          'ℹ️ Use Chrome DevTools → Application tab to verify PWA installability',
+          'ℹ️ App meets all Chrome installability criteria',
         ],
         missing: [
           '❌ Maskable app icon (192x192 & 512x512 PNG)',
@@ -2213,25 +2219,37 @@ export default function StatusPage() {
                               role="button"
                               className="cursor-pointer"
                             >
-                              <div
-                                className="radial-progress mb-2"
-                                style={
-                                  {
-                                    '--value': data.score,
-                                    '--size': '5rem',
-                                    '--thickness': '6px',
-                                  } as React.CSSProperties
-                                }
-                                role="progressbar"
-                                aria-label={`${key.replace(/([A-Z])/g, ' $1').trim()} score: ${data.score} out of 100`}
-                                aria-valuenow={data.score}
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                              >
-                                <span className="text-xs font-bold">
-                                  {data.score}
-                                </span>
-                              </div>
+                              {data.score === null ? (
+                                <div
+                                  className="border-base-300 bg-base-200 mb-2 flex h-20 w-20 items-center justify-center rounded-full border-4"
+                                  role="img"
+                                  aria-label={`${key.replace(/([A-Z])/g, ' $1').trim()} - scoring deprecated`}
+                                >
+                                  <span className="text-base-content/50 text-xs font-bold">
+                                    N/A
+                                  </span>
+                                </div>
+                              ) : (
+                                <div
+                                  className="radial-progress mb-2"
+                                  style={
+                                    {
+                                      '--value': data.score,
+                                      '--size': '5rem',
+                                      '--thickness': '6px',
+                                    } as React.CSSProperties
+                                  }
+                                  role="progressbar"
+                                  aria-label={`${key.replace(/([A-Z])/g, ' $1').trim()} score: ${data.score} out of 100`}
+                                  aria-valuenow={data.score}
+                                  aria-valuemin={0}
+                                  aria-valuemax={100}
+                                >
+                                  <span className="text-xs font-bold">
+                                    {data.score}
+                                  </span>
+                                </div>
+                              )}
                               <div className="mt-1 text-xs font-semibold capitalize">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}
                               </div>
@@ -2250,8 +2268,26 @@ export default function StatusPage() {
                                       key
                                         .slice(1)
                                         .replace(/([A-Z])/g, ' $1')}{' '}
-                                    Score Breakdown ({data.score}/100)
+                                    {data.score !== null
+                                      ? `Score Breakdown (${data.score}/100)`
+                                      : 'Details'}
                                   </h3>
+
+                                  {data.details?.notes &&
+                                    data.details.notes.length > 0 && (
+                                      <div className="mt-2">
+                                        <p className="text-info mb-1 text-xs font-semibold">
+                                          Important Notes:
+                                        </p>
+                                        <ul className="space-y-0.5 text-xs">
+                                          {data.details.notes.map(
+                                            (item: string, i: number) => (
+                                              <li key={i}>{item}</li>
+                                            )
+                                          )}
+                                        </ul>
+                                      </div>
+                                    )}
 
                                   {data.details?.passing &&
                                     data.details.passing.length > 0 && (
