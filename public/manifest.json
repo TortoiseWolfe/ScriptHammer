@@ -3,7 +3,7 @@
   "short_name": "ScriptHammer",
   "description": "ScriptHammer - Modern Next.js template with PWA, theming, and interactive components",
   "theme_color": "#2563eb",
-  "background_color": "#ffffff",
+  "background_color": "#1a1a1a",
   "display": "standalone",
   "start_url": "/",
   "scope": "/",

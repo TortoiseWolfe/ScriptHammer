@@ -959,9 +959,11 @@ export default function StatusPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-sm">FCP</span>
                     <div className="dropdown dropdown-hover">
-                      <div
+                      <button
+                        type="button"
                         tabIndex={0}
                         className="btn btn-circle btn-ghost btn-xs"
+                        aria-label="Learn more about First Contentful Paint"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -976,7 +978,7 @@ export default function StatusPage() {
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           ></path>
                         </svg>
-                      </div>
+                      </button>
                       <div
                         tabIndex={0}
                         className="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow"
@@ -1013,9 +1015,11 @@ export default function StatusPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-sm">LCP</span>
                     <div className="dropdown dropdown-hover">
-                      <div
+                      <button
+                        type="button"
                         tabIndex={0}
                         className="btn btn-circle btn-ghost btn-xs"
+                        aria-label="Learn more about Largest Contentful Paint"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -1030,7 +1034,7 @@ export default function StatusPage() {
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           ></path>
                         </svg>
-                      </div>
+                      </button>
                       <div
                         tabIndex={0}
                         className="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow"
@@ -1070,9 +1074,11 @@ export default function StatusPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-sm">CLS</span>
                     <div className="dropdown dropdown-hover">
-                      <div
+                      <button
+                        type="button"
                         tabIndex={0}
                         className="btn btn-circle btn-ghost btn-xs"
+                        aria-label="Learn more about Cumulative Layout Shift"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -1087,7 +1093,7 @@ export default function StatusPage() {
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           ></path>
                         </svg>
-                      </div>
+                      </button>
                       <div
                         tabIndex={0}
                         className="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow"
@@ -1132,9 +1138,11 @@ export default function StatusPage() {
                   <div className="flex items-center gap-1">
                     <span className="text-sm">TTFB</span>
                     <div className="dropdown dropdown-hover">
-                      <div
+                      <button
+                        type="button"
                         tabIndex={0}
                         className="btn btn-circle btn-ghost btn-xs"
+                        aria-label="Learn more about Time to First Byte"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -1149,7 +1157,7 @@ export default function StatusPage() {
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           ></path>
                         </svg>
-                      </div>
+                      </button>
                       <div
                         tabIndex={0}
                         className="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow"
