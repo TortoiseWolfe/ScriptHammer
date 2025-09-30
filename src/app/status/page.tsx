@@ -190,7 +190,7 @@ export default function StatusPage() {
     seo: 100,
     pwa: 92,
     timestamp: null as string | null,
-    url: 'https://www.scripthammer.com/',
+    url: 'https://scripthammer.com/',
     isDefault: true,
   };
 
@@ -366,7 +366,7 @@ export default function StatusPage() {
     {
       name: 'Next.js App',
       status: 'operational',
-      url: 'https://www.scripthammer.com/',
+      url: 'https://scripthammer.com/',
     },
     {
       name: 'Contact Form',
@@ -416,7 +416,7 @@ export default function StatusPage() {
             seo: staticData.seo || 0,
             pwa: staticData.pwa || 0,
             timestamp: staticData.timestamp,
-            url: staticData.url || 'https://www.scripthammer.com/',
+            url: staticData.url || 'https://scripthammer.com/',
             isDefault: false,
           };
 
@@ -542,7 +542,7 @@ export default function StatusPage() {
               seo: staticData.seo || 0,
               pwa: staticData.pwa || 0,
               timestamp: staticData.timestamp,
-              url: staticData.url || 'https://www.scripthammer.com/',
+              url: staticData.url || 'https://scripthammer.com/',
               isDefault: false,
             };
 
@@ -583,7 +583,7 @@ export default function StatusPage() {
       }
 
       // Step 2: Fall back to live PageSpeed API (with rate limiting)
-      const url = 'https://www.scripthammer.com/';
+      const url = 'https://scripthammer.com/';
       const apiKey = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY;
       const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa${apiKey ? `&key=${apiKey}` : ''}`;
 
@@ -2218,7 +2218,7 @@ export default function StatusPage() {
                         Click &quot;Run Test&quot; for real-time analysis or
                         visit{' '}
                         <a
-                          href="https://pagespeed.web.dev/?url=https://www.scripthammer.com/"
+                          href="https://pagespeed.web.dev/?url=https://scripthammer.com/"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="link break-all"
