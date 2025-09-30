@@ -167,7 +167,7 @@ Traditional templates require editing multiple files:
 - ❌ Edit PWA manifests
 - ❌ Update hardcoded references throughout codebase
 
-With ScriptHammer:
+With ScriptHammer, the process is dramatically simplified:
 
 - ✅ Use template with any name
 - ✅ Create `.env` file (one-time, 30 seconds)
