@@ -167,8 +167,9 @@ describe('CountdownBanner', () => {
 
   it('renders countdown timer', () => {
     const { container } = render(<CountdownBanner />);
-    // Verify countdown class exists (DaisyUI component)
-    expect(container.querySelector('.countdown')).toBeInTheDocument();
+    // Verify timer displays format like "92d 8h 10m 35s"
+    const timerText = container.textContent;
+    expect(timerText).toMatch(/\d+d\s+\d+h\s+\d+m\s+\d+s/);
   });
 
   it('renders promotional content', () => {
@@ -349,7 +350,7 @@ docker compose exec scripthammer sh -c "pnpm run test:suite && pnpm run build"
 - **Memory Leak**: Return `() => clearInterval(timer)` in useEffect
 - **localStorage**: Wrap in try/catch for Safari private mode
 
-**References**: PRP Methodology (`docs/prp-docs/`), SpecKit Guide, Component Generator, DaisyUI Countdown, React docs, MDN (localStorage, ARIA)
+**References**: PRP Methodology (`docs/prp-docs/`), SpecKit Guide, Component Generator, React docs, MDN (localStorage, ARIA)
 
 ---
 
