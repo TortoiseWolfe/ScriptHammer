@@ -504,7 +504,7 @@ export default function StatusPage() {
     // Check cooldown
     const now = Date.now();
     const timeSinceLastAttempt = now - lastLighthouseAttempt;
-    const minimumWait = 60000; // 1 minute minimum between attempts
+    const minimumWait = 5000; // 5 seconds minimum between attempts (have API key)
 
     if (timeSinceLastAttempt < minimumWait) {
       const waitTime = Math.ceil((minimumWait - timeSinceLastAttempt) / 1000);
@@ -519,72 +519,7 @@ export default function StatusPage() {
     setLastLighthouseAttempt(now);
 
     try {
-      // Strategy: Try static file first (from GitHub Actions), then fall back to live API
-      // This avoids rate limits for most users since static file is updated daily
-
-      // Step 1: Try to load from static file (GitHub Actions updates this daily)
-      try {
-        const staticResponse = await fetch('/docs/lighthouse-scores.json');
-        if (staticResponse.ok) {
-          const staticData = await staticResponse.json();
-
-          // Check if static data is recent (less than 48 hours old)
-          const staticAge =
-            Date.now() - new Date(staticData.timestamp).getTime();
-          const fortyEightHours = 48 * 60 * 60 * 1000;
-
-          if (staticAge < fortyEightHours) {
-            // Use static data - it's fresh enough
-            // Handle both old format (flat) and new format (desktop/mobile)
-            const mobileScores = staticData.mobile || staticData;
-            const scores = {
-              performance: mobileScores.performance || 0,
-              accessibility: mobileScores.accessibility || 0,
-              bestPractices: mobileScores.bestPractices || 0,
-              seo: mobileScores.seo || 0,
-              pwa: mobileScores.pwa || 0,
-              timestamp: staticData.timestamp,
-              url: staticData.url || 'https://scripthammer.com/',
-              isDefault: false,
-            };
-
-            // Update state and localStorage
-            setLighthouseScores(scores);
-            localStorage.setItem('lighthouseScores', JSON.stringify(scores));
-
-            // Update the lighthouse metrics display
-            setLighthouse({
-              performance: {
-                ...lighthouse.performance,
-                score: scores.performance,
-              },
-              accessibility: {
-                ...lighthouse.accessibility,
-                score: scores.accessibility,
-              },
-              bestPractices: {
-                ...lighthouse.bestPractices,
-                score: scores.bestPractices,
-              },
-              seo: { ...lighthouse.seo, score: scores.seo },
-              pwa: { ...lighthouse.pwa, score: scores.pwa },
-            });
-
-            const hoursOld = Math.round(staticAge / (60 * 60 * 1000));
-            setLighthouseError(
-              `Using pre-cached scores from GitHub Actions (${hoursOld} hour${hoursOld !== 1 ? 's' : ''} old). Click "Run Lighthouse Test" to fetch live scores.`
-            );
-            return;
-          }
-        }
-      } catch (staticError) {
-        console.log(
-          'Could not load static scores, will try live API:',
-          staticError
-        );
-      }
-
-      // Step 2: Fall back to live PageSpeed API (with rate limiting)
+      // Use live PageSpeed API (we have an API key so no rate limit concerns)
       const url = 'https://scripthammer.com/';
       const apiKey = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY;
       const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa${apiKey ? `&key=${apiKey}` : ''}`;
