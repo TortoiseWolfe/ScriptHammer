@@ -9,6 +9,7 @@ import { parseTasksFile, TaskProgress } from '@/utils/tasks-parser';
 import projectConfig from '@/config/project-status.json';
 import packageJson from '../../../package.json';
 import deploymentHistory from '@/data/deployment-history.json';
+import { logger } from '@/utils/logger';
 
 interface PerformanceMetrics {
   FCP: number | null;
@@ -209,7 +210,7 @@ export default function StatusPage() {
             }
           }
         } catch (e) {
-          console.error('Failed to parse saved scores:', e);
+          logger.error('Failed to parse saved scores:', e);
         }
       }
     }
@@ -453,7 +454,7 @@ export default function StatusPage() {
           }));
         }
       } catch (error) {
-        console.log('Could not load static Lighthouse scores:', error);
+        logger.log('Could not load static Lighthouse scores:', error);
       }
     };
 
@@ -470,7 +471,7 @@ export default function StatusPage() {
       const progress = await parseTasksFile();
       setTaskProgress(progress);
     } catch (error) {
-      console.error('Failed to load task progress:', error);
+      logger.error('Failed to load task progress:', error);
     }
   };
 
@@ -493,7 +494,7 @@ export default function StatusPage() {
       setPwaResults(results);
       setLastTestTime(new Date());
     } catch (error) {
-      console.error('PWA test error:', error);
+      logger.error('PWA test error:', error);
       setTestError('Tests failed to complete. Check console for details.');
     } finally {
       setIsTestingPWA(false);
@@ -597,7 +598,7 @@ export default function StatusPage() {
       // Clear any cooldown on success
       setRateLimitCooldown(0);
     } catch (error) {
-      console.error('Lighthouse test error:', error);
+      logger.error('Lighthouse test error:', error);
       setLighthouseError(
         error instanceof Error ? error.message : 'Failed to run Lighthouse test'
       );
@@ -657,7 +658,7 @@ export default function StatusPage() {
         // Stop observing after a short delay
         setTimeout(() => observer.disconnect(), 1000);
       } catch {
-        console.log('LCP observer not supported');
+        logger.log('LCP observer not supported');
       }
 
       // Force a layout shift calculation by toggling visibility
@@ -732,7 +733,7 @@ export default function StatusPage() {
       // 4. Reload task progress
       await loadTaskProgress();
     } catch (error) {
-      console.error('Error during test run:', error);
+      logger.error('Error during test run:', error);
     } finally {
       setIsRunningAllTests(false);
     }
