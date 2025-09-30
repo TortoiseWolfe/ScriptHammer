@@ -46,7 +46,9 @@ jobs:
           NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
 
       - name: Build Next.js app
-        run: pnpm run build
+        run: |
+          echo "Building with PageSpeed API key: ${NEXT_PUBLIC_PAGESPEED_API_KEY:0:10}..."
+          pnpm run build
         env:
           NEXT_PUBLIC_AUTHOR_AVATAR: ${{ secrets.NEXT_PUBLIC_AUTHOR_AVATAR }}
           NEXT_PUBLIC_AUTHOR_BIO: ${{ secrets.NEXT_PUBLIC_AUTHOR_BIO }}
