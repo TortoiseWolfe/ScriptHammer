@@ -312,9 +312,10 @@ export class SEOAnalyzer {
       strengths.push('Good use of headings');
     }
 
-    // Check for images
+    // Check for images (in content or featured image in metadata)
     const images = content.match(/!\[.*?\]\(.*?\)/g) || [];
-    if (images.length === 0) {
+    const hasFeaturedImage = !!post.metadata?.featuredImage;
+    if (images.length === 0 && !hasFeaturedImage) {
       score -= 15;
       suggestions.push({
         category: 'content',

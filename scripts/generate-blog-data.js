@@ -184,9 +184,11 @@ Happy reading! 🎉
       console.log('📝 Created sample blog post');
     }
 
-    // Get all markdown files
+    // Get all markdown files (exclude documentation files like CLAUDE.md)
     const files = await fs.readdir(BLOG_DIR);
-    const markdownFiles = files.filter((file) => file.endsWith('.md'));
+    const markdownFiles = files.filter(
+      (file) => file.endsWith('.md') && !file.match(/^[A-Z]+\.md$/) // Skip all-caps filenames (CLAUDE.md, README.md)
+    );
 
     if (markdownFiles.length === 0) {
       console.log('⚠️  No markdown files found in', BLOG_DIR);

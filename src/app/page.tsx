@@ -195,10 +195,10 @@ export default function Home() {
                 </a>
               </nav>
 
-              {/* Quick Links - hide on mobile */}
+              {/* Quick Links - vertical stack on mobile, horizontal on desktop */}
               <nav
                 aria-label="Secondary navigation"
-                className="mt-8 hidden flex-wrap justify-center gap-2 text-xs sm:mt-8 sm:flex sm:gap-4 sm:text-sm md:mt-10 lg:justify-start"
+                className="mt-8 flex flex-col gap-2 text-sm sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 sm:text-sm md:mt-10 lg:justify-start"
               >
                 <Link
                   href="/game"
@@ -206,7 +206,10 @@ export default function Home() {
                 >
                   Play Game
                 </Link>
-                <span className="opacity-30" aria-hidden="true">
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
                   •
                 </span>
                 <Link
@@ -215,7 +218,10 @@ export default function Home() {
                 >
                   Status
                 </Link>
-                <span className="opacity-30" aria-hidden="true">
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
                   •
                 </span>
                 <Link
@@ -224,7 +230,10 @@ export default function Home() {
                 >
                   Contact
                 </Link>
-                <span className="opacity-30" aria-hidden="true">
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
                   •
                 </span>
                 <Link
@@ -233,7 +242,10 @@ export default function Home() {
                 >
                   Schedule
                 </Link>
-                <span className="opacity-30" aria-hidden="true">
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
                   •
                 </span>
                 <Link
@@ -242,7 +254,10 @@ export default function Home() {
                 >
                   Map
                 </Link>
-                <span className="opacity-30" aria-hidden="true">
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
                   •
                 </span>
                 <a
