@@ -17,6 +17,7 @@ import {
   generateJsonLd,
   JsonLdScript,
 } from '@/utils/metadata';
+import PWAInstall from '@/components/PWAInstall';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -129,6 +130,7 @@ export default function RootLayout({
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />
+          <PWAInstall />
           <AccessibilityProvider>
             <GlobalNav />
             <ErrorBoundary level="page">

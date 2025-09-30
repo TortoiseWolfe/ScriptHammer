@@ -36,38 +36,48 @@ export default function PWAInstall() {
         // Use dynamic basePath from project config
         const swPath = projectConfig.swPath;
 
-        console.log(`[PWA] Registering Service Worker from: ${swPath}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[PWA] Registering Service Worker from: ${swPath}`);
+        }
 
         // Add timestamp to force update
         const swUrl = `${swPath}?v=${Date.now()}`;
 
         navigator.serviceWorker.register(swUrl).then(
           (registration) => {
-            console.log('[PWA] Service Worker registered:', registration);
-            console.log('[PWA] SW Scope:', registration.scope);
-            console.log(
-              '[PWA] SW State:',
-              registration.active?.state || 'installing'
-            );
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[PWA] Service Worker registered:', registration);
+              console.log('[PWA] SW Scope:', registration.scope);
+              console.log(
+                '[PWA] SW State:',
+                registration.active?.state || 'installing'
+              );
+            }
 
             // Force update check
-            registration
-              .update()
-              .catch((err) => console.log('SW update failed:', err));
+            registration.update().catch((err) => {
+              if (process.env.NODE_ENV === 'development') {
+                console.log('SW update failed:', err);
+              }
+            });
 
             // Check for updates periodically
             setInterval(() => {
-              registration
-                .update()
-                .catch((err) => console.log('SW update check failed:', err));
+              registration.update().catch((err) => {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('SW update check failed:', err);
+                }
+              });
             }, 60000); // Check every minute
           },
           (error) => {
-            console.error('[PWA] Service Worker registration failed:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('[PWA] Service Worker registration failed:', error);
+            }
           }
         );
       });
-    } else {
+    } else if (process.env.NODE_ENV === 'development') {
       console.log('[PWA] Service Worker not supported in this browser');
     }
 
