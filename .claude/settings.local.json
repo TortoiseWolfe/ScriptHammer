@@ -13,7 +13,10 @@
       "Bash(find:*)",
       "WebFetch(domain:scripthammer.com)",
       "WebFetch(domain:www.scripthammer.com)",
-      "WebFetch(domain:www.googleapis.com)"
+      "WebFetch(domain:www.googleapis.com)",
+      "Bash(xargs:*)",
+      "Bash(python3:*)",
+      "Bash(/dev/null)"
     ],
     "deny": [],
     "ask": []

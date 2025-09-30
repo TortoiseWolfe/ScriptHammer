@@ -149,6 +149,7 @@
     "husky": "^9.1.7",
     "jest-axe": "^10.0.0",
     "jsdom": "^26.1.0",
+    "lighthouse": "^12.8.2",
     "lint-staged": "^16.1.6",
     "msw": "^2.0.0",
     "nodemon": "^3.1.10",
