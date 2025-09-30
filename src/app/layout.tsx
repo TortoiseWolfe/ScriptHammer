@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   manifest: projectConfig.manifestPath,
   icons: {
     icon: ['/favicon.ico', '/icon.svg'],
-    apple: '/apple-icon.png',
+    apple: '/apple-touch-icon.png',
   },
   appleWebApp: {
     capable: true,
