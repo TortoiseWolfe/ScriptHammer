@@ -400,6 +400,64 @@ export default function StatusPage() {
     // Load task progress
     loadTaskProgress();
 
+    // Load static Lighthouse scores on mount
+    const loadStaticLighthouseScores = async () => {
+      try {
+        const response = await fetch('/docs/lighthouse-scores.json');
+        if (response.ok) {
+          const staticData = await response.json();
+
+          // Update scores if we have valid data
+          const scores = {
+            performance: staticData.performance || 0,
+            accessibility: staticData.accessibility || 0,
+            bestPractices: staticData.bestPractices || 0,
+            seo: staticData.seo || 0,
+            pwa: staticData.pwa || 0,
+            timestamp: staticData.timestamp,
+            url: staticData.url || 'https://www.scripthammer.com/',
+            isDefault: false,
+          };
+
+          // Only update if we don't have fresher cached data
+          const cachedScores = localStorage.getItem('lighthouseScores');
+          if (cachedScores) {
+            const cached = JSON.parse(cachedScores);
+            const cachedAge = Date.now() - new Date(cached.timestamp).getTime();
+            const staticAge =
+              Date.now() - new Date(staticData.timestamp).getTime();
+
+            // Use whichever is fresher
+            if (cachedAge < staticAge) {
+              return;
+            }
+          }
+
+          setLighthouseScores(scores);
+          localStorage.setItem('lighthouseScores', JSON.stringify(scores));
+
+          // Update the lighthouse metrics display
+          setLighthouse((prev) => ({
+            performance: { ...prev.performance, score: scores.performance },
+            accessibility: {
+              ...prev.accessibility,
+              score: scores.accessibility,
+            },
+            bestPractices: {
+              ...prev.bestPractices,
+              score: scores.bestPractices,
+            },
+            seo: { ...prev.seo, score: scores.seo },
+            pwa: { ...prev.pwa, score: scores.pwa },
+          }));
+        }
+      } catch (error) {
+        console.log('Could not load static Lighthouse scores:', error);
+      }
+    };
+
+    loadStaticLighthouseScores();
+
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
@@ -460,11 +518,73 @@ export default function StatusPage() {
     setLastLighthouseAttempt(now);
 
     try {
-      // Always test the production URL
-      const url = 'https://www.scripthammer.com/';
+      // Strategy: Try static file first (from GitHub Actions), then fall back to live API
+      // This avoids rate limits for most users since static file is updated daily
 
-      // Call PageSpeed Insights API directly from the client
-      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa`;
+      // Step 1: Try to load from static file (GitHub Actions updates this daily)
+      try {
+        const staticResponse = await fetch('/docs/lighthouse-scores.json');
+        if (staticResponse.ok) {
+          const staticData = await staticResponse.json();
+
+          // Check if static data is recent (less than 48 hours old)
+          const staticAge =
+            Date.now() - new Date(staticData.timestamp).getTime();
+          const fortyEightHours = 48 * 60 * 60 * 1000;
+
+          if (staticAge < fortyEightHours) {
+            // Use static data - it's fresh enough
+            const scores = {
+              performance: staticData.performance || 0,
+              accessibility: staticData.accessibility || 0,
+              bestPractices: staticData.bestPractices || 0,
+              seo: staticData.seo || 0,
+              pwa: staticData.pwa || 0,
+              timestamp: staticData.timestamp,
+              url: staticData.url || 'https://www.scripthammer.com/',
+              isDefault: false,
+            };
+
+            // Update state and localStorage
+            setLighthouseScores(scores);
+            localStorage.setItem('lighthouseScores', JSON.stringify(scores));
+
+            // Update the lighthouse metrics display
+            setLighthouse({
+              performance: {
+                ...lighthouse.performance,
+                score: scores.performance,
+              },
+              accessibility: {
+                ...lighthouse.accessibility,
+                score: scores.accessibility,
+              },
+              bestPractices: {
+                ...lighthouse.bestPractices,
+                score: scores.bestPractices,
+              },
+              seo: { ...lighthouse.seo, score: scores.seo },
+              pwa: { ...lighthouse.pwa, score: scores.pwa },
+            });
+
+            const hoursOld = Math.round(staticAge / (60 * 60 * 1000));
+            setLighthouseError(
+              `Using pre-cached scores from GitHub Actions (${hoursOld} hour${hoursOld !== 1 ? 's' : ''} old). Click "Run Lighthouse Test" to fetch live scores.`
+            );
+            return;
+          }
+        }
+      } catch (staticError) {
+        console.log(
+          'Could not load static scores, will try live API:',
+          staticError
+        );
+      }
+
+      // Step 2: Fall back to live PageSpeed API (with rate limiting)
+      const url = 'https://www.scripthammer.com/';
+      const apiKey = process.env.NEXT_PUBLIC_PAGESPEED_API_KEY;
+      const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa${apiKey ? `&key=${apiKey}` : ''}`;
 
       const response = await fetch(apiUrl);
 
@@ -494,7 +614,7 @@ export default function StatusPage() {
 
       const data = await response.json();
 
-      // Extract Lighthouse scores
+      // Extract Lighthouse scores from PageSpeed API response
       const scores = {
         performance: Math.round(
           (data.lighthouseResult?.categories?.performance?.score || 0) * 100
@@ -2047,10 +2167,10 @@ export default function StatusPage() {
             >
               <div className="space-y-3">
                 {lighthouseError && (
-                  <div className="alert alert-error mb-4">
+                  <div className="alert alert-error mb-4 max-w-full">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 shrink-0 stroke-current"
+                      className="h-5 w-5 shrink-0 stroke-current"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -2061,16 +2181,18 @@ export default function StatusPage() {
                         d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </svg>
-                    <span>{lighthouseError}</span>
+                    <span className="overflow-wrap-anywhere text-xs break-words sm:text-sm">
+                      {lighthouseError}
+                    </span>
                   </div>
                 )}
                 {lighthouseScores.isDefault && (
-                  <div className="alert alert-info mb-4">
+                  <div className="alert alert-info mb-4 max-w-full">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
-                      className="h-6 w-6 shrink-0 stroke-current"
+                      className="h-5 w-5 shrink-0 stroke-current"
                     >
                       <path
                         strokeLinecap="round"
@@ -2079,18 +2201,18 @@ export default function StatusPage() {
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       ></path>
                     </svg>
-                    <div>
-                      <p className="text-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs break-words sm:text-sm">
                         Using default scores based on typical performance
                       </p>
-                      <p className="text-xs">
+                      <p className="text-xs break-words">
                         Click &quot;Run Test&quot; for real-time analysis or
                         visit{' '}
                         <a
                           href="https://pagespeed.web.dev/?url=https://www.scripthammer.com/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="link"
+                          className="link break-all"
                         >
                           PageSpeed Insights
                         </a>
@@ -2132,9 +2254,12 @@ export default function StatusPage() {
                 ) : (
                   <>
                     {/* Visual Score Display with Tooltips */}
-                    <div className="mb-4 grid grid-cols-2 gap-4">
+                    <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 md:gap-6">
                       {Object.entries(lighthouse).map(([key, data]) => (
-                        <div key={key} className="text-center">
+                        <div
+                          key={key}
+                          className="flex flex-col items-center text-center"
+                        >
                           <div className="dropdown dropdown-hover">
                             <div
                               tabIndex={0}
@@ -2142,12 +2267,12 @@ export default function StatusPage() {
                               className="cursor-pointer"
                             >
                               <div
-                                className="radial-progress"
+                                className="radial-progress mb-2"
                                 style={
                                   {
                                     '--value': data.score,
-                                    '--size': '4rem',
-                                    '--thickness': '4px',
+                                    '--size': '5rem',
+                                    '--thickness': '6px',
                                   } as React.CSSProperties
                                 }
                                 role="progressbar"
@@ -2156,14 +2281,14 @@ export default function StatusPage() {
                                 aria-valuemin={0}
                                 aria-valuemax={100}
                               >
-                                <span className="text-sm font-bold">
+                                <span className="text-xs font-bold">
                                   {data.score}
                                 </span>
                               </div>
-                              <div className="mt-1 text-xs capitalize">
+                              <div className="mt-1 text-xs font-semibold capitalize">
                                 {key.replace(/([A-Z])/g, ' $1').trim()}
                               </div>
-                              <div className="text-base-content/60 text-xs">
+                              <div className="text-base-content/60 max-w-[8rem] text-xs">
                                 {data.description}
                               </div>
                             </div>
