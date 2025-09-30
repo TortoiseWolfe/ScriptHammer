@@ -195,6 +195,7 @@ export default function StatusPage() {
     isDefault: true,
   };
 
+  const [isMounted, setIsMounted] = useState(false);
   const [lighthouseScores, setLighthouseScores] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('lighthouseScores');
@@ -217,6 +218,10 @@ export default function StatusPage() {
     // Return default scores if no valid cache
     return DEFAULT_LIGHTHOUSE_SCORES;
   });
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const hasLighthouseData = lighthouseScores.performance > 0;
 
@@ -323,42 +328,6 @@ export default function StatusPage() {
           '📝 This measures technical readiness',
           '📝 NOT search ranking or position',
           '📝 Content quality still matters',
-        ],
-      },
-    },
-    pwa: {
-      score: null, // PWA scoring deprecated in Lighthouse 12.0 (May 2024)
-      description:
-        'App capabilities (PWA scoring removed from Lighthouse 12.0)',
-      details: {
-        passing: [
-          '✅ Service Worker registered',
-          '✅ Web App Manifest present',
-          '✅ HTTPS enabled (production)',
-          '✅ Installable as app',
-          '✅ Offline caching active',
-          '✅ Standalone display mode',
-          '✅ Theme color configured',
-          '✅ Background sync enabled',
-          '✅ App shortcuts defined',
-          '✅ Responsive viewport',
-        ],
-        notes: [
-          'ℹ️ PWA audits removed from Lighthouse 12.0+ (May 2024)',
-          'ℹ️ Use Chrome DevTools → Application tab to verify PWA installability',
-          'ℹ️ App meets all Chrome installability criteria',
-        ],
-        missing: [
-          '❌ Maskable app icon (192x192 & 512x512 PNG)',
-          '❌ Apple touch icon for iOS',
-          '❌ Screenshots not found (referenced in manifest)',
-          '❌ Splash screen not configured',
-        ],
-        optional: [
-          '💡 Web Share API not implemented',
-          '💡 Push notifications not configured',
-          '💡 App badging not enabled',
-          '💡 File handling not configured',
         ],
       },
     },
@@ -2010,7 +1979,7 @@ export default function StatusPage() {
           <div className="space-y-6">
             <Card
               title={
-                <div className="flex w-full items-center justify-between">
+                <div className="flex w-full flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
                     <span>Lighthouse Scores</span>
                     <div className="dropdown dropdown-hover">
@@ -2051,28 +2020,9 @@ export default function StatusPage() {
                         </div>
                       </div>
                     </div>
-                    {lighthouseScores.timestamp && (
-                      <span className="text-base-content/50 text-xs">
-                        {lighthouseScores.isDefault
-                          ? '(Default scores)'
-                          : `Last tested: ${new Date(lighthouseScores.timestamp).toLocaleString()}`}
-                      </span>
-                    )}
-                    {!lighthouseScores.isDefault &&
-                      lighthouseScores.timestamp && (
-                        <span className="text-base-content/50 text-xs">
-                          (Cache:{' '}
-                          {Math.round(
-                            (Date.now() -
-                              new Date(lighthouseScores.timestamp).getTime()) /
-                              3600000
-                          )}
-                          h old)
-                        </span>
-                      )}
                   </div>
-                  <div className="flex gap-2">
-                    {!lighthouseScores.isDefault && (
+                  <div className="flex flex-shrink-0 gap-2">
+                    {isMounted && !lighthouseScores.isDefault && (
                       <button
                         onClick={() => {
                           localStorage.removeItem('lighthouseScores');
@@ -2081,7 +2031,7 @@ export default function StatusPage() {
                             'Cache cleared. Using default scores.'
                           );
                         }}
-                        className="btn btn-xs btn-ghost"
+                        className="btn btn-sm btn-ghost"
                         title="Clear cached scores"
                       >
                         Clear Cache
@@ -2119,6 +2069,27 @@ export default function StatusPage() {
               bordered
             >
               <div className="space-y-3">
+                {lighthouseScores.timestamp && (
+                  <div className="text-base-content/50 mb-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span suppressHydrationWarning>
+                      {lighthouseScores.isDefault
+                        ? '(Default scores)'
+                        : `Last tested: ${new Date(lighthouseScores.timestamp).toLocaleString()}`}
+                    </span>
+                    {!lighthouseScores.isDefault &&
+                      lighthouseScores.timestamp && (
+                        <span>
+                          (Cache:{' '}
+                          {Math.round(
+                            (Date.now() -
+                              new Date(lighthouseScores.timestamp).getTime()) /
+                              3600000
+                          )}
+                          h old)
+                        </span>
+                      )}
+                  </div>
+                )}
                 {lighthouseError && (
                   <div className="alert alert-error mb-4 max-w-full">
                     <svg
@@ -2207,13 +2178,13 @@ export default function StatusPage() {
                 ) : (
                   <>
                     {/* Visual Score Display with Tooltips */}
-                    <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 md:gap-6">
+                    <div className="mb-4 flex flex-col gap-4">
                       {Object.entries(lighthouse).map(([key, data]) => (
                         <div
                           key={key}
-                          className="flex flex-col items-center text-center"
+                          className="border-base-300 bg-base-100 flex items-center gap-4 rounded-lg border p-4"
                         >
-                          <div className="dropdown dropdown-hover">
+                          <div className="dropdown dropdown-hover flex-shrink-0">
                             <div
                               tabIndex={0}
                               role="button"
@@ -2221,7 +2192,7 @@ export default function StatusPage() {
                             >
                               {data.score === null ? (
                                 <div
-                                  className="border-base-300 bg-base-200 mb-2 flex h-20 w-20 items-center justify-center rounded-full border-4"
+                                  className="border-base-300 bg-base-200 flex h-20 w-20 items-center justify-center rounded-full border-4"
                                   role="img"
                                   aria-label={`${key.replace(/([A-Z])/g, ' $1').trim()} - scoring deprecated`}
                                 >
@@ -2231,7 +2202,7 @@ export default function StatusPage() {
                                 </div>
                               ) : (
                                 <div
-                                  className="radial-progress mb-2"
+                                  className="radial-progress"
                                   style={
                                     {
                                       '--value': data.score,
@@ -2250,13 +2221,38 @@ export default function StatusPage() {
                                   </span>
                                 </div>
                               )}
-                              <div className="mt-1 text-xs font-semibold capitalize">
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                              </div>
-                              <div className="text-base-content/60 max-w-[8rem] text-xs">
-                                {data.description}
-                              </div>
                             </div>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-sm font-semibold capitalize">
+                              {key.replace(/([A-Z])/g, ' $1').trim()}
+                            </h3>
+                            <p className="text-base-content/60 mt-1 text-sm">
+                              {data.description}
+                            </p>
+                          </div>
+                          <div className="dropdown dropdown-hover flex-shrink-0">
+                            {data.details && (
+                              <button
+                                tabIndex={0}
+                                className="btn btn-circle btn-ghost btn-sm"
+                                aria-label="View details"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  className="h-5 w-5 stroke-current"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                              </button>
+                            )}
                             {data.details && (
                               <div
                                 tabIndex={0}
