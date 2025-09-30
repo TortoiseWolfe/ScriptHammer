@@ -46,6 +46,42 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   cleanDistDir: true,
+  webpack: (config, { isServer }) => {
+    // Optimize code splitting for better performance
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor chunks for node_modules
+            vendor: {
+              name: 'vendor',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 10,
+              reuseExistingChunk: true,
+            },
+            // Common chunks used across multiple pages
+            common: {
+              name: 'common',
+              minChunks: 2,
+              priority: 5,
+              reuseExistingChunk: true,
+            },
+            // Heavy libraries in separate chunks
+            leaflet: {
+              test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
+              name: 'leaflet',
+              priority: 20,
+            },
+          },
+        },
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -1,6 +1,21 @@
 'use client';
 
-import CaptainShipCrewWithNPC from '@/components/atomic/CaptainShipCrewWithNPC/CaptainShipCrewWithNPC';
+import dynamic from 'next/dynamic';
+
+// Dynamically import game component to reduce initial bundle size
+const CaptainShipCrewWithNPC = dynamic(
+  () =>
+    import('@/components/atomic/CaptainShipCrewWithNPC/CaptainShipCrewWithNPC'),
+  {
+    loading: () => (
+      <div className="bg-base-200 card flex h-96 items-center justify-center">
+        <span className="loading loading-spinner loading-lg"></span>
+        <p className="mt-4 text-sm">Loading game...</p>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 export default function GamePage() {
   return (
