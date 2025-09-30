@@ -17,8 +17,9 @@ describe('CountdownBanner', () => {
 
   it('renders countdown timer', () => {
     const { container } = render(<CountdownBanner />);
-    // Verify countdown class exists (DaisyUI component)
-    expect(container.querySelector('.countdown')).toBeInTheDocument();
+    // Verify timer displays format like "92d 8h 10m 35s"
+    const timerText = container.textContent;
+    expect(timerText).toMatch(/\d+d\s+\d+h\s+\d+m\s+\d+s/);
   });
 
   it('renders promotional content', () => {
