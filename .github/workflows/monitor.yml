@@ -12,7 +12,7 @@ jobs:
   lighthouse:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Allow bot to commit lighthouse scores
+      contents: write # Allow bot to commit lighthouse scores
     steps:
       - uses: actions/checkout@v4
 
