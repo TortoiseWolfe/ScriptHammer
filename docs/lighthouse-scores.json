@@ -6,5 +6,6 @@
   "pwa": 92,
   "timestamp": "2025-09-29T00:00:00Z",
   "url": "https://www.scripthammer.com/",
-  "source": "initial-baseline"
+  "source": "initial-baseline",
+  "note": "Testing deployment trigger"
 }
