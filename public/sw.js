@@ -19,17 +19,15 @@ const STATIC_ASSETS = [
 
 // Skip waiting and claim clients immediately
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing...');
   event.waitUntil(
     caches
       .open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[ServiceWorker] Precaching static assets');
         // Try to cache static assets, but don't fail install if some are missing
         return Promise.allSettled(
           STATIC_ASSETS.map((url) =>
-            cache.add(url).catch((err) => {
-              console.warn(`[ServiceWorker] Failed to cache ${url}:`, err);
+            cache.add(url).catch(() => {
+              // Silently handle cache failures
             })
           )
         );
@@ -40,7 +38,6 @@ self.addEventListener('install', (event) => {
 
 // Clean up old caches on activation
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating...');
   event.waitUntil(
     caches
       .keys()
@@ -55,10 +52,7 @@ self.addEventListener('activate', (event) => {
                 cacheName !== IMAGE_CACHE
               );
             })
-            .map((cacheName) => {
-              console.log('[ServiceWorker] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
+            .map((cacheName) => caches.delete(cacheName))
         );
       })
       .then(() => self.clients.claim())
@@ -183,8 +177,6 @@ self.addEventListener('fetch', (event) => {
 
 // Background sync for offline form submissions
 self.addEventListener('sync', (event) => {
-  console.log('[ServiceWorker] Sync event:', event.tag);
-
   if (event.tag === 'sync-offline-queue') {
     event.waitUntil(syncOfflineQueue());
   }
@@ -203,10 +195,7 @@ async function syncOfflineQueue() {
         timestamp: new Date().toISOString(),
       });
     });
-
-    console.log('[ServiceWorker] Offline queue sync triggered');
   } catch (error) {
-    console.error('[ServiceWorker] Sync failed:', error);
     throw error; // Retry sync later
   }
 }
@@ -250,10 +239,6 @@ self.addEventListener('push', (event) => {
 
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
-  console.log('[ServiceWorker] Notification click received.');
   event.notification.close();
-
   event.waitUntil(clients.openWindow('/'));
 });
-
-console.log('[ServiceWorker] Loaded successfully');
