@@ -86,12 +86,33 @@ The project uses Product Requirements Prompts for feature implementation:
 - ~~PRP-013: Calendar Integration~~ ✅ Completed
 - ~~PRP-014: Geolocation Map~~ ✅ Completed (2025-09-18)
 - **Auto-Configuration System** ✅ Completed (2025-09-18) - Auto-detects project name from git remote (not a formal PRP)
+- ~~**Lighthouse Phases 3 & 4**~~ ✅ Completed (2025-09-30) - Best Practices 100/100, PWA deprecated in Lighthouse 12.0
 - PRP-012: Visual Regression Testing (P2 - deferred until UI stable)
 - PRP-001: PRP Methodology (P3 - document after implementation)
 
 **Future PRPs** (0.4.0):
 
 - PRP-015: Enhanced Geolocation Accuracy (P2 - hybrid desktop/mobile approach)
+
+## Lighthouse Scores (September 2025)
+
+**Current Scores** (verified via Lighthouse CLI):
+
+- ✅ Performance: 95/100
+- ✅ Accessibility: 96/100
+- ✅ Best Practices: 100/100 (all console statements removed)
+- ✅ SEO: 100/100
+- ⚠️ PWA: N/A (scoring deprecated in Lighthouse 12.0, May 2024)
+
+**PWA Status**: Despite no Lighthouse score, the app IS a fully functional PWA:
+
+- Service worker registered and active
+- Valid web app manifest
+- Served over HTTPS
+- Meets all Chrome installability criteria
+- Offline support enabled
+
+**Note**: PWA scoring was completely removed from Lighthouse 12.0+. Use Chrome DevTools → Application tab to verify PWA installability.
 
 ## Architecture Overview
 
