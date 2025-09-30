@@ -108,6 +108,7 @@ export function FontSizeControl() {
             href="/accessibility"
             className="btn btn-ghost btn-sm flex-1"
             title="All accessibility options"
+            aria-label="View all accessibility options"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
