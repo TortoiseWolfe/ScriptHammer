@@ -130,7 +130,6 @@ export default function RootLayout({
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />
-          <PWAInstall />
           <AccessibilityProvider>
             <GlobalNav />
             <ErrorBoundary level="page">
