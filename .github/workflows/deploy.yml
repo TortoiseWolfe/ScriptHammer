@@ -35,6 +35,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify PageSpeed API Key
+        run: |
+          if [ -z "${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}" ]; then
+            echo "::error::NEXT_PUBLIC_PAGESPEED_API_KEY secret is empty or not set"
+            exit 1
+          fi
+          echo "::notice::PageSpeed API key is set (length: ${#NEXT_PUBLIC_PAGESPEED_API_KEY})"
+        env:
+          NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
+
       - name: Build Next.js app
         run: pnpm run build
         env:
