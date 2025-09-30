@@ -86,15 +86,15 @@ jobs:
           }
           EOF
 
-      # Commit updated scores back to repo
-      - name: Commit Lighthouse Scores
-        if: success()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add docs/lighthouse-scores.json
-          git diff --quiet && git diff --staged --quiet || git commit -m "chore: Update Lighthouse scores [skip ci]"
-          git push --no-verify
+      # Disabled: Auto-commits cause merge conflicts. Update scores manually instead.
+      # - name: Commit Lighthouse Scores
+      #   if: success()
+      #   run: |
+      #     git config --local user.email "github-actions[bot]@users.noreply.github.com"
+      #     git config --local user.name "github-actions[bot]"
+      #     git add docs/lighthouse-scores.json
+      #     git diff --quiet && git diff --staged --quiet || git commit -m "chore: Update Lighthouse scores [skip ci]"
+      #     git push --no-verify
 
       - name: Upload Lighthouse Results
         uses: actions/upload-artifact@v4
