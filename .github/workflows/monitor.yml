@@ -66,6 +66,34 @@ jobs:
           echo "SEO: ${{ steps.lighthouse.outputs.seo }}" >> lighthouse-results.md
           echo "PWA: ${{ steps.lighthouse.outputs.pwa }}" >> lighthouse-results.md
 
+      # Save scores to static JSON file for fallback
+      - name: Save Lighthouse Scores to JSON
+        if: success()
+        run: |
+          mkdir -p docs
+          cat > docs/lighthouse-scores.json << EOF
+          {
+            "performance": ${{ steps.lighthouse.outputs.performance || 0 }},
+            "accessibility": ${{ steps.lighthouse.outputs.accessibility || 0 }},
+            "bestPractices": ${{ steps.lighthouse.outputs.best-practices || 0 }},
+            "seo": ${{ steps.lighthouse.outputs.seo || 0 }},
+            "pwa": ${{ steps.lighthouse.outputs.pwa || 0 }},
+            "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+            "url": "https://www.scripthammer.com/",
+            "source": "github-actions"
+          }
+          EOF
+
+      # Commit updated scores back to repo
+      - name: Commit Lighthouse Scores
+        if: success()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/lighthouse-scores.json
+          git diff --quiet && git diff --staged --quiet || git commit -m "chore: Update Lighthouse scores [skip ci]"
+          git push
+
       - name: Upload Lighthouse Results
         uses: actions/upload-artifact@v4
         with:
