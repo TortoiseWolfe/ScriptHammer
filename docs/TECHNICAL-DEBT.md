@@ -31,52 +31,6 @@ This document tracks known technical issues, workarounds, and future concerns th
 
 ## Current Issues
 
-### 7. Environment Variable Configuration Duplication
-
-**Date Added**: 2025-09-25
-**Severity**: Medium
-**Component**: Hot-reload system / nodemon configuration
-**Impact**: Architectural confusion, maintenance overhead
-
-**Issue**: Docker-specific environment variables are being set in the wrong location. The `nodemon-blog.json` configuration file contains Docker polling variables that should only be in `docker-compose.yml`.
-
-**Current State (INCORRECT)**:
-
-```json
-// nodemon-blog.json
-{
-  "env": {
-    "NODE_ENV": "development",
-    "CHOKIDAR_USEPOLLING": "true", // ❌ Docker-specific, wrong location
-    "CHOKIDAR_INTERVAL": "500" // ❌ Docker-specific, wrong location
-  }
-}
-```
-
-**Correct Approach**:
-
-- All Docker-specific environment variables should be in `docker-compose.yml` ONLY
-- nodemon config should remain portable and environment-agnostic
-- Docker polling settings belong in Docker configuration, not application config
-
-**Impact**:
-
-- Violates separation of concerns
-- Creates confusion about where to configure Docker polling
-- Makes nodemon config Docker-dependent when it shouldn't be
-- Duplicates configuration across multiple files
-
-**Resolution**:
-
-1. Remove `CHOKIDAR_USEPOLLING` and `CHOKIDAR_INTERVAL` from `nodemon-blog.json`
-2. Add `CHOKIDAR_INTERVAL=500` to `docker-compose.yml` environment section
-3. Keep nodemon config generic for use in any environment
-4. Document that Docker polling belongs in docker-compose.yml only
-
-**Workaround**: Currently functioning but architecturally incorrect. The polling works with this setup but needs refactoring for proper separation of concerns.
-
-## Current Issues
-
 ### 7. Disqus Theme Integration
 
 **Date Added**: 2025-09-28
@@ -97,23 +51,40 @@ This document tracks known technical issues, workarounds, and future concerns th
 
 - `/src/components/molecular/DisqusComments.tsx`
 
-### 8. Next.js Dynamic Params Warning
+## Resolved Issues
+
+### ~~9. Environment Variable Configuration Duplication~~ ✅ RESOLVED
+
+**Date Added**: 2025-09-25
+**Date Resolved**: 2025-09-30
+**Severity**: None (already resolved)
+**Impact**: None
+
+**Issue**: Documentation mentioned `nodemon-blog.json` containing Docker polling variables.
+
+**Resolution**:
+
+- File was already removed in previous cleanup
+- Docker environment variables properly configured in `docker-compose.yml`
+- No action needed - documentation was outdated
+
+### ~~8. Next.js Dynamic Params Warning~~ ✅ RESOLVED
 
 **Date Added**: 2025-09-28
-**Severity**: Low
-**Impact**: Dev warnings only, no production impact
+**Date Resolved**: 2025-09-30
+**Severity**: None
+**Impact**: None
 
-**Issue**: Next.js 15 shows warnings about using `params.slug` without awaiting params first in blog pages.
+**Issue**: Next.js 15 showed warnings about using `params.slug` without awaiting params first in blog pages.
 
-**Current State**: Non-breaking warning in development logs.
+**Resolution**:
 
-**Proper Solution**: Update blog page components to properly await params before accessing properties per Next.js 15 best practices.
+- Updated `/src/app/blog/[slug]/page.tsx` to use `params: Promise<{ slug: string }>`
+- Updated `/src/app/blog/tags/[tag]/page.tsx` to use `params: Promise<{ tag: string }>`
+- Both files now properly await params before accessing properties
+- Follows Next.js 15 async params best practices
 
-**Files Affected**:
-
-- `/src/app/blog/[slug]/page.tsx`
-
-## Resolved Issues
+## Resolved Issues (Previous)
 
 ### ~~6. lint-staged Git Stash Issues in Docker~~ ✅ RESOLVED
 

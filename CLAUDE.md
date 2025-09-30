@@ -10,9 +10,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **Clean Architecture** - Follow established patterns consistently
 5. **No Technical Debt** - Never commit TODOs or workarounds
 
-## Current Sprint: Technical Debt Reduction (Sprint 3.5)
+## Current Status: Post-Sprint 3.5 - Ready for Next Phase
 
-**IMPORTANT**: See `/CONSTITUTION.md` for current sprint priorities. Focus on eliminating technical debt before adding new features.
+**Sprint 3.5 Complete** ✅ - All technical debt eliminated (2025-09-19)
+**Post-Cleanup Complete** ✅ - Next.js 15 params fixed (2025-09-30)
+
+**Next Steps**: Choose between PRP-001 (Methodology Documentation) or Sprint 4 (Advanced Features)
 
 ## Component Structure Requirements ⚠️ MANDATORY
 
