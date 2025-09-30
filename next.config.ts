@@ -46,6 +46,9 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   cleanDistDir: true,
+  env: {
+    NEXT_PUBLIC_PAGESPEED_API_KEY: process.env.NEXT_PUBLIC_PAGESPEED_API_KEY,
+  },
   webpack: (config, { isServer }) => {
     // Optimize code splitting for better performance
     if (!isServer) {
