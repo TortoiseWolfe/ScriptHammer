@@ -7,16 +7,17 @@ import blogData from '@/lib/blog/blog-data.json';
 import type { BlogPost } from '@/types/blog';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     tag: string;
-  };
+  }>;
 }
 
 // Generate metadata for SEO
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const decodedTag = decodeURIComponent(params.tag);
+  const { tag } = await params;
+  const decodedTag = decodeURIComponent(tag);
 
   // Find the proper case version of the tag
   const allTags = new Set<string>();
@@ -89,9 +90,10 @@ function getRelatedTags(currentTag: string, posts: any[]): string[] {
     .map(([tag]) => tag);
 }
 
-export default function TagPage({ params }: PageProps) {
-  const decodedTag = decodeURIComponent(params.tag);
-  const posts = getPostsByTag(params.tag);
+export default async function TagPage({ params }: PageProps) {
+  const { tag } = await params;
+  const decodedTag = decodeURIComponent(tag);
+  const posts = getPostsByTag(tag);
 
   // If no posts found, show 404
   if (posts.length === 0) {
