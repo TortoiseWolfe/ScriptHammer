@@ -124,7 +124,8 @@ export function FontSizeControl() {
                 d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2M21 9H15L13.5 7.5C13.1 7.1 12.6 6.9 12 6.9S10.9 7.1 10.5 7.5L7.91 10.09C7.66 10.34 7.66 10.76 7.91 11.01L10.5 13.6C10.9 14 11.4 14.2 12 14.2S13.1 14 13.5 13.6L15 12.1H21C21.6 12.1 22 11.7 22 11.1V10C22 9.4 21.6 9 21 9M8.5 12.5L12 16L15.5 12.5L12 22L8.5 12.5Z"
               />
             </svg>
-            More
+            <span className="hidden sm:inline">More Options</span>
+            <span className="sm:hidden">Options</span>
           </Link>
         </div>
       </div>
