@@ -77,24 +77,65 @@ A Product Requirements Prompt (PRP) focuses on **what users need**, not how to b
 
 **SpecKit Workflow** (PRP → Spec → Plan → Tasks → Implement):
 
+> **Note for Readers**: Steps 2-4 require [Claude Code CLI](https://claude.com/claude-code) installed and configured. If you don't have Claude Code, skip directly to step 5 (component generation) and follow the code examples in Part 2.
+
 ```bash
-# 1. Create feature branch
+# 1. Create feature branch (run from host machine)
 ./scripts/prp-to-feature.sh countdown-timer 016
 
-# 2. Generate SpecKit spec (tell Claude)
+# 2. Generate SpecKit spec (Claude Code slash command - tell Claude in the CLI)
 /specify New Year's countdown banner with $321/year offer
 
-# 3. Generate implementation plan
+# 3. Generate implementation plan (Claude Code slash command)
 /plan Use native Date, localStorage, integrate into layout
 
-# 4. Generate task list
+# 4. Generate task list (Claude Code slash command)
 /tasks Focus on Test-Driven Development (TDD) approach
 
-# 5. Generate component scaffold
-docker compose exec scripthammer pnpm run generate:component CountdownBanner atomic
+# 5. Generate component scaffold (run in Docker container - interactive prompts)
+docker compose exec scripthammer pnpm run generate:component
+# You'll be prompted for:
+#   - Component name: CountdownBanner
+#   - Category: atomic
+#   - Has props? Y
+#   - Include hooks? N
 ```
 
-**Generated Artifacts**: SpecKit creates `spec.md` (Given/When/Then, Functional Requirements/FR-001+, Non-Functional Requirements/NFR-001+), `plan.md` (technical specs), `research.md`, `data-model.md`, `tasks.md`
+<details>
+<summary><strong>Alternative: CLI Arguments</strong> (for scripting/automation)</summary>
+
+```bash
+docker compose exec scripthammer pnpm run generate:component -- \
+  --name CountdownBanner \
+  --category atomic \
+  --hasProps true \
+  --withHooks false
+```
+
+Categories: `subatomic`, `atomic`, `molecular`, `organisms`, `templates`
+
+</details>
+
+**Generated Artifacts** (if using Claude Code): SpecKit creates `spec.md` (Given/When/Then, Functional Requirements/FR-001+, Non-Functional Requirements/NFR-001+), `plan.md` (technical specs), `research.md`, `data-model.md`, `tasks.md`
+
+**Without Claude Code**: Skip to step 5 and follow the code implementation in Part 2. The component generator creates the 5-file pattern scaffold:
+
+```
+CountdownBanner/
+├── index.tsx                             # Barrel export (re-exports component)
+├── CountdownBanner.tsx                   # Main component (implement below)
+├── CountdownBanner.test.tsx              # Unit tests (see test code below)
+├── CountdownBanner.stories.tsx           # Storybook stories (update after implementation)
+└── CountdownBanner.accessibility.test.tsx # A11y tests (update after implementation)
+```
+
+The `index.tsx` barrel export allows you to import with `import { CountdownBanner } from '@/components/atomic/CountdownBanner'` instead of specifying the full file path.
+
+> **Note for Storybook**: When creating `CountdownBanner.stories.tsx`, use `@storybook/nextjs` for imports in Next.js projects:
+>
+> ```tsx
+> import type { Meta, StoryObj } from '@storybook/nextjs'; // Not @storybook/react
+> ```
 
 ---
 
@@ -105,25 +146,42 @@ After running the SpecKit workflow, `/plan` generates technical specifications l
 **Tests** (`CountdownBanner.test.tsx`):
 
 ```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+
+// Mock Next.js router (required for useRouter hook)
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+  }),
+}));
+
+import { CountdownBanner } from './CountdownBanner';
+
 describe('CountdownBanner', () => {
-  it('renders countdown correctly', () => {
-    vi.setSystemTime(new Date('2025-12-31T23:00:00'));
-    render(<CountdownBanner />);
-    expect(screen.getByText(/1d/)).toBeInTheDocument();
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  it('returns null after midnight', () => {
-    vi.setSystemTime(new Date('2026-01-01T00:00:01'));
+  it('renders countdown timer', () => {
     const { container } = render(<CountdownBanner />);
-    expect(container.firstChild).toBeNull();
+    // Verify countdown class exists (DaisyUI component)
+    expect(container.querySelector('.countdown')).toBeInTheDocument();
   });
 
-  it('persists dismissal', async () => {
+  it('renders promotional content', () => {
     render(<CountdownBanner />);
-    screen.getByLabelText(/dismiss/i).click();
-    await waitFor(() =>
-      expect(localStorage.getItem('countdown-dismissed-2026')).toBe('true')
-    );
+    expect(screen.getByText('$321/year')).toBeInTheDocument();
+    expect(screen.getByText('Book Now')).toBeInTheDocument();
+  });
+
+  it('persists dismissal with timestamp', () => {
+    render(<CountdownBanner />);
+    const dismissButton = screen.getByLabelText(/dismiss/i);
+    fireEvent.click(dismissButton);
+    const dismissedAt = localStorage.getItem('countdown-dismissed');
+    expect(dismissedAt).toBeTruthy();
+    expect(parseInt(dismissedAt!, 10)).toBeGreaterThan(Date.now() - 1000);
   });
 });
 ```
@@ -134,9 +192,10 @@ describe('CountdownBanner', () => {
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/atomic/Button';
+import Button from '@/components/atomic/Button';
 
-const DISMISS_KEY = 'countdown-dismissed-2026'; // Year-specific resets annually
+const DISMISS_KEY = 'countdown-dismissed';
+const DISMISS_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 export const CountdownBanner = () => {
   const router = useRouter();
@@ -153,7 +212,16 @@ export const CountdownBanner = () => {
   // Check dismissal on mount
   useEffect(() => {
     setMounted(true);
-    setIsDismissed(localStorage.getItem(DISMISS_KEY) === 'true');
+    try {
+      const dismissedAt = localStorage.getItem(DISMISS_KEY);
+      if (dismissedAt) {
+        const timeSinceDismissal = Date.now() - parseInt(dismissedAt, 10);
+        setIsDismissed(timeSinceDismissal < DISMISS_DURATION);
+      }
+    } catch (e) {
+      // Safari private mode - user will see banner every time
+      setIsDismissed(false);
+    }
   }, []);
 
   // Calculate and update countdown
@@ -186,32 +254,18 @@ export const CountdownBanner = () => {
 
   return (
     <div
-      className="alert alert-warning sticky top-0 z-50"
+      className="bg-warning text-warning-content fixed top-20 right-6 z-50 max-w-sm rounded-lg p-4 shadow-2xl max-sm:top-16 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
       role="banner"
       aria-live="polite"
     >
-      <div className="flex flex-1 flex-col items-center justify-between gap-4 sm:flex-row">
+      <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="text-2xl">⏰</span>
           <div>
             <span className="font-bold">New Year Special</span>
-            <div className="countdown font-mono text-2xl">
-              <span style={{ '--value': timeLeft.days } as any}>
-                {timeLeft.days}
-              </span>
-              d
-              <span style={{ '--value': timeLeft.hours } as any}>
-                {timeLeft.hours}
-              </span>
-              h
-              <span style={{ '--value': timeLeft.minutes } as any}>
-                {timeLeft.minutes}
-              </span>
-              m
-              <span style={{ '--value': timeLeft.seconds } as any}>
-                {timeLeft.seconds}
-              </span>
-              s
+            <div className="font-mono text-lg">
+              {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m{' '}
+              {timeLeft.seconds}s
             </div>
           </div>
         </div>
@@ -229,8 +283,13 @@ export const CountdownBanner = () => {
         <button
           className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2"
           onClick={() => {
-            localStorage.setItem(DISMISS_KEY, 'true');
-            setIsDismissed(true);
+            try {
+              localStorage.setItem(DISMISS_KEY, Date.now().toString());
+              setIsDismissed(true);
+            } catch (e) {
+              // Safari private mode - just hide for session
+              setIsDismissed(true);
+            }
           }}
           aria-label="Dismiss countdown banner"
         >
@@ -246,12 +305,14 @@ export const CountdownBanner = () => {
 
 ```tsx
 import { CountdownBanner } from '@/components/atomic/CountdownBanner';
+import { GlobalNav } from '@/components/GlobalNav';
+import { Footer } from '@/components/Footer';
 
 export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <Header />
+        <GlobalNav />
         <CountdownBanner /> {/* Appears on all pages */}
         <main>{children}</main>
         <Footer />
@@ -264,8 +325,11 @@ export default function RootLayout({ children }) {
 **Validation**:
 
 ```bash
-docker compose exec scripthammer pnpm run test:suite
-docker compose exec scripthammer pnpm run build
+# Format code to match project style
+docker compose exec scripthammer pnpm run format
+
+# Run full test suite and build
+docker compose exec scripthammer sh -c "pnpm run test:suite && pnpm run build"
 ```
 
 ---
@@ -297,7 +361,7 @@ docker compose exec scripthammer pnpm run build
 
 **Customize**: Edit price, CTA text, target date in code
 
-**Test**: `docker compose exec scripthammer pnpm run test:suite && pnpm run build`
+**Test**: `docker compose exec scripthammer sh -c "pnpm run test:suite && pnpm run build"`
 
 **Deploy**: `git add . && git commit -m "feat: Countdown banner" && git push` (GitHub Actions auto-deploys)
 

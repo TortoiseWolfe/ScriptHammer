@@ -62,6 +62,27 @@ docker compose exec scripthammer pnpm run storybook      # Start Storybook
 docker compose exec scripthammer pnpm run docker:clean   # Clean start if issues
 ```
 
+### Component Generator
+
+**Interactive mode** (recommended for learning):
+
+```bash
+docker compose exec scripthammer pnpm run generate:component
+# Prompts for: name, category, hasProps, includeHooks
+```
+
+**CLI mode** (for scripting/automation):
+
+```bash
+docker compose exec scripthammer pnpm run generate:component -- \
+  --name ComponentName \
+  --category atomic \
+  --hasProps true \
+  --withHooks false
+
+# Categories: subatomic, atomic, molecular, organisms, templates
+```
+
 ### Testing Commands (Inside Docker)
 
 ```bash
@@ -100,6 +121,7 @@ The project uses Product Requirements Prompts for feature implementation:
 
 **Remaining PRPs** (0.3.0) - Priority Order:
 
+- ~~PRP-001: PRP Methodology~~ ✅ Completed (merged before blog posts)
 - ~~PRP-010: EmailJS Integration~~ ✅ Completed
 - ~~PRP-011: PWA Background Sync~~ ✅ Completed
 - ~~PRP-013: Calendar Integration~~ ✅ Completed
@@ -107,7 +129,6 @@ The project uses Product Requirements Prompts for feature implementation:
 - **Auto-Configuration System** ✅ Completed (2025-09-18) - Auto-detects project name from git remote (not a formal PRP)
 - ~~**Lighthouse Phases 3 & 4**~~ ✅ Completed (2025-09-30) - Best Practices 100/100, PWA deprecated in Lighthouse 12.0
 - PRP-012: Visual Regression Testing (P2 - deferred until UI stable)
-- PRP-001: PRP Methodology (P3 - document after implementation)
 
 **Future PRPs** (0.4.0):
 

@@ -16,7 +16,9 @@
       "WebFetch(domain:www.googleapis.com)",
       "Bash(xargs:*)",
       "Bash(python3:*)",
-      "Bash(/dev/null)"
+      "Bash(/dev/null)",
+      "Bash(test:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []
