@@ -97,7 +97,7 @@ The project automatically detects your repository name and owner from git remote
 
 - **Developer Guide**: See [CLAUDE.md](./CLAUDE.md) for comprehensive development documentation
 - **Component Creation**: [docs/CREATING_COMPONENTS.md](./docs/CREATING_COMPONENTS.md)
-- **PRP Workflow**: [docs/PRP-EXECUTION-GUIDE.md](./docs/PRP-EXECUTION-GUIDE.md)
+- **PRP/SpecKit Workflow**: [docs/prp-docs/SPECKIT-PRP-GUIDE.md](./docs/prp-docs/SPECKIT-PRP-GUIDE.md) - Quick reference for feature development
 - **Testing Guide**: [docs/project/TESTING.md](./docs/project/TESTING.md)
 - **Contributing**: [docs/project/CONTRIBUTING.md](./docs/project/CONTRIBUTING.md)
 - **Security**: [docs/project/SECURITY.md](./docs/project/SECURITY.md)

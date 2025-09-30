@@ -17,6 +17,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Next Steps**: Choose between PRP-001 (Methodology Documentation) or Sprint 4 (Advanced Features)
 
+## PRP/SpecKit Workflow
+
+ScriptHammer uses Product Requirements Prompts (PRPs) integrated with SpecKit workflow commands for feature development.
+
+**Quick Start**: See [SPECKIT-PRP-GUIDE.md](docs/prp-docs/SPECKIT-PRP-GUIDE.md)
+
+**Full Guide**: See [PRP Methodology](docs/prp-docs/prp-methodology-prp.md)
+
+**Workflow**:
+
+1. Write PRP: `docs/prp-docs/<feature>-prp.md`
+2. Create branch: `./scripts/prp-to-feature.sh <feature> <number>`
+3. Run SpecKit: `/specify` → `/plan` → `/tasks` → `/implement`
+
+**When to Use**: Features taking >1 day, external integrations, architectural changes
+
 ## Component Structure Requirements ⚠️ MANDATORY
 
 **CRITICAL**: Components must follow the 5-file pattern or CI/CD will fail:
