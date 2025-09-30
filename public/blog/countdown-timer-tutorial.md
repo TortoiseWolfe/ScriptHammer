@@ -17,7 +17,7 @@ categories:
 excerpt: Learn the PRP/SpecKit workflow by building a countdown timer. From requirements to production code with ScriptHammer template.
 featuredImage: /blog-images/countdown-timer-tutorial/countdown-banner-preview.svg
 featuredImageAlt: Countdown timer component showing days, hours, minutes, seconds with New Year sale promotion
-ogImage: /blog-images/countdown-timer-tutorial/countdown-banner-og.svg
+ogImage: /blog-images/countdown-timer-tutorial/countdown-banner-og.png
 ogTitle: Build a Countdown Timer - PRP/SpecKit Tutorial
 ogDescription: Learn the PRP/SpecKit workflow by building a countdown timer. From requirements to production code.
 twitterCard: summary_large_image
