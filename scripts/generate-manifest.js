@@ -52,7 +52,7 @@ const manifest = {
   short_name: projectConfig.projectName.substring(0, 12),
   description: `${projectConfig.projectName} - Modern Next.js template with PWA, theming, and interactive components`,
   theme_color: '#2563eb',
-  background_color: '#ffffff',
+  background_color: '#1a1a1a', // Dark splash screen (Lighthouse Phase 1)
   display: 'standalone',
   start_url: `${projectConfig.basePath}/`,
   scope: `${projectConfig.basePath}/`,
@@ -111,15 +111,15 @@ const manifest = {
       purpose: 'any',
     },
     {
-      src: `${projectConfig.basePath}/icon-192-maskable.svg`,
+      src: `${projectConfig.basePath}/icon-192x192-maskable.png`,
       sizes: '192x192',
-      type: 'image/svg+xml',
+      type: 'image/png',
       purpose: 'maskable',
     },
     {
-      src: `${projectConfig.basePath}/icon-512-maskable.svg`,
+      src: `${projectConfig.basePath}/icon-512x512-maskable.png`,
       sizes: '512x512',
-      type: 'image/svg+xml',
+      type: 'image/png',
       purpose: 'maskable',
     },
   ],
