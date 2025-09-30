@@ -124,6 +124,7 @@ const InfoTooltip = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className="link link-primary text-xs"
+                aria-label={`Learn more about ${title}`}
               >
                 Learn more →
               </a>
