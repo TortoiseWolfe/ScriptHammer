@@ -1,74 +1,50 @@
 <svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="ogBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
     </linearGradient>
   </defs>
 
-  <!-- Background -->
+  <!-- Bright warning/alert yellow background -->
   <rect width="1200" height="630" fill="url(#ogBg)"/>
 
-  <!-- Grid pattern -->
-  <g opacity="0.08">
-    <pattern id="ogGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" stroke-width="1.5"/>
-    </pattern>
-    <rect width="1200" height="630" fill="url(#ogGrid)" />
-  </g>
+  <!-- Main visual - big countdown display -->
+  <g transform="translate(0, 80)">
+    <!-- Giant clock emoji -->
+    <text x="600" y="120" font-size="140" text-anchor="middle">⏰</text>
 
-  <!-- Main content container -->
-  <g transform="translate(100, 120)">
-    <!-- Title -->
-    <text x="500" y="0" font-family="Arial, sans-serif" font-size="52" font-weight="bold" fill="white" text-anchor="middle">Build a Countdown Timer</text>
-    <text x="500" y="60" font-family="Arial, sans-serif" font-size="32" fill="white" opacity="0.9" text-anchor="middle">ScriptHammer Tutorial</text>
-
-    <!-- Banner preview -->
+    <!-- Huge countdown numbers -->
     <g transform="translate(0, 120)">
-      <!-- Banner background -->
-      <rect x="0" y="0" width="1000" height="240" rx="16" fill="#fbbf24" opacity="0.95"/>
+      <!-- Days -->
+      <text x="200" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">92</text>
+      <text x="200" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">DAYS</text>
 
-      <!-- Clock emoji -->
-      <text x="50" y="120" font-size="72" fill="#000">⏰</text>
+      <!-- Colon -->
+      <text x="340" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
 
-      <!-- New Year Special -->
-      <text x="150" y="90" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#000">New Year Special</text>
+      <!-- Hours -->
+      <text x="480" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">08</text>
+      <text x="480" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">HOURS</text>
 
-      <!-- Countdown display -->
-      <g transform="translate(150, 110)">
-        <!-- Days -->
-        <text x="0" y="40" font-family="monospace" font-size="52" font-weight="bold" fill="#000">31</text>
-        <text x="70" y="40" font-family="monospace" font-size="40" fill="#000">d</text>
+      <!-- Colon -->
+      <text x="620" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
 
-        <!-- Hours -->
-        <text x="130" y="40" font-family="monospace" font-size="52" font-weight="bold" fill="#000">12</text>
-        <text x="200" y="40" font-family="monospace" font-size="40" fill="#000">h</text>
+      <!-- Minutes -->
+      <text x="760" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">47</text>
+      <text x="760" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">MINS</text>
 
-        <!-- Minutes -->
-        <text x="260" y="40" font-family="monospace" font-size="52" font-weight="bold" fill="#000">47</text>
-        <text x="330" y="40" font-family="monospace" font-size="40" fill="#000">m</text>
+      <!-- Colon -->
+      <text x="900" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
 
-        <!-- Seconds -->
-        <text x="390" y="40" font-family="monospace" font-size="52" font-weight="bold" fill="#000">23</text>
-        <text x="460" y="40" font-family="monospace" font-size="40" fill="#000">s</text>
-      </g>
-
-      <!-- Price and offer -->
-      <g transform="translate(650, 100)">
-        <text x="0" y="0" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#000">$321/year</text>
-        <text x="0" y="45" font-family="Arial, sans-serif" font-size="22" fill="#000" opacity="0.9">Custom ScriptHammer Setup</text>
-      </g>
-
-      <!-- Book Now button -->
-      <rect x="700" y="165" width="200" height="70" rx="8" fill="#8b5cf6"/>
-      <text x="800" y="210" font-family="Arial, sans-serif" font-size="26" font-weight="bold" fill="white" text-anchor="middle">Book Now</text>
-
-      <!-- Dismiss X -->
-      <circle cx="960" cy="40" r="24" fill="#000" opacity="0.1"/>
-      <text x="960" y="50" font-family="Arial, sans-serif" font-size="28" fill="#000" text-anchor="middle">✕</text>
+      <!-- Seconds -->
+      <text x="1000" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">23</text>
+      <text x="1000" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">SECS</text>
     </g>
 
-    <!-- Bottom tagline -->
-    <text x="500" y="440" font-family="Arial, sans-serif" font-size="28" fill="white" opacity="0.85" text-anchor="middle">Learn PRP/SpecKit workflow • Production-ready code • 7-min read</text>
+    <!-- Bottom text -->
+    <text x="600" y="360" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#1f2937" text-anchor="middle">Build This Component</text>
+    <text x="600" y="430" font-family="Arial, sans-serif" font-size="42" fill="#1f2937" text-anchor="middle">React • TypeScript • TDD Tutorial</text>
+    <text x="600" y="490" font-family="Arial, sans-serif" font-size="38" fill="#7c2d12" text-anchor="middle">ScriptHammer Template</text>
   </g>
 </svg>
