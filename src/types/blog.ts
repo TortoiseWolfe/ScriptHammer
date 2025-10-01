@@ -46,6 +46,10 @@ export interface PostMetadata {
   featuredImage?: string;
   featuredImageAlt?: string;
   ogImage?: string;
+  ogTitle?: string;
+  ogDescription?: string;
+  twitterCard?: string;
+  linkedinAuthorUrl?: string;
 }
 
 export interface SEOMetadata {
