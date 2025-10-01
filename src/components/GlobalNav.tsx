@@ -175,9 +175,12 @@ export function GlobalNav() {
             ))}
           </nav>
 
-          {/* Mobile Menu */}
+          {/* Mobile Menu - 44px touch target */}
           <div className="dropdown dropdown-end md:hidden">
-            <label tabIndex={0} className="btn btn-ghost btn-circle">
+            <label
+              tabIndex={0}
+              className="btn btn-ghost btn-circle min-h-11 min-w-11"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -210,13 +213,13 @@ export function GlobalNav() {
             </ul>
           </div>
 
-          {/* Right Section: Theme & PWA - Tighter spacing on mobile */}
-          <div className="flex items-center gap-1 sm:gap-2">
+          {/* Right Section: Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
+          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
             {/* PWA Install Button */}
             {showInstallButton && !isInstalled && (
               <button
                 onClick={handleInstallClick}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm min-h-11 min-w-11"
                 title="Progressive Web App (PWA) - Install this app for offline access and better performance"
               >
                 <svg
@@ -242,11 +245,11 @@ export function GlobalNav() {
             {/* Color Vision Control */}
             <ColorblindToggle className="compact" />
 
-            {/* Theme Selector */}
+            {/* Theme Selector - Mobile-first touch targets */}
             <div className="dropdown dropdown-end">
               <label
                 tabIndex={0}
-                className="btn btn-ghost btn-circle btn-xs sm:btn-md"
+                className="btn btn-ghost btn-circle min-h-11 min-w-11"
                 title="Change theme"
               >
                 <svg
