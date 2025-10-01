@@ -336,8 +336,8 @@ export async function generateMetadata({
     },
     other: {
       author: post.author.name,
-      ...(post.seo?.linkedinAuthorUrl && {
-        'article:author': post.seo.linkedinAuthorUrl,
+      ...(post.metadata?.linkedinAuthorUrl && {
+        'article:author': post.metadata.linkedinAuthorUrl,
       }),
       'twitter:label1': 'Reading time',
       'twitter:data1': `${readingTimeMinutes} minute${readingTimeMinutes > 1 ? 's' : ''}`,
