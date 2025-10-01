@@ -21,6 +21,7 @@ ogImage: /blog-images/countdown-timer-tutorial/countdown-banner-og.png
 ogTitle: Build a Countdown Timer - PRP/SpecKit Tutorial
 ogDescription: Learn the PRP/SpecKit workflow by building a countdown timer. Step-by-step tutorial from requirements to production-ready code with ScriptHammer.
 twitterCard: summary_large_image
+linkedinAuthorUrl: https://www.linkedin.com/in/pohlner/
 ---
 
 # From Template to Client: Building Landing Pages That Convert
