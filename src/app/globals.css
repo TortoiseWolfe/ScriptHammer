@@ -1,6 +1,17 @@
 @import 'tailwindcss';
 @import '../styles/colorblind-patterns.css';
 @import '../styles/prism-vscode-dark.css';
+@import '../styles/mobile-first-utilities.css';
+
+@theme {
+  /* Mobile-first breakpoints (PRP-017) */
+  --breakpoint-xs: 20rem; /* 320px - Small phones (minimum supported) */
+  --breakpoint-sm: 26.75rem; /* 428px - Standard phones */
+  --breakpoint-md: 48rem; /* 768px - Tablets */
+  --breakpoint-lg: 64rem; /* 1024px - Desktop */
+  --breakpoint-xl: 80rem; /* 1280px - Large desktop */
+}
+
 @plugin "daisyui" {
   themes:
     light, dark, cupcake, bumblebee, emerald, corporate, synthwave, retro,
@@ -22,7 +33,7 @@
   size-adjust: 100%;
 }
 
-/* Accessibility Font Scaling System */
+/* Accessibility Font Scaling System + Mobile-First Fluid Typography (PRP-017) */
 :root {
   /* Base scale factor - controlled by accessibility settings */
   --font-scale-factor: 1;
@@ -33,20 +44,43 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Scaled text sizes */
-  --text-xs: calc(0.75rem * var(--font-scale-factor));
-  --text-sm: calc(0.875rem * var(--font-scale-factor));
-  --text-base: calc(1rem * var(--font-scale-factor));
-  --text-lg: calc(1.125rem * var(--font-scale-factor));
-  --text-xl: calc(1.25rem * var(--font-scale-factor));
-  --text-2xl: calc(1.5rem * var(--font-scale-factor));
-  --text-3xl: calc(1.875rem * var(--font-scale-factor));
-  --text-4xl: calc(2.25rem * var(--font-scale-factor));
-  --text-5xl: calc(3rem * var(--font-scale-factor));
-  --text-6xl: calc(3.75rem * var(--font-scale-factor));
-  --text-7xl: calc(4.5rem * var(--font-scale-factor));
-  --text-8xl: calc(6rem * var(--font-scale-factor));
-  --text-9xl: calc(8rem * var(--font-scale-factor));
+  /* Fluid typography using clamp() for mobile-first responsive scaling
+   * Format: clamp(min, preferred, max) * scale-factor
+   * min: mobile (320px), preferred: fluid calc, max: desktop (1024px+)
+   */
+  --text-xs: calc(
+    clamp(0.625rem, 0.5rem + 0.5vw, 0.75rem) * var(--font-scale-factor)
+  );
+  --text-sm: calc(
+    clamp(0.75rem, 0.65rem + 0.5vw, 0.875rem) * var(--font-scale-factor)
+  );
+  --text-base: calc(
+    clamp(0.875rem, 0.8rem + 0.5vw, 1rem) * var(--font-scale-factor)
+  );
+  --text-lg: calc(
+    clamp(1rem, 0.95rem + 0.5vw, 1.125rem) * var(--font-scale-factor)
+  );
+  --text-xl: calc(
+    clamp(1.125rem, 1rem + 0.75vw, 1.25rem) * var(--font-scale-factor)
+  );
+  --text-2xl: calc(
+    clamp(1.25rem, 1.1rem + 1vw, 1.5rem) * var(--font-scale-factor)
+  );
+  --text-3xl: calc(
+    clamp(1.5rem, 1.3rem + 1.25vw, 1.875rem) * var(--font-scale-factor)
+  );
+  --text-4xl: calc(
+    clamp(1.75rem, 1.5rem + 1.5vw, 2.25rem) * var(--font-scale-factor)
+  );
+  --text-5xl: calc(clamp(2rem, 1.75rem + 2vw, 3rem) * var(--font-scale-factor));
+  --text-6xl: calc(
+    clamp(2.5rem, 2rem + 2.5vw, 3.75rem) * var(--font-scale-factor)
+  );
+  --text-7xl: calc(
+    clamp(3rem, 2.5rem + 3vw, 4.5rem) * var(--font-scale-factor)
+  );
+  --text-8xl: calc(clamp(4rem, 3rem + 4vw, 6rem) * var(--font-scale-factor));
+  --text-9xl: calc(clamp(5rem, 4rem + 5vw, 8rem) * var(--font-scale-factor));
 }
 
 /* Subtle Animations */
