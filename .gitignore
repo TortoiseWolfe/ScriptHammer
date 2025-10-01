@@ -64,3 +64,4 @@ specify
 tasks
 storybook-static/
 .component-backup-*
+docs/visual-testing/
