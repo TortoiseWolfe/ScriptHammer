@@ -66,8 +66,9 @@ const InfoTooltip = ({
                 ? 'dropdown-end'
                 : '';
 
-  // Determine size class
-  const sizeClass = size === 'compact' ? 'w-64' : 'w-80';
+  // Determine size class - use max-width for mobile responsiveness
+  const sizeClass =
+    size === 'compact' ? 'w-full max-w-64 sm:w-64' : 'w-full max-w-80 sm:w-80';
 
   return (
     <div className={`dropdown dropdown-hover ${positionClass}`}>
@@ -91,7 +92,7 @@ const InfoTooltip = ({
         </svg>
       </button>
       <div
-        className={`card compact dropdown-content bg-base-200 border-base-300 rounded-box z-[100] border shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl backdrop-brightness-90 ${sizeClass}`}
+        className={`card compact dropdown-content bg-base-200 border-base-300 rounded-box z-[100] border shadow-[0_10px_40px_rgba(0,0,0,0.25)] backdrop-blur-xl backdrop-brightness-90 ${sizeClass} mx-2`}
       >
         <div className="card-body">
           <h3 className="text-sm font-semibold">{title}</h3>
@@ -829,7 +830,7 @@ export default function StatusPage() {
               bordered
             >
               <div className="space-y-2">
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-0">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold">Status:</span>
                     <InfoTooltip
@@ -841,7 +842,7 @@ export default function StatusPage() {
                   </div>
                   <span className="badge badge-success">Operational</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-0">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold">Version:</span>
                     <InfoTooltip
@@ -853,7 +854,7 @@ export default function StatusPage() {
                   </div>
                   <span>{buildInfo.version}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-0">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold">Environment:</span>
                     <InfoTooltip
