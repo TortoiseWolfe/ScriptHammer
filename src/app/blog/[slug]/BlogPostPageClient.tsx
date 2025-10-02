@@ -40,7 +40,7 @@ export default function BlogPostPageClient({
   const [showSeoDetails, setShowSeoDetails] = useState(false);
 
   return (
-    <article className="container mx-auto max-w-5xl px-4 py-8">
+    <article className="container mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Main Post Content - Now full width */}
       <BlogPostViewer
         post={post}
@@ -78,7 +78,7 @@ export default function BlogPostPageClient({
                 </h3>
                 <button
                   onClick={() => setShowSeoDetails(false)}
-                  className="btn btn-circle btn-xs sm:btn-sm"
+                  className="btn btn-circle btn-xs sm:btn-sm min-h-11 min-w-11"
                   aria-label="Close"
                 >
                   ✕
@@ -91,7 +91,7 @@ export default function BlogPostPageClient({
                 <div className="mt-4 flex gap-2 sm:mt-6">
                   <Link
                     href="/blog/seo"
-                    className="btn btn-ghost btn-xs sm:btn-sm"
+                    className="btn btn-ghost btn-xs sm:btn-sm min-h-11 min-w-11"
                   >
                     SEO Dashboard
                   </Link>
@@ -102,9 +102,9 @@ export default function BlogPostPageClient({
         </div>
       )}
 
-      {/* Compact Footer - Author + Share in one tight section */}
-      <div className="border-base-300 mt-6 border-t pt-4">
-        <div className="flex items-center justify-between gap-4">
+      {/* Compact Footer - Author + Share (PRP-017 T038) */}
+      <div className="border-base-300 mt-6 border-t pt-4 sm:mt-8 sm:pt-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Author info */}
           {author && (
             <div className="flex items-center gap-3">
@@ -132,7 +132,7 @@ export default function BlogPostPageClient({
                 )}
               </div>
 
-              {/* Author social links - compact */}
+              {/* Author social links - mobile-first touch targets (PRP-017 T038) */}
               {author.socialLinks && author.socialLinks.length > 0 && (
                 <div className="flex items-center gap-1">
                   {author.socialLinks
@@ -143,7 +143,7 @@ export default function BlogPostPageClient({
                         href={link.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:text-primary p-1"
+                        className="hover:text-primary inline-flex min-h-11 min-w-11 items-center justify-center"
                         aria-label={`${author.name} on ${link.platform}`}
                       >
                         <SocialIcon

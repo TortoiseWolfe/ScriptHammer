@@ -46,10 +46,12 @@ export const Button: React.FC<ButtonProps> = ({
     error: 'btn-error',
   };
 
+  // Mobile-first touch targets (PRP-017 T026)
+  // All sizes enforce 44×44px minimum for WCAG AAA / Apple HIG compliance
   const sizeClasses = {
-    xs: 'btn-xs',
-    sm: 'btn-sm',
-    md: '',
+    xs: 'btn-xs min-w-11 min-h-11',
+    sm: 'btn-sm min-w-11 min-h-11',
+    md: 'min-w-11 min-h-11',
     lg: 'btn-lg',
   };
 

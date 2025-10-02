@@ -51,9 +51,9 @@ describe('Card', () => {
     expect(container.firstChild).toHaveClass('card-compact');
   });
 
-  it('applies side class when side prop is true', () => {
+  it('applies side class when side prop is true (mobile-first: md:card-side)', () => {
     const { container } = render(<Card side>Content</Card>);
-    expect(container.firstChild).toHaveClass('card-side');
+    expect(container.firstChild).toHaveClass('md:card-side');
   });
 
   it('applies glass class when glass prop is true', () => {

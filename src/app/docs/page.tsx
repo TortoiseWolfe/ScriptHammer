@@ -154,7 +154,7 @@ export default function DocsPage() {
   ];
 
   return (
-    <main className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
+    <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       <header className="mb-8 text-center sm:mb-10 md:mb-12">
         <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
           Everything you need to know about ScriptHammer
@@ -225,7 +225,7 @@ export default function DocsPage() {
               href="https://github.com/TortoiseWolfe/ScriptHammer/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-primary"
+              className="btn btn-primary min-h-11 min-w-11"
             >
               Report an Issue
             </a>
@@ -233,11 +233,11 @@ export default function DocsPage() {
               href="https://github.com/TortoiseWolfe/ScriptHammer/discussions"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-outline"
+              className="btn btn-outline min-h-11 min-w-11"
             >
               Start a Discussion
             </a>
-            <Link href="/contact" className="btn btn-outline">
+            <Link href="/contact" className="btn btn-outline min-h-11 min-w-11">
               Contact Us
             </Link>
           </div>

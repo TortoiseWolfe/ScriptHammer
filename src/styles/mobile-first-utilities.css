@@ -1,0 +1,202 @@
+/**
+ * Mobile-First Utility Classes
+ * PRP-017: Mobile-First Design Overhaul
+ *
+ * Reusable utility classes for common mobile-first patterns
+ */
+
+/* ========================================================================
+   Container Patterns
+   ======================================================================== */
+
+/**
+ * Mobile-first container: Full width → constrained
+ * Mobile: Full width with padding
+ * Tablet: Larger padding
+ * Desktop: Centered with max-width
+ */
+.container-mobile-first {
+  @apply w-full px-4 sm:px-6 lg:mx-auto lg:max-w-7xl lg:px-8;
+}
+
+/* ========================================================================
+   Touch Target Standards
+   ======================================================================== */
+
+/**
+ * Touch target: 44×44px minimum (WCAG AAA + Apple HIG)
+ * Apply to all tappable elements on mobile
+ */
+.touch-target {
+  @apply min-h-11 min-w-11;
+}
+
+/**
+ * Touch target large: 48×48px (extra comfortable)
+ */
+.touch-target-lg {
+  @apply min-h-12 min-w-12;
+}
+
+/* ========================================================================
+   Layout Patterns
+   ======================================================================== */
+
+/**
+ * Stack to row: Vertical stacking → horizontal row
+ * Mobile: Flex column with gap
+ * Tablet+: Flex row with larger gap
+ */
+.stack-to-row {
+  @apply flex flex-col gap-4 sm:flex-row sm:gap-6 lg:gap-8;
+}
+
+/**
+ * Responsive grid: 1 col → 2 col → 3 col → 4 col
+ * Mobile: Single column
+ * Small mobile (500px): 2 columns
+ * Tablet: 3 columns
+ * Desktop: 4 columns
+ */
+.grid-responsive {
+  @apply grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4;
+}
+
+/**
+ * Responsive grid - simple 1→2→3
+ */
+.grid-responsive-simple {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
+
+/* ========================================================================
+   Visibility Controls
+   ======================================================================== */
+
+/**
+ * Mobile only: Visible on mobile, hidden on desktop
+ */
+.mobile-only {
+  @apply block md:hidden;
+}
+
+/**
+ * Desktop only: Hidden on mobile, visible on desktop
+ */
+.desktop-only {
+  @apply hidden md:block;
+}
+
+/**
+ * Tablet and up: Hidden on mobile, visible tablet+
+ */
+.tablet-up {
+  @apply hidden md:block;
+}
+
+/* ========================================================================
+   Spacing Patterns
+   ======================================================================== */
+
+/**
+ * Section padding: Responsive vertical spacing
+ * Mobile: py-8
+ * Tablet: py-12
+ * Desktop: py-16
+ */
+.section-padding {
+  @apply py-8 sm:py-12 lg:py-16;
+}
+
+/**
+ * Section padding horizontal: Responsive horizontal spacing
+ * Mobile: px-4
+ * Tablet: px-6
+ * Desktop: px-8
+ */
+.section-padding-x {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+/**
+ * Gap responsive: Responsive gap sizing
+ * Mobile: gap-2 (8px)
+ * Tablet: gap-4 (16px)
+ * Desktop: gap-6 (24px)
+ */
+.gap-responsive {
+  @apply gap-2 sm:gap-4 lg:gap-6;
+}
+
+/* ========================================================================
+   Text Patterns
+   ======================================================================== */
+
+/**
+ * Prose mobile: Optimized prose width for mobile
+ * Narrower on mobile for comfortable line length
+ */
+.prose-mobile {
+  @apply max-w-full sm:max-w-prose;
+}
+
+/**
+ * Prevent text overflow on mobile
+ */
+.text-safe {
+  @apply break-words hyphens-auto;
+}
+
+/* ========================================================================
+   Interactive Patterns
+   ======================================================================== */
+
+/**
+ * Button group mobile: Stack on mobile, row on desktop
+ */
+.button-group-mobile {
+  @apply flex flex-col gap-2 sm:flex-row sm:gap-4;
+}
+
+/**
+ * Form group mobile: Stack labels/inputs vertically on all sizes
+ */
+.form-group-mobile {
+  @apply flex flex-col gap-2;
+}
+
+/* ========================================================================
+   Image Patterns
+   ======================================================================== */
+
+/**
+ * Image responsive: Full width on mobile, constrained on desktop
+ */
+.img-responsive {
+  @apply h-auto w-full md:max-w-2xl;
+}
+
+/**
+ * Image cover: Maintain aspect ratio with object-cover
+ */
+.img-cover {
+  @apply h-full w-full object-cover;
+}
+
+/* ========================================================================
+   Card Patterns
+   ======================================================================== */
+
+/**
+ * Card mobile: Full width on mobile, constrained on desktop
+ */
+.card-mobile {
+  @apply w-full sm:max-w-sm md:max-w-md;
+}
+
+/**
+ * Card grid: Responsive card grid
+ */
+.card-grid {
+  @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+}
