@@ -12,7 +12,7 @@ export function FontSizeControl() {
     <div className="dropdown dropdown-end">
       <label
         tabIndex={0}
-        className="btn btn-ghost btn-circle btn-xs sm:btn-md"
+        className="btn btn-ghost btn-circle min-h-11 min-w-11"
         title="Text size and spacing"
       >
         <svg

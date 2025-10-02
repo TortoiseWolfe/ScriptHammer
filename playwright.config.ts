@@ -1,10 +1,28 @@
 import { defineConfig, devices } from '@playwright/test';
+import { TEST_VIEWPORTS } from './src/config/test-viewports';
+import type { TestViewport } from './src/types/mobile-first';
 
 /**
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
 // require('dotenv').config();
+
+/**
+ * Convert TestViewport to Playwright device config
+ */
+function createDeviceConfig(viewport: TestViewport) {
+  return {
+    viewport: {
+      width: viewport.width,
+      height: viewport.height,
+    },
+    deviceScaleFactor: viewport.deviceScaleFactor,
+    hasTouch: viewport.hasTouch,
+    isMobile: viewport.isMobile,
+    ...(viewport.userAgent && { userAgent: viewport.userAgent }),
+  };
+}
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -66,15 +84,21 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
 
-    /* Test against mobile viewports. */
-    {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    },
+    /* Mobile-first test viewports (PRP-017) */
+    ...TEST_VIEWPORTS.filter((v) => v.category === 'mobile').map(
+      (viewport) => ({
+        name: `Mobile - ${viewport.name}`,
+        use: createDeviceConfig(viewport),
+      })
+    ),
+
+    /* Tablet viewports */
+    ...TEST_VIEWPORTS.filter((v) => v.category === 'tablet').map(
+      (viewport) => ({
+        name: `Tablet - ${viewport.name}`,
+        use: createDeviceConfig(viewport),
+      })
+    ),
 
     /* Test against branded browsers. */
     // {
