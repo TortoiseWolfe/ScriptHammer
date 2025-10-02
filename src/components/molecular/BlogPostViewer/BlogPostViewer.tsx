@@ -234,13 +234,13 @@ export default function BlogPostViewer({
 
   return (
     <article className={`blog-post-viewer${className ? ` ${className}` : ''}`}>
-      {/* Floating controls - fixed position */}
-      <div className="fixed top-20 right-4 z-50 space-y-3">
+      {/* Floating controls - mobile-first positioning (PRP-017 T038) */}
+      <div className="fixed top-20 right-2 z-50 space-y-3 sm:right-4">
         {/* SEO Score Badge */}
         {seoScore !== undefined && (
           <button
             onClick={onSeoClick}
-            className="btn btn-sm w-full gap-2 shadow-md"
+            className="btn btn-sm min-h-11 w-full min-w-11 gap-2 shadow-md"
             style={{
               backgroundColor:
                 seoScore >= 80
@@ -274,7 +274,7 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 cursor-pointer rounded px-2 py-1 text-sm font-medium shadow-md transition-colors">
+              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 min-h-11 cursor-pointer rounded px-2 py-1 text-sm font-medium shadow-md transition-colors">
                 <span className="inline-flex items-center gap-2">
                   <svg
                     className="h-4 w-4"
@@ -292,7 +292,7 @@ export default function BlogPostViewer({
                   TOC
                 </span>
               </summary>
-              <nav className="bg-base-100 border-base-300 absolute top-8 right-0 z-10 mt-1 max-h-[70vh] w-80 overflow-y-auto rounded-lg border p-4 shadow-lg">
+              <nav className="bg-base-100 border-base-300 absolute top-8 right-0 z-10 mt-1 max-h-[70vh] w-64 overflow-y-auto rounded-lg border p-4 shadow-lg sm:w-80">
                 {renderTOC(toc)}
               </nav>
             </details>
@@ -300,8 +300,8 @@ export default function BlogPostViewer({
         )}
       </div>
 
-      {/* Header */}
-      <header className="mb-10">
+      {/* Header - Mobile-first spacing (PRP-017 T038) */}
+      <header className="mb-6 sm:mb-8 md:mb-10">
         {/* Title */}
         <h1 className="mb-4 text-2xl leading-tight font-bold sm:mb-6 sm:text-3xl md:text-4xl lg:text-5xl">
           {post.title}
@@ -328,10 +328,10 @@ export default function BlogPostViewer({
         )}
       </header>
 
-      {/* Featured Image */}
+      {/* Featured Image - Mobile-first sizing (PRP-017 T038) */}
       {featuredImageSrc && (
-        <figure className="mb-10">
-          <div className="relative h-96 w-full">
+        <figure className="mb-6 sm:mb-8 md:mb-10">
+          <div className="relative h-48 w-full sm:h-64 md:h-80 lg:h-96">
             <Image
               src={featuredImageSrc}
               alt={post.metadata?.featuredImageAlt || post.title}
