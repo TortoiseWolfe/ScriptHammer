@@ -2,12 +2,20 @@
 .mockup-code pre[class*='language-'] {
   background: transparent !important;
   margin: 0 !important;
-  padding: 1rem !important;
+  padding: 1rem 1.5rem !important;
 }
 
 .mockup-code code[class*='language-'] {
   background: transparent !important;
   text-shadow: none !important;
+  display: block !important;
+  text-indent: 0 !important;
+}
+
+/* Ensure mockup-code container has proper padding */
+.mockup-code {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 /* Tomorrow Night theme colors adapted for mockup-code */
