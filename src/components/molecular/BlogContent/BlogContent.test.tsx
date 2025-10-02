@@ -66,10 +66,10 @@ describe('BlogContent', () => {
 
     // Check that the content container has the expected responsive styling classes
     const contentDiv = container.firstChild as HTMLElement;
-    expect(contentDiv).toHaveClass('[&>h1]:text-lg'); // Mobile size
-    expect(contentDiv).toHaveClass('lg:[&>h1]:text-3xl'); // Desktop size
-    expect(contentDiv).toHaveClass('[&>h2]:text-base'); // Mobile size
-    expect(contentDiv).toHaveClass('lg:[&>h2]:text-2xl'); // Desktop size
+    expect(contentDiv).toHaveClass('[&>h1]:!text-base'); // Mobile size (with !important)
+    expect(contentDiv).toHaveClass('lg:[&>h1]:!text-2xl'); // Desktop size
+    expect(contentDiv).toHaveClass('[&>h2]:!text-sm'); // Mobile size (with !important)
+    expect(contentDiv).toHaveClass('lg:[&>h2]:!text-xl'); // Desktop size
     expect(contentDiv).toHaveClass('[&>p]:text-xs'); // Mobile size
     expect(contentDiv).toHaveClass('lg:[&>p]:text-lg'); // Desktop size
   });
