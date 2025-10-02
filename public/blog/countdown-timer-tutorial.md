@@ -134,11 +134,11 @@ CountdownBanner/
 
 The `index.tsx` barrel export allows you to import with `import { CountdownBanner } from '@/components/atomic/CountdownBanner'` instead of specifying the full file path.
 
-> **Note for Storybook**: When creating `CountdownBanner.stories.tsx`, use `@storybook/nextjs` for imports in Next.js projects:
->
-> ```tsx
-> import type { Meta, StoryObj } from '@storybook/nextjs'; // Not @storybook/react
-> ```
+**Note for Storybook**: When creating `CountdownBanner.stories.tsx`, use `@storybook/nextjs` for imports in Next.js projects:
+
+```tsx
+import type { Meta, StoryObj } from '@storybook/nextjs'; // Not @storybook/react
+```
 
 ---
 
