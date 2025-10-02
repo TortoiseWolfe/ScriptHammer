@@ -29,21 +29,21 @@ export default function Home() {
 
   return (
     <main className="from-base-200 via-base-100 to-base-200 flex h-[calc(100vh-10rem)] flex-col overflow-x-hidden overflow-y-auto bg-gradient-to-br">
-      {/* Skip to main content for accessibility */}
+      {/* Skip to main content for accessibility - mobile-first touch target (PRP-017 T036) */}
       <a
         href="#main-content"
-        className="btn btn-sm btn-primary sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
+        className="btn btn-sm btn-primary sr-only min-h-11 min-w-11 focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
       >
         Skip to main content
       </a>
 
-      {/* Hero Section */}
+      {/* Hero Section - Mobile-first responsive padding (PRP-017 T036) */}
       <section
         id="main-content"
         aria-label="Welcome hero"
         className="hero relative flex-1"
       >
-        <div className="hero-content py-6 sm:py-8 md:py-10">
+        <div className="hero-content px-4 py-6 sm:px-6 sm:py-8 md:py-10 lg:px-8">
           <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16">
             {/* Logo - responsive sizes */}
             <div className="flex-shrink-0">
@@ -111,14 +111,14 @@ export default function Home() {
                 </span>
               </div>
 
-              {/* Primary Actions - vertical stack on mobile */}
+              {/* Primary Actions - mobile-first touch targets (PRP-017 T036) */}
               <nav
                 aria-label="Primary navigation"
-                className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 lg:justify-start"
+                className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start"
               >
                 <Link
                   href="/blog"
-                  className="btn btn-accent btn-md sm:btn-md md:btn-lg group w-full sm:w-auto"
+                  className="btn btn-accent btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
                 >
                   <svg
                     className="mr-2 h-5 w-5"
@@ -139,7 +139,7 @@ export default function Home() {
                   href="https://tortoisewolfe.github.io/ScriptHammer/storybook/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-primary btn-md sm:btn-md md:btn-lg group w-full sm:w-auto"
+                  className="btn btn-primary btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
                 >
                   <svg
                     className="mr-2 h-5 w-5 transition-transform group-hover:scale-110"
@@ -159,7 +159,7 @@ export default function Home() {
                 </a>
                 <Link
                   href="/themes"
-                  className="btn btn-secondary btn-md sm:btn-md md:btn-lg group w-full sm:w-auto"
+                  className="btn btn-secondary btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
                 >
                   <svg
                     className="mr-2 h-5 w-5 transition-transform group-hover:scale-110"
@@ -181,7 +181,7 @@ export default function Home() {
                   href={detectedConfig.projectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-outline btn-md sm:btn-md md:btn-lg group w-full sm:w-auto"
+                  className="btn btn-outline btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
                 >
                   <svg
                     className="mr-2 h-5 w-5 transition-transform group-hover:scale-110"
@@ -274,11 +274,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Feature Cards Section */}
-      <section aria-label="Key features" className="flex-shrink-0 px-4 py-4">
+      {/* Feature Cards Section - Mobile-first responsive grid (PRP-017 T036) */}
+      <section
+        aria-label="Key features"
+        className="flex-shrink-0 px-4 py-4 sm:px-6 lg:px-8"
+      >
         <div className="container mx-auto">
           <h2 className="sr-only">Key Features</h2>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-4">
             <Link
               href="/themes"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
