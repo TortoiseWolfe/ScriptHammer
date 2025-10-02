@@ -33,10 +33,12 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const baseClasses = 'card bg-base-100 shadow-xl';
 
+  // Mobile-first layout (PRP-017 T027)
+  // side layout only on tablet+ (stacks on mobile)
   const classes = [
     baseClasses,
     compact && 'card-compact',
-    side && 'card-side',
+    side && 'md:card-side',
     glass && 'glass',
     bordered && 'card-bordered',
     className,
