@@ -38,7 +38,7 @@ export default function BlogContent({ htmlContent }: BlogContentProps) {
         // Code is already escaped by markdown processor, keep it escaped for safety
         // Prism will handle the highlighting after the content is rendered
         return `
-          <div class="mockup-code bg-base-300 my-8 relative" data-code-id="${id}">
+          <div class="mockup-code bg-base-300 my-4 relative" data-code-id="${id}">
             <div class="absolute top-2 right-12 text-xs text-base-content/60">${lang}</div>
             <button
               onclick="navigator.clipboard.writeText(this.parentElement.querySelector('pre').textContent); this.innerHTML='✓'; setTimeout(() => this.innerHTML='📋', 2000)"

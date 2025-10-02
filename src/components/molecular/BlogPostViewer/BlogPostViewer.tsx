@@ -240,7 +240,7 @@ export default function BlogPostViewer({
         {seoScore !== undefined && (
           <button
             onClick={onSeoClick}
-            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium shadow-md"
+            className="inline-flex min-h-8 min-w-8 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md"
             style={{
               backgroundColor:
                 seoScore >= 80
@@ -274,7 +274,7 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium shadow-md transition-colors">
+              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
                 <span className="inline-flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
