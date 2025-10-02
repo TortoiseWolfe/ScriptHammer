@@ -62,10 +62,17 @@ export default function SocialShareButtons({
     lg: 'h-6 w-6',
   };
 
+  // Mobile-first touch targets (PRP-017 T038)
   const buttonSizeClasses = {
-    sm: showLabels ? 'btn-sm' : 'p-1',
-    md: showLabels ? '' : 'p-1.5',
-    lg: showLabels ? 'btn-lg' : 'p-2',
+    sm: showLabels
+      ? 'btn-sm min-h-11 min-w-11'
+      : 'min-h-11 min-w-11 inline-flex items-center justify-center',
+    md: showLabels
+      ? 'min-h-11 min-w-11'
+      : 'min-h-11 min-w-11 inline-flex items-center justify-center',
+    lg: showLabels
+      ? 'btn-lg'
+      : 'min-h-11 min-w-11 inline-flex items-center justify-center',
   };
 
   const availablePlatforms = [...platforms];
