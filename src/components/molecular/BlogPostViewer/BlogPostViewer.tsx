@@ -240,7 +240,7 @@ export default function BlogPostViewer({
         {seoScore !== undefined && (
           <button
             onClick={onSeoClick}
-            className="btn btn-sm min-h-11 w-full min-w-11 gap-2 shadow-md"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium shadow-md"
             style={{
               backgroundColor:
                 seoScore >= 80
@@ -274,8 +274,8 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 min-h-11 cursor-pointer rounded px-2 py-1 text-sm font-medium shadow-md transition-colors">
-                <span className="inline-flex items-center gap-2">
+              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-lg px-3 py-2 text-sm font-medium shadow-md transition-colors">
+                <span className="inline-flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
                     fill="none"
@@ -303,7 +303,7 @@ export default function BlogPostViewer({
       {/* Header - Mobile-first spacing (PRP-017 T038) */}
       <header className="mb-6 sm:mb-8 md:mb-10">
         {/* Title */}
-        <h1 className="mb-4 text-2xl leading-tight font-bold sm:mb-6 sm:text-3xl md:text-4xl lg:text-5xl">
+        <h1 className="mb-4 text-3xl leading-tight font-bold sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
           {post.title}
         </h1>
 
