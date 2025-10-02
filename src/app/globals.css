@@ -368,3 +368,157 @@ p:not([class*='text-']) {
 [data-theme] code[class*='language-'] {
   @apply font-mono text-sm;
 }
+
+/* Mobile-first button sizing override for status page */
+.btn-mobile-compact {
+  height: 1.5rem !important;
+  min-height: 1.5rem !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  font-size: 0.625rem !important;
+  line-height: 1 !important;
+}
+
+@media (min-width: 26.75rem) {
+  .btn-mobile-compact {
+    height: 2rem !important;
+    min-height: 2rem !important;
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* Global Typography Scale (Mobile-first) */
+/* Ensures consistent heading sizes across all pages */
+
+/* Page Title (H1) */
+.page-title {
+  font-size: var(--text-xl) !important;
+  font-weight: bold !important;
+  margin-top: 1rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+@media (min-width: 26.75rem) {
+  /* sm breakpoint */
+  .page-title {
+    font-size: var(--text-2xl) !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+@media (min-width: 48rem) {
+  /* md breakpoint */
+  .page-title {
+    font-size: var(--text-3xl) !important;
+    margin-top: 2rem !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
+@media (min-width: 64rem) {
+  /* lg breakpoint */
+  .page-title {
+    font-size: var(--text-4xl) !important;
+    margin-top: 3rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* Section Title (H2) */
+.section-title {
+  font-size: var(--text-lg) !important;
+  font-weight: bold !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.375rem !important;
+}
+
+@media (min-width: 26.75rem) {
+  .section-title {
+    font-size: var(--text-xl) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+@media (min-width: 48rem) {
+  .section-title {
+    font-size: var(--text-2xl) !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+@media (min-width: 64rem) {
+  .section-title {
+    font-size: var(--text-3xl) !important;
+    margin-top: 2rem !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
+/* Subsection Title (H3) */
+.subsection-title {
+  font-size: var(--text-base) !important;
+  font-weight: bold !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+@media (min-width: 26.75rem) {
+  .subsection-title {
+    font-size: var(--text-lg) !important;
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+@media (min-width: 48rem) {
+  .subsection-title {
+    font-size: var(--text-xl) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+}
+
+@media (min-width: 64rem) {
+  .subsection-title {
+    font-size: var(--text-2xl) !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+}
+
+/* Minor Heading (H4) */
+.minor-heading {
+  font-size: var(--text-sm) !important;
+  font-weight: bold !important;
+  margin-top: 0.375rem !important;
+  margin-bottom: 0.125rem !important;
+}
+
+@media (min-width: 26.75rem) {
+  .minor-heading {
+    font-size: var(--text-base) !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+}
+
+@media (min-width: 48rem) {
+  .minor-heading {
+    font-size: var(--text-lg) !important;
+    margin-top: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+@media (min-width: 64rem) {
+  .minor-heading {
+    font-size: var(--text-xl) !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+}

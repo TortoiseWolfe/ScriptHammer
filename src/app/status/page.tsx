@@ -760,12 +760,12 @@ export default function StatusPage() {
   const pwaTestSummary = pwaTester.getTestSummary();
 
   return (
-    <main className="bg-base-200 min-h-screen p-8">
+    <main className="bg-base-200 min-h-screen overflow-x-hidden p-2 sm:p-4 md:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="mb-2 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
+        <div className="mb-4 sm:mb-6 md:mb-8">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="page-title">
                 {projectConfig.project.name} Status Dashboard
               </h1>
               <p className="text-base-content/70 text-sm sm:text-base">
@@ -776,15 +776,16 @@ export default function StatusPage() {
             <button
               onClick={runAllTests}
               disabled={isRunningAllTests}
-              className={`btn ${isRunningAllTests ? 'btn-warning' : 'btn-primary'}`}
+              className={`btn btn-mobile-compact flex-shrink-0 ${isRunningAllTests ? 'btn-warning' : 'btn-primary'}`}
             >
               {isRunningAllTests ? (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1 sm:gap-2">
                   <span className="loading loading-spinner loading-sm"></span>
-                  Running All Tests...
+                  <span className="xs:inline hidden">Running...</span>
+                  <span className="xs:hidden">...</span>
                 </span>
               ) : (
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1 sm:gap-2">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
@@ -799,15 +800,16 @@ export default function StatusPage() {
                       d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
                     />
                   </svg>
-                  Run All Tests
+                  <span className="xs:inline hidden">Run All Tests</span>
+                  <span className="xs:hidden">Run</span>
                 </span>
               )}
             </button>
           </div>
         </div>
 
-        <div className="mb-8 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-3">
-          <div className="space-y-6">
+        <div className="mb-4 grid grid-cols-1 items-stretch gap-3 sm:mb-6 sm:gap-4 md:mb-8 md:gap-6 lg:grid-cols-3">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
             <Card
               title={
                 <div className="flex items-center gap-2">
@@ -1119,7 +1121,7 @@ export default function StatusPage() {
             {/* PWA Feature Tests */}
             <Card
               title={
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-between">
                   <div className="flex items-center gap-2">
                     <span>PWA Feature Tests</span>
                     <InfoTooltip
@@ -1160,7 +1162,7 @@ export default function StatusPage() {
                       </div>
                     </label>
                     <button
-                      className={`btn btn-sm ${
+                      className={`btn btn-xs sm:btn-sm ${
                         isTestingPWA
                           ? 'btn-warning'
                           : testError
@@ -1263,7 +1265,7 @@ export default function StatusPage() {
             </Card>
           </div>
 
-          <div className="space-y-6 overflow-visible">
+          <div className="space-y-3 overflow-visible sm:space-y-4 md:space-y-6">
             {false && (
               <Card
                 title={
@@ -1976,7 +1978,7 @@ export default function StatusPage() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-3 sm:space-y-4 md:space-y-6">
             <Card
               title={
                 <div className="flex w-full flex-wrap items-center justify-between gap-4">
@@ -2031,7 +2033,7 @@ export default function StatusPage() {
                             'Cache cleared. Using default scores.'
                           );
                         }}
-                        className="btn btn-sm btn-ghost"
+                        className="btn btn-xs sm:btn-sm btn-ghost"
                         title="Clear cached scores"
                       >
                         Clear Cache
@@ -2040,7 +2042,7 @@ export default function StatusPage() {
                     <button
                       onClick={runLighthouseTest}
                       disabled={isTestingLighthouse || rateLimitCooldown > 0}
-                      className={`btn btn-sm ${
+                      className={`btn btn-xs sm:btn-sm ${
                         isTestingLighthouse
                           ? 'btn-warning'
                           : lighthouseError
