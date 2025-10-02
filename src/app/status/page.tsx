@@ -814,7 +814,7 @@ export default function StatusPage() {
             <Card
               title={
                 <div className="flex items-center gap-2">
-                  <span>Build Status</span>
+                  <span className="status-card-title">Build Status</span>
                   <InfoTooltip
                     title="Build Status"
                     description="Shows the current health and configuration of your deployed application."
@@ -1122,9 +1122,9 @@ export default function StatusPage() {
             {/* PWA Feature Tests */}
             <Card
               title={
-                <div className="flex flex-wrap items-center gap-2 sm:justify-between">
+                <>
                   <div className="flex items-center gap-2">
-                    <span>PWA Feature Tests</span>
+                    <span className="status-card-title">PWA Feature Tests</span>
                     <InfoTooltip
                       title="Progressive Web App Features"
                       description="Tests whether your app can be installed like a native app and work offline."
@@ -1185,7 +1185,7 @@ export default function StatusPage() {
                       )}
                     </button>
                   </div>
-                </div>
+                </>
               }
               bordered
             >
@@ -1271,7 +1271,7 @@ export default function StatusPage() {
               <Card
                 title={
                   <div className="flex items-center gap-2">
-                    <span>Project Progress</span>
+                    <span className="status-card-title">Project Progress</span>
                     <InfoTooltip
                       title="Task Completion Tracking"
                       description="Shows progress through development sprints and tasks defined in TASKS.md."
@@ -1889,7 +1889,7 @@ export default function StatusPage() {
             <Card
               title={
                 <div className="flex items-center gap-2">
-                  <span>Service Status</span>
+                  <span className="status-card-title">Service Status</span>
                   <InfoTooltip
                     title="Deployed Services"
                     description="Real-time status of deployed services and endpoints."
@@ -1937,7 +1937,7 @@ export default function StatusPage() {
             <Card
               title={
                 <div className="flex items-center gap-2">
-                  <span>Features Completed</span>
+                  <span className="status-card-title">Features Completed</span>
                   <InfoTooltip
                     title="Implemented Features"
                     description="Major features that have been completed in this project."
@@ -1984,7 +1984,7 @@ export default function StatusPage() {
               title={
                 <div className="flex w-full flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <span>Lighthouse Scores</span>
+                    <span className="status-card-title">Lighthouse Scores</span>
                     <div className="dropdown dropdown-hover">
                       <button
                         type="button"
@@ -2422,7 +2422,9 @@ export default function StatusPage() {
               <Card
                 title={
                   <div className="flex items-center gap-2">
-                    <span>Recent Deployments</span>
+                    <span className="status-card-title">
+                      Recent Deployments
+                    </span>
                     <InfoTooltip
                       title="Deployment History"
                       description="Shows recent code changes that have been deployed to production."
@@ -2482,7 +2484,7 @@ export default function StatusPage() {
         <Card
           title={
             <div className="flex items-center gap-2">
-              <span>System Information</span>
+              <span className="status-card-title">System Information</span>
               <InfoTooltip
                 title="Technical Stack Overview"
                 description="The core technologies and features that power this application."

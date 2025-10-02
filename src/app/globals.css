@@ -435,11 +435,21 @@ p:not([class*='text-']) {
   margin-bottom: 0.25rem !important;
 }
 
+/* Status Card Title (for status page card headings) */
+.status-card-title {
+  font-size: var(--text-base) !important;
+  font-weight: 600 !important;
+}
+
 @media (min-width: 26.75rem) {
   .section-title {
     font-size: var(--text-xl) !important;
     margin-top: 1rem !important;
     margin-bottom: 0.5rem !important;
+  }
+
+  .status-card-title {
+    font-size: var(--text-lg) !important;
   }
 }
 
@@ -448,6 +458,10 @@ p:not([class*='text-']) {
     font-size: var(--text-2xl) !important;
     margin-top: 1.5rem !important;
     margin-bottom: 0.75rem !important;
+  }
+
+  .status-card-title {
+    font-size: var(--text-xl) !important;
   }
 }
 
