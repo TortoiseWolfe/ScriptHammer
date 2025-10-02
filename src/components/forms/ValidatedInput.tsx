@@ -144,11 +144,12 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
       onBlur?.(e);
     };
 
-    // Size classes
+    // Mobile-first touch targets (PRP-017 T028)
+    // All sizes enforce 44px minimum height
     const sizeClasses = {
-      xs: 'input-xs',
-      sm: 'input-sm',
-      md: 'input-md',
+      xs: 'input-xs min-h-11',
+      sm: 'input-sm min-h-11',
+      md: 'input-md min-h-11',
       lg: 'input-lg',
     };
 
