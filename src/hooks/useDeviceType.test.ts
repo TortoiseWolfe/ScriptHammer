@@ -35,6 +35,10 @@ describe('useDeviceType', () => {
       configurable: true,
       value: 0,
     });
+    // Remove ontouchstart to simulate non-touch environment
+    if ('ontouchstart' in window) {
+      delete (window as any).ontouchstart;
+    }
   });
 
   afterEach(() => {
