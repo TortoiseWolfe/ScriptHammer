@@ -59,8 +59,8 @@ export default async function BlogPage() {
   const { posts } = await getPosts(1, 100); // Get up to 100 posts
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
-      {/* Page Header */}
+    <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
+      {/* Page Header - Mobile-first (PRP-017 T037) */}
       <header className="mb-8 text-center sm:mb-10 md:mb-12">
         <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
           Thoughts, ideas, and insights from our team
@@ -70,8 +70,8 @@ export default async function BlogPage() {
       {/* Main Content Area */}
       {posts.length > 0 ? (
         <div>
-          {/* Posts Grid */}
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Posts Grid - Mobile-first responsive (PRP-017 T037) */}
+          <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
               <BlogPostCard
                 key={post.id}
