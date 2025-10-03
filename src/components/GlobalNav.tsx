@@ -175,46 +175,46 @@ export function GlobalNav() {
             ))}
           </nav>
 
-          {/* Mobile Menu - 44px touch target */}
-          <div className="dropdown dropdown-end md:hidden">
-            <label
-              tabIndex={0}
-              className="btn btn-ghost btn-circle min-h-11 min-w-11"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </label>
-            <ul
-              tabIndex={0}
-              className="menu menu-sm dropdown-content bg-base-100 rounded-box right-0 z-[1] mt-3 w-40 p-2 shadow"
-            >
-              {navItems.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={pathname === item.href ? 'active' : ''}
-                  >
-                    {item.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           {/* Right Section: Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
           <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
+            {/* Mobile Menu - 44px touch target */}
+            <div className="dropdown dropdown-end md:hidden">
+              <label
+                tabIndex={0}
+                className="btn btn-ghost btn-circle min-h-11 min-w-11"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+              </label>
+              <ul
+                tabIndex={0}
+                className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-40 p-2 shadow"
+              >
+                {navItems.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={pathname === item.href ? 'active' : ''}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
             {/* PWA Install Button */}
             {showInstallButton && !isInstalled && (
               <button
