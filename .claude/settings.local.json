@@ -18,7 +18,9 @@
       "Bash(python3:*)",
       "Bash(/dev/null)",
       "Bash(test:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(./scripts/clean-start.sh:*)",
+      "mcp__playwright__browser_navigate"
     ],
     "deny": [],
     "ask": []
