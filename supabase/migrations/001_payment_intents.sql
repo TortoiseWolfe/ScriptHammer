@@ -19,7 +19,7 @@ CREATE TABLE payment_intents (
 CREATE INDEX idx_payment_intents_customer_email ON payment_intents(customer_email);
 CREATE INDEX idx_payment_intents_created_at ON payment_intents(created_at DESC);
 CREATE INDEX idx_payment_intents_user_id ON payment_intents(template_user_id);
-CREATE INDEX idx_payment_intents_expires_at ON payment_intents(expires_at) WHERE expires_at > NOW();
+CREATE INDEX idx_payment_intents_expires_at ON payment_intents(expires_at) ;
 
 COMMENT ON TABLE payment_intents IS 'Customer payment intentions before provider redirect (24hr expiry)';
 COMMENT ON COLUMN payment_intents.amount IS 'Amount in cents ($1.00 = 100)';

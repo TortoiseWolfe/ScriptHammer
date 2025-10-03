@@ -40,13 +40,43 @@ This guide walks you through setting up the complete payment integration system 
 
 ### 1.3 Get Supabase Credentials
 
-1. In your project dashboard, click **Settings** (gear icon) → **API**
-2. Copy these values (you'll need them shortly):
-   - **Project URL**: `https://xxxxx.supabase.co`
-   - **Project API keys**:
-     - `anon` `public` key (starts with `eyJh...`)
-     - `service_role` `secret` key (starts with `eyJh...`)
-3. Note your **Project Reference ID** from Settings → General (e.g., `abcdefgh`)
+**On the main project dashboard** (the page you land on after creating your project):
+
+1. Scroll to the bottom right - find the **"Project API"** section
+2. Copy the **Project URL**: `https://xxxxx.supabase.co` (click Copy button)
+3. Copy the **anon public** API Key (starts with `eyJh...`) - click Copy button
+
+**Get the service_role key (REQUIRED - it's NOT on the main dashboard):**
+
+4. Click **Settings** (gear icon) in the left sidebar
+5. Under "DATA API" section, click **"API Keys"** (has "NEW" badge)
+6. Find **service_role** key, click **"Reveal"** then click Copy (starts with `eyJh...`)
+
+**Get the Project ID:**
+
+7. In the left Settings sidebar, click **General**
+8. Copy **Project ID** (alphanumeric code like `vswxgxbjodpgwfgsjrhq`)
+
+**Database Password:**
+
+9. The password you created in Step 1.2 (you saved it, right?)
+
+### 1.4 Add Credentials to .env
+
+Edit `/home/turtle_wolfe/repos/ScriptHammer/.env` and add:
+
+```bash
+# Supabase Project Configuration
+SUPABASE_PROJECT_REF=abcdefgh
+SUPABASE_DB_PASSWORD=your-database-password
+
+# Supabase API Keys
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=eyJh...your-service-role-key
+```
+
+**Security Note**: `.env` is gitignored. Never commit these keys!
 
 ---
 
@@ -63,10 +93,11 @@ docker compose exec scripthammer supabase --version
 
 ### 2.2 Link to Cloud Project
 
+Now that credentials are in `.env`, link your local project:
+
 ```bash
-# Link to your Supabase project
-docker compose exec scripthammer supabase link --project-ref YOUR_PROJECT_REF
-# When prompted, enter your database password from Step 1.2
+# Link to your Supabase project (reads SUPABASE_PROJECT_REF and SUPABASE_DB_PASSWORD from .env)
+docker compose exec scripthammer supabase link --project-ref $SUPABASE_PROJECT_REF --password $SUPABASE_DB_PASSWORD
 ```
 
 **Expected Output**:
@@ -75,6 +106,8 @@ docker compose exec scripthammer supabase link --project-ref YOUR_PROJECT_REF
 Finished supabase link.
 Local config differs from linked project. Try updating with supabase db pull.
 ```
+
+**What just happened**: Supabase CLI created `supabase/.temp` directory and linked your local migrations to the cloud project.
 
 ### 2.3 Push Migrations to Supabase
 
@@ -107,33 +140,16 @@ docker compose exec scripthammer ls -lh /app/src/lib/supabase/types.ts
 
 ---
 
-## Step 3: Configure Environment Variables
+## Step 3: Set Up Stripe (Optional)
 
-### 3.1 Copy Supabase Credentials to .env
-
-Edit `/home/turtle_wolfe/repos/ScriptHammer/.env`:
-
-```bash
-# Add these lines (uncommented):
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJh...your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=eyJh...your-service-role-key
-```
-
-**Security Note**: `.env` is gitignored. Never commit these keys!
-
----
-
-## Step 4: Set Up Stripe (Optional)
-
-### 4.1 Create Stripe Account
+### 3.1 Create Stripe Account
 
 1. Go to [stripe.com](https://stripe.com)
 2. Sign up for an account
 3. Activate account (requires business details)
 4. Switch to **Test Mode** (toggle in top-right)
 
-### 4.2 Get Stripe API Keys
+### 3.2 Get Stripe API Keys
 
 1. Dashboard → **Developers** → **API keys**
 2. Copy:
@@ -146,7 +162,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJh...your-service-role-key
    STRIPE_SECRET_KEY=sk_test_xxxxx
    ```
 
-### 4.3 Set Up Stripe Webhook
+### 3.3 Set Up Stripe Webhook
 
 **Note**: Webhook secret will be configured after deploying Edge Functions (Step 6)
 
@@ -158,23 +174,23 @@ You'll add the endpoint URL after deploying Edge Functions.
 
 ---
 
-## Step 5: Set Up PayPal (Optional)
+## Step 4: Set Up PayPal (Optional)
 
-### 5.1 Create PayPal Developer Account
+### 4.1 Create PayPal Developer Account
 
 1. Go to [developer.paypal.com](https://developer.paypal.com)
 2. Log in or create account
 3. Go to **Dashboard** → **My Apps & Credentials**
 4. Switch to **Sandbox** mode
 
-### 5.2 Create App
+### 4.2 Create App
 
 1. Click **Create App**
 2. App Name: `ScriptHammer Payments`
 3. Select **Merchant** account type
 4. Click **Create App**
 
-### 5.3 Get PayPal Credentials
+### 4.3 Get PayPal Credentials
 
 From your app page, copy:
 
@@ -188,21 +204,21 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=AXXXxxxxx
 PAYPAL_CLIENT_SECRET=your-secret
 ```
 
-### 5.4 Configure PayPal Webhook (Later)
+### 4.4 Configure PayPal Webhook (Later)
 
 Webhook configuration happens after Edge Function deployment (Step 6).
 
 ---
 
-## Step 6: Set Up Email Notifications (Resend)
+## Step 5: Set Up Email Notifications (Resend)
 
-### 6.1 Create Resend Account
+### 5.1 Create Resend Account
 
 1. Go to [resend.com](https://resend.com)
 2. Sign up (free tier: 3,000 emails/month)
 3. Verify your email address
 
-### 6.2 Add Domain or Use Testing Domain
+### 5.2 Add Domain or Use Testing Domain
 
 **Option A: Use Testing Domain** (for development):
 
@@ -217,7 +233,7 @@ Webhook configuration happens after Edge Function deployment (Step 6).
 3. Add DNS records (SPF, DKIM, DMARC) to your domain provider
 4. Wait for verification (~5-10 minutes)
 
-### 6.3 Get API Key
+### 5.3 Get API Key
 
 1. **API Keys** → **Create API Key**
 2. Name: `ScriptHammer Payments`
@@ -232,9 +248,9 @@ RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxx
 
 ---
 
-## Step 7: Configure Cash App & Chime (Optional)
+## Step 6: Configure Cash App & Chime (Optional)
 
-### 7.1 Cash App
+### 6.1 Cash App
 
 1. Download Cash App mobile app
 2. Create account if needed
@@ -246,7 +262,7 @@ Add to `.env`:
 NEXT_PUBLIC_CASHAPP_CASHTAG=$yourcashtag
 ```
 
-### 7.2 Chime
+### 6.2 Chime
 
 1. Download Chime mobile app
 2. Create account
@@ -260,9 +276,9 @@ NEXT_PUBLIC_CHIME_SIGN=$yourchimesign
 
 ---
 
-## Step 8: Deploy Edge Functions
+## Step 7: Deploy Edge Functions
 
-### 8.1 Deploy Webhook Handlers
+### 7.1 Deploy Webhook Handlers
 
 After Phase 3 implementation (not yet done), you'll deploy:
 
@@ -273,7 +289,7 @@ docker compose exec scripthammer supabase functions deploy paypal-webhook
 docker compose exec scripthammer supabase functions deploy send-payment-email
 ```
 
-### 8.2 Get Edge Function URLs
+### 7.2 Get Edge Function URLs
 
 ```bash
 docker compose exec scripthammer supabase functions list
@@ -284,7 +300,7 @@ Your webhook URLs will be:
 - Stripe: `https://your-project.supabase.co/functions/v1/stripe-webhook`
 - PayPal: `https://your-project.supabase.co/functions/v1/paypal-webhook`
 
-### 8.3 Configure Stripe Webhook
+### 7.3 Configure Stripe Webhook
 
 1. Stripe Dashboard → **Developers** → **Webhooks**
 2. Click **Add endpoint**
@@ -305,7 +321,7 @@ Add to `.env`:
 STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 ```
 
-### 8.4 Configure PayPal Webhook
+### 7.4 Configure PayPal Webhook
 
 1. PayPal Developer Dashboard → **Apps & Credentials**
 2. Click your app → **Webhooks**
@@ -329,9 +345,9 @@ PAYPAL_WEBHOOK_ID=your-webhook-id
 
 ---
 
-## Step 9: Verify Configuration
+## Step 8: Verify Configuration
 
-### 9.1 Check All Environment Variables
+### 8.1 Check All Environment Variables
 
 Your `.env` should now have:
 
@@ -363,7 +379,7 @@ NEXT_PUBLIC_CASHAPP_CASHTAG=$yourcashtag
 NEXT_PUBLIC_CHIME_SIGN=$yourchimesign
 ```
 
-### 9.2 Test Configuration
+### 8.2 Test Configuration
 
 ```bash
 # Restart dev server to load new env vars
@@ -377,9 +393,9 @@ docker compose exec scripthammer pnpm run dev
 
 ---
 
-## Step 10: Seed Test Data (Optional)
+## Step 9: Seed Test Data (Optional)
 
-### 10.1 Insert Payment Provider Config
+### 9.1 Insert Payment Provider Config
 
 In Supabase Dashboard → **SQL Editor**, run:
 

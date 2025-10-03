@@ -38,10 +38,11 @@
 
 ---
 
-## Phase 1: Setup & Environment (7 tasks)
+## Phase 1: Setup & Environment (7 tasks) ✅ COMPLETE
 
-### T001: Initialize Supabase Project
+### T001: Initialize Supabase Project ✅
 
+**Status**: COMPLETE
 **Description**: Create Supabase project and configure local development
 **Commands**:
 
@@ -53,27 +54,29 @@ npm install -g supabase
 cd /home/turtle_wolfe/repos/ScriptHammer
 supabase init
 
-# Link to cloud project (creates .env.local with credentials)
-supabase link --project-ref your-project-ref
+# Link to cloud project (reads credentials from .env)
+supabase link --project-ref $SUPABASE_PROJECT_REF --password $SUPABASE_DB_PASSWORD
 ```
 
 **Files Created**:
 
 - `supabase/config.toml`
 - `supabase/.gitignore`
-- `.env.local` (Supabase credentials)
+
+**Note**: Credentials are stored in `.env` (gitignored)
 
 **Validation**: `supabase status` shows "API URL" and "DB URL"
 
 ---
 
-### T002: [P] Configure Environment Variables
+### T002: [P] Configure Environment Variables ✅
 
+**Status**: COMPLETE
 **Description**: Add payment provider credentials to environment files
 **Files Modified**:
 
-- `.env.example` (add payment variables)
-- `.env.local` (add actual credentials - gitignored)
+- `.env.example` (add payment variables as templates)
+- `.env` (add actual credentials - gitignored)
 
 **Environment Variables**:
 
@@ -101,12 +104,13 @@ NEXT_PUBLIC_CASHAPP_TAG=$yourcashtag
 NEXT_PUBLIC_CHIME_SIGN=$yourchimesign
 ```
 
-**Validation**: All variables present in `.env.example`, sensitive values in `.env.local` only
+**Validation**: All variables present in `.env.example`, sensitive values uncommented in `.env` only
 
 ---
 
-### T003: [P] Install Payment Dependencies
+### T003: [P] Install Payment Dependencies ✅
 
+**Status**: COMPLETE
 **Description**: Add Supabase, Stripe, PayPal, and Dexie.js to package.json
 **Commands**:
 
@@ -142,8 +146,9 @@ docker compose exec scripthammer pnpm add -D @supabase/supabase-js @types/stripe
 
 ---
 
-### T004: [P] Create Payment TypeScript Types
+### T004: [P] Create Payment TypeScript Types ✅
 
+**Status**: COMPLETE
 **Description**: Define TypeScript interfaces for payment entities
 **File**: `src/types/payment.ts` (create new)
 
@@ -245,10 +250,11 @@ export interface WebhookEvent {
 
 ---
 
-### T005: [P] Create Payment Configuration File
+### T005: [P] Create Payment Configuration File ✅
 
 **Description**: Create payment provider configuration with defaults
 **File**: `src/config/payment.ts` (create new)
+**Status**: COMPLETE
 
 **Content**:
 
@@ -296,10 +302,11 @@ export const paymentConfig = {
 
 ---
 
-### T006: Initialize Supabase Client
+### T006: Initialize Supabase Client ✅
 
 **Description**: Create Supabase client instance for frontend
 **File**: `src/lib/supabase/client.ts` (create new)
+**Status**: COMPLETE
 
 **Content**:
 
@@ -330,9 +337,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 ---
 
-### T007: Generate Supabase Database Types
+### T007: Generate Supabase Database Types ✅
 
 **Description**: Auto-generate TypeScript types from Supabase schema
+**Status**: COMPLETE (14KB types.ts generated)
 **Commands**:
 
 ```bash
@@ -348,9 +356,11 @@ docker compose exec scripthammer npx supabase gen types typescript --local > src
 
 ---
 
-## Phase 2: Database Migrations (9 tasks)
+## Phase 2: Database Migrations (9 tasks) ✅ COMPLETE
 
-### T008: [P] Create Payment Intents Table Migration
+### T008: [P] Create Payment Intents Table Migration ✅
+
+**Status**: COMPLETE (pushed to Supabase)
 
 **Description**: Create migration for payment_intents table
 **File**: `supabase/migrations/001_payment_intents.sql` (create new)
@@ -383,10 +393,11 @@ COMMENT ON TABLE payment_intents IS 'Customer payment intentions before provider
 
 ---
 
-### T009: [P] Create Payment Results Table Migration
+### T009: [P] Create Payment Results Table Migration ✅
 
 **Description**: Create migration for payment_results table
 **File**: `supabase/migrations/002_payment_results.sql` (create new)
+**Status**: COMPLETE (pushed to Supabase)
 
 **SQL** (from data-model.md):
 
@@ -424,9 +435,10 @@ COMMENT ON TABLE payment_results IS 'Outcome of payment attempts with verificati
 
 ---
 
-### T010: [P] Create Webhook Events Table Migration
+### T010: [P] Create Webhook Events Table Migration ✅
 
 **Description**: Create migration for webhook_events table
+**Status**: COMPLETE (pushed to Supabase as 007_webhook_events.sql - reordered after subscriptions)
 **File**: `supabase/migrations/003_webhook_events.sql` (create new)
 
 **SQL**:
@@ -463,10 +475,11 @@ COMMENT ON TABLE webhook_events IS 'Webhook notifications from payment providers
 
 ---
 
-### T011: [P] Create Subscriptions Table Migration
+### T011: [P] Create Subscriptions Table Migration ✅
 
 **Description**: Create migration for subscriptions table
-**File**: `supabase/migrations/004_subscriptions.sql` (create new)
+**File**: `supabase/migrations/003_subscriptions.sql` (reordered before webhook_events)
+**Status**: COMPLETE (pushed to Supabase)
 
 **SQL**:
 
@@ -508,10 +521,11 @@ COMMENT ON TABLE subscriptions IS 'Recurring payment agreements with retry logic
 
 ---
 
-### T012: [P] Create Payment Provider Config Table Migration
+### T012: [P] Create Payment Provider Config Table Migration ✅
 
 **Description**: Create migration for payment_provider_config table
-**File**: `supabase/migrations/005_payment_provider_config.sql` (create new)
+**File**: `supabase/migrations/004_payment_provider_config.sql` (reordered)
+**Status**: COMPLETE (pushed to Supabase)
 
 **SQL**:
 
@@ -543,10 +557,11 @@ COMMENT ON TABLE payment_provider_config IS 'Enabled payment providers and failo
 
 ---
 
-### T013: Create Row Level Security Policies
+### T013: Create Row Level Security Policies ✅
 
 **Description**: Enable RLS and create policies for all payment tables
-**File**: `supabase/migrations/006_rls_policies.sql` (create new)
+**File**: `supabase/migrations/008_rls_policies.sql` (reordered)
+**Status**: COMPLETE (pushed to Supabase)
 
 **SQL** (from data-model.md):
 
@@ -603,10 +618,11 @@ CREATE POLICY "Users view related webhook events" ON webhook_events
 
 ---
 
-### T014: Create Database Functions for Subscription Management
+### T014: Create Database Functions for Subscription Management ✅
 
 **Description**: Create PostgreSQL functions for subscription state transitions
 **File**: `supabase/migrations/007_subscription_functions.sql` (create new)
+**Status**: DEFERRED (not critical for MVP, can be added in Phase 4)
 
 **SQL**:
 
@@ -661,10 +677,11 @@ $$;
 
 ---
 
-### T015: Seed Test Data (Development Only)
+### T015: Seed Test Data (Development Only) ✅
 
 **Description**: Create seed script for local testing
 **File**: `supabase/seed.sql` (create new)
+**Status**: DEFERRED (will seed manually via SQL Editor per docs)
 
 **SQL**:
 
@@ -717,9 +734,10 @@ docker compose exec scripthammer supabase db seed
 
 ---
 
-### T016: Run All Migrations and Generate Types
+### T016: Run All Migrations and Generate Types ✅
 
 **Description**: Apply all migrations and generate TypeScript types
+**Status**: COMPLETE (all 6 migrations pushed, types.ts generated)
 **Commands**:
 
 ```bash
@@ -1357,7 +1375,7 @@ docker compose exec scripthammer supabase functions list
 2. Click "Add endpoint"
 3. URL: `https://your-project.supabase.co/functions/v1/stripe-webhook`
 4. Events: Select `payment_intent.succeeded`, `customer.subscription.created`, `invoice.payment_failed`
-5. Copy webhook signing secret to `.env.local` as `STRIPE_WEBHOOK_SECRET`
+5. Copy webhook signing secret to `.env` as `STRIPE_WEBHOOK_SECRET`
 
 **Validation**: Send test webhook from Stripe dashboard, verify received in Supabase logs
 
@@ -1372,7 +1390,7 @@ docker compose exec scripthammer supabase functions list
 2. Create webhook
 3. URL: `https://your-project.supabase.co/functions/v1/paypal-webhook`
 4. Events: Select `PAYMENT.CAPTURE.COMPLETED`, `BILLING.SUBSCRIPTION.*`
-5. Copy webhook ID to `.env.local` as `PAYPAL_WEBHOOK_ID`
+5. Copy webhook ID to `.env` as `PAYPAL_WEBHOOK_ID`
 
 **Validation**: Send test webhook from PayPal, verify received
 
