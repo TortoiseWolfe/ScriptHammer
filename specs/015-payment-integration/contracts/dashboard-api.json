@@ -1,0 +1,265 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Payment Dashboard API",
+    "description": "Real-time dashboard queries for payment activity (Supabase client subscriptions)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/get-realtime-payments": {
+      "get": {
+        "summary": "Get realtime payment activity",
+        "description": "Retrieves recent payments with real-time updates via Supabase subscriptions",
+        "operationId": "getRealtimePayments",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Realtime payments retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealtimePaymentsResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-supabase-subscription": {
+          "table": "payment_results",
+          "event": "INSERT",
+          "filter": "template_user_id=eq.{auth.uid()}"
+        }
+      }
+    },
+    "/get-subscription-status": {
+      "get": {
+        "summary": "Get subscription status",
+        "description": "Retrieves active subscriptions for a customer email",
+        "operationId": "getSubscriptionStatus",
+        "parameters": [
+          {
+            "name": "customer_email",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-payment-stats": {
+      "get": {
+        "summary": "Get payment statistics",
+        "description": "Retrieves aggregated payment stats for a date range",
+        "operationId": "getPaymentStats",
+        "parameters": [
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment stats retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RealtimePaymentsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentActivity"
+            }
+          }
+        }
+      },
+      "PaymentActivity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["stripe", "paypal", "cashapp", "chime"]
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "succeeded", "failed", "refunded"]
+          },
+          "charged_amount": {
+            "type": "integer",
+            "description": "Amount in cents"
+          },
+          "charged_currency": {
+            "type": "string"
+          },
+          "customer_email": {
+            "type": "string",
+            "format": "email"
+          },
+          "webhook_verified": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubscriptionStatusResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SubscriptionStatus"
+            }
+          }
+        }
+      },
+      "SubscriptionStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string",
+            "enum": ["stripe", "paypal"]
+          },
+          "provider_subscription_id": {
+            "type": "string"
+          },
+          "plan_amount": {
+            "type": "integer"
+          },
+          "plan_interval": {
+            "type": "string",
+            "enum": ["month", "year"]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "past_due",
+              "grace_period",
+              "canceled",
+              "expired"
+            ]
+          },
+          "next_billing_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "failed_payment_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentStatsResponse": {
+        "type": "object",
+        "properties": {
+          "total_payments": {
+            "type": "integer",
+            "description": "Total number of payments in period"
+          },
+          "successful_payments": {
+            "type": "integer"
+          },
+          "failed_payments": {
+            "type": "integer"
+          },
+          "total_revenue": {
+            "type": "integer",
+            "description": "Total revenue in cents"
+          },
+          "revenue_by_currency": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "example": {
+              "usd": 150000,
+              "eur": 85000
+            }
+          },
+          "revenue_by_provider": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "example": {
+              "stripe": 120000,
+              "paypal": 115000
+            }
+          },
+          "active_subscriptions": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

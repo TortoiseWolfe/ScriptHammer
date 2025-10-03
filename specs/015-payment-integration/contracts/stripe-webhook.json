@@ -1,0 +1,246 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Stripe Webhook Handler",
+    "description": "Supabase Edge Function that receives and processes Stripe webhook events",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{project_ref}.supabase.co/functions/v1",
+      "description": "Supabase Edge Functions",
+      "variables": {
+        "project_ref": {
+          "default": "your-project-ref",
+          "description": "Your Supabase project reference"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/stripe-webhook": {
+      "post": {
+        "summary": "Process Stripe webhook event",
+        "description": "Receives webhook notifications from Stripe for payment and subscription events. Verifies signature and processes event idempotently.",
+        "operationId": "handleStripeWebhook",
+        "security": [],
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "in": "header",
+            "required": true,
+            "description": "Stripe webhook signature for verification",
+            "schema": {
+              "type": "string",
+              "example": "t=1492774577,v1=5257a869e7ecebeda32affa62cdca3fa51cad7e77a0e56ff536d0ce8e108d8bd"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Stripe event object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StripeEvent"
+              },
+              "examples": {
+                "payment_intent_succeeded": {
+                  "summary": "Payment Intent Succeeded",
+                  "value": {
+                    "id": "evt_1234567890",
+                    "object": "event",
+                    "api_version": "2023-10-16",
+                    "created": 1677649265,
+                    "type": "payment_intent.succeeded",
+                    "data": {
+                      "object": {
+                        "id": "pi_1234567890",
+                        "object": "payment_intent",
+                        "amount": 1000,
+                        "currency": "usd",
+                        "status": "succeeded",
+                        "metadata": {
+                          "intent_id": "550e8400-e29b-41d4-a716-446655440000"
+                        }
+                      }
+                    }
+                  }
+                },
+                "customer_subscription_created": {
+                  "summary": "Customer Subscription Created",
+                  "value": {
+                    "id": "evt_9876543210",
+                    "object": "event",
+                    "api_version": "2023-10-16",
+                    "created": 1677649265,
+                    "type": "customer.subscription.created",
+                    "data": {
+                      "object": {
+                        "id": "sub_1234567890",
+                        "object": "subscription",
+                        "customer": "cus_1234567890",
+                        "status": "active",
+                        "current_period_end": 1680241265,
+                        "plan": {
+                          "amount": 500,
+                          "currency": "usd",
+                          "interval": "month"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature or malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookError"
+                },
+                "examples": {
+                  "invalid_signature": {
+                    "value": {
+                      "error": "Invalid signature",
+                      "event_id": "evt_1234567890"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate event (already processed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccess"
+                },
+                "examples": {
+                  "duplicate": {
+                    "value": {
+                      "received": true,
+                      "event_id": "evt_1234567890",
+                      "message": "Event already processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StripeEvent": {
+        "type": "object",
+        "required": ["id", "object", "type", "data"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the event",
+            "example": "evt_1234567890"
+          },
+          "object": {
+            "type": "string",
+            "enum": ["event"],
+            "description": "String representing the object's type"
+          },
+          "api_version": {
+            "type": "string",
+            "description": "Stripe API version used to render data",
+            "example": "2023-10-16"
+          },
+          "created": {
+            "type": "integer",
+            "description": "Time at which the event was created (Unix timestamp)",
+            "example": 1677649265
+          },
+          "type": {
+            "type": "string",
+            "description": "Event type",
+            "enum": [
+              "checkout.session.completed",
+              "payment_intent.succeeded",
+              "payment_intent.payment_failed",
+              "customer.subscription.created",
+              "customer.subscription.updated",
+              "customer.subscription.deleted",
+              "invoice.payment_succeeded",
+              "invoice.payment_failed"
+            ]
+          },
+          "data": {
+            "type": "object",
+            "required": ["object"],
+            "properties": {
+              "object": {
+                "type": "object",
+                "description": "The event data object (PaymentIntent, Subscription, etc.)"
+              }
+            }
+          }
+        }
+      },
+      "WebhookSuccess": {
+        "type": "object",
+        "required": ["received"],
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "example": true
+          },
+          "event_id": {
+            "type": "string",
+            "example": "evt_1234567890"
+          },
+          "message": {
+            "type": "string",
+            "example": "Event processed successfully"
+          }
+        }
+      },
+      "WebhookError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid signature"
+          },
+          "event_id": {
+            "type": "string",
+            "example": "evt_1234567890"
+          }
+        }
+      }
+    }
+  }
+}
