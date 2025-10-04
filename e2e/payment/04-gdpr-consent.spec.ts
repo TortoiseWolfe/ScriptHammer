@@ -20,7 +20,9 @@ test.describe('GDPR Payment Consent Flow', () => {
     await expect(consentModal).toBeVisible();
 
     // Should have lock icon
-    await expect(consentModal.getByRole('img', { hidden: true })).toBeVisible();
+    await expect(
+      consentModal.locator('svg[aria-hidden="true"]').first()
+    ).toBeVisible();
 
     // Should show what consent means
     await expect(consentModal.getByText(/what this means/i)).toBeVisible();

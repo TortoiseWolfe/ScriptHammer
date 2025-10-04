@@ -1,5 +1,7 @@
 /**
  * PaymentHistory Storybook Stories
+ *
+ * Mock data is provided via MSW handlers in src/mocks/handlers.ts
  */
 
 import type { Meta, StoryObj } from '@storybook/nextjs';
@@ -10,6 +12,12 @@ const meta: Meta<typeof PaymentHistory> = {
   component: PaymentHistory,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'Displays payment transaction history with filters and pagination. Mock data provided via MSW.',
+      },
+    },
   },
   tags: ['autodocs'],
   argTypes: {

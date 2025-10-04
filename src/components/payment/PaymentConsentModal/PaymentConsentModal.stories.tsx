@@ -2,12 +2,28 @@
  * PaymentConsentModal Storybook Stories
  */
 
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Decorator } from '@storybook/nextjs';
 import { PaymentConsentModal } from './PaymentConsentModal';
+
+// Mock the usePaymentConsent hook to always show the modal
+const MockConsentDecorator: Decorator = (Story) => {
+  // Clear consent in localStorage before rendering
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('payment_consent_date');
+    }
+  }, []);
+
+  return <Story />;
+};
 
 const meta: Meta<typeof PaymentConsentModal> = {
   title: 'Payment/PaymentConsentModal',
   component: PaymentConsentModal,
+  decorators: [MockConsentDecorator],
   parameters: {
     layout: 'centered',
   },

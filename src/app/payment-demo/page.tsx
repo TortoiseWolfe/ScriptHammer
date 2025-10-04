@@ -10,26 +10,28 @@ import { PaymentButton } from '@/components/payment/PaymentButton/PaymentButton'
 import { PaymentConsentModal } from '@/components/payment/PaymentConsentModal/PaymentConsentModal';
 import { PaymentHistory } from '@/components/payment/PaymentHistory/PaymentHistory';
 import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/PaymentStatusDisplay';
-import type { PaymentResult } from '@/types/payment';
 
 export default function PaymentDemoPage() {
   const [showConsent, setShowConsent] = useState(true);
-  const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
-    null
-  );
+  const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   // Demo user ID (would come from auth in production)
   const demoUserId = 'demo-user-123';
 
-  const handlePaymentSuccess = (result: PaymentResult) => {
-    setPaymentResult(result);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    setPaymentResultId(paymentIntentId);
     setPaymentError(null);
   };
 
   const handlePaymentError = (error: Error) => {
     setPaymentError(error);
-    setPaymentResult(null);
+    setPaymentResultId(null);
   };
 
   return (
@@ -41,6 +43,14 @@ export default function PaymentDemoPage() {
           Explore the payment system features: Stripe integration, GDPR consent,
           offline queue, and transaction history.
         </p>
+        {mounted && (
+          <div className="alert alert-warning mt-4">
+            <span>
+              🔴 LATEST BUILD: {new Date().toISOString()} - showConsent=
+              {showConsent.toString()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* GDPR Consent Modal */}
@@ -49,16 +59,47 @@ export default function PaymentDemoPage() {
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title">Step 1: GDPR Consent</h2>
-              <p className="text-base-content/70">
+              <p className="text-base-content/70 mb-4">
                 Before processing payments, we need your consent to load
                 third-party payment scripts (Stripe, PayPal).
               </p>
-              <PaymentConsentModal
-                onAccept={() => setShowConsent(false)}
-                onDecline={() =>
-                  alert('Payment features require consent to function')
-                }
-              />
+
+              {/* Inline consent UI for demo */}
+              <div className="bg-base-200 rounded-lg p-4">
+                <h4 className="mb-2 font-semibold">What this means:</h4>
+                <ul className="list-inside list-disc space-y-1 text-sm">
+                  <li>
+                    External scripts will be loaded from Stripe and PayPal
+                  </li>
+                  <li>
+                    Your payment data will be processed securely by these
+                    providers
+                  </li>
+                  <li>
+                    No payment scripts are loaded without your explicit consent
+                  </li>
+                  <li>You can revoke this consent at any time in settings</li>
+                </ul>
+              </div>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  className="btn btn-primary min-h-11 flex-1"
+                  onClick={() => setShowConsent(false)}
+                >
+                  Accept & Continue
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost min-h-11 flex-1"
+                  onClick={() =>
+                    alert('Payment features require consent to function')
+                  }
+                >
+                  Decline
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -83,44 +124,41 @@ export default function PaymentDemoPage() {
                 {/* One-time payment */}
                 <PaymentButton
                   amount={2000}
-                  currency="USD"
-                  provider="stripe"
+                  currency="usd"
                   type="one_time"
+                  customerEmail="demo@example.com"
                   description="Demo Product - $20.00"
+                  buttonText="Pay $20.00 (One-Time)"
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   className="btn-primary"
-                >
-                  Pay $20.00 (One-Time)
-                </PaymentButton>
+                />
 
                 {/* Recurring payment */}
                 <PaymentButton
                   amount={999}
-                  currency="USD"
-                  provider="stripe"
+                  currency="usd"
                   type="recurring"
+                  customerEmail="demo@example.com"
                   description="Demo Subscription - $9.99/month"
+                  buttonText="Subscribe $9.99/month"
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   className="btn-secondary"
-                >
-                  Subscribe $9.99/month
-                </PaymentButton>
+                />
 
                 {/* PayPal */}
                 <PaymentButton
                   amount={1500}
-                  currency="USD"
-                  provider="paypal"
+                  currency="usd"
                   type="one_time"
+                  customerEmail="demo@example.com"
                   description="Demo PayPal Payment - $15.00"
+                  buttonText="PayPal $15.00"
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   className="btn-accent"
-                >
-                  PayPal $15.00
-                </PaymentButton>
+                />
               </div>
             </div>
           </div>
@@ -128,20 +166,36 @@ export default function PaymentDemoPage() {
       )}
 
       {/* Payment Result Display */}
-      {(paymentResult || paymentError) && (
+      {(paymentResultId || paymentError) && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
               <h2 className="card-title">Step 3: Payment Result</h2>
-              <PaymentStatusDisplay
-                result={paymentResult || undefined}
-                error={paymentError || undefined}
-                loading={false}
-                onRetry={() => {
-                  setPaymentResult(null);
-                  setPaymentError(null);
-                }}
-              />
+              {paymentError ? (
+                <div className="alert alert-error">
+                  <span>Error: {paymentError.message}</span>
+                  <button
+                    className="btn btn-sm"
+                    onClick={() => {
+                      setPaymentResultId(null);
+                      setPaymentError(null);
+                    }}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : (
+                <PaymentStatusDisplay
+                  paymentResultId={paymentResultId}
+                  showDetails
+                  onRetrySuccess={(newId) => {
+                    setPaymentResultId(newId);
+                  }}
+                  onRetryError={(error) => {
+                    setPaymentError(error);
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>

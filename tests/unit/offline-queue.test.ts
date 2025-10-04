@@ -1,76 +1,113 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * Offline Queue Unit Tests
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
-  addToQueue,
-  getQueuedPayments,
-  removeFromQueue,
+  queueOperation,
+  getPendingOperations,
+  clearQueue,
   getPendingCount,
+  processPendingOperations,
 } from '@/lib/payments/offline-queue';
 
-// Mock Dexie database
-vi.mock('@/lib/payments/offline-queue', async () => {
-  const actual = await vi.importActual('@/lib/payments/offline-queue');
-  return {
-    ...actual,
-    // Mock will use in-memory storage for tests
-  };
-});
-
-describe('OfflineQueue', () => {
+describe('Offline Queue', () => {
   beforeEach(async () => {
-    // Clear queue before each test
-    const queued = await getQueuedPayments();
-    for (const item of queued) {
-      await removeFromQueue(item.id);
-    }
+    await clearQueue();
   });
 
-  describe('addToQueue', () => {
-    it('should add payment to queue', async () => {
-      const paymentData = {
-        amount: 2000,
-        currency: 'usd' as const,
-        type: 'one_time' as const,
-        provider: 'stripe' as const,
-        customerEmail: 'test@example.com',
-      };
+  it('should queue a payment intent operation', async () => {
+    const data = {
+      amount: 2000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test@example.com',
+    };
 
-      await addToQueue(paymentData);
-      const count = await getPendingCount();
-      expect(count).toBeGreaterThanOrEqual(0);
-    });
+    await queueOperation('payment_intent', data);
+
+    const count = await getPendingCount();
+    expect(count).toBe(1);
   });
 
-  describe('getQueuedPayments', () => {
-    it('should return all queued payments', async () => {
-      const payments = await getQueuedPayments();
-      expect(Array.isArray(payments)).toBe(true);
-    });
+  it('should retrieve queued operations', async () => {
+    const data = {
+      amount: 2000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test@example.com',
+    };
+
+    await queueOperation('payment_intent', data);
+
+    const operations = await getPendingOperations();
+    expect(operations).toHaveLength(1);
+    expect(operations[0].type).toBe('payment_intent');
+    expect(operations[0].attempts).toBe(0);
   });
 
-  describe('getPendingCount', () => {
-    it('should return count of pending payments', async () => {
-      const count = await getPendingCount();
-      expect(typeof count).toBe('number');
-      expect(count).toBeGreaterThanOrEqual(0);
+  it('should clear all queued operations', async () => {
+    await queueOperation('payment_intent', {
+      amount: 2000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test@example.com',
     });
+
+    await clearQueue();
+
+    const count = await getPendingCount();
+    expect(count).toBe(0);
   });
 
-  describe('removeFromQueue', () => {
-    it('should remove payment from queue', async () => {
-      const paymentData = {
-        amount: 1000,
-        currency: 'usd' as const,
-        type: 'one_time' as const,
-        provider: 'stripe' as const,
-        customerEmail: 'test@example.com',
-      };
-
-      const id = await addToQueue(paymentData);
-      await removeFromQueue(id);
-
-      const queued = await getQueuedPayments();
-      const found = queued.find((p) => p.id === id);
-      expect(found).toBeUndefined();
+  it('should return correct pending count', async () => {
+    await queueOperation('payment_intent', {
+      amount: 1000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test1@example.com',
     });
+
+    await queueOperation('payment_intent', {
+      amount: 2000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test2@example.com',
+    });
+
+    const count = await getPendingCount();
+    expect(count).toBe(2);
+  });
+
+  it('should queue subscription update operations', async () => {
+    await queueOperation('subscription_update', {
+      id: 'sub-123',
+      status: 'canceled',
+    });
+
+    const operations = await getPendingOperations();
+    expect(operations).toHaveLength(1);
+    expect(operations[0].type).toBe('subscription_update');
+  });
+
+  it('should handle multiple operations in queue', async () => {
+    await queueOperation('payment_intent', {
+      amount: 1000,
+      currency: 'usd' as const,
+      type: 'one_time' as const,
+      customer_email: 'test1@example.com',
+    });
+
+    await queueOperation('subscription_update', {
+      id: 'sub-123',
+      status: 'canceled',
+    });
+
+    const operations = await getPendingOperations();
+    expect(operations).toHaveLength(2);
+
+    const types = operations.map((op) => op.type);
+    expect(types).toContain('payment_intent');
+    expect(types).toContain('subscription_update');
   });
 });

@@ -1,8 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+/**
+ * Payment Service Unit Tests
+ */
+
+import { describe, it, expect, vi } from 'vitest';
 import {
   createPaymentIntent,
-  getPaymentHistory,
   formatPaymentAmount,
+  getPaymentHistory,
+  isPaymentIntentExpired,
 } from '@/lib/payments/payment-service';
 
 // Mock Supabase client
@@ -12,7 +17,15 @@ vi.mock('@/lib/supabase/client', () => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
           single: vi.fn(() => ({
-            data: { id: 'test-intent-id' },
+            data: {
+              id: 'test-intent-123',
+              amount: 2000,
+              currency: 'usd',
+              type: 'one_time',
+              customer_email: 'test@example.com',
+              created_at: new Date().toISOString(),
+              expires_at: new Date(Date.now() + 3600000).toISOString(),
+            },
             error: null,
           })),
         })),
@@ -31,29 +44,42 @@ vi.mock('@/lib/supabase/client', () => ({
   },
 }));
 
-describe('PaymentService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
+describe('Payment Service', () => {
   describe('createPaymentIntent', () => {
-    it('should create a payment intent', async () => {
-      const result = await createPaymentIntent({
-        amount: 2000,
-        currency: 'usd',
-        type: 'one_time',
-        provider: 'stripe',
-        customerEmail: 'test@example.com',
-      });
+    it('should create a payment intent with correct parameters', async () => {
+      const intent = await createPaymentIntent(
+        2000,
+        'usd',
+        'one_time',
+        'test@example.com'
+      );
 
-      expect(result).toBeDefined();
+      expect(intent).toBeDefined();
+      expect(intent.id).toBe('test-intent-123');
+      expect(intent.amount).toBe(2000);
+      expect(intent.currency).toBe('usd');
     });
-  });
 
-  describe('getPaymentHistory', () => {
-    it('should fetch payment history for user', async () => {
-      const history = await getPaymentHistory('user-123', 20);
-      expect(Array.isArray(history)).toBe(true);
+    it('should throw error for invalid email', async () => {
+      await expect(
+        createPaymentIntent(2000, 'usd', 'one_time', 'invalid-email')
+      ).rejects.toThrow('Invalid email address');
+    });
+
+    it('should accept optional parameters', async () => {
+      const intent = await createPaymentIntent(
+        2000,
+        'usd',
+        'recurring',
+        'test@example.com',
+        {
+          interval: 'month',
+          description: 'Test subscription',
+          metadata: { plan: 'premium' },
+        }
+      );
+
+      expect(intent).toBeDefined();
     });
   });
 
@@ -71,6 +97,84 @@ describe('PaymentService', () => {
     it('should format GBP correctly', () => {
       const formatted = formatPaymentAmount(3000, 'gbp');
       expect(formatted).toBe('£30.00');
+    });
+
+    it('should format CAD correctly', () => {
+      const formatted = formatPaymentAmount(2500, 'cad');
+      expect(formatted).toBe('CA$25.00');
+    });
+
+    it('should format AUD correctly', () => {
+      const formatted = formatPaymentAmount(1800, 'aud');
+      expect(formatted).toBe('A$18.00');
+    });
+
+    it('should handle zero amount', () => {
+      const formatted = formatPaymentAmount(0, 'usd');
+      expect(formatted).toBe('$0.00');
+    });
+
+    it('should handle large amounts', () => {
+      const formatted = formatPaymentAmount(99999, 'usd');
+      expect(formatted).toBe('$999.99');
+    });
+  });
+
+  describe('getPaymentHistory', () => {
+    it('should retrieve payment history for a user', async () => {
+      const history = await getPaymentHistory('user-123');
+
+      expect(Array.isArray(history)).toBe(true);
+    });
+
+    it('should accept limit parameter', async () => {
+      const history = await getPaymentHistory('user-123', 10);
+
+      expect(Array.isArray(history)).toBe(true);
+    });
+
+    it('should use default limit when not specified', async () => {
+      const history = await getPaymentHistory('user-123');
+
+      expect(Array.isArray(history)).toBe(true);
+    });
+  });
+
+  describe('isPaymentIntentExpired', () => {
+    it('should return false for non-expired intent', () => {
+      const intent = {
+        id: 'test-123',
+        template_user_id: 'user-123',
+        amount: 2000,
+        currency: 'usd' as const,
+        type: 'one_time' as const,
+        interval: null,
+        customer_email: 'test@example.com',
+        description: null,
+        metadata: null,
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
+      };
+
+      expect(isPaymentIntentExpired(intent)).toBe(false);
+    });
+
+    it('should return true for expired intent', () => {
+      const intent = {
+        id: 'test-123',
+        template_user_id: 'user-123',
+        amount: 2000,
+        currency: 'usd' as const,
+        type: 'one_time' as const,
+        interval: null,
+        customer_email: 'test@example.com',
+        description: null,
+        metadata: null,
+        created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        expires_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+      };
+
+      expect(isPaymentIntentExpired(intent)).toBe(true);
     });
   });
 });

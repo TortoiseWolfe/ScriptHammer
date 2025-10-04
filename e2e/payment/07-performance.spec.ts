@@ -101,8 +101,11 @@ test.describe('Payment System Performance', () => {
 
     // Measure memory usage before
     const memoryBefore = await page.evaluate(() => {
-      if (performance.memory) {
-        return performance.memory.usedJSHeapSize;
+      const perf = performance as Performance & {
+        memory?: { usedJSHeapSize: number };
+      };
+      if (perf.memory) {
+        return perf.memory.usedJSHeapSize;
       }
       return 0;
     });
@@ -125,8 +128,11 @@ test.describe('Payment System Performance', () => {
 
     // Measure memory usage after
     const memoryAfter = await page.evaluate(() => {
-      if (performance.memory) {
-        return performance.memory.usedJSHeapSize;
+      const perf = performance as Performance & {
+        memory?: { usedJSHeapSize: number };
+      };
+      if (perf.memory) {
+        return perf.memory.usedJSHeapSize;
       }
       return 0;
     });

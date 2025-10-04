@@ -16,10 +16,23 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// Check if localStorage is available
+function canUseLocalStorage(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const test = '__test__';
+    localStorage.setItem(test, test);
+    localStorage.removeItem(test);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Supabase client instance
  * - Configured for frontend use with anon key
- * - Persistent sessions enabled
+ * - Persistent sessions enabled (if localStorage available)
  * - Real-time subscriptions configured
  */
 export const supabase = createClient(
@@ -27,7 +40,7 @@ export const supabase = createClient(
   supabaseConfig.anonKey,
   {
     auth: {
-      persistSession: true,
+      persistSession: canUseLocalStorage(),
       autoRefreshToken: true,
       detectSessionInUrl: true,
     },

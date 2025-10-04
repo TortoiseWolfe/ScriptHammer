@@ -47,17 +47,24 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     // Only run in browser
     if (typeof window === 'undefined') return;
 
-    const consent = localStorage.getItem('payment_consent');
-    const date = localStorage.getItem('payment_consent_date');
+    try {
+      const consent = localStorage.getItem('payment_consent');
+      const date = localStorage.getItem('payment_consent_date');
 
-    setConsentDate(date);
+      setConsentDate(date);
 
-    if (consent === 'granted') {
-      setHasConsent(true);
-      setShowModal(false);
-    } else {
-      // Show modal if no consent or declined
-      // Note: We retry each visit (don't permanently store 'declined' per GDPR)
+      if (consent === 'granted') {
+        setHasConsent(true);
+        setShowModal(false);
+      } else {
+        // Show modal if no consent or declined
+        // Note: We retry each visit (don't permanently store 'declined' per GDPR)
+        setHasConsent(false);
+        setShowModal(true);
+      }
+    } catch (error) {
+      // localStorage blocked by tracking prevention - default to showing modal
+      console.warn('localStorage access blocked:', error);
       setHasConsent(false);
       setShowModal(true);
     }
@@ -65,8 +72,15 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
 
   const grantConsent = () => {
     const now = new Date().toISOString();
-    localStorage.setItem('payment_consent', 'granted');
-    localStorage.setItem('payment_consent_date', now);
+    try {
+      localStorage.setItem('payment_consent', 'granted');
+      localStorage.setItem('payment_consent_date', now);
+    } catch (error) {
+      console.warn(
+        'localStorage access blocked, consent stored in memory only:',
+        error
+      );
+    }
     setHasConsent(true);
     setConsentDate(now);
     setShowModal(false);
@@ -74,16 +88,27 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
   };
 
   const declineConsent = () => {
-    // Store decline but allow retry on next visit
-    localStorage.setItem('payment_consent', 'declined');
+    try {
+      // Store decline but allow retry on next visit
+      localStorage.setItem('payment_consent', 'declined');
+    } catch (error) {
+      console.warn(
+        'localStorage access blocked, consent stored in memory only:',
+        error
+      );
+    }
     setHasConsent(false);
     setShowModal(false);
     console.log('❌ Payment consent declined');
   };
 
   const resetConsent = () => {
-    localStorage.removeItem('payment_consent');
-    localStorage.removeItem('payment_consent_date');
+    try {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('payment_consent_date');
+    } catch (error) {
+      console.warn('localStorage access blocked:', error);
+    }
     setHasConsent(false);
     setConsentDate(null);
     setShowModal(true);

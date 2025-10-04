@@ -1,47 +1,30 @@
 /**
  * PaymentStatusDisplay Storybook Stories
+ *
+ * Mock data is provided via MSW handlers in src/mocks/handlers.ts
  */
 
 import type { Meta, StoryObj } from '@storybook/nextjs';
 import { PaymentStatusDisplay } from './PaymentStatusDisplay';
-import type { PaymentResult } from '@/types/payment';
-
-// Helper to create mock payment results
-const createMockPaymentResult = (
-  status: PaymentResult['status'],
-  overrides?: Partial<PaymentResult>
-): PaymentResult => ({
-  id: '123e4567-e89b-12d3-a456-426614174000',
-  intent_id: '123e4567-e89b-12d3-a456-426614174001',
-  template_user_id: 'user-123',
-  provider: 'stripe',
-  transaction_id: 'pi_3OjXXX2eZvKYlo2C0abc1234',
-  status,
-  charged_amount: 2000,
-  charged_currency: 'usd',
-  provider_fee: 58,
-  webhook_verified: true,
-  webhook_verified_at: new Date().toISOString(),
-  redirect_verified: false,
-  redirect_verified_at: null,
-  verification_method: 'webhook',
-  failure_reason: null,
-  error_code: null,
-  error_message: null,
-  metadata: {},
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-  ...overrides,
-});
 
 const meta: Meta<typeof PaymentStatusDisplay> = {
   title: 'Payment/PaymentStatusDisplay',
   component: PaymentStatusDisplay,
   parameters: {
     layout: 'centered',
+    docs: {
+      description: {
+        component:
+          'Displays payment status with real-time updates. Mock data provided via MSW.',
+      },
+    },
   },
   tags: ['autodocs'],
   argTypes: {
+    paymentResultId: {
+      control: 'text',
+      description: 'Payment result ID to display',
+    },
     showDetails: {
       control: 'boolean',
       description: 'Show payment details',
@@ -55,10 +38,10 @@ type Story = StoryObj<typeof PaymentStatusDisplay>;
 /**
  * Successful payment
  */
-export const Success: Story = {
+export const Succeeded: Story = {
   args: {
-    result: createMockPaymentResult('succeeded'),
-    loading: false,
+    paymentResultId: 'result-succeeded',
+    showDetails: true,
   },
 };
 
@@ -67,19 +50,8 @@ export const Success: Story = {
  */
 export const Failed: Story = {
   args: {
-    result: createMockPaymentResult('failed'),
-    loading: false,
-    onRetry: () => alert('Retry clicked!'),
-  },
-};
-
-/**
- * Refunded payment
- */
-export const Refunded: Story = {
-  args: {
-    result: createMockPaymentResult('refunded'),
-    loading: false,
+    paymentResultId: 'result-failed',
+    showDetails: true,
   },
 };
 
@@ -88,61 +60,55 @@ export const Refunded: Story = {
  */
 export const Pending: Story = {
   args: {
-    result: createMockPaymentResult('pending'),
-    loading: false,
+    paymentResultId: 'result-pending',
+    showDetails: true,
   },
 };
 
 /**
- * Loading state with skeleton
+ * Refunded payment (mocked via 'refunded' in ID)
+ */
+export const Refunded: Story = {
+  args: {
+    paymentResultId: 'payment-refunded-example',
+    showDetails: true,
+  },
+};
+
+/**
+ * Without details
+ */
+export const WithoutDetails: Story = {
+  args: {
+    paymentResultId: 'result-succeeded',
+    showDetails: false,
+  },
+};
+
+/**
+ * Loading state (null ID)
  */
 export const Loading: Story = {
   args: {
-    loading: true,
+    paymentResultId: null,
+    showDetails: true,
   },
 };
 
 /**
- * Error state
+ * With retry callbacks
  */
-export const ErrorState: Story = {
+export const WithCallbacks: Story = {
   args: {
-    loading: false,
-    error: new Error('Failed to load payment result'),
-    onRetry: () => alert('Retry clicked!'),
-  },
-};
-
-/**
- * No result found
- */
-export const NoResult: Story = {
-  args: {
-    loading: false,
-  },
-};
-
-/**
- * PayPal payment
- */
-export const PayPalPayment: Story = {
-  args: {
-    result: createMockPaymentResult('succeeded', {
-      provider: 'paypal',
-      transaction_id: 'PAYID-MYXXXXXABCD1234567890',
-    }),
-    loading: false,
-  },
-};
-
-/**
- * Unverified webhook
- */
-export const UnverifiedWebhook: Story = {
-  args: {
-    result: createMockPaymentResult('succeeded', {
-      webhook_verified: false,
-    }),
-    loading: false,
+    paymentResultId: 'result-failed',
+    showDetails: true,
+    onRetrySuccess: (newIntentId: string) => {
+      console.log('Retry succeeded:', newIntentId);
+      alert(`Payment retry succeeded! New intent: ${newIntentId}`);
+    },
+    onRetryError: (error: Error) => {
+      console.error('Retry failed:', error);
+      alert(`Payment retry failed: ${error.message}`);
+    },
   },
 };

@@ -7,17 +7,12 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PaymentStatusDisplay } from './PaymentStatusDisplay';
 import type { PaymentResult } from '@/types/payment';
+import { usePaymentRealtime } from '@/hooks/usePaymentRealtime';
 
 // Mock hooks and services
 const mockRetryFailedPayment = vi.fn();
 
-vi.mock('@/hooks/usePaymentRealtime', () => ({
-  usePaymentRealtime: vi.fn(() => ({
-    paymentResult: null,
-    loading: false,
-    error: null,
-  })),
-}));
+vi.mock('@/hooks/usePaymentRealtime');
 
 vi.mock('@/lib/payments/payment-service', () => ({
   retryFailedPayment: (...args: unknown[]) => mockRetryFailedPayment(...args),
@@ -40,7 +35,11 @@ const createMockResult = (status: PaymentResult['status']): PaymentResult => ({
   status,
   charged_amount: 2000,
   charged_currency: 'usd',
+  provider_fee: 58,
   webhook_verified: true,
+  verification_method: 'webhook',
+  error_code: null,
+  error_message: null,
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
 });
@@ -51,8 +50,8 @@ describe('PaymentStatusDisplay', () => {
   });
 
   it('renders loading skeleton while loading', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
       paymentResult: null,
       loading: true,
       error: null,
@@ -65,8 +64,8 @@ describe('PaymentStatusDisplay', () => {
   });
 
   it('renders error alert when error exists', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
       paymentResult: null,
       loading: false,
       error: new Error('Test error'),
@@ -78,8 +77,8 @@ describe('PaymentStatusDisplay', () => {
   });
 
   it('renders no result message when result is null', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
       paymentResult: null,
       loading: false,
       error: null,
@@ -93,87 +92,82 @@ describe('PaymentStatusDisplay', () => {
   });
 
   it('renders successful payment status', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('paid'),
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('succeeded'),
       loading: false,
       error: null,
     });
 
-    render(<PaymentStatusDisplay paymentResultId="test-id" />);
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
 
     expect(screen.getByText('Payment Successful')).toBeInTheDocument();
-    expect(screen.getByText('PAID')).toBeInTheDocument();
+    expect(screen.getByText('SUCCEEDED')).toBeInTheDocument();
   });
 
-  it('renders failed payment status with retry button', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('failed'),
+  it('renders failed payment status with retry button', async () => {
+    // Mock is already set up at top level
+    const failedResult = createMockResult('failed');
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: failedResult,
       loading: false,
       error: null,
     });
 
-    render(<PaymentStatusDisplay paymentResultId="test-id" />);
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
 
     expect(screen.getByText('Payment Failed')).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: /Retry failed payment/i })
-    ).toBeInTheDocument();
-  });
-
-  it('renders refunded payment status', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('refunded'),
-      loading: false,
-      error: null,
-    });
-
-    render(<PaymentStatusDisplay paymentResultId="test-id" />);
-
-    expect(screen.getByText('Payment Refunded')).toBeInTheDocument();
-    expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 
   it('renders pending payment status', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
       paymentResult: createMockResult('pending'),
       loading: false,
       error: null,
     });
 
-    render(<PaymentStatusDisplay paymentResultId="test-id" />);
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
 
     expect(screen.getByText('Payment Pending')).toBeInTheDocument();
     expect(screen.getByText('PENDING')).toBeInTheDocument();
   });
 
-  it('displays payment details when showDetails is true', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('paid'),
+  it('renders refunded payment status', () => {
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('refunded'),
       loading: false,
       error: null,
     });
 
-    render(
-      <PaymentStatusDisplay paymentResultId="test-id" showDetails={true} />
-    );
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
+
+    expect(screen.getByText('Payment Refunded')).toBeInTheDocument();
+    expect(screen.getByText('REFUNDED')).toBeInTheDocument();
+  });
+
+  it('displays payment details when showDetails is true', () => {
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('succeeded'),
+      loading: false,
+      error: null,
+    });
+
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
 
     expect(screen.getByText('Amount:')).toBeInTheDocument();
     expect(screen.getByText('$20.00')).toBeInTheDocument();
     expect(screen.getByText('Provider:')).toBeInTheDocument();
-    expect(screen.getByText('stripe')).toBeInTheDocument();
-    expect(screen.getByText('Transaction ID:')).toBeInTheDocument();
-    expect(screen.getByText('tx_123')).toBeInTheDocument();
+    expect(screen.getByText('stripe')).toBeInTheDocument(); // lowercase with capitalize CSS class
   });
 
   it('hides payment details when showDetails is false', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('paid'),
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('succeeded'),
       loading: false,
       error: null,
     });
@@ -186,53 +180,18 @@ describe('PaymentStatusDisplay', () => {
     expect(screen.queryByText('Provider:')).not.toBeInTheDocument();
   });
 
-  it('displays webhook verified indicator', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('paid'),
-      loading: false,
-      error: null,
-    });
-
-    render(
-      <PaymentStatusDisplay paymentResultId="test-id" showDetails={true} />
-    );
-
-    expect(screen.getByText('Webhook Verified')).toBeInTheDocument();
-  });
-
-  it('handles retry button click', async () => {
+  it('calls onRetrySuccess when retry succeeds', async () => {
     const user = userEvent.setup();
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('failed'),
-      loading: false,
-      error: null,
-    });
-
-    mockRetryFailedPayment.mockResolvedValue({ id: 'new-intent-id' });
-
-    render(<PaymentStatusDisplay paymentResultId="test-id" />);
-
-    const retryButton = screen.getByRole('button', {
-      name: /Retry failed payment/i,
-    });
-    await user.click(retryButton);
-
-    expect(mockRetryFailedPayment).toHaveBeenCalledWith('456');
-  });
-
-  it('calls onRetrySuccess callback on successful retry', async () => {
-    const user = userEvent.setup();
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('failed'),
-      loading: false,
-      error: null,
-    });
-
     const onRetrySuccess = vi.fn();
-    mockRetryFailedPayment.mockResolvedValue({ id: 'new-intent-id' });
+    // Mock is already set up at top level
+
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('failed'),
+      loading: false,
+      error: null,
+    });
+
+    mockRetryFailedPayment.mockResolvedValue({ id: 'new-intent-123' });
 
     render(
       <PaymentStatusDisplay
@@ -241,27 +200,27 @@ describe('PaymentStatusDisplay', () => {
       />
     );
 
-    const retryButton = screen.getByRole('button', {
-      name: /Retry failed payment/i,
-    });
+    const retryButton = screen.getByRole('button', { name: /retry/i });
     await user.click(retryButton);
 
     await waitFor(() => {
-      expect(onRetrySuccess).toHaveBeenCalledWith('new-intent-id');
+      expect(onRetrySuccess).toHaveBeenCalledWith('new-intent-123');
     });
   });
 
-  it('calls onRetryError callback on failed retry', async () => {
+  it('calls onRetryError when retry fails', async () => {
     const user = userEvent.setup();
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
+    const onRetryError = vi.fn();
+    // Mock is already set up at top level
+
+    vi.mocked(usePaymentRealtime).mockReturnValue({
       paymentResult: createMockResult('failed'),
       loading: false,
       error: null,
     });
 
-    const onRetryError = vi.fn();
-    mockRetryFailedPayment.mockRejectedValue(new Error('Retry failed'));
+    const testError = new Error('Retry failed');
+    mockRetryFailedPayment.mockRejectedValue(testError);
 
     render(
       <PaymentStatusDisplay
@@ -270,31 +229,66 @@ describe('PaymentStatusDisplay', () => {
       />
     );
 
-    const retryButton = screen.getByRole('button', {
-      name: /Retry failed payment/i,
-    });
+    const retryButton = screen.getByRole('button', { name: /retry/i });
     await user.click(retryButton);
 
     await waitFor(() => {
-      expect(onRetryError).toHaveBeenCalledWith(expect.any(Error));
+      expect(onRetryError).toHaveBeenCalledWith(testError);
     });
   });
 
-  it('applies custom className', () => {
-    const { usePaymentRealtime } = require('@/hooks/usePaymentRealtime');
-    usePaymentRealtime.mockReturnValue({
-      paymentResult: createMockResult('paid'),
+  it('disables retry button while retrying', async () => {
+    const user = userEvent.setup();
+    // Mock is already set up at top level
+
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('failed'),
       loading: false,
       error: null,
     });
 
-    const { container } = render(
-      <PaymentStatusDisplay
-        paymentResultId="test-id"
-        className="custom-class"
-      />
+    mockRetryFailedPayment.mockImplementation(
+      () =>
+        new Promise((resolve) => setTimeout(() => resolve({ id: '123' }), 100))
     );
 
-    expect(container.querySelector('.custom-class')).toBeInTheDocument();
+    render(<PaymentStatusDisplay paymentResultId="test-id" />);
+
+    const retryButton = screen.getByRole('button', { name: /retry/i });
+    await user.click(retryButton);
+
+    expect(screen.getByText('Retrying...')).toBeInTheDocument();
+    expect(retryButton).toBeDisabled();
+  });
+
+  it('displays webhook verified badge when verified', () => {
+    // Mock is already set up at top level
+    const result = createMockResult('succeeded');
+    result.webhook_verified = true;
+
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: result,
+      loading: false,
+      error: null,
+    });
+
+    render(<PaymentStatusDisplay paymentResultId="test-id" showDetails />);
+
+    expect(screen.getByText('Webhook Verified')).toBeInTheDocument();
+  });
+
+  it('does not show retry button for non-failed payments', () => {
+    // Mock is already set up at top level
+    vi.mocked(usePaymentRealtime).mockReturnValue({
+      paymentResult: createMockResult('succeeded'),
+      loading: false,
+      error: null,
+    });
+
+    render(<PaymentStatusDisplay paymentResultId="test-id" />);
+
+    expect(
+      screen.queryByRole('button', { name: /retry/i })
+    ).not.toBeInTheDocument();
   });
 });

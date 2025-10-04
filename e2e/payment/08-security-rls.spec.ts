@@ -132,17 +132,22 @@ test.describe('Row Level Security Policies', () => {
     );
 
     // Try to insert invalid currency
-    const { data, error } = await supabaseAdmin.from('payment_intents').insert({
-      amount: 1000,
-      currency: 'INVALID', // Not in allowed currencies
-      type: 'one_time',
-      customer_email: 'test@example.com',
-      template_user_id: '00000000-0000-0000-0000-000000000000',
-    });
+    const { data, error } = await supabaseAdmin
+      .from('payment_intents')
+      .insert({
+        amount: 1000,
+        currency: 'INVALID' as never, // Not in allowed currencies
+        type: 'one_time',
+        customer_email: 'test@example.com',
+        template_user_id: '00000000-0000-0000-0000-000000000000',
+      })
+      .select();
 
     // Should be blocked by CHECK constraint (if implemented)
     // Or should be validated in application layer
-    expect(error || data?.currency === 'usd').toBeTruthy();
+    expect(
+      error || (data && data.length > 0 && data[0].currency === 'usd')
+    ).toBeTruthy();
   });
 
   test('should prevent SQL injection in payment queries', async () => {
