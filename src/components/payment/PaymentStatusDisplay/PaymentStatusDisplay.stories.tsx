@@ -18,7 +18,11 @@ const createMockPaymentResult = (
   status,
   charged_amount: 2000,
   charged_currency: 'usd',
+  provider_fee: 58,
   webhook_verified: true,
+  verification_method: 'webhook',
+  error_code: null,
+  error_message: null,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 });
@@ -53,7 +57,7 @@ export const Success: Story = {
     (Story) => {
       vi.mock('@/hooks/usePaymentRealtime', () => ({
         usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('paid'),
+          paymentResult: createMockPaymentResult('succeeded'),
           loading: false,
           error: null,
         }),
@@ -165,7 +169,7 @@ export const Error: Story = {
         usePaymentRealtime: () => ({
           paymentResult: null,
           loading: false,
-          error: new Error('Failed to load payment result'),
+          error: { message: 'Failed to load payment result' } as Error,
         }),
       }));
       return <Story />;
@@ -207,7 +211,7 @@ export const WithoutDetails: Story = {
     (Story) => {
       vi.mock('@/hooks/usePaymentRealtime', () => ({
         usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('paid'),
+          paymentResult: createMockPaymentResult('succeeded'),
           loading: false,
           error: null,
         }),
@@ -227,7 +231,7 @@ export const PayPalPayment: Story = {
   },
   decorators: [
     (Story) => {
-      const paypalResult = createMockPaymentResult('paid');
+      const paypalResult = createMockPaymentResult('succeeded');
       paypalResult.provider = 'paypal';
       paypalResult.transaction_id = 'PAYID-MYXXXXXABCD1234567890';
 
@@ -253,7 +257,7 @@ export const UnverifiedWebhook: Story = {
   },
   decorators: [
     (Story) => {
-      const unverifiedResult = createMockPaymentResult('paid');
+      const unverifiedResult = createMockPaymentResult('succeeded');
       unverifiedResult.webhook_verified = false;
 
       vi.mock('@/hooks/usePaymentRealtime', () => ({

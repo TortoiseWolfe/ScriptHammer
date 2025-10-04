@@ -38,7 +38,7 @@ export const db = new PaymentQueueDB();
 export async function queueOperation(
   type: QueuedOperation['type'],
   data: QueuedOperation['data']
-): Promise<number> {
+): Promise<unknown> {
   return await db.queuedOperations.add({
     type,
     data,

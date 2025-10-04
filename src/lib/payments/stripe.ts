@@ -65,7 +65,9 @@ export async function createCheckoutSession(
   const { sessionId } = await response.json();
 
   // Redirect to Stripe Checkout
-  const { error } = await stripe.redirectToCheckout({ sessionId });
+  // Note: redirectToCheckout is deprecated in newer Stripe.js versions
+  // Using type assertion to handle deprecated API
+  const { error } = await (stripe as any).redirectToCheckout({ sessionId });
 
   if (error) {
     throw new Error(error.message || 'Failed to redirect to Stripe Checkout');
@@ -150,7 +152,7 @@ export async function createSubscriptionCheckout(
 
   const { sessionId } = await response.json();
 
-  const { error } = await stripe.redirectToCheckout({ sessionId });
+  const { error } = await (stripe as any).redirectToCheckout({ sessionId });
 
   if (error) {
     throw new Error(error.message || 'Failed to redirect to Stripe Checkout');

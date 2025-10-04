@@ -137,7 +137,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
 
   // Map status to badge style
   const statusConfig = {
-    paid: {
+    succeeded: {
       badge: 'badge-success',
       icon: (
         <svg

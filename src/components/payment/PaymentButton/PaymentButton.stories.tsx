@@ -103,7 +103,7 @@ export const NoProviderTabs: Story = {
 export const Subscription: Story = {
   args: {
     ...Default.args,
-    type: 'subscription',
+    type: 'recurring',
     buttonText: 'Start Subscription',
   },
 };

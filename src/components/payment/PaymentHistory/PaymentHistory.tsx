@@ -10,7 +10,7 @@ import {
   getPaymentHistory,
   formatPaymentAmount,
 } from '@/lib/payments/payment-service';
-import type { PaymentActivity, Currency } from '@/types/payment';
+import type { PaymentActivity, Currency, PaymentStatus } from '@/types/payment';
 
 export interface PaymentHistoryProps {
   userId: string;
@@ -112,8 +112,8 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   // Status badge styling
   const getStatusBadge = (status: PaymentActivity['status']) => {
-    const badges = {
-      paid: 'badge-success',
+    const badges: Record<PaymentStatus, string> = {
+      succeeded: 'badge-success',
       failed: 'badge-error',
       refunded: 'badge-warning',
       pending: 'badge-info',
