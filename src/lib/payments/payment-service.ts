@@ -35,15 +35,32 @@ export async function createPaymentIntent(
   validatePaymentAmount(amount);
   validateCurrency(currency);
 
-  if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+  // Sanitize email (prevent injection, normalize for deduplication)
+  const sanitizedEmail = customerEmail.trim().toLowerCase();
+  if (!sanitizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
     throw new Error('Invalid email address');
+  }
+
+  // Validate metadata (prevent resource exhaustion)
+  if (options?.metadata) {
+    const metadataStr = JSON.stringify(options.metadata);
+    if (metadataStr.length > 1024) {
+      throw new Error('Metadata exceeds 1KB limit');
+    }
+    const checkNesting = (obj: unknown, depth = 0): void => {
+      if (depth > 2) throw new Error('Metadata nesting exceeds 2 levels');
+      if (obj && typeof obj === 'object') {
+        Object.values(obj).forEach((v) => checkNesting(v, depth + 1));
+      }
+    };
+    checkNesting(options.metadata);
   }
 
   const intentData: CreatePaymentIntentInput = {
     amount,
     currency,
     type,
-    customer_email: customerEmail,
+    customer_email: sanitizedEmail,
     interval: options?.interval,
     description: options?.description,
     metadata: options?.metadata,
