@@ -760,7 +760,7 @@ docker compose exec scripthammer supabase db inspect
 
 ---
 
-## Phase 3: Edge Functions (Webhook Handlers) (13 tasks)
+## Phase 3: Edge Functions (Webhook Handlers) (13 tasks) ✅ COMPLETE
 
 ### T017: [P] Write Contract Test for Stripe Webhook
 
@@ -1485,7 +1485,7 @@ docker compose exec scripthammer supabase secrets list
 
 ---
 
-## Phase 4: Client Library (Offline Queue & Payment Wrappers) (10 tasks)
+## Phase 4: Client Library (Offline Queue & Payment Wrappers) (10 tasks) ✅ COMPLETE
 
 ### T030: [P] Create Offline Queue with Dexie.js
 
@@ -2038,7 +2038,7 @@ export function initConnectionListener() {
 
 ---
 
-## Phase 5: Components (Payment UI) (15 tasks)
+## Phase 5: Components (Payment UI) (15 tasks) ✅ COMPLETE
 
 ### T040: Generate PaymentButton Component
 
