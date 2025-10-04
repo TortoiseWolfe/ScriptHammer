@@ -24,7 +24,7 @@ const meta: Meta<typeof PaymentButton> = {
     },
     type: {
       control: 'select',
-      options: ['one_time', 'subscription'],
+      options: ['one_time', 'recurring'],
       description: 'Payment type',
     },
     size: {

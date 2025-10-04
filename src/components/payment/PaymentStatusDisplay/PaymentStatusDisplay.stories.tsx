@@ -5,14 +5,15 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
 import { PaymentStatusDisplay } from './PaymentStatusDisplay';
 import type { PaymentResult } from '@/types/payment';
-import { vi } from 'vitest';
 
-// Mock the realtime hook with different states
+// Helper to create mock payment results
 const createMockPaymentResult = (
-  status: PaymentResult['status']
+  status: PaymentResult['status'],
+  overrides?: Partial<PaymentResult>
 ): PaymentResult => ({
   id: '123e4567-e89b-12d3-a456-426614174000',
   intent_id: '123e4567-e89b-12d3-a456-426614174001',
+  template_user_id: 'user-123',
   provider: 'stripe',
   transaction_id: 'pi_3OjXXX2eZvKYlo2C0abc1234',
   status,
@@ -20,11 +21,17 @@ const createMockPaymentResult = (
   charged_currency: 'usd',
   provider_fee: 58,
   webhook_verified: true,
+  webhook_verified_at: new Date().toISOString(),
+  redirect_verified: false,
+  redirect_verified_at: null,
   verification_method: 'webhook',
+  failure_reason: null,
   error_code: null,
   error_message: null,
+  metadata: {},
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
+  ...overrides,
 });
 
 const meta: Meta<typeof PaymentStatusDisplay> = {
@@ -50,21 +57,9 @@ type Story = StoryObj<typeof PaymentStatusDisplay>;
  */
 export const Success: Story = {
   args: {
-    paymentResultId: 'test-success-id',
-    showDetails: true,
+    result: createMockPaymentResult('succeeded'),
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('succeeded'),
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -72,21 +67,10 @@ export const Success: Story = {
  */
 export const Failed: Story = {
   args: {
-    paymentResultId: 'test-failed-id',
-    showDetails: true,
+    result: createMockPaymentResult('failed'),
+    loading: false,
+    onRetry: () => alert('Retry clicked!'),
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('failed'),
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -94,43 +78,19 @@ export const Failed: Story = {
  */
 export const Refunded: Story = {
   args: {
-    paymentResultId: 'test-refunded-id',
-    showDetails: true,
+    result: createMockPaymentResult('refunded'),
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('refunded'),
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
- * Pending payment with loading animation
+ * Pending payment
  */
 export const Pending: Story = {
   args: {
-    paymentResultId: 'test-pending-id',
-    showDetails: true,
+    result: createMockPaymentResult('pending'),
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('pending'),
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -138,43 +98,19 @@ export const Pending: Story = {
  */
 export const Loading: Story = {
   args: {
-    paymentResultId: 'test-loading-id',
-    showDetails: true,
+    loading: true,
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: null,
-          loading: true,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
  * Error state
  */
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
-    paymentResultId: 'test-error-id',
-    showDetails: true,
+    loading: false,
+    error: new Error('Failed to load payment result'),
+    onRetry: () => alert('Retry clicked!'),
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: null,
-          loading: false,
-          error: { message: 'Failed to load payment result' } as Error,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -182,43 +118,8 @@ export const Error: Story = {
  */
 export const NoResult: Story = {
   args: {
-    paymentResultId: null,
-    showDetails: true,
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: null,
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
-};
-
-/**
- * Without details section
- */
-export const WithoutDetails: Story = {
-  args: {
-    paymentResultId: 'test-no-details-id',
-    showDetails: false,
-  },
-  decorators: [
-    (Story) => {
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: createMockPaymentResult('succeeded'),
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -226,25 +127,12 @@ export const WithoutDetails: Story = {
  */
 export const PayPalPayment: Story = {
   args: {
-    paymentResultId: 'test-paypal-id',
-    showDetails: true,
+    result: createMockPaymentResult('succeeded', {
+      provider: 'paypal',
+      transaction_id: 'PAYID-MYXXXXXABCD1234567890',
+    }),
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      const paypalResult = createMockPaymentResult('succeeded');
-      paypalResult.provider = 'paypal';
-      paypalResult.transaction_id = 'PAYID-MYXXXXXABCD1234567890';
-
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: paypalResult,
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };
 
 /**
@@ -252,22 +140,9 @@ export const PayPalPayment: Story = {
  */
 export const UnverifiedWebhook: Story = {
   args: {
-    paymentResultId: 'test-unverified-id',
-    showDetails: true,
+    result: createMockPaymentResult('succeeded', {
+      webhook_verified: false,
+    }),
+    loading: false,
   },
-  decorators: [
-    (Story) => {
-      const unverifiedResult = createMockPaymentResult('succeeded');
-      unverifiedResult.webhook_verified = false;
-
-      vi.mock('@/hooks/usePaymentRealtime', () => ({
-        usePaymentRealtime: () => ({
-          paymentResult: unverifiedResult,
-          loading: false,
-          error: null,
-        }),
-      }));
-      return <Story />;
-    },
-  ],
 };

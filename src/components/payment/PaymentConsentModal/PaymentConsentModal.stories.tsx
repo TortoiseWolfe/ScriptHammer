@@ -5,20 +5,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
 import { PaymentConsentModal } from './PaymentConsentModal';
 
-// Mock the hook to always show modal in Storybook
-import { vi } from 'vitest';
-
-vi.mock('@/hooks/usePaymentConsent', () => ({
-  usePaymentConsent: () => ({
-    showModal: true,
-    hasConsent: false,
-    consentDate: null,
-    grantConsent: () => console.log('Consent granted'),
-    declineConsent: () => console.log('Consent declined'),
-    resetConsent: () => console.log('Consent reset'),
-  }),
-}));
-
 const meta: Meta<typeof PaymentConsentModal> = {
   title: 'Payment/PaymentConsentModal',
   component: PaymentConsentModal,
