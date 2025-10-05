@@ -13,32 +13,32 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 ## Phase 3.1: Setup & Configuration (T001-T008)
 
-- [ ] T001 [P] Add Supabase Auth dependencies to package.json (`@supabase/auth-helpers-nextjs@^0.8.7`, `zod@^3.22.4`, `bcryptjs@^2.4.3`)
-- [ ] T002 [P] Add testing dependencies (`msw@^2.0.0` for API mocking)
-- [ ] T003 [P] Update .env.example with Supabase Auth environment variables (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, NEXT_PUBLIC_SITE_URL)
-- [ ] T004 [P] Create src/lib/supabase/client.ts (browser Supabase client)
-- [ ] T005 [P] Create src/lib/supabase/server.ts (SSR Supabase client)
-- [ ] T006 Create src/lib/supabase/middleware.ts (session validation helper)
-- [ ] T007 Create src/middleware.ts (Next.js middleware for protected routes)
-- [ ] T008 [P] Create supabase/migrations/000_create_auth_tables.sql (user_profiles, auth_audit_logs tables with RLS policies)
+- [x] T001 [P] Add Supabase Auth dependencies to package.json (`@supabase/ssr@^0.5.2`, `zod` already installed)
+- [x] T002 [P] Add testing dependencies (`msw@^2.0.0` already installed)
+- [x] T003 [P] Update .env.example with Supabase Auth environment variables (already configured)
+- [x] T004 [P] Create src/lib/supabase/client.ts (browser Supabase client using @supabase/ssr)
+- [x] T005 [P] Create src/lib/supabase/server.ts (SSR Supabase client using @supabase/ssr)
+- [x] T006 Create src/lib/supabase/middleware.ts (session validation helper)
+- [x] T007 Create src/middleware.ts (Next.js middleware for protected routes)
+- [x] T008 [P] Create supabase/migrations/001_create_auth_tables.sql (user_profiles, auth_audit_logs tables with RLS policies)
 
 ## Phase 3.2: Database Setup (T009-T012)
 
-- [ ] T009 [P] Add database triggers in migration: auto-create user profile on sign-up
-- [ ] T010 [P] Add database triggers in migration: auto-update timestamps on profile changes
-- [ ] T011 [P] Add database function in migration: cleanup_old_audit_logs() for 90-day retention
-- [ ] T012 Create supabase/migrations/001_update_payment_rls.sql (update payment_intents RLS policies to use auth.uid())
+- [x] T009 [P] Add database triggers in migration: auto-create user profile on sign-up (included in 001_create_auth_tables.sql)
+- [x] T010 [P] Add database triggers in migration: auto-update timestamps on profile changes (included in 001_create_auth_tables.sql)
+- [x] T011 [P] Add database function in migration: cleanup_old_audit_logs() for 90-day retention (included in 001_create_auth_tables.sql)
+- [x] T012 Create supabase/migrations/002_update_payment_rls.sql (update payment_intents RLS policies to use auth.uid())
 
 ## Phase 3.3: Contract Tests (TDD Phase 1) ⚠️ MUST FAIL BEFORE IMPLEMENTATION
 
-- [ ] T013 [P] Create tests/contract/auth/sign-up.contract.test.ts (POST /auth/v1/signup contract validation)
-- [ ] T014 [P] Create tests/contract/auth/sign-in.contract.test.ts (POST /auth/v1/token contract validation)
-- [ ] T015 [P] Create tests/contract/auth/sign-out.contract.test.ts (POST /auth/v1/logout contract validation)
-- [ ] T016 [P] Create tests/contract/auth/password-reset.contract.test.ts (POST /auth/v1/recover contract validation)
-- [ ] T017 [P] Create tests/contract/auth/oauth.contract.test.ts (POST /auth/v1/authorize contract validation)
-- [ ] T018 [P] Create tests/contract/profile/get-profile.contract.test.ts (GET /rest/v1/user_profiles contract validation)
-- [ ] T019 [P] Create tests/contract/profile/update-profile.contract.test.ts (PATCH /rest/v1/user_profiles contract validation)
-- [ ] T020 [P] Create tests/contract/profile/delete-account.contract.test.ts (DELETE /rest/v1/user_profiles contract validation)
+- [x] T013 [P] Create tests/contract/auth/sign-up.contract.test.ts (POST /auth/v1/signup contract validation)
+- [x] T014 [P] Create tests/contract/auth/sign-in.contract.test.ts (POST /auth/v1/token contract validation)
+- [x] T015 [P] Create tests/contract/auth/sign-out.contract.test.ts (POST /auth/v1/logout contract validation)
+- [x] T016 [P] Create tests/contract/auth/password-reset.contract.test.ts (POST /auth/v1/recover contract validation)
+- [x] T017 [P] Create tests/contract/auth/oauth.contract.test.ts (POST /auth/v1/authorize contract validation - OAuth redirect tests need E2E)
+- [x] T018 [P] Create tests/contract/profile/get-profile.contract.test.ts (GET /rest/v1/user_profiles contract validation)
+- [x] T019 [P] Create tests/contract/profile/update-profile.contract.test.ts (PATCH /rest/v1/user_profiles contract validation)
+- [x] T020 [P] Create tests/contract/profile/delete-account.contract.test.ts (DELETE /rest/v1/user_profiles contract validation)
 
 ## Phase 3.4: Validation Utilities (T021-T025)
 

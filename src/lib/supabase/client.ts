@@ -1,61 +1,53 @@
 /**
- * Supabase Client Configuration
- * Singleton instance for frontend usage
+ * Supabase Client for Browser (Client-side)
+ *
+ * Creates a Supabase client for use in browser/client components.
+ * Automatically handles session management with localStorage.
+ *
+ * @module lib/supabase/client
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { supabaseConfig, validateSupabaseConfig } from '@/config/payment';
-
-// Validate configuration at module load
-if (typeof window !== 'undefined') {
-  try {
-    validateSupabaseConfig();
-  } catch (error) {
-    console.error('Supabase configuration error:', error);
-    throw error;
-  }
-}
-
-// Check if localStorage is available
-function canUseLocalStorage(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const test = '__test__';
-    localStorage.setItem(test, test);
-    localStorage.removeItem(test);
-    return true;
-  } catch {
-    return false;
-  }
-}
+import { createBrowserClient } from '@supabase/ssr';
+import type { Database } from '@/lib/supabase/types';
 
 /**
- * Supabase client instance
- * - Configured for frontend use with anon key
- * - Persistent sessions enabled (if localStorage available)
- * - Real-time subscriptions configured
+ * Creates a Supabase client for browser use
+ *
+ * @returns Supabase client instance
+ * @throws Error if environment variables are not configured
+ *
+ * @example
+ * ```tsx
+ * import { createClient } from '@/lib/supabase/client';
+ *
+ * function MyComponent() {
+ *   const supabase = createClient();
+ *
+ *   const handleSignIn = async () => {
+ *     const { data, error } = await supabase.auth.signInWithPassword({
+ *       email: 'user@example.com',
+ *       password: 'password'
+ *     });
+ *   };
+ * }
+ * ```
  */
-export const supabase = createClient(
-  supabaseConfig.url,
-  supabaseConfig.anonKey,
-  {
-    auth: {
-      persistSession: canUseLocalStorage(),
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 10,
-      },
-    },
-    global: {
-      headers: {
-        'x-client-info': 'scripthammer-payment-integration',
-      },
-    },
+export function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error(
+      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
+    );
   }
-);
+
+  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+}
+
+// Legacy singleton export for backward compatibility with payment system
+// TODO: Migrate payment system to use createClient() function
+export const supabase = createClient();
 
 /**
  * Helper: Check if Supabase is accessible

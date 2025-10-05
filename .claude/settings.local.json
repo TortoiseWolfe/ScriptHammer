@@ -20,7 +20,8 @@
       "Bash(test:*)",
       "Bash(cat:*)",
       "Bash(./scripts/clean-start.sh:*)",
-      "mcp__playwright__browser_navigate"
+      "mcp__playwright__browser_navigate",
+      "Bash(.specify/scripts/bash/check-implementation-prerequisites.sh:*)"
     ],
     "deny": [],
     "ask": []
