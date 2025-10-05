@@ -11,6 +11,7 @@ import { CookieConsent } from '@/components/privacy/CookieConsent';
 import { ConsentModal } from '@/components/privacy/ConsentModal';
 import GoogleAnalytics from '@/components/atomic/GoogleAnalytics';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { projectConfig } from '@/config/project.config';
 import {
   generateMetadata,
@@ -131,16 +132,18 @@ export default function RootLayout({
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />
-          <AccessibilityProvider>
-            <GlobalNav />
-            <CountdownBanner />
-            <ErrorBoundary level="page">
-              <main className="flex-1">{children}</main>
-            </ErrorBoundary>
-            <Footer />
-            <CookieConsent />
-            <ConsentModal />
-          </AccessibilityProvider>
+          <AuthProvider>
+            <AccessibilityProvider>
+              <GlobalNav />
+              <CountdownBanner />
+              <ErrorBoundary level="page">
+                <main className="flex-1">{children}</main>
+              </ErrorBoundary>
+              <Footer />
+              <CookieConsent />
+              <ConsentModal />
+            </AccessibilityProvider>
+          </AuthProvider>
         </ConsentProvider>
       </body>
     </html>

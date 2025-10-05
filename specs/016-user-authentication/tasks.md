@@ -50,10 +50,10 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 ## Phase 3.5: Auth Context & State Management (T026-T029)
 
-- [ ] T026 Create src/contexts/AuthContext.tsx (React Context for auth state: user, session, loading, signUp, signIn, signOut)
-- [ ] T027 Create src/hooks/useAuth.ts (custom hook wrapping AuthContext)
-- [ ] T028 [P] Create src/contexts/AuthContext.test.tsx (unit tests for context)
-- [ ] T029 Run context tests to verify they FAIL (pnpm test src/contexts/AuthContext.test.tsx)
+- [x] T026 Create src/contexts/AuthContext.tsx (React Context for auth state: user, session, loading, signUp, signIn, signOut)
+- [x] T027 Create tests/unit/auth/use-auth.test.tsx (unit tests for useAuth hook and AuthProvider) - 8/8 tests pass
+- [x] T028 [P] Integrate AuthProvider into src/app/layout.tsx (wraps app to provide global auth state)
+- [x] T029 Create src/lib/auth/protected-route.tsx (withProtectedRoute HOC and useProtectedRoute hook for route protection)
 
 ## Phase 3.6: Auth Components Generation (T030-T049)
 
