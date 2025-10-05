@@ -45,6 +45,18 @@
 
 ---
 
+## Clarifications
+
+### Session 2025-10-05
+
+- Q: When unverified users try to access payment features, what should happen? → A: Redirect to email verification page with retry option
+- Q: What is the maximum expected concurrent user session count for capacity planning? → A: 100-1,000 users (small business scale)
+- Q: When the email delivery service fails (verification/reset emails), what should happen? → A: Show error immediately and require manual retry
+- Q: What authentication events should be logged for security auditing? → A: All auth events including token refresh, password changes (comprehensive)
+- Q: How long should user sessions remain active before requiring re-authentication? → A: 30 days with "remember me" option
+
+---
+
 ## User Scenarios & Testing _(mandatory)_
 
 ### Primary User Story
@@ -62,8 +74,9 @@ As a user of ScriptHammer's payment system, I need to create an account and auth
 #### Scenario 2: Existing User Login
 
 1. **Given** I have a verified account, **When** I enter my correct email and password, **Then** I am signed in and redirected to my dashboard
-2. **Given** I am signed in, **When** I navigate to payment history, **Then** I see only MY payment transactions
-3. **Given** I am signed in, **When** I close my browser and return later, **Then** my session is still active (if not expired)
+2. **Given** I am signing in, **When** I check the "Remember Me" option, **Then** my session remains active for 30 days
+3. **Given** I am signed in, **When** I navigate to payment history, **Then** I see only MY payment transactions
+4. **Given** I am signed in with "Remember Me", **When** I close my browser and return within 30 days, **Then** my session is still active
 
 #### Scenario 3: Password Reset
 
@@ -88,6 +101,12 @@ As a user of ScriptHammer's payment system, I need to create an account and auth
 - How does the system handle expired verification links?
   → System shows error and provides option to resend verification email
 
+- What happens when email delivery fails for verification or password reset?
+  → System shows error immediately with message: "Failed to send email. Please try again." and provides manual retry button
+
+- What happens when an unverified user tries to access payment features?
+  → System redirects to email verification page with message: "Please verify your email to access payment features" and provides resend verification button
+
 - What happens when a user's session expires while they're viewing payment history?
   → System redirects to sign-in page with message: "Session expired. Please sign in again."
 
@@ -107,7 +126,7 @@ As a user of ScriptHammer's payment system, I need to create an account and auth
 - **FR-002**: System MUST validate email addresses before account creation
 - **FR-003**: System MUST require password minimum length of 8 characters with complexity requirements (uppercase, lowercase, number, special character)
 - **FR-004**: System MUST send verification emails to confirm user email addresses
-- **FR-005**: System MUST prevent unverified users from accessing payment features
+- **FR-005**: System MUST redirect unverified users to email verification page when attempting to access payment features, with option to resend verification email
 - **FR-006**: System MUST allow users to sign in with verified email and password
 - **FR-007**: System MUST allow users to sign in using GitHub OAuth
 - **FR-008**: System MUST allow users to sign in using Google OAuth
@@ -121,6 +140,8 @@ As a user of ScriptHammer's payment system, I need to create an account and auth
 - **FR-013**: System MUST prevent unauthorized access to payment operations
 - **FR-014**: System MUST redirect unauthenticated users to sign-in page when accessing protected routes
 - **FR-015**: System MUST maintain user sessions across browser refreshes (until expiration)
+- **FR-015a**: System MUST provide "Remember Me" option at sign-in to extend session duration to 30 days
+- **FR-015b**: System MUST expire sessions after 30 days when "Remember Me" is enabled, or use shorter default duration when not enabled
 - **FR-016**: System MUST automatically refresh authentication tokens before expiration
 - **FR-017**: System MUST limit failed login attempts to 5 per 15-minute period per email address
 - **FR-018**: System MUST expire password reset links after 1 hour
@@ -196,7 +217,7 @@ _Updated by main() during processing_
 
 - Payment integration (PRP-015) is already deployed and functional
 - Database schema includes auth.users table with RLS policies configured
-- Email delivery service is available for verification and password reset emails
+- Email delivery service is available for verification and password reset emails (failures handled with immediate error and manual retry)
 - OAuth applications are registered with GitHub and Google
 
 ### Assumptions
@@ -212,3 +233,20 @@ _Updated by main() during processing_
 - Must comply with PCI requirements for payment processing
 - Must comply with GDPR for user data protection
 - All security vulnerabilities in PRP-015 must be resolved before production deployment
+
+### Performance & Scale Targets
+
+- **Concurrent Users**: System MUST support 100-1,000 concurrent authenticated sessions
+- **Session Management**: Authentication service MUST handle small business scale (100-1,000 users)
+
+### Observability & Auditing
+
+- **Security Audit Logging**: System MUST log all authentication events including:
+  - User sign-up and email verification
+  - Successful and failed login attempts
+  - Password changes and reset requests
+  - Token refresh operations
+  - User logout events
+  - Account deletion events
+- **Log Retention**: Authentication audit logs MUST be retained for compliance review
+- **Privacy Compliance**: Logs MUST NOT contain passwords or sensitive credentials, only event metadata
