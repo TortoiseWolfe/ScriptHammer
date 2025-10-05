@@ -7,7 +7,7 @@
 
 Implement production-ready authentication system using Supabase Auth with email/password, OAuth (GitHub/Google), email verification, password reset, session management, and comprehensive audit logging. Integrate with existing payment system to replace hardcoded user IDs with authenticated sessions.
 
-**Total Tasks**: 67
+**Total Tasks**: 78
 **Estimated Duration**: 10-12 days
 **TDD Approach**: Tests before implementation (RED-GREEN-REFACTOR)
 
@@ -59,29 +59,29 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 **Use component generator for all components**
 
-- [ ] T030 [P] Generate SignUpForm component (pnpm run generate:component -- --name SignUpForm --category atomic --hasProps true)
-- [ ] T031 [P] Generate SignInForm component (pnpm run generate:component -- --name SignInForm --category atomic --hasProps true)
-- [ ] T032 [P] Generate OAuthButtons component (pnpm run generate:component -- --name OAuthButtons --category atomic --hasProps true)
-- [ ] T033 [P] Generate ForgotPasswordForm component (pnpm run generate:component -- --name ForgotPasswordForm --category atomic --hasProps true)
-- [ ] T034 [P] Generate ResetPasswordForm component (pnpm run generate:component -- --name ResetPasswordForm --category atomic --hasProps true)
-- [ ] T035 [P] Generate EmailVerificationNotice component (pnpm run generate:component -- --name EmailVerificationNotice --category atomic --hasProps true)
-- [ ] T036 [P] Generate UserProfileCard component (pnpm run generate:component -- --name UserProfileCard --category atomic --hasProps true)
-- [ ] T037 [P] Generate AccountSettings component (pnpm run generate:component -- --name AccountSettings --category atomic --hasProps true)
-- [ ] T038 [P] Generate ProtectedRoute component (pnpm run generate:component -- --name ProtectedRoute --category atomic --hasProps true)
-- [ ] T039 [P] Generate AuthGuard component (pnpm run generate:component -- --name AuthGuard --category atomic --hasProps true)
+- [ ] T030 [P] Generate SignUpForm component in src/components/auth/ (pnpm run generate:component -- --name SignUpForm --category auth --hasProps true)
+- [ ] T031 [P] Generate SignInForm component in src/components/auth/ (pnpm run generate:component -- --name SignInForm --category auth --hasProps true)
+- [ ] T032 [P] Generate OAuthButtons component in src/components/auth/ (pnpm run generate:component -- --name OAuthButtons --category auth --hasProps true)
+- [ ] T033 [P] Generate ForgotPasswordForm component in src/components/auth/ (pnpm run generate:component -- --name ForgotPasswordForm --category auth --hasProps true)
+- [ ] T034 [P] Generate ResetPasswordForm component in src/components/auth/ (pnpm run generate:component -- --name ResetPasswordForm --category auth --hasProps true)
+- [ ] T035 [P] Generate EmailVerificationNotice component in src/components/auth/ (pnpm run generate:component -- --name EmailVerificationNotice --category auth --hasProps true)
+- [ ] T036 [P] Generate UserProfileCard component in src/components/auth/ (pnpm run generate:component -- --name UserProfileCard --category auth --hasProps true)
+- [ ] T037 [P] Generate AccountSettings component in src/components/auth/ (pnpm run generate:component -- --name AccountSettings --category auth --hasProps true)
+- [ ] T038 [P] Generate ProtectedRoute component in src/components/auth/ (pnpm run generate:component -- --name ProtectedRoute --category auth --hasProps true)
+- [ ] T039 [P] Generate AuthGuard component in src/components/auth/ (pnpm run generate:component -- --name AuthGuard --category auth --hasProps true)
 
 **Implement component logic (after generation)**
 
-- [ ] T040 Implement SignUpForm logic in src/components/atomic/SignUpForm/SignUpForm.tsx (email/password inputs, validation, Remember Me checkbox)
-- [ ] T041 Implement SignInForm logic in src/components/atomic/SignInForm/SignInForm.tsx (email/password inputs, validation, rate limiting UI)
-- [ ] T042 Implement OAuthButtons logic in src/components/atomic/OAuthButtons/OAuthButtons.tsx (GitHub, Google OAuth buttons)
-- [ ] T043 Implement ForgotPasswordForm logic in src/components/atomic/ForgotPasswordForm/ForgotPasswordForm.tsx (email input, send reset link)
-- [ ] T044 Implement ResetPasswordForm logic in src/components/atomic/ResetPasswordForm/ResetPasswordForm.tsx (new password input, token validation)
-- [ ] T045 Implement EmailVerificationNotice logic in src/components/atomic/EmailVerificationNotice/EmailVerificationNotice.tsx (resend verification email)
-- [ ] T046 Implement UserProfileCard logic in src/components/atomic/UserProfileCard/UserProfileCard.tsx (display username, avatar, bio)
-- [ ] T047 Implement AccountSettings logic in src/components/atomic/AccountSettings/AccountSettings.tsx (update profile, change password, delete account)
-- [ ] T048 Implement ProtectedRoute logic in src/components/atomic/ProtectedRoute/ProtectedRoute.tsx (HOC wrapping children, redirect to /sign-in if no session)
-- [ ] T049 Implement AuthGuard logic in src/components/atomic/AuthGuard/AuthGuard.tsx (redirect component for unverified users)
+- [ ] T040 Implement SignUpForm logic in src/components/auth/SignUpForm/SignUpForm.tsx (email/password inputs, validation, Remember Me checkbox)
+- [ ] T041 Implement SignInForm logic in src/components/auth/SignInForm/SignInForm.tsx (email/password inputs, validation, rate limiting UI)
+- [ ] T042 Implement OAuthButtons logic in src/components/auth/OAuthButtons/OAuthButtons.tsx (GitHub, Google OAuth buttons)
+- [ ] T043 Implement ForgotPasswordForm logic in src/components/auth/ForgotPasswordForm/ForgotPasswordForm.tsx (email input, send reset link)
+- [ ] T044 Implement ResetPasswordForm logic in src/components/auth/ResetPasswordForm/ResetPasswordForm.tsx (new password input, token validation)
+- [ ] T045 Implement EmailVerificationNotice logic in src/components/auth/EmailVerificationNotice/EmailVerificationNotice.tsx (resend verification email)
+- [ ] T046 Implement UserProfileCard logic in src/components/auth/UserProfileCard/UserProfileCard.tsx (display username, avatar, bio)
+- [ ] T047 Implement AccountSettings logic in src/components/auth/AccountSettings/AccountSettings.tsx (update profile, change password, delete account)
+- [ ] T048 Implement ProtectedRoute logic in src/components/auth/ProtectedRoute/ProtectedRoute.tsx (HOC wrapping children, redirect to /sign-in if no session)
+- [ ] T049 Implement AuthGuard logic in src/components/auth/AuthGuard/AuthGuard.tsx (redirect component for unverified users)
 
 ## Phase 3.7: Page Routes (T050-T057)
 
@@ -111,23 +111,24 @@ Implement production-ready authentication system using Supabase Auth with email/
 ## Phase 3.10: E2E Tests (Playwright)
 
 - [ ] T066 [P] Create tests/e2e/auth/user-registration.spec.ts (complete registration flow from quickstart.md: sign-up → verify → sign-in)
-- [ ] T067 [P] Create tests/e2e/auth/protected-routes.spec.ts (verify protected routes redirect, verify RLS policies enforce payment access)
-- [ ] T068 [P] Create tests/e2e/auth/session-persistence.spec.ts (verify Remember Me extends session, verify token refresh)
+- [ ] T067 [P] Create tests/e2e/auth/protected-routes.spec.ts (verify protected routes redirect, verify RLS policies enforce payment access, verify cascade delete removes user_profiles/audit_logs/payment_intents)
+- [ ] T068 [P] Create tests/e2e/auth/session-persistence.spec.ts (verify Remember Me extends session to 30 days, verify automatic token refresh before expiration, verify session persists across browser restarts)
 
 ## Phase 3.11: Accessibility & Security Testing
 
 - [ ] T069 Run Pa11y accessibility tests on all auth pages (pnpm run test:a11y:dev with server running)
 - [ ] T070 Verify WCAG AA compliance for all forms (keyboard navigation, screen reader labels, error announcements)
 - [ ] T071 Run security audit (pnpm audit, verify no OWASP Top 10 vulnerabilities)
+- [ ] T072 [P] Execute quickstart.md validation steps manually (verify complete user journey: sign-up → verify → sign-in → access payment demo)
 
 ## Phase 3.12: Polish & Documentation
 
-- [ ] T072 [P] Update CLAUDE.md with auth patterns (AuthContext usage, ProtectedRoute HOC, OAuth callback handling)
-- [ ] T073 [P] Update docs/prp-docs/PRP-STATUS.md to mark PRP-016 as complete
-- [ ] T074 Run full test suite (pnpm run test:suite) and verify all tests pass
-- [ ] T075 Run type checking (pnpm run type-check) and fix any TypeScript errors
-- [ ] T076 Run linter (pnpm run lint) and fix any ESLint warnings
-- [ ] T077 Verify Lighthouse scores remain 90+ for all metrics
+- [ ] T073 [P] Update CLAUDE.md with auth patterns (AuthContext usage, ProtectedRoute HOC, OAuth callback handling)
+- [ ] T074 [P] Update docs/prp-docs/PRP-STATUS.md to mark PRP-016 as complete
+- [ ] T075 Run full test suite (pnpm run test:suite) and verify all tests pass
+- [ ] T076 Run type checking (pnpm run type-check) and fix any TypeScript errors
+- [ ] T077 Run linter (pnpm run lint) and fix any ESLint warnings
+- [ ] T078 Verify Lighthouse scores remain 90+ for all metrics
 
 ## Dependencies
 

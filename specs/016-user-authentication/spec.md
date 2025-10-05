@@ -53,7 +53,7 @@
 - Q: What is the maximum expected concurrent user session count for capacity planning? → A: 100-1,000 users (small business scale)
 - Q: When the email delivery service fails (verification/reset emails), what should happen? → A: Show error immediately and require manual retry
 - Q: What authentication events should be logged for security auditing? → A: All auth events including token refresh, password changes (comprehensive)
-- Q: How long should user sessions remain active before requiring re-authentication? → A: 30 days with "remember me" option
+- Q: How long should user sessions remain active before requiring re-authentication? → A: 30 days with "remember me" option, 7 days default duration without "remember me"
 
 ---
 
@@ -141,7 +141,7 @@ As a user of ScriptHammer's payment system, I need to create an account and auth
 - **FR-014**: System MUST redirect unauthenticated users to sign-in page when accessing protected routes
 - **FR-015**: System MUST maintain user sessions across browser refreshes (until expiration)
 - **FR-015a**: System MUST provide "Remember Me" option at sign-in to extend session duration to 30 days
-- **FR-015b**: System MUST expire sessions after 30 days when "Remember Me" is enabled, or use shorter default duration when not enabled
+- **FR-015b**: System MUST expire sessions after 30 days when "Remember Me" is enabled, or 7 days default duration when not enabled
 - **FR-016**: System MUST automatically refresh authentication tokens before expiration
 - **FR-017**: System MUST limit failed login attempts to 5 per 15-minute period per email address
 - **FR-018**: System MUST expire password reset links after 1 hour
