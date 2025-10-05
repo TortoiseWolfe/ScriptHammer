@@ -7,6 +7,7 @@ import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -15,6 +16,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function GlobalNav() {
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
   const [theme, setTheme] = useState<string>('');
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -175,8 +177,56 @@ export function GlobalNav() {
             ))}
           </nav>
 
-          {/* Right Section: Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
+          {/* Right Section: Auth, Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
           <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
+            {/* Auth Buttons */}
+            {user ? (
+              <div className="dropdown dropdown-end">
+                <label
+                  tabIndex={0}
+                  className="btn btn-ghost btn-circle avatar min-h-11 min-w-11"
+                >
+                  <div className="bg-primary text-primary-content flex w-8 items-center justify-center rounded-full">
+                    <span className="text-sm font-bold">
+                      {user.email?.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                </label>
+                <ul
+                  tabIndex={0}
+                  className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow"
+                >
+                  <li className="menu-title">
+                    <span>{user.email}</span>
+                  </li>
+                  <li>
+                    <Link href="/profile">Profile</Link>
+                  </li>
+                  <li>
+                    <Link href="/account">Account Settings</Link>
+                  </li>
+                  <li>
+                    <button onClick={() => signOut()}>Sign Out</button>
+                  </li>
+                </ul>
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/sign-in"
+                  className="btn btn-ghost btn-sm min-h-11 min-w-11"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className="btn btn-primary btn-sm min-h-11 min-w-11"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+
             {/* Mobile Menu - 44px touch target */}
             <div className="dropdown dropdown-end md:hidden">
               <label
@@ -212,6 +262,34 @@ export function GlobalNav() {
                     </Link>
                   </li>
                 ))}
+                {user ? (
+                  <>
+                    <li className="menu-title mt-2">
+                      <span>Account</span>
+                    </li>
+                    <li>
+                      <Link href="/profile">Profile</Link>
+                    </li>
+                    <li>
+                      <Link href="/account">Settings</Link>
+                    </li>
+                    <li>
+                      <button onClick={() => signOut()}>Sign Out</button>
+                    </li>
+                  </>
+                ) : (
+                  <>
+                    <li className="menu-title mt-2">
+                      <span>Account</span>
+                    </li>
+                    <li>
+                      <Link href="/sign-in">Sign In</Link>
+                    </li>
+                    <li>
+                      <Link href="/sign-up">Sign Up</Link>
+                    </li>
+                  </>
+                )}
               </ul>
             </div>
 
