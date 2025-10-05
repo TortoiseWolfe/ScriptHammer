@@ -1,0 +1,48 @@
+{
+  "// Note": "Pa11y config specifically for auth pages (T069)",
+  "defaults": {
+    "standard": "WCAG2AA",
+    "timeout": 30000,
+    "wait": 5000,
+    "viewport": {
+      "width": 1280,
+      "height": 1024
+    },
+    "runners": ["axe", "htmlcs"],
+    "hideElements": "",
+    "ignore": ["color-contrast"],
+    "chromeLaunchConfig": {
+      "args": [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage"
+      ],
+      "executablePath": "/usr/bin/chromium"
+    },
+    "headers": {
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+    }
+  },
+  "urls": [
+    {
+      "url": "http://localhost:3000/sign-up",
+      "screenCapture": ".pa11y-screenshots/auth/sign-up.png"
+    },
+    {
+      "url": "http://localhost:3000/sign-in",
+      "screenCapture": ".pa11y-screenshots/auth/sign-in.png"
+    },
+    {
+      "url": "http://localhost:3000/forgot-password",
+      "screenCapture": ".pa11y-screenshots/auth/forgot-password.png"
+    },
+    {
+      "url": "http://localhost:3000/reset-password",
+      "screenCapture": ".pa11y-screenshots/auth/reset-password.png"
+    },
+    {
+      "url": "http://localhost:3000/verify-email",
+      "screenCapture": ".pa11y-screenshots/auth/verify-email.png"
+    }
+  ]
+}

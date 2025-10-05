@@ -1,6 +1,12 @@
 import React from 'react';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Verify Email',
+  description: 'Verify your email address',
+};
 
 export default function VerifyEmailPage() {
   return (

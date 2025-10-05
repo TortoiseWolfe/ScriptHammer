@@ -1,6 +1,12 @@
 import React from 'react';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import Link from 'next/link';
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Reset Password',
+  description: 'Reset your password',
+};
 
 export default function ForgotPasswordPage() {
   return (
