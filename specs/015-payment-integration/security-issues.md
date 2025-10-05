@@ -27,9 +27,11 @@ export async function getPaymentHistory(userId: string, limit = 20);
 
 **Attack**: `getPaymentHistory('victim-uuid')` → view victim's payments
 
-**Status**: ⏸️ **DEFERRED** - Requires auth implementation (would break demo)
+**Status**: 🚧 **BLOCKED BY PRP-016** - User Authentication required
 
 **Fix**: Get userId from `supabase.auth.getUser()`, remove parameter
+
+**See**: `docs/prp-docs/user-authentication-prp.md`
 
 ---
 
@@ -43,9 +45,11 @@ export async function getPaymentHistory(userId: string, limit = 20);
 
 **Issue**: No verification that user owns the payment before operations
 
-**Status**: ⏸️ **DEFERRED** - Mitigated by RLS policies
+**Status**: 🚧 **BLOCKED BY PRP-016** - User Authentication required
 
 **Fix**: Add `auth.uid()` ownership checks
+
+**See**: `docs/prp-docs/user-authentication-prp.md`
 
 ---
 
