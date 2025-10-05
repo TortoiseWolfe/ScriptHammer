@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import SignUpForm from '@/components/auth/SignUpForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
