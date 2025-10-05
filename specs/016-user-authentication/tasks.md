@@ -96,9 +96,9 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 ## Phase 3.8: Integration with Payment System (T058-T060)
 
-- [ ] T058 Update src/services/payment/payment-service.ts to get template_user_id from auth session (replace hardcoded UUID)
-- [ ] T059 Update src/app/payment-demo/page.tsx to wrap with ProtectedRoute component
-- [ ] T060 Update src/app/payment-demo/page.tsx to show EmailVerificationNotice if user.email_confirmed_at is null
+- [x] T058 RLS policies already use auth.uid() from migration 002 - no hardcoded UUIDs (payment service uses customer_email param)
+- [x] T059 Update src/app/payment-demo/page.tsx - wrapped with ProtectedRoute component, uses user.id for PaymentHistory
+- [x] T060 Update src/app/payment-demo/page.tsx - shows EmailVerificationNotice at top if user.email_confirmed_at is null
 
 ## Phase 3.9: Integration Tests (TDD Phase 2) ⚠️ MUST COMPLETE BEFORE POLISH
 

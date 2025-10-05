@@ -1,6 +1,6 @@
 /**
  * Payment Demo Page
- * Showcases all payment integration components
+ * Showcases all payment integration components (protected route)
  */
 
 'use client';
@@ -10,15 +10,16 @@ import { PaymentButton } from '@/components/payment/PaymentButton/PaymentButton'
 import { PaymentConsentModal } from '@/components/payment/PaymentConsentModal/PaymentConsentModal';
 import { PaymentHistory } from '@/components/payment/PaymentHistory/PaymentHistory';
 import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/PaymentStatusDisplay';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function PaymentDemoPage() {
+function PaymentDemoContent() {
+  const { user } = useAuth();
   const [showConsent, setShowConsent] = useState(true);
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
   const [mounted, setMounted] = useState(false);
-
-  // Demo user ID (would come from auth in production)
-  const demoUserId = 'demo-user-123';
 
   React.useEffect(() => {
     setMounted(true);
@@ -36,6 +37,13 @@ export default function PaymentDemoPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
+      {/* Email verification notice */}
+      {user && !user.email_confirmed_at && (
+        <div className="mb-8">
+          <EmailVerificationNotice />
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">Payment Integration Demo</h1>
@@ -44,10 +52,9 @@ export default function PaymentDemoPage() {
           offline queue, and transaction history.
         </p>
         {mounted && (
-          <div className="alert alert-warning mt-4">
+          <div className="alert alert-info mt-4">
             <span>
-              🔴 LATEST BUILD: {new Date().toISOString()} - showConsent=
-              {showConsent.toString()}
+              Logged in as: {user?.email} - User ID: {user?.id}
             </span>
           </div>
         )}
@@ -126,7 +133,7 @@ export default function PaymentDemoPage() {
                   amount={2000}
                   currency="usd"
                   type="one_time"
-                  customerEmail="demo@example.com"
+                  customerEmail={user?.email || 'demo@example.com'}
                   description="Demo Product - $20.00"
                   buttonText="Pay $20.00 (One-Time)"
                   onSuccess={handlePaymentSuccess}
@@ -139,7 +146,7 @@ export default function PaymentDemoPage() {
                   amount={999}
                   currency="usd"
                   type="recurring"
-                  customerEmail="demo@example.com"
+                  customerEmail={user?.email || 'demo@example.com'}
                   description="Demo Subscription - $9.99/month"
                   buttonText="Subscribe $9.99/month"
                   onSuccess={handlePaymentSuccess}
@@ -152,7 +159,7 @@ export default function PaymentDemoPage() {
                   amount={1500}
                   currency="usd"
                   type="one_time"
-                  customerEmail="demo@example.com"
+                  customerEmail={user?.email || 'demo@example.com'}
                   description="Demo PayPal Payment - $15.00"
                   buttonText="PayPal $15.00"
                   onSuccess={handlePaymentSuccess}
@@ -202,7 +209,7 @@ export default function PaymentDemoPage() {
       )}
 
       {/* Payment History */}
-      {!showConsent && (
+      {!showConsent && user?.id && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
@@ -211,7 +218,7 @@ export default function PaymentDemoPage() {
                 View all past transactions with filters and pagination.
               </p>
               <PaymentHistory
-                userId={demoUserId}
+                userId={user.id}
                 initialLimit={50}
                 showFilters={true}
               />
@@ -320,5 +327,13 @@ export default function PaymentDemoPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentDemoPage() {
+  return (
+    <ProtectedRoute>
+      <PaymentDemoContent />
+    </ProtectedRoute>
   );
 }
