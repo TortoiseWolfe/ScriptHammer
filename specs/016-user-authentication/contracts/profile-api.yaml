@@ -1,0 +1,99 @@
+openapi: 3.0.0
+info:
+  title: User Profile API Contracts
+  version: 1.0.0
+  description: API contracts for user profile management
+
+servers:
+  - url: https://vswxgxbjodpgwfgsjrhq.supabase.co/rest/v1
+    description: Supabase REST API
+
+paths:
+  /user_profiles:
+    get:
+      summary: Get user profile
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Not authenticated
+
+    patch:
+      summary: Update user profile
+      operationId: updateProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 30
+                display_name:
+                  type: string
+                  maxLength: 100
+                avatar_url:
+                  type: string
+                  format: uri
+                bio:
+                  type: string
+                  maxLength: 500
+      responses:
+        '200':
+          description: Profile updated
+        '400':
+          description: Validation error
+        '409':
+          description: Username already taken
+
+    delete:
+      summary: Delete user account
+      operationId: deleteAccount
+      security:
+        - BearerAuth: []
+      responses:
+        '204':
+          description: Account deleted
+        '401':
+          description: Not authenticated
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+        bio:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
