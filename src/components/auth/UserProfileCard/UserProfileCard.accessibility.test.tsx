@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import { axe } from 'jest-axe';
-import { UserProfileCard } from './UserProfileCard';
+import render from '@testing-library/react';
+import axe from 'jest-axe';
+import UserProfileCard from './UserProfileCard';
 
 describe('UserProfileCard Accessibility', () => {
   it('should have no accessibility violations', async () => {

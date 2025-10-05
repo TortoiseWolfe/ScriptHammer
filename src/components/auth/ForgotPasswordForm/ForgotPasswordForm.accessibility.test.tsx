@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import { axe } from 'jest-axe';
-import { ForgotPasswordForm } from './ForgotPasswordForm';
+import render from '@testing-library/react';
+import axe from 'jest-axe';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 describe('ForgotPasswordForm Accessibility', () => {
   it('should have no accessibility violations', async () => {

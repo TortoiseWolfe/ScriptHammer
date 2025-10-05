@@ -46,7 +46,7 @@ describe('Password Reset Flow Integration', () => {
   it('should request password reset with valid email', async () => {
     // Step 1: Validate email
     const emailValidation = validateEmail(testEmail);
-    expect(emailValidation.isValid).toBe(true);
+    expect(emailValidation.valid).toBe(true);
 
     // Step 2: Request password reset
     const { data, error } = await supabase.auth.resetPasswordForEmail(
@@ -66,7 +66,7 @@ describe('Password Reset Flow Integration', () => {
 
     // Step 1: Client-side validation should fail
     const emailValidation = validateEmail(invalidEmail);
-    expect(emailValidation.isValid).toBe(false);
+    expect(emailValidation.valid).toBe(false);
 
     // Step 2: API should also reject
     const { error } = await supabase.auth.resetPasswordForEmail(invalidEmail);
@@ -89,8 +89,8 @@ describe('Password Reset Flow Integration', () => {
 
     // Client-side validation should fail
     const passwordValidation = validatePassword(weakPassword);
-    expect(passwordValidation.isValid).toBe(false);
-    expect(passwordValidation.errors.length).toBeGreaterThan(0);
+    expect(passwordValidation.valid).toBe(false);
+    expect(passwordValidation.error).toBeTruthy();
   });
 
   it('should update password after reset token validation', async () => {
@@ -106,7 +106,7 @@ describe('Password Reset Flow Integration', () => {
 
     // Step 2: Validate new password
     const passwordValidation = validatePassword(newPassword);
-    expect(passwordValidation.isValid).toBe(true);
+    expect(passwordValidation.valid).toBe(true);
 
     // Step 3: Update password
     const { data, error } = await supabase.auth.updateUser({

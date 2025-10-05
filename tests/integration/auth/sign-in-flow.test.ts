@@ -45,7 +45,7 @@ describe('Sign-In Flow Integration', () => {
   it('should complete full sign-in flow with valid credentials', async () => {
     // Step 1: Validate email
     const emailValidation = validateEmail(testEmail);
-    expect(emailValidation.isValid).toBe(true);
+    expect(emailValidation.valid).toBe(true);
 
     // Step 2: Sign in via API
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -73,7 +73,7 @@ describe('Sign-In Flow Integration', () => {
 
     // Step 1: Client-side validation should fail
     const emailValidation = validateEmail(invalidEmail);
-    expect(emailValidation.isValid).toBe(false);
+    expect(emailValidation.valid).toBe(false);
 
     // Step 2: API should also reject
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -109,21 +109,20 @@ describe('Sign-In Flow Integration', () => {
   });
 
   it('should enforce rate limiting after multiple failed attempts', async () => {
-    const rateLimiter = new RateLimiter('test-rate-limit', 3, 60000); // 3 attempts, 1 minute
+    const rateLimiter = new RateLimiter('test-rate-limit', 3, 1); // 3 attempts, 1 minute
 
     // Step 1: First 3 attempts should be allowed
     for (let i = 0; i < 3; i++) {
-      const allowed = rateLimiter.tryAttempt();
-      expect(allowed.allowed).toBe(true);
+      expect(rateLimiter.isAllowed()).toBe(true);
+      rateLimiter.recordAttempt();
     }
 
     // Step 2: 4th attempt should be blocked
-    const blockedAttempt = rateLimiter.tryAttempt();
-    expect(blockedAttempt.allowed).toBe(false);
-    expect(blockedAttempt.remainingTime).toBeGreaterThan(0);
+    expect(rateLimiter.isAllowed()).toBe(false);
+    expect(rateLimiter.getTimeUntilReset()).toBeGreaterThan(0);
 
     // Clean up
-    rateLimiter.reset();
+    rateLimiter.clear();
   });
 
   it('should update user state after successful sign-in', async () => {

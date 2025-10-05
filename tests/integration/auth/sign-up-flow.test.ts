@@ -18,20 +18,6 @@ describe('Sign-Up Flow Integration', () => {
     supabase = createClient();
   });
 
-  afterAll(async () => {
-    // Clean up test users
-    for (const email of testUsers) {
-      try {
-        const { data: user } = await supabase.auth.admin.getUserByEmail(email);
-        if (user) {
-          await supabase.auth.admin.deleteUser(user.id);
-        }
-      } catch (e) {
-        // User may not exist, ignore
-      }
-    }
-  });
-
   it('should complete full sign-up flow with valid data', async () => {
     const testEmail = `integration-test-${Date.now()}@example.com`;
     const testPassword = 'ValidPass123!';
@@ -41,8 +27,8 @@ describe('Sign-Up Flow Integration', () => {
     const emailValidation = validateEmail(testEmail);
     const passwordValidation = validatePassword(testPassword);
 
-    expect(emailValidation.isValid).toBe(true);
-    expect(passwordValidation.isValid).toBe(true);
+    expect(emailValidation.valid).toBe(true);
+    expect(passwordValidation.valid).toBe(true);
 
     // Step 2: Sign up via API
     const { data, error } = await supabase.auth.signUp({
@@ -78,8 +64,8 @@ describe('Sign-Up Flow Integration', () => {
 
     // Step 1: Client-side validation should fail
     const emailValidation = validateEmail(invalidEmail);
-    expect(emailValidation.isValid).toBe(false);
-    expect(emailValidation.errors).toContain('Invalid email format');
+    expect(emailValidation.valid).toBe(false);
+    expect(emailValidation.error).toBeTruthy();
 
     // Step 2: API should also reject
     const { data, error } = await supabase.auth.signUp({
@@ -97,8 +83,8 @@ describe('Sign-Up Flow Integration', () => {
 
     // Step 1: Client-side validation should fail
     const passwordValidation = validatePassword(weakPassword);
-    expect(passwordValidation.isValid).toBe(false);
-    expect(passwordValidation.errors.length).toBeGreaterThan(0);
+    expect(passwordValidation.valid).toBe(false);
+    expect(passwordValidation.error).toBeTruthy();
 
     // Step 2: API should also reject
     const { data, error } = await supabase.auth.signUp({

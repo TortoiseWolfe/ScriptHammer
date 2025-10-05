@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
-import { axe } from 'jest-axe';
-import { SignUpForm } from './SignUpForm';
+import render from '@testing-library/react';
+import axe from 'jest-axe';
+import SignUpForm from './SignUpForm';
 
 describe('SignUpForm Accessibility', () => {
   it('should have no accessibility violations', async () => {

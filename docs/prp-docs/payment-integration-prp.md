@@ -58,6 +58,7 @@ A production-ready payment integration system with **Supabase backend** supporti
 ### ScriptHammer Architecture Constraint
 
 **Static Export for GitHub Pages:**
+
 ```typescript
 // next.config.ts
 const nextConfig = {
@@ -67,11 +68,13 @@ const nextConfig = {
 ```
 
 **The Challenge:**
+
 - ❌ No Next.js API routes (require Node.js server)
 - ❌ No server-side rendering
 - ❌ No webhook endpoints (can't receive POST requests)
 
 **The Solution: Supabase Backend**
+
 - ✅ Edge Functions (Deno-based serverless)
 - ✅ PostgreSQL database (managed)
 - ✅ Real-time subscriptions
@@ -81,6 +84,7 @@ const nextConfig = {
 ### Supabase Backend Pattern
 
 **Architecture:**
+
 ```
 Browser (Static Site) → Supabase Client → Edge Functions → Database
                                     ↓
@@ -90,6 +94,7 @@ Browser (Static Site) → Supabase Client → Edge Functions → Database
 ```
 
 **Edge Function Example:**
+
 ```typescript
 // supabase/functions/stripe-webhook/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
@@ -134,9 +139,9 @@ export class StripeProvider {
   async createCheckout(amount, currency) {
     // Call Supabase Edge Function
     const { data } = await supabase.functions.invoke('stripe-create-payment', {
-      body: { amount, currency, type: 'one_time' }
-    })
-    return data
+      body: { amount, currency, type: 'one_time' },
+    });
+    return data;
   }
 }
 ```
@@ -145,10 +150,10 @@ export class StripeProvider {
 
 ```typescript
 // GDPR consent before loading Stripe/PayPal scripts
-const { hasConsent } = usePaymentConsent()
+const { hasConsent } = usePaymentConsent();
 
 if (!hasConsent) {
-  await requestConsent() // Show modal
+  await requestConsent(); // Show modal
 }
 
 // Load payment scripts only after consent
@@ -157,18 +162,21 @@ if (!hasConsent) {
 ### Dependencies & Libraries
 
 #### Supabase
+
 ```bash
 pnpm add @supabase/supabase-js  # Client library
 pnpm add -D supabase             # CLI for migrations & deployment
 ```
 
 #### Stripe
+
 ```bash
 pnpm add @stripe/stripe-js  # Client-side (browser)
 # stripe SDK used in Edge Functions (Deno import)
 ```
 
 #### PayPal
+
 ```bash
 pnpm add @paypal/react-paypal-js  # React components
 # PayPal SDK used in Edge Functions
@@ -367,30 +375,35 @@ CREATE POLICY "Enable read for authenticated users" ON payment_results
 
 ### Environment Variables
 
-**Supabase (Client-Side - NEXT_PUBLIC_):**
+**Supabase (Client-Side - NEXT*PUBLIC*):**
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
 ```
 
 **Stripe (Client-Side):**
+
 ```bash
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 ```
 
 **PayPal (Client-Side):**
+
 ```bash
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=xxx
 NEXT_PUBLIC_VENMO_ENABLED=true
 ```
 
 **Cash App & Chime (Client-Side):**
+
 ```bash
 NEXT_PUBLIC_CASHAPP_CASHTAG=$YourCashTag
 NEXT_PUBLIC_CHIME_SIGN=$YourChimeSign
 ```
 
 **Server-Side Secrets (Edge Function Environment):**
+
 ```bash
 # Set in Supabase Dashboard → Edge Functions → Secrets
 SUPABASE_SERVICE_ROLE_KEY=eyJxxx...  # For database writes
@@ -407,6 +420,7 @@ PAYPAL_WEBHOOK_ID=xxx
 ### Step 1: Setup Supabase Project (15 minutes)
 
 **1.1 Create Supabase Account**
+
 ```bash
 # 1. Go to https://supabase.com
 # 2. Sign up (free, no credit card)
@@ -416,18 +430,21 @@ PAYPAL_WEBHOOK_ID=xxx
 ```
 
 **1.2 Install Supabase CLI**
+
 ```bash
 docker compose exec scripthammer pnpm add @supabase/supabase-js
 docker compose exec scripthammer pnpm add -D supabase
 ```
 
 **1.3 Initialize Supabase**
+
 ```bash
 docker compose exec scripthammer npx supabase init
 docker compose exec scripthammer npx supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 **1.4 Create Database Schema**
+
 ```bash
 # Migration file created in specs/015-payment-integration/
 docker compose exec scripthammer npx supabase db push
@@ -436,12 +453,14 @@ docker compose exec scripthammer npx supabase db push
 ### Step 2: Setup Payment Providers
 
 **Stripe:**
+
 1. Create account at https://dashboard.stripe.com/register
 2. Get test API keys
 3. Configure webhook: `https://YOUR_PROJECT.supabase.co/functions/v1/stripe-webhook`
 4. Events: `checkout.session.completed`, `customer.subscription.created`, `invoice.payment_failed`
 
 **PayPal:**
+
 1. Create developer account at https://developer.paypal.com
 2. Create sandbox app
 3. Get client ID and secret
@@ -500,6 +519,7 @@ docker compose exec scripthammer pnpm exec playwright test
 ### During Implementation
 
 **After Each Task:**
+
 - [ ] Type checking passes
 - [ ] Edge Functions deploy successfully
 - [ ] Database queries work
@@ -523,34 +543,42 @@ docker compose exec scripthammer pnpm exec playwright test
 ## 6. Risk Mitigation
 
 ### Risk 1: Supabase Dependency
+
 **Impact**: Medium - Template users must create Supabase account
 **Probability**: High - Required for functionality
 **Mitigation**:
+
 - Free tier generous (500MB DB, 2M function calls/month)
 - No credit card required
 - 15-minute setup with clear documentation
 - Alternative: Document client-only mode (limited features)
 
 ### Risk 2: Edge Function Cold Starts
+
 **Impact**: Low - First request may be slower
 **Probability**: Medium - After inactivity
 **Mitigation**:
+
 - Cold start ~1-2 seconds (acceptable)
 - Functions warm up quickly
 - Can use Supabase cron jobs to keep warm
 
 ### Risk 3: Webhook Signature Verification
+
 **Impact**: High - Security vulnerability if broken
 **Probability**: Low - Stripe/PayPal SDKs handle this
 **Mitigation**:
+
 - Use official SDK verification methods
 - 100% test coverage for webhook handlers
 - Comprehensive error logging
 
 ### Risk 4: Database Storage Limits
+
 **Impact**: Low - Free tier has limits
 **Probability**: Low - Payment data is small
 **Mitigation**:
+
 - 500MB free tier = ~100K payment records
 - Auto-cleanup of old webhook events
 - Clear upgrade path if needed
@@ -560,23 +588,27 @@ docker compose exec scripthammer pnpm exec playwright test
 ## 7. References
 
 ### Supabase
+
 - [Supabase Documentation](https://supabase.com/docs)
 - [Edge Functions Guide](https://supabase.com/docs/guides/functions)
 - [Database Migrations](https://supabase.com/docs/guides/cli/local-development)
 - [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)
 
 ### Stripe
+
 - [Stripe.js Reference](https://stripe.com/docs/js)
 - [Checkout Documentation](https://stripe.com/docs/payments/checkout)
 - [Webhooks Guide](https://stripe.com/docs/webhooks)
 - [Testing with Stripe CLI](https://stripe.com/docs/stripe-cli)
 
 ### PayPal
+
 - [PayPal Checkout Integration](https://developer.paypal.com/docs/checkout/)
 - [Webhook Events](https://developer.paypal.com/api/rest/webhooks/)
 - [Sandbox Testing](https://developer.paypal.com/tools/sandbox/)
 
 ### Related PRPs
+
 - **PRP-007**: Cookie Consent & GDPR
 - **PRP-010**: EmailJS Integration (provider pattern)
 - **PRP-013**: Calendar Integration (consent pattern)
