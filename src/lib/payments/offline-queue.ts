@@ -5,6 +5,7 @@
 
 import Dexie, { Table } from 'dexie';
 import { supabase } from '@/lib/supabase/client';
+import type { Json } from '@/lib/supabase/types';
 import type { CreatePaymentIntentInput } from '@/types/payment';
 
 export interface QueuedOperation {
@@ -151,7 +152,7 @@ async function executePaymentIntent(
       interval: data.interval || null,
       customer_email: data.customer_email,
       description: data.description || null,
-      metadata: data.metadata || {},
+      metadata: (data.metadata || {}) as Json,
       template_user_id: '00000000-0000-0000-0000-000000000000', // TODO: Get from auth context
     })
     .select()
@@ -173,7 +174,7 @@ async function executeSubscriptionUpdate(
   const { error } = await supabase
     .from('subscriptions')
     .update(data)
-    .eq('id', data.id);
+    .eq('id', data.id as string);
 
   if (error) {
     throw new Error(`Failed to update subscription: ${error.message}`);

@@ -5,14 +5,22 @@ import AuthGuard from './AuthGuard';
 
 describe('AuthGuard Accessibility', () => {
   it('should have no accessibility violations', async () => {
-    const { container } = render(<AuthGuard />);
+    const { container } = render(
+      <AuthGuard>
+        <div>Test</div>
+      </AuthGuard>
+    );
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   it('should have proper ARIA attributes', () => {
-    const { container } = render(<AuthGuard />);
+    const { container } = render(
+      <AuthGuard>
+        <div>Test</div>
+      </AuthGuard>
+    );
 
     // Add specific ARIA attribute tests based on component type
     // Example: const button = container.querySelector('button');
@@ -20,7 +28,11 @@ describe('AuthGuard Accessibility', () => {
   });
 
   it('should be keyboard navigable', () => {
-    const { container } = render(<AuthGuard />);
+    const { container } = render(
+      <AuthGuard>
+        <div>Test</div>
+      </AuthGuard>
+    );
 
     // Test keyboard navigation
     const focusableElements = container.querySelectorAll(
@@ -33,7 +45,11 @@ describe('AuthGuard Accessibility', () => {
   });
 
   it('should have sufficient color contrast', async () => {
-    const { container } = render(<AuthGuard />);
+    const { container } = render(
+      <AuthGuard>
+        <div>Test</div>
+      </AuthGuard>
+    );
 
     // Axe will check color contrast
     const results = await axe(container, {
@@ -46,7 +62,11 @@ describe('AuthGuard Accessibility', () => {
   });
 
   it('should support screen readers', () => {
-    const { container } = render(<AuthGuard />);
+    const { container } = render(
+      <AuthGuard>
+        <div>Test</div>
+      </AuthGuard>
+    );
 
     // Check for screen reader support
     // Example: Images should have alt text

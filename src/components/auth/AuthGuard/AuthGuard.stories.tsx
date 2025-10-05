@@ -18,10 +18,6 @@ const meta: Meta<typeof AuthGuard> = {
       control: 'text',
       description: 'Content to display inside the component',
     },
-    className: {
-      control: 'text',
-      description: 'Additional CSS classes',
-    },
   },
 };
 
@@ -34,10 +30,9 @@ export const Default: Story = {
   },
 };
 
-export const WithCustomClass: Story = {
+export const WithChildren: Story = {
   args: {
-    children: 'AuthGuard with custom styling',
-    className: 'p-4 bg-primary text-white rounded',
+    children: 'AuthGuard with children',
   },
 };
 

@@ -7,7 +7,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { usePaymentRealtime } from '@/hooks/usePaymentRealtime';
 import type { PaymentResult } from '@/types/payment';
 
-// Mock Supabase client
+// Create mock instances
 const mockChannel = {
   on: vi.fn().mockReturnThis(),
   subscribe: vi.fn().mockReturnThis(),
@@ -43,8 +43,11 @@ const mockSupabase = {
   removeChannel: vi.fn(),
 };
 
+// Mock Supabase client module - use function to avoid hoisting issues
 vi.mock('@/lib/supabase/client', () => ({
-  supabase: mockSupabase,
+  get supabase() {
+    return mockSupabase;
+  },
 }));
 
 describe('usePaymentRealtime', () => {

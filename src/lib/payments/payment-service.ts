@@ -5,6 +5,7 @@
 
 import { supabase, isSupabaseOnline } from '@/lib/supabase/client';
 import { queueOperation } from './offline-queue';
+import type { Json } from '@/lib/supabase/types';
 import type {
   CreatePaymentIntentInput,
   PaymentIntent,
@@ -87,14 +88,14 @@ export async function createPaymentIntent(
         interval: intentData.interval || null,
         customer_email: intentData.customer_email,
         description: intentData.description || null,
-        metadata: intentData.metadata || {},
+        metadata: (intentData.metadata || {}) as Json,
         template_user_id: '00000000-0000-0000-0000-000000000000', // TODO: Get from auth
       })
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+    return data as PaymentIntent;
   } catch (error) {
     // If network error, queue it
     if (
@@ -125,7 +126,7 @@ export async function getPaymentStatus(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data as PaymentResult | null;
 }
 
 /**
@@ -180,7 +181,7 @@ export async function getPaymentHistory(
     provider: item.provider as PaymentActivity['provider'],
     transaction_id: item.transaction_id,
     status: item.status as PaymentActivity['status'],
-    charged_amount: item.charged_amount,
+    charged_amount: item.charged_amount ?? 0,
     charged_currency: item.charged_currency as Currency,
     customer_email: (item.intent as any).customer_email,
     webhook_verified: item.webhook_verified,
@@ -231,7 +232,7 @@ export async function getPaymentIntent(
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data as PaymentIntent | null;
 }
 
 /**

@@ -302,12 +302,91 @@ export type Database = {
           },
         ];
       };
+      user_profiles: {
+        Row: {
+          avatar_url: string | null;
+          bio: string | null;
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          updated_at: string;
+          username: string | null;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          id: string;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Update: {
+          avatar_url?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          updated_at?: string;
+          username?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_profiles_id_fkey';
+            columns: ['id'];
+            isOneToOne: true;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      auth_audit_logs: {
+        Row: {
+          created_at: string;
+          event_data: Json | null;
+          event_type: string;
+          id: string;
+          ip_address: string | null;
+          user_agent: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          event_data?: Json | null;
+          event_type: string;
+          id?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          event_data?: Json | null;
+          event_type?: string;
+          id?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'auth_audit_logs_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      delete_user: {
+        Args: Record<PropertyKey, never>;
+        Returns: void;
+      };
     };
     Enums: {
       [_ in never]: never;

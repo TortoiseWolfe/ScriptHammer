@@ -61,7 +61,7 @@ export function usePaymentRealtime(
         if (fetchError) throw fetchError;
 
         if (isMounted) {
-          setPaymentResult(data);
+          setPaymentResult(data as PaymentResult | null);
           setLoading(false);
         }
       } catch (err) {

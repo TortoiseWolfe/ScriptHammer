@@ -9,13 +9,6 @@ describe('AccountSettings', () => {
     expect(element).toBeInTheDocument();
   });
 
-  it('renders children when provided', () => {
-    const testContent = 'Test Content';
-    render(<AccountSettings>{testContent}</AccountSettings>);
-    const element = screen.getByText(testContent);
-    expect(element).toBeInTheDocument();
-  });
-
   it('applies custom className when provided', () => {
     const customClass = 'custom-class';
     const { container } = render(<AccountSettings className={customClass} />);

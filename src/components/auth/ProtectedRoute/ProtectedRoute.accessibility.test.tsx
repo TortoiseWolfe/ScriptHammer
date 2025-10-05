@@ -5,14 +5,22 @@ import ProtectedRoute from './ProtectedRoute';
 
 describe('ProtectedRoute Accessibility', () => {
   it('should have no accessibility violations', async () => {
-    const { container } = render(<ProtectedRoute />);
+    const { container } = render(
+      <ProtectedRoute>
+        <div>Test</div>
+      </ProtectedRoute>
+    );
 
     const results = await axe(container);
     expect(results).toHaveNoViolations();
   });
 
   it('should have proper ARIA attributes', () => {
-    const { container } = render(<ProtectedRoute />);
+    const { container } = render(
+      <ProtectedRoute>
+        <div>Test</div>
+      </ProtectedRoute>
+    );
 
     // Add specific ARIA attribute tests based on component type
     // Example: const button = container.querySelector('button');
@@ -20,7 +28,11 @@ describe('ProtectedRoute Accessibility', () => {
   });
 
   it('should be keyboard navigable', () => {
-    const { container } = render(<ProtectedRoute />);
+    const { container } = render(
+      <ProtectedRoute>
+        <div>Test</div>
+      </ProtectedRoute>
+    );
 
     // Test keyboard navigation
     const focusableElements = container.querySelectorAll(
@@ -33,7 +45,11 @@ describe('ProtectedRoute Accessibility', () => {
   });
 
   it('should have sufficient color contrast', async () => {
-    const { container } = render(<ProtectedRoute />);
+    const { container } = render(
+      <ProtectedRoute>
+        <div>Test</div>
+      </ProtectedRoute>
+    );
 
     // Axe will check color contrast
     const results = await axe(container, {
@@ -46,7 +62,11 @@ describe('ProtectedRoute Accessibility', () => {
   });
 
   it('should support screen readers', () => {
-    const { container } = render(<ProtectedRoute />);
+    const { container } = render(
+      <ProtectedRoute>
+        <div>Test</div>
+      </ProtectedRoute>
+    );
 
     // Check for screen reader support
     // Example: Images should have alt text

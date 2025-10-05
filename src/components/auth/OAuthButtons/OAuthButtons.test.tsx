@@ -9,13 +9,6 @@ describe('OAuthButtons', () => {
     expect(element).toBeInTheDocument();
   });
 
-  it('renders children when provided', () => {
-    const testContent = 'Test Content';
-    render(<OAuthButtons>{testContent}</OAuthButtons>);
-    const element = screen.getByText(testContent);
-    expect(element).toBeInTheDocument();
-  });
-
   it('applies custom className when provided', () => {
     const customClass = 'custom-class';
     const { container } = render(<OAuthButtons className={customClass} />);

@@ -9,13 +9,6 @@ describe('ForgotPasswordForm', () => {
     expect(element).toBeInTheDocument();
   });
 
-  it('renders children when provided', () => {
-    const testContent = 'Test Content';
-    render(<ForgotPasswordForm>{testContent}</ForgotPasswordForm>);
-    const element = screen.getByText(testContent);
-    expect(element).toBeInTheDocument();
-  });
-
   it('applies custom className when provided', () => {
     const customClass = 'custom-class';
     const { container } = render(

@@ -64,7 +64,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
         if (fetchError) throw fetchError;
 
-        setSubscriptions((data as Subscription[]) || []);
+        setSubscriptions((data as unknown as Subscription[]) || []);
       } catch (err) {
         setError(
           err instanceof Error ? err : new Error('Failed to load subscriptions')
