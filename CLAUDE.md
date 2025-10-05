@@ -129,6 +129,7 @@ The project uses Product Requirements Prompts for feature implementation:
 - ~~**Auto-Configuration System**~~ ✅ Completed (2025-09-18) - Auto-detects project name from git remote (not a formal PRP)
 - ~~**Lighthouse Phases 3 & 4**~~ ✅ Completed (2025-09-30) - Best Practices 100/100, PWA deprecated in Lighthouse 12.0
 - ~~**PRP-017: Mobile-First Design**~~ ✅ Completed (2025-10-01) - Full mobile-first overhaul with 44px touch targets
+- ~~**PRP-015: Payment Integration**~~ ✅ Completed (2025-10-03) - Supabase backend, Stripe/PayPal providers, GDPR consent, offline queue
 - PRP-012: Visual Regression Testing (P2 - deferred until UI stable)
 
 **Future PRPs** (0.4.0):
@@ -570,6 +571,42 @@ curl -X POST http://localhost:3000/api/blog/storage?action=cleanup
 - PRP-011 has 4 known test failures that don't affect production - see test issues doc
 - Blog system (Feature 018) is fully functional with 69/77 tasks complete
 - Blog feature uses IndexedDB - test in multiple browsers
+
+## PRP-015: Payment Integration System (Completed 2025-10-03)
+
+Successfully implemented comprehensive payment integration with Supabase backend, multiple payment providers, and offline-first architecture.
+
+### Architecture
+
+- **Backend**: Supabase (PostgreSQL + Edge Functions + Realtime)
+- **Payment Providers**: Stripe, PayPal (Cash App/Chime planned)
+- **Client Library**: `/src/lib/payments/` - payment-service.ts, stripe.ts, paypal.ts, offline-queue.ts
+- **UI Components**: `/src/components/payment/` - PaymentButton, PaymentConsentModal, PaymentStatusDisplay, PaymentHistory, SubscriptionManager
+- **Database**: Row Level Security (RLS) policies, webhook verification, retry schedules
+- **Tests**: 8 E2E tests in `/e2e/payment/` (T055-T062)
+
+### Key Features
+
+- **GDPR Compliance**: Consent modal before loading payment provider scripts
+- **Offline Queue**: IndexedDB-based queue with automatic sync on reconnection
+- **Real-time Updates**: Supabase realtime subscriptions for payment status
+- **Webhook Verification**: Signature verification for Stripe/PayPal webhooks
+- **Failed Payment Retry**: Exponential backoff with 3-day grace period
+- **Multi-currency**: USD, EUR, GBP, CAD, AUD support
+- **Type Safety**: Full TypeScript coverage with strict mode
+
+### Important Files
+
+- **Database Migrations**: `/supabase/migrations/` - payment_intents, payment_results, webhook_events, subscriptions
+- **Edge Functions**: `/supabase/functions/` - stripe-create-payment, stripe-webhook, paypal-create-subscription, paypal-webhook, send-receipt-email
+- **Type Definitions**: `/src/types/payment.ts`
+- **Integration Tests**: `/e2e/payment/*.spec.ts` (Playwright)
+
+### Known Issues
+
+- Stripe.redirectToCheckout deprecated - using type assertion workaround
+- Dexie return type is `Promise<unknown>` (IndexedDB can return string, number, or ArrayBuffer)
+- RLS tests require `SUPABASE_SERVICE_ROLE_KEY` environment variable
 
 ## Feature 022: NEW Markdown-First Blog System (Building from Scratch)
 

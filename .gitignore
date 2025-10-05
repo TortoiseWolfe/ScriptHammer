@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (keep .env.example for documentation)
 .env
+.env.backup
 .env.local
 .env.*.local
 
