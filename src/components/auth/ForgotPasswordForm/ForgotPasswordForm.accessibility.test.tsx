@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import render from '@testing-library/react';
-import axe from 'jest-axe';
+import { render } from '@testing-library/react';
+import { axe } from 'jest-axe';
 import ForgotPasswordForm from './ForgotPasswordForm';
 
 describe('ForgotPasswordForm Accessibility', () => {
@@ -27,7 +27,7 @@ describe('ForgotPasswordForm Accessibility', () => {
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
     );
 
-    focusableElements.forEach((element) => {
+    focusableElements.forEach((element: Element) => {
       expect(element).toBeVisible();
     });
   });
@@ -51,7 +51,7 @@ describe('ForgotPasswordForm Accessibility', () => {
     // Check for screen reader support
     // Example: Images should have alt text
     const images = container.querySelectorAll('img');
-    images.forEach((img) => {
+    images.forEach((img: Element) => {
       expect(img).toHaveAttribute('alt');
     });
   });
