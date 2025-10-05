@@ -2,37 +2,31 @@
  * Supabase Client for Browser (Client-side)
  *
  * Creates a Supabase client for use in browser/client components.
- * Automatically handles session management with localStorage.
+ * Configured for static export (no server-side code exchange).
  *
  * @module lib/supabase/client
  */
 
-import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// Global singleton instance (persists across hot reloads in development)
+let supabaseInstance: SupabaseClient<Database> | null = null;
 
 /**
  * Creates a Supabase client for browser use
+ * Uses implicit flow for static sites (no PKCE)
  *
  * @returns Supabase client instance
  * @throws Error if environment variables are not configured
- *
- * @example
- * ```tsx
- * import { createClient } from '@/lib/supabase/client';
- *
- * function MyComponent() {
- *   const supabase = createClient();
- *
- *   const handleSignIn = async () => {
- *     const { data, error } = await supabase.auth.signInWithPassword({
- *       email: 'user@example.com',
- *       password: 'password'
- *     });
- *   };
- * }
- * ```
  */
-export function createClient() {
+export function createClient(): SupabaseClient<Database> {
+  // Return existing instance if available
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -42,11 +36,27 @@ export function createClient() {
     );
   }
 
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+  supabaseInstance = createSupabaseClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        // Use implicit flow for static sites (no server-side code exchange)
+        flowType: 'implicit',
+        // Store session in localStorage
+        storage:
+          typeof window !== 'undefined' ? window.localStorage : undefined,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    }
+  );
+
+  return supabaseInstance;
 }
 
-// Legacy singleton export for backward compatibility with payment system
-// TODO: Migrate payment system to use createClient() function
+// Singleton export for all components to use
 export const supabase = createClient();
 
 /**
