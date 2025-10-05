@@ -59,29 +59,29 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 **Use component generator for all components**
 
-- [ ] T030 [P] Generate SignUpForm component in src/components/auth/ (pnpm run generate:component -- --name SignUpForm --category auth --hasProps true)
-- [ ] T031 [P] Generate SignInForm component in src/components/auth/ (pnpm run generate:component -- --name SignInForm --category auth --hasProps true)
-- [ ] T032 [P] Generate OAuthButtons component in src/components/auth/ (pnpm run generate:component -- --name OAuthButtons --category auth --hasProps true)
-- [ ] T033 [P] Generate ForgotPasswordForm component in src/components/auth/ (pnpm run generate:component -- --name ForgotPasswordForm --category auth --hasProps true)
-- [ ] T034 [P] Generate ResetPasswordForm component in src/components/auth/ (pnpm run generate:component -- --name ResetPasswordForm --category auth --hasProps true)
-- [ ] T035 [P] Generate EmailVerificationNotice component in src/components/auth/ (pnpm run generate:component -- --name EmailVerificationNotice --category auth --hasProps true)
-- [ ] T036 [P] Generate UserProfileCard component in src/components/auth/ (pnpm run generate:component -- --name UserProfileCard --category auth --hasProps true)
-- [ ] T037 [P] Generate AccountSettings component in src/components/auth/ (pnpm run generate:component -- --name AccountSettings --category auth --hasProps true)
-- [ ] T038 [P] Generate ProtectedRoute component in src/components/auth/ (pnpm run generate:component -- --name ProtectedRoute --category auth --hasProps true)
-- [ ] T039 [P] Generate AuthGuard component in src/components/auth/ (pnpm run generate:component -- --name AuthGuard --category auth --hasProps true)
+- [x] T030 [P] Generate SignUpForm component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T031 [P] Generate SignInForm component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T032 [P] Generate OAuthButtons component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T033 [P] Generate ForgotPasswordForm component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T034 [P] Generate ResetPasswordForm component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T035 [P] Generate EmailVerificationNotice component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T036 [P] Generate UserProfileCard component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T037 [P] Generate AccountSettings component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T038 [P] Generate ProtectedRoute component in src/components/auth/ (generated in molecular, moved to auth)
+- [x] T039 [P] Generate AuthGuard component in src/components/auth/ (generated in molecular, moved to auth)
 
 **Implement component logic (after generation)**
 
-- [ ] T040 Implement SignUpForm logic in src/components/auth/SignUpForm/SignUpForm.tsx (email/password inputs, validation, Remember Me checkbox)
-- [ ] T041 Implement SignInForm logic in src/components/auth/SignInForm/SignInForm.tsx (email/password inputs, validation, rate limiting UI)
-- [ ] T042 Implement OAuthButtons logic in src/components/auth/OAuthButtons/OAuthButtons.tsx (GitHub, Google OAuth buttons)
-- [ ] T043 Implement ForgotPasswordForm logic in src/components/auth/ForgotPasswordForm/ForgotPasswordForm.tsx (email input, send reset link)
-- [ ] T044 Implement ResetPasswordForm logic in src/components/auth/ResetPasswordForm/ResetPasswordForm.tsx (new password input, token validation)
-- [ ] T045 Implement EmailVerificationNotice logic in src/components/auth/EmailVerificationNotice/EmailVerificationNotice.tsx (resend verification email)
-- [ ] T046 Implement UserProfileCard logic in src/components/auth/UserProfileCard/UserProfileCard.tsx (display username, avatar, bio)
-- [ ] T047 Implement AccountSettings logic in src/components/auth/AccountSettings/AccountSettings.tsx (update profile, change password, delete account)
-- [ ] T048 Implement ProtectedRoute logic in src/components/auth/ProtectedRoute/ProtectedRoute.tsx (HOC wrapping children, redirect to /sign-in if no session)
-- [ ] T049 Implement AuthGuard logic in src/components/auth/AuthGuard/AuthGuard.tsx (redirect component for unverified users)
+- [x] T040 Implement SignUpForm logic - email/password, validation, Remember Me checkbox, onSuccess callback
+- [x] T041 Implement SignInForm logic - email/password, validation, rate limiting with RateLimiter class
+- [x] T042 Implement OAuthButtons logic - GitHub/Google OAuth with signInWithOAuth
+- [x] T043 Implement ForgotPasswordForm logic - email input, resetPasswordForEmail, success/error states
+- [x] T044 Implement ResetPasswordForm logic - new password input, updateUser, confirm password match
+- [x] T045 Implement EmailVerificationNotice logic - resend verification with supabase.auth.resend()
+- [x] T046 Implement UserProfileCard logic - display user email, username, bio, avatar placeholder
+- [x] T047 Implement AccountSettings logic - update profile metadata, change password, delete account (RPC)
+- [x] T048 Implement ProtectedRoute logic - wrapper component, redirect to /auth/sign-in if not authenticated
+- [x] T049 Implement AuthGuard logic - redirect to /verify-email if email not confirmed
 
 ## Phase 3.7: Page Routes (T050-T057)
 
