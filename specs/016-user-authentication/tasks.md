@@ -85,14 +85,14 @@ Implement production-ready authentication system using Supabase Auth with email/
 
 ## Phase 3.7: Page Routes (T050-T057)
 
-- [ ] T050 [P] Create src/app/sign-up/page.tsx (sign-up page using SignUpForm and OAuthButtons)
-- [ ] T051 [P] Create src/app/sign-in/page.tsx (sign-in page using SignInForm and OAuthButtons)
-- [ ] T052 [P] Create src/app/forgot-password/page.tsx (forgot password page using ForgotPasswordForm)
-- [ ] T053 [P] Create src/app/reset-password/page.tsx (reset password page using ResetPasswordForm)
-- [ ] T054 [P] Create src/app/verify-email/page.tsx (email verification page using EmailVerificationNotice)
-- [ ] T055 [P] Create src/app/profile/page.tsx (user profile page using UserProfileCard, protected route)
-- [ ] T056 [P] Create src/app/account/page.tsx (account settings page using AccountSettings, protected route)
-- [ ] T057 Create src/app/auth/callback/route.ts (OAuth callback handler: exchange code for session)
+- [x] T050 [P] Create src/app/sign-up/page.tsx - sign-up page with SignUpForm + OAuthButtons
+- [x] T051 [P] Create src/app/sign-in/page.tsx - sign-in page with SignInForm + OAuthButtons + forgot password link
+- [x] T052 [P] Create src/app/forgot-password/page.tsx - password reset request page
+- [x] T053 [P] Create src/app/reset-password/page.tsx - password reset completion page
+- [x] T054 [P] Create src/app/verify-email/page.tsx - email verification notice page
+- [x] T055 [P] Create src/app/profile/page.tsx - user profile page with ProtectedRoute wrapper
+- [x] T056 [P] Create src/app/account/page.tsx - account settings page with ProtectedRoute wrapper
+- [x] T057 Create src/app/auth/callback/route.ts - OAuth callback handler with exchangeCodeForSession
 
 ## Phase 3.8: Integration with Payment System (T058-T060)
 
