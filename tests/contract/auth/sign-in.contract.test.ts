@@ -2,25 +2,18 @@
  * Contract Test: Sign-In API (POST /auth/v1/token)
  *
  * Tests the contract between our app and Supabase Auth sign-in endpoint.
- * These tests MUST fail until implementation is complete (TDD RED phase).
+ * Uses static pre-confirmed test user from fixtures.
  */
 
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { createClient } from '@/lib/supabase/client';
+import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('Supabase Auth Sign-In Contract', () => {
   let supabase: ReturnType<typeof createClient>;
-  const testEmail = `signin-test-${Date.now()}@example.com`;
-  const testPassword = 'ValidPass123!';
 
   beforeAll(async () => {
     supabase = createClient();
-
-    // Create test user
-    await supabase.auth.signUp({
-      email: testEmail,
-      password: testPassword,
-    });
   });
 
   afterEach(async () => {
@@ -30,20 +23,20 @@ describe('Supabase Auth Sign-In Contract', () => {
 
   it('should accept valid credentials', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: testPassword,
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
     });
 
     expect(error).toBeNull();
     expect(data.session).toBeDefined();
     expect(data.user).toBeDefined();
-    expect(data.user?.email).toBe(testEmail);
+    expect(data.user?.email).toBe(TEST_EMAIL);
   });
 
   it('should return session with access token', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: testPassword,
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
     });
 
     expect(error).toBeNull();
@@ -58,7 +51,7 @@ describe('Supabase Auth Sign-In Contract', () => {
   it('should reject invalid email', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: 'nonexistent@example.com',
-      password: testPassword,
+      password: TEST_PASSWORD,
     });
 
     expect(error).toBeDefined();
@@ -68,7 +61,7 @@ describe('Supabase Auth Sign-In Contract', () => {
 
   it('should reject invalid password', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: testEmail,
+      email: TEST_EMAIL,
       password: 'WrongPassword123!',
     });
 
@@ -79,12 +72,12 @@ describe('Supabase Auth Sign-In Contract', () => {
 
   it('should handle case-insensitive email', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: testEmail.toUpperCase(),
-      password: testPassword,
+      email: TEST_EMAIL.toUpperCase(),
+      password: TEST_PASSWORD,
     });
 
     // Supabase normalizes email to lowercase
     expect(error).toBeNull();
-    expect(data.user?.email).toBe(testEmail.toLowerCase());
+    expect(data.user?.email).toBe(TEST_EMAIL.toLowerCase());
   });
 });

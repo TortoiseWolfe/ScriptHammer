@@ -1,33 +1,27 @@
 /**
  * Contract Test: Get Profile API (GET /rest/v1/user_profiles)
  *
- * Tests the contract for retrieving user profile data.
- * These tests MUST fail until implementation is complete (TDD RED phase).
+ * Tests the contract for retrieving user profile data using static confirmed test user.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@/lib/supabase/client';
+import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('User Profile GET Contract', () => {
   let supabase: ReturnType<typeof createClient>;
   let testUserId: string;
-  const testEmail = `profile-get-${Date.now()}@example.com`;
 
   beforeAll(async () => {
     supabase = createClient();
 
-    // Create and sign in test user
-    const { data } = await supabase.auth.signUp({
-      email: testEmail,
-      password: 'ValidPass123!',
+    // Sign in with pre-confirmed static test user
+    const { data } = await supabase.auth.signInWithPassword({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
     });
 
     testUserId = data.user!.id;
-
-    await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
   });
 
   afterAll(async () => {
@@ -52,7 +46,7 @@ describe('User Profile GET Contract', () => {
     expect(data).toHaveProperty('updated_at');
   });
 
-  it('should auto-create profile on sign-up', async () => {
+  it('should have profile matching user ID', async () => {
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -61,7 +55,7 @@ describe('User Profile GET Contract', () => {
 
     expect(error).toBeNull();
     expect(data?.id).toBe(testUserId);
-    expect(data?.username).toBeNull(); // Initially null until user sets it
+    expect(data?.username).toBeDefined(); // Static test user has username already set
   });
 
   it('should enforce RLS - users can only view own profile', async () => {

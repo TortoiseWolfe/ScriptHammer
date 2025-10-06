@@ -1,33 +1,27 @@
 /**
  * Contract Test: Update Profile API (PATCH /rest/v1/user_profiles)
  *
- * Tests the contract for updating user profile data.
- * These tests MUST fail until implementation is complete (TDD RED phase).
+ * Tests the contract for updating user profile data using static confirmed test user.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@/lib/supabase/client';
+import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('User Profile UPDATE Contract', () => {
   let supabase: ReturnType<typeof createClient>;
   let testUserId: string;
-  const testEmail = `profile-update-${Date.now()}@example.com`;
 
   beforeAll(async () => {
     supabase = createClient();
 
-    // Create and sign in test user
-    const { data } = await supabase.auth.signUp({
-      email: testEmail,
-      password: 'ValidPass123!',
+    // Sign in with pre-confirmed static test user
+    const { data } = await supabase.auth.signInWithPassword({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
     });
 
     testUserId = data.user!.id;
-
-    await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
   });
 
   afterAll(async () => {
