@@ -321,8 +321,37 @@ See `.env.example` for all available environment variables including:
 - Calendar providers (Calendly/Cal.com)
 - Author information and social links
 - Project overrides for special deployment scenarios
+- Test user credentials for contract tests
 
 See `/docs/TEMPLATE-GUIDE.md` for details on the auto-configuration system.
+
+### Test User Configuration
+
+Contract tests require pre-configured test users in Supabase:
+
+**Primary Test User** (required):
+
+- Email: `test@example.com` (or override with `TEST_USER_PRIMARY_EMAIL`)
+- Password: `TestPassword123!` (or override with `TEST_USER_PRIMARY_PASSWORD`)
+- Must be pre-created and email-confirmed in Supabase (see `/supabase/seed-test-user.sql`)
+- Used for: sign-in, profile operations, standard contract tests
+
+**Secondary Test User** (optional - for email verification tests):
+
+- Configure in `.env`: `TEST_USER_SECONDARY_EMAIL` and `TEST_USER_SECONDARY_PASSWORD`
+- Must be a REAL email address you control (e.g., `yourname+scripthammer@gmail.com`)
+- Enables: password reset tests, sign-up flow tests with actual email verification
+- Tests will be gracefully skipped if not configured
+
+**To enable all contract tests:**
+
+```bash
+# Add to .env
+TEST_USER_SECONDARY_EMAIL=yourname+scripthammer@gmail.com
+TEST_USER_SECONDARY_PASSWORD=YourTestPassword123!
+```
+
+**Note:** Gmail's + addressing is perfect for test users - all emails go to your main inbox with different addresses.
 
 ## Common Issues & Solutions
 
