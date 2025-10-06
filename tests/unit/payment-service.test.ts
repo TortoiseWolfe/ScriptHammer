@@ -42,6 +42,7 @@ vi.mock('@/lib/supabase/client', () => ({
       })),
     })),
   },
+  isSupabaseOnline: vi.fn(() => true),
 }));
 
 describe('Payment Service', () => {
@@ -106,7 +107,7 @@ describe('Payment Service', () => {
 
     it('should format AUD correctly', () => {
       const formatted = formatPaymentAmount(1800, 'aud');
-      expect(formatted).toBe('A$18.00');
+      expect(formatted).toBe('AU$18.00');
     });
 
     it('should handle zero amount', () => {

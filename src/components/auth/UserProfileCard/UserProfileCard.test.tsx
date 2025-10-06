@@ -1,12 +1,12 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import UserProfileCard from './UserProfileCard';
 
 describe('UserProfileCard', () => {
   it('renders without crashing', () => {
-    const { container } = render(<UserProfileCard />);
-    // Component returns null when no user is authenticated (mocked as null)
-    expect(container.firstChild).toBeNull();
+    render(<UserProfileCard />);
+    // With mocked user (testuser), component should render the username
+    expect(screen.getByText('testuser')).toBeInTheDocument();
   });
 
   // TODO: Add more specific tests for UserProfileCard functionality

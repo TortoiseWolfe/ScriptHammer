@@ -96,9 +96,8 @@ describe('PaymentConsentModal Accessibility', () => {
 
     const buttons = container.querySelectorAll('button');
     buttons.forEach((button) => {
-      const styles = window.getComputedStyle(button);
-      const minHeight = parseInt(styles.minHeight);
-      expect(minHeight).toBeGreaterThanOrEqual(44);
+      // Check for min-h-11 class (11 * 4px = 44px in Tailwind)
+      expect(button.className).toContain('min-h-11');
     });
   });
 

@@ -6,7 +6,7 @@ describe('AccountSettings', () => {
   it('renders without crashing', () => {
     render(<AccountSettings />);
     expect(
-      screen.getByRole('heading', { name: /account settings/i })
+      screen.getByRole('heading', { name: /profile settings/i })
     ).toBeInTheDocument();
   });
 

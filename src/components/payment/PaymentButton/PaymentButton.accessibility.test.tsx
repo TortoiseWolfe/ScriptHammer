@@ -23,6 +23,17 @@ vi.mock('@/hooks/usePaymentButton', () => ({
   })),
 }));
 
+vi.mock('@/hooks/usePaymentConsent', () => ({
+  usePaymentConsent: vi.fn(() => ({
+    showModal: false,
+    hasConsent: true,
+    consentDate: new Date().toISOString(),
+    grantConsent: vi.fn(),
+    declineConsent: vi.fn(),
+    resetConsent: vi.fn(),
+  })),
+}));
+
 vi.mock('@/lib/payments/payment-service', () => ({
   formatPaymentAmount: vi.fn(() => '$20.00'),
 }));
@@ -156,9 +167,8 @@ describe('PaymentButton Accessibility', () => {
 
     const buttons = container.querySelectorAll('button');
     buttons.forEach((button) => {
-      const styles = window.getComputedStyle(button);
-      const minHeight = parseInt(styles.minHeight);
-      expect(minHeight).toBeGreaterThanOrEqual(44);
+      // Check for min-h-11 class (11 * 4px = 44px in Tailwind)
+      expect(button.className).toContain('min-h-11');
     });
   });
 

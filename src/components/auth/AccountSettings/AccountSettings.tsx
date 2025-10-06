@@ -109,10 +109,11 @@ export default function AccountSettings({
         <div className="card-body">
           <h3 className="card-title">Profile Settings</h3>
           <div className="form-control">
-            <label className="label">
+            <label htmlFor="username-input" className="label">
               <span className="label-text">Username</span>
             </label>
             <input
+              id="username-input"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -121,10 +122,11 @@ export default function AccountSettings({
             />
           </div>
           <div className="form-control">
-            <label className="label">
+            <label htmlFor="bio-textarea" className="label">
               <span className="label-text">Bio</span>
             </label>
             <textarea
+              id="bio-textarea"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               className="textarea textarea-bordered"
@@ -147,10 +149,11 @@ export default function AccountSettings({
         <div className="card-body">
           <h3 className="card-title">Change Password</h3>
           <div className="form-control">
-            <label className="label">
+            <label htmlFor="new-password-input" className="label">
               <span className="label-text">New Password</span>
             </label>
             <input
+              id="new-password-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -159,10 +162,11 @@ export default function AccountSettings({
             />
           </div>
           <div className="form-control">
-            <label className="label">
+            <label htmlFor="confirm-password-input" className="label">
               <span className="label-text">Confirm Password</span>
             </label>
             <input
+              id="confirm-password-input"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}

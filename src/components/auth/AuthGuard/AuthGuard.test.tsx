@@ -5,7 +5,7 @@ import AuthGuard from './AuthGuard';
 describe('AuthGuard', () => {
   it('renders without crashing', () => {
     render(
-      <AuthGuard>
+      <AuthGuard requireVerification={false}>
         <div>Test</div>
       </AuthGuard>
     );
@@ -15,7 +15,7 @@ describe('AuthGuard', () => {
 
   it('renders children when provided', () => {
     const testContent = 'Test Content';
-    render(<AuthGuard>{testContent}</AuthGuard>);
+    render(<AuthGuard requireVerification={false}>{testContent}</AuthGuard>);
     const element = screen.getByText(testContent);
     expect(element).toBeInTheDocument();
   });

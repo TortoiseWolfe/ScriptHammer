@@ -5,7 +5,7 @@ import ResetPasswordForm from './ResetPasswordForm';
 describe('ResetPasswordForm', () => {
   it('renders without crashing', () => {
     render(<ResetPasswordForm />);
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/new password/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /reset password/i })
     ).toBeInTheDocument();

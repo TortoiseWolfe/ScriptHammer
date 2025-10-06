@@ -183,7 +183,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         className={`btn btn-primary ${sizeClasses[size]} ${isProcessing ? 'loading' : ''}`}
         onClick={initiatePayment}
         disabled={!selectedProvider || isProcessing || !hasConsent}
-        aria-label={`Pay ${formattedAmount}`}
+        aria-label={buttonText || `Pay ${formattedAmount}`}
         aria-busy={isProcessing}
       >
         {isProcessing ? (

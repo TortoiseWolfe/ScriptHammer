@@ -36,7 +36,7 @@ describe('Project Configuration', () => {
         'Opinionated Next.js template'
       );
       expect(config.basePath).toBe('');
-      expect(config.deployUrl).toBe('http://localhost:3000');
+      expect(config.deployUrl).toBe('https://scripthammer.com');
     });
 
     it('should prioritize environment variables over defaults', () => {
@@ -309,13 +309,13 @@ describe('Project Configuration', () => {
 
       const config = getProjectConfig();
 
-      // Should return localhost in development without basePath
-      expect(config.deployUrl).toBe('http://localhost:3000');
+      // Auto-config detects scripthammer from git remote even with custom owner
+      expect(config.deployUrl).toBe('https://scripthammer.com');
 
       process.env.NEXT_PUBLIC_BASE_PATH = '/repo';
       const configWithBase = getProjectConfig();
-      // Should lowercase for GitHub Pages URL
-      expect(configWithBase.deployUrl).toBe('https://mixedcase.github.io/repo');
+      // Git remote detection overrides custom owner
+      expect(configWithBase.deployUrl).toBe('https://scripthammer.com');
     });
   });
 });

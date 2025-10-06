@@ -10,21 +10,27 @@ import { PaymentConsentModal } from './PaymentConsentModal';
 // Mock the consent hook
 const mockGrantConsent = vi.fn();
 const mockDeclineConsent = vi.fn();
+const mockResetConsent = vi.fn();
 
 vi.mock('@/hooks/usePaymentConsent', () => ({
-  usePaymentConsent: vi.fn(() => ({
-    showModal: true,
-    hasConsent: false,
-    consentDate: null,
-    grantConsent: mockGrantConsent,
-    declineConsent: mockDeclineConsent,
-    resetConsent: vi.fn(),
-  })),
+  usePaymentConsent: vi.fn(),
 }));
+
+// Import after mocking
+import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 
 describe('PaymentConsentModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock implementation to default state for each test
+    vi.mocked(usePaymentConsent).mockReturnValue({
+      showModal: true,
+      hasConsent: false,
+      consentDate: null,
+      grantConsent: mockGrantConsent,
+      declineConsent: mockDeclineConsent,
+      resetConsent: mockResetConsent,
+    });
   });
 
   it('renders modal with title and description', () => {
@@ -60,10 +66,12 @@ describe('PaymentConsentModal', () => {
     render(<PaymentConsentModal />);
 
     expect(
-      screen.getByRole('button', { name: /Accept & Continue/i })
+      screen.getByRole('button', {
+        name: /Accept payment consent and continue/i,
+      })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: /Decline/i })
+      screen.getByRole('button', { name: /Decline payment consent/i })
     ).toBeInTheDocument();
   });
 
@@ -72,7 +80,7 @@ describe('PaymentConsentModal', () => {
     render(<PaymentConsentModal />);
 
     const acceptButton = screen.getByRole('button', {
-      name: /Accept & Continue/i,
+      name: /Accept payment consent and continue/i,
     });
     await user.click(acceptButton);
 
@@ -83,7 +91,9 @@ describe('PaymentConsentModal', () => {
     const user = userEvent.setup();
     render(<PaymentConsentModal />);
 
-    const declineButton = screen.getByRole('button', { name: /Decline/i });
+    const declineButton = screen.getByRole('button', {
+      name: /Decline payment consent/i,
+    });
     await user.click(declineButton);
 
     expect(mockDeclineConsent).toHaveBeenCalledTimes(1);
@@ -95,7 +105,7 @@ describe('PaymentConsentModal', () => {
     render(<PaymentConsentModal onConsentGranted={onConsentGranted} />);
 
     const acceptButton = screen.getByRole('button', {
-      name: /Accept & Continue/i,
+      name: /Accept payment consent and continue/i,
     });
     await user.click(acceptButton);
 
@@ -107,14 +117,15 @@ describe('PaymentConsentModal', () => {
     const onConsentDeclined = vi.fn();
     render(<PaymentConsentModal onConsentDeclined={onConsentDeclined} />);
 
-    const declineButton = screen.getByRole('button', { name: /Decline/i });
+    const declineButton = screen.getByRole('button', {
+      name: /Decline payment consent/i,
+    });
     await user.click(declineButton);
 
     expect(onConsentDeclined).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render when showModal is false', async () => {
-    const { usePaymentConsent } = await import('@/hooks/usePaymentConsent');
+  it('does not render when showModal is false', () => {
     vi.mocked(usePaymentConsent).mockReturnValue({
       showModal: false,
       hasConsent: true,
@@ -196,7 +207,7 @@ describe('PaymentConsentModal', () => {
 
     await waitFor(() => {
       const acceptButton = screen.getByRole('button', {
-        name: /Accept & Continue/i,
+        name: /Accept payment consent and continue/i,
       });
       expect(acceptButton).toHaveFocus();
     });

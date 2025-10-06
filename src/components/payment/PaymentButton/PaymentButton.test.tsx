@@ -21,6 +21,17 @@ vi.mock('@/hooks/usePaymentButton', () => ({
   })),
 }));
 
+vi.mock('@/hooks/usePaymentConsent', () => ({
+  usePaymentConsent: vi.fn(() => ({
+    showModal: false,
+    hasConsent: true,
+    consentDate: new Date().toISOString(),
+    grantConsent: vi.fn(),
+    declineConsent: vi.fn(),
+    resetConsent: vi.fn(),
+  })),
+}));
+
 vi.mock('@/lib/payments/payment-service', () => ({
   formatPaymentAmount: vi.fn((amount: number, currency: string) => {
     const formatted = (amount / 100).toFixed(2);

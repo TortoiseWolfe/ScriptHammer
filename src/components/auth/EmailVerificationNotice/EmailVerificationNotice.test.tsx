@@ -5,7 +5,9 @@ import EmailVerificationNotice from './EmailVerificationNotice';
 describe('EmailVerificationNotice', () => {
   it('renders without crashing', () => {
     render(<EmailVerificationNotice />);
-    expect(screen.getByText(/verify your email/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/please verify your email address/i)
+    ).toBeInTheDocument();
   });
 
   // TODO: Add more specific tests for EmailVerificationNotice functionality

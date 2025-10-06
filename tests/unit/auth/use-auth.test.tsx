@@ -5,56 +5,77 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 
-// Mock Supabase client
-vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
-    auth: {
-      getSession: vi.fn(() =>
-        Promise.resolve({
-          data: { session: null },
-          error: null,
-        })
-      ),
-      onAuthStateChange: vi.fn(() => ({
-        data: {
-          subscription: {
-            unsubscribe: vi.fn(),
-          },
+// Mock Supabase client first (this needs to be hoisted)
+vi.mock('@/lib/supabase/client', () => {
+  const mockAuth = {
+    getSession: vi.fn(() =>
+      Promise.resolve({
+        data: { session: null },
+        error: null,
+      })
+    ),
+    onAuthStateChange: vi.fn(() => ({
+      data: {
+        subscription: {
+          unsubscribe: vi.fn(),
         },
-      })),
-      signUp: vi.fn(() =>
-        Promise.resolve({
-          data: { user: null, session: null },
-          error: null,
-        })
-      ),
-      signInWithPassword: vi.fn(() =>
-        Promise.resolve({
-          data: { user: null, session: null },
-          error: null,
-        })
-      ),
-      signOut: vi.fn(() =>
-        Promise.resolve({
-          error: null,
-        })
-      ),
-      refreshSession: vi.fn(() =>
-        Promise.resolve({
-          data: { session: null },
-          error: null,
-        })
-      ),
-    },
-  })),
-}));
+      },
+    })),
+    signUp: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null, session: null },
+        error: null,
+      })
+    ),
+    signInWithPassword: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null, session: null },
+        error: null,
+      })
+    ),
+    signOut: vi.fn(() =>
+      Promise.resolve({
+        error: null,
+      })
+    ),
+    refreshSession: vi.fn(() =>
+      Promise.resolve({
+        data: { session: null },
+        error: null,
+      })
+    ),
+  };
+
+  const mockSupabaseClient = { auth: mockAuth };
+
+  return {
+    createClient: vi.fn(() => mockSupabaseClient),
+    supabase: mockSupabaseClient,
+  };
+});
+
+// Unmock AuthContext to use real implementation for these unit tests
+vi.unmock('@/contexts/AuthContext');
+
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase/client';
 
 describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset all mock implementations to defaults
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+      error: null,
+    });
+    vi.mocked(supabase.auth.onAuthStateChange).mockReturnValue({
+      data: {
+        subscription: {
+          unsubscribe: vi.fn(),
+        },
+      },
+    } as any);
   });
 
   it('should throw error when used outside AuthProvider', () => {
@@ -78,26 +99,6 @@ describe('useAuth', () => {
   });
 
   it('should call signUp with correct parameters', async () => {
-    const mockSignUp = vi.fn(() =>
-      Promise.resolve({
-        data: { user: null, session: null },
-        error: null,
-      })
-    );
-
-    // Mock before rendering
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn(() => ({
-          data: { subscription: { unsubscribe: vi.fn() } },
-        })),
-        signUp: mockSignUp,
-      },
-    } as any);
-
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
     });
@@ -108,7 +109,7 @@ describe('useAuth', () => {
 
     await result.current.signUp('test@example.com', 'password123');
 
-    expect(mockSignUp).toHaveBeenCalledWith({
+    expect(supabase.auth.signUp).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
       options: {
@@ -118,25 +119,6 @@ describe('useAuth', () => {
   });
 
   it('should call signIn with correct parameters', async () => {
-    const mockSignIn = vi.fn(() =>
-      Promise.resolve({
-        data: { user: null, session: null },
-        error: null,
-      })
-    );
-
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn(() => ({
-          data: { subscription: { unsubscribe: vi.fn() } },
-        })),
-        signInWithPassword: mockSignIn,
-      },
-    } as any);
-
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
     });
@@ -147,31 +129,13 @@ describe('useAuth', () => {
 
     await result.current.signIn('test@example.com', 'password123');
 
-    expect(mockSignIn).toHaveBeenCalledWith({
+    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
     });
   });
 
   it('should call signOut', async () => {
-    const mockSignOut = vi.fn(() =>
-      Promise.resolve({
-        error: null,
-      })
-    );
-
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn(() => ({
-          data: { subscription: { unsubscribe: vi.fn() } },
-        })),
-        signOut: mockSignOut,
-      },
-    } as any);
-
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
     });
@@ -182,7 +146,7 @@ describe('useAuth', () => {
 
     await result.current.signOut();
 
-    expect(mockSignOut).toHaveBeenCalled();
+    expect(supabase.auth.signOut).toHaveBeenCalled();
   });
 
   it('should handle auth state changes', async () => {
@@ -199,23 +163,18 @@ describe('useAuth', () => {
 
     let authStateCallback: any;
 
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn((callback) => {
-          authStateCallback = callback;
-          return {
-            data: {
-              subscription: {
-                unsubscribe: vi.fn(),
-              },
+    vi.mocked(supabase.auth.onAuthStateChange).mockImplementation(
+      (callback) => {
+        authStateCallback = callback;
+        return {
+          data: {
+            subscription: {
+              unsubscribe: vi.fn(),
             },
-          };
-        }),
-      },
-    } as any);
+          },
+        } as any;
+      }
+    );
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
@@ -236,30 +195,6 @@ describe('useAuth', () => {
   });
 
   it('should refresh session', async () => {
-    const mockRefreshSession = vi.fn(() =>
-      Promise.resolve({
-        data: {
-          session: {
-            user: { id: 'user-123' },
-            access_token: 'new-token',
-          },
-        },
-        error: null,
-      })
-    );
-
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn(() => ({
-          data: { subscription: { unsubscribe: vi.fn() } },
-        })),
-        refreshSession: mockRefreshSession,
-      },
-    } as any);
-
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,
     });
@@ -270,26 +205,13 @@ describe('useAuth', () => {
 
     await result.current.refreshSession();
 
-    expect(mockRefreshSession).toHaveBeenCalled();
+    expect(supabase.auth.refreshSession).toHaveBeenCalled();
   });
 
   it('should handle errors gracefully', async () => {
     const mockError = new Error('Auth error');
-    const mockSignIn = vi.fn(() => {
-      throw mockError;
-    });
 
-    vi.mocked(createClient).mockReturnValue({
-      auth: {
-        getSession: vi.fn(() =>
-          Promise.resolve({ data: { session: null }, error: null })
-        ),
-        onAuthStateChange: vi.fn(() => ({
-          data: { subscription: { unsubscribe: vi.fn() } },
-        })),
-        signInWithPassword: mockSignIn,
-      },
-    } as any);
+    vi.mocked(supabase.auth.signInWithPassword).mockRejectedValue(mockError);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: AuthProvider,

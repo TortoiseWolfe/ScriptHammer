@@ -4,13 +4,19 @@ import { afterEach, vi, expect } from 'vitest';
 import { toHaveNoViolations } from 'jest-axe';
 import 'fake-indexeddb/auto';
 
-// Mock AuthContext for all tests
+// Mock AuthContext with reasonable defaults for component tests
+// Unit tests can override with vi.doUnmock() if needed
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: null,
-    session: null,
+    user: {
+      id: '123',
+      email: 'test@example.com',
+      user_metadata: { username: 'testuser' },
+      email_confirmed_at: null, // Allow EmailVerificationNotice to render
+    },
+    session: { access_token: 'mock-token' },
     isLoading: false,
-    isAuthenticated: false,
+    isAuthenticated: true,
     signUp: vi.fn(async () => ({ error: null })),
     signIn: vi.fn(async () => ({ error: null })),
     signOut: vi.fn(async () => ({ error: null })),
@@ -33,15 +39,9 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Mock Payment Consent hook for all tests
-vi.mock('@/hooks/usePaymentConsent', () => ({
-  usePaymentConsent: () => ({
-    showModal: true, // Show modal by default in tests
-    hasConsent: false,
-    grantConsent: vi.fn(),
-    declineConsent: vi.fn(),
-  }),
-}));
+// Note: usePaymentConsent is NOT globally mocked
+// Tests that need it should mock it themselves (see PaymentConsentModal.test.tsx)
+// This allows unit tests to test the real implementation
 
 // Mock CSS imports
 vi.mock('leaflet/dist/leaflet.css', () => ({}));
