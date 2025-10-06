@@ -309,12 +309,12 @@ describe('Project Configuration', () => {
 
       const config = getProjectConfig();
 
-      // Auto-config detects scripthammer from git remote even with custom owner
+      // Custom domain takes priority
       expect(config.deployUrl).toBe('https://scripthammer.com');
 
       process.env.NEXT_PUBLIC_BASE_PATH = '/repo';
       const configWithBase = getProjectConfig();
-      // Git remote detection overrides custom owner
+      // Custom domain still takes priority even with basePath
       expect(configWithBase.deployUrl).toBe('https://scripthammer.com');
     });
   });
