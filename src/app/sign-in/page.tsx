@@ -1,14 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import SignInForm from '@/components/auth/SignInForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 export default function SignInPage() {
-  const searchParams = useSearchParams();
-  const returnUrl = searchParams?.get('returnUrl') || '/profile';
+  const [returnUrl, setReturnUrl] = useState('/profile');
+
+  useEffect(() => {
+    // Read query params client-side for static export compatibility
+    const params = new URLSearchParams(window.location.search);
+    const url = params.get('returnUrl');
+    if (url) {
+      setReturnUrl(url);
+    }
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 md:py-16 lg:px-8">
