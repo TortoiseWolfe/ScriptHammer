@@ -8,7 +8,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { PaymentHistory } from './PaymentHistory';
 
 const meta: Meta<typeof PaymentHistory> = {
-  title: 'Payment/PaymentHistory',
+  title: 'Features/Payment/PaymentHistory',
   component: PaymentHistory,
   parameters: {
     layout: 'fullscreen',

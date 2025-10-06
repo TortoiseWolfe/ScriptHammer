@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { CopyButton } from './CopyButton';
 
 const meta = {
-  title: 'Blog/CopyButton',
+  title: 'Features/Blog/CopyButton',
   component: CopyButton,
   parameters: {
     layout: 'centered',

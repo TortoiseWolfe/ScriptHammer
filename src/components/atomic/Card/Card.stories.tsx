@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { Button } from '../Button/Button';
 
 const meta = {
-  title: 'Atomic/Card',
+  title: 'Atomic Design/Atomic/Card',
   component: Card,
   parameters: {
     layout: 'centered',

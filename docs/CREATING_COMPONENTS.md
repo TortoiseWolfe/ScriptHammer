@@ -106,7 +106,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import ContactForm from './ContactForm';
 
 const meta: Meta<typeof ContactForm> = {
-  title: 'Molecular/ContactForm',
+  title: 'Features/Forms/ContactForm', // Update based on functional category
   component: ContactForm,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],
@@ -119,6 +119,12 @@ export const Default: Story = {
   args: {},
 };
 ```
+
+**Note**: After generation, update the `title` field to match the component's functional category:
+
+- Atomic design: `'Atomic Design/Atomic/ComponentName'`
+- Feature components: `'Features/CategoryName/ComponentName'` (e.g., Authentication, Payment, Blog, Map)
+- Layout/Theme: `'Layout/Theme/ComponentName'`
 
 ### Index File (`index.tsx`)
 

@@ -21,7 +21,7 @@ const MockConsentDecorator: Decorator = (Story) => {
 };
 
 const meta: Meta<typeof PaymentConsentModal> = {
-  title: 'Payment/PaymentConsentModal',
+  title: 'Features/Payment/PaymentConsentModal',
   component: PaymentConsentModal,
   decorators: [MockConsentDecorator],
   parameters: {

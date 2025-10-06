@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import TagBadge from './TagBadge';
 
 const meta = {
-  title: 'Atomic/TagBadge',
+  title: 'Atomic Design/Atomic/TagBadge',
   component: TagBadge,
   parameters: {
     layout: 'centered',

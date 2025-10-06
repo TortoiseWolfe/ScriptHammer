@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { AnimatedLogo } from './AnimatedLogo';
 
 const meta: Meta<typeof AnimatedLogo> = {
-  title: 'Atomic/AnimatedLogo',
+  title: 'Atomic Design/Atomic/AnimatedLogo',
   component: AnimatedLogo,
   parameters: {
     layout: 'centered',

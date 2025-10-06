@@ -4,7 +4,7 @@ import SEOAnalysisPanel from './SEOAnalysisPanel';
 import type { BlogPost } from '@/types/blog';
 
 const meta: Meta<typeof SEOAnalysisPanel> = {
-  title: 'Molecular/SEOAnalysisPanel',
+  title: 'Features/Blog/SEOAnalysisPanel',
   component: SEOAnalysisPanel,
   parameters: {
     layout: 'padded',

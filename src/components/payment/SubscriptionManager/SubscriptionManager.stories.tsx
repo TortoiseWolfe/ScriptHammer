@@ -8,7 +8,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { SubscriptionManager } from './SubscriptionManager';
 
 const meta: Meta<typeof SubscriptionManager> = {
-  title: 'Payment/SubscriptionManager',
+  title: 'Features/Payment/SubscriptionManager',
   component: SubscriptionManager,
   parameters: {
     layout: 'fullscreen',

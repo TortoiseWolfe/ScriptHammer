@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import DraggableDice from './DraggableDice';
 
 const meta: Meta<typeof DraggableDice> = {
-  title: 'Components/Atomic/DraggableDice',
+  title: 'Atomic Design/Atomic/DraggableDice',
   component: DraggableDice,
   parameters: {
     layout: 'centered',

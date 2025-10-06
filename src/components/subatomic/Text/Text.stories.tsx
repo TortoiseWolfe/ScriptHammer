@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { Text } from './Text';
 
 const meta = {
-  title: 'SubAtomic/Text',
+  title: 'Atomic Design/Subatomic/Text',
   component: Text,
   parameters: {
     layout: 'padded',

@@ -68,3 +68,43 @@ npm view @storybook/test dist-tags.latest
 ```
 
 Once they reach 9.x, add them back to package.json and .storybook/main.ts
+
+## Story Organization (Updated October 2025)
+
+All 51 component stories follow a consistent functional organization structure:
+
+### Structure:
+
+**Atomic Design/** - Design complexity hierarchy (16 components)
+
+- `Atomic Design/Subatomic/` - Primitive building blocks (Text)
+- `Atomic Design/Atomic/` - Basic UI components (Button, Card, etc.)
+
+**Features/** - Functional purpose grouping (34 components)
+
+- `Features/Authentication/` - Auth components (SignInForm, SignUpForm, etc.)
+- `Features/Privacy/` - GDPR compliance (CookieConsent, ConsentModal, etc.)
+- `Features/Payment/` - Payment processing (PaymentButton, PaymentHistory, etc.)
+- `Features/Map/` - Geolocation (MapContainer, LocationButton, etc.)
+- `Features/Blog/` - Blog system (BlogPostCard, BlogContent, etc.)
+- `Features/Forms/` - Form components (ContactForm)
+- `Features/Calendar/` - Calendar integration (CalendarEmbed)
+- `Features/Analytics/` - Tracking (GoogleAnalytics)
+
+**Layout/** - Layout and theming (3 components)
+
+- `Layout/Theme/` - Theme switching (FontSwitcher, ColorblindToggle, etc.)
+
+### Example Story Titles:
+
+```typescript
+title: 'Atomic Design/Atomic/Button';
+title: 'Features/Authentication/SignInForm';
+title: 'Features/Payment/PaymentButton';
+title: 'Features/Blog/BlogPostCard';
+title: 'Layout/Theme/FontSwitcher';
+```
+
+### When Creating New Components:
+
+After using the component generator, update the story `title` field to match the functional category rather than the generated atomic design category.

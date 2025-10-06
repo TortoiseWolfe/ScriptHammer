@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { CountdownBanner } from './CountdownBanner';
 
 const meta: Meta<typeof CountdownBanner> = {
-  title: 'Components/Atomic/CountdownBanner',
+  title: 'Atomic Design/Atomic/CountdownBanner',
   component: CountdownBanner,
   parameters: {
     layout: 'centered',

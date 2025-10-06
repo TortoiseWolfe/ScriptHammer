@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { ColorblindToggle } from './ColorblindToggle';
 
 const meta = {
-  title: 'Atomic/ColorblindToggle',
+  title: 'Layout/Theme/ColorblindToggle',
   component: ColorblindToggle,
   parameters: {
     layout: 'centered',

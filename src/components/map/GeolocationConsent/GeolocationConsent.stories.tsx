@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { GeolocationConsent, GeolocationPurpose } from './GeolocationConsent';
 
 const meta = {
-  title: 'Components/Map/GeolocationConsent',
+  title: 'Features/Map/GeolocationConsent',
   component: GeolocationConsent,
   parameters: {
     layout: 'centered',

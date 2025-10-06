@@ -1,15 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import React from 'react';
 import EmailVerificationNotice from './EmailVerificationNotice';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+const withAuthProvider = (Story: any) => (
+  <AuthProvider>
+    <Story />
+  </AuthProvider>
+);
 
 const meta: Meta<typeof EmailVerificationNotice> = {
-  title: 'Components/Molecular/EmailVerificationNotice',
+  title: 'Features/Authentication/EmailVerificationNotice',
   component: EmailVerificationNotice,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'centered',
     docs: {
       description: {
         component:
-          'EmailVerificationNotice component for the molecular category.',
+          'Notice banner for users who need to verify their email address.',
       },
     },
   },
@@ -26,15 +35,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {},
-};
-
-export const WithCustomClass: Story = {
-  args: {
-    className: 'p-4 bg-primary text-white rounded',
-  },
-};
-
-export const Empty: Story = {
   args: {},
 };

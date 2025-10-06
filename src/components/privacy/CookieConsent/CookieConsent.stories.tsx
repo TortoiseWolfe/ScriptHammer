@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { useConsent } from '../../../contexts/ConsentContext';
 
 const meta: Meta<typeof CookieConsent> = {
-  title: 'Privacy/CookieConsent',
+  title: 'Features/Privacy/CookieConsent',
   component: CookieConsent,
   parameters: {
     layout: 'fullscreen',

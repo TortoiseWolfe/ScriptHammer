@@ -4,7 +4,7 @@ import { MapContainer, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const meta = {
-  title: 'Components/Map/LocationMarker',
+  title: 'Features/Map/LocationMarker',
   component: LocationMarker,
   parameters: {
     layout: 'fullscreen',

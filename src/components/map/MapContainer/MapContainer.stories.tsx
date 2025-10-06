@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { MapContainer } from './MapContainer';
 
 const meta = {
-  title: 'Components/Map/MapContainer',
+  title: 'Features/Map/MapContainer',
   component: MapContainer,
   parameters: {
     layout: 'fullscreen',

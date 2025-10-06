@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { useConsent } from '../../../contexts/ConsentContext';
 
 const meta: Meta<typeof PrivacyControls> = {
-  title: 'Privacy/PrivacyControls',
+  title: 'Features/Privacy/PrivacyControls',
   component: PrivacyControls,
   parameters: {
     layout: 'centered',

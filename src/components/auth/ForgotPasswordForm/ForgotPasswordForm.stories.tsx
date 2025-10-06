@@ -2,13 +2,20 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import ForgotPasswordForm from './ForgotPasswordForm';
 
 const meta: Meta<typeof ForgotPasswordForm> = {
-  title: 'Components/Molecular/ForgotPasswordForm',
+  title: 'Features/Authentication/ForgotPasswordForm',
   component: ForgotPasswordForm,
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: 'ForgotPasswordForm component for the molecular category.',
+        component: 'Password reset form for forgotten passwords.',
+      },
+    },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/forgot-password',
+        query: {},
       },
     },
   },
@@ -25,15 +32,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
-  args: {},
-};
-
-export const WithCustomClass: Story = {
-  args: {
-    className: 'p-4 bg-primary text-white rounded',
-  },
-};
-
-export const Empty: Story = {
   args: {},
 };

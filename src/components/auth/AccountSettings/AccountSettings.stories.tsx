@@ -1,14 +1,24 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import React from 'react';
 import AccountSettings from './AccountSettings';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+// Mock AuthProvider decorator for Storybook
+const withAuthProvider = (Story: any) => (
+  <AuthProvider>
+    <Story />
+  </AuthProvider>
+);
 
 const meta: Meta<typeof AccountSettings> = {
-  title: 'Components/Molecular/AccountSettings',
+  title: 'Features/Authentication/AccountSettings',
   component: AccountSettings,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: 'AccountSettings component for the molecular category.',
+        component: 'Account settings management for authenticated users.',
       },
     },
   },
@@ -30,10 +40,6 @@ export const Default: Story = {
 
 export const WithCustomClass: Story = {
   args: {
-    className: 'p-4 bg-primary text-white rounded',
+    className: 'max-w-2xl',
   },
-};
-
-export const Empty: Story = {
-  args: {},
 };

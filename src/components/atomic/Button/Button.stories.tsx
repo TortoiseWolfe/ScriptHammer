@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { Button } from './Button';
 
 const meta = {
-  title: 'Atomic/Button',
+  title: 'Atomic Design/Atomic/Button',
   component: Button,
   parameters: {
     layout: 'centered',

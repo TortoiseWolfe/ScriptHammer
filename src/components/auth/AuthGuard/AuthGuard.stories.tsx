@@ -1,22 +1,42 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import React from 'react';
 import AuthGuard from './AuthGuard';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+const withAuthProvider = (Story: any) => (
+  <AuthProvider>
+    <Story />
+  </AuthProvider>
+);
 
 const meta: Meta<typeof AuthGuard> = {
-  title: 'Components/Molecular/AuthGuard',
+  title: 'Features/Authentication/AuthGuard',
   component: AuthGuard,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: 'AuthGuard component for the molecular category.',
+        component:
+          'Component wrapper that conditionally renders content based on authentication state.',
+      },
+    },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/test-page',
+        query: {},
       },
     },
   },
   tags: ['autodocs'],
   argTypes: {
+    requireVerification: {
+      control: 'boolean',
+      description: 'Require email verification',
+    },
     children: {
-      control: 'text',
-      description: 'Content to display inside the component',
+      description: 'Content to display when authenticated',
     },
   },
 };
@@ -26,16 +46,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: 'Default AuthGuard content',
+    children: (
+      <div className="card bg-base-100 p-8 shadow-xl">Guarded content</div>
+    ),
   },
-};
-
-export const WithChildren: Story = {
-  args: {
-    children: 'AuthGuard with children',
-  },
-};
-
-export const Empty: Story = {
-  args: {},
 };

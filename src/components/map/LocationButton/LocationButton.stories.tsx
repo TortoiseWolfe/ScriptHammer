@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { LocationButton } from './LocationButton';
 
 const meta = {
-  title: 'Components/Map/LocationButton',
+  title: 'Features/Map/LocationButton',
   component: LocationButton,
   parameters: {
     layout: 'centered',

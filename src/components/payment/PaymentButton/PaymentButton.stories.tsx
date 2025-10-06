@@ -6,7 +6,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { PaymentButton } from './PaymentButton';
 
 const meta: Meta<typeof PaymentButton> = {
-  title: 'Payment/PaymentButton',
+  title: 'Features/Payment/PaymentButton',
   component: PaymentButton,
   parameters: {
     layout: 'centered',

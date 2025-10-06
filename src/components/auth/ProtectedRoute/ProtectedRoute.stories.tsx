@@ -1,14 +1,30 @@
 import type { Meta, StoryObj } from '@storybook/nextjs';
+import React from 'react';
 import ProtectedRoute from './ProtectedRoute';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+const withAuthProvider = (Story: any) => (
+  <AuthProvider>
+    <Story />
+  </AuthProvider>
+);
 
 const meta: Meta<typeof ProtectedRoute> = {
-  title: 'Components/Molecular/ProtectedRoute',
+  title: 'Features/Authentication/ProtectedRoute',
   component: ProtectedRoute,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'centered',
     docs: {
       description: {
-        component: 'ProtectedRoute component for the molecular category.',
+        component: 'Route wrapper that requires authentication.',
+      },
+    },
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/protected',
+        query: {},
       },
     },
   },
@@ -16,7 +32,7 @@ const meta: Meta<typeof ProtectedRoute> = {
   argTypes: {
     children: {
       control: 'text',
-      description: 'Content to display inside the component',
+      description: 'Content to display when authenticated',
     },
   },
 };
@@ -26,16 +42,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    children: 'Default ProtectedRoute content',
+    children: (
+      <div className="card bg-base-100 p-8 shadow-xl">
+        Protected content - requires authentication
+      </div>
+    ),
   },
-};
-
-export const WithChildren: Story = {
-  args: {
-    children: 'ProtectedRoute with children',
-  },
-};
-
-export const Empty: Story = {
-  args: {},
 };

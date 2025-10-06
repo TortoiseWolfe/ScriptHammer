@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import ResetPasswordForm from './ResetPasswordForm';
 
 const meta: Meta<typeof ResetPasswordForm> = {
-  title: 'Components/Molecular/ResetPasswordForm',
+  title: 'Features/Authentication/ResetPasswordForm',
   component: ResetPasswordForm,
   parameters: {
     layout: 'centered',

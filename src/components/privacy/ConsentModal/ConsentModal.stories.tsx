@@ -5,7 +5,7 @@ import React, { useEffect } from 'react';
 import { useConsent } from '../../../contexts/ConsentContext';
 
 const meta: Meta<typeof ConsentModal> = {
-  title: 'Privacy/ConsentModal',
+  title: 'Features/Privacy/ConsentModal',
   component: ConsentModal,
   parameters: {
     layout: 'fullscreen',

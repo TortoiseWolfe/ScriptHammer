@@ -4,7 +4,7 @@ import { ScriptHammerLogo } from './ScriptHammerLogo';
 import { LayeredScriptHammerLogo } from './LayeredScriptHammerLogo';
 
 const meta = {
-  title: 'Atomic/SpinningLogo',
+  title: 'Atomic Design/Atomic/SpinningLogo',
   component: SpinningLogo,
   parameters: {
     layout: 'centered',

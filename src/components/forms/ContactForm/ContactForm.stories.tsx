@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import { ContactForm } from './ContactForm';
 
 const meta = {
-  title: 'Forms/ContactForm',
+  title: 'Features/Forms/ContactForm',
   component: ContactForm,
   parameters: {
     layout: 'centered',
