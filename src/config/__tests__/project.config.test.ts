@@ -24,9 +24,9 @@ describe('Project Configuration', () => {
 
   describe('getProjectConfig', () => {
     it('should return default configuration when no environment variables are set', () => {
-      // Ensure we're not in production mode for this test
       vi.stubEnv('NODE_ENV', 'development');
       vi.stubEnv('GITHUB_ACTIONS', undefined);
+      delete process.env.NEXT_PUBLIC_DEPLOY_URL;
 
       const config = getProjectConfig();
 
@@ -36,7 +36,7 @@ describe('Project Configuration', () => {
         'Opinionated Next.js template'
       );
       expect(config.basePath).toBe('');
-      expect(config.deployUrl).toBe('https://scripthammer.com');
+      expect(config.deployUrl).toBe('http://localhost:3000');
     });
 
     it('should prioritize environment variables over defaults', () => {
@@ -301,21 +301,21 @@ describe('Project Configuration', () => {
       expect(config.manifestPath).toBe('/app//manifest.json');
     });
 
-    it('should handle project owner with mixed case', () => {
+    it('should prioritize custom deploy URL over all other URL generation', () => {
       vi.stubEnv('NODE_ENV', 'development');
       vi.stubEnv('GITHUB_ACTIONS', undefined);
 
-      process.env.NEXT_PUBLIC_PROJECT_OWNER = 'MixedCase';
+      // Test with custom domain - should override everything
+      process.env.NEXT_PUBLIC_DEPLOY_URL = 'https://custom-domain.com';
+      process.env.NEXT_PUBLIC_PROJECT_OWNER = 'TestOwner';
 
       const config = getProjectConfig();
+      expect(config.deployUrl).toBe('https://custom-domain.com');
 
-      // Custom domain takes priority
-      expect(config.deployUrl).toBe('https://scripthammer.com');
-
+      // Custom domain should still take priority even with basePath set
       process.env.NEXT_PUBLIC_BASE_PATH = '/repo';
       const configWithBase = getProjectConfig();
-      // Custom domain still takes priority even with basePath
-      expect(configWithBase.deployUrl).toBe('https://scripthammer.com');
+      expect(configWithBase.deployUrl).toBe('https://custom-domain.com');
     });
   });
 });

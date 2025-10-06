@@ -211,8 +211,9 @@ export function GlobalNav() {
                       onClick={(e) => {
                         e.preventDefault();
                         // Close dropdown
-                        document.activeElement instanceof HTMLElement &&
+                        if (document.activeElement instanceof HTMLElement) {
                           document.activeElement.blur();
+                        }
                         // Sign out and redirect
                         signOut().then(() => {
                           window.location.href = '/';
@@ -293,8 +294,9 @@ export function GlobalNav() {
                         onClick={(e) => {
                           e.preventDefault();
                           // Close dropdown
-                          document.activeElement instanceof HTMLElement &&
+                          if (document.activeElement instanceof HTMLElement) {
                             document.activeElement.blur();
+                          }
                           // Sign out and redirect
                           signOut().then(() => {
                             window.location.href = '/';
