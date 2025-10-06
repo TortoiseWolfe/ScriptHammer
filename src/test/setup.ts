@@ -33,6 +33,16 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
+// Mock Payment Consent hook for all tests
+vi.mock('@/hooks/usePaymentConsent', () => ({
+  usePaymentConsent: () => ({
+    showModal: true, // Show modal by default in tests
+    hasConsent: false,
+    grantConsent: vi.fn(),
+    declineConsent: vi.fn(),
+  }),
+}));
+
 // Mock CSS imports
 vi.mock('leaflet/dist/leaflet.css', () => ({}));
 vi.mock('prismjs/themes/prism-tomorrow.css', () => ({}));
