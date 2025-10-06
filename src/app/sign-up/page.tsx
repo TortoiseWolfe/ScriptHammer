@@ -4,8 +4,12 @@ import React from 'react';
 import SignUpForm from '@/components/auth/SignUpForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignUpPage() {
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams?.get('returnUrl') || '/profile';
+
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 md:py-16 lg:px-8">
       <div className="mx-auto max-w-md">
@@ -13,7 +17,11 @@ export default function SignUpPage() {
           Create Account
         </h1>
 
-        <SignUpForm onSuccess={() => (window.location.href = '/profile')} />
+        <SignUpForm
+          onSuccess={() =>
+            (window.location.href = decodeURIComponent(returnUrl))
+          }
+        />
 
         <div className="divider my-6">OR</div>
 
@@ -21,7 +29,10 @@ export default function SignUpPage() {
 
         <p className="mt-6 text-center text-sm">
           Already have an account?{' '}
-          <Link href="/sign-in" className="link-primary">
+          <Link
+            href={`/sign-in${returnUrl !== '/profile' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            className="link-primary"
+          >
             Sign in
           </Link>
         </p>

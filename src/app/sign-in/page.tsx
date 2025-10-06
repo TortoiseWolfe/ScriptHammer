@@ -4,14 +4,22 @@ import React from 'react';
 import SignInForm from '@/components/auth/SignInForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function SignInPage() {
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams?.get('returnUrl') || '/profile';
+
   return (
     <div className="container mx-auto px-4 py-12 sm:px-6 md:py-16 lg:px-8">
       <div className="mx-auto max-w-md">
         <h1 className="mb-6 text-center text-3xl font-bold sm:mb-8">Sign In</h1>
 
-        <SignInForm onSuccess={() => (window.location.href = '/profile')} />
+        <SignInForm
+          onSuccess={() =>
+            (window.location.href = decodeURIComponent(returnUrl))
+          }
+        />
 
         <p className="mt-4 text-center text-sm">
           <Link href="/forgot-password" className="link-primary">
@@ -25,7 +33,10 @@ export default function SignInPage() {
 
         <p className="mt-6 text-center text-sm">
           Don&apos;t have an account?{' '}
-          <Link href="/sign-up" className="link-primary">
+          <Link
+            href={`/sign-up${returnUrl !== '/profile' ? `?returnUrl=${encodeURIComponent(returnUrl)}` : ''}`}
+            className="link-primary"
+          >
             Sign up
           </Link>
         </p>
