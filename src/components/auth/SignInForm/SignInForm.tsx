@@ -79,6 +79,7 @@ export default function SignInForm({
           onChange={(e) => setEmail(e.target.value)}
           className="input input-bordered min-h-11"
           placeholder="you@example.com"
+          autoComplete="email"
           required
           disabled={loading}
         />
@@ -95,6 +96,7 @@ export default function SignInForm({
           onChange={(e) => setPassword(e.target.value)}
           className="input input-bordered min-h-11"
           placeholder="••••••••"
+          autoComplete="current-password"
           required
           disabled={loading}
         />

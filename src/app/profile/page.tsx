@@ -1,7 +1,13 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import UserProfileCard from '@/components/auth/UserProfileCard';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Your Profile - ScriptHammer',
+  description: 'View and manage your user profile',
+};
 
 export default function ProfilePage() {
   return (

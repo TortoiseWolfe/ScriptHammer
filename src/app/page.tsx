@@ -201,18 +201,6 @@ export default function Home() {
                 className="mt-8 flex flex-col gap-2 text-sm sm:mt-8 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 sm:text-sm md:mt-10 lg:justify-start"
               >
                 <Link
-                  href="/game"
-                  className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
-                >
-                  Play Game
-                </Link>
-                <span
-                  className="hidden opacity-30 sm:inline"
-                  aria-hidden="true"
-                >
-                  •
-                </span>
-                <Link
                   href="/status"
                   className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
                 >
@@ -225,10 +213,34 @@ export default function Home() {
                   •
                 </span>
                 <Link
-                  href="/contact"
+                  href="/game"
                   className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
                 >
-                  Contact
+                  Play Game
+                </Link>
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
+                  •
+                </span>
+                <Link
+                  href="/payment-demo"
+                  className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
+                >
+                  Payment Demo
+                </Link>
+                <span
+                  className="hidden opacity-30 sm:inline"
+                  aria-hidden="true"
+                >
+                  •
+                </span>
+                <Link
+                  href="/map"
+                  className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
+                >
+                  Map
                 </Link>
                 <span
                   className="hidden opacity-30 sm:inline"
@@ -249,10 +261,10 @@ export default function Home() {
                   •
                 </span>
                 <Link
-                  href="/map"
+                  href="/contact"
                   className="link link-hover opacity-87 hover:opacity-100 focus:opacity-100"
                 >
-                  Map
+                  Contact
                 </Link>
                 <span
                   className="hidden opacity-30 sm:inline"

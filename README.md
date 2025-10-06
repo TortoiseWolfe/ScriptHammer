@@ -105,16 +105,16 @@ The project automatically detects your repository name and owner from git remote
 
 ## 🎯 Project Status
 
-**Version 0.3.5** - Sprint 3.5 Complete ✅ | 12 of 14 PRPs completed
+**Version 0.3.5** - Sprint 3.5 Complete ✅ | 15 of 16 PRPs completed
 
-| Category      | Completed                                         | Remaining         |
-| ------------- | ------------------------------------------------- | ----------------- |
-| Foundation    | Component Structure, E2E Testing                  | PRP Methodology   |
-| Accessibility | WCAG AA, Colorblind Mode, Font Switcher           | -                 |
-| Privacy       | Cookie Consent, Google Analytics                  | -                 |
-| Forms         | Web3Forms Integration, EmailJS, PWA Sync          | -                 |
-| Features      | Calendar Integration, Geolocation Map             | Visual Regression |
-| Tech Debt     | Sprint 3.5: All 46 tasks complete (2025-09-19) ✨ | -                 |
+| Category      | Completed                                         | Remaining                             |
+| ------------- | ------------------------------------------------- | ------------------------------------- |
+| Foundation    | PRP Methodology, Component Structure, E2E Testing | -                                     |
+| Accessibility | WCAG AA, Colorblind Mode, Font Switcher           | -                                     |
+| Privacy       | Cookie Consent, Google Analytics                  | -                                     |
+| Forms         | Web3Forms Integration, EmailJS, PWA Sync          | -                                     |
+| Features      | Calendar, Geolocation, Payments, Authentication   | Visual Regression (deferred to 0.4.0) |
+| Tech Debt     | Sprint 3.5: All 46 tasks complete (2025-09-19) ✨ | -                                     |
 
 See [docs/prp-docs/PRP-STATUS.md](./docs/prp-docs/PRP-STATUS.md) for detailed progress.
 

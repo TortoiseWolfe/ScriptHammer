@@ -1,7 +1,13 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import AccountSettings from '@/components/auth/AccountSettings';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Account Settings - ScriptHammer',
+  description: 'Manage your account settings and preferences',
+};
 
 export default function AccountPage() {
   return (
