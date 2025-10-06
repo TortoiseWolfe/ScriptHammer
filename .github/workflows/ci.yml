@@ -90,8 +90,8 @@ jobs:
 
       - name: Start server in background
         run: |
-          pnpm start &
-          sleep 10
+          npx serve out -p 3000 &
+          npx wait-on http://localhost:3000
 
       - name: Run Pa11y accessibility tests
         run: npx pa11y-ci --json > pa11y-results.json || true
