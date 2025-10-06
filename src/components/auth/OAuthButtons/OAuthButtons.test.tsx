@@ -5,14 +5,13 @@ import OAuthButtons from './OAuthButtons';
 describe('OAuthButtons', () => {
   it('renders without crashing', () => {
     render(<OAuthButtons />);
-    const element = screen.getByText(/OAuthButtons/i);
-    expect(element).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /github/i })).toBeInTheDocument();
   });
 
   it('applies custom className when provided', () => {
     const customClass = 'custom-class';
     const { container } = render(<OAuthButtons className={customClass} />);
-    const element = container.querySelector('.o-auth-buttons');
+    const element = container.firstChild as HTMLElement;
     expect(element).toHaveClass(customClass);
   });
 

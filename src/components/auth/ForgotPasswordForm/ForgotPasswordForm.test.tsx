@@ -5,8 +5,10 @@ import ForgotPasswordForm from './ForgotPasswordForm';
 describe('ForgotPasswordForm', () => {
   it('renders without crashing', () => {
     render(<ForgotPasswordForm />);
-    const element = screen.getByText(/ForgotPasswordForm/i);
-    expect(element).toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /send reset link/i })
+    ).toBeInTheDocument();
   });
 
   it('applies custom className when provided', () => {
@@ -14,8 +16,8 @@ describe('ForgotPasswordForm', () => {
     const { container } = render(
       <ForgotPasswordForm className={customClass} />
     );
-    const element = container.querySelector('.forgot-password-form');
-    expect(element).toHaveClass(customClass);
+    const form = container.querySelector('form');
+    expect(form).toHaveClass(customClass);
   });
 
   // TODO: Add more specific tests for ForgotPasswordForm functionality

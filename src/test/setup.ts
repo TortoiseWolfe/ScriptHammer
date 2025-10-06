@@ -4,6 +4,35 @@ import { afterEach, vi, expect } from 'vitest';
 import { toHaveNoViolations } from 'jest-axe';
 import 'fake-indexeddb/auto';
 
+// Mock AuthContext for all tests
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    session: null,
+    isLoading: false,
+    isAuthenticated: false,
+    signUp: vi.fn(async () => ({ error: null })),
+    signIn: vi.fn(async () => ({ error: null })),
+    signOut: vi.fn(async () => ({ error: null })),
+    refreshSession: vi.fn(async () => {}),
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock Next.js navigation for all tests
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // Mock CSS imports
 vi.mock('leaflet/dist/leaflet.css', () => ({}));
 vi.mock('prismjs/themes/prism-tomorrow.css', () => ({}));
@@ -81,4 +110,19 @@ if (typeof HTMLCanvasElement !== 'undefined') {
     rect: vi.fn(),
     clip: vi.fn(),
   }));
+}
+
+// Mock HTMLDialogElement for payment modals (JSDOM doesn't support dialog element)
+if (typeof HTMLDialogElement !== 'undefined') {
+  HTMLDialogElement.prototype.showModal =
+    HTMLDialogElement.prototype.showModal ||
+    function (this: HTMLDialogElement) {
+      this.open = true;
+    };
+
+  HTMLDialogElement.prototype.close =
+    HTMLDialogElement.prototype.close ||
+    function (this: HTMLDialogElement) {
+      this.open = false;
+    };
 }

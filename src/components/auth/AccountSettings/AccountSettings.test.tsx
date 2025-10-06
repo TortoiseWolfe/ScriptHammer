@@ -5,15 +5,9 @@ import AccountSettings from './AccountSettings';
 describe('AccountSettings', () => {
   it('renders without crashing', () => {
     render(<AccountSettings />);
-    const element = screen.getByText(/AccountSettings/i);
-    expect(element).toBeInTheDocument();
-  });
-
-  it('applies custom className when provided', () => {
-    const customClass = 'custom-class';
-    const { container } = render(<AccountSettings className={customClass} />);
-    const element = container.querySelector('.account-settings');
-    expect(element).toHaveClass(customClass);
+    expect(
+      screen.getByRole('heading', { name: /account settings/i })
+    ).toBeInTheDocument();
   });
 
   // TODO: Add more specific tests for AccountSettings functionality

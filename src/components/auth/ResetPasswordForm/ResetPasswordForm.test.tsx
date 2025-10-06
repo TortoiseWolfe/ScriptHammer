@@ -5,15 +5,17 @@ import ResetPasswordForm from './ResetPasswordForm';
 describe('ResetPasswordForm', () => {
   it('renders without crashing', () => {
     render(<ResetPasswordForm />);
-    const element = screen.getByText(/ResetPasswordForm/i);
-    expect(element).toBeInTheDocument();
+    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /reset password/i })
+    ).toBeInTheDocument();
   });
 
   it('applies custom className when provided', () => {
     const customClass = 'custom-class';
     const { container } = render(<ResetPasswordForm className={customClass} />);
-    const element = container.querySelector('.reset-password-form');
-    expect(element).toHaveClass(customClass);
+    const form = container.querySelector('form');
+    expect(form).toHaveClass(customClass);
   });
 
   // TODO: Add more specific tests for ResetPasswordForm functionality
