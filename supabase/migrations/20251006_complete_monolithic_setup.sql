@@ -230,6 +230,16 @@ CREATE UNIQUE INDEX idx_rate_limit_unique ON rate_limit_attempts(identifier, att
 
 COMMENT ON TABLE rate_limit_attempts IS 'Server-side rate limiting - prevents brute force';
 
+-- Enable RLS on rate_limit_attempts (system-managed, service role only)
+ALTER TABLE rate_limit_attempts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role only access" ON rate_limit_attempts
+  FOR ALL
+  USING (false);
+
+COMMENT ON POLICY "Service role only access" ON rate_limit_attempts IS
+  'Rate limiting data is system-managed. Only service role can access.';
+
 -- OAuth state tracking (CSRF protection)
 CREATE TABLE oauth_states (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -250,18 +260,32 @@ CREATE INDEX idx_oauth_states_session ON oauth_states(session_id);
 
 COMMENT ON TABLE oauth_states IS 'OAuth state tokens - prevents session hijacking';
 
+-- Enable RLS on oauth_states (system-managed, service role only)
+ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Service role only access" ON oauth_states
+  FOR ALL
+  USING (false);
+
+COMMENT ON POLICY "Service role only access" ON oauth_states IS
+  'OAuth state tokens are system-managed. Only service role can access.';
+
 -- ============================================================================
 -- PART 4: FUNCTIONS
 -- ============================================================================
 
 -- Update timestamp function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = NOW();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Auto-create user profile on signup
 CREATE OR REPLACE FUNCTION create_user_profile()
@@ -284,11 +308,15 @@ $$;
 
 -- Cleanup old audit logs (90 days)
 CREATE OR REPLACE FUNCTION cleanup_old_audit_logs()
-RETURNS void AS $$
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     DELETE FROM auth_audit_logs WHERE created_at < NOW() - INTERVAL '90 days';
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Rate limiting check (Feature 017)
 CREATE OR REPLACE FUNCTION check_rate_limit(
@@ -296,7 +324,11 @@ CREATE OR REPLACE FUNCTION check_rate_limit(
   p_attempt_type TEXT,
   p_ip_address INET DEFAULT NULL
 )
-RETURNS JSON AS $$
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_record rate_limit_attempts%ROWTYPE;
   v_max_attempts INTEGER := 5;
@@ -329,7 +361,7 @@ BEGIN
     RETURN json_build_object('allowed', FALSE, 'remaining', 0, 'locked_until', v_now + (v_window_minutes || ' minutes')::INTERVAL, 'reason', 'rate_limited');
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Record failed auth attempt (Feature 017)
 CREATE OR REPLACE FUNCTION record_failed_attempt(
@@ -337,7 +369,11 @@ CREATE OR REPLACE FUNCTION record_failed_attempt(
   p_attempt_type TEXT,
   p_ip_address INET DEFAULT NULL
 )
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   UPDATE rate_limit_attempts
   SET attempt_count = attempt_count + 1, updated_at = now(), ip_address = COALESCE(p_ip_address, ip_address)
@@ -350,7 +386,7 @@ BEGIN
       SET attempt_count = rate_limit_attempts.attempt_count + 1, updated_at = now();
   END IF;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ============================================================================
 -- PART 5: TRIGGERS
