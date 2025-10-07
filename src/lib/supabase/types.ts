@@ -340,6 +340,84 @@ export type Database = {
           },
         ];
       };
+      oauth_states: {
+        Row: {
+          id: string;
+          state_token: string;
+          provider: string;
+          session_id: string | null;
+          return_url: string | null;
+          ip_address: string | null;
+          user_agent: string | null;
+          used: boolean;
+          created_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          state_token: string;
+          provider: string;
+          session_id?: string | null;
+          return_url?: string | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          used?: boolean;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          state_token?: string;
+          provider?: string;
+          session_id?: string | null;
+          return_url?: string | null;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          used?: boolean;
+          created_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [];
+      };
+      rate_limit_attempts: {
+        Row: {
+          id: string;
+          identifier: string;
+          attempt_type: string;
+          ip_address: string | null;
+          user_agent: string | null;
+          window_start: string;
+          attempt_count: number;
+          locked_until: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          identifier: string;
+          attempt_type: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          window_start?: string;
+          attempt_count?: number;
+          locked_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          identifier?: string;
+          attempt_type?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          window_start?: string;
+          attempt_count?: number;
+          locked_until?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       auth_audit_logs: {
         Row: {
           created_at: string;
@@ -385,6 +463,22 @@ export type Database = {
     Functions: {
       delete_user: {
         Args: Record<PropertyKey, never>;
+        Returns: void;
+      };
+      check_rate_limit: {
+        Args: {
+          p_identifier: string;
+          p_attempt_type: string;
+          p_ip_address: string | null;
+        };
+        Returns: Json;
+      };
+      record_failed_attempt: {
+        Args: {
+          p_identifier: string;
+          p_attempt_type: string;
+          p_ip_address: string | null;
+        };
         Returns: void;
       };
     };

@@ -16,10 +16,29 @@ import type {
   PaymentInterval,
 } from '@/types/payment';
 import { validatePaymentAmount, validateCurrency } from '@/config/payment';
+import { validateAndSanitizeMetadata } from './metadata-validator';
+
+/**
+ * Get authenticated user ID
+ * @throws Error if user not authenticated
+ */
+async function getAuthenticatedUserId(): Promise<string> {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error('Authentication required for payment operations');
+  }
+
+  return user.id;
+}
 
 /**
  * Create a payment intent
  * Queues operation if offline
+ * REQ-SEC-001: Requires authentication, uses RLS for data isolation
  */
 export async function createPaymentIntent(
   amount: number,
@@ -32,6 +51,9 @@ export async function createPaymentIntent(
     metadata?: Record<string, unknown>;
   }
 ): Promise<PaymentIntent> {
+  // Require authentication (REQ-SEC-001)
+  const userId = await getAuthenticatedUserId();
+
   // Validate inputs
   validatePaymentAmount(amount);
   validateCurrency(currency);
@@ -42,19 +64,17 @@ export async function createPaymentIntent(
     throw new Error('Invalid email address');
   }
 
-  // Validate metadata (prevent resource exhaustion)
+  // Validate metadata (REQ-SEC-005: prevent prototype pollution and resource exhaustion)
+  let sanitizedMetadata: Record<string, unknown> = {};
   if (options?.metadata) {
-    const metadataStr = JSON.stringify(options.metadata);
-    if (metadataStr.length > 1024) {
-      throw new Error('Metadata exceeds 1KB limit');
+    try {
+      // validateAndSanitizeMetadata throws on validation error and returns sanitized metadata
+      sanitizedMetadata = validateAndSanitizeMetadata(options.metadata);
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : 'Invalid metadata'
+      );
     }
-    const checkNesting = (obj: unknown, depth = 0): void => {
-      if (depth > 2) throw new Error('Metadata nesting exceeds 2 levels');
-      if (obj && typeof obj === 'object') {
-        Object.values(obj).forEach((v) => checkNesting(v, depth + 1));
-      }
-    };
-    checkNesting(options.metadata);
   }
 
   const intentData: CreatePaymentIntentInput = {
@@ -64,7 +84,7 @@ export async function createPaymentIntent(
     customer_email: sanitizedEmail,
     interval: options?.interval,
     description: options?.description,
-    metadata: options?.metadata,
+    metadata: sanitizedMetadata,
   };
 
   // Check if online
@@ -89,7 +109,7 @@ export async function createPaymentIntent(
         customer_email: intentData.customer_email,
         description: intentData.description || null,
         metadata: (intentData.metadata || {}) as Json,
-        template_user_id: '00000000-0000-0000-0000-000000000000', // TODO: Get from auth
+        template_user_id: userId, // REQ-SEC-001: Use authenticated user ID
       })
       .select()
       .single();
@@ -115,10 +135,14 @@ export async function createPaymentIntent(
 
 /**
  * Get payment status by intent ID
+ * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
  */
 export async function getPaymentStatus(
   intentId: string
 ): Promise<PaymentResult | null> {
+  // Require authentication (REQ-SEC-001)
+  await getAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from('payment_results')
     .select('*')
@@ -131,8 +155,12 @@ export async function getPaymentStatus(
 
 /**
  * Cancel a pending payment intent
+ * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
  */
 export async function cancelPaymentIntent(intentId: string): Promise<void> {
+  // Require authentication (REQ-SEC-001)
+  await getAuthenticatedUserId();
+
   // Check if payment already processed
   const status = await getPaymentStatus(intentId);
   if (status) {
@@ -140,6 +168,7 @@ export async function cancelPaymentIntent(intentId: string): Promise<void> {
   }
 
   // Delete the intent (before expiration)
+  // RLS policy ensures user can only delete their own intents
   const { error } = await supabase
     .from('payment_intents')
     .delete()
@@ -149,12 +178,15 @@ export async function cancelPaymentIntent(intentId: string): Promise<void> {
 }
 
 /**
- * Get payment history for a user
+ * Get payment history for authenticated user
+ * REQ-SEC-001: Uses authenticated user ID, protected by RLS
  */
 export async function getPaymentHistory(
-  userId: string,
   limit = 20
 ): Promise<PaymentActivity[]> {
+  // Require authentication (REQ-SEC-001)
+  const userId = await getAuthenticatedUserId();
+
   const { data, error } = await supabase
     .from('payment_results')
     .select(
@@ -191,11 +223,15 @@ export async function getPaymentHistory(
 
 /**
  * Retry a failed payment
+ * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
  */
 export async function retryFailedPayment(
   intentId: string
 ): Promise<PaymentIntent> {
-  // Get original intent
+  // Require authentication (REQ-SEC-001)
+  await getAuthenticatedUserId();
+
+  // Get original intent (RLS ensures user owns it)
   const { data: originalIntent, error: fetchError } = await supabase
     .from('payment_intents')
     .select('*')
@@ -205,6 +241,7 @@ export async function retryFailedPayment(
   if (fetchError) throw fetchError;
 
   // Create new intent with same data
+  // createPaymentIntent will use the authenticated user's ID
   return await createPaymentIntent(
     originalIntent.amount,
     originalIntent.currency as Currency,
@@ -221,10 +258,15 @@ export async function retryFailedPayment(
 
 /**
  * Get payment intent by ID
+ * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
  */
 export async function getPaymentIntent(
   intentId: string
 ): Promise<PaymentIntent | null> {
+  // Require authentication (REQ-SEC-001)
+  await getAuthenticatedUserId();
+
+  // RLS policy ensures user can only access their own intents
   const { data, error } = await supabase
     .from('payment_intents')
     .select('*')

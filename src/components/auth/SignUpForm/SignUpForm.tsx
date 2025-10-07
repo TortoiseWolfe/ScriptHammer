@@ -2,8 +2,14 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  formatLockoutTime,
+} from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
-import { validatePassword } from '@/lib/auth/password-validator';
+import { logAuthEvent } from '@/lib/auth/audit-logger';
+import PasswordStrengthIndicator from '@/components/atomic/PasswordStrengthIndicator';
 
 export interface SignUpFormProps {
   /** Callback on successful sign up */
@@ -14,7 +20,7 @@ export interface SignUpFormProps {
 
 /**
  * SignUpForm component
- * Email/password sign-up with validation
+ * Email/password sign-up with server-side rate limiting
  *
  * @category molecular
  */
@@ -22,7 +28,7 @@ export default function SignUpForm({
   onSuccess,
   className = '',
 }: SignUpFormProps) {
-  const { signUp } = useAuth();
+  const { signUp, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,23 +40,39 @@ export default function SignUpForm({
     e.preventDefault();
     setError(null);
 
-    // Validate email
+    // Enhanced email validation (REQ-SEC-004)
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.error);
+      setError(emailValidation.errors[0] || 'Invalid email address');
       return;
     }
 
-    // Validate password
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      setError(passwordValidation.error);
+    // Show warning for disposable emails
+    if (emailValidation.warnings.length > 0) {
+      console.warn('Email validation warnings:', emailValidation.warnings);
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
     // Confirm password match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      return;
+    }
+
+    // Check server-side rate limit for sign-up attempts (REQ-SEC-003)
+    const rateLimit = await checkRateLimit(email, 'sign_up');
+
+    if (!rateLimit.allowed) {
+      const timeUntilReset = rateLimit.locked_until
+        ? formatLockoutTime(rateLimit.locked_until)
+        : '15 minutes';
+      setError(
+        `Too many sign-up attempts. Please try again in ${timeUntilReset}.`
+      );
       return;
     }
 
@@ -61,8 +83,28 @@ export default function SignUpForm({
     setLoading(false);
 
     if (signUpError) {
+      // Record failed attempt on server
+      await recordFailedAttempt(email, 'sign_up');
+
+      // Log failed sign-up attempt (T034)
+      await logAuthEvent({
+        event_type: 'sign_up',
+        event_data: { email, provider: 'email' },
+        success: false,
+        error_message: signUpError.message,
+      });
+
       setError(signUpError.message);
     } else {
+      // Log successful sign-up (T034)
+      if (user) {
+        await logAuthEvent({
+          user_id: user.id,
+          event_type: 'sign_up',
+          event_data: { email, provider: 'email' },
+        });
+      }
+
       onSuccess?.();
     }
   };
@@ -102,6 +144,10 @@ export default function SignUpForm({
           required
           disabled={loading}
         />
+        {/* Password strength indicator (T042) */}
+        <div className="mt-2">
+          <PasswordStrengthIndicator password={password} />
+        </div>
       </div>
 
       <div className="form-control">
@@ -134,7 +180,7 @@ export default function SignUpForm({
       </div>
 
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert" aria-live="assertive">
           <span>{error}</span>
         </div>
       )}

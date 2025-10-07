@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { generateOAuthState } from '@/lib/auth/oauth-state';
 
 export interface OAuthButtonsProps {
   /** Additional CSS classes */
@@ -10,20 +11,36 @@ export interface OAuthButtonsProps {
 
 /**
  * OAuthButtons component
- * GitHub and Google OAuth sign-in buttons
+ * GitHub and Google OAuth sign-in buttons with CSRF protection
  *
  * @category molecular
  */
 export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
   const supabase = createClient();
+  const [loading, setLoading] = useState<'github' | 'google' | null>(null);
 
   const handleOAuth = async (provider: 'github' | 'google') => {
-    await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    setLoading(provider);
+
+    try {
+      // Generate CSRF protection state token (REQ-SEC-002)
+      const stateToken = await generateOAuthState(provider);
+
+      // Initiate OAuth flow with state parameter
+      await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            state: stateToken,
+          },
+        },
+      });
+    } catch (error) {
+      console.error('OAuth initialization error:', error);
+      setLoading(null);
+      // Could show error to user here
+    }
   };
 
   return (
@@ -31,6 +48,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
       <button
         onClick={() => handleOAuth('github')}
         className="btn btn-outline min-h-11 w-full"
+        disabled={loading !== null}
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
           <path
@@ -44,6 +62,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
       <button
         onClick={() => handleOAuth('google')}
         className="btn btn-outline min-h-11 w-full"
+        disabled={loading !== null}
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path

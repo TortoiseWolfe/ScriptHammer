@@ -2,8 +2,13 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  formatLockoutTime,
+} from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
-import { RateLimiter } from '@/lib/auth/rate-limiter';
+import { logAuthEvent } from '@/lib/auth/audit-logger';
 
 export interface SignInFormProps {
   /** Callback on successful sign in */
@@ -14,7 +19,7 @@ export interface SignInFormProps {
 
 /**
  * SignInForm component
- * Email/password sign-in with rate limiting
+ * Email/password sign-in with server-side rate limiting
  *
  * @category molecular
  */
@@ -22,32 +27,41 @@ export default function SignInForm({
   onSuccess,
   className = '',
 }: SignInFormProps) {
-  const { signIn } = useAuth();
+  const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [rateLimiter] = useState(() => new RateLimiter(email, 5, 15));
+  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
+    null
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validate email
+    // Enhanced email validation (REQ-SEC-004)
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.error);
+      setError(emailValidation.errors[0] || 'Invalid email address');
       return;
     }
 
-    // Check rate limit
-    if (!rateLimiter.isAllowed()) {
-      const remaining = rateLimiter.getRemainingAttempts();
-      const resetTime = Math.ceil(rateLimiter.getTimeUntilReset() / 60000);
-      setError(`Too many attempts. Try again in ${resetTime} minutes.`);
+    // Check server-side rate limit (REQ-SEC-003)
+    const rateLimit = await checkRateLimit(email, 'sign_in');
+
+    if (!rateLimit.allowed) {
+      const timeUntilReset = rateLimit.locked_until
+        ? formatLockoutTime(rateLimit.locked_until)
+        : '15 minutes';
+      setError(
+        `Too many failed attempts. Your account has been temporarily locked. Please try again in ${timeUntilReset}.`
+      );
+      setRemainingAttempts(0);
       return;
     }
 
+    setRemainingAttempts(rateLimit.remaining);
     setLoading(true);
 
     const { error: signInError } = await signIn(email, password);
@@ -55,10 +69,38 @@ export default function SignInForm({
     setLoading(false);
 
     if (signInError) {
-      rateLimiter.recordAttempt();
-      setError(signInError.message);
+      // Record failed attempt on server (REQ-SEC-003)
+      await recordFailedAttempt(email, 'sign_in');
+
+      // Log failed sign-in attempt (T033)
+      await logAuthEvent({
+        event_type: 'sign_in',
+        event_data: { email, provider: 'email' },
+        success: false,
+        error_message: signInError.message,
+      });
+
+      // Update remaining attempts display
+      const newRemaining = rateLimit.remaining - 1;
+      setRemainingAttempts(newRemaining);
+
+      let errorMessage = signInError.message;
+      if (newRemaining > 0 && newRemaining <= 3) {
+        errorMessage += ` (${newRemaining} attempts remaining)`;
+      }
+
+      setError(errorMessage);
     } else {
-      rateLimiter.clear();
+      // Log successful sign-in (T033)
+      if (user) {
+        await logAuthEvent({
+          user_id: user.id,
+          event_type: 'sign_in',
+          event_data: { email, provider: 'email' },
+        });
+      }
+
+      // Successful sign-in
       onSuccess?.();
     }
   };
@@ -103,7 +145,7 @@ export default function SignInForm({
       </div>
 
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert" aria-live="assertive">
           <span>{error}</span>
         </div>
       )}

@@ -21,10 +21,6 @@ const meta: Meta<typeof PaymentHistory> = {
   },
   tags: ['autodocs'],
   argTypes: {
-    userId: {
-      control: 'text',
-      description: 'User ID to fetch payment history for',
-    },
     initialLimit: {
       control: 'number',
       description: 'Number of payments to fetch initially',
@@ -32,6 +28,10 @@ const meta: Meta<typeof PaymentHistory> = {
     showFilters: {
       control: 'boolean',
       description: 'Show filter controls',
+    },
+    className: {
+      control: 'text',
+      description: 'Additional CSS classes',
     },
   },
 };
@@ -41,7 +41,6 @@ type Story = StoryObj<typeof PaymentHistory>;
 
 export const Default: Story = {
   args: {
-    userId: 'demo-user-123',
     initialLimit: 20,
     showFilters: true,
   },
@@ -49,7 +48,6 @@ export const Default: Story = {
 
 export const NoFilters: Story = {
   args: {
-    userId: 'demo-user-123',
     initialLimit: 20,
     showFilters: false,
   },
@@ -57,7 +55,6 @@ export const NoFilters: Story = {
 
 export const LargeDataset: Story = {
   args: {
-    userId: 'demo-user-123',
     initialLimit: 100,
     showFilters: true,
   },
@@ -65,7 +62,6 @@ export const LargeDataset: Story = {
 
 export const SmallLimit: Story = {
   args: {
-    userId: 'demo-user-123',
     initialLimit: 5,
     showFilters: true,
   },

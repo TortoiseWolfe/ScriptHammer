@@ -65,7 +65,7 @@ describe('Sign-Up Flow Integration', () => {
     // Step 1: Client-side validation should fail
     const emailValidation = validateEmail(invalidEmail);
     expect(emailValidation.valid).toBe(false);
-    expect(emailValidation.error).toBeTruthy();
+    expect(emailValidation.errors.length).toBeGreaterThan(0);
 
     // Step 2: API should also reject
     const { data, error } = await supabase.auth.signUp({

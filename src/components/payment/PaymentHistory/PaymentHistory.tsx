@@ -13,7 +13,6 @@ import {
 import type { PaymentActivity, Currency, PaymentStatus } from '@/types/payment';
 
 export interface PaymentHistoryProps {
-  userId: string;
   initialLimit?: number;
   showFilters?: boolean;
   className?: string;
@@ -23,13 +22,13 @@ type StatusFilter = 'all' | 'paid' | 'failed' | 'refunded' | 'pending';
 
 /**
  * Payment history dashboard with filters
+ * REQ-SEC-001: Automatically uses authenticated user's payment history
  *
  * @example
  * ```tsx
- * function DashboardPage({ userId }: { userId: string }) {
+ * function DashboardPage() {
  *   return (
  *     <PaymentHistory
- *       userId={userId}
  *       initialLimit={20}
  *       showFilters={true}
  *     />
@@ -38,7 +37,6 @@ type StatusFilter = 'all' | 'paid' | 'failed' | 'refunded' | 'pending';
  * ```
  */
 export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
-  userId,
   initialLimit = 20,
   showFilters = true,
   className = '',
@@ -56,14 +54,15 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch payment history
+  // Fetch payment history (uses authenticated user)
   useEffect(() => {
     const fetchHistory = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const history = await getPaymentHistory(userId, initialLimit);
+        // getPaymentHistory now uses authenticated user automatically (REQ-SEC-001)
+        const history = await getPaymentHistory(initialLimit);
         setPayments(history);
         setFilteredPayments(history);
       } catch (err) {
@@ -78,7 +77,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     };
 
     fetchHistory();
-  }, [userId, initialLimit]);
+  }, [initialLimit]);
 
   // Apply filters
   useEffect(() => {

@@ -40,21 +40,17 @@ vi.mock('@/lib/payments/payment-service', () => ({
 }));
 
 describe('PaymentHistory', () => {
-  const defaultProps = {
-    userId: 'user-123',
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should render loading state initially', () => {
-    render(<PaymentHistory {...defaultProps} />);
+    render(<PaymentHistory />);
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('should render payment history after loading', async () => {
-    render(<PaymentHistory {...defaultProps} />);
+    render(<PaymentHistory />);
 
     await waitFor(() => {
       expect(screen.getByText('Payment History')).toBeInTheDocument();
@@ -62,7 +58,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should display filters when showFilters is true', async () => {
-    render(<PaymentHistory {...defaultProps} showFilters={true} />);
+    render(<PaymentHistory showFilters={true} />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
@@ -71,7 +67,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should not display filters when showFilters is false', async () => {
-    render(<PaymentHistory {...defaultProps} showFilters={false} />);
+    render(<PaymentHistory showFilters={false} />);
 
     await waitFor(() => {
       expect(screen.queryByLabelText(/status/i)).not.toBeInTheDocument();
@@ -79,7 +75,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should display payment count badge', async () => {
-    render(<PaymentHistory {...defaultProps} />);
+    render(<PaymentHistory />);
 
     await waitFor(() => {
       expect(screen.getByText(/total payments/i)).toBeInTheDocument();

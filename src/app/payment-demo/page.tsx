@@ -217,11 +217,7 @@ function PaymentDemoContent() {
               <p className="text-base-content/70 mb-4">
                 View all past transactions with filters and pagination.
               </p>
-              <PaymentHistory
-                userId={user.id}
-                initialLimit={50}
-                showFilters={true}
-              />
+              <PaymentHistory initialLimit={50} showFilters={true} />
             </div>
           </div>
         </div>

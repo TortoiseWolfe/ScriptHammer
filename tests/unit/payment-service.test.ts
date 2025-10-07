@@ -13,6 +13,19 @@ import {
 // Mock Supabase client
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
+    auth: {
+      getUser: vi.fn(() =>
+        Promise.resolve({
+          data: {
+            user: {
+              id: 'test-user-123',
+              email: 'test@example.com',
+            },
+          },
+          error: null,
+        })
+      ),
+    },
     from: vi.fn(() => ({
       insert: vi.fn(() => ({
         select: vi.fn(() => ({
@@ -23,6 +36,7 @@ vi.mock('@/lib/supabase/client', () => ({
               currency: 'usd',
               type: 'one_time',
               customer_email: 'test@example.com',
+              template_user_id: 'test-user-123',
               created_at: new Date().toISOString(),
               expires_at: new Date(Date.now() + 3600000).toISOString(),
             },
@@ -122,20 +136,20 @@ describe('Payment Service', () => {
   });
 
   describe('getPaymentHistory', () => {
-    it('should retrieve payment history for a user', async () => {
-      const history = await getPaymentHistory('user-123');
+    it('should retrieve payment history for authenticated user', async () => {
+      const history = await getPaymentHistory();
 
       expect(Array.isArray(history)).toBe(true);
     });
 
     it('should accept limit parameter', async () => {
-      const history = await getPaymentHistory('user-123', 10);
+      const history = await getPaymentHistory(10);
 
       expect(Array.isArray(history)).toBe(true);
     });
 
     it('should use default limit when not specified', async () => {
-      const history = await getPaymentHistory('user-123');
+      const history = await getPaymentHistory();
 
       expect(Array.isArray(history)).toBe(true);
     });

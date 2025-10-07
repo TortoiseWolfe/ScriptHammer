@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { validatePassword } from '@/lib/auth/password-validator';
+import { logAuthEvent } from '@/lib/auth/audit-logger';
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -73,8 +74,26 @@ export default function AccountSettings({
     setLoading(false);
 
     if (updateError) {
+      // Log failed password change (T035)
+      if (user) {
+        await logAuthEvent({
+          user_id: user.id,
+          event_type: 'password_change',
+          success: false,
+          error_message: updateError.message,
+        });
+      }
+
       setError(updateError.message);
     } else {
+      // Log successful password change (T035)
+      if (user) {
+        await logAuthEvent({
+          user_id: user.id,
+          event_type: 'password_change',
+        });
+      }
+
       setSuccess(true);
       setPassword('');
       setConfirmPassword('');

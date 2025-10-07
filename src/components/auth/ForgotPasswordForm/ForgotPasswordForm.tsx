@@ -2,7 +2,13 @@
 
 import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import {
+  checkRateLimit,
+  recordFailedAttempt,
+  formatLockoutTime,
+} from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
+import { logAuthEvent } from '@/lib/auth/audit-logger';
 
 export interface ForgotPasswordFormProps {
   /** Callback on success */
@@ -13,7 +19,7 @@ export interface ForgotPasswordFormProps {
 
 /**
  * ForgotPasswordForm component
- * Send password reset email
+ * Send password reset email with server-side rate limiting
  *
  * @category molecular
  */
@@ -32,9 +38,23 @@ export default function ForgotPasswordForm({
     setError(null);
     setSuccess(false);
 
+    // Enhanced email validation (REQ-SEC-004)
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.error);
+      setError(emailValidation.errors[0] || 'Invalid email address');
+      return;
+    }
+
+    // Check server-side rate limit for password reset attempts (REQ-SEC-003)
+    const rateLimit = await checkRateLimit(email, 'password_reset');
+
+    if (!rateLimit.allowed) {
+      const timeUntilReset = rateLimit.locked_until
+        ? formatLockoutTime(rateLimit.locked_until)
+        : '15 minutes';
+      setError(
+        `Too many password reset attempts. Please try again in ${timeUntilReset}.`
+      );
       return;
     }
 
@@ -50,8 +70,25 @@ export default function ForgotPasswordForm({
     setLoading(false);
 
     if (resetError) {
+      // Record failed attempt
+      await recordFailedAttempt(email, 'password_reset');
+
+      // Log failed password reset attempt (T036)
+      await logAuthEvent({
+        event_type: 'password_reset_request',
+        event_data: { email },
+        success: false,
+        error_message: resetError.message,
+      });
+
       setError(resetError.message);
     } else {
+      // Log successful password reset request (T036)
+      await logAuthEvent({
+        event_type: 'password_reset_request',
+        event_data: { email },
+      });
+
       setSuccess(true);
       onSuccess?.();
     }
@@ -87,7 +124,7 @@ export default function ForgotPasswordForm({
       </div>
 
       {error && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert" aria-live="assertive">
           <span>{error}</span>
         </div>
       )}

@@ -8,6 +8,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
+import { useIdleTimeout } from '@/hooks/useIdleTimeout';
+import IdleTimeoutModal from '@/components/molecular/IdleTimeoutModal';
 
 export interface AuthState {
   user: User | null;
@@ -31,6 +33,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showIdleModal, setShowIdleModal] = useState(false);
+
+  // Session idle timeout (24 hours = 1440 minutes)
+  const { timeRemaining, resetTimer } = useIdleTimeout({
+    timeoutMinutes: 1440,
+    warningMinutes: 1,
+    onWarning: () => {
+      if (user) {
+        setShowIdleModal(true);
+      }
+    },
+    onTimeout: () => {
+      if (user) {
+        signOut();
+      }
+    },
+  });
 
   useEffect(() => {
     // Get initial session
@@ -105,7 +124,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshSession,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const handleContinueSession = () => {
+    setShowIdleModal(false);
+    resetTimer();
+  };
+
+  const handleSignOutNow = () => {
+    setShowIdleModal(false);
+    signOut();
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <IdleTimeoutModal
+        isOpen={showIdleModal}
+        timeRemaining={timeRemaining}
+        onContinue={handleContinueSession}
+        onSignOut={handleSignOutNow}
+      />
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

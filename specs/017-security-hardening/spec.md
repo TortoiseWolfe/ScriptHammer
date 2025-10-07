@@ -48,6 +48,18 @@
 
 ---
 
+## Clarifications
+
+### Session 2025-10-06
+
+- Q: What is the default idle timeout duration for standard user sessions? → A: Configurable with 24 hour default
+- Q: Should the idle timeout also apply to "Remember Me" sessions, or should they be exempt? → A: Extended idle timeout (7 days) for "Remember Me" sessions
+- Q: How should the system handle disposable/temporary email addresses? → A: Warn user - show warning but allow sign-up
+- Q: When webhook processing fails after all retry attempts, how should admins be notified? → A: Both email + database flag
+- Q: When should the automated cleanup process run to remove expired payment intents? → A: Configurable with weekly Sunday 3 AM UTC default
+
+---
+
 ## User Scenarios & Testing _(mandatory)_
 
 ### Primary Security Story
@@ -122,8 +134,8 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 
 #### Scenario 6: Session Security
 
-1. **Given** I leave my browser open without activity, **When** 30 minutes pass, **Then** my session expires and I must sign in again
-2. **Given** I am signed in with "Remember Me", **When** I perform sensitive operations (payment, profile changes), **Then** the system may require additional verification
+1. **Given** I leave my browser open without activity, **When** 24 hours pass (or 7 days for Remember Me), **Then** my session expires and I must sign in again
+2. **Given** I am signed in with "Remember Me", **When** I perform sensitive operations (payment, profile changes), **Then** the extended idle timeout (7 days) still applies
 3. **Given** my session is active, **When** I explicitly sign out, **Then** my session is completely terminated and cannot be reused
 
 **Acceptance Criteria:**
@@ -271,15 +283,16 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 
 #### REQ-SEC-006: Comprehensive Email Validation
 
-**What**: Email addresses must be validated for proper format, valid top-level domain, and optionally blocked if from disposable email services.
+**What**: Email addresses must be validated for proper format, valid top-level domain, and warned (not blocked) if from disposable email services.
 
-**Why**: Invalid or disposable emails prevent account recovery, enable abuse, and reduce user quality.
+**Why**: Invalid or disposable emails prevent account recovery, enable abuse, and reduce user quality. Warning users allows legitimate testing while discouraging abuse.
 
 **Acceptance Criteria**:
 
 - Email validation requires valid TLD (`.com`, `.org`, etc.)
 - Consecutive dots (`..`) rejected
-- Disposable email domains blocked (configurable list)
+- Disposable email domains trigger warning message (configurable list)
+- Warning displayed but sign-up allowed to proceed
 - Email normalized to lowercase for consistency
 - Local part and domain both required
 
@@ -341,16 +354,17 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 
 #### REQ-UX-002: Session Idle Timeout
 
-**What**: User sessions must automatically expire after a configurable period of inactivity (default 30 minutes) to prevent unauthorized access to unattended devices.
+**What**: User sessions must automatically expire after a configurable period of inactivity (default 24 hours) to prevent unauthorized access to unattended devices. "Remember Me" sessions use an extended idle timeout (7 days).
 
-**Why**: Users often leave devices unlocked. Idle timeout reduces risk of physical access to accounts.
+**Why**: Users often leave devices unlocked. Idle timeout reduces risk of physical access to accounts while balancing usability for general-purpose PWA usage.
 
 **Acceptance Criteria**:
 
 - Inactivity timer resets on mouse movement, keyboard input, clicks
 - User warned before timeout (1 minute warning)
-- Timeout duration configurable (default 30 min)
-- "Remember Me" extends initial session but still enforces idle timeout
+- Standard session idle timeout: configurable (default 24 hours)
+- "Remember Me" session idle timeout: 7 days
+- "Remember Me" extends absolute session duration to 30 days with 7-day idle timeout
 
 ---
 
@@ -372,15 +386,17 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 
 #### REQ-REL-002: Webhook Retry Mechanism
 
-**What**: Failed webhook processing attempts must be automatically retried with exponential backoff until success or maximum attempts reached.
+**What**: Failed webhook processing attempts must be automatically retried with exponential backoff until success or maximum attempts reached. After all retries fail, admins are notified via email and the failure is flagged in the database.
 
-**Why**: Transient network failures or temporary downtime can cause payment status to never update. Retries ensure eventual consistency.
+**Why**: Transient network failures or temporary downtime can cause payment status to never update. Retries ensure eventual consistency, and alerts ensure admins can investigate permanent failures.
 
 **Acceptance Criteria**:
 
 - Failed webhooks retried up to 3 times
 - Exponential backoff between retries (1min, 5min, 30min)
-- After max attempts, webhook marked as permanently failed
+- After max attempts, webhook marked as permanently failed in database
+- Email alert sent to configured admin email address after final failure
+- Database flag set for manual review and queryability
 - Admin can manually trigger retry for failed webhooks
 - Idempotency prevents duplicate processing on retry
 
@@ -388,13 +404,14 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 
 #### REQ-OPS-001: Payment Intent Cleanup
 
-**What**: Payment intents that expire after 24 hours must be automatically removed from the database to prevent unbounded growth.
+**What**: Payment intents that expire after 24 hours must be automatically removed from the database to prevent unbounded growth. Cleanup runs on a configurable schedule (default: weekly on Sunday at 3 AM UTC).
 
-**Why**: Expired intents serve no purpose and consume database resources over time.
+**Why**: Expired intents serve no purpose and consume database resources over time. Weekly cleanup balances resource usage with minimal operational overhead.
 
 **Acceptance Criteria**:
 
-- Daily cleanup process runs automatically
+- Cleanup process runs automatically on configurable schedule
+- Default schedule: Weekly on Sunday at 3 AM UTC
 - Intents older than 24 hours deleted
 - Associated metadata also cleaned up
 - Cleanup logs number of records removed
@@ -535,27 +552,6 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - **100% of expired payment intents cleaned up** (REQ-OPS-001)
 - **95%+ webhook processing success rate** (after retries, REQ-REL-002)
 - **Zero production console.log leaks** (REQ-POLISH-001)
-
----
-
-## Open Questions _(optional)_
-
-### Technical Clarifications Needed
-
-1. Should disposable email blocking be enforced or just warned? (REQ-SEC-006)
-   - Recommendation: Start with warning, add enforcement if abuse detected
-
-2. What should idle timeout duration be? (REQ-UX-002)
-   - Default 30 min, or configurable per deployment?
-
-3. Should webhook retry mechanism send alerts to admins after max failures? (REQ-REL-002)
-   - Recommendation: Yes, via email or monitoring integration
-
-4. What is acceptable payment intent cleanup schedule? (REQ-OPS-001)
-   - Daily at 2 AM UTC, or more/less frequent?
-
-5. Should session idle timeout apply to "Remember Me" sessions? (REQ-UX-002)
-   - Recommendation: Yes, but with longer timeout (2 hours instead of 30 min)
 
 ---
 

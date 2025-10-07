@@ -111,24 +111,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-        <link
-          rel="preconnect"
-          href="https://fonts.googleapis.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <JsonLdScript data={generateJsonLd()} />
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
         suppressHydrationWarning
       >
+        <ThemeScript />
+        <JsonLdScript data={generateJsonLd()} />
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />

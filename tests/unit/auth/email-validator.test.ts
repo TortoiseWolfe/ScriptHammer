@@ -24,7 +24,7 @@ describe('Email Validator', () => {
     });
 
     it('should handle edge cases', () => {
-      expect(isValidEmail('a@b.c')).toBe(true); // Min valid
+      expect(isValidEmail('a@b.io')).toBe(true); // Min valid
       expect(isValidEmail('user..name@example.com')).toBe(false); // Double dot
       expect(isValidEmail('user@example..com')).toBe(false); // Double dot in domain
     });
@@ -34,20 +34,20 @@ describe('Email Validator', () => {
     it('should return error for invalid email', () => {
       const result = validateEmail('notanemail');
       expect(result.valid).toBe(false);
-      expect(result.error).toBeDefined();
-      expect(result.error).toContain('Invalid email');
+      expect(result.errors).toBeDefined();
+      expect(result.errors[0]).toContain('Invalid email');
     });
 
     it('should return success for valid email', () => {
       const result = validateEmail('user@example.com');
       expect(result.valid).toBe(true);
-      expect(result.error).toBeNull();
+      expect(result.errors).toHaveLength(0);
     });
 
     it('should normalize email to lowercase', () => {
       const result = validateEmail('User@Example.COM');
       expect(result.valid).toBe(true);
-      expect(result.normalizedEmail).toBe('user@example.com');
+      expect(result.normalized).toBe('user@example.com');
     });
   });
 });

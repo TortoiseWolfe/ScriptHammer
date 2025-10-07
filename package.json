@@ -69,7 +69,9 @@
     "test:quick": "pnpm run type-check && pnpm run lint && pnpm test -- --run",
     "test:pwa": "node scripts/test-pwa.js",
     "test:pwa:verbose": "node scripts/test-pwa.js --verbose",
-    "test:pwa:build": "echo 'Building production in Docker...' && docker compose exec scripthammer pnpm run build && echo 'Starting server...' && docker compose exec -d scripthammer sh -c 'cd out && python3 -m http.server 3001' && sleep 5 && docker compose exec -e TEST_PORT=3001 scripthammer node scripts/test-pwa.js --production && docker compose exec scripthammer pkill -f 'python3 -m http.server' || true"
+    "test:pwa:build": "echo 'Building production in Docker...' && docker compose exec scripthammer pnpm run build && echo 'Starting server...' && docker compose exec -d scripthammer sh -c 'cd out && python3 -m http.server 3001' && sleep 5 && docker compose exec -e TEST_PORT=3001 scripthammer node scripts/test-pwa.js --production && docker compose exec scripthammer pkill -f 'python3 -m http.server' || true",
+    "cleanup:intents": "tsx scripts/cleanup-expired-intents.ts",
+    "retry:webhooks": "tsx scripts/retry-failed-webhooks.ts"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
