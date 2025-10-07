@@ -3,6 +3,7 @@
   background: transparent !important;
   margin: 0 !important;
   padding: 0.5rem 1rem !important;
+  font-size: 0.875rem; /* 14px mobile */
 }
 
 .mockup-code code[class*='language-'] {
@@ -10,6 +11,31 @@
   text-shadow: none !important;
   display: block !important;
   text-indent: 0 !important;
+  font-size: 0.875rem; /* 14px mobile */
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 0.95rem; /* 15.2px */
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 1.125rem; /* 18px */
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 1.25rem; /* 20px */
+  }
 }
 
 /* Ensure mockup-code container has proper padding */
