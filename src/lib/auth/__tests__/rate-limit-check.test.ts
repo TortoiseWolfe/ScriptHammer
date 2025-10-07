@@ -5,14 +5,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { checkRateLimit, recordFailedAttempt } from '../rate-limit-check';
 import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/test/supabase-admin';
 
 describe('Rate Limiting - Server-Side Enforcement', () => {
   const testEmail = 'test@example.com';
   const testIP = '192.168.1.1';
 
   beforeEach(async () => {
-    // Reset rate limit state between tests by deleting test records
-    await supabase
+    // Reset rate limit state between tests using admin client (bypasses RLS)
+    await supabaseAdmin
       .from('rate_limit_attempts')
       .delete()
       .eq('identifier', testEmail);

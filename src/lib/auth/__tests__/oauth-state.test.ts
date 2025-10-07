@@ -9,11 +9,12 @@ import {
   cleanupExpiredStates,
 } from '../oauth-state';
 import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin } from '@/test/supabase-admin';
 
 describe('OAuth State Management - CSRF Protection', () => {
   beforeEach(async () => {
-    // Clear any existing states from database
-    await supabase
+    // Clear any existing states from database using admin client (bypasses RLS)
+    await supabaseAdmin
       .from('oauth_states')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');

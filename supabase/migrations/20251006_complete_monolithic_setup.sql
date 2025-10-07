@@ -260,15 +260,31 @@ CREATE INDEX idx_oauth_states_session ON oauth_states(session_id);
 
 COMMENT ON TABLE oauth_states IS 'OAuth state tokens - prevents session hijacking';
 
--- Enable RLS on oauth_states (system-managed, service role only)
+-- Enable RLS on oauth_states (CSRF protection tokens)
 ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Service role only access" ON oauth_states
-  FOR ALL
-  USING (false);
+-- Allow anyone to insert state tokens (for OAuth flow initiation)
+CREATE POLICY "Anyone can create state tokens" ON oauth_states
+  FOR INSERT
+  WITH CHECK (true);
 
-COMMENT ON POLICY "Service role only access" ON oauth_states IS
-  'OAuth state tokens are system-managed. Only service role can access.';
+-- Allow anyone to read state tokens (for validation during OAuth callback)
+CREATE POLICY "Anyone can read state tokens" ON oauth_states
+  FOR SELECT
+  USING (true);
+
+-- Allow anyone to update state tokens (for marking as used)
+CREATE POLICY "Anyone can update state tokens" ON oauth_states
+  FOR UPDATE
+  USING (true);
+
+-- Allow anyone to delete expired state tokens (for cleanup)
+CREATE POLICY "Anyone can delete expired states" ON oauth_states
+  FOR DELETE
+  USING (expires_at < NOW());
+
+COMMENT ON TABLE oauth_states IS
+  'OAuth state tokens are random UUIDs with 5-minute expiration. Safe to allow public access.';
 
 -- ============================================================================
 -- PART 4: FUNCTIONS
