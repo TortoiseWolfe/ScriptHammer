@@ -8,10 +8,15 @@ import {
   validateOAuthState,
   cleanupExpiredStates,
 } from '../oauth-state';
+import { supabase } from '@/lib/supabase/client';
 
 describe('OAuth State Management - CSRF Protection', () => {
-  beforeEach(() => {
-    // Clear any existing states
+  beforeEach(async () => {
+    // Clear any existing states from database
+    await supabase
+      .from('oauth_states')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
     vi.clearAllMocks();
   });
 
