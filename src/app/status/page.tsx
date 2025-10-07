@@ -190,7 +190,6 @@ export default function StatusPage() {
     accessibility: 98,
     bestPractices: 95,
     seo: 100,
-    pwa: 92,
     timestamp: null as string | null,
     url: 'https://scripthammer.com/',
     isDefault: true,
@@ -426,7 +425,6 @@ export default function StatusPage() {
               score: scores.bestPractices,
             },
             seo: { ...prev.seo, score: scores.seo },
-            pwa: { ...prev.pwa, score: scores.pwa },
           }));
         }
       } catch (error) {
@@ -544,9 +542,6 @@ export default function StatusPage() {
         seo: Math.round(
           (data.lighthouseResult?.categories?.seo?.score || 0) * 100
         ),
-        pwa: Math.round(
-          (data.lighthouseResult?.categories?.pwa?.score || 0) * 100
-        ),
         timestamp: new Date().toISOString(),
         url: url,
         isDefault: false,
@@ -568,7 +563,6 @@ export default function StatusPage() {
           score: scores.bestPractices,
         },
         seo: { ...lighthouse.seo, score: scores.seo },
-        pwa: { ...lighthouse.pwa, score: scores.pwa },
       });
 
       // Clear any cooldown on success
@@ -1416,7 +1410,7 @@ export default function StatusPage() {
                                         title:
                                           'Progressive Web App Transformation',
                                         description:
-                                          'Implemented Service Worker with cache-first strategy, Web App Manifest for installability, offline support, background sync for forms, and achieved 92/100 PWA score.',
+                                          'Implemented Service Worker with cache-first strategy, Web App Manifest for installability, offline support, and background sync for forms.',
                                         whyItMatters:
                                           'Transformed the website into an installable app that works offline. Users can install it on desktop/mobile and use it without internet.',
                                       },

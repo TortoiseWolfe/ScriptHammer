@@ -25,9 +25,7 @@ export default function SignUpPage() {
         </h1>
 
         <SignUpForm
-          onSuccess={() =>
-            (window.location.href = decodeURIComponent(returnUrl))
-          }
+          onSuccess={() => (window.location.href = '/verify-email')}
         />
 
         <div className="divider my-6">OR</div>

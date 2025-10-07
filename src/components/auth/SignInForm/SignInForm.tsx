@@ -69,6 +69,12 @@ export default function SignInForm({
     setLoading(false);
 
     if (signInError) {
+      // Check if email needs verification
+      if (signInError.message.toLowerCase().includes('email not confirmed')) {
+        window.location.href = '/verify-email';
+        return;
+      }
+
       // Record failed attempt on server (REQ-SEC-003)
       await recordFailedAttempt(email, 'sign_in');
 
