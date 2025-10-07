@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { generateOAuthState } from '@/lib/auth/oauth-state';
 
 export interface OAuthButtonsProps {
   /** Additional CSS classes */
@@ -23,17 +22,12 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
     setLoading(provider);
 
     try {
-      // Generate CSRF protection state token (REQ-SEC-002)
-      const stateToken = await generateOAuthState(provider);
-
-      // Initiate OAuth flow with state parameter
+      // Supabase handles CSRF protection via built-in state parameter (PKCE flow)
+      // No need to manually manage state tokens
       await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            state: stateToken,
-          },
         },
       });
     } catch (error) {
