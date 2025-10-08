@@ -32,5 +32,13 @@ fi
 echo "✨ Container initialized successfully"
 
 # Switch to node user and execute the main command
-# Using su to switch to node user
-exec su -s /bin/sh node -c "exec $@"
+# Create a script that will be executed as node user
+cat > /tmp/start.sh << 'SCRIPT'
+#!/bin/sh
+cd /app
+exec "$@"
+SCRIPT
+chmod +x /tmp/start.sh
+
+# Execute as node user
+exec su node /tmp/start.sh "$@"

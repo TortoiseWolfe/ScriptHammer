@@ -24,12 +24,12 @@ twitterCard: summary_large_image
 
 Scripthammer is an opinionated Next.js template that comes batteries-included with everything you need to build modern web applications. No more setup fatigue - just clone and start building.
 
-## What's Actually In This Template
+## 📦 What's Actually In This Template
 
 ![Scripthammer Dashboard](/blog-images/scripthammer-intro/dashboard-overview.svg)
 _The Scripthammer dashboard showing the theme switcher and component structure_
 
-### Core Technologies
+### 🔧 Core Technologies
 
 - **[Next.js](https://nextjs.org/) 15.5.2** with App Router and static export support
 - **[React](https://react.dev/) 19.1.0** with [TypeScript](https://www.typescriptlang.org/) strict mode
@@ -37,7 +37,7 @@ _The Scripthammer dashboard showing the theme switcher and component structure_
 - **PWA Support** with offline capabilities via [Workbox](https://developer.chrome.com/docs/workbox/)
 - **[Docker](https://www.docker.com/)-First Development** - everything runs in containers
 
-### Real Features That Work
+### ✨ Real Features That Work
 
 #### 🎨 32 Theme System
 
@@ -81,7 +81,7 @@ docker compose exec scripthammer pnpm run test:suite
 - App manifest for installability
 - Push notification ready
 
-## Docker Development Environment (MANDATORY)
+## 🐳 Docker Development Environment (MANDATORY)
 
 ![Docker Architecture](/blog-images/scripthammer-intro/docker-architecture.svg)
 _Docker-first development environment with isolated containers_
@@ -104,7 +104,7 @@ docker compose exec scripthammer pnpm run generate:component
 # npm run dev   # WILL NOT WORK
 ```
 
-## Component Generator
+## 🔨 Component Generator
 
 Stop copying component boilerplate. Use the generator:
 
@@ -120,7 +120,7 @@ This creates the required 5-file structure:
 - `MyComponent.accessibility.test.tsx` - A11y tests
 - `index.tsx` - Barrel export
 
-## Project Configuration
+## ⚙️ Project Configuration
 
 The project auto-detects most configuration from your Git repository:
 
@@ -136,15 +136,15 @@ const projectConfig = {
 
 Minimal setup required - just create your `.env` file and the rest is detected automatically.
 
-## Current Features in Production
+## 🚀 Current Features in Production
 
-### Privacy & Consent
+### 🔒 Privacy & Consent
 
 - GDPR (General Data Protection Regulation)-compliant cookie consent system
 - Granular privacy controls
 - [Google Analytics](https://analytics.google.com/) integration (with consent)
 
-### Blog System
+### 📝 Blog System
 
 - Markdown-based blog with frontmatter
 - SEO (Search Engine Optimization) analysis and scoring
@@ -152,19 +152,19 @@ Minimal setup required - just create your `.env` file and the rest is detected a
 - Offline-first with IndexedDB storage
 - Background sync for offline edits
 
-### Maps & Location
+### 🗺️ Maps & Location
 
 - [Leaflet](https://leafletjs.com/) integration for interactive maps
 - Geolocation with privacy consent
 - [OpenStreetMap](https://www.openstreetmap.org/) tiles (no API (Application Programming Interface) key needed)
 
-### Calendar Integration
+### 📅 Calendar Integration
 
 - [Calendly](https://calendly.com/) and [Cal.com](https://cal.com/) embedded support
 - Privacy-first with consent modal
 - Event scheduling capabilities
 
-## File Structure
+## 📂 File Structure
 
 ```
 src/
@@ -181,7 +181,7 @@ src/
 └── types/            # TypeScript definitions
 ```
 
-## Testing Commands
+## 🧪 Testing Commands
 
 ```bash
 # Quick validation
@@ -196,7 +196,7 @@ docker compose exec scripthammer pnpm run lint
 docker compose exec scripthammer pnpm run test:coverage
 ```
 
-## Why Scripthammer?
+## 💡 Why Scripthammer?
 
 1. **Quick Setup** - Create `.env`, run `docker compose up`, and you're developing
 2. **Reduced Configuration** - Opinionated choices with auto-detection from git
@@ -204,7 +204,7 @@ docker compose exec scripthammer pnpm run test:coverage
 4. **TypeScript First** - Comprehensive typing with strict mode enabled
 5. **Well Tested** - Full test suite with unit, E2E, and accessibility testing
 
-## Getting Started (Docker Required)
+## 🚀 Getting Started (Docker Required)
 
 **⚠️ PREREQUISITE**: Docker and Docker Compose MUST be installed. This project does NOT support local development.
 
@@ -229,7 +229,7 @@ docker compose up  # First build takes 5-10 minutes
 - ❌ `pnpm install` - Will NOT work
 - ❌ `npm install` - Will NOT work
 
-## What's Next?
+## 🎯 What's Next?
 
 Check out the [CONSTITUTION.md](https://github.com/TortoiseWolfe/ScriptHammer/blob/main/.specify/memory/constitution.md) for the project principles and current sprint goals. Read [CLAUDE.md](https://github.com/TortoiseWolfe/ScriptHammer/blob/main/CLAUDE.md) for AI (Artificial Intelligence) pair programming guidelines and best practices when working with this codebase.
 

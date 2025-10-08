@@ -111,6 +111,105 @@ Configure your PWA manifest...
 ❌ BAD: "The countdown timer is rendered by the component."
 ```
 
+## Emoji Usage: Visual Hierarchy & Personality
+
+**Goal**: Make content more scannable and engaging while maintaining professionalism.
+
+### When to Use Emojis
+
+1. **Section Headers**: Add visual markers to help readers quickly find content
+2. **Callouts**: Highlight warnings, tips, and important notes
+3. **Lists**: Add personality to bullet points (use sparingly)
+4. **Code Comments**: Make inline comments more scannable
+
+### Emoji Categories
+
+**Technical Domains** (use in headers):
+
+- 🔒 Security & Authentication
+- 💳 Payments & Monetization
+- 🗄️ Database & Data Storage
+- 🌐 Web APIs & Networking
+- 📱 Mobile & Responsive Design
+- 🎨 UI/UX & Styling
+- 🚀 Performance & Optimization
+- 🔧 Configuration & Setup
+- 🧪 Testing & Quality Assurance
+
+**Status Markers** (use in callouts):
+
+- ✅ Success, Completed, Best Practice
+- ⚠️ Warning, Important, Gotcha
+- ❌ Error, Avoid, Anti-Pattern
+- 💡 Tip, Insight, Pro Tip
+- 📝 Note, Documentation
+- 🐛 Bug, Debugging, Issue
+
+**Action Indicators**:
+
+- 🔨 Building, Implementation
+- 📦 Packages, Dependencies
+- 🔍 Research, Discovery
+- 🎯 Goal, Target, Metric
+
+### Usage Guidelines
+
+**DO:**
+
+```markdown
+## 🔒 Authentication Flows
+
+⚠️ **Important**: Never expose API keys in client-side code.
+
+✅ **Best Practice**: Use environment variables for secrets.
+
+### 💳 Payment Integration
+```
+
+**DON'T:**
+
+```markdown
+## 🔒🛡️💳 Authentication and Payment 🚀✨ (too many emojis)
+
+🎉 This section is about payments! 💰💵💴 (unprofessional tone)
+```
+
+### Limits & Balance
+
+- **Headers**: Max 1 emoji per header
+- **Paragraphs**: Use emojis only for callouts (warnings, tips)
+- **Lists**: Optional emoji per bullet, only if it adds clarity
+- **Frequency**: If every section has emojis, none stand out—use strategically
+
+### Examples from Good Practice
+
+```markdown
+## 🗄️ Why We Chose Supabase
+
+⚠️ **Security Gotcha**: Row-Level Security policies must be tested with both authenticated and anonymous users.
+
+### 🔧 Configuration Steps
+
+1. 📦 Install dependencies: `npm install @supabase/supabase-js`
+2. 🔑 Add environment variables to `.env.local`
+3. ✅ Test connection with `supabase status`
+```
+
+### Code Comment Examples
+
+```tsx
+// 🚀 Performance: Memoize expensive calculations
+const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
+
+// 🐛 Fix: Prevents memory leak on unmount
+return () => clearInterval(timer);
+
+// ⚠️ Warning: This breaks SSR - only run on client
+if (typeof window !== 'undefined') {
+  localStorage.setItem('key', value);
+}
+```
+
 ## Code Examples
 
 ### Always Provide Context
@@ -179,10 +278,11 @@ Before publishing, verify:
 - [ ] All acronyms explained on first use
 - [ ] Technical terms linked to documentation
 - [ ] Code examples have inline comments for key concepts
-- [ ] Headings are descriptive
+- [ ] Headings are descriptive with strategic emoji usage
 - [ ] Active voice used throughout
 - [ ] No assumptions about reader's technical knowledge
 - [ ] Reading time appropriate for content depth
+- [ ] Emojis add clarity without overwhelming (max 1 per header)
 
 ## Word Count Guidelines
 
@@ -196,4 +296,4 @@ Don't sacrifice clarity for brevity. Better to be thorough than terse.
 
 ---
 
-_Last updated: 2025-09-30_
+_Last updated: 2025-10-07_

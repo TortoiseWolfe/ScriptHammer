@@ -24,7 +24,7 @@ ogImage: /blog-images/auto-config/featured-og.png
 
 ScriptHammer automatically configures itself based on your new repository. Use this template, and everything adapts to your project name and settings with minimal setup.
 
-## Prerequisites
+## ✅ Prerequisites
 
 - **Docker and Docker Compose installed (MANDATORY)**
 - Git configured with a remote repository
@@ -32,7 +32,7 @@ ScriptHammer automatically configures itself based on your new repository. Use t
 
 **⚠️ IMPORTANT**: This project REQUIRES Docker. Local npm/pnpm commands are NOT supported. All development MUST use Docker containers.
 
-## Quick Start (10-15 minutes first time)
+## 🚀 Quick Start (10-15 minutes first time)
 
 ### 1. Use Template on GitHub
 
@@ -86,7 +86,7 @@ NEXT_PUBLIC_AUTHOR_TWITTER=yourhandle
 
 **Note**: All these are OPTIONAL except UID/GID. The app works without them, but features like analytics and contact forms won't function until configured.
 
-### 4. Start Docker (MANDATORY - No Local Development)
+### 4. Start Docker (MANDATORY)
 
 ```bash
 docker compose up
@@ -107,7 +107,7 @@ All commands MUST be run inside Docker:
 # ✅ RIGHT: docker compose exec scripthammer pnpm run dev
 ```
 
-## What Gets Auto-Configured
+## 🔧 What Gets Auto-Configured
 
 When you create from template and clone, ScriptHammer automatically detects and configures:
 
@@ -127,7 +127,7 @@ The auto-config system generates configuration at build time:
 
 Check these files after running `docker compose exec scripthammer pnpm run build` - they contain YOUR project's information automatically detected from Git.
 
-## How to Use It
+## 💡 How to Use It
 
 The configuration is available everywhere in your code:
 
@@ -157,7 +157,7 @@ export async function GET() {
 }
 ```
 
-## Minimal Manual Setup
+## ⚙️ Minimal Manual Setup
 
 Traditional templates require editing multiple files:
 
@@ -174,7 +174,7 @@ With ScriptHammer, the process is dramatically simplified:
 - ✅ Most configuration detected automatically from git
 - ⚠️ Some components may still have hardcoded values (being improved)
 
-## Common Tasks (All Require Docker)
+## 🛠️ Common Tasks (All Require Docker)
 
 ### Deploy to GitHub Pages
 
@@ -185,7 +185,7 @@ docker compose exec scripthammer pnpm run deploy
 # Automatically configured for your repository
 ```
 
-### Configure Production Environment Variables
+### Configure Production Env Vars
 
 **IMPORTANT**: Your local `.env` file is NOT used in GitHub Actions. You must add your configuration as GitHub Secrets for production features to work.
 
@@ -287,14 +287,14 @@ docker compose exec scripthammer pnpm run test:suite
 
 Look at `src/config/project-detected.ts` after running the build—it shows your detected settings.
 
-## Key Benefits
+## 🎯 Key Benefits
 
 - **Quick Setup**: Use template and start coding in 10-15 minutes
 - **Minimal Configuration**: Only `.env` file required, rest auto-detects
 - **Works in Most Environments**: Local Docker, GitHub Actions CI/CD
 - **Reduced Errors**: Fewer manual edits means fewer mistakes
 
-## How It Works
+## 🔍 How It Works
 
 The core detection script (`scripts/detect-project.js`) runs at build time:
 
@@ -339,7 +339,7 @@ The script (under 180 lines) handles:
 - Safe file writing with atomic operations
 - TypeScript and JSON generation
 
-## Advanced Features
+## 🚀 Advanced Features
 
 ### Environment Detection
 
@@ -362,7 +362,7 @@ docker compose exec scripthammer pnpm run deploy
 
 The project auto-detects your configuration from git, so you don't need different settings for different environments.
 
-## Try It Now
+## 🧪 Try It Now
 
 1. **Use Template** [ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer) (30 seconds)
 2. **Clone** your new repository (30 seconds)
@@ -378,7 +378,7 @@ The project auto-detects your configuration from git, so you don't need differen
 - `/status` page displays YOUR project info
 - All configuration files have YOUR details
 
-## Technical Details
+## 📚 Technical Details
 
 ### Generated Files
 
@@ -424,7 +424,7 @@ _Save 30-60 minutes of manual configuration with every new project_
 
 While traditional templates require editing 22+ files and configuration points, ScriptHammer handles everything automatically. No more hunting for hardcoded values or broken references after using the template.
 
-## Troubleshooting
+## ⚠️ Troubleshooting
 
 ### Common Issues
 
@@ -452,7 +452,7 @@ While traditional templates require editing 22+ files and configuration points, 
 - This is a known limitation being addressed
 - Main configuration files ARE auto-detected correctly
 
-## The Bottom Line
+## ✅ The Bottom Line
 
 ScriptHammer significantly reduces setup friction compared to traditional templates. While not completely "zero-config," it automates most configuration through git detection, requiring only minimal setup (creating the `.env` file).
 

@@ -26,7 +26,7 @@ linkedinAuthorUrl: https://www.linkedin.com/in/pohlner/
 
 # From Template to Client: Building Landing Pages That Convert
 
-## The Landing Page Strategy
+## 🎯 The Landing Page Strategy
 
 ScriptHammer isn't just a Next.js template—it's your **entry point** to client relationships.
 
@@ -42,7 +42,7 @@ That's **$27/month** for a professional landing page with:
 
 **The Business Model**: 4 hours initial setup + 8 hours quarterly updates = your foot in the door. When they need a Content Management System (CMS), e-commerce, or custom features—you're their trusted webmaster with recurring revenue + upsell pipeline.
 
-## Why Countdown Timers Work
+## ⏱️ Why Countdown Timers Work
 
 Countdown timers increase conversions by 8-12%. But fake urgency erodes trust. If you say it ends at midnight January 1st, it **must disappear** at midnight January 1st.
 
@@ -54,7 +54,7 @@ Let's build a real countdown timer using **Product Requirements Prompt (PRP) →
 
 A Product Requirements Prompt (PRP) focuses on **what users need**, not how to build it. The `/specify` command reads your PRP and searches the codebase to determine technical approach. PRPs have 3 core sections focusing on product requirements:
 
-## 1. Product Requirements
+## 📋 1. Product Requirements
 
 **What**: Countdown banner showing time until January 1st midnight, promoting "$321/year Custom Setup", linking to `/schedule`
 
@@ -64,7 +64,7 @@ A Product Requirements Prompt (PRP) focuses on **what users need**, not how to b
 
 **Out of Scope**: Payment processing, discount codes, email automation, analytics, A/B testing (Minimum Viable Product/MVP)
 
-## 2. Context & Codebase Intelligence
+## 🧠 2. Context & Codebase Intelligence
 
 **Reuse Existing**:
 
@@ -74,7 +74,7 @@ A Product Requirements Prompt (PRP) focuses on **what users need**, not how to b
 
 **No New Dependencies**: Use native browser Application Programming Interfaces (APIs)
 
-## 3. Implementation Runbook
+## 🔨 3. Implementation Runbook
 
 **SpecKit Workflow** (PRP → Spec → Plan → Tasks → Implement):
 
@@ -363,7 +363,7 @@ docker compose exec scripthammer sh -c "pnpm run test:suite && pnpm run build"
 
 **Business**: $321/year landing page service, conversion optimization, sales funnel, recurring revenue
 
-## Next Steps
+## 🚀 Next Steps
 
 **Customize**: Edit price, CTA text, target date in code
 
@@ -377,7 +377,7 @@ docker compose exec scripthammer sh -c "pnpm run test:suite && pnpm run build"
 
 ---
 
-## The Bigger Picture
+## 💡 The Bigger Picture
 
 This tutorial demonstrates **building a consulting business** using ScriptHammer:
 
@@ -391,7 +391,7 @@ Clients want proven solutions. Developers want starting points. Consultants want
 
 ---
 
-## Ready to Start?
+## ✅ Ready to Start?
 
 ✅ Production-ready countdown component
 ✅ Repeatable PRP/SpecKit workflow
