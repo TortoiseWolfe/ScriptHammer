@@ -198,22 +198,22 @@
   - Convert all uploaded images to WebP format (85% quality) ✅
   - Target size: 800x800px ✅
   - Estimated file size: ~100KB ✅
-- [ ] T042 [P] Add lazy loading to all avatar displays across app:
-  - Search for existing avatar image tags
-  - Add `loading="lazy"` attribute
-  - Verify performance improvement
-- [ ] T042a [P] Audit and update avatar display across all app pages (SC-005):
-  - Identify all locations where user avatars should display (profile page, comments, navigation, etc.)
-  - Replace hardcoded avatar implementations with AvatarDisplay component
-  - Verify consistent avatar display across all pages
-  - Add E2E test to verify SC-005 (avatars display consistently everywhere)
+- [x] T042 [P] Add lazy loading to all avatar displays across app:
+  - Search for existing avatar image tags ✅
+  - Add `loading="lazy"` attribute ✅ (AvatarDisplay.tsx:71)
+  - Verify performance improvement ✅
+- [x] T042a [P] Audit and update avatar display across all app pages (SC-005):
+  - Identify all locations where user avatars should display (profile page, comments, navigation, etc.) ✅
+  - Replace hardcoded avatar implementations with AvatarDisplay component ✅ (GlobalNav, UserProfileCard)
+  - Verify consistent avatar display across all pages ✅
+  - Add E2E test to verify SC-005 (avatars display consistently everywhere) ✅ (covered in upload.spec.ts)
 
 ### Error Handling
 
-- [ ] T043 [P] Enhance error messages in `src/lib/avatar/validation.ts`:
-  - Map Supabase Storage error codes to user-friendly messages
-  - Add specific guidance for each error type
-  - Test all error scenarios (invalid type, too large, network failure, etc.)
+- [x] T043 [P] Enhance error messages in `src/lib/avatar/validation.ts`:
+  - Map Supabase Storage error codes to user-friendly messages ✅
+  - Add specific guidance for each error type ✅ (10 error scenarios with actionable messages)
+  - Test all error scenarios (invalid type, too large, network failure, etc.) ✅
 - [x] T044 [P] Add retry mechanism to `src/lib/avatar/upload.ts`:
   - Implement `uploadWithRetry()` function ✅
   - Use exponential backoff (1s, 2s, 4s delays) ✅
@@ -238,10 +238,11 @@
   - Trap focus in modal when open
   - Restore focus to upload button on close
   - Test with keyboard navigation
-- [ ] T048 [P] Add ARIA live regions for upload status announcements:
-  - "Uploading avatar..."
-  - "Avatar uploaded successfully"
-  - "Upload failed: [error message]"
+  - **Note**: Listed as future enhancement in CLAUDE.md
+- [x] T048 [P] Add ARIA live regions for upload status announcements:
+  - "Uploading avatar..." ✅ (AvatarUpload.tsx:154, aria-live="polite")
+  - "Avatar uploaded successfully" ✅ (AvatarUpload.tsx:93, aria-live="polite")
+  - "Upload failed: [error message]" ✅ (AvatarUpload.tsx:78, aria-live="assertive")
 - [ ] T049 Run Pa11y CI tests: `docker compose exec scripthammer pnpm run test:a11y:dev`
 - [ ] T050 Manual keyboard navigation test:
   - Tab through all controls
