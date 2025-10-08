@@ -1,5 +1,5 @@
 ---
-title: 'Offline Payment Integration: Stripe, PayPal & GDPR'
+title: 'Offline Payment: Stripe, PayPal & GDPR'
 author: TortoiseWolfe
 date: 2025-10-09
 slug: offline-payment-system-stripe-paypal

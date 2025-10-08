@@ -8,6 +8,7 @@ import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { useAuth } from '@/contexts/AuthContext';
+import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -186,11 +187,15 @@ export function GlobalNav() {
                   tabIndex={0}
                   className="btn btn-ghost btn-circle avatar min-h-11 min-w-11"
                 >
-                  <div className="bg-primary text-primary-content flex w-8 items-center justify-center rounded-full">
-                    <span className="text-sm font-bold">
-                      {user.email?.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                  <AvatarDisplay
+                    avatarUrl={
+                      (user.user_metadata?.avatar_url as string) || null
+                    }
+                    displayName={
+                      user.user_metadata?.username || user.email || 'User'
+                    }
+                    size="sm"
+                  />
                 </label>
                 <ul
                   tabIndex={0}
