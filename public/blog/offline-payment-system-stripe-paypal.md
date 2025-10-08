@@ -312,38 +312,62 @@ export async function createPaymentIntent({
 
 ### Metadata Validation
 
-User-provided metadata can't contain dangerous keys like `__proto__` or `constructor`:
+User-provided metadata can't contain dangerous keys like `__proto__` or `constructor`, and must fit within size limits:
 
 ```typescript
 // src/lib/payments/metadata-validator.ts
-const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const DANGEROUS_KEYS = new Set([
+  '__proto__',
+  'constructor',
+  'prototype',
+  '__defineGetter__',
+  '__defineSetter__',
+  '__lookupGetter__',
+  '__lookupSetter__',
+]);
 
-export function validateMetadata(
-  metadata: Record<string, unknown>
+const MAX_METADATA_SIZE = 1024; // 1KB total
+const MAX_NESTING_DEPTH = 2;
+
+export function validateAndSanitizeMetadata(
+  metadata: unknown
 ): Record<string, unknown> {
-  const validated: Record<string, unknown> = {};
-
-  for (const [key, value] of Object.entries(metadata)) {
-    // Reject dangerous keys
-    if (DANGEROUS_KEYS.has(key)) {
-      throw new Error(`Invalid metadata key: ${key}`);
-    }
-
-    // Limit key count (max 100 keys)
-    if (Object.keys(validated).length >= 100) {
-      throw new Error('Metadata exceeds maximum key count (100)');
-    }
-
-    // Validate value size (max 10KB per value)
-    const valueStr = JSON.stringify(value);
-    if (valueStr.length > 10 * 1024) {
-      throw new Error(`Metadata value for "${key}" exceeds 10KB limit`);
-    }
-
-    validated[key] = value;
+  // Must be a plain object
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    throw new Error('Metadata must be a plain object');
   }
 
-  return validated;
+  // Check for prototype pollution at all levels
+  const pollutionError = checkPrototypePollution(metadata);
+  if (pollutionError) {
+    throw new Error(pollutionError);
+  }
+
+  // Check for circular references
+  if (hasCircularReferences(metadata)) {
+    throw new Error('Metadata cannot contain circular references');
+  }
+
+  // Check nesting depth (max 2 levels)
+  const nestingDepth = getNestingDepth(metadata);
+  if (nestingDepth > MAX_NESTING_DEPTH) {
+    throw new Error(`Metadata nesting exceeds ${MAX_NESTING_DEPTH} levels`);
+  }
+
+  // Check array limits (max 100 items per array)
+  const arrayError = checkArrayLimits(metadata);
+  if (arrayError) {
+    throw new Error(arrayError);
+  }
+
+  // Check total size limit (1KB for entire metadata object)
+  const serialized = JSON.stringify(metadata);
+  if (serialized.length > MAX_METADATA_SIZE) {
+    throw new Error(`Metadata exceeds 1KB limit`);
+  }
+
+  // Sanitize by removing dangerous keys
+  return sanitizeMetadata(metadata as Record<string, unknown>);
 }
 ```
 
@@ -436,8 +460,10 @@ export function PaymentButton({
 
 ### Edge Function: Stripe Checkout
 
+**⚠️ Note**: This is an example implementation. ScriptHammer currently uses `stripe-webhook` for webhook handling. You'll need to create this Edge Function in your own project and adapt it to your specific requirements.
+
 ```typescript
-// supabase/functions/stripe-create-payment/index.ts
+// supabase/functions/stripe-create-payment/index.ts (example implementation)
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';

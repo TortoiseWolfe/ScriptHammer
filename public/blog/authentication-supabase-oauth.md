@@ -274,7 +274,39 @@ We prevent this with **state tokens**:
 ```typescript
 // src/lib/auth/oauth-state.ts
 import { supabase } from '@/lib/supabase/client';
-import { v4 as uuidv4 } from 'uuid';
+
+// Generate UUID v4 using crypto API (available in modern browsers and Node 16+)
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older environments
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
+ * Get or create a session ID for CSRF validation
+ * Uses sessionStorage to track the browser session
+ */
+function getSessionId(): string {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const SESSION_KEY = 'oauth_session_id';
+  let sessionId = sessionStorage.getItem(SESSION_KEY);
+
+  if (!sessionId) {
+    sessionId = generateUUID();
+    sessionStorage.setItem(SESSION_KEY, sessionId);
+  }
+
+  return sessionId;
+}
 
 /**
  * Generate a cryptographically random state token for OAuth flow
@@ -283,13 +315,14 @@ import { v4 as uuidv4 } from 'uuid';
 export async function generateOAuthState(
   provider: 'github' | 'google'
 ): Promise<string> {
-  const stateToken = uuidv4(); // Cryptographically random UUID
+  const stateToken = generateUUID(); // Cryptographically random UUID
+  const sessionId = getSessionId(); // Get or create browser session ID
 
   // Store in database
   const { error } = await supabase.from('oauth_states').insert({
     state_token: stateToken,
     provider,
-    session_id: window.sessionStorage.getItem('session_id'), // Tie to browser session
+    session_id: sessionId, // Tie to browser session
     expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
   });
 
@@ -677,66 +710,85 @@ Next.js middleware runs before page rendering, making it perfect for authenticat
 
 ```typescript
 // src/middleware.ts
-import { createServerClient } from '@supabase/ssr';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-const protectedRoutes = ['/profile', '/payment-demo'];
-const authRoutes = ['/sign-in', '/sign-up'];
+import { type NextRequest } from 'next/server';
+import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  return await updateSession(request);
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+```
+
+The `updateSession` helper handles session validation and route protection:
+
+```typescript
+// src/lib/supabase/middleware.ts
+import { createServerClient } from '@supabase/ssr';
+import { type NextRequest, NextResponse } from 'next/server';
+
+export async function updateSession(request: NextRequest) {
+  const supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
+        getAll() {
+          return request.cookies.getAll();
         },
-        set(name: string, value: string, options: any) {
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          response.cookies.set({ name, value: '', ...options });
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            supabaseResponse.cookies.set(name, value, options);
+          });
         },
       },
     }
   );
 
+  // Get user session (refreshes expired tokens automatically)
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Redirect authenticated users away from auth pages
+  if (
+    user &&
+    (request.nextUrl.pathname === '/sign-in' ||
+      request.nextUrl.pathname === '/sign-up')
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/profile';
+    return NextResponse.redirect(url);
+  }
 
   // Redirect unauthenticated users from protected routes
+  const protectedRoutes = ['/profile', '/account', '/payment-demo'];
   if (
+    !user &&
     protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
   ) {
-    if (!session) {
-      return NextResponse.redirect(new URL('/sign-in', request.url));
-    }
+    const url = request.nextUrl.clone();
+    url.pathname = '/sign-in';
+    url.searchParams.set('redirectTo', request.nextUrl.pathname);
+    return NextResponse.redirect(url);
   }
 
-  // Redirect authenticated users from auth pages
-  if (authRoutes.some((route) => request.nextUrl.pathname.startsWith(route))) {
-    if (session) {
-      return NextResponse.redirect(new URL('/profile', request.url));
-    }
-  }
-
-  return response;
+  return supabaseResponse;
 }
-
-export const config = {
-  matcher: ['/profile/:path*', '/payment-demo/:path*', '/sign-in', '/sign-up'],
-};
 ```
 
-This middleware ensures:
+This middleware pattern ensures:
 
-- Unauthenticated users can't access `/profile` or `/payment-demo`
+- Unauthenticated users can't access `/profile`, `/account`, or `/payment-demo`
 - Authenticated users don't see sign-in/sign-up pages (redirected to `/profile`)
+- Session tokens are automatically refreshed before expiration
 
 ## 🧪 Part 6: Testing Authentication
 
@@ -828,33 +880,33 @@ test.describe('Sign-In Flow', () => {
 
 ### Lesson 1: Cookies vs localStorage
 
-Initially, we used `localStorage` for session tokens. Bad idea. Local storage is:
-
-- Vulnerable to Cross-Site Scripting (XSS) attacks
-- Not sent with HTTP requests (requires manual header management)
-- Not scoped to domain (shared across subdomains)
-
-Cookies with `httpOnly` and `secure` flags are the correct choice:
+For static sites with no server-side code exchange, we use `localStorage` for session tokens with Supabase's implicit flow:
 
 ```typescript
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    auth: {
-      storageKey: 'sb-auth-token',
-      storage: {
-        getItem: (key) => {
-          // Don't use localStorage for auth tokens
-          return null;
-        },
-        setItem: () => {},
-        removeItem: () => {},
+// src/lib/supabase/client.ts
+export function createClient(): SupabaseClient<Database> {
+  const supabaseInstance = createSupabaseClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        // Use implicit flow for static sites (no server-side code exchange)
+        flowType: 'implicit',
+        // Store session in localStorage
+        storage:
+          typeof window !== 'undefined' ? window.localStorage : undefined,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
       },
-    },
-  }
-);
+    }
+  );
+
+  return supabaseInstance;
+}
 ```
+
+For server-side authentication (SSR), use `@supabase/ssr` with `httpOnly` cookies as shown in the middleware section.
 
 ### Lesson 2: Test Isolation & Cleanup
 
