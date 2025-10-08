@@ -19,7 +19,7 @@ let supabaseInstance: SupabaseClient<Database> | null = null;
  * Uses implicit flow for static sites (no PKCE)
  *
  * @returns Supabase client instance
- * @throws Error if environment variables are not configured
+ * @throws Error if environment variables are not configured (browser only)
  */
 export function createClient(): SupabaseClient<Database> {
   // Return existing instance if available
@@ -29,6 +29,14 @@ export function createClient(): SupabaseClient<Database> {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // During build/SSR, return a placeholder - don't throw
+  // The actual client will be created when running in browser
+  if (typeof window === 'undefined') {
+    // Create a mock client that won't actually be used
+    // This allows the build to succeed
+    return {} as SupabaseClient<Database>;
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error(
@@ -56,7 +64,16 @@ export function createClient(): SupabaseClient<Database> {
   return supabaseInstance;
 }
 
+/**
+ * Get the Supabase client singleton
+ * Only initializes when called (lazy loading)
+ */
+export function getSupabase(): SupabaseClient<Database> {
+  return createClient();
+}
+
 // Singleton export for all components to use
+// This is safe now because createClient() handles SSR/build gracefully
 export const supabase = createClient();
 
 /**

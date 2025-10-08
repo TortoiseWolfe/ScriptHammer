@@ -357,21 +357,37 @@ TEST_USER_SECONDARY_PASSWORD=YourTestPassword123!
 
 For CI/CD pipelines to work correctly, you must configure the following secrets in your GitHub repository.
 
-**How to add secrets:**
+**Quick setup:** [→ Add secrets to this repository](https://github.com/TortoiseWolfe/ScriptHammer/settings/secrets/actions)
 
-1. Go to your repository on GitHub
-2. Navigate to: Settings → Secrets and variables → Actions
-3. Click "New repository secret"
-4. Add each secret below
+**🚀 EASIEST METHOD - Copy from your `.env` file:**
+
+If you already have a working `.env` file, just copy the values directly from there! The GitHub secrets should be **exactly the same** as your local environment variables.
 
 **Required secrets:**
 
-| Secret Name                     | Description                                            | Where to find it                                                                                  |
-| ------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                              | Supabase Dashboard → Project Settings → API → Project URL                                         |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anonymous/public key                     | Supabase Dashboard → Project Settings → API → Project API keys → `anon` `public`                  |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Your Supabase service role key (for integration tests) | Supabase Dashboard → Project Settings → API → Project API keys → `service_role` (⚠️ Keep secret!) |
-| `NEXT_PUBLIC_DEPLOY_URL`        | Your production deployment URL                         | e.g., `https://scripthammer.com` or `https://yourusername.github.io/your-repo`                    |
+| GitHub Secret Name              | Copy from `.env` variable                         | What it is                                   |
+| ------------------------------- | ------------------------------------------------- | -------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `NEXT_PUBLIC_SUPABASE_URL`                        | Full URL (e.g., `https://xxxxx.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `NEXT_PUBLIC_SUPABASE_ANON_KEY`                   | Long JWT token starting with `eyJ...`        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | `SUPABASE_SERVICE_ROLE_KEY`                       | Long JWT token starting with `eyJ...`        |
+| `NEXT_PUBLIC_DEPLOY_URL`        | `NEXT_PUBLIC_DEPLOY_URL` (or use your actual URL) | `https://scripthammer.com`                   |
+
+**Steps:**
+
+1. Open your `.env` file
+2. Click [→ Add secrets to GitHub](https://github.com/TortoiseWolfe/ScriptHammer/settings/secrets/actions)
+3. For each secret above:
+   - Click "New repository secret"
+   - Name: Use the "GitHub Secret Name" from the table
+   - Value: Copy-paste the **entire value** from your `.env` file (the full JWT token, not just a snippet)
+   - Click "Add secret"
+
+**Don't have a `.env` file? Get the values from Supabase:**
+
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Click ⚙️ Settings (gear icon) → API
+4. Copy the **full values** from "Project API keys" section
 
 **⚠️ Security Warning:** The `SUPABASE_SERVICE_ROLE_KEY` bypasses Row Level Security. Never expose it in client code or commit it to the repository. It's only used for integration test database cleanup in GitHub Actions.
 
