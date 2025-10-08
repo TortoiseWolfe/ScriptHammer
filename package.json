@@ -27,7 +27,7 @@
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "generate:rss": "node scripts/generate-rss.js",
     "prebuild": "node scripts/detect-project.js && node scripts/generate-author-config.js && node scripts/generate-manifest.js && node scripts/generate-sitemap.js && node scripts/generate-rss.js",
-    "build": "pnpm run clean:next && NODE_ENV=production next build || true",
+    "build": "pnpm run clean:next && NODE_ENV=production next build",
     "start": "next start",
     "lint": "eslint",
     "test": "pnpm run clean:next && vitest",
