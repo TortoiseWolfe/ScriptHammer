@@ -28,7 +28,7 @@ Authentication is the foundation of any application that handles user data. Get 
 
 This post documents our implementation of production-ready authentication in ScriptHammer using [Supabase](https://supabase.com/), complete with OAuth (Open Authorization) providers, server-side rate limiting, and database-level security policies. This isn't a "hello world" tutorial—this is what we learned building authentication that actually ships to production.
 
-## 🗄️ Why We Chose Supabase Over Auth0 and Firebase
+## 🗄️ Why Supabase? (vs Auth0/Firebase)
 
 After evaluating Auth0, Firebase Auth, and Supabase, we chose Supabase for three critical reasons:
 
@@ -602,7 +602,7 @@ CREATE POLICY "Users update own profile" ON user_profiles
 
 ✅ **Security Guarantee**: These policies run **at the database level**, enforced by PostgreSQL. Even if an attacker compromises your Next.js API routes, they can't query other users' data.
 
-## ⏱️ Part 5: Session Management and Protected Routes
+## ⏱️ Part 5: Session & Route Protection
 
 ### AuthContext for Global Session State
 
@@ -826,7 +826,7 @@ test.describe('Sign-In Flow', () => {
 
 ## 💡 Part 7: What We Learned
 
-### Lesson 1: Cookie vs localStorage for Sessions
+### Lesson 1: Cookies vs localStorage
 
 Initially, we used `localStorage` for session tokens. Bad idea. Local storage is:
 
@@ -894,7 +894,7 @@ const userBClient = createClient(supabaseUrl, supabaseAnonKey, {
 });
 ```
 
-### Lesson 4: Fail Open on Rate Limit Errors
+### Lesson 4: Fail Open on Rate Errors
 
 When the rate limit database query fails, **fail open** (allow the request) rather than **fail closed** (block everyone):
 

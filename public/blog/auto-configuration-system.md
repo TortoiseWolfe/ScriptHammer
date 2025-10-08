@@ -32,7 +32,7 @@ ScriptHammer automatically configures itself based on your new repository. Use t
 
 **⚠️ IMPORTANT**: This project REQUIRES Docker. Local npm/pnpm commands are NOT supported. All development MUST use Docker containers.
 
-## 🚀 Quick Start (10-15 minutes first time)
+## 🚀 Quick Start (10-15 min)
 
 ### 1. Use Template on GitHub
 
@@ -249,7 +249,7 @@ docker compose exec scripthammer pnpm run deploy
 - **Build-time injection**: Secrets are injected during `pnpm run build` in CI/CD
 - **Without secrets**: Your site will deploy but features like analytics, forms, and calendars won't function
 
-#### Updating the Deploy Workflow (Optional)
+#### Update Deploy Workflow (Optional)
 
 If you need to use additional environment variables, update `.github/workflows/deploy.yml`:
 

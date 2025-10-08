@@ -121,7 +121,7 @@ PAYPAL_SECRET=EK...  # Edge Functions only
 PAYPAL_WEBHOOK_ID=WH-...  # For signature verification
 ```
 
-### Cash App & Chime (No Configuration Needed)
+### Cash App & Chime
 
 Cash App and Chime use direct links—no API keys, no consent modals, no external scripts:
 
@@ -838,7 +838,7 @@ After 3 failed retries, the subscription enters a **7-day grace period**. If pay
 
 ## 💡 Part 8: What We Learned
 
-### Lesson 1: Webhook Idempotency is Non-Negotiable
+### Lesson 1: Webhook Idempotency Required
 
 Stripe sends duplicate webhooks. Without idempotency checks, you'll double-charge customers or double-credit accounts.
 
