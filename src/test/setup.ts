@@ -87,7 +87,10 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
-// Mock HTMLCanvasElement.getContext for axe-core
+// Track blob dimensions for createImageBitmap
+const blobDimensions = new WeakMap<Blob, { width: number; height: number }>();
+
+// Mock HTMLCanvasElement.getContext and toBlob for avatar tests
 if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = vi.fn().mockImplementation(() => ({
     fillStyle: '',
@@ -119,7 +122,78 @@ if (typeof HTMLCanvasElement !== 'undefined') {
     transform: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),
+    fillText: vi.fn(),
+    strokeText: vi.fn(),
+    textAlign: 'left',
+    textBaseline: 'alphabetic',
+    font: '10px sans-serif',
   }));
+
+  // Mock toBlob for avatar image processing
+  HTMLCanvasElement.prototype.toBlob = vi.fn().mockImplementation(function (
+    this: HTMLCanvasElement,
+    callback: BlobCallback,
+    type = 'image/png',
+    quality = 0.92
+  ) {
+    // Create a mock blob and track the canvas dimensions
+    const blob = new Blob(['mock-image-data'], { type });
+    blobDimensions.set(blob, {
+      width: this.width,
+      height: this.height,
+    });
+    setTimeout(() => callback(blob), 0);
+  });
+}
+
+// Mock createImageBitmap for avatar validation
+if (typeof global !== 'undefined') {
+  global.createImageBitmap = vi.fn().mockImplementation((source: any) => {
+    // Handle File/Blob objects
+    if (source instanceof File || source instanceof Blob) {
+      // Check if we tracked dimensions for this blob
+      const dims = blobDimensions.get(source);
+      if (dims) {
+        return Promise.resolve({
+          width: dims.width,
+          height: dims.height,
+          close: vi.fn(),
+        });
+      }
+      // Special case: files with "not an image" content (text) should reject
+      if (source.size < 20 && source.type.startsWith('image/')) {
+        return Promise.reject(new Error('Failed to decode image'));
+      }
+      // Default for unknown blobs
+      return Promise.resolve({
+        width: 500,
+        height: 500,
+        close: vi.fn(),
+      });
+    }
+    // Handle image elements or objects with width/height
+    return Promise.resolve({
+      width: source.width || 500,
+      height: source.height || 500,
+      close: vi.fn(),
+    });
+  });
+}
+
+// Mock URL.createObjectURL and revokeObjectURL for blob handling
+if (typeof global !== 'undefined' && typeof URL !== 'undefined') {
+  const blobUrls = new Map<string, Blob>();
+  let urlCounter = 0;
+
+  URL.createObjectURL = vi.fn().mockImplementation((blob: Blob) => {
+    const url = `blob:http://localhost/${++urlCounter}`;
+    blobUrls.set(url, blob);
+    return url;
+  });
+
+  URL.revokeObjectURL = vi.fn().mockImplementation((url: string) => {
+    blobUrls.delete(url);
+  });
 }
 
 // Mock HTMLDialogElement for payment modals (JSDOM doesn't support dialog element)

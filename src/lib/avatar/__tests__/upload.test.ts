@@ -11,21 +11,29 @@ import {
   uploadWithRetry,
 } from '../upload';
 
-// Mock Supabase client
+// Create persistent mock objects using vi.hoisted()
+const mockGetUser = vi.fn();
+const mockUpdateUser = vi.fn();
+const mockUpload = vi.fn();
+const mockRemove = vi.fn();
+const mockGetPublicUrl = vi.fn();
+const mockFrom = vi.fn(() => ({
+  upload: mockUpload,
+  remove: mockRemove,
+  getPublicUrl: mockGetPublicUrl,
+}));
+
+// Mock Supabase client with persistent mocks
 vi.mock('@/lib/supabase/client', () => ({
-  createClient: vi.fn(() => ({
+  createClient: () => ({
     auth: {
-      getUser: vi.fn(),
-      updateUser: vi.fn(),
+      getUser: mockGetUser,
+      updateUser: mockUpdateUser,
     },
     storage: {
-      from: vi.fn(() => ({
-        upload: vi.fn(),
-        remove: vi.fn(),
-        getPublicUrl: vi.fn(),
-      })),
+      from: mockFrom,
     },
-  })),
+  }),
 }));
 
 describe('extractPathFromUrl', () => {
@@ -62,16 +70,13 @@ describe('uploadAvatar', () => {
   });
 
   it('should return error if user not authenticated', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: { user: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
         status: 401,
-      } as never,
+      },
     });
 
     const blob = new Blob(['test'], { type: 'image/webp' });
@@ -82,20 +87,17 @@ describe('uploadAvatar', () => {
   });
 
   it('should handle upload errors', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
         user: { id: 'user-123', user_metadata: {} },
       },
       error: null,
-    } as never);
+    });
 
-    vi.mocked(mockClient.storage.from('avatars').upload).mockResolvedValue({
+    mockUpload.mockResolvedValue({
       data: null,
       error: new Error('Upload failed'),
-    } as never);
+    });
 
     const blob = new Blob(['test'], { type: 'image/webp' });
     const result = await uploadAvatar(blob);
@@ -105,39 +107,32 @@ describe('uploadAvatar', () => {
   });
 
   it('should rollback upload if profile update fails', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    const mockRemove = vi.fn().mockResolvedValue({ data: null, error: null });
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
         user: { id: 'user-123', user_metadata: {} },
       },
       error: null,
-    } as never);
+    });
 
-    vi.mocked(mockClient.storage.from('avatars').upload).mockResolvedValue({
+    mockUpload.mockResolvedValue({
       data: { path: 'user-123/123.webp' },
       error: null,
-    } as never);
+    });
 
-    vi.mocked(mockClient.storage.from('avatars').getPublicUrl).mockReturnValue({
+    mockGetPublicUrl.mockReturnValue({
       data: { publicUrl: 'https://example.com/avatar.webp' },
-    } as never);
+    });
 
-    vi.mocked(mockClient.storage.from('avatars').remove).mockImplementation(
-      mockRemove as never
-    );
+    mockRemove.mockResolvedValue({ data: null, error: null });
 
-    vi.mocked(mockClient.auth.updateUser).mockResolvedValue({
+    mockUpdateUser.mockResolvedValue({
       data: { user: null },
       error: {
         message: 'Update failed',
         name: 'AuthError',
         status: 500,
-      } as never,
-    } as never);
+      },
+    });
 
     const blob = new Blob(['test'], { type: 'image/webp' });
     const result = await uploadAvatar(blob);
@@ -154,16 +149,13 @@ describe('removeAvatar', () => {
   });
 
   it('should return error if user not authenticated', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: { user: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
         status: 401,
-      } as never,
+      },
     });
 
     const result = await removeAvatar();
@@ -172,15 +164,12 @@ describe('removeAvatar', () => {
   });
 
   it('should return success if no avatar exists', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
         user: { id: 'user-123', user_metadata: {} },
       },
       error: null,
-    } as never);
+    });
 
     const result = await removeAvatar();
 
@@ -188,10 +177,7 @@ describe('removeAvatar', () => {
   });
 
   it('should handle profile update errors', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
         user: {
           id: 'user-123',
@@ -199,16 +185,16 @@ describe('removeAvatar', () => {
         },
       },
       error: null,
-    } as never);
+    });
 
-    vi.mocked(mockClient.auth.updateUser).mockResolvedValue({
+    mockUpdateUser.mockResolvedValue({
       data: { user: null },
       error: {
         message: 'Update failed',
         name: 'AuthError',
         status: 500,
-      } as never,
-    } as never);
+      },
+    });
 
     const result = await removeAvatar();
 
@@ -222,39 +208,36 @@ describe('uploadWithRetry', () => {
   });
 
   it('should retry failed uploads', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: {
         user: { id: 'user-123', user_metadata: {} },
       },
       error: null,
-    } as never);
+    });
 
     // First two attempts fail, third succeeds
-    vi.mocked(mockClient.storage.from('avatars').upload)
+    mockUpload
       .mockResolvedValueOnce({
         data: null,
         error: new Error('Network error'),
-      } as never)
+      })
       .mockResolvedValueOnce({
         data: null,
         error: new Error('Network error'),
-      } as never)
+      })
       .mockResolvedValueOnce({
         data: { path: 'user-123/123.webp' },
         error: null,
-      } as never);
+      });
 
-    vi.mocked(mockClient.storage.from('avatars').getPublicUrl).mockReturnValue({
+    mockGetPublicUrl.mockReturnValue({
       data: { publicUrl: 'https://example.com/avatar.webp' },
-    } as never);
+    });
 
-    vi.mocked(mockClient.auth.updateUser).mockResolvedValue({
+    mockUpdateUser.mockResolvedValue({
       data: { user: { id: 'user-123' } },
       error: null,
-    } as never);
+    });
 
     const blob = new Blob(['test'], { type: 'image/webp' });
     const result = await uploadWithRetry(blob, 3);
@@ -264,16 +247,13 @@ describe('uploadWithRetry', () => {
   }, 10000); // Increase timeout for retries
 
   it('should not retry authentication errors', async () => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const mockClient = createClient();
-
-    vi.mocked(mockClient.auth.getUser).mockResolvedValue({
+    mockGetUser.mockResolvedValue({
       data: { user: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
         status: 401,
-      } as never,
+      },
     });
 
     const blob = new Blob(['test'], { type: 'image/webp' });

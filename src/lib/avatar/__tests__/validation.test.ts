@@ -119,14 +119,14 @@ describe('getStorageErrorMessage', () => {
     const error = new Error('Forbidden 403');
     const message = getStorageErrorMessage(error);
 
-    expect(message).toContain('permission');
+    expect(message).toContain('Permission denied');
   });
 
   it('should return size error for 413', () => {
     const error = new Error('Payload Too Large 413');
     const message = getStorageErrorMessage(error);
 
-    expect(message).toContain('exceeds maximum');
+    expect(message).toContain('File too large');
   });
 
   it('should return network error for fetch failures', () => {
@@ -140,7 +140,7 @@ describe('getStorageErrorMessage', () => {
     const error = new Error('Storage quota exceeded');
     const message = getStorageErrorMessage(error);
 
-    expect(message).toContain('quota');
+    expect(message).toContain('Storage limit');
   });
 
   it('should return generic message for unknown errors', () => {

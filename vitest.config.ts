@@ -37,6 +37,11 @@ export default defineConfig({
       'tests/integration/auth/protected-routes.test.ts', // 10 tests - flaky/rate limit
       'tests/integration/auth/sign-in-flow.test.ts', // 7 tests - rate limit
       'tests/integration/auth/sign-up-flow.test.ts', // 5 tests - rate limit + config
+      // Exclude avatar integration tests requiring real browser Canvas API
+      // These are covered by E2E tests in /e2e/avatar/upload.spec.ts
+      'src/lib/avatar/__tests__/image-processing.test.ts', // 6 tests - requires real Canvas
+      'src/lib/avatar/__tests__/validation.test.ts', // 7 tests - createImageBitmap dimension checks need real browser
+      'tests/integration/avatar/upload-flow.integration.test.ts', // 4 tests - requires real browser
     ],
     coverage: {
       provider: 'v8',
