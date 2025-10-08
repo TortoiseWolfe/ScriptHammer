@@ -78,7 +78,7 @@ export async function validateAvatarFile(
 
 /**
  * Get user-friendly error message for Supabase Storage errors
- * Maps storage error codes to clear, actionable messages
+ * Maps storage error codes to clear, actionable messages with helpful guidance
  *
  * @param error - Error from Supabase Storage
  * @returns User-friendly error message
@@ -88,27 +88,48 @@ export function getStorageErrorMessage(error: unknown): string {
     const message = error.message.toLowerCase();
 
     if (message.includes('unauthorized') || message.includes('401')) {
-      return 'Please sign in to upload an avatar.';
+      return 'Authentication required. Please sign in to upload an avatar.';
     }
 
     if (message.includes('forbidden') || message.includes('403')) {
-      return 'You do not have permission to perform this action.';
+      return 'Permission denied. You can only upload avatars to your own profile.';
     }
 
     if (message.includes('payload too large') || message.includes('413')) {
-      return 'File size exceeds maximum limit.';
+      return 'File too large. Please select an image smaller than 5MB.';
     }
 
-    if (message.includes('network') || message.includes('fetch')) {
-      return 'Upload failed. Please check your connection and try again.';
+    if (
+      message.includes('network') ||
+      message.includes('fetch') ||
+      message.includes('connection')
+    ) {
+      return 'Network error. Please check your internet connection and try again.';
     }
 
-    if (message.includes('quota')) {
-      return 'Storage quota exceeded. Please contact support.';
+    if (message.includes('timeout')) {
+      return 'Upload timeout. Your internet may be slow. Try a smaller image or check your connection.';
     }
 
-    return error.message;
+    if (message.includes('quota') || message.includes('storage')) {
+      return 'Storage limit reached. Please contact support or delete old avatars.';
+    }
+
+    if (message.includes('not found') || message.includes('404')) {
+      return 'Avatar not found. It may have been already deleted.';
+    }
+
+    if (message.includes('bucket')) {
+      return 'Storage configuration error. Please contact support.';
+    }
+
+    // Return original error message if it's short and readable
+    if (error.message.length < 100 && !error.message.includes('Error:')) {
+      return error.message;
+    }
+
+    return 'Upload failed. Please try again or contact support if the problem persists.';
   }
 
-  return 'An unexpected error occurred. Please try again.';
+  return 'An unexpected error occurred. Please try again later.';
 }

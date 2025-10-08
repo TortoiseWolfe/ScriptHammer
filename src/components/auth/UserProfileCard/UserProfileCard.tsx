@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 
 export interface UserProfileCardProps {
   /** Additional CSS classes */
@@ -23,17 +24,18 @@ export default function UserProfileCard({
     return null;
   }
 
+  const avatarUrl = (user.user_metadata?.avatar_url as string) || null;
+  const displayName = user.user_metadata?.username || user.email || 'User';
+
   return (
     <div className={`card bg-base-200${className ? ` ${className}` : ''}`}>
       <div className="card-body">
         <div className="flex items-center gap-4">
-          <div className="avatar placeholder">
-            <div className="bg-neutral text-neutral-content w-16 rounded-full">
-              <span className="text-xl">
-                {user.email?.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          </div>
+          <AvatarDisplay
+            avatarUrl={avatarUrl}
+            displayName={displayName}
+            size="lg"
+          />
           <div className="flex-1">
             <h3 className="card-title">
               {user.user_metadata?.username || 'User'}

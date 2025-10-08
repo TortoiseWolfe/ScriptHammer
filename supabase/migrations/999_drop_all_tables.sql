@@ -1,11 +1,28 @@
 -- =========================================
 -- Drop Script: Complete Database Reset
--- Feature: Combined Payment + Auth + Security Setup
+-- Feature: Combined Payment + Auth + Security + Avatar Setup
 -- Created: 2025-10-06
+-- Updated: 2025-10-08 (Added avatar cleanup)
 -- =========================================
 -- WARNING: This script will DELETE EVERYTHING
 -- Only run this when you want to completely reset the database
 -- =========================================
+
+-- =========================================
+-- STEP 0: Clean up storage (Feature 022: Avatar Upload)
+-- =========================================
+
+-- Drop avatar storage policies (on storage.objects)
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+
+-- Delete all files from avatars bucket
+DELETE FROM storage.objects WHERE bucket_id = 'avatars';
+
+-- Delete avatars bucket
+DELETE FROM storage.buckets WHERE id = 'avatars';
 
 -- =========================================
 -- STEP 1: Drop all tables (CASCADE handles policies/triggers)
@@ -45,6 +62,8 @@ DROP FUNCTION IF EXISTS record_failed_attempt(TEXT, TEXT, INET) CASCADE;
 -- CLEANUP COMPLETE
 -- =========================================
 -- Everything has been completely dropped:
+--   - All storage buckets and files (avatars)
+--   - All storage policies (avatar RLS)
 --   - All payment tables (with CASCADE - removes policies/triggers)
 --   - All auth tables (with CASCADE - removes policies/triggers)
 --   - All security tables (with CASCADE - removes policies/triggers)

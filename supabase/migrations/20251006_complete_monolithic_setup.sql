@@ -419,7 +419,67 @@ CREATE TRIGGER on_auth_user_created
     EXECUTE FUNCTION create_user_profile();
 
 -- ============================================================================
--- PART 6: ROW LEVEL SECURITY (RLS) POLICIES
+-- PART 6: STORAGE BUCKETS (Feature 022: Avatar Upload)
+-- ============================================================================
+
+-- Create avatars bucket for user profile pictures
+INSERT INTO storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+VALUES (
+  'avatars',
+  'avatars',
+  true,                                              -- Public read access
+  5242880,                                           -- 5MB max file size
+  ARRAY['image/jpeg', 'image/png', 'image/webp']    -- Allowed formats
+)
+ON CONFLICT (id) DO NOTHING;                         -- Idempotent
+
+-- Drop existing avatar policies (for clean re-run)
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+
+-- Avatar RLS Policy 1: INSERT - Users can upload own avatar
+CREATE POLICY "Users can upload own avatar"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Avatar RLS Policy 2: UPDATE - Users can update own avatar
+CREATE POLICY "Users can update own avatar"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Avatar RLS Policy 3: DELETE - Users can delete own avatar
+CREATE POLICY "Users can delete own avatar"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'avatars' AND
+  auth.uid()::text = (storage.foldername(name))[1]
+);
+
+-- Avatar RLS Policy 4: SELECT - Anyone can view avatars (public read)
+CREATE POLICY "Anyone can view avatars"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'avatars');
+
+-- ============================================================================
+-- PART 7: ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
 
 -- Enable RLS on all tables
@@ -597,9 +657,11 @@ WHERE email = 'test@example.com';
 --   ✅ Payment tables: payment_intents, payment_results, subscriptions, webhook_events, payment_provider_config
 --   ✅ Auth tables: user_profiles, auth_audit_logs
 --   ✅ Security tables: rate_limit_attempts, oauth_states
+--   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt
 --   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at
---   ✅ RLS policies: All tables protected with auth.uid()
+--   ✅ RLS policies: All tables + storage.objects protected with auth.uid()
+--   ✅ Avatar policies: 4 policies (user isolation + public read)
 --   ✅ Permissions: Authenticated users + service role
 --   ✅ Test user: test@example.com (primary, email confirmed)
 -- ============================================================================

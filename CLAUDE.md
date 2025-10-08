@@ -1015,3 +1015,148 @@ await logAuthEvent({
   - Integration tests: Real database (`/tests/integration/auth/rate-limiting.integration.test.ts`)
   - E2E tests: Real browser (`/e2e/auth/rate-limiting.spec.ts`)
 - All tests now fast, reliable, and properly isolated
+
+## Feature 022: User Avatar Upload (Completed 2025-10-08)
+
+Successfully implemented user avatar upload with client-side cropping, Supabase Storage integration, and mobile-first design.
+
+### Architecture
+
+- **Frontend**: react-easy-crop (v5.5.3) for image cropping with touch support
+- **Storage**: Supabase Storage with 5MB limit, public read access
+- **Image Processing**: Canvas API for WebP compression (800x800px @ 85% quality)
+- **RLS Policies**: 4 policies ensuring user isolation (upload/update/delete own, public read)
+- **UI Components**: AvatarUpload, AvatarDisplay (following 5-file pattern)
+- **Tests**: Integration tests, E2E tests, accessibility tests
+
+### Key Features
+
+- **Client-side cropping**: Interactive crop interface with zoom control
+- **WebP compression**: Automatic conversion to WebP format for optimal file size (~100KB)
+- **Initials fallback**: Automatically generates initials from username/email when no avatar
+- **Mobile-first design**: 44px touch targets, responsive layout
+- **Replace functionality**: Automatically deletes old avatar when uploading new one
+- **Remove functionality**: Users can remove avatar and revert to initials
+- **Lazy loading**: All avatars use `loading="lazy"` for performance
+- **Error handling**: User-friendly error messages with actionable guidance
+- **ARIA support**: Live regions, proper labels, keyboard navigation
+
+### Component Usage
+
+**Upload Avatar:**
+
+```typescript
+import AvatarUpload from '@/components/atomic/AvatarUpload';
+
+function MyComponent() {
+  const handleUploadComplete = (url: string) => {
+    console.log('New avatar URL:', url);
+    // Refresh user context or update state
+  };
+
+  return <AvatarUpload onUploadComplete={handleUploadComplete} />;
+}
+```
+
+**Display Avatar:**
+
+```typescript
+import AvatarDisplay from '@/components/atomic/AvatarDisplay';
+
+function UserProfile({ user }) {
+  return (
+    <AvatarDisplay
+      avatarUrl={user.user_metadata?.avatar_url}
+      displayName={user.user_metadata?.username || user.email}
+      size="lg"  // sm | md | lg | xl
+    />
+  );
+}
+```
+
+**Remove Avatar:**
+
+```typescript
+import { removeAvatar } from '@/lib/avatar/upload';
+
+async function handleRemove() {
+  const result = await removeAvatar();
+  if (result.error) {
+    console.error(result.error);
+  } else {
+    // Avatar removed successfully
+  }
+}
+```
+
+### Database Setup
+
+**Storage Bucket:**
+
+```sql
+-- Created via migration: 20251008_avatar_upload.sql
+-- Bucket: avatars (public read, 5MB max, JPEG/PNG/WebP only)
+```
+
+**RLS Policies:**
+
+- Users can upload own avatar (INSERT)
+- Users can update own avatar (UPDATE)
+- Users can delete own avatar (DELETE)
+- Anyone can view avatars (SELECT) - public read
+
+**Monolithic Setup:**
+
+All avatar configuration is included in `/supabase/migrations/20251006_complete_monolithic_setup.sql` (PART 6: STORAGE BUCKETS) for fresh setups.
+
+**Teardown:**
+
+Avatar cleanup is included in `/supabase/migrations/999_drop_all_tables.sql` (STEP 0) for complete database reset.
+
+### Integration Points
+
+**AccountSettings** (`/account`):
+
+- Full avatar management UI
+- Upload, replace, and remove functionality
+- Displays current avatar with initials fallback
+
+**GlobalNav**:
+
+- User avatar in navigation dropdown
+- Uses AvatarDisplay component for consistency
+
+**UserProfileCard**:
+
+- Profile page avatar display
+- Consistent appearance across app
+
+### File Structure
+
+```
+src/
+├── components/atomic/
+│   ├── AvatarUpload/       # Upload component with crop modal
+│   └── AvatarDisplay/      # Display component with initials fallback
+├── lib/avatar/
+│   ├── types.ts            # TypeScript interfaces
+│   ├── validation.ts       # File validation (MIME, size, dimensions)
+│   ├── image-processing.ts # Canvas API crop and WebP compression
+│   └── upload.ts           # Supabase Storage operations
+tests/integration/avatar/   # Integration tests
+e2e/avatar/                 # E2E tests
+```
+
+### Known Limitations
+
+- **Desktop Compatibility**: Works in all modern browsers supporting Canvas API and createImageBitmap
+- **File Size**: 5MB hard limit (enforced by Supabase Storage bucket)
+- **Dimensions**: Minimum 200x200px (validated client-side)
+- **Formats**: JPEG, PNG, WebP only (enforced by bucket MIME types)
+
+### Future Enhancements
+
+- Focus trap for crop modal (optional accessibility improvement)
+- Escape key to close modal
+- Retry mechanism with exponential backoff (already implemented in `uploadWithRetry()` but not yet used in UI)
+- Image quality warnings for very small/large images

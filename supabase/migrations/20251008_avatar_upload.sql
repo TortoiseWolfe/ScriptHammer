@@ -36,8 +36,14 @@ ON CONFLICT (id) DO NOTHING;  -- Idempotent
 -- PART 3: ROW LEVEL SECURITY POLICIES
 -- ============================================================================
 
+-- Drop existing policies if they exist (to make script re-runnable)
+DROP POLICY IF EXISTS "Users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+
 -- Policy: Users can upload own avatar (INSERT)
-CREATE POLICY IF NOT EXISTS "Users can upload own avatar"
+CREATE POLICY "Users can upload own avatar"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
@@ -46,7 +52,7 @@ WITH CHECK (
 );
 
 -- Policy: Users can update own avatar (UPDATE)
-CREATE POLICY IF NOT EXISTS "Users can update own avatar"
+CREATE POLICY "Users can update own avatar"
 ON storage.objects FOR UPDATE
 TO authenticated
 USING (
@@ -55,7 +61,7 @@ USING (
 );
 
 -- Policy: Users can delete own avatar (DELETE)
-CREATE POLICY IF NOT EXISTS "Users can delete own avatar"
+CREATE POLICY "Users can delete own avatar"
 ON storage.objects FOR DELETE
 TO authenticated
 USING (
@@ -64,7 +70,7 @@ USING (
 );
 
 -- Policy: Anyone can view avatars (SELECT) - Public read
-CREATE POLICY IF NOT EXISTS "Anyone can view avatars"
+CREATE POLICY "Anyone can view avatars"
 ON storage.objects FOR SELECT
 TO public
 USING (bucket_id = 'avatars');
