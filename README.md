@@ -1,188 +1,145 @@
-# Supabase CLI
+# ScriptHammer - Modern Next.js Template with PWA
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/TortoiseWolfe/ScriptHammer)
+[![Use Template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge)](https://github.com/TortoiseWolfe/ScriptHammer/generate)
+[![Stars](https://img.shields.io/github/stars/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer)
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, component gallery, and extensive testing infrastructure.
 
-This repository contains all the functionality for Supabase CLI.
+## 🚀 Live Demos
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+- **Main App**: [https://www.scripthammer.com/](https://www.scripthammer.com/)
+- **Storybook**: [https://www.scripthammer.com/storybook/](https://www.scripthammer.com/storybook/)
+- **Status Dashboard**: [https://www.scripthammer.com/status](https://www.scripthammer.com/status)
 
-## Getting started
+## ✨ Key Features
 
-### Install the CLI
+- 🎨 **32 DaisyUI Themes** - Light/dark variants with persistent selection
+- 📱 **Progressive Web App** - Installable with offline support
+- 🧩 **Component Library** - Atomic design with Storybook documentation
+- ♿ **Accessibility** - WCAG AA compliant, colorblind assistance
+- 🔒 **Privacy Compliance** - GDPR-ready cookie consent system
+- 🧪 **Testing Suite** - Comprehensive unit tests with 58% coverage, E2E test suite, accessibility testing
+- 📊 **Real-time Monitoring** - Web Vitals, Lighthouse scores, health checks
+- 🚀 **CI/CD Pipeline** - GitHub Actions with automated deployment
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+## 🛠️ Tech Stack
 
-```bash
-npm i supabase --save-dev
-```
+- **Next.js 15.5** / **React 19** / **TypeScript 5**
+- **Tailwind CSS 4** + **DaisyUI** (beta)
+- **Vitest** / **Playwright** / **Pa11y**
+- **Docker** / **GitHub Actions** / **pnpm 10.16.1**
 
-To install the beta release channel:
+## 🚀 Quick Start
 
-```bash
-npm i supabase@beta --save-dev
-```
+### Prerequisites
 
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+- Docker and Docker Compose installed
+- Git configured
 
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
+### Docker Development (MANDATORY)
 
-> **Note**
-> For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
-
-<details>
-  <summary><b>macOS</b></summary>
-
-Available via [Homebrew](https://brew.sh). To install:
-
-```sh
-brew install supabase/tap/supabase
-```
-
-To install the beta release channel:
-
-```sh
-brew install supabase/tap/supabase-beta
-brew link --overwrite supabase-beta
-```
-
-To upgrade:
-
-```sh
-brew upgrade supabase
-```
-
-</details>
-
-<details>
-  <summary><b>Windows</b></summary>
-
-Available via [Scoop](https://scoop.sh). To install:
-
-```powershell
-scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-scoop install supabase
-```
-
-To upgrade:
-
-```powershell
-scoop update supabase
-```
-
-</details>
-
-<details>
-  <summary><b>Linux</b></summary>
-
-Available via [Homebrew](https://brew.sh) and Linux packages.
-
-#### via Homebrew
-
-To install:
-
-```sh
-brew install supabase/tap/supabase
-```
-
-To upgrade:
-
-```sh
-brew upgrade supabase
-```
-
-#### via Linux packages
-
-Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
-
-```sh
-sudo apk add --allow-untrusted <...>.apk
-```
-
-```sh
-sudo dpkg -i <...>.deb
-```
-
-```sh
-sudo rpm -i <...>.rpm
-```
-
-```sh
-sudo pacman -U <...>.pkg.tar.zst
-```
-
-</details>
-
-<details>
-  <summary><b>Other Platforms</b></summary>
-
-You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
-
-```sh
-go install github.com/supabase/cli@latest
-```
-
-Add a symlink to the binary in `$PATH` for easier access:
-
-```sh
-ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-```
-
-This works on other non-standard Linux distros.
-
-</details>
-
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
-
-Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-To install in your working directory:
+This project **REQUIRES Docker** for development to ensure consistency across all environments.
 
 ```bash
-pkgx install supabase
+# 1. Use this template on GitHub (your project name is auto-detected!)
+# 2. Clone YOUR new repository
+git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME.git
+cd YOUR_PROJECT_NAME
+
+# 3. Create and configure .env file (REQUIRED)
+cp .env.example .env
+
+# Edit .env to add your services (all optional except UID/GID):
+# - Google Analytics ID
+# - EmailJS/Web3Forms credentials
+# - Calendar integration URLs
+# - Author information
+# See .env.example for all available options
+
+# 4. Start Docker development environment
+docker compose up     # Start everything (first build takes 5-10 minutes)
+
+# Development is now running at http://localhost:3000
 ```
 
-Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-
-</details>
-
-### Run the CLI
+### Common Docker Commands
 
 ```bash
-supabase bootstrap
+# Run commands inside container
+docker compose exec scripthammer pnpm run dev         # Dev server
+docker compose exec scripthammer pnpm test            # Run tests
+docker compose exec scripthammer pnpm run storybook   # Storybook
+
+# Clean restart if needed
+docker compose down
+docker compose up --build
 ```
 
-Or using npx:
+**NOTE**: Local pnpm/npm commands are NOT supported. All development MUST use Docker.
 
-```bash
-npx supabase bootstrap
-```
+## ⚙️ Auto-Configuration
 
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+The project automatically detects your repository name and owner from git remote URL at build time:
 
-## Docs
+- **Project name**: Detected from repository name
+- **Owner**: Detected from GitHub username
+- **Base path**: Configured for GitHub Pages deployment
+- **PWA manifest**: Generated with your project name
 
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+**Troubleshooting**:
 
-## Breaking changes
+- If auto-detection fails, ensure you have a git remote: `git remote -v`
+- Override with environment variables in `.env` if needed
+- Check `src/config/project-detected.ts` after build to see detected values
 
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+## 📚 Documentation
 
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+- **Developer Guide**: See [CLAUDE.md](./CLAUDE.md) for comprehensive development documentation
+- **Component Creation**: [docs/CREATING_COMPONENTS.md](./docs/CREATING_COMPONENTS.md)
+- **PRP/SpecKit Workflow**: [docs/prp-docs/SPECKIT-PRP-GUIDE.md](./docs/prp-docs/SPECKIT-PRP-GUIDE.md) - Quick reference for feature development
+- **Testing Guide**: [docs/project/TESTING.md](./docs/project/TESTING.md)
+- **Contributing**: [docs/project/CONTRIBUTING.md](./docs/project/CONTRIBUTING.md)
+- **Security**: [docs/project/SECURITY.md](./docs/project/SECURITY.md)
+- **Changelog**: [docs/project/CHANGELOG.md](./docs/project/CHANGELOG.md)
 
-## Developing
+## 🎯 Project Status
 
-To run from source:
+**Version 0.3.5** - Sprint 3.5 Complete ✅ | 12 of 14 PRPs completed
 
-```sh
-# Go >= 1.22
-go run . help
-```
+| Category      | Completed                                         | Remaining         |
+| ------------- | ------------------------------------------------- | ----------------- |
+| Foundation    | Component Structure, E2E Testing                  | PRP Methodology   |
+| Accessibility | WCAG AA, Colorblind Mode, Font Switcher           | -                 |
+| Privacy       | Cookie Consent, Google Analytics                  | -                 |
+| Forms         | Web3Forms Integration, EmailJS, PWA Sync          | -                 |
+| Features      | Calendar Integration, Geolocation Map             | Visual Regression |
+| Tech Debt     | Sprint 3.5: All 46 tasks complete (2025-09-19) ✨ | -                 |
+
+See [docs/prp-docs/PRP-STATUS.md](./docs/prp-docs/PRP-STATUS.md) for detailed progress.
+
+## 🏆 Lighthouse Scores
+
+[![WCAG 2.1 AA Compliant](https://img.shields.io/badge/WCAG%202.1-AA%20Compliant-success)](https://www.w3.org/WAI/WCAG21/quickref/)
+
+- **Performance**: 92/100
+- **Accessibility**: 98/100
+- **Best Practices**: 95/100
+- **SEO**: 100/100
+- **PWA**: 92/100
+
+## 🤝 Contributing
+
+1. Fork the repository (for contributing back to ScriptHammer)
+2. Create your feature branch (`git checkout -b feature/amazing`)
+3. Run tests in Docker (`docker compose exec scripthammer pnpm test`)
+4. Commit changes (`git commit -m 'Add feature'`)
+5. Push and open a PR
+
+## 📄 License
+
+MIT - See [LICENSE](./LICENSE) for details
+
+---
+
+**For Template Users**: Your project name is automatically detected from your new repository! No manual configuration needed. See [docs/TEMPLATE-GUIDE.md](./docs/TEMPLATE-GUIDE.md) for details.
