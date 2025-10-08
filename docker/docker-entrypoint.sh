@@ -12,12 +12,19 @@ echo "📦 Checking dependencies..."
 pnpm install --frozen-lockfile
 echo "✅ Dependencies are up-to-date"
 
-# .next directory is mounted as tmpfs - ensure proper permissions AFTER pnpm install
-echo "🔧 Setting up tmpfs .next directory..."
+# .next directory cleanup - remove if exists to prevent permission issues
+echo "🧹 Cleaning .next directory..."
+if [ -d "/app/.next" ]; then
+  rm -rf /app/.next
+  echo "  Removed existing .next directory"
+fi
+
+# Create fresh .next directory with proper permissions
+echo "🔧 Setting up fresh .next directory..."
 mkdir -p /app/.next
 chown -R node:node /app/.next
 chmod -R 755 /app/.next
-echo "✅ tmpfs .next directory configured!"
+echo "✅ Fresh .next directory configured!"
 
 # Also ensure node_modules has correct ownership
 chown -R node:node /app/node_modules 2>/dev/null || true

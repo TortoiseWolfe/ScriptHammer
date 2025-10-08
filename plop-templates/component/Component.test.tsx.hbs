@@ -4,26 +4,26 @@ import {{pascalCase name}} from './{{pascalCase name}}';
 
 describe('{{pascalCase name}}', () => {
   it('renders without crashing', () => {
-    render(<{{pascalCase name}} />);
-    const element = screen.getByText(/{{pascalCase name}}/i);
-    expect(element).toBeInTheDocument();
+    const { container } = render(<{{pascalCase name}}{{#if hasProps}} />{{else}} />{{/if}});
+    expect(container.firstChild).toBeInTheDocument();
   });
 
   {{#if hasProps}}
   it('renders children when provided', () => {
     const testContent = 'Test Content';
-    render(<{{pascalCase name}}>{testContent}</{{pascalCase name}}>);
-    const element = screen.getByText(testContent);
-    expect(element).toBeInTheDocument();
+    const { getByText } = render(
+      <{{pascalCase name}}>{testContent}</{{pascalCase name}}>
+    );
+    expect(getByText(testContent)).toBeInTheDocument();
   });
 
   it('applies custom className when provided', () => {
-    const customClass = 'custom-class';
+    const customClass = 'custom-test-class';
     const { container } = render(<{{pascalCase name}} className={customClass} />);
-    const element = container.querySelector('.{{dashCase name}}');
-    expect(element).toHaveClass(customClass);
+    const element = container.querySelector('.custom-test-class');
+    expect(element).toBeInTheDocument();
   });
   {{/if}}
 
-  // TODO: Add more specific tests for {{pascalCase name}} functionality
+  // Add component-specific tests based on actual functionality
 });

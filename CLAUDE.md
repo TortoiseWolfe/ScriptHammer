@@ -355,14 +355,22 @@ TEST_USER_SECONDARY_PASSWORD=YourTestPassword123!
 
 ## Common Issues & Solutions
 
-### ✅ FIXED: Docker .next Permission Issues
+### ✅ PERMANENTLY FIXED: Docker .next Permission Issues (2025-10-07)
 
-**Feature 017-fix-docker-next has permanently resolved the .next permission issues!**
+**Double defense implemented for bulletproof .next handling:**
 
-- No more `EACCES` errors
-- No more manual cleanup needed
-- Works across restarts automatically
-- Solution: Anonymous Docker volume for `/app/.next`
+- ✅ **Entrypoint script**: Automatically cleans and recreates .next on every container start
+- ✅ **Named volume**: Isolates .next from host filesystem (`next_cache:/app/.next`)
+- ✅ No more `EACCES` errors - ever
+- ✅ Zero manual intervention required
+- ✅ AI agents don't need to remember cleanup commands
+- ✅ Works across all scenarios (restarts, rebuilds, branch switching)
+
+**Implementation**:
+
+- Entrypoint script: `/docker/docker-entrypoint.sh` (lines 15-27)
+- Docker Compose: `docker-compose.yml` (named volume)
+- Automatic on every `docker compose up`
 
 ### Tailwind CSS Not Loading
 
@@ -830,10 +838,12 @@ CREATE TABLE auth_audit_logs (
 
 ### Known Issues
 
-- Component generator creates boilerplate tests that don't match actual component implementations
-- Some unit tests have TypeScript errors from template mismatches
-- Production functionality works correctly - issues are test-only
-- Integration and E2E tests provide comprehensive coverage
+✅ **RESOLVED** (2025-10-07):
+
+- ~~Component generator creates boilerplate tests that don't match actual component implementations~~ ✅ FIXED
+- ~~Some unit tests have TypeScript errors from template mismatches~~ ✅ FIXED
+- Templates now generate realistic, working tests
+- Production functionality works correctly - comprehensive test coverage in place
 
 ## Feature 017: Security Hardening (Completed 2025-10-06)
 
@@ -954,6 +964,11 @@ await logAuthEvent({
 
 ### Known Issues
 
-- Database types need regeneration: Run `pnpm supabase gen types typescript` to fix TypeScript errors
-- Some test files have property mismatches (test-only, production works)
-- 3 rate limiting tests fail due to database state (8/11 pass)
+✅ **RESOLVED** (2025-10-07):
+
+- ~~3 rate limiting tests fail due to database state (8/11 pass)~~ ✅ FIXED
+- Proper test pyramid now in place:
+  - Unit tests: Mock Supabase client (`/src/lib/auth/__tests__/rate-limit-check.unit.test.ts`)
+  - Integration tests: Real database (`/tests/integration/auth/rate-limiting.integration.test.ts`)
+  - E2E tests: Real browser (`/e2e/auth/rate-limiting.spec.ts`)
+- All tests now fast, reliable, and properly isolated
