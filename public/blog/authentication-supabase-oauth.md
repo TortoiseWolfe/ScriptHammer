@@ -1,5 +1,5 @@
 ---
-title: 'Supabase Authentication: OAuth & Security Guide'
+title: 'Supabase Authentication: OAuth & Security'
 author: TortoiseWolfe
 date: 2025-10-08
 slug: authentication-supabase-oauth
