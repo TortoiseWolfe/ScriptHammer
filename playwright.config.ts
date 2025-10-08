@@ -6,7 +6,7 @@ import type { TestViewport } from './src/types/mobile-first';
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-// require('dotenv').config();
+require('dotenv').config();
 
 /**
  * Convert TestViewport to Playwright device config

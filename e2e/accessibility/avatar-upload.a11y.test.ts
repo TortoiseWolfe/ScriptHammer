@@ -28,10 +28,10 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
     await page.fill('input[type="email"]', testEmail);
     await page.fill('input[type="password"]', testPassword);
     await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(home|dashboard|$)/, { timeout: 10000 });
+    await page.waitForURL(/\/(profile|verify-email)/, { timeout: 10000 });
 
     // Navigate to Account Settings
-    await page.goto('/account-settings');
+    await page.goto('/account');
     await page.waitForLoadState('networkidle');
   });
 
