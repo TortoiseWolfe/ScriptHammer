@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { validatePassword } from '@/lib/auth/password-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import AvatarDisplay from '@/components/atomic/AvatarDisplay';
+import AvatarUpload from '@/components/atomic/AvatarUpload';
+import { removeAvatar } from '@/lib/avatar/upload';
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -21,14 +24,18 @@ export default function AccountSettings({
   className = '',
 }: AccountSettingsProps) {
   const supabase = createClient();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [username, setUsername] = useState(user?.user_metadata?.username || '');
   const [bio, setBio] = useState(user?.user_metadata?.bio || '');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    (user?.user_metadata?.avatar_url as string) || null
+  );
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +128,31 @@ export default function AccountSettings({
     }
   };
 
+  const handleAvatarUploadComplete = async (url: string) => {
+    setAvatarUrl(url);
+    await refreshSession(); // Refresh to get updated user metadata
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!confirm('Are you sure you want to remove your avatar?')) {
+      return;
+    }
+
+    setError(null);
+    setRemovingAvatar(true);
+
+    const result = await removeAvatar();
+
+    setRemovingAvatar(false);
+
+    if (result.error) {
+      setError(result.error);
+    } else {
+      setAvatarUrl(null);
+      await refreshSession(); // Refresh to get updated user metadata
+    }
+  };
+
   return (
     <div className={`space-y-6${className ? ` ${className}` : ''}`}>
       {/* Profile Settings */}
@@ -162,6 +194,48 @@ export default function AccountSettings({
           </button>
         </div>
       </form>
+
+      {/* Avatar Settings */}
+      <div className="card bg-base-200">
+        <div className="card-body">
+          <h3 className="card-title">Profile Picture</h3>
+
+          {/* Current Avatar Display */}
+          <div className="mb-4 flex flex-col items-center gap-4 sm:flex-row">
+            <AvatarDisplay
+              avatarUrl={avatarUrl}
+              displayName={username || user?.email || 'User'}
+              size="xl"
+            />
+            <div className="text-sm opacity-70">
+              {avatarUrl ? (
+                <p>Your current profile picture</p>
+              ) : (
+                <p>
+                  No profile picture set. Upload one to personalize your
+                  account.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Upload Avatar */}
+          <AvatarUpload onUploadComplete={handleAvatarUploadComplete} />
+
+          {/* Remove Avatar Button */}
+          {avatarUrl && (
+            <button
+              type="button"
+              onClick={handleRemoveAvatar}
+              className="btn btn-error btn-outline min-h-11"
+              disabled={removingAvatar}
+              aria-label="Remove avatar"
+            >
+              {removingAvatar ? 'Removing...' : 'Remove Avatar'}
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Password Change */}
       <form onSubmit={handleChangePassword} className="card bg-base-200">
