@@ -8,6 +8,8 @@ import { logAuthEvent } from '@/lib/auth/audit-logger';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 import AvatarUpload from '@/components/atomic/AvatarUpload';
 import { removeAvatar } from '@/lib/avatar/upload';
+import DataExportButton from '@/components/atomic/DataExportButton';
+import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -36,6 +38,7 @@ export default function AccountSettings({
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,25 +110,12 @@ export default function AccountSettings({
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (
-      !confirm(
-        'Are you sure you want to delete your account? This cannot be undone.'
-      )
-    ) {
-      return;
-    }
+  const handleOpenDeleteModal = () => {
+    setIsDeleteModalOpen(true);
+  };
 
-    setError(null);
-    setLoading(true);
-
-    const { error: deleteError } = await supabase.rpc('delete_user');
-
-    setLoading(false);
-
-    if (deleteError) {
-      setError(deleteError.message);
-    }
+  const handleCloseDeleteModal = () => {
+    setIsDeleteModalOpen(false);
   };
 
   const handleAvatarUploadComplete = async (url: string) => {
@@ -277,22 +267,49 @@ export default function AccountSettings({
         </div>
       </form>
 
-      {/* Delete Account */}
+      {/* Privacy & Data (GDPR Section) - Task T188 */}
       <div className="card bg-base-200">
         <div className="card-body">
-          <h3 className="card-title text-error">Danger Zone</h3>
+          <h3 className="card-title">Privacy & Data</h3>
           <p className="text-sm opacity-70">
-            Once you delete your account, there is no going back.
+            Manage your personal data in compliance with GDPR regulations.
           </p>
-          <button
-            onClick={handleDeleteAccount}
-            className="btn btn-error min-h-11"
-            disabled={loading}
-          >
-            Delete Account
-          </button>
+
+          {/* Data Export Subsection */}
+          <div className="divider"></div>
+          <div className="space-y-3">
+            <h4 className="font-semibold">Data Export</h4>
+            <p className="text-sm opacity-70">
+              Download all your data including messages (decrypted),
+              connections, and profile information in JSON format.
+            </p>
+            <DataExportButton />
+          </div>
+
+          {/* Account Deletion Subsection */}
+          <div className="divider"></div>
+          <div className="space-y-3">
+            <h4 className="text-error font-semibold">Account Deletion</h4>
+            <p className="text-sm opacity-70">
+              Permanently delete your account and all associated data. This
+              action cannot be undone.
+            </p>
+            <button
+              onClick={handleOpenDeleteModal}
+              className="btn btn-error min-h-11"
+              disabled={loading}
+            >
+              Delete Account
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Account Deletion Modal */}
+      <AccountDeletionModal
+        isOpen={isDeleteModalOpen}
+        onClose={handleCloseDeleteModal}
+      />
 
       {error && (
         <div className="alert alert-error">

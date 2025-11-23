@@ -52,23 +52,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Fallback timeout - prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth loading timeout - forcing isLoading to false');
       setIsLoading(false);
-    });
+    }, 5000);
+
+    // Get initial session
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        clearTimeout(loadingTimeout);
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        clearTimeout(loadingTimeout);
+        console.error('Failed to get session:', error);
+        setIsLoading(false);
+      });
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+
+      // Auto-generate encryption keys on first login
+      if (session?.user && _event === 'SIGNED_IN') {
+        try {
+          const { keyManagementService } = await import(
+            '@/services/messaging/key-service'
+          );
+          const hasKeys = await keyManagementService.hasValidKeys();
+          if (!hasKeys) {
+            console.log('Initializing encryption keys...');
+            await keyManagementService.initializeKeys();
+            console.log('Encryption keys initialized successfully');
+          }
+        } catch (error) {
+          console.error('Failed to initialize encryption keys:', error);
+          // Don't break auth flow if key generation fails
+        }
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string) => {

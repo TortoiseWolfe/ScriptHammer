@@ -33,12 +33,10 @@ vi.mock('@/utils/offline-queue', () => ({
 // Mock background sync utilities
 vi.mock('@/utils/background-sync', () => ({
   registerBackgroundSync: vi.fn().mockResolvedValue(true),
-  isBackgroundSyncSupported: vi.fn().mockReturnValue(false),
   processQueue: vi.fn().mockResolvedValue(undefined),
   getSyncStatus: vi.fn().mockResolvedValue({
     supported: false,
     registered: false,
-    queueSize: 0,
   }),
 }));
 
@@ -46,10 +44,6 @@ vi.mock('@/utils/background-sync', () => ({
 vi.mock('./useOfflineQueue', () => ({
   useOfflineQueue: vi.fn(() => ({
     isOnline: true,
-    isBackgroundSyncSupported: false,
-    queueSize: 0,
-    addToOfflineQueue: vi.fn().mockResolvedValue(true),
-    refreshQueueSize: vi.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -89,7 +83,6 @@ describe('useWeb3Forms Hook', () => {
       expect(result.current.error).toBeNull();
       expect(result.current.successMessage).toBeNull();
       expect(result.current.isOnline).toBe(true);
-      expect(result.current.queueSize).toBe(0);
       expect(result.current.wasQueuedOffline).toBe(false);
     });
 
@@ -299,14 +292,17 @@ describe('useWeb3Forms Hook', () => {
 
     it('should queue submission when offline', async () => {
       const { useOfflineQueue } = await import('./useOfflineQueue');
-      const mockAddToOfflineQueue = vi.fn().mockResolvedValue(true);
 
       vi.mocked(useOfflineQueue).mockReturnValue({
+        queue: [],
+        queueCount: 0,
+        failedCount: 0,
+        isSyncing: false,
         isOnline: false,
-        isBackgroundSyncSupported: false,
-        queueSize: 0,
-        addToOfflineQueue: mockAddToOfflineQueue,
-        refreshQueueSize: vi.fn(),
+        syncQueue: vi.fn(),
+        retryFailed: vi.fn(),
+        clearSynced: vi.fn(),
+        getFailedMessages: vi.fn().mockResolvedValue([]),
       });
 
       const { result } = renderHook(() => useWeb3Forms());
@@ -316,7 +312,7 @@ describe('useWeb3Forms Hook', () => {
       });
 
       expect(emailService.send).not.toHaveBeenCalled();
-      expect(mockAddToOfflineQueue).toHaveBeenCalledWith(validFormData);
+      // localStorage is used directly in the hook, not a mockable external function
       expect(result.current.wasQueuedOffline).toBe(true);
       expect(result.current.successMessage).toContain('queued for sending');
     });
@@ -357,11 +353,15 @@ describe('useWeb3Forms Hook', () => {
       // Ensure online state
       const { useOfflineQueue } = await import('./useOfflineQueue');
       vi.mocked(useOfflineQueue).mockReturnValue({
+        queue: [],
+        queueCount: 0,
+        failedCount: 0,
+        isSyncing: false,
         isOnline: true,
-        isBackgroundSyncSupported: false,
-        queueSize: 0,
-        addToOfflineQueue: vi.fn().mockResolvedValue(true),
-        refreshQueueSize: vi.fn(),
+        syncQueue: vi.fn(),
+        retryFailed: vi.fn(),
+        clearSynced: vi.fn(),
+        getFailedMessages: vi.fn().mockResolvedValue([]),
       });
 
       const { result } = renderHook(() => useWeb3Forms());

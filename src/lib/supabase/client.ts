@@ -72,9 +72,25 @@ export function getSupabase(): SupabaseClient<Database> {
   return createClient();
 }
 
-// Singleton export for all components to use
-// This is safe now because createClient() handles SSR/build gracefully
-export const supabase = createClient();
+/**
+ * Lazy singleton getter - only creates client when accessed in browser
+ * This prevents SSR issues while maintaining backwards compatibility
+ */
+function getSupabaseInstance() {
+  if (typeof window === 'undefined') {
+    throw new Error('Supabase client can only be used in browser context');
+  }
+  return createClient();
+}
+
+// Export singleton using a getter to ensure lazy initialization
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get: (target, prop) => {
+    const instance = getSupabaseInstance();
+    const value = instance[prop as keyof typeof instance];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});
 
 /**
  * Helper: Check if Supabase is accessible
@@ -82,7 +98,8 @@ export const supabase = createClient();
  */
 export async function isSupabaseOnline(): Promise<boolean> {
   try {
-    const { error } = await supabase
+    const client = createClient();
+    const { error } = await client
       .from('payment_intents')
       .select('id')
       .limit(1);

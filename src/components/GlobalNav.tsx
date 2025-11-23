@@ -9,6 +9,7 @@ import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { useAuth } from '@/contexts/AuthContext';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
+import { useUnreadCount } from '@/hooks/useUnreadCount';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -18,6 +19,7 @@ interface BeforeInstallPromptEvent extends Event {
 export function GlobalNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const unreadCount = useUnreadCount();
   const [theme, setTheme] = useState<string>('');
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -180,6 +182,35 @@ export function GlobalNav() {
 
           {/* Right Section: Auth, Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
           <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
+            {/* Messages Icon (authenticated users only) */}
+            {user && (
+              <Link
+                href="/conversations"
+                className="btn btn-ghost btn-circle indicator min-h-11 min-w-11"
+                title="Messages"
+              >
+                {unreadCount > 0 && (
+                  <span className="indicator-item badge badge-primary badge-sm">
+                    {unreadCount}
+                  </span>
+                )}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                  />
+                </svg>
+              </Link>
+            )}
+
             {/* Auth Buttons */}
             {user ? (
               <div className="dropdown dropdown-end">
@@ -209,6 +240,22 @@ export function GlobalNav() {
                   </li>
                   <li>
                     <Link href="/account">Account Settings</Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/conversations"
+                      className="flex items-center justify-between"
+                    >
+                      <span>Messages</span>
+                      {unreadCount > 0 && (
+                        <span className="badge badge-primary badge-sm">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/messages/connections">Connections</Link>
                   </li>
                   <li>
                     <button
@@ -292,6 +339,22 @@ export function GlobalNav() {
                     </li>
                     <li>
                       <Link href="/account">Settings</Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/conversations"
+                        className="flex items-center justify-between"
+                      >
+                        <span>Messages</span>
+                        {unreadCount > 0 && (
+                          <span className="badge badge-primary badge-sm">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link href="/messages/connections">Connections</Link>
                     </li>
                     <li>
                       <button

@@ -62,6 +62,48 @@ docker compose exec scripthammer pnpm run storybook      # Start Storybook
 docker compose exec scripthammer pnpm run docker:clean   # Clean start if issues
 ```
 
+### Supabase Keep-Alive (Automatic)
+
+**⚠️ IMPORTANT**: This project uses Supabase Cloud (free tier), which auto-pauses after **7 days of inactivity**.
+
+**Automatic Keep-Alive**: A GitHub Actions workflow runs **every 6 days** to prevent auto-pause.
+
+- Workflow: `.github/workflows/supabase-keepalive.yml`
+- Schedule: 3:00 AM UTC every 6 days
+- Requires: GitHub secrets (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY)
+- Manual trigger: Actions tab → "Supabase Keep-Alive" → "Run workflow"
+
+**If Instance Is Paused** (first request after 7+ days):
+
+```bash
+# Prime manually to wake it up:
+docker compose exec scripthammer pnpm run prime
+
+# Expected output if paused:
+# 🔄 Priming Supabase cloud instance...
+#    URL: https://vswxgxbjodpgwfgsjrhq.supabase.co
+# ✅ Supabase ready (15234ms - instance was paused, now awake)
+#    Subsequent requests should be fast (<500ms)
+
+# Expected output if active:
+# ✅ Supabase ready (11ms - instance was already active)
+```
+
+**Symptoms of Paused Instance**:
+
+- First database request takes 10-30 seconds (or times out)
+- DNS resolution fails (NXDOMAIN) - domain temporarily inactive
+- Tests fail with "fetch failed" or "ENOTFOUND" errors
+- Dev server may fail to load user data
+
+**Recovery**:
+
+1. Run `docker compose exec scripthammer pnpm run prime` (waits up to 30 seconds)
+2. Instance wakes up and hostname becomes active
+3. All subsequent requests work normally
+
+**Production Alternative**: Upgrade to Supabase Pro ($25/mo) to eliminate auto-pause behavior.
+
 ### Component Generator
 
 **Interactive mode** (recommended for learning):
@@ -422,6 +464,20 @@ If CSS styles aren't appearing:
 1. Ensure Leaflet CSS import is NOT in `globals.css` (causes build issues)
 2. Import Leaflet CSS only in map components that use it
 3. Restart Docker container after CSS changes
+
+### Slow Supabase Requests (10-30 seconds)
+
+**Symptom**: First database request takes 10-30 seconds, then subsequent requests are fast.
+
+**Cause**: Supabase Cloud free tier auto-pauses after 1 week of inactivity.
+
+**Solution**: Run the priming command
+
+```bash
+docker compose exec scripthammer pnpm run prime
+```
+
+**Details**: See the "Supabase Priming (After Inactivity)" section above for full explanation.
 
 ### Webpack Cache Corruption (Rare)
 
@@ -1160,3 +1216,233 @@ e2e/avatar/                 # E2E tests
 - Escape key to close modal
 - Retry mechanism with exponential backoff (already implemented in `uploadWithRetry()` but not yet used in UI)
 - Image quality warnings for very small/large images
+
+## PRP-023: User Messaging System (Completed 2025-11-22)
+
+Successfully implemented end-to-end encrypted messaging with zero-knowledge architecture, friend requests, and real-time delivery.
+
+### Architecture
+
+- **Encryption**: ECDH P-256 key exchange + AES-GCM-256 symmetric encryption
+- **Key Management**: Lazy generation, IndexedDB storage for private keys
+- **Backend**: Supabase (PostgreSQL + Realtime + RLS policies)
+- **Offline Support**: IndexedDB queue with automatic sync on reconnection
+- **Real-time**: Supabase Realtime (sub-500ms message delivery)
+- **Libraries**: Dexie.js 4.0.10 (IndexedDB wrapper), Web Crypto API
+- **Tests**: Integration tests, E2E tests (Playwright), comprehensive unit tests
+
+### Key Features
+
+- **Zero-Knowledge Encryption**: End-to-end encryption with Web Crypto API
+  - ECDH P-256 for key exchange
+  - AES-GCM-256 for message encryption
+  - Server only stores ciphertext (cannot read messages)
+- **Friend Requests**: User discovery and connection management
+- **Real-time Messaging**: Sub-500ms message delivery via Supabase Realtime
+- **Delivery Status Indicators**: Sent (✓), Delivered (✓✓), Read (✓✓ blue)
+- **Message Pagination**: Cursor-based pagination (50 messages per page)
+- **Conversation List**: Full-featured conversation management
+  - Search by participant name (debounced 300ms)
+  - Filter: All, Unread, Archived
+  - Sort: Recent, Alphabetical, Unread First
+  - Unread count badges
+  - Last message preview (50 chars max)
+  - Relative timestamps ("2m ago", "Yesterday", etc.)
+- **Mobile-First Responsive**: Adaptive layout (full-screen mobile, split-pane tablet+)
+- **GDPR Compliance**: Zero-knowledge architecture ensures privacy
+
+### Common Tasks
+
+**Send encrypted message:**
+
+```typescript
+import { messageService } from '@/services/messaging/message-service';
+
+const result = await messageService.sendMessage({
+  conversation_id: 'uuid-here',
+  content: 'Hello, world!', // Plaintext (auto-encrypted)
+});
+```
+
+**Fetch message history:**
+
+```typescript
+const history = await messageService.getMessageHistory(
+  'conversation-id',
+  null, // cursor (null for latest)
+  50 // limit
+);
+
+// All messages are automatically decrypted
+history.messages.forEach((msg) => {
+  console.log(msg.content); // Decrypted plaintext
+});
+```
+
+**Send friend request:**
+
+```typescript
+import { connectionService } from '@/services/messaging/connection-service';
+
+await connectionService.sendFriendRequest({
+  addressee_id: 'user-uuid-here',
+});
+```
+
+**Use connections hook in components:**
+
+```typescript
+import { useConnections } from '@/hooks/useConnections';
+
+function MyComponent() {
+  const { connections, loading, acceptRequest, declineRequest } = useConnections();
+
+  return (
+    <div>
+      {connections.pending_received.map(req => (
+        <div key={req.connection.id}>
+          <p>{req.requester.username} sent you a request</p>
+          <button onClick={() => acceptRequest(req.connection.id)}>Accept</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Database Setup
+
+**Tables**: All messaging tables are included in `/supabase/migrations/20251006_complete_monolithic_setup.sql` (PART 9: USER MESSAGING SYSTEM)
+
+**Tables created:**
+
+- `user_connections` - Friend requests with status (pending/accepted/blocked)
+- `conversations` - 1-to-1 chat metadata
+- `messages` - Encrypted message storage (ciphertext + IV only)
+- `user_encryption_keys` - Public keys (JWK format)
+- `conversation_keys` - Encrypted shared secrets (future use)
+- `typing_indicators` - Real-time typing status
+
+**RLS Policies:**
+
+- Users can only view own connections/conversations/messages
+- Public keys are publicly readable (required for encryption)
+- Strict user isolation enforced at database level
+
+**IndexedDB Stores** (client-side):
+
+- `messaging_private_keys` - Private encryption keys (never sent to server)
+- `messaging_queued_messages` - Offline message queue
+- `messaging_cached_messages` - Local message cache for offline viewing
+
+### Encryption Flow
+
+**First message send** (1-2 second delay on initial setup):
+
+1. Check IndexedDB for private key → not found
+2. Generate ECDH P-256 key pair (computationally expensive)
+3. Store private key in IndexedDB (client-side only)
+4. Upload public key to Supabase (`user_encryption_keys` table)
+5. Fetch recipient's public key from Supabase
+6. Derive shared secret: ECDH(sender private, recipient public)
+7. Generate random 96-bit IV
+8. Encrypt message: AES-GCM-256(plaintext, shared secret, IV)
+9. Store ciphertext + IV in `messages` table
+
+**Subsequent messages** (instant):
+
+1. Retrieve private key from IndexedDB (cached)
+2. Fetch recipient's public key (cached)
+3. Derive shared secret (reused if already derived)
+4. Generate new random IV for each message
+5. Encrypt message with AES-GCM-256
+6. Store ciphertext + IV
+
+### Important Files
+
+**Services:**
+
+- `/src/services/messaging/connection-service.ts` - Friend request management
+- `/src/services/messaging/message-service.ts` - Send/receive encrypted messages
+- `/src/services/messaging/key-service.ts` - Encryption key lifecycle management
+
+**Encryption:**
+
+- `/src/lib/messaging/encryption.ts` - Web Crypto API wrapper (ECDH + AES-GCM)
+- `/src/lib/messaging/database.ts` - Dexie.js IndexedDB schema
+- `/src/lib/messaging/validation.ts` - Input validation and sanitization
+
+**Hooks:**
+
+- `/src/hooks/useConnections.ts` - Connection management hook
+- `/src/hooks/useUnreadCount.ts` - Unread message counter
+
+**Components:**
+
+- `/src/components/organisms/ChatWindow/` - Main chat interface
+- `/src/components/organisms/ConversationList/` - Conversation list with search/filter/sort
+- `/src/components/molecular/MessageThread/` - Message list with virtual scrolling
+- `/src/components/molecular/ConversationListItem/` - Individual conversation preview
+- `/src/components/atomic/MessageBubble/` - Individual message with delivery status
+- `/src/components/atomic/MessageInput/` - Message input with character count
+
+**Types:**
+
+- `/src/types/messaging.ts` - Complete TypeScript definitions
+
+**Database:**
+
+- `/supabase/migrations/20251006_complete_monolithic_setup.sql` - PART 9 (messaging tables)
+- `/supabase/migrations/999_drop_all_tables.sql` - Cleanup (includes messaging teardown)
+
+**Tests:**
+
+- `/tests/integration/messaging/` - Integration tests with real Supabase
+- `/e2e/messaging/` - E2E tests (Playwright) - friend requests, encrypted messaging
+- `/src/lib/messaging/__tests__/encryption.test.ts` - Encryption service unit tests
+
+### Troubleshooting
+
+**"Setting up encryption..." takes 1-2 seconds:**
+
+- **Normal behavior** on first message send
+- Key generation is computationally expensive (ECDH P-256)
+- Subsequent messages are instant (keys cached in IndexedDB)
+
+**"This person needs to sign in before you can message them":**
+
+- Recipient hasn't logged in yet and has no encryption keys
+- They must sign in at least once to generate encryption keys
+- Message can be sent after recipient initializes their keys
+
+**Supabase RLS policy errors:**
+
+- Verify user is authenticated (`auth.uid()` must be set)
+- Check connection exists (can't message users you're not connected to)
+- Test RLS policies in Supabase dashboard SQL editor
+
+**"Your encryption keys failed to initialize":**
+
+- Browser storage issue (IndexedDB quota exceeded or blocked)
+- Try in incognito mode to test
+- Check browser console for IndexedDB errors
+
+### Known Limitations
+
+- **Device-specific keys**: Private keys stored in browser IndexedDB (no multi-device sync)
+- **Message history loss**: Clearing browser data = lost decryption keys
+- **No message recovery**: Zero-knowledge means server cannot recover lost keys
+- **Browser compatibility**: Requires Web Crypto API (all modern browsers, HTTPS required in production)
+- **Perfect forward secrecy**: NOT implemented (same key pair for all conversations)
+
+### Security Considerations
+
+- **Zero-knowledge architecture**: Server cannot decrypt messages (only stores ciphertext)
+- **End-to-end encryption**: Only sender and recipient can read messages
+- **Private keys never leave device**: Stored exclusively in browser IndexedDB
+- **Public key distribution**: Server acts as trusted key directory
+- **Key rotation**: Implemented via `keyManagementService.rotateKeys()` but not automated
+
+### Developer Guide
+
+For detailed developer documentation, see `/docs/messaging/QUICKSTART.md`

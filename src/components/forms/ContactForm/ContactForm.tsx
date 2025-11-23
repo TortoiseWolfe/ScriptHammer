@@ -46,7 +46,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     successMessage,
     reset: resetSubmission,
     isOnline,
-    queueSize,
+    queueCount,
     wasQueuedOffline,
   } = useWeb3Forms({
     onSuccess,
@@ -98,15 +98,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             <div className="font-semibold">You are currently offline</div>
             <div className="text-sm">
               Your message will be sent when connection is restored
-              {queueSize > 0 &&
-                ` (${queueSize} message${queueSize > 1 ? 's' : ''} queued)`}
+              {queueCount > 0 &&
+                ` (${queueCount} message${queueCount > 1 ? 's' : ''} queued)`}
             </div>
           </div>
         </div>
       )}
 
       {/* Queued Messages Indicator */}
-      {isOnline && queueSize > 0 && (
+      {isOnline && queueCount > 0 && (
         <div className="alert alert-info mb-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -122,7 +122,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             />
           </svg>
           <span>
-            {queueSize} queued message{queueSize > 1 ? 's' : ''} will be sent
+            {queueCount} queued message{queueCount > 1 ? 's' : ''} will be sent
             automatically
           </span>
         </div>

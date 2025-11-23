@@ -10,6 +10,8 @@ import {
   type Web3FormsResponse,
 } from '@/schemas/contact.schema';
 import { useOfflineQueue } from './useOfflineQueue';
+import { addToQueue, getQueueSize } from '@/utils/offline-queue';
+import { registerBackgroundSync } from '@/utils/background-sync';
 
 /**
  * Hook configuration options
@@ -35,7 +37,7 @@ export interface UseWeb3FormsReturn {
   error: string | null;
   successMessage: string | null;
   isOnline: boolean;
-  queueSize: number;
+  queueCount: number;
   wasQueuedOffline: boolean;
 }
 
@@ -61,16 +63,43 @@ export const useWeb3Forms = (
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [wasQueuedOffline, setWasQueuedOffline] = useState(false);
 
-  // Offline queue management
-  const { isOnline, queueSize, addToOfflineQueue } = useOfflineQueue({
-    onOnline: () => {
-      // Could trigger sync here if needed
-      console.log('[Web3Forms] Connection restored');
-    },
-    onOffline: () => {
-      console.log('[Web3Forms] Connection lost - will queue submissions');
-    },
-  });
+  // Use offline queue hook for network status
+  const { isOnline, queueCount: messagingQueueCount } = useOfflineQueue();
+
+  // Forms-specific offline queue using IndexedDB
+  const [formsQueueCount, setFormsQueueCount] = useState(0);
+
+  // Load initial queue size
+  useEffect(() => {
+    const loadQueueSize = async () => {
+      const size = await getQueueSize();
+      setFormsQueueCount(size);
+    };
+    loadQueueSize();
+  }, []);
+
+  const queueCount = formsQueueCount + messagingQueueCount;
+
+  const addToOfflineQueue = async (
+    data: ContactFormData
+  ): Promise<{ id: string; queued: boolean }> => {
+    try {
+      const success = await addToQueue(data);
+      if (success) {
+        const newSize = await getQueueSize();
+        setFormsQueueCount(newSize);
+
+        // Register background sync to process when online
+        await registerBackgroundSync();
+
+        return { id: `form-${Date.now()}`, queued: true };
+      }
+      return { id: '', queued: false };
+    } catch (error) {
+      console.error('[Web3Forms] Failed to queue offline:', error);
+      return { id: '', queued: false };
+    }
+  };
 
   // Ref to track timeout
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,9 +168,9 @@ export const useWeb3Forms = (
           console.log('[Web3Forms] Offline - queuing submission');
 
           // Add to offline queue
-          const queued = await addToOfflineQueue(data);
+          const result = await addToOfflineQueue(data);
 
-          if (queued) {
+          if (result.queued) {
             setIsSuccess(true);
             setWasQueuedOffline(true);
             setSuccessMessage(
@@ -248,7 +277,7 @@ export const useWeb3Forms = (
     error,
     successMessage,
     isOnline,
-    queueSize,
+    queueCount,
     wasQueuedOffline,
   };
 };

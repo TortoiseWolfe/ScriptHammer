@@ -58,13 +58,29 @@ describe('User Profile GET Contract', () => {
     expect(data?.username).toBeDefined(); // Static test user has username already set
   });
 
-  it('should enforce RLS - users can only view own profile', async () => {
-    // Try to query all profiles (should only return current user's)
+  it('should allow viewing all profiles for friend search (Feature 023)', async () => {
+    // Query all profiles - Feature 023 requires this for friend search functionality
     const { data, error } = await supabase.from('user_profiles').select('*');
 
     expect(error).toBeNull();
-    expect(data).toHaveLength(1);
-    expect(data?.[0].id).toBe(testUserId);
+    expect(data).toBeDefined();
+    expect(Array.isArray(data)).toBe(true);
+
+    // Should return at least the current user's profile
+    expect(data!.length).toBeGreaterThanOrEqual(1);
+
+    // Current user's profile should be included
+    const ownProfile = data!.find((profile) => profile.id === testUserId);
+    expect(ownProfile).toBeDefined();
+    expect(ownProfile?.id).toBe(testUserId);
+
+    // All profiles should have required structure
+    data!.forEach((profile) => {
+      expect(profile).toHaveProperty('id');
+      expect(profile).toHaveProperty('username');
+      expect(profile).toHaveProperty('display_name');
+      expect(profile).toHaveProperty('avatar_url');
+    });
   });
 
   it('should return null for non-existent profile', async () => {
@@ -76,7 +92,7 @@ describe('User Profile GET Contract', () => {
       .eq('id', fakeId)
       .single();
 
-    // RLS blocks access to other profiles
+    // Returns null because profile doesn't exist (not because of RLS)
     expect(data).toBeNull();
   });
 });

@@ -1,130 +1,195 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { addToQueue, getQueueSize } from '@/utils/offline-queue';
-import {
-  registerBackgroundSync,
-  isBackgroundSyncSupported as checkBackgroundSyncSupport,
-} from '@/utils/background-sync';
+/**
+ * useOfflineQueue Hook
+ * Tasks: T158-T161
+ *
+ * Provides offline message queue management with automatic sync:
+ * - Monitor queue count
+ * - Trigger sync on 'online' event
+ * - Show queue processing status
+ * - Manual retry for failed messages
+ */
 
-export interface UseOfflineQueueOptions {
-  onQueueAdd?: (data: Record<string, unknown>) => void;
-  onOnline?: () => void;
-  onOffline?: () => void;
-}
+import { useState, useEffect, useCallback } from 'react';
+import { offlineQueueService } from '@/services/messaging/offline-queue-service';
+import type { QueuedMessage } from '@/types/messaging';
 
 export interface UseOfflineQueueReturn {
+  /** Queued messages (unsynced) */
+  queue: QueuedMessage[];
+  /** Number of queued messages */
+  queueCount: number;
+  /** Number of failed messages */
+  failedCount: number;
+  /** Whether queue is currently syncing */
+  isSyncing: boolean;
+  /** Whether user is online */
   isOnline: boolean;
-  isBackgroundSyncSupported: boolean;
-  queueSize: number;
-  addToOfflineQueue: (data: Record<string, unknown>) => Promise<boolean>;
-  refreshQueueSize: () => Promise<void>;
+  /** Manually trigger queue sync */
+  syncQueue: () => Promise<void>;
+  /** Retry all failed messages */
+  retryFailed: () => Promise<void>;
+  /** Clear all synced messages */
+  clearSynced: () => Promise<void>;
+  /** Get all failed messages */
+  getFailedMessages: () => Promise<QueuedMessage[]>;
 }
 
 /**
- * Hook for managing offline queue and network status
+ * Hook for managing offline message queue
+ *
+ * Features:
+ * - Automatic sync on reconnection (online event)
+ * - Queue count tracking
+ * - Manual sync and retry
+ * - Network status monitoring
+ *
+ * @returns UseOfflineQueueReturn - Queue state and control functions
+ *
+ * @example
+ * ```typescript
+ * function ChatWindow() {
+ *   const { queueCount, isSyncing, syncQueue, isOnline } = useOfflineQueue();
+ *
+ *   return (
+ *     <div>
+ *       {!isOnline && <p>Offline mode - messages will sync when online</p>}
+ *       {queueCount > 0 && <p>{queueCount} messages queued</p>}
+ *       {isSyncing && <p>Syncing messages...</p>}
+ *       <button onClick={syncQueue}>Retry Now</button>
+ *     </div>
+ *   );
+ * }
+ * ```
  */
-export function useOfflineQueue(
-  options: UseOfflineQueueOptions = {}
-): UseOfflineQueueReturn {
-  const { onQueueAdd, onOnline, onOffline } = options;
-
+export function useOfflineQueue(): UseOfflineQueueReturn {
+  const [queue, setQueue] = useState<QueuedMessage[]>([]);
+  const [queueCount, setQueueCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(
-    typeof window !== 'undefined' ? navigator.onLine : true
-  );
-  const [queueSize, setQueueSize] = useState(0);
-  const [isBackgroundSyncSupported] = useState(() =>
-    typeof window !== 'undefined' ? checkBackgroundSyncSupport() : false
+    typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
-  // Refresh queue size
-  const refreshQueueSize = useCallback(async () => {
+  // Load queue data
+  const loadQueue = useCallback(async () => {
     try {
-      const size = await getQueueSize();
-      setQueueSize(size);
+      const queuedMessages = await offlineQueueService.getQueue();
+      const failedMessages = await offlineQueueService.getFailedMessages();
+
+      setQueue(queuedMessages);
+      setQueueCount(queuedMessages.length);
+      setFailedCount(failedMessages.length);
     } catch (error) {
-      console.error('Error getting queue size:', error);
+      console.error('Failed to load offline queue:', error);
     }
   }, []);
 
-  // Add to offline queue
-  const addToOfflineQueue = useCallback(
-    async (data: Record<string, unknown>): Promise<boolean> => {
-      try {
-        const success = await addToQueue(data);
+  // Sync queue with server
+  const syncQueue = useCallback(async () => {
+    if (!navigator.onLine || isSyncing) {
+      return;
+    }
 
-        if (success) {
-          await refreshQueueSize();
+    setIsSyncing(true);
 
-          // Register for background sync if supported
-          if (isBackgroundSyncSupported) {
-            await registerBackgroundSync();
-          }
+    try {
+      const result = await offlineQueueService.syncQueue();
+      console.log(
+        `Sync complete: ${result.success} successful, ${result.failed} failed`
+      );
 
-          onQueueAdd?.(data);
-        }
+      // Reload queue to reflect changes
+      await loadQueue();
+    } catch (error) {
+      console.error('Failed to sync queue:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [isSyncing, loadQueue]);
 
-        return success;
-      } catch (error) {
-        console.error('Error adding to offline queue:', error);
-        return false;
-      }
-    },
-    [isBackgroundSyncSupported, onQueueAdd, refreshQueueSize]
-  );
+  // Retry all failed messages
+  const retryFailed = useCallback(async () => {
+    try {
+      const count = await offlineQueueService.retryFailed();
+      console.log(`Reset ${count} failed messages for retry`);
 
-  // Handle online/offline events
+      // Reload queue
+      await loadQueue();
+
+      // Trigger sync
+      await syncQueue();
+    } catch (error) {
+      console.error('Failed to retry messages:', error);
+    }
+  }, [loadQueue, syncQueue]);
+
+  // Clear synced messages
+  const clearSynced = useCallback(async () => {
+    try {
+      const count = await offlineQueueService.clearSyncedMessages();
+      console.log(`Cleared ${count} synced messages`);
+
+      await loadQueue();
+    } catch (error) {
+      console.error('Failed to clear synced messages:', error);
+    }
+  }, [loadQueue]);
+
+  // Get failed messages
+  const getFailedMessages = useCallback(async () => {
+    return await offlineQueueService.getFailedMessages();
+  }, []);
+
+  // Handle online event - automatic sync
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     const handleOnline = () => {
+      console.log('Network online - triggering queue sync');
       setIsOnline(true);
-      refreshQueueSize();
-      onOnline?.();
-
-      // Register background sync when coming online
-      if (isBackgroundSyncSupported) {
-        registerBackgroundSync();
-      }
+      syncQueue();
     };
 
     const handleOffline = () => {
+      console.log('Network offline');
       setIsOnline(false);
-      onOffline?.();
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Listen for background sync completion messages from Service Worker
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'BACKGROUND_SYNC_COMPLETE') {
-        refreshQueueSize();
-      }
-    };
-
-    if ('serviceWorker' in navigator && navigator.serviceWorker) {
-      navigator.serviceWorker.addEventListener('message', handleMessage);
-    }
-
-    // Initial queue size check
-    refreshQueueSize();
-
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-
-      if ('serviceWorker' in navigator && navigator.serviceWorker) {
-        navigator.serviceWorker.removeEventListener('message', handleMessage);
-      }
     };
-  }, [isBackgroundSyncSupported, onOnline, onOffline, refreshQueueSize]);
+  }, [syncQueue]);
+
+  // Load queue on mount and set up polling
+  useEffect(() => {
+    loadQueue();
+
+    // Poll queue every 30 seconds to keep count updated
+    const interval = setInterval(loadQueue, 30000);
+
+    return () => clearInterval(interval);
+  }, [loadQueue]);
+
+  // Trigger sync on mount if online and queue has items
+  useEffect(() => {
+    if (isOnline && queueCount > 0 && !isSyncing) {
+      syncQueue();
+    }
+  }, []); // Only run once on mount
 
   return {
+    queue,
+    queueCount,
+    failedCount,
+    isSyncing,
     isOnline,
-    isBackgroundSyncSupported,
-    queueSize,
-    addToOfflineQueue,
-    refreshQueueSize,
+    syncQueue,
+    retryFailed,
+    clearSynced,
+    getFailedMessages,
   };
 }

@@ -1,0 +1,43 @@
+name: Supabase Keep-Alive
+
+# Runs every 6 days to prevent Supabase Cloud free tier from auto-pausing (pauses after 7 days)
+on:
+  schedule:
+    # Runs at 3:00 AM UTC every 6 days
+    - cron: '0 3 */6 * *'
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+jobs:
+  prime-supabase:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prime Supabase instance
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: pnpm run prime
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Supabase priming failed!"
+          echo "The instance may be paused or the URL/keys may be incorrect."
+          echo "Check the workflow logs and verify your Supabase project is active."
+          exit 1

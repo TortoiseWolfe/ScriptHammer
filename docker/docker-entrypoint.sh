@@ -15,8 +15,9 @@ echo "✅ Dependencies are up-to-date"
 # .next directory cleanup - remove if exists to prevent permission issues
 echo "🧹 Cleaning .next directory..."
 if [ -d "/app/.next" ]; then
-  rm -rf /app/.next
-  echo "  Removed existing .next directory"
+  rm -rf /app/.next 2>/dev/null || echo "  .next is a volume (skip cleanup)"
+else
+  echo "  No .next directory to clean"
 fi
 
 # Create fresh .next directory with proper permissions

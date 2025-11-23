@@ -21,12 +21,12 @@ describe('ContactForm Accessibility', () => {
     validateBeforeSubmit: mockValidateBeforeSubmit,
     reset: mockReset,
     isSubmitting: false,
+    queueCount: 0,
     isSuccess: false,
     isError: false,
     error: null,
     successMessage: null,
     isOnline: true,
-    queueSize: 0,
     wasQueuedOffline: false,
   };
 

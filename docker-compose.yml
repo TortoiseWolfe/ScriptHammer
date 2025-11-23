@@ -17,6 +17,9 @@ services:
     environment:
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
       interval: 30s

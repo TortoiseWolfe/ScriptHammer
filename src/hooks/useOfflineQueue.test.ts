@@ -1,370 +1,529 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useOfflineQueue } from './useOfflineQueue';
-import * as offlineQueue from '@/utils/offline-queue';
-import * as backgroundSync from '@/utils/background-sync';
+import { offlineQueueService } from '@/services/messaging/offline-queue-service';
+import type { QueuedMessage } from '@/types/messaging';
 
-// Mock the modules
-vi.mock('@/utils/offline-queue');
-vi.mock('@/utils/background-sync');
+// Mock the offline queue service
+vi.mock('@/services/messaging/offline-queue-service', () => ({
+  offlineQueueService: {
+    getQueue: vi.fn(),
+    getFailedMessages: vi.fn(),
+    syncQueue: vi.fn(),
+    retryFailed: vi.fn(),
+    clearSyncedMessages: vi.fn(),
+  },
+}));
 
 describe('useOfflineQueue', () => {
-  let originalNavigatorOnLine: boolean;
-  let onlineHandler: EventListener | null = null;
-  let offlineHandler: EventListener | null = null;
-  let messageHandler: EventListener | null = null;
-  let mockServiceWorker: ServiceWorker;
+  const mockQueuedMessage: QueuedMessage = {
+    id: 'msg-1',
+    conversation_id: 'conv-1',
+    sender_id: 'user-1',
+    encrypted_content: 'encrypted',
+    initialization_vector: 'iv',
+    status: 'pending',
+    synced: false,
+    retries: 0,
+    created_at: Date.now(),
+  };
+
+  const mockFailedMessage: QueuedMessage = {
+    ...mockQueuedMessage,
+    id: 'msg-2',
+    status: 'failed',
+    retries: 5,
+  };
 
   beforeEach(() => {
-    // Store original value
-    originalNavigatorOnLine = navigator.onLine;
+    vi.clearAllMocks();
 
-    // Setup default mocks
-    vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
-    vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
-    vi.mocked(backgroundSync.isBackgroundSyncSupported).mockReturnValue(true);
-    vi.mocked(backgroundSync.registerBackgroundSync).mockResolvedValue(true);
-
-    // Capture event listeners
-    window.addEventListener = vi.fn((event: string, handler: EventListener) => {
-      if (event === 'online') onlineHandler = handler;
-      if (event === 'offline') offlineHandler = handler;
-    }) as typeof window.addEventListener;
-
-    window.removeEventListener = vi.fn();
-
-    // Mock service worker
-    mockServiceWorker = {
-      addEventListener: vi.fn((event: string, handler: EventListener) => {
-        if (event === 'message') messageHandler = handler;
-      }),
-      removeEventListener: vi.fn(),
-    } as unknown as ServiceWorker;
-
-    Object.defineProperty(navigator, 'serviceWorker', {
-      value: mockServiceWorker,
-      writable: true,
+    // Default mock implementations
+    vi.mocked(offlineQueueService.getQueue).mockResolvedValue([]);
+    vi.mocked(offlineQueueService.getFailedMessages).mockResolvedValue([]);
+    vi.mocked(offlineQueueService.syncQueue).mockResolvedValue({
+      success: 0,
+      failed: 0,
     });
+    vi.mocked(offlineQueueService.retryFailed).mockResolvedValue(0);
+    vi.mocked(offlineQueueService.clearSyncedMessages).mockResolvedValue(0);
 
-    // Set initial online state
+    // Mock navigator.onLine
     Object.defineProperty(navigator, 'onLine', {
-      value: true,
       writable: true,
+      value: true,
       configurable: true,
     });
   });
 
   afterEach(() => {
-    // Restore original value
-    Object.defineProperty(navigator, 'onLine', {
-      value: originalNavigatorOnLine,
-      writable: true,
-      configurable: true,
-    });
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Initial State', () => {
-    it('should initialize with correct online state', () => {
+    it('should initialize with correct default values', async () => {
       const { result } = renderHook(() => useOfflineQueue());
 
-      expect(result.current.isOnline).toBe(true);
-      expect(result.current.queueSize).toBe(0);
-      expect(result.current.isBackgroundSyncSupported).toBe(true);
-    });
-
-    it('should initialize offline when navigator.onLine is false', () => {
-      Object.defineProperty(navigator, 'onLine', {
-        value: false,
-        writable: true,
+      // Wait for initial load
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
       });
 
-      const { result } = renderHook(() => useOfflineQueue());
-
-      expect(result.current.isOnline).toBe(false);
+      expect(result.current.queue).toEqual([]);
+      expect(result.current.queueCount).toBe(0);
+      expect(result.current.failedCount).toBe(0);
+      expect(result.current.isSyncing).toBe(false);
+      expect(result.current.isOnline).toBe(true);
     });
 
-    it('should detect background sync support', () => {
-      vi.mocked(backgroundSync.isBackgroundSyncSupported).mockReturnValue(
-        false
-      );
-
+    it('should provide all required functions', () => {
       const { result } = renderHook(() => useOfflineQueue());
 
-      expect(result.current.isBackgroundSyncSupported).toBe(false);
+      expect(typeof result.current.syncQueue).toBe('function');
+      expect(typeof result.current.retryFailed).toBe('function');
+      expect(typeof result.current.clearSynced).toBe('function');
+      expect(typeof result.current.getFailedMessages).toBe('function');
     });
+  });
 
-    it('should load initial queue size', async () => {
-      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(3);
+  describe('Queue Loading', () => {
+    it('should load queue on mount', async () => {
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+      vi.mocked(offlineQueueService.getFailedMessages).mockResolvedValue([]);
 
       const { result } = renderHook(() => useOfflineQueue());
 
       await waitFor(() => {
-        expect(result.current.queueSize).toBe(3);
-      });
-    });
-  });
-
-  describe('Network State Changes', () => {
-    it('should handle online event', async () => {
-      const onOnline = vi.fn();
-      const { result } = renderHook(() => useOfflineQueue({ onOnline }));
-
-      // Initially set offline
-      Object.defineProperty(navigator, 'onLine', {
-        value: false,
-        writable: true,
+        expect(result.current.queueCount).toBe(1);
       });
 
-      act(() => {
-        offlineHandler?.({} as Event);
-      });
-
-      expect(result.current.isOnline).toBe(false);
-
-      // Trigger online event
-      Object.defineProperty(navigator, 'onLine', {
-        value: true,
-        writable: true,
-      });
-
-      act(() => {
-        onlineHandler?.({} as Event);
-      });
-
-      expect(result.current.isOnline).toBe(true);
-      expect(onOnline).toHaveBeenCalled();
-      expect(backgroundSync.registerBackgroundSync).toHaveBeenCalled();
+      expect(result.current.queue).toEqual([mockQueuedMessage]);
+      expect(result.current.failedCount).toBe(0);
     });
 
-    it('should handle offline event', () => {
-      const onOffline = vi.fn();
-      const { result } = renderHook(() => useOfflineQueue({ onOffline }));
-
-      act(() => {
-        offlineHandler?.({} as Event);
-      });
-
-      expect(result.current.isOnline).toBe(false);
-      expect(onOffline).toHaveBeenCalled();
-    });
-  });
-
-  describe('Queue Operations', () => {
-    it('should add item to offline queue', async () => {
-      const onQueueAdd = vi.fn();
-      const { result } = renderHook(() => useOfflineQueue({ onQueueAdd }));
-
-      const testData = {
-        name: 'Test',
-        email: 'test@example.com',
-      };
-
-      let success: boolean = false;
-      await act(async () => {
-        success = await result.current.addToOfflineQueue(testData);
-      });
-
-      expect(success).toBe(true);
-      expect(offlineQueue.addToQueue).toHaveBeenCalledWith(testData);
-      expect(onQueueAdd).toHaveBeenCalledWith(testData);
-      expect(backgroundSync.registerBackgroundSync).toHaveBeenCalled();
-    });
-
-    it('should update queue size after adding item', async () => {
-      vi.mocked(offlineQueue.getQueueSize)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(1);
+    it('should track failed messages separately', async () => {
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+      vi.mocked(offlineQueueService.getFailedMessages).mockResolvedValue([
+        mockFailedMessage,
+      ]);
 
       const { result } = renderHook(() => useOfflineQueue());
 
-      expect(result.current.queueSize).toBe(0);
-
-      await act(async () => {
-        await result.current.addToOfflineQueue({ test: 'data' });
-      });
-
       await waitFor(() => {
-        expect(result.current.queueSize).toBe(1);
-      });
-    });
-
-    it('should handle add to queue failure', async () => {
-      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(false);
-
-      const onQueueAdd = vi.fn();
-      const { result } = renderHook(() => useOfflineQueue({ onQueueAdd }));
-
-      let success: boolean = true;
-      await act(async () => {
-        success = await result.current.addToOfflineQueue({ test: 'data' });
+        expect(result.current.failedCount).toBe(1);
       });
 
-      expect(success).toBe(false);
-      expect(onQueueAdd).not.toHaveBeenCalled();
+      expect(result.current.queueCount).toBe(1);
     });
 
-    it('should handle add to queue error', async () => {
+    it('should handle loading errors gracefully', async () => {
       const consoleError = vi
         .spyOn(console, 'error')
         .mockImplementation(() => {});
-      vi.mocked(offlineQueue.addToQueue).mockRejectedValue(
-        new Error('Test error')
+      vi.mocked(offlineQueueService.getQueue).mockRejectedValue(
+        new Error('Database error')
       );
 
       const { result } = renderHook(() => useOfflineQueue());
 
-      let success: boolean = true;
-      await act(async () => {
-        success = await result.current.addToOfflineQueue({ test: 'data' });
+      await waitFor(() => {
+        expect(consoleError).toHaveBeenCalledWith(
+          'Failed to load offline queue:',
+          expect.any(Error)
+        );
       });
 
-      expect(success).toBe(false);
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error adding to offline queue:',
-        expect.any(Error)
-      );
-
-      consoleError.mockRestore();
-    });
-
-    it('should refresh queue size', async () => {
-      vi.mocked(offlineQueue.getQueueSize)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(5);
-
-      const { result } = renderHook(() => useOfflineQueue());
-
-      expect(result.current.queueSize).toBe(0);
-
-      await act(async () => {
-        await result.current.refreshQueueSize();
-      });
-
-      expect(result.current.queueSize).toBe(5);
-    });
-
-    it('should handle queue size error', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-      vi.mocked(offlineQueue.getQueueSize)
-        .mockResolvedValueOnce(0)
-        .mockRejectedValueOnce(new Error('Test error'));
-
-      const { result } = renderHook(() => useOfflineQueue());
-
-      await act(async () => {
-        await result.current.refreshQueueSize();
-      });
-
-      expect(consoleError).toHaveBeenCalledWith(
-        'Error getting queue size:',
-        expect.any(Error)
-      );
-
-      consoleError.mockRestore();
+      // Should maintain default values on error
+      expect(result.current.queueCount).toBe(0);
+      expect(result.current.failedCount).toBe(0);
     });
   });
 
-  describe('Background Sync', () => {
-    it('should not register background sync if not supported', async () => {
-      vi.mocked(backgroundSync.isBackgroundSyncSupported).mockReturnValue(
-        false
+  describe('Queue Sync', () => {
+    it('should sync queue successfully', async () => {
+      // Empty queue to prevent auto-sync
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([]);
+      vi.mocked(offlineQueueService.syncQueue).mockResolvedValue({
+        success: 1,
+        failed: 0,
+      });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.syncQueue();
+      });
+
+      expect(offlineQueueService.syncQueue).toHaveBeenCalled();
+    });
+
+    it('should set isSyncing flag during sync', async () => {
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([]);
+
+      let resolveSyncQueue: (value: any) => void;
+      const syncPromise = new Promise((resolve) => {
+        resolveSyncQueue = resolve;
+      });
+
+      vi.mocked(offlineQueueService.syncQueue).mockReturnValue(
+        syncPromise as Promise<{ success: number; failed: number }>
       );
 
       const { result } = renderHook(() => useOfflineQueue());
 
-      await act(async () => {
-        await result.current.addToOfflineQueue({ test: 'data' });
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
       });
 
-      expect(backgroundSync.registerBackgroundSync).not.toHaveBeenCalled();
-    });
-
-    it('should handle background sync complete message', async () => {
-      vi.mocked(offlineQueue.getQueueSize)
-        .mockResolvedValueOnce(0)
-        .mockResolvedValueOnce(3)
-        .mockResolvedValueOnce(0);
-
-      renderHook(() => useOfflineQueue());
-
-      // Simulate background sync complete message
+      // Start sync
       act(() => {
-        messageHandler?.({
-          data: { type: 'BACKGROUND_SYNC_COMPLETE' },
-        } as MessageEvent);
+        result.current.syncQueue();
+      });
+
+      // Should be syncing
+      await waitFor(() => {
+        expect(result.current.isSyncing).toBe(true);
+      });
+
+      // Resolve sync
+      await act(async () => {
+        resolveSyncQueue!({ success: 1, failed: 0 });
       });
 
       await waitFor(() => {
-        expect(offlineQueue.getQueueSize).toHaveBeenCalledTimes(2);
+        expect(result.current.isSyncing).toBe(false);
       });
     });
 
-    it('should ignore non-sync messages', () => {
-      renderHook(() => useOfflineQueue());
-
-      act(() => {
-        messageHandler?.({
-          data: { type: 'OTHER_MESSAGE' },
-        } as MessageEvent);
+    it('should not sync when offline', async () => {
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: false,
+        configurable: true,
       });
 
-      // Should not trigger refresh
-      expect(offlineQueue.getQueueSize).toHaveBeenCalledTimes(1); // Only initial
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.syncQueue();
+      });
+
+      expect(offlineQueueService.syncQueue).not.toHaveBeenCalled();
+    });
+
+    it('should not sync when already syncing', async () => {
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([]);
+
+      let resolveSyncQueue: (value: any) => void;
+      const syncPromise = new Promise((resolve) => {
+        resolveSyncQueue = resolve;
+      });
+
+      vi.mocked(offlineQueueService.syncQueue).mockReturnValue(
+        syncPromise as Promise<{ success: number; failed: number }>
+      );
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      // Start first sync
+      act(() => {
+        result.current.syncQueue();
+      });
+
+      await waitFor(() => {
+        expect(result.current.isSyncing).toBe(true);
+      });
+
+      // Try to start second sync
+      await act(async () => {
+        await result.current.syncQueue();
+      });
+
+      // Should only be called once
+      expect(offlineQueueService.syncQueue).toHaveBeenCalledTimes(1);
+
+      // Cleanup
+      await act(async () => {
+        resolveSyncQueue!({ success: 0, failed: 0 });
+      });
+    });
+
+    it('should handle sync errors', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      vi.mocked(offlineQueueService.syncQueue).mockRejectedValue(
+        new Error('Sync failed')
+      );
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.syncQueue();
+      });
+
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to sync queue:',
+        expect.any(Error)
+      );
+      expect(result.current.isSyncing).toBe(false);
     });
   });
 
-  describe('Cleanup', () => {
-    it('should remove event listeners on unmount', () => {
+  describe('Retry Failed Messages', () => {
+    it('should reset failed messages and trigger sync', async () => {
+      vi.mocked(offlineQueueService.retryFailed).mockResolvedValue(2);
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.retryFailed();
+      });
+
+      expect(offlineQueueService.retryFailed).toHaveBeenCalled();
+      expect(offlineQueueService.syncQueue).toHaveBeenCalled();
+    });
+
+    it('should reload queue after retry', async () => {
+      vi.mocked(offlineQueueService.retryFailed).mockResolvedValue(2);
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      const initialCallCount = vi.mocked(offlineQueueService.getQueue).mock
+        .calls.length;
+
+      await act(async () => {
+        await result.current.retryFailed();
+      });
+
+      // getQueue should have been called again after retry
+      expect(
+        vi.mocked(offlineQueueService.getQueue).mock.calls.length
+      ).toBeGreaterThan(initialCallCount);
+    });
+
+    it('should handle retry errors', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      vi.mocked(offlineQueueService.retryFailed).mockRejectedValue(
+        new Error('Retry failed')
+      );
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.retryFailed();
+      });
+
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to retry messages:',
+        expect.any(Error)
+      );
+    });
+  });
+
+  describe('Clear Synced Messages', () => {
+    it('should clear synced messages', async () => {
+      vi.mocked(offlineQueueService.clearSyncedMessages).mockResolvedValue(3);
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.clearSynced();
+      });
+
+      expect(offlineQueueService.clearSyncedMessages).toHaveBeenCalled();
+    });
+
+    it('should reload queue after clearing', async () => {
+      vi.mocked(offlineQueueService.clearSyncedMessages).mockResolvedValue(3);
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      const initialCallCount = vi.mocked(offlineQueueService.getQueue).mock
+        .calls.length;
+
+      await act(async () => {
+        await result.current.clearSynced();
+      });
+
+      // getQueue should have been called again
+      expect(
+        vi.mocked(offlineQueueService.getQueue).mock.calls.length
+      ).toBeGreaterThan(initialCallCount);
+    });
+
+    it('should handle clear errors', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      vi.mocked(offlineQueueService.clearSyncedMessages).mockRejectedValue(
+        new Error('Clear failed')
+      );
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      await act(async () => {
+        await result.current.clearSynced();
+      });
+
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to clear synced messages:',
+        expect.any(Error)
+      );
+    });
+  });
+
+  describe('Get Failed Messages', () => {
+    it('should return failed messages', async () => {
+      vi.mocked(offlineQueueService.getFailedMessages).mockResolvedValue([
+        mockFailedMessage,
+      ]);
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      const failed = await result.current.getFailedMessages();
+      expect(failed).toEqual([mockFailedMessage]);
+    });
+  });
+
+  describe('Online/Offline Events', () => {
+    it('should trigger sync when going online', async () => {
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      // Simulate going online
+      act(() => {
+        window.dispatchEvent(new Event('online'));
+      });
+
+      await waitFor(() => {
+        expect(offlineQueueService.syncQueue).toHaveBeenCalled();
+      });
+
+      expect(result.current.isOnline).toBe(true);
+    });
+
+    it('should update isOnline when going offline', async () => {
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      act(() => {
+        window.dispatchEvent(new Event('offline'));
+      });
+
+      expect(result.current.isOnline).toBe(false);
+    });
+
+    it('should cleanup event listeners on unmount', async () => {
+      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+
       const { unmount } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
 
       unmount();
 
-      expect(window.removeEventListener).toHaveBeenCalledWith(
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'online',
-        onlineHandler
+        expect.any(Function)
       );
-      expect(window.removeEventListener).toHaveBeenCalledWith(
+      expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'offline',
-        offlineHandler
+        expect.any(Function)
       );
-      expect(mockServiceWorker.removeEventListener).toHaveBeenCalledWith(
-        'message',
-        messageHandler
-      );
-    });
-
-    it('should handle missing service worker gracefully', () => {
-      Object.defineProperty(navigator, 'serviceWorker', {
-        value: undefined,
-        writable: true,
-      });
-
-      const { result, unmount } = renderHook(() => useOfflineQueue());
-
-      // Should still work without service worker
-      expect(result.current.isOnline).toBe(true);
-
-      // Should not error on unmount
-      expect(() => unmount()).not.toThrow();
     });
   });
 
-  describe('SSR Compatibility', () => {
-    it('should handle server-side rendering', () => {
-      // SSR compatibility is ensured by checking for window existence in the hook
-      // Testing actual SSR would require a different test environment
-      // The hook uses typeof window !== 'undefined' checks throughout
-      const { result } = renderHook(() => useOfflineQueue());
+  describe('Queue Polling', () => {
+    it('should setup polling interval on mount', async () => {
+      const setIntervalSpy = vi.spyOn(global, 'setInterval');
 
-      // Should initialize with defaults in client environment
-      expect(result.current.isOnline).toBe(true);
-      expect(result.current.isBackgroundSyncSupported).toBe(true);
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      // Should have set up interval
+      expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 30000);
+    });
+
+    it('should cleanup polling interval on unmount', async () => {
+      const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
+
+      const { unmount } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalled();
+      });
+
+      unmount();
+
+      expect(clearIntervalSpy).toHaveBeenCalled();
     });
   });
 });

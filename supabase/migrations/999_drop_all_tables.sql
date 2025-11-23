@@ -41,6 +41,14 @@ DROP TABLE IF EXISTS payment_provider_config CASCADE;
 DROP TABLE IF EXISTS rate_limit_attempts CASCADE;
 DROP TABLE IF EXISTS oauth_states CASCADE;
 
+-- Messaging tables (PRP-023) - depend on auth.users via foreign keys
+DROP TABLE IF EXISTS typing_indicators CASCADE;
+DROP TABLE IF EXISTS conversation_keys CASCADE;
+DROP TABLE IF EXISTS user_encryption_keys CASCADE;
+DROP TABLE IF EXISTS messages CASCADE;
+DROP TABLE IF EXISTS conversations CASCADE;
+DROP TABLE IF EXISTS user_connections CASCADE;
+
 -- Auth tables (drop last - other tables reference auth.users)
 DROP TABLE IF EXISTS auth_audit_logs CASCADE;
 DROP TABLE IF EXISTS user_profiles CASCADE;
@@ -57,6 +65,8 @@ DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
 DROP FUNCTION IF EXISTS cleanup_old_audit_logs() CASCADE;
 DROP FUNCTION IF EXISTS check_rate_limit(TEXT, TEXT, INET) CASCADE;
 DROP FUNCTION IF EXISTS record_failed_attempt(TEXT, TEXT, INET) CASCADE;
+DROP FUNCTION IF EXISTS update_conversation_timestamp() CASCADE;
+DROP FUNCTION IF EXISTS assign_sequence_number() CASCADE;
 
 -- =========================================
 -- CLEANUP COMPLETE
@@ -67,7 +77,8 @@ DROP FUNCTION IF EXISTS record_failed_attempt(TEXT, TEXT, INET) CASCADE;
 --   - All payment tables (with CASCADE - removes policies/triggers)
 --   - All auth tables (with CASCADE - removes policies/triggers)
 --   - All security tables (with CASCADE - removes policies/triggers)
---   - All functions
+--   - All messaging tables (with CASCADE - removes policies/triggers/indexes)
+--   - All functions (including messaging triggers)
 --
 -- Database is now empty and ready for fresh setup.
 --

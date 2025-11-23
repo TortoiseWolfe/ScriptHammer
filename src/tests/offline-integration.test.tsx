@@ -23,11 +23,15 @@ vi.mock('@/utils/web3forms');
 
 // Create a mock implementation for useOfflineQueue
 const createMockUseOfflineQueue = (overrides = {}) => ({
+  queue: [],
+  queueCount: 0,
+  failedCount: 0,
+  isSyncing: false,
   isOnline: true,
-  isBackgroundSyncSupported: true,
-  queueSize: 0,
-  addToOfflineQueue: vi.fn().mockResolvedValue(true),
-  refreshQueueSize: vi.fn(),
+  syncQueue: vi.fn().mockResolvedValue(undefined),
+  retryFailed: vi.fn().mockResolvedValue(undefined),
+  clearSynced: vi.fn().mockResolvedValue(undefined),
+  getFailedMessages: vi.fn().mockResolvedValue([]),
   ...overrides,
 });
 
@@ -185,17 +189,17 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Mock the hook to return offline state with queue functionality
-      const mockAddToOfflineQueue = vi.fn().mockResolvedValue(true);
+      // Mock the hook to return offline state
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          queueSize: 0,
-          addToOfflineQueue: mockAddToOfflineQueue,
+          queueCount: 0, // messaging queue is empty
         })
       );
 
+      // Mock IndexedDB utilities that useWeb3Forms uses
       vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
 
       render(<ContactForm />);
 
@@ -253,8 +257,8 @@ describe('Offline Queue Integration', () => {
 
       // Wait for submission to process
       await waitFor(() => {
-        // Check that the offline queue was called
-        expect(mockAddToOfflineQueue).toHaveBeenCalledWith(
+        // Check that the IndexedDB utility was called
+        expect(offlineQueue.addToQueue).toHaveBeenCalledWith(
           expect.objectContaining({
             name: 'John Doe',
             email: 'john@example.com',
@@ -272,14 +276,17 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Mock the hook for offline state with successful queue
-      const mockAddToOfflineQueue = vi.fn().mockResolvedValue(true);
+      // Mock the hook for offline state
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          addToOfflineQueue: mockAddToOfflineQueue,
+          queueCount: 0,
         })
       );
+
+      // Mock IndexedDB utilities
+      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
 
       render(<ContactForm />);
 
@@ -343,13 +350,16 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Mock the hook to return offline state with queue size
+      // Mock the hook to return offline state (messaging queue empty)
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          queueSize: 3,
+          queueCount: 0,
         })
       );
+
+      // Mock forms queue to have 3 items
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(3);
 
       render(<ContactForm />);
 
@@ -365,20 +375,19 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Initial setup with 2 messages queued
-      let currentQueueSize = 2;
-      const mockAddToOfflineQueue = vi.fn().mockImplementation(() => {
-        currentQueueSize = 3;
-        return Promise.resolve(true);
-      });
-
+      // Initial setup with 2 forms queued
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          queueSize: currentQueueSize,
-          addToOfflineQueue: mockAddToOfflineQueue,
+          queueCount: 0, // messaging queue empty
         })
       );
+
+      // Start with 2 forms queued, then update to 3 after submission
+      vi.mocked(offlineQueue.getQueueSize)
+        .mockResolvedValueOnce(2) // Initial load on mount
+        .mockResolvedValue(3); // After addToQueue succeeds (line 89 in useWeb3Forms)
+      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
 
       const { rerender } = render(<ContactForm />);
 
@@ -431,16 +440,7 @@ describe('Offline Queue Integration', () => {
         fireEvent.click(submitButton);
       });
 
-      // Update the mock to return the new queue size
-      vi.mocked(useOfflineQueue).mockReturnValue(
-        createMockUseOfflineQueue({
-          isOnline: false,
-          queueSize: 3,
-          addToOfflineQueue: mockAddToOfflineQueue,
-        })
-      );
-
-      // Force re-render to update queue size
+      // Force re-render to trigger queue size refresh
       rerender(<ContactForm />);
 
       await waitFor(() => {
@@ -575,13 +575,16 @@ describe('Offline Queue Integration', () => {
     });
 
     it('should show queue indicator when messages are queued', async () => {
-      // Mock hook to show queued messages while online
+      // Mock hook to show messaging queue while online
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: true,
-          queueSize: 2,
+          queueCount: 2, // 2 messaging messages queued
         })
       );
+
+      // No forms queued
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
 
       render(<ContactForm />);
 
@@ -604,18 +607,17 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Setup mock for offline state that will fail
-      const mockAddToOfflineQueue = vi.fn().mockResolvedValue(false);
-
-      // Make sure the underlying utility also fails
-      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(false);
-
+      // Setup mock for offline state
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          addToOfflineQueue: mockAddToOfflineQueue,
+          queueCount: 0,
         })
       );
+
+      // Make the IndexedDB utility fail
+      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(false);
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
 
       render(<ContactForm />);
 
@@ -681,15 +683,20 @@ describe('Offline Queue Integration', () => {
         writable: true,
       });
 
-      // Setup mock for offline state without background sync support
-      const mockAddToOfflineQueue = vi.fn().mockResolvedValue(true);
+      // Setup mock for offline state
       vi.mocked(useOfflineQueue).mockReturnValue(
         createMockUseOfflineQueue({
           isOnline: false,
-          isBackgroundSyncSupported: false,
-          addToOfflineQueue: mockAddToOfflineQueue,
+          queueCount: 0,
         })
       );
+
+      // Mock IndexedDB utilities - should still queue even without background sync
+      vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
+      vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
+
+      // Mock background sync as not supported
+      vi.mocked(backgroundSync.registerBackgroundSync).mockResolvedValue(false);
 
       render(<ContactForm />);
 
@@ -739,10 +746,10 @@ describe('Offline Queue Integration', () => {
       });
 
       await waitFor(() => {
-        expect(mockAddToOfflineQueue).toHaveBeenCalled();
+        expect(offlineQueue.addToQueue).toHaveBeenCalled();
       });
 
-      // Should still queue the message
+      // Should still queue the message even without background sync
       await waitFor(() => {
         expect(
           screen.getByText(/message queued for sending when online/i)
