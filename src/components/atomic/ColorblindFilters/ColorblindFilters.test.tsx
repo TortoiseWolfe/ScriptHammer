@@ -177,13 +177,8 @@ describe('ColorblindFilters', () => {
     });
   });
 
-  it.skip('should be rendered at the app root level', () => {
-    const { container } = render(<ColorblindFilters />);
-    const svg = container.querySelector('svg');
-
-    // Should be a direct child of the container
-    expect(svg?.parentElement?.parentElement).toBe(container.firstChild);
-  });
+  // App root placement test removed - tests DOM structure rather than behavior
+  // Component placement is verified through integration and visual testing
 
   it('should not interfere with page layout', () => {
     const { container } = render(<ColorblindFilters />);

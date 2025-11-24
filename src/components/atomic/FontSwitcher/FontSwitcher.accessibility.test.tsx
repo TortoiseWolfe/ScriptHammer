@@ -185,28 +185,9 @@ describe('FontSwitcher Accessibility', () => {
     });
   });
 
-  describe('axe Accessibility', () => {
-    it.skip('should have no accessibility violations when closed', async () => {
-      // Skipping due to DaisyUI dropdown using CSS-based approach
-      // which may not be fully recognized by axe in test environment
-      const { container } = render(<FontSwitcher />);
-      const results = await axe(container);
-      expect(results).toHaveNoViolations();
-    });
-
-    it.skip('should have no accessibility violations when open', async () => {
-      // Skipping due to DaisyUI dropdown using CSS-based approach
-      // which may not be fully recognized by axe in test environment
-      const user = userEvent.setup();
-      const { container } = render(<FontSwitcher />);
-
-      const button = screen.getByRole('button', { name: /font selection/i });
-      await user.click(button);
-
-      const results = await axe(container);
-      expect(results).toHaveNoViolations();
-    });
-  });
+  // Axe accessibility tests removed - Pa11y provides comprehensive accessibility testing
+  // FontSwitcher is tested via Pa11y CI on /accessibility route (see /config/pa11yci.json)
+  // Pa11y uses real browser (Chromium) which properly handles DaisyUI CSS-based dropdowns
 
   describe('Visual Indicators', () => {
     it('should show loading state for fonts', async () => {

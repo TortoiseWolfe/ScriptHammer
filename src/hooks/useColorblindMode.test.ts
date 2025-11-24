@@ -180,9 +180,18 @@ describe('useColorblindMode', () => {
       expect(result.current.patternsEnabled).toBe(false);
     });
 
-    it.skip('should add colorblind-patterns class when enabled', () => {
+    it('should add colorblind-patterns class when enabled', () => {
       const { result } = renderHook(() => useColorblindMode());
 
+      // First set a colorblind mode (patterns only apply when mode !== NONE)
+      act(() => {
+        result.current.setColorblindMode(ColorblindType.PROTANOPIA);
+      });
+
+      // Clear mocks from setColorblindMode call
+      vi.clearAllMocks();
+
+      // Now toggle patterns and check
       act(() => {
         result.current.togglePatterns();
       });
@@ -224,11 +233,15 @@ describe('useColorblindMode', () => {
   });
 
   describe('localStorage Persistence', () => {
-    it.skip('should save both mode and patterns state', () => {
+    it('should save both mode and patterns state', () => {
       const { result } = renderHook(() => useColorblindMode());
 
+      // Split act() calls to ensure state updates between function calls
       act(() => {
         result.current.setColorblindMode(ColorblindType.PROTANOMALY);
+      });
+
+      act(() => {
         result.current.togglePatterns();
       });
 

@@ -374,13 +374,13 @@ describe('Privacy Utilities', () => {
       );
     });
 
-    it.skip('should handle errors gracefully', async () => {
+    it('should handle errors gracefully', async () => {
       // Add an item to localStorage first
       localStorage.setItem('testItem', 'test');
 
-      // Mock localStorage.removeItem to throw an error
-      const originalRemoveItem = localStorage.removeItem;
-      localStorage.removeItem = vi.fn(() => {
+      // Spy on localStorage.removeItem to throw an error
+      const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+      removeItemSpy.mockImplementation(() => {
         throw new Error('Storage error');
       });
 
@@ -390,7 +390,7 @@ describe('Privacy Utilities', () => {
       expect(result.error).toBe('Storage error');
 
       // Restore original
-      localStorage.removeItem = originalRemoveItem;
+      removeItemSpy.mockRestore();
     });
 
     it('should clear data without options', async () => {

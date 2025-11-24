@@ -179,7 +179,8 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     if (isOnline && queueCount > 0 && !isSyncing) {
       syncQueue();
     }
-  }, []); // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount - intentionally omitting deps
 
   return {
     queue,

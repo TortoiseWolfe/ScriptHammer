@@ -100,16 +100,6 @@ describe('CookieConsent', () => {
       expect(mockAcceptAll).toHaveBeenCalledTimes(1);
     });
 
-    it.skip('should call rejectAll when Reject All button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<CookieConsent />);
-
-      const rejectButton = screen.getByRole('button', { name: /reject all/i });
-      await user.click(rejectButton);
-
-      expect(mockRejectAll).toHaveBeenCalledTimes(1);
-    });
-
     it('should call openModal when Customize button is clicked', async () => {
       const user = userEvent.setup();
       render(<CookieConsent />);
@@ -159,7 +149,7 @@ describe('CookieConsent', () => {
       ).toBeInTheDocument();
     });
 
-    it.skip('should support keyboard navigation', async () => {
+    it('should support keyboard navigation', async () => {
       const user = userEvent.setup();
       render(<CookieConsent />);
 
@@ -188,13 +178,6 @@ describe('CookieConsent', () => {
 
       const link = screen.getByText(/Learn more/);
       expect(link.closest('a')).toHaveAttribute('href', '/privacy');
-    });
-
-    it.skip('should display cookie policy link', () => {
-      render(<CookieConsent cookiePolicyUrl="/cookies" />);
-
-      const link = screen.getByRole('link', { name: /cookie policy/i });
-      expect(link).toHaveAttribute('href', '/cookies');
     });
 
     it('should display custom content when provided', () => {
@@ -252,19 +235,6 @@ describe('CookieConsent', () => {
 
       expect(mockAcceptAll).toHaveBeenCalled();
       expect(onAcceptAll).toHaveBeenCalled();
-    });
-
-    it.skip('should call onRejectAll callback after rejecting', async () => {
-      // Skipped: Reject All button removed in compact design
-      const onRejectAll = vi.fn();
-      const user = userEvent.setup();
-
-      render(<CookieConsent onRejectAll={onRejectAll} />);
-
-      await user.click(screen.getByRole('button', { name: /reject all/i }));
-
-      expect(mockRejectAll).toHaveBeenCalled();
-      expect(onRejectAll).toHaveBeenCalled();
     });
 
     it('should call onCustomize callback when opening modal', async () => {

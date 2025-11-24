@@ -167,6 +167,8 @@ export default function MessageThread({
 
       lastMessageRef.current = latestMessageId;
     }
+    // scrollToBottom is stable (useCallback with stable deps), safe to omit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   // Check if user has scrolled away from bottom

@@ -150,6 +150,7 @@ export default function UserSearch({
                       <div className="avatar placeholder">
                         <div className="bg-neutral text-neutral-content w-12 rounded-full">
                           {user.avatar_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={user.avatar_url}
                               alt={user.display_name || user.username || 'User'}

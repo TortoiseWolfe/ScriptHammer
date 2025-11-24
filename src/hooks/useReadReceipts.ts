@@ -123,6 +123,8 @@ export function useReadReceipts({
       }
 
       // Flush pending updates on unmount
+      // Intentionally accessing ref at cleanup time to flush pending reads
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       if (pendingReadRef.current.size > 0) {
         markMessagesAsRead();
       }

@@ -80,26 +80,27 @@ export const useWeb3Forms = (
 
   const queueCount = formsQueueCount + messagingQueueCount;
 
-  const addToOfflineQueue = async (
-    data: ContactFormData
-  ): Promise<{ id: string; queued: boolean }> => {
-    try {
-      const success = await addToQueue(data);
-      if (success) {
-        const newSize = await getQueueSize();
-        setFormsQueueCount(newSize);
+  const addToOfflineQueue = useCallback(
+    async (data: ContactFormData): Promise<{ id: string; queued: boolean }> => {
+      try {
+        const success = await addToQueue(data);
+        if (success) {
+          const newSize = await getQueueSize();
+          setFormsQueueCount(newSize);
 
-        // Register background sync to process when online
-        await registerBackgroundSync();
+          // Register background sync to process when online
+          await registerBackgroundSync();
 
-        return { id: `form-${Date.now()}`, queued: true };
+          return { id: `form-${Date.now()}`, queued: true };
+        }
+        return { id: '', queued: false };
+      } catch (error) {
+        console.error('[Web3Forms] Failed to queue offline:', error);
+        return { id: '', queued: false };
       }
-      return { id: '', queued: false };
-    } catch (error) {
-      console.error('[Web3Forms] Failed to queue offline:', error);
-      return { id: '', queued: false };
-    }
-  };
+    },
+    []
+  ); // No dependencies - uses only imported functions and setState
 
   // Ref to track timeout
   const resetTimeoutRef = useRef<NodeJS.Timeout | null>(null);

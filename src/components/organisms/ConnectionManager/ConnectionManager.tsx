@@ -91,6 +91,7 @@ export default function ConnectionManager({
               <div className="avatar placeholder">
                 <div className="bg-neutral text-neutral-content w-12 rounded-full">
                   {otherUser.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={otherUser.avatar_url}
                       alt={

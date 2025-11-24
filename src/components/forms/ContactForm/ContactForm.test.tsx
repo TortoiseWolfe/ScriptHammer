@@ -306,43 +306,8 @@ describe('ContactForm', () => {
     });
 
     describe('Accessibility', () => {
-      it.skip('should be keyboard navigable', async () => {
-        const user = userEvent.setup();
-        render(<ContactForm />);
-
-        const nameInput = screen.getByLabelText(/full name/i);
-        const emailInput = screen.getByLabelText(/email address/i);
-        const subjectInput = screen.getByLabelText(/subject/i);
-        const messageInput = screen.getByLabelText(/message/i);
-
-        // Tab through form fields and fill them to enable submit
-        await user.tab();
-        expect(nameInput).toHaveFocus();
-        await user.type(nameInput, 'John Doe');
-
-        await user.tab();
-        expect(emailInput).toHaveFocus();
-        await user.type(emailInput, 'john@example.com');
-
-        await user.tab();
-        expect(subjectInput).toHaveFocus();
-        await user.type(subjectInput, 'Test Subject');
-
-        await user.tab();
-        expect(messageInput).toHaveFocus();
-        await user.type(messageInput, 'This is a test message');
-
-        // Now the submit button should be enabled and focusable
-        const submitButton = screen.getByRole('button', {
-          name: /send message/i,
-        });
-        await waitFor(() => {
-          expect(submitButton).not.toBeDisabled();
-        });
-
-        await user.tab();
-        expect(submitButton).toHaveFocus();
-      });
+      // Keyboard navigation test moved to E2E: e2e/accessibility/contact-form-keyboard.spec.ts
+      // jsdom cannot properly simulate focus behavior - requires real browser DOM
 
       it('should announce errors to screen readers', async () => {
         const user = userEvent.setup();

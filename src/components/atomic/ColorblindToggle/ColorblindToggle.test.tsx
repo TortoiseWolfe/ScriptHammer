@@ -206,30 +206,9 @@ describe('ColorblindToggle', () => {
     });
   });
 
-  it.skip('should close dropdown when clicking outside', async () => {
-    const user = userEvent.setup();
-    render(
-      <div>
-        <ColorblindToggle />
-        <button>Outside button</button>
-      </div>
-    );
-
-    const toggleButton = screen.getByRole('button', { name: /color vision/i });
-    await user.click(toggleButton);
-
-    expect(screen.getByText('Color Vision Assistance')).toBeInTheDocument();
-
-    // Click outside
-    const outsideButton = screen.getByText('Outside button');
-    await user.click(outsideButton);
-
-    await waitFor(() => {
-      expect(
-        screen.queryByText('Color Vision Assistance')
-      ).not.toBeInTheDocument();
-    });
-  });
+  // Click outside behavior test removed - E2E test provides real browser coverage
+  // DaisyUI CSS :focus-within not properly supported in jsdom
+  // E2E test: /e2e/accessibility/colorblind-toggle.spec.ts
 
   it('should show label on larger screens', () => {
     render(<ColorblindToggle />);

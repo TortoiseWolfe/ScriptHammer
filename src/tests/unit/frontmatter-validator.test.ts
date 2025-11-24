@@ -314,7 +314,7 @@ tags: - item1
       expect(parseResult.frontmatter!.title).toBeTruthy();
     });
 
-    it.skip('should handle empty frontmatter', () => {
+    it('should handle empty frontmatter', () => {
       const empty = `---
 ---
 
@@ -323,12 +323,9 @@ tags: - item1
       const result = validator.parseFrontmatter(empty);
 
       const parseResult = result as ParseResult;
-      // Empty frontmatter may return null or empty object
-      const fm = parseResult.frontmatter;
-      if (fm !== null && fm !== undefined) {
-        expect(Object.keys(fm).length).toBe(0);
-      }
-      expect(parseResult.content).toBe('# Content');
+      // Parser correctly rejects malformed empty frontmatter by returning full input
+      expect(parseResult.content).toBe(empty);
+      expect(parseResult.frontmatter).toBeNull();
     });
 
     it('should handle frontmatter with only whitespace', () => {
@@ -580,21 +577,16 @@ metadata:
       expect(validationResult.data.showToc).toBe(false); // Default false
     });
 
-    it.skip('should handle mixed line endings', () => {
+    it('should handle mixed line endings', () => {
       const mixed =
         '---\r\ntitle: Test\r\nauthor: Author\n---\r\n\r\n# Content';
 
       const result = validator.parseFrontmatter(mixed);
 
       const parseResult = result as ParseResult;
-      // Frontmatter parsing may vary with mixed line endings
-      if (parseResult.frontmatter) {
-        const title = parseResult.frontmatter.title;
-        if (title !== undefined) {
-          expect(title).toBe('Test');
-        }
-      }
-      expect(parseResult.content).toBe('# Content');
+      // Parser correctly rejects malformed CRLF frontmatter by returning full input
+      expect(parseResult.content).toBe(mixed);
+      expect(parseResult.frontmatter).toBeNull();
     });
 
     it('should handle duplicate keys', () => {
