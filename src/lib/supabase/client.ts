@@ -39,17 +39,9 @@ export function createClient(): SupabaseClient<Database> {
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
-      '❌ [Supabase] Missing environment variables:',
-      {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseAnonKey,
-      },
-      '\nPlease configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in GitHub repository secrets.'
+    throw new Error(
+      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
     );
-    // Return a non-functional client instead of throwing
-    // This prevents the entire app from crashing
-    return {} as SupabaseClient<Database>;
   }
 
   supabaseInstance = createSupabaseClient<Database>(
