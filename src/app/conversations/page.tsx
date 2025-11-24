@@ -54,6 +54,7 @@ export default function ConversationsPage() {
 
       if (convError) {
         setError('Failed to load conversations: ' + convError.message);
+        setLoading(false);
         return;
       }
 
