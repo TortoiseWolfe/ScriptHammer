@@ -203,8 +203,10 @@ export class EncryptionService {
   ): Promise<string> {
     try {
       // Convert from base64
-      const ciphertextBuffer = this.base64ToArrayBuffer(ciphertext);
-      const iv = this.base64ToArrayBuffer(ivBase64);
+      const ciphertextBuffer = this.base64ToArrayBuffer(
+        ciphertext
+      ) as BufferSource;
+      const iv = this.base64ToArrayBuffer(ivBase64) as BufferSource;
 
       // Decrypt with AES-GCM
       const plaintextBuffer = await crypto.subtle.decrypt(
@@ -241,18 +243,18 @@ export class EncryptionService {
   }
 
   /**
-   * Convert base64 string to ArrayBuffer
+   * Convert base64 string to Uint8Array (BufferSource for SubtleCrypto)
    * @private
    */
-  private base64ToArrayBuffer(base64: string): ArrayBuffer {
+  private base64ToArrayBuffer(base64: string): Uint8Array {
     const binary = atob(base64);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    // Use slice() to ensure we get a proper ArrayBuffer without offset issues
-    // This fixes CI failures in Node.js 20.x where bytes.buffer may not be compatible
-    return bytes.buffer.slice(0);
+    // Return Uint8Array directly - SubtleCrypto accepts TypedArray
+    // This fixes CI failures where bytes.buffer wasn't recognized as valid BufferSource
+    return bytes;
   }
 }
 
