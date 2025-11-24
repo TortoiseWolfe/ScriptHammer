@@ -30,38 +30,19 @@ export function createClient(): SupabaseClient<Database> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Debug logging for production troubleshooting
-  console.log('[Supabase Client] Initializing...');
-  console.log(
-    '[Supabase Client] URL:',
-    supabaseUrl ? `${supabaseUrl.substring(0, 20)}...` : 'MISSING'
-  );
-  console.log(
-    '[Supabase Client] Key:',
-    supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'MISSING'
-  );
-  console.log(
-    '[Supabase Client] Environment:',
-    typeof window === 'undefined' ? 'SSR/Build' : 'Browser'
-  );
-
   // During build/SSR, return a placeholder - don't throw
   // The actual client will be created when running in browser
   if (typeof window === 'undefined') {
     // Create a mock client that won't actually be used
     // This allows the build to succeed
-    console.log('[Supabase Client] Returning mock client for SSR/build');
     return {} as SupabaseClient<Database>;
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('[Supabase Client] ERROR: Missing environment variables');
     throw new Error(
       'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
     );
   }
-
-  console.log('[Supabase Client] Creating real Supabase client...');
 
   supabaseInstance = createSupabaseClient<Database>(
     supabaseUrl,

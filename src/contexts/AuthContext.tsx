@@ -52,36 +52,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    console.log('[AuthContext] Initializing auth...');
-
     // Fallback timeout - prevent infinite loading
     const loadingTimeout = setTimeout(() => {
-      console.warn(
-        '[AuthContext] Auth loading timeout (5s) - forcing isLoading to false'
-      );
-      console.warn(
-        '[AuthContext] This suggests Supabase client is not responding'
-      );
+      console.warn('Auth loading timeout - forcing isLoading to false');
       setIsLoading(false);
     }, 5000);
 
     // Get initial session
-    console.log('[AuthContext] Calling supabase.auth.getSession()...');
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
         clearTimeout(loadingTimeout);
-        console.log('[AuthContext] getSession() resolved successfully');
-        console.log('[AuthContext] Session:', session ? 'Active' : 'None');
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       })
       .catch((error) => {
         clearTimeout(loadingTimeout);
-        console.error('[AuthContext] getSession() failed with error:', error);
-        console.error('[AuthContext] Error type:', error?.constructor?.name);
-        console.error('[AuthContext] Error message:', error?.message);
+        console.error('Failed to get session:', error);
         setIsLoading(false);
       });
 
