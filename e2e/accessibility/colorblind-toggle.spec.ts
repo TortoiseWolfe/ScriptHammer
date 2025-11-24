@@ -115,7 +115,7 @@ test.describe('ColorblindToggle - Accessibility', () => {
 
     // Select a colorblind mode (not "No Correction Needed")
     const select = page.getByRole('combobox');
-    await select.selectOption({ label: /protanopia/i });
+    await select.selectOption({ label: 'Protanopia (Red-Blind) Correction' });
 
     // Wait for UI update
     await page.waitForTimeout(200);
@@ -138,7 +138,9 @@ test.describe('ColorblindToggle - Accessibility', () => {
     await page.waitForTimeout(200);
 
     const select = page.getByRole('combobox');
-    await select.selectOption({ label: /deuteranopia/i });
+    await select.selectOption({
+      label: 'Deuteranopia (Green-Blind) Correction',
+    });
     await page.waitForTimeout(300);
 
     // Navigate to another page
