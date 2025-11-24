@@ -250,7 +250,9 @@ export class EncryptionService {
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
-    return bytes.buffer;
+    // Use slice() to ensure we get a proper ArrayBuffer without offset issues
+    // This fixes CI failures in Node.js 20.x where bytes.buffer may not be compatible
+    return bytes.buffer.slice(0);
   }
 }
 
