@@ -57,6 +57,9 @@ public/TASKS.md
 /public/rss.xml
 /public/sitemap.xml
 
+# Claude Code local settings (user-specific permissions)
+.claude/settings.local.json
+
 # Local Specify development tools (keep outputs, ignore scripts/templates)
 .specify/scripts/
 .specify/templates/

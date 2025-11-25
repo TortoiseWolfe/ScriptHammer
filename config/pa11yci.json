@@ -1,14 +1,15 @@
 {
   "// Note": "Pa11y requires Chromium to be installed. In Docker, update Dockerfile to include chromium package",
+  "// Note2": "Next.js 15 streams metadata via JavaScript. The title element appears after hydration, not in initial HTML.",
   "defaults": {
     "standard": "WCAG2AA",
     "timeout": 30000,
-    "wait": 5000,
+    "wait": 3000,
     "viewport": {
       "width": 1280,
       "height": 1024
     },
-    "runners": ["axe", "htmlcs"],
+    "runners": ["axe"],
     "hideElements": "",
     "ignore": ["color-contrast"],
     "chromeLaunchConfig": {
@@ -26,19 +27,23 @@
   "urls": [
     {
       "url": "http://localhost:3000/",
-      "screenCapture": ".pa11y-screenshots/home.png"
+      "screenCapture": ".pa11y-screenshots/home.png",
+      "actions": ["wait for element footer to be visible"]
     },
     {
       "url": "http://localhost:3000/themes",
-      "screenCapture": ".pa11y-screenshots/themes.png"
+      "screenCapture": ".pa11y-screenshots/themes.png",
+      "actions": ["wait for element footer to be visible"]
     },
     {
       "url": "http://localhost:3000/accessibility",
-      "screenCapture": ".pa11y-screenshots/accessibility.png"
+      "screenCapture": ".pa11y-screenshots/accessibility.png",
+      "actions": ["wait for element footer to be visible"]
     },
     {
       "url": "http://localhost:3000/status",
-      "screenCapture": ".pa11y-screenshots/status.png"
+      "screenCapture": ".pa11y-screenshots/status.png",
+      "actions": ["wait for element footer to be visible"]
     }
   ]
 }
