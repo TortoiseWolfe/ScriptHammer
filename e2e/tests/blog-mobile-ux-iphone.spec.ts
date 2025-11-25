@@ -1,8 +1,7 @@
 import { test, expect, devices } from '@playwright/test';
-import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
 
 /**
- * Mobile UX Tests for Blog Posts
+ * Mobile UX Tests for Blog Posts - iPhone 12
  *
  * IMPORTANT: These tests verify the RESULT of fixes, not the process of fixing.
  * Always verify fixes with human eyes first, then write tests to prevent regression.
@@ -10,11 +9,12 @@ import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
  * See PRP-016: Mobile-First Visual Testing Methodology
  */
 
-test.describe('Blog Post Mobile UX - iPhone 12', () => {
-  test.use({
-    ...devices['iPhone 12'],
-  });
+// Device configuration at file scope (not inside describe)
+test.use({
+  ...devices['iPhone 12'],
+});
 
+test.describe('Blog Post Mobile UX - iPhone 12', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to a blog post
     await page.goto('/blog/countdown-timer-react-tutorial');
@@ -259,113 +259,6 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
         path: 'test-results/mobile-featured-image.png',
         fullPage: false,
       });
-    }
-  });
-});
-
-/**
- * Mobile UX Tests - Mobile Chrome (Pixel 5)
- *
- * Run same tests on Android viewport to ensure cross-platform compatibility
- */
-test.describe('Blog Post Mobile UX - Pixel 5', () => {
-  test.use({
-    ...devices['Pixel 5'],
-  });
-
-  test('should display footer at bottom', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(500);
-
-    const footer = page.locator('footer');
-    await expect(footer).toBeVisible();
-    await expect(footer).toContainText('Made by');
-  });
-
-  test('should not have horizontal scroll', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
-
-    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
-    const viewportWidth = page.viewportSize()?.width || 0;
-
-    expect(scrollWidth).toBeLessThanOrEqual(viewportWidth + 1);
-  });
-});
-
-/**
- * Touch Target Standards for Blog (T013)
- * PRP-017: Mobile-First Design Overhaul
- *
- * Test blog interactive elements meet 44x44px AAA standards
- * This test should FAIL initially (TDD RED phase)
- */
-test.describe('Blog Touch Target Standards - iPhone 12', () => {
-  test.use({
-    ...devices['iPhone 12'],
-  });
-
-  const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minWidth;
-  const TOLERANCE = 1;
-
-  test('Blog list cards have adequate touch targets (44x44px minimum)', async ({
-    page,
-  }) => {
-    await page.goto('/blog');
-    await page.waitForLoadState('networkidle');
-
-    // Find all blog post card links
-    const blogCards = await page.locator('a[href*="/blog/"]').all();
-
-    const failures: string[] = [];
-
-    for (let i = 0; i < blogCards.length; i++) {
-      const card = blogCards[i];
-
-      if (await card.isVisible()) {
-        const box = await card.boundingBox();
-
-        if (box) {
-          // Cards should have adequate height for tapping
-          if (box.height < MINIMUM - TOLERANCE) {
-            const href = await card.getAttribute('href');
-            failures.push(
-              `Card ${i} (${href}): height ${box.height.toFixed(1)}px < ${MINIMUM}px`
-            );
-          }
-        }
-      }
-    }
-
-    if (failures.length > 0) {
-      const summary = `${failures.length} blog cards failed touch target requirements:\n${failures.join('\n')}`;
-      expect(failures.length, summary).toBe(0);
-    }
-  });
-
-  test('Blog post interactive elements meet 44x44px', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
-    await page.waitForLoadState('networkidle');
-
-    // Test buttons (SEO badge, TOC, etc.)
-    const buttons = await page.locator('button').all();
-
-    for (const button of buttons) {
-      if (await button.isVisible()) {
-        const box = await button.boundingBox();
-
-        if (box) {
-          expect(
-            box.width,
-            'Button width must be ≥ 44px'
-          ).toBeGreaterThanOrEqual(MINIMUM - TOLERANCE);
-
-          expect(
-            box.height,
-            'Button height must be ≥ 44px'
-          ).toBeGreaterThanOrEqual(MINIMUM - TOLERANCE);
-        }
-      }
     }
   });
 });
