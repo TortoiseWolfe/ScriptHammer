@@ -5,24 +5,54 @@
  * Global authentication state management with React Context
  */
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+} from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
+import { retryWithBackoff } from '@/lib/auth/retry-utils';
 import IdleTimeoutModal from '@/components/molecular/IdleTimeoutModal';
+
+/**
+ * Auth error types for user feedback
+ */
+export interface AuthError {
+  code: 'TIMEOUT' | 'NETWORK' | 'AUTH_FAILED' | 'UNKNOWN';
+  message: string;
+  retryable: boolean;
+}
+
+/**
+ * Auth error messages for consistent user feedback
+ */
+export const AUTH_ERROR_MESSAGES: Record<AuthError['code'], string> = {
+  TIMEOUT: 'Authentication taking longer than expected',
+  NETWORK: 'Unable to connect. Check your internet connection.',
+  AUTH_FAILED: 'Sign in failed. Please try again.',
+  UNKNOWN: 'Something went wrong. Please try again.',
+};
 
 export interface AuthState {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  error: AuthError | null;
+  retryCount: number;
 }
 
 export interface AuthContextType extends AuthState {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<{ error: Error | null }>;
+  signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
+  retry: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
@@ -33,7 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<AuthError | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const [showIdleModal, setShowIdleModal] = useState(false);
+  const isLocalSignOut = useRef(false);
 
   // Session idle timeout (24 hours = 1440 minutes)
   const { timeRemaining, resetTimer } = useIdleTimeout({
@@ -52,26 +85,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    // Fallback timeout - prevent infinite loading
+    // Fallback timeout - prevent infinite loading (FR-001)
     const loadingTimeout = setTimeout(() => {
-      console.warn('Auth loading timeout - forcing isLoading to false');
+      console.warn('Auth loading timeout - setting error state');
+      setError({
+        code: 'TIMEOUT',
+        message: AUTH_ERROR_MESSAGES.TIMEOUT,
+        retryable: true,
+      });
       setIsLoading(false);
     }, 5000);
 
-    // Get initial session
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
+    // Get initial session with retry logic (FR-007)
+    const getSessionWithRetry = async () => {
+      try {
+        const {
+          data: { session },
+        } = await retryWithBackoff(
+          () =>
+            supabase.auth.getSession().then((res) => {
+              if (res.error) throw res.error;
+              return res;
+            }),
+          3, // maxRetries
+          [1000, 2000, 4000] // exponential backoff delays
+        );
         clearTimeout(loadingTimeout);
         setSession(session);
         setUser(session?.user ?? null);
+        setError(null);
         setIsLoading(false);
-      })
-      .catch((error) => {
+      } catch (err) {
         clearTimeout(loadingTimeout);
-        console.error('Failed to get session:', error);
+        console.error('Failed to get session after retries:', err);
+        setError({
+          code: 'AUTH_FAILED',
+          message: AUTH_ERROR_MESSAGES.AUTH_FAILED,
+          retryable: true,
+        });
         setIsLoading(false);
-      });
+      }
+    };
+
+    getSessionWithRetry();
 
     // Listen for auth changes
     const {
@@ -80,6 +136,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+
+      // FR-009: Cross-tab sign-out detection
+      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
+        // Sign-out detected from another tab - redirect to home
+        console.log('Cross-tab sign-out detected, redirecting to home');
+        window.location.href = '/';
+        return;
+      }
+
+      // Reset local sign-out flag after handling
+      if (_event === 'SIGNED_OUT') {
+        isLocalSignOut.current = false;
+      }
 
       // Auto-generate encryption keys on first login
       if (session?.user && _event === 'SIGNED_IN') {
@@ -134,12 +203,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Mark as local sign-out to prevent double redirect from onAuthStateChange
+    isLocalSignOut.current = true;
+
+    // FR-004: Clear local state FIRST (fail-safe)
+    setUser(null);
+    setSession(null);
+    setError(null);
+
+    // Then attempt Supabase signOut (don't await, don't throw)
     try {
-      const { error } = await supabase.auth.signOut();
-      return { error };
-    } catch (error) {
-      return { error: error as Error };
+      await supabase.auth.signOut();
+    } catch (err) {
+      // Log but don't throw - local state already cleared
+      console.error('Supabase signOut failed (local state cleared):', err);
     }
+
+    // FR-005: Force page reload to clear any stale React state
+    window.location.href = '/';
   };
 
   const refreshSession = async () => {
@@ -148,15 +229,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.session?.user ?? null);
   };
 
+  const retry = async () => {
+    setError(null);
+    setRetryCount((prev) => prev + 1);
+    setIsLoading(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setSession(session);
+      setUser(session?.user ?? null);
+    } catch (err) {
+      console.error('Retry failed:', err);
+      setError({
+        code: 'AUTH_FAILED',
+        message: AUTH_ERROR_MESSAGES.AUTH_FAILED,
+        retryable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
   const value: AuthContextType = {
     user,
     session,
     isLoading,
     isAuthenticated: !!user,
+    error,
+    retryCount,
     signUp,
     signIn,
     signOut,
     refreshSession,
+    retry,
+    clearError,
   };
 
   const handleContinueSession = () => {

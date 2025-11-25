@@ -48,7 +48,24 @@ export default function SignInForm({
     }
 
     // Check server-side rate limit (REQ-SEC-003)
-    const rateLimit = await checkRateLimit(email, 'sign_in');
+    // Fail-open: if rate limit check fails, allow sign-in attempt
+    let rateLimit: {
+      allowed: boolean;
+      remaining: number;
+      locked_until?: string | null;
+    } = {
+      allowed: true,
+      remaining: 5,
+    };
+    try {
+      rateLimit = await checkRateLimit(email, 'sign_in');
+    } catch (rateLimitError) {
+      console.warn(
+        'Rate limit check failed, allowing sign-in attempt:',
+        rateLimitError
+      );
+      // Continue with sign-in (fail-open for UX)
+    }
 
     if (!rateLimit.allowed) {
       const timeUntilReset = rateLimit.locked_until

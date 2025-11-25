@@ -37,10 +37,14 @@ const withMockAuthenticatedUser = (Story: any) => {
     session: null,
     isLoading: false,
     isAuthenticated: true,
+    error: null,
+    retryCount: 0,
     signUp: async () => ({ error: null }),
     signIn: async () => ({ error: null }),
-    signOut: async () => ({ error: null }),
+    signOut: async () => {},
     refreshSession: async () => {},
+    retry: async () => {},
+    clearError: () => {},
   };
 
   return (
@@ -59,10 +63,14 @@ const withMockUnauthenticatedUser = (Story: any) => {
     session: null,
     isLoading: false,
     isAuthenticated: false,
+    error: null,
+    retryCount: 0,
     signUp: async () => ({ error: null }),
     signIn: async () => ({ error: null }),
-    signOut: async () => ({ error: null }),
+    signOut: async () => {},
     refreshSession: async () => {},
+    retry: async () => {},
+    clearError: () => {},
   };
 
   return (

@@ -20,7 +20,13 @@ interface Conversation {
  * Simple UI to view and select conversations
  */
 export default function ConversationsPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const {
+    user,
+    isLoading: authLoading,
+    error: authError,
+    retry,
+    clearError,
+  } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +109,49 @@ export default function ConversationsPage() {
     router.push(`/messages?conversation=${conversationId}`);
   };
 
-  if (loading) {
+  // Auth error state - show error with retry option (FR-006)
+  if (authError) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="alert alert-error max-w-md flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 shrink-0 stroke-current"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{authError.message}</span>
+          </div>
+          {authError.retryable && (
+            <div className="flex gap-2">
+              <button className="btn btn-sm btn-outline" onClick={retry}>
+                Retry
+              </button>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => {
+                  clearError();
+                  router.push('/sign-in');
+                }}
+              >
+                Sign in again
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (loading || authLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
