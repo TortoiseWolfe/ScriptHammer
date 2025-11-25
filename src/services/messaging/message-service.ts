@@ -25,6 +25,7 @@ import type {
 import {
   AuthenticationError,
   EncryptionError,
+  EncryptionLockedError,
   ConnectionError,
   ValidationError,
   MESSAGE_CONSTRAINTS,
@@ -79,10 +80,12 @@ export class MessageService {
     }
 
     try {
-      // Initialize sender's keys if needed (lazy generation)
-      const hasKeys = await keyManagementService.hasValidKeys();
-      if (!hasKeys) {
-        await keyManagementService.initializeKeys();
+      // Get sender's derived keys from memory (derived on login)
+      const senderKeys = keyManagementService.getCurrentKeys();
+      if (!senderKeys) {
+        throw new EncryptionLockedError(
+          'Your encryption keys are not available. Please sign in again to send messages.'
+        );
       }
 
       // Get conversation details
@@ -113,29 +116,7 @@ export class MessageService {
         );
       }
 
-      // Get sender's private key
-      const senderPrivateKeyJwk = await encryptionService.getPrivateKey(
-        user.id
-      );
-
-      if (!senderPrivateKeyJwk) {
-        throw new EncryptionError(
-          'Your encryption keys failed to initialize. This may be a browser storage issue. Please refresh the page and try again.'
-        );
-      }
-
-      // Import keys
-      const senderPrivateKey = await crypto.subtle.importKey(
-        'jwk',
-        senderPrivateKeyJwk,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        ['deriveBits', 'deriveKey']
-      );
-
+      // Import recipient's public key
       const recipientPublicKeyCrypto = await crypto.subtle.importKey(
         'jwk',
         recipientPublicKey,
@@ -147,9 +128,9 @@ export class MessageService {
         []
       );
 
-      // Derive shared secret
+      // Derive shared secret using sender's derived private key
       const sharedSecret = await encryptionService.deriveSharedSecret(
-        senderPrivateKey,
+        senderKeys.privateKey,
         recipientPublicKeyCrypto
       );
 
@@ -276,7 +257,8 @@ export class MessageService {
       if (
         error instanceof AuthenticationError ||
         error instanceof ValidationError ||
-        error instanceof EncryptionError
+        error instanceof EncryptionError ||
+        error instanceof EncryptionLockedError
       ) {
         throw error;
       }
@@ -446,9 +428,6 @@ export class MessageService {
         profileMap.set(profile.id, profile);
       });
 
-      // Get private key for decryption
-      let privateKeyJwk = await encryptionService.getPrivateKey(user.id);
-
       // If no messages, just return empty array (no need for keys)
       if (messagesToDecrypt.length === 0) {
         return {
@@ -458,34 +437,39 @@ export class MessageService {
         };
       }
 
-      // If we have messages but no keys, initialize them now
-      if (!privateKeyJwk) {
-        await keyManagementService.initializeKeys();
-        privateKeyJwk = await encryptionService.getPrivateKey(user.id);
+      // Get private key for decryption from memory (derived on login)
+      console.log('[Decryption] Starting for conversation:', conversationId);
+      const currentKeys = keyManagementService.getCurrentKeys();
 
-        if (!privateKeyJwk) {
-          throw new EncryptionError('Failed to initialize encryption keys');
-        }
+      if (!currentKeys) {
+        console.error(
+          '[Decryption] CRITICAL: Encryption keys not available - user needs to re-authenticate'
+        );
+        throw new EncryptionLockedError(
+          'Your encryption keys are not available. Please sign in again to view messages.'
+        );
       }
 
-      const privateKey = await crypto.subtle.importKey(
-        'jwk',
-        privateKeyJwk,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        ['deriveBits', 'deriveKey']
-      );
+      console.log('[Decryption] Keys available in memory for user:', user.id);
 
       // Get other participant's public key
+      console.log(
+        '[Decryption] Fetching public key for other user:',
+        otherParticipantId
+      );
       const otherPublicKey =
         await keyManagementService.getUserPublicKey(otherParticipantId);
+      console.log(
+        '[Decryption] Other user public key:',
+        otherPublicKey ? 'FOUND' : 'MISSING'
+      );
 
       if (!otherPublicKey) {
         // Cannot decrypt messages without other user's public key
         // This shouldn't happen if messages exist, but handle gracefully
+        console.error(
+          '[Decryption] CRITICAL: Cannot decrypt - other user has no public key'
+        );
         return {
           messages: [],
           has_more: false,
@@ -493,6 +477,9 @@ export class MessageService {
         };
       }
 
+      console.log(
+        '[Decryption] Importing other user public key via crypto.subtle...'
+      );
       const otherPublicKeyCrypto = await crypto.subtle.importKey(
         'jwk',
         otherPublicKey,
@@ -503,14 +490,35 @@ export class MessageService {
         false,
         []
       );
+      console.log('[Decryption] Other user public key imported successfully');
 
-      // Derive shared secret
+      // Derive shared secret using our derived private key
+      console.log('[Decryption] Deriving ECDH shared secret...');
+      console.log(
+        '[Decryption] Key setup: currentUser =',
+        user.id,
+        '| otherParticipant =',
+        otherParticipantId
+      );
       const sharedSecret = await encryptionService.deriveSharedSecret(
-        privateKey,
+        currentKeys.privateKey,
         otherPublicKeyCrypto
       );
+      console.log('[Decryption] Shared secret derived successfully');
 
       // Decrypt all messages
+      console.log(
+        '[Decryption] Decrypting',
+        messagesToDecrypt.length,
+        'messages...'
+      );
+      console.log(
+        '[Decryption] Note: Messages from',
+        user.id,
+        '= sent by me, from',
+        otherParticipantId,
+        '= received'
+      );
       const decryptedMessages: DecryptedMessage[] = await Promise.all(
         messagesToDecrypt.map(async (msg: any) => {
           try {
@@ -541,7 +549,25 @@ export class MessageService {
                 'Unknown',
             };
           } catch (decryptError) {
-            // If decryption fails, show placeholder (silently)
+            // Log the decryption failure with details (but not sensitive data)
+            const err = decryptError as Error;
+            // Log as individual args to avoid DOMException serialization issues
+            console.error(
+              '[Decryption] FAILED for message:',
+              msg.id,
+              '| error:',
+              String(err.name || 'unknown'),
+              '-',
+              String(err.message || 'no message'),
+              '| sender:',
+              msg.sender_id,
+              '| content length:',
+              msg.encrypted_content?.length || 0,
+              '| IV length:',
+              msg.initialization_vector?.length || 0,
+              '| created:',
+              msg.created_at
+            );
             return {
               id: msg.id,
               conversation_id: msg.conversation_id,
@@ -560,6 +586,11 @@ export class MessageService {
           }
         })
       );
+      console.log(
+        '[Decryption] Completed decryption for',
+        decryptedMessages.length,
+        'messages'
+      );
 
       // Reverse to chronological order (oldest first)
       decryptedMessages.reverse();
@@ -576,6 +607,7 @@ export class MessageService {
       if (
         error instanceof AuthenticationError ||
         error instanceof EncryptionError ||
+        error instanceof EncryptionLockedError ||
         error instanceof ConnectionError ||
         error instanceof ValidationError
       ) {
@@ -624,18 +656,29 @@ export class MessageService {
       return;
     }
 
+    console.log(
+      '[MessageService] markAsRead called with',
+      messageIds.length,
+      'messages'
+    );
     try {
-      const { error } = await (supabase as any)
+      const { error, count } = await (supabase as any)
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .in('id', messageIds)
         .is('read_at', null); // Only update if not already read
 
       if (error) {
+        console.error('[MessageService] markAsRead error:', error);
         throw new ConnectionError(
           'Failed to mark messages as read: ' + error.message
         );
       }
+      console.log(
+        '[MessageService] markAsRead success, updated',
+        count,
+        'messages'
+      );
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
@@ -759,6 +802,14 @@ export class MessageService {
           ? conversation.participant_2_id
           : conversation.participant_1_id;
 
+      // Get sender's derived keys from memory
+      const senderKeys = keyManagementService.getCurrentKeys();
+      if (!senderKeys) {
+        throw new EncryptionLockedError(
+          'Your encryption keys are not available. Please sign in again to edit messages.'
+        );
+      }
+
       // Get recipient's public key
       const recipientPublicKey =
         await keyManagementService.getUserPublicKey(recipientId);
@@ -769,26 +820,7 @@ export class MessageService {
         );
       }
 
-      // Get sender's private key
-      const senderPrivateKeyJwk = await encryptionService.getPrivateKey(
-        user.id
-      );
-
-      if (!senderPrivateKeyJwk) {
-        throw new EncryptionError(
-          'Your encryption keys are not available. Please refresh and try again.'
-        );
-      }
-
-      // Import keys
-      const senderPrivateKey = await crypto.subtle.importKey(
-        'jwk',
-        senderPrivateKeyJwk,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        false,
-        ['deriveBits', 'deriveKey']
-      );
-
+      // Import recipient's public key
       const recipientPublicKeyCrypto = await crypto.subtle.importKey(
         'jwk',
         recipientPublicKey,
@@ -797,9 +829,9 @@ export class MessageService {
         []
       );
 
-      // Derive shared secret
+      // Derive shared secret using sender's derived private key
       const sharedSecret = await encryptionService.deriveSharedSecret(
-        senderPrivateKey,
+        senderKeys.privateKey,
         recipientPublicKeyCrypto
       );
 
@@ -830,6 +862,7 @@ export class MessageService {
         error instanceof AuthenticationError ||
         error instanceof ValidationError ||
         error instanceof EncryptionError ||
+        error instanceof EncryptionLockedError ||
         error instanceof ConnectionError
       ) {
         throw error;
@@ -931,6 +964,165 @@ export class MessageService {
         throw error;
       }
       throw new ConnectionError('Failed to delete message', error);
+    }
+  }
+
+  /**
+   * Archive a conversation for the current user
+   * Per-user archive: User A archiving doesn't affect User B's view
+   *
+   * @param conversationId - UUID of the conversation to archive
+   * @returns Promise<void>
+   * @throws AuthenticationError if user is not signed in
+   * @throws ValidationError if conversation not found or user not a participant
+   * @throws ConnectionError if database update fails
+   */
+  async archiveConversation(conversationId: string): Promise<void> {
+    const supabase = createClient();
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new AuthenticationError(
+        'You must be signed in to archive conversations'
+      );
+    }
+
+    try {
+      // Get conversation to determine which participant the user is
+      const { data: conversation, error: fetchError } = await (supabase as any)
+        .from('conversations')
+        .select('participant_1_id, participant_2_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (fetchError || !conversation) {
+        throw new ValidationError('Conversation not found', 'conversationId');
+      }
+
+      // Determine which column to update based on user's participant role
+      let updateColumn: string;
+      if (conversation.participant_1_id === user.id) {
+        updateColumn = 'archived_by_participant_1';
+      } else if (conversation.participant_2_id === user.id) {
+        updateColumn = 'archived_by_participant_2';
+      } else {
+        throw new ValidationError(
+          'You are not a participant in this conversation',
+          'conversationId'
+        );
+      }
+
+      console.log(
+        '[MessageService] archiveConversation:',
+        conversationId,
+        'column:',
+        updateColumn
+      );
+
+      // Update the archive status
+      const { error: updateError, data: updateData } = await (supabase as any)
+        .from('conversations')
+        .update({ [updateColumn]: true })
+        .eq('id', conversationId)
+        .select();
+
+      if (updateError) {
+        console.error(
+          '[MessageService] archiveConversation error:',
+          updateError
+        );
+        throw new ConnectionError(
+          'Failed to archive conversation: ' + updateError.message
+        );
+      }
+
+      console.log('[MessageService] archiveConversation success:', updateData);
+    } catch (error) {
+      if (
+        error instanceof AuthenticationError ||
+        error instanceof ValidationError ||
+        error instanceof ConnectionError
+      ) {
+        throw error;
+      }
+      throw new ConnectionError('Failed to archive conversation', error);
+    }
+  }
+
+  /**
+   * Unarchive a conversation for the current user
+   *
+   * @param conversationId - UUID of the conversation to unarchive
+   * @returns Promise<void>
+   * @throws AuthenticationError if user is not signed in
+   * @throws ValidationError if conversation not found or user not a participant
+   * @throws ConnectionError if database update fails
+   */
+  async unarchiveConversation(conversationId: string): Promise<void> {
+    const supabase = createClient();
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new AuthenticationError(
+        'You must be signed in to unarchive conversations'
+      );
+    }
+
+    try {
+      // Get conversation to determine which participant the user is
+      const { data: conversation, error: fetchError } = await (supabase as any)
+        .from('conversations')
+        .select('participant_1_id, participant_2_id')
+        .eq('id', conversationId)
+        .single();
+
+      if (fetchError || !conversation) {
+        throw new ValidationError('Conversation not found', 'conversationId');
+      }
+
+      // Determine which column to update based on user's participant role
+      let updateColumn: string;
+      if (conversation.participant_1_id === user.id) {
+        updateColumn = 'archived_by_participant_1';
+      } else if (conversation.participant_2_id === user.id) {
+        updateColumn = 'archived_by_participant_2';
+      } else {
+        throw new ValidationError(
+          'You are not a participant in this conversation',
+          'conversationId'
+        );
+      }
+
+      // Update the archive status
+      const { error: updateError } = await (supabase as any)
+        .from('conversations')
+        .update({ [updateColumn]: false })
+        .eq('id', conversationId);
+
+      if (updateError) {
+        throw new ConnectionError(
+          'Failed to unarchive conversation: ' + updateError.message
+        );
+      }
+    } catch (error) {
+      if (
+        error instanceof AuthenticationError ||
+        error instanceof ValidationError ||
+        error instanceof ConnectionError
+      ) {
+        throw error;
+      }
+      throw new ConnectionError('Failed to unarchive conversation', error);
     }
   }
 }

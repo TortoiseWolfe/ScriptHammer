@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { messageService } from '@/services/messaging/message-service';
 import type {
   ConversationWithParticipants,
   UserProfile,
@@ -11,6 +13,7 @@ export interface ConversationListItem {
   lastMessage: string | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  isArchived: boolean;
 }
 
 export type FilterType = 'all' | 'unread' | 'archived';
@@ -27,6 +30,9 @@ export type SortType = 'recent' | 'alphabetical' | 'unread';
  * - Real-time updates via Supabase subscriptions
  */
 export function useConversationList() {
+  // Use auth context for user - prevents race conditions with getUser()
+  const { user: authUser, isLoading: authLoading } = useAuth();
+
   const [conversations, setConversations] = useState<ConversationListItem[]>(
     []
   );
@@ -38,21 +44,26 @@ export function useConversationList() {
 
   // Load conversations from database
   const loadConversations = useCallback(async () => {
+    // Wait for auth to be ready
+    if (authLoading) {
+      return;
+    }
+
+    // Use user from AuthContext instead of calling getUser()
+    // This prevents race conditions with async getUser() calls
+    const user = authUser;
+
+    if (!user) {
+      setError('You must be logged in');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
       const supabase = createClient();
-
-      // Get current user
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setError('You must be logged in');
-        setLoading(false);
-        return;
-      }
 
       // Get all conversations for this user
       const { data: conversationsData, error: convsError } = await (
@@ -62,6 +73,10 @@ export function useConversationList() {
         .select('*')
         .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });
+
+      // DEBUG: Log query results
+      console.log('[ConversationList] Query error:', convsError);
+      console.log('[ConversationList] Query data:', conversationsData);
 
       if (convsError) throw convsError;
       if (!conversationsData) {
@@ -73,11 +88,16 @@ export function useConversationList() {
       // For each conversation, get participant info and unread count
       const conversationItems: ConversationListItem[] = await Promise.all(
         conversationsData.map(async (conv: any) => {
-          // Determine other participant
-          const otherParticipantId =
-            conv.participant_1_id === user.id
-              ? conv.participant_2_id
-              : conv.participant_1_id;
+          // Determine other participant and archive status based on user's role
+          const isParticipant1 = conv.participant_1_id === user.id;
+          const otherParticipantId = isParticipant1
+            ? conv.participant_2_id
+            : conv.participant_1_id;
+
+          // Determine if current user has archived this conversation
+          const isArchived = isParticipant1
+            ? conv.archived_by_participant_1 === true
+            : conv.archived_by_participant_2 === true;
 
           // Get participant profile
           const { data: profile } = await supabase
@@ -114,6 +134,7 @@ export function useConversationList() {
             lastMessage: lastMessageData ? '[Encrypted message]' : null, // We can't decrypt here without full message object
             lastMessageAt: conv.last_message_at,
             unreadCount: unreadCount || 0,
+            isArchived,
           };
         })
       );
@@ -124,7 +145,7 @@ export function useConversationList() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authUser, authLoading]);
 
   // Filter conversations based on search and filter type
   const filteredConversations = conversations
@@ -139,12 +160,17 @@ export function useConversationList() {
       }
 
       // Type filter
-      if (filterType === 'unread' && conv.unreadCount === 0) {
-        return false;
+      if (filterType === 'all') {
+        // 'All' excludes archived conversations
+        return !conv.isArchived;
       }
-      // TODO: Add archived support in future
+      if (filterType === 'unread') {
+        // 'Unread' shows non-archived conversations with unread messages
+        return !conv.isArchived && conv.unreadCount > 0;
+      }
       if (filterType === 'archived') {
-        return false; // No archived conversations yet
+        // 'Archived' shows only archived conversations
+        return conv.isArchived;
       }
 
       return true;
@@ -210,6 +236,18 @@ export function useConversationList() {
           loadConversations();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          // Reload when messages are updated (e.g., read_at changes)
+          loadConversations();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -217,9 +255,50 @@ export function useConversationList() {
     };
   }, [loadConversations]);
 
+  // Archive a conversation
+  const archiveConversation = useCallback(
+    async (conversationId: string) => {
+      console.log(
+        '[Archive] Attempting to archive conversation:',
+        conversationId
+      );
+      try {
+        await messageService.archiveConversation(conversationId);
+        console.log(
+          '[Archive] Successfully archived conversation:',
+          conversationId
+        );
+        // Reload to update the list
+        loadConversations();
+      } catch (err: any) {
+        console.error(
+          '[Archive] Failed to archive conversation:',
+          conversationId,
+          err
+        );
+        setError(err.message || 'Failed to archive conversation');
+      }
+    },
+    [loadConversations]
+  );
+
+  // Unarchive a conversation
+  const unarchiveConversation = useCallback(
+    async (conversationId: string) => {
+      try {
+        await messageService.unarchiveConversation(conversationId);
+        // Reload to update the list
+        loadConversations();
+      } catch (err: any) {
+        setError(err.message || 'Failed to unarchive conversation');
+      }
+    },
+    [loadConversations]
+  );
+
   return {
     conversations: filteredConversations,
-    loading,
+    loading: loading || authLoading,
     error,
     searchQuery,
     setSearchQuery,
@@ -228,5 +307,7 @@ export function useConversationList() {
     sortType,
     setSortType,
     reload: loadConversations,
+    archiveConversation,
+    unarchiveConversation,
   };
 }

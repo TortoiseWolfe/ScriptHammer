@@ -48,10 +48,12 @@ export function useReadReceipts({
     const messageIds = Array.from(pendingReadRef.current);
     pendingReadRef.current.clear();
 
+    console.log('[ReadReceipts] Marking messages as read:', messageIds);
     try {
       await messageService.markAsRead(messageIds);
+      console.log('[ReadReceipts] Successfully marked messages as read');
     } catch (error) {
-      console.error('Failed to mark messages as read:', error);
+      console.error('[ReadReceipts] Failed to mark messages as read:', error);
       // Re-add to pending if failed (retry on next batch)
       messageIds.forEach((id) => pendingReadRef.current.add(id));
     }

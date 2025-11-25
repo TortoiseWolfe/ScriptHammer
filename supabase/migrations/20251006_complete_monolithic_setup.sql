@@ -701,6 +701,8 @@ CREATE TABLE conversations (
   participant_1_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   participant_2_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   last_message_at TIMESTAMPTZ,
+  archived_by_participant_1 BOOLEAN NOT NULL DEFAULT FALSE,
+  archived_by_participant_2 BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT no_self_conversation CHECK (participant_1_id != participant_2_id),
   CONSTRAINT canonical_ordering CHECK (participant_1_id < participant_2_id),
@@ -710,6 +712,7 @@ CREATE TABLE conversations (
 CREATE INDEX idx_conversations_participant_1 ON conversations(participant_1_id);
 CREATE INDEX idx_conversations_participant_2 ON conversations(participant_2_id);
 CREATE INDEX idx_conversations_last_message ON conversations(last_message_at DESC);
+CREATE INDEX idx_conversations_archived ON conversations(participant_1_id, archived_by_participant_1, participant_2_id, archived_by_participant_2);
 
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 
@@ -730,6 +733,11 @@ CREATE POLICY "Users can create conversations with connections" ON conversations
 
 CREATE POLICY "System can update last_message_at" ON conversations
   FOR UPDATE TO service_role USING (true);
+
+-- Allow users to archive/unarchive their own conversations
+CREATE POLICY "Users can update own conversation archive status" ON conversations
+  FOR UPDATE USING (auth.uid() = participant_1_id OR auth.uid() = participant_2_id)
+  WITH CHECK (auth.uid() = participant_1_id OR auth.uid() = participant_2_id);
 
 COMMENT ON TABLE conversations IS '1-to-1 conversations with canonical ordering';
 
@@ -786,16 +794,43 @@ CREATE POLICY "Users can edit own messages" ON messages
   FOR UPDATE USING (sender_id = auth.uid())
   WITH CHECK (sender_id = auth.uid() AND created_at > now() - INTERVAL '15 minutes');
 
+-- Allow recipients to mark messages as read (update read_at field)
+-- This is separate from edit policy because recipients need to update messages they didn't send
+CREATE POLICY "Recipients can mark messages as read" ON messages
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM conversations
+      WHERE conversations.id = messages.conversation_id AND (
+        conversations.participant_1_id = auth.uid() OR
+        conversations.participant_2_id = auth.uid()
+      )
+    )
+    AND sender_id != auth.uid()
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM conversations
+      WHERE conversations.id = messages.conversation_id AND (
+        conversations.participant_1_id = auth.uid() OR
+        conversations.participant_2_id = auth.uid()
+      )
+    )
+    AND sender_id != auth.uid()
+  );
+
 CREATE POLICY "Users cannot delete messages" ON messages
   FOR DELETE USING (false);
 
 COMMENT ON TABLE messages IS 'E2E encrypted messages with 15-minute edit window';
 
--- Table 4: user_encryption_keys (Public ECDH keys)
+-- Table 4: user_encryption_keys (Public ECDH keys + password-derived salt)
+-- encryption_salt: Base64-encoded 16-byte Argon2 salt for password-derived keys
+-- NULL salt indicates legacy random-generated keys requiring migration (Feature 032)
 CREATE TABLE user_encryption_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   public_key JSONB NOT NULL,
+  encryption_salt TEXT, -- Base64 Argon2 salt (NULL = legacy keys)
   device_id TEXT,
   expires_at TIMESTAMPTZ,
   revoked BOOLEAN NOT NULL DEFAULT false,
@@ -806,6 +841,8 @@ CREATE TABLE user_encryption_keys (
 CREATE INDEX idx_user_encryption_keys_user ON user_encryption_keys(user_id);
 CREATE INDEX idx_user_encryption_keys_active ON user_encryption_keys(user_id, revoked, expires_at)
   WHERE revoked = false;
+CREATE INDEX idx_user_encryption_keys_salt ON user_encryption_keys(user_id)
+  WHERE encryption_salt IS NOT NULL;
 
 ALTER TABLE user_encryption_keys ENABLE ROW LEVEL SECURITY;
 
