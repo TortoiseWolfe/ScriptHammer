@@ -123,6 +123,44 @@ export default function SignInForm({
         });
       }
 
+      // Derive encryption keys from password (Feature 032)
+      try {
+        const { keyManagementService } = await import(
+          '@/services/messaging/key-service'
+        );
+
+        // Check if user has existing keys
+        const hasKeys = await keyManagementService.hasKeys();
+
+        if (!hasKeys) {
+          // New user: initialize keys with password
+          console.log('[SignIn] New user - initializing encryption keys');
+          await keyManagementService.initializeKeys(password);
+        } else {
+          // Check if user needs migration (legacy random keys)
+          const needsMigration = await keyManagementService.needsMigration();
+
+          if (needsMigration) {
+            // Legacy user with ONLY NULL-salt keys - auto-initialize new keys (Feature 033)
+            console.log(
+              '[SignIn] Legacy user - auto-initializing new encryption keys'
+            );
+            await keyManagementService.initializeKeys(password);
+          } else {
+            // Existing user: derive keys from password
+            console.log('[SignIn] Existing user - deriving encryption keys');
+            await keyManagementService.deriveKeys(password);
+          }
+        }
+      } catch (keyError) {
+        console.error(
+          '[SignIn] Failed to initialize/derive encryption keys:',
+          keyError
+        );
+        // Don't block sign-in flow, but log the error
+        // User will be prompted to re-authenticate when accessing messages
+      }
+
       // Successful sign-in
       onSuccess?.();
     }

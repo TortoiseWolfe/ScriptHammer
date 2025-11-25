@@ -1,38 +1,55 @@
 /**
  * Key Management Service for User Encryption Keys
- * Tasks: T055-T059
+ * Tasks: T055-T059, Feature 032 (T007)
  *
  * Manages user encryption key lifecycle:
- * - Lazy key generation on first message
- * - Key validation and rotation
- * - Public key storage in Supabase
+ * - Password-derived keys (Argon2id + ECDH P-256)
+ * - Keys held in memory only (no IndexedDB storage)
+ * - Key derivation on login, clear on logout
+ * - Migration support for legacy random keys
+ *
+ * Flow:
+ * - New user: initializeKeys(password) → generate salt, derive keys, store salt+publicKey
+ * - Existing user: deriveKeys(password) → fetch salt, derive keys, verify match
+ * - Legacy user: needsMigration() returns true → migration flow (Phase 6)
  */
 
 import { createClient } from '@/lib/supabase/client';
 import { encryptionService } from '@/lib/messaging/encryption';
-import type { UserEncryptionKey } from '@/types/messaging';
+import { KeyDerivationService } from '@/lib/messaging/key-derivation';
+import type { DerivedKeyPair } from '@/types/messaging';
 import {
   AuthenticationError,
   EncryptionError,
   ConnectionError,
+  KeyDerivationError,
+  KeyMismatchError,
 } from '@/types/messaging';
 
 export class KeyManagementService {
+  /** In-memory storage for derived keys (cleared on logout) */
+  private derivedKeys: DerivedKeyPair | null = null;
+
+  /** Key derivation service (Argon2id) */
+  private keyDerivationService = new KeyDerivationService();
+
   /**
-   * Initialize user's encryption keys (lazy generation)
-   * Task: T056
+   * Initialize encryption keys for NEW user (first login after registration)
+   * Task: T007 (Feature 032)
    *
    * Flow:
-   * 1. Check if user has private key in IndexedDB
-   * 2. If not, generate new ECDH key pair
-   * 3. Store private key in IndexedDB
-   * 4. Upload public key to Supabase
+   * 1. Generate random salt
+   * 2. Derive ECDH P-256 key pair from password + salt
+   * 3. Store salt and public key in Supabase
+   * 4. Hold keys in memory (never persisted to IndexedDB)
    *
-   * @returns Promise<boolean> - true if initialization successful
+   * @param password - User's plaintext password
+   * @returns Promise<DerivedKeyPair> - Derived key pair
    * @throws AuthenticationError if not authenticated
-   * @throws EncryptionError if key generation fails
+   * @throws KeyDerivationError if derivation fails
+   * @throws ConnectionError if Supabase upload fails
    */
-  async initializeKeys(): Promise<boolean> {
+  async initializeKeys(password: string): Promise<DerivedKeyPair> {
     const supabase = createClient();
 
     // Get authenticated user
@@ -48,37 +65,24 @@ export class KeyManagementService {
     }
 
     try {
-      // Check if user already has keys in IndexedDB
-      const existingKey = await encryptionService.getPrivateKey(user.id);
+      // Step 1: Generate random salt
+      const salt = this.keyDerivationService.generateSalt();
 
-      if (existingKey) {
-        // Keys already initialized
-        return true;
-      }
+      // Step 2: Derive key pair from password
+      const keyPair = await this.keyDerivationService.deriveKeyPair({
+        password,
+        salt,
+      });
 
-      // Generate new ECDH P-256 key pair
-      const keyPair = await encryptionService.generateKeyPair();
-
-      // Export keys to JWK format
-      const publicKeyJwk = await encryptionService.exportPublicKey(
-        keyPair.publicKey
-      );
-      const privateKeyJwk = await crypto.subtle.exportKey(
-        'jwk',
-        keyPair.privateKey
-      );
-
-      // Store private key in IndexedDB (client-side only, never sent to server)
-      await encryptionService.storePrivateKey(user.id, privateKeyJwk);
-
-      // Upload public key to Supabase for other users to encrypt messages
+      // Step 3: Upload public key and salt to Supabase
       const { error: uploadError } = await (supabase as any)
         .from('user_encryption_keys')
         .insert({
           user_id: user.id,
-          public_key: publicKeyJwk,
-          device_id: null, // Future: support multiple devices
-          expires_at: null, // Future: key expiration
+          public_key: keyPair.publicKeyJwk,
+          encryption_salt: keyPair.salt, // Base64-encoded salt
+          device_id: null,
+          expires_at: null,
           revoked: false,
         });
 
@@ -88,27 +92,43 @@ export class KeyManagementService {
         );
       }
 
-      return true;
+      // Step 4: Store in memory
+      this.derivedKeys = keyPair;
+
+      console.log('[KeyService] Keys initialized for user:', user.id);
+      return keyPair;
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
-        error instanceof EncryptionError ||
+        error instanceof KeyDerivationError ||
         error instanceof ConnectionError
       ) {
         throw error;
       }
-      throw new EncryptionError('Failed to initialize encryption keys', error);
+      throw new KeyDerivationError(
+        'Failed to initialize encryption keys',
+        error
+      );
     }
   }
 
   /**
-   * Check if user has valid encryption keys
-   * Task: T057
+   * Derive keys for EXISTING user (on every login)
+   * Task: T007 (Feature 032)
    *
-   * @returns Promise<boolean> - true if user has valid keys in IndexedDB
+   * Flow:
+   * 1. Fetch salt from Supabase
+   * 2. Derive key pair from password + salt
+   * 3. Verify derived public key matches stored public key
+   * 4. Hold keys in memory
+   *
+   * @param password - User's plaintext password
+   * @returns Promise<DerivedKeyPair> - Derived key pair
    * @throws AuthenticationError if not authenticated
+   * @throws KeyDerivationError if derivation fails
+   * @throws KeyMismatchError if password is wrong (public keys don't match)
    */
-  async hasValidKeys(): Promise<boolean> {
+  async deriveKeys(password: string): Promise<DerivedKeyPair> {
     const supabase = createClient();
 
     const {
@@ -118,14 +138,231 @@ export class KeyManagementService {
 
     if (authError || !user) {
       throw new AuthenticationError(
+        'You must be signed in to derive encryption keys'
+      );
+    }
+
+    try {
+      // Step 1: Fetch salt and public key from Supabase
+      const { data, error } = await (supabase as any)
+        .from('user_encryption_keys')
+        .select('encryption_salt, public_key')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error) {
+        throw new ConnectionError(
+          'Failed to fetch user key data: ' + error.message
+        );
+      }
+
+      if (!data?.encryption_salt) {
+        throw new KeyDerivationError(
+          'No salt found. User may need migration or initialization.'
+        );
+      }
+
+      // Decode base64 salt
+      const saltBytes = Uint8Array.from(atob(data.encryption_salt), (c) =>
+        c.charCodeAt(0)
+      );
+
+      // Step 2: Derive key pair from password
+      const keyPair = await this.keyDerivationService.deriveKeyPair({
+        password,
+        salt: saltBytes,
+      });
+
+      // Step 3: Verify public key matches stored
+      const isMatch = this.keyDerivationService.verifyPublicKey(
+        keyPair.publicKeyJwk,
+        data.public_key
+      );
+
+      if (!isMatch) {
+        throw new KeyMismatchError();
+      }
+
+      // Step 4: Store in memory
+      this.derivedKeys = keyPair;
+
+      console.log('[KeyService] Keys derived for user:', user.id);
+      return keyPair;
+    } catch (error) {
+      if (
+        error instanceof AuthenticationError ||
+        error instanceof KeyDerivationError ||
+        error instanceof KeyMismatchError ||
+        error instanceof ConnectionError
+      ) {
+        throw error;
+      }
+      throw new KeyDerivationError('Failed to derive encryption keys', error);
+    }
+  }
+
+  /**
+   * Get current derived keys from memory
+   * @returns DerivedKeyPair or null if not derived
+   */
+  getCurrentKeys(): DerivedKeyPair | null {
+    return this.derivedKeys;
+  }
+
+  /**
+   * Clear keys from memory (call on logout)
+   */
+  clearKeys(): void {
+    this.derivedKeys = null;
+    console.log('[KeyService] Keys cleared from memory');
+  }
+
+  /**
+   * Check if user needs migration (has legacy random keys)
+   * Feature 033: Fixed to check for ANY valid key, not just most recent
+   *
+   * @returns true only if user has keys but NONE have valid encryption_salt
+   */
+  async needsMigration(): Promise<boolean> {
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return false; // Not authenticated, can't check
+    }
+
+    try {
+      // Check if ANY active key has a valid salt
+      const { data: validKeys, error: validError } = await (supabase as any)
+        .from('user_encryption_keys')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .not('encryption_salt', 'is', null)
+        .limit(1);
+
+      if (validError) {
+        console.error(
+          '[KeyService] needsMigration: Error checking valid keys:',
+          validError
+        );
+        return false; // Safe default - don't block users on error
+      }
+
+      // If user has at least one valid key, no migration needed
+      if (validKeys && validKeys.length > 0) {
+        return false;
+      }
+
+      // Check if user has ANY keys at all (to distinguish new user from legacy user)
+      const { data: anyKeys, error: anyError } = await (supabase as any)
+        .from('user_encryption_keys')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .limit(1);
+
+      if (anyError) {
+        console.error(
+          '[KeyService] needsMigration: Error checking any keys:',
+          anyError
+        );
+        return false;
+      }
+
+      // Needs migration only if has keys but none have salt
+      // (New users with no keys don't need migration - they need initialization)
+      return anyKeys && anyKeys.length > 0;
+    } catch (error) {
+      console.error('[KeyService] needsMigration: Unexpected error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if user has any encryption keys (new or legacy)
+   * @returns true if user has keys in Supabase
+   */
+  async hasKeys(): Promise<boolean> {
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return false;
+    }
+
+    try {
+      const { data, error } = await (supabase as any)
+        .from('user_encryption_keys')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .limit(1)
+        .single();
+
+      return !error && data !== null;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Legacy method - check if user has valid encryption keys
+   * Task: T057 (kept for backwards compatibility during migration)
+   *
+   * @deprecated Use getCurrentKeys() !== null for in-memory check
+   * @returns Promise<boolean> - true if user has valid keys
+   * @throws AuthenticationError if not authenticated
+   */
+  async hasValidKeys(): Promise<boolean> {
+    console.log(
+      '[Decryption] hasValidKeys: Checking for valid encryption keys'
+    );
+
+    // First check in-memory keys
+    if (this.derivedKeys !== null) {
+      console.log('[Decryption] hasValidKeys: FOUND in-memory keys');
+      return true;
+    }
+
+    // Fall back to IndexedDB check for legacy support
+    const supabase = createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('[Decryption] hasValidKeys: Not authenticated');
+      throw new AuthenticationError(
         'You must be signed in to check encryption keys'
       );
     }
 
     try {
       const privateKey = await encryptionService.getPrivateKey(user.id);
-      return privateKey !== null;
+      const hasKeys = privateKey !== null;
+      console.log(
+        '[Decryption] hasValidKeys:',
+        hasKeys ? 'FOUND (IndexedDB)' : 'MISSING',
+        'for user:',
+        user.id
+      );
+      return hasKeys;
     } catch (error) {
+      console.error('[Decryption] hasValidKeys: Error checking keys', error);
       return false;
     }
   }
@@ -137,11 +374,13 @@ export class KeyManagementService {
    * Note: Old messages remain encrypted with old keys. Rotation only affects
    * new messages. Future enhancement: re-encrypt old messages.
    *
+   * @param password - User's plaintext password (required for key derivation)
    * @returns Promise<boolean> - true if rotation successful
    * @throws AuthenticationError if not authenticated
-   * @throws EncryptionError if key generation fails
+   * @throws KeyDerivationError if key derivation fails
+   * @throws ConnectionError if database operation fails
    */
-  async rotateKeys(): Promise<boolean> {
+  async rotateKeys(password: string): Promise<boolean> {
     const supabase = createClient();
 
     const {
@@ -169,25 +408,20 @@ export class KeyManagementService {
         );
       }
 
-      // Generate new key pair
-      const keyPair = await encryptionService.generateKeyPair();
-      const publicKeyJwk = await encryptionService.exportPublicKey(
-        keyPair.publicKey
-      );
-      const privateKeyJwk = await crypto.subtle.exportKey(
-        'jwk',
-        keyPair.privateKey
-      );
+      // Generate new salt and derive key pair from password
+      const salt = this.keyDerivationService.generateSalt();
+      const keyPair = await this.keyDerivationService.deriveKeyPair({
+        password,
+        salt,
+      });
 
-      // Store new private key in IndexedDB (overwrites old)
-      await encryptionService.storePrivateKey(user.id, privateKeyJwk);
-
-      // Upload new public key to Supabase
+      // Upload new public key AND salt to Supabase (no IndexedDB storage)
       const { error: uploadError } = await (supabase as any)
         .from('user_encryption_keys')
         .insert({
           user_id: user.id,
-          public_key: publicKeyJwk,
+          public_key: keyPair.publicKeyJwk,
+          encryption_salt: keyPair.salt, // REQUIRED: Base64-encoded salt
           device_id: null,
           expires_at: null,
           revoked: false,
@@ -199,16 +433,20 @@ export class KeyManagementService {
         );
       }
 
+      // Update in-memory keys (password-derived keys are never persisted to IndexedDB)
+      this.derivedKeys = keyPair;
+
+      console.log('[KeyService] Keys rotated for user:', user.id);
       return true;
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
-        error instanceof EncryptionError ||
+        error instanceof KeyDerivationError ||
         error instanceof ConnectionError
       ) {
         throw error;
       }
-      throw new EncryptionError('Failed to rotate encryption keys', error);
+      throw new KeyDerivationError('Failed to rotate encryption keys', error);
     }
   }
 
@@ -273,6 +511,10 @@ export class KeyManagementService {
    * @throws ConnectionError if query fails
    */
   async getUserPublicKey(userId: string): Promise<JsonWebKey | null> {
+    console.log(
+      '[Decryption] getUserPublicKey: Fetching public key for user:',
+      userId
+    );
     const supabase = createClient();
 
     try {
@@ -288,18 +530,31 @@ export class KeyManagementService {
       if (error) {
         if (error.code === 'PGRST116') {
           // No rows returned
+          console.log(
+            '[Decryption] getUserPublicKey: NO KEY FOUND for user:',
+            userId
+          );
           return null;
         }
+        console.error(
+          '[Decryption] getUserPublicKey: Query error:',
+          error.message
+        );
         throw new ConnectionError(
           'Failed to get user public key: ' + error.message
         );
       }
 
+      console.log(
+        '[Decryption] getUserPublicKey: FOUND public key for user:',
+        userId
+      );
       return data?.public_key ?? null;
     } catch (error) {
       if (error instanceof ConnectionError) {
         throw error;
       }
+      console.error('[Decryption] getUserPublicKey: Unexpected error', error);
       throw new ConnectionError('Failed to get user public key', error);
     }
   }

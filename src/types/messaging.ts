@@ -49,6 +49,7 @@ export interface UserEncryptionKey {
   id: string;
   user_id: string;
   public_key: JsonWebKey; // JWK format
+  encryption_salt: string | null; // Base64 Argon2 salt (NULL = legacy keys)
   device_id: string | null;
   expires_at: string | null;
   revoked: boolean;
@@ -211,6 +212,18 @@ export interface SearchUsersResult {
 // CRYPTO TYPES
 // =============================================================================
 
+export interface KeyDerivationParams {
+  password: string;
+  salt: Uint8Array; // 16 bytes
+}
+
+export interface DerivedKeyPair {
+  privateKey: CryptoKey; // ECDH P-256, never persisted
+  publicKey: CryptoKey; // ECDH P-256
+  publicKeyJwk: JsonWebKey; // For Supabase storage
+  salt: string; // Base64-encoded for storage
+}
+
 export interface EncryptedPayload {
   ciphertext: string; // Base64-encoded
   iv: string; // Base64-encoded initialization vector
@@ -348,6 +361,44 @@ export class ValidationError extends Error {
   }
 }
 
+export class KeyDerivationError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'KeyDerivationError';
+  }
+}
+
+export class KeyMismatchError extends Error {
+  constructor(
+    message: string = "Incorrect password. The encryption key doesn't match. Please try again."
+  ) {
+    super(message);
+    this.name = 'KeyMismatchError';
+  }
+}
+
+export class MigrationError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'MigrationError';
+  }
+}
+
+export class EncryptionLockedError extends Error {
+  constructor(
+    message: string = 'Encryption keys are not available. Please sign in again to unlock messaging.'
+  ) {
+    super(message);
+    this.name = 'EncryptionLockedError';
+  }
+}
+
 // =============================================================================
 // CONSTANTS
 // =============================================================================
@@ -365,6 +416,19 @@ export const CRYPTO_PARAMS = {
   AES_ALGORITHM: 'AES-GCM',
   AES_KEY_LENGTH: 256,
   IV_LENGTH_BYTES: 12, // 96 bits
+} as const;
+
+/**
+ * Argon2 configuration (OWASP recommended for password hashing)
+ * Per FR-001: Argon2id with memory=65536 (64MB), timeCost=3, parallelism=4, hashLength=32
+ */
+export const ARGON2_CONFIG = {
+  TYPE: 'argon2id', // Hybrid of argon2i and argon2d (best for passwords)
+  MEMORY_COST: 65536, // 64 MB
+  TIME_COST: 3, // 3 iterations
+  PARALLELISM: 4, // 4 parallel lanes
+  HASH_LENGTH: 32, // 256 bits for P-256 seed
+  SALT_LENGTH: 16, // 16 bytes
 } as const;
 
 export const OFFLINE_QUEUE_CONFIG = {

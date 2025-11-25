@@ -119,6 +119,9 @@ export class EncryptionService {
     privateKey: CryptoKey,
     publicKey: CryptoKey
   ): Promise<CryptoKey> {
+    console.log(
+      '[Decryption] deriveSharedSecret: Starting ECDH key derivation'
+    );
     try {
       const sharedSecret = await crypto.subtle.deriveKey(
         {
@@ -134,8 +137,14 @@ export class EncryptionService {
         ['encrypt', 'decrypt']
       );
 
+      console.log('[Decryption] deriveSharedSecret: SUCCESS');
       return sharedSecret;
     } catch (error) {
+      const err = error as Error;
+      console.error('[Decryption] deriveSharedSecret: FAILED', {
+        errorName: err.name,
+        errorMessage: err.message,
+      });
       throw new EncryptionError('Failed to derive shared secret', error);
     }
   }
@@ -201,6 +210,10 @@ export class EncryptionService {
     ivBase64: string,
     sharedSecret: CryptoKey
   ): Promise<string> {
+    console.log('[Decryption] decryptMessage: Starting AES-GCM decryption', {
+      ciphertextLength: ciphertext?.length || 0,
+      ivLength: ivBase64?.length || 0,
+    });
     try {
       // Convert from base64
       const ciphertextBuffer = this.base64ToArrayBuffer(
@@ -220,8 +233,27 @@ export class EncryptionService {
 
       // Convert bytes to string
       const decoder = new TextDecoder();
-      return decoder.decode(plaintextBuffer);
+      const plaintext = decoder.decode(plaintextBuffer);
+      console.log(
+        '[Decryption] decryptMessage: SUCCESS (length:',
+        plaintext.length,
+        'chars)'
+      );
+      return plaintext;
     } catch (error) {
+      const err = error as Error;
+      // Log as individual args to avoid DOMException serialization issues
+      console.error(
+        '[Decryption] decryptMessage: FAILED -',
+        'name:',
+        String(err.name || 'unknown'),
+        '| message:',
+        String(err.message || 'no message'),
+        '| ciphertext length:',
+        ciphertext?.length || 0,
+        '| IV length:',
+        ivBase64?.length || 0
+      );
       throw new DecryptionError(
         'Failed to decrypt message (wrong key or corrupted data)',
         error
