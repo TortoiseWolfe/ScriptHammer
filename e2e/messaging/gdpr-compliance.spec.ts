@@ -1,20 +1,28 @@
 /**
  * E2E tests for GDPR Compliance Features
  * Tasks: T191, T192
+ * Updated: Feature 026 - Using standardized test users
  *
  * Tests data export and account deletion flows
  */
 
 import { test, expect } from '@playwright/test';
 
+// Test user - use PRIMARY from standardized test fixtures (Feature 026)
+const TEST_USER = {
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+};
+
 test.describe('GDPR Data Export', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as test user
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'TestPassword123!');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#email', TEST_USER.email);
+    await page.fill('#password', TEST_USER.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
 
     // Navigate to account settings
     await page.goto('/account');
@@ -152,11 +160,13 @@ test.describe('GDPR Data Export', () => {
 test.describe('GDPR Account Deletion', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as test user
+    // NOTE: Account deletion tests use mocked responses to prevent actual deletion
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', 'test-deletion@example.com');
-    await page.fill('input[type="password"]', 'TestPassword123!');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#email', TEST_USER.email);
+    await page.fill('#password', TEST_USER.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/', { timeout: 10000 });
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
 
     // Navigate to account settings
     await page.goto('/account');

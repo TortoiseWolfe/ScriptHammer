@@ -14,15 +14,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
 
-// Test users (must exist in Supabase)
+// Test users - use PRIMARY and TERTIARY from standardized test fixtures (Feature 026)
 const USER_A = {
-  email: 'friend-request-tester-a@example.com',
-  password: 'TestPassword123!',
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
 };
 
 const USER_B = {
-  email: 'friend-request-tester-b@example.com',
-  password: 'TestPassword123!',
+  username: 'testuser-b',
+  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
+  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
 };
 
 // Supabase admin client for database verification
@@ -47,8 +48,8 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: User A signs in =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('input[name="email"]', USER_A.email);
-      await page.fill('input[name="password"]', USER_A.password);
+      await page.fill('#email', USER_A.email);
+      await page.fill('#password', USER_A.password);
       await page.click('button[type="submit"]');
       await page.waitForURL('/');
 
@@ -120,8 +121,8 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('input[name="email"]', USER_A.email);
-      await page.fill('input[name="password"]', USER_A.password);
+      await page.fill('#email', USER_A.email);
+      await page.fill('#password', USER_A.password);
       await page.click('button[type="submit"]');
       await page.waitForURL('/');
 
@@ -189,8 +190,8 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('input[name="email"]', USER_A.email);
-      await page.fill('input[name="password"]', USER_A.password);
+      await page.fill('#email', USER_A.email);
+      await page.fill('#password', USER_A.password);
       await page.click('button[type="submit"]');
       await page.waitForURL('/');
 
@@ -274,14 +275,14 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Both users sign in =====
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.fill('input[name="email"]', USER_A.email);
-      await pageA.fill('input[name="password"]', USER_A.password);
+      await pageA.fill('#email', USER_A.email);
+      await pageA.fill('#password', USER_A.password);
       await pageA.click('button[type="submit"]');
       await pageA.waitForURL('/');
 
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await pageB.fill('input[name="email"]', USER_B.email);
-      await pageB.fill('input[name="password"]', USER_B.password);
+      await pageB.fill('#email', USER_B.email);
+      await pageB.fill('#password', USER_B.password);
       await pageB.click('button[type="submit"]');
       await pageB.waitForURL('/');
 
@@ -378,8 +379,8 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('input[name="email"]', USER_A.email);
-      await page.fill('input[name="password"]', USER_A.password);
+      await page.fill('#email', USER_A.email);
+      await page.fill('#password', USER_A.password);
       await page.click('button[type="submit"]');
       await page.waitForURL('/');
 

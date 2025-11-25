@@ -12,19 +12,20 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
 
-// Test users (same as friend-requests, must exist in Supabase)
+// Test users - use PRIMARY and TERTIARY from standardized test fixtures (Feature 026)
 const USER_A = {
-  email: 'friend-request-tester-a@example.com',
-  password: 'TestPassword123!',
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
 };
 
 const USER_B = {
-  email: 'friend-request-tester-b@example.com',
-  password: 'TestPassword123!',
+  username: 'testuser-b',
+  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
+  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
 };
 
 // Supabase admin client for database verification
@@ -52,17 +53,18 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // ===== STEP 1: User A signs in =====
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.fill('input[name="email"]', USER_A.email);
-      await pageA.fill('input[name="password"]', USER_A.password);
+      await pageA.waitForLoadState('networkidle');
+      await pageA.fill('#email', USER_A.email);
+      await pageA.fill('#password', USER_A.password);
       await pageA.click('button[type="submit"]');
-      await pageA.waitForURL('/');
+      await pageA.waitForURL(/.*\/profile/, { timeout: 15000 });
 
       // ===== STEP 2: User B signs in (in separate context) =====
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await pageB.fill('input[name="email"]', USER_B.email);
-      await pageB.fill('input[name="password"]', USER_B.password);
+      await pageB.fill('#email', USER_B.email);
+      await pageB.fill('#password', USER_B.password);
       await pageB.click('button[type="submit"]');
-      await pageB.waitForURL('/');
+      await pageB.waitForURL(/.*\/profile/, { timeout: 15000 });
 
       // ===== STEP 3: User A navigates to conversations =====
       await pageA.goto(`${BASE_URL}/conversations`);
@@ -153,10 +155,10 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // Sign in as User A
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.fill('input[name="email"]', USER_A.email);
-      await pageA.fill('input[name="password"]', USER_A.password);
+      await pageA.fill('#email', USER_A.email);
+      await pageA.fill('#password', USER_A.password);
       await pageA.click('button[type="submit"]');
-      await pageA.waitForURL('/');
+      await pageA.waitForURL(/.*\/profile/, { timeout: 15000 });
 
       // Navigate to conversation
       await pageA.goto(`${BASE_URL}/conversations`);
@@ -231,10 +233,10 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // User A signs in and navigates to conversation
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.fill('input[name="email"]', USER_A.email);
-      await pageA.fill('input[name="password"]', USER_A.password);
+      await pageA.fill('#email', USER_A.email);
+      await pageA.fill('#password', USER_A.password);
       await pageA.click('button[type="submit"]');
-      await pageA.waitForURL('/');
+      await pageA.waitForURL(/.*\/profile/, { timeout: 15000 });
 
       await pageA.goto(`${BASE_URL}/conversations`);
       const conversationItem = pageA
@@ -272,10 +274,10 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== USER B READS THE MESSAGE =====
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await pageB.fill('input[name="email"]', USER_B.email);
-      await pageB.fill('input[name="password"]', USER_B.password);
+      await pageB.fill('#email', USER_B.email);
+      await pageB.fill('#password', USER_B.password);
       await pageB.click('button[type="submit"]');
-      await pageB.waitForURL('/');
+      await pageB.waitForURL(/.*\/profile/, { timeout: 15000 });
 
       await pageB.goto(`${BASE_URL}/conversations`);
       const conversationItemB = pageB
@@ -309,10 +311,10 @@ test.describe('Encrypted Messaging Flow', () => {
 
   test('should load message history with pagination', async ({ page }) => {
     await page.goto(`${BASE_URL}/sign-in`);
-    await page.fill('input[name="email"]', USER_A.email);
-    await page.fill('input[name="password"]', USER_A.password);
+    await page.fill('#email', USER_A.email);
+    await page.fill('#password', USER_A.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
 
     await page.goto(`${BASE_URL}/conversations`);
     const conversationItem = page
@@ -399,10 +401,10 @@ test.describe('Encryption Key Security', () => {
 
     // Sign in and send a message
     await page.goto(`${BASE_URL}/sign-in`);
-    await page.fill('input[name="email"]', USER_A.email);
-    await page.fill('input[name="password"]', USER_A.password);
+    await page.fill('#email', USER_A.email);
+    await page.fill('#password', USER_A.password);
     await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
 
     await page.goto(`${BASE_URL}/conversations`);
     const conversationItem = page
