@@ -23,7 +23,7 @@ async function createTestConversation() {
     const { data: users } = await supabase
       .from('user_profiles')
       .select('id, username')
-      .in('username', ['testuser', 'testuser2']);
+      .in('username', ['testuser', 'testuser-b']);
 
     if (!users || users.length < 2) {
       console.error('❌ Need both testuser and testuser2 in database');
@@ -32,7 +32,7 @@ async function createTestConversation() {
     }
 
     const user1 = users.find((u) => u.username === 'testuser');
-    const user2 = users.find((u) => u.username === 'testuser2');
+    const user2 = users.find((u) => u.username === 'testuser-b');
 
     console.log(`\n📝 Creating conversation between:`);
     console.log(`   User 1: ${user1?.username} (${user1?.id})`);

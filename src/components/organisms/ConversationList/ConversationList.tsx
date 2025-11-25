@@ -38,6 +38,7 @@ export default function ConversationList({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const {
     conversations,
+    counts,
     loading,
     error,
     searchQuery,
@@ -47,6 +48,8 @@ export default function ConversationList({
     sortType,
     setSortType,
     reload,
+    archiveConversation,
+    unarchiveConversation,
   } = useConversationList();
 
   const [searchInput, setSearchInput] = useState('');
@@ -105,11 +108,6 @@ export default function ConversationList({
     router.push(`/messages?conversation=${conversationId}`);
   };
 
-  const totalUnread = conversations.reduce(
-    (sum, conv) => sum + conv.unreadCount,
-    0
-  );
-
   return (
     <div className={`bg-base-100 flex h-full flex-col ${className}`}>
       {/* Header */}
@@ -149,6 +147,9 @@ export default function ConversationList({
             aria-selected={filterType === 'all'}
           >
             All
+            {counts.all > 0 && (
+              <span className="badge badge-sm ml-1">{counts.all}</span>
+            )}
           </button>
           <button
             className={`tab min-h-11 ${filterType === 'unread' ? 'tab-active' : ''}`}
@@ -157,9 +158,9 @@ export default function ConversationList({
             aria-selected={filterType === 'unread'}
           >
             Unread
-            {totalUnread > 0 && (
+            {counts.unread > 0 && (
               <span className="badge badge-primary badge-sm ml-1">
-                {totalUnread}
+                {counts.unread}
               </span>
             )}
           </button>
@@ -168,10 +169,11 @@ export default function ConversationList({
             onClick={() => setFilterType('archived')}
             role="tab"
             aria-selected={filterType === 'archived'}
-            disabled
-            title="Coming soon"
           >
             Archived
+            {counts.archived > 0 && (
+              <span className="badge badge-sm ml-1">{counts.archived}</span>
+            )}
           </button>
         </div>
 
@@ -253,8 +255,11 @@ export default function ConversationList({
                 lastMessage={conv.lastMessage}
                 lastMessageAt={conv.lastMessageAt}
                 unreadCount={conv.unreadCount}
+                isArchived={conv.isArchived}
                 isSelected={conv.id === selectedConversationId}
                 onClick={() => handleConversationClick(conv.id)}
+                onArchive={() => archiveConversation(conv.id)}
+                onUnarchive={() => unarchiveConversation(conv.id)}
               />
             ))}
           </div>

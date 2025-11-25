@@ -16,6 +16,19 @@ interface Conversation {
 }
 
 /**
+ * Helper: Wrap a promise with a timeout
+ * @param promise The promise to wrap
+ * @param ms Timeout in milliseconds
+ * @returns Promise that rejects if timeout exceeded
+ */
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Query timeout')), ms)
+  );
+  return Promise.race([promise, timeout]);
+};
+
+/**
  * Conversations List Page
  * Simple UI to view and select conversations
  */
@@ -32,19 +45,44 @@ export default function ConversationsPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  // Diagnostic logging (FR-001, FR-007)
+  console.log('[Conversations] Render', {
+    authLoading,
+    user: !!user,
+    loading,
+    error,
+  });
+
   const loadConversations = useCallback(async () => {
-    if (!user) return;
+    console.log('[Conversations] loadConversations START');
+    if (!user) {
+      console.log('[Conversations] No user, returning');
+      return;
+    }
 
     try {
       setLoading(true);
       const supabase = createClient();
 
-      // Get all conversations for this user
-      const { data: convos, error: convError } = await (supabase as any)
-        .from('conversations')
-        .select('*')
-        .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
-        .order('last_message_at', { ascending: false, nullsFirst: false });
+      console.log('[Conversations] Querying conversations...');
+      // Get all conversations for this user with 10-second timeout (FR-003)
+      const result = await withTimeout(
+        (supabase as any)
+          .from('conversations')
+          .select('*')
+          .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
+          .order('last_message_at', { ascending: false, nullsFirst: false }),
+        10000
+      );
+      const { data: convos, error: convError } = result as {
+        data: Conversation[] | null;
+        error: { message: string } | null;
+      };
+
+      console.log('[Conversations] Query result', {
+        count: convos?.length,
+        error: convError,
+      });
 
       if (convError) {
         setError('Failed to load conversations: ' + convError.message);
@@ -90,16 +128,30 @@ export default function ConversationsPage() {
 
       setConversations(conversationsWithNames);
     } catch (err: any) {
-      setError(err.message || 'Failed to load conversations');
+      console.log('[Conversations] Error caught', err);
+      // User-friendly error messages (FR-004)
+      if (err.message === 'Query timeout') {
+        setError('Loading took too long. Please try again.');
+      } else {
+        setError(err.message || 'Failed to load conversations');
+      }
     } finally {
+      console.log(
+        '[Conversations] loadConversations END - setting loading=false'
+      );
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
+    console.log('[Conversations] useEffect triggered', {
+      authLoading,
+      user: !!user,
+    });
     if (!authLoading && user) {
       loadConversations();
     } else if (!authLoading && !user) {
+      console.log('[Conversations] No user after auth, showing sign-in prompt');
       setLoading(false);
       setError('Please sign in to view conversations');
     }
@@ -162,8 +214,42 @@ export default function ConversationsPage() {
   if (error) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="alert alert-error max-w-md">
-          <span>{error}</span>
+        <div className="alert alert-error max-w-md flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 shrink-0 stroke-current"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{error}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => {
+                setError(null);
+                loadConversations();
+              }}
+            >
+              Retry
+            </button>
+            {error === 'Please sign in to view conversations' && (
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => router.push('/sign-in')}
+              >
+                Sign in
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

@@ -86,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Fallback timeout - prevent infinite loading (FR-001)
+    // Must be longer than retry delays (1s + 2s + 4s = 7s) to allow retries to complete
     const loadingTimeout = setTimeout(() => {
       console.warn('Auth loading timeout - setting error state');
       setError({
@@ -94,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         retryable: true,
       });
       setIsLoading(false);
-    }, 5000);
+    }, 10000);
 
     // Get initial session with retry logic (FR-007)
     const getSessionWithRetry = async () => {
@@ -145,28 +146,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Reset local sign-out flag after handling
+      // Reset local sign-out flag after handling and clear encryption keys
       if (_event === 'SIGNED_OUT') {
         isLocalSignOut.current = false;
-      }
-
-      // Auto-generate encryption keys on first login
-      if (session?.user && _event === 'SIGNED_IN') {
+        // Clear encryption keys from memory on logout
         try {
           const { keyManagementService } = await import(
             '@/services/messaging/key-service'
           );
-          const hasKeys = await keyManagementService.hasValidKeys();
-          if (!hasKeys) {
-            console.log('Initializing encryption keys...');
-            await keyManagementService.initializeKeys();
-            console.log('Encryption keys initialized successfully');
-          }
+          keyManagementService.clearKeys();
         } catch (error) {
-          console.error('Failed to initialize encryption keys:', error);
-          // Don't break auth flow if key generation fails
+          console.error('Failed to clear encryption keys:', error);
         }
       }
+
+      // Note: Encryption keys are now derived in SignInForm.handleSubmit()
+      // with the user's password. No auto-init here.
     });
 
     return () => {

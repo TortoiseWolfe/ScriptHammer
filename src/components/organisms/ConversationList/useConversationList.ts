@@ -201,6 +201,15 @@ export function useConversationList() {
       return 0;
     });
 
+  // Compute counts from UNFILTERED conversations for tab badges
+  const counts = {
+    all: conversations.filter((c) => !c.isArchived).length,
+    unread: conversations.filter((c) => !c.isArchived && c.unreadCount > 0)
+      .length,
+    archived: conversations.filter((c) => c.isArchived).length,
+    totalUnread: conversations.reduce((sum, c) => sum + c.unreadCount, 0),
+  };
+
   // Load conversations on mount
   useEffect(() => {
     loadConversations();
@@ -298,6 +307,7 @@ export function useConversationList() {
 
   return {
     conversations: filteredConversations,
+    counts,
     loading: loading || authLoading,
     error,
     searchQuery,

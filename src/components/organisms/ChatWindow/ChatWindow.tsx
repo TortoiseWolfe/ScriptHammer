@@ -5,6 +5,8 @@ import MessageThread from '@/components/molecular/MessageThread';
 import MessageInput from '@/components/atomic/MessageInput';
 import type { DecryptedMessage } from '@/types/messaging';
 import { useKeyboardShortcuts, shortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useReadReceipts } from '@/hooks/useReadReceipts';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface ChatWindowProps {
   /** Conversation ID */
@@ -61,6 +63,15 @@ export default function ChatWindow({
 }: ChatWindowProps) {
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
   const [isEditMode, setIsEditMode] = React.useState(false);
+  const { user } = useAuth();
+
+  // Mark messages as read when they enter viewport
+  useReadReceipts({
+    messages,
+    userId: user?.id || '',
+    conversationId,
+    isVisible: true,
+  });
 
   // Auto-focus message input on mount (T216)
   useEffect(() => {

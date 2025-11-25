@@ -180,6 +180,42 @@ kill -9 <PID>
 | Template Setup      | `docs/TEMPLATE-GUIDE.md`               |
 | Testing Guide       | `docs/project/TESTING.md`              |
 
+## Supabase Database Migrations (CRITICAL)
+
+**NEVER create separate migration files.** This project uses a **monolithic migration file**:
+
+```
+supabase/migrations/20251006_complete_monolithic_setup.sql
+```
+
+### Adding Schema Changes
+
+1. **Edit the monolithic file directly** - Add new tables, columns, indexes to the appropriate section
+2. **Use `IF NOT EXISTS`** - All CREATE statements must be idempotent
+3. **Add to existing transaction** - New schema goes inside the `BEGIN;`...`COMMIT;` block
+4. **Run via Supabase Dashboard** - Copy the entire monolithic file to SQL Editor and execute
+
+### Example: Adding a Column
+
+```sql
+-- Add to the appropriate table section in the monolithic file
+ALTER TABLE user_encryption_keys
+ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
+```
+
+### Why Monolithic?
+
+- Single source of truth for entire schema
+- Can recreate database from scratch with one file
+- No migration ordering issues
+- Supabase Cloud doesn't support CLI migrations on free tier
+
+**DO NOT:**
+
+- Create files like `032_add_encryption_salt.sql`
+- Suggest running SQL snippets piecemeal
+- Use Supabase CLI migrations
+
 ## Important Notes
 
 - Never create components manually - use the generator

@@ -358,6 +358,63 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   });
 });
 
+test.describe('Conversations Page Loading (Feature 029)', () => {
+  test('should load conversations page within 5 seconds (SC-001)', async ({
+    page,
+  }) => {
+    test.setTimeout(30000);
+
+    // Sign in
+    await page.goto('/sign-in');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#email', USER_A.email);
+    await page.fill('#password', USER_A.password);
+    await page.click('button[type="submit"]', { force: true });
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+
+    // Navigate to conversations page and time it
+    const startTime = Date.now();
+    await page.goto('/conversations');
+
+    // Wait for page title to load - NOT spinner
+    await expect(
+      page.locator('h1:has-text("Conversations")').first()
+    ).toBeVisible({ timeout: 5000 });
+
+    const loadTime = Date.now() - startTime;
+    console.log('[Test] Conversations page loaded in ' + loadTime + 'ms');
+
+    // Verify page loaded within 5 seconds (SC-001)
+    expect(loadTime).toBeLessThan(5000);
+
+    // Verify spinner is NOT visible (SC-002)
+    const spinner = page.locator('.loading-spinner');
+    await expect(spinner).toBeHidden();
+  });
+
+  test('should show retry button on error state (FR-005)', async ({ page }) => {
+    test.setTimeout(30000);
+
+    // Sign in
+    await page.goto('/sign-in');
+    await page.waitForLoadState('networkidle');
+    await page.fill('#email', USER_A.email);
+    await page.fill('#password', USER_A.password);
+    await page.click('button[type="submit"]', { force: true });
+    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+
+    // Navigate to conversations
+    await page.goto('/conversations');
+    await page.waitForLoadState('networkidle');
+
+    // If error is shown, verify retry button exists
+    const errorAlert = page.locator('.alert-error');
+    if (await errorAlert.isVisible().catch(() => false)) {
+      await expect(page.locator('button:has-text("Retry")')).toBeVisible();
+    }
+  });
+});
+
 test.describe('Test Idempotency Verification', () => {
   test('should complete cleanup successfully', async () => {
     const client = getAdminClient();
