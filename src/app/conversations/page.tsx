@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,19 +26,7 @@ export default function ConversationsPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (user) {
-        loadConversations();
-      } else {
-        setLoading(false);
-        setError('Please sign in to view conversations');
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -60,6 +48,7 @@ export default function ConversationsPage() {
 
       if (!convos || convos.length === 0) {
         setConversations([]);
+        setLoading(false);
         return;
       }
 
@@ -99,7 +88,16 @@ export default function ConversationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      loadConversations();
+    } else if (!authLoading && !user) {
+      setLoading(false);
+      setError('Please sign in to view conversations');
+    }
+  }, [user, authLoading, loadConversations]);
 
   const handleSelectConversation = (conversationId: string) => {
     router.push(`/messages?conversation=${conversationId}`);
