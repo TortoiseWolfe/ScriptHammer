@@ -1,23 +1,124 @@
 // Security Hardening: OAuth State Management Tests
 // Feature 017 - Task T010
-// Purpose: Test OAuth CSRF protection via state parameter (MUST FAIL until implementation)
+// Purpose: Test OAuth CSRF protection via state parameter
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// In-memory store to simulate oauth_states table
+const mockOAuthStates = new Map<
+  string,
+  {
+    id: string;
+    state_token: string;
+    provider: string;
+    session_id: string;
+    return_url: string;
+    used: boolean;
+    expires_at: Date;
+    created_at: Date;
+  }
+>();
+
+// Mock Supabase client
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    from: (table: string) => {
+      if (table !== 'oauth_states') {
+        throw new Error(`Unexpected table: ${table}`);
+      }
+      return {
+        insert: (data: any) => ({
+          then: (resolve: any) => {
+            const id = crypto.randomUUID();
+            mockOAuthStates.set(data.state_token, {
+              id,
+              ...data,
+              used: false,
+              expires_at: new Date(Date.now() + 5 * 60 * 1000),
+              created_at: new Date(),
+            });
+            resolve({ error: null });
+          },
+        }),
+        select: (columns: string) => ({
+          eq: (field: string, value: string) => ({
+            single: () => ({
+              then: (resolve: any) => {
+                const state = mockOAuthStates.get(value);
+                if (state) {
+                  resolve({ data: state, error: null });
+                } else {
+                  resolve({ data: null, error: { code: 'PGRST116' } });
+                }
+              },
+            }),
+          }),
+          lt: (field: string, value: string) => ({
+            select: () => ({
+              then: (resolve: any) => {
+                const now = new Date(value);
+                const expired: string[] = [];
+                mockOAuthStates.forEach((state, token) => {
+                  if (state.expires_at < now) {
+                    expired.push(token);
+                  }
+                });
+                expired.forEach((token) => mockOAuthStates.delete(token));
+                resolve({
+                  data: expired.map((t) => ({ state_token: t })),
+                  error: null,
+                });
+              },
+            }),
+          }),
+        }),
+        update: (data: any) => ({
+          eq: (field: string, value: string) => ({
+            then: (resolve: any) => {
+              const state = mockOAuthStates.get(value);
+              if (state) {
+                Object.assign(state, data);
+              }
+              resolve({ error: null });
+            },
+          }),
+        }),
+        delete: () => ({
+          lt: (field: string, value: string) => ({
+            select: () => ({
+              then: (resolve: any) => {
+                const now = new Date(value);
+                const deleted: string[] = [];
+                mockOAuthStates.forEach((state, token) => {
+                  if (state.expires_at < now) {
+                    deleted.push(token);
+                  }
+                });
+                deleted.forEach((token) => mockOAuthStates.delete(token));
+                resolve({
+                  data: deleted.map((t) => ({ state_token: t })),
+                  error: null,
+                });
+              },
+            }),
+          }),
+        }),
+      };
+    },
+  },
+}));
+
+// Import after mocking
 import {
   generateOAuthState,
   validateOAuthState,
   cleanupExpiredStates,
 } from '../oauth-state';
-import { supabase } from '@/lib/supabase/client';
-import { supabaseAdmin } from '@/test/supabase-admin';
 
 describe('OAuth State Management - CSRF Protection', () => {
-  beforeEach(async () => {
-    // Clear any existing states from database using admin client (bypasses RLS)
-    await supabaseAdmin
-      .from('oauth_states')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
+  beforeEach(() => {
+    // Clear in-memory state store
+    mockOAuthStates.clear();
     vi.clearAllMocks();
   });
 
