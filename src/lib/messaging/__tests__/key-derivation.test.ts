@@ -5,18 +5,12 @@
  *
  * Tests: generateSalt, deriveKeyPair determinism, verifyPublicKey
  *
- * NOTE: Tests that require full WebCrypto (PKCS#8 import) are skipped in jsdom.
- * These tests run in browser via E2E tests instead.
- *
- * Coverage Target: 100% (for non-browser-dependent tests)
+ * Coverage Target: 100%
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { KeyDerivationService } from '../key-derivation';
-import { ARGON2_CONFIG } from '@/types/messaging';
-
-// jsdom doesn't support PKCS#8 key import - skip browser-dependent tests
-const SKIP_BROWSER_TESTS = true;
+import { ARGON2_CONFIG, CRYPTO_PARAMS } from '@/types/messaging';
 
 describe('KeyDerivationService', () => {
   let service: KeyDerivationService;
@@ -51,7 +45,7 @@ describe('KeyDerivationService', () => {
     });
   });
 
-  describe.skipIf(SKIP_BROWSER_TESTS)('deriveKeyPair', () => {
+  describe('deriveKeyPair', () => {
     it('should derive same key pair from same password and salt (determinism)', async () => {
       const password = 'TestPassword123!';
       const salt = service.generateSalt();
@@ -163,7 +157,7 @@ describe('KeyDerivationService', () => {
     });
   });
 
-  describe.skipIf(SKIP_BROWSER_TESTS)('verifyPublicKey', () => {
+  describe('verifyPublicKey', () => {
     it('should return true for matching public keys', async () => {
       const password = 'TestPassword123!';
       const salt = service.generateSalt();
@@ -229,7 +223,7 @@ describe('KeyDerivationService', () => {
     });
   });
 
-  describe.skipIf(SKIP_BROWSER_TESTS)('end-to-end key derivation flow', () => {
+  describe('end-to-end key derivation flow', () => {
     it('should complete full derivation and verification flow', async () => {
       const password = 'SecurePassword123!';
 

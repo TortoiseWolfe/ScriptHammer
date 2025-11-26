@@ -22,6 +22,7 @@ import {
   DerivedKeyPair,
   KeyDerivationError,
 } from '@/types/messaging';
+import { p256 } from '@noble/curves/nist.js';
 
 /**
  * P-256 curve order (n) for scalar reduction
@@ -252,38 +253,41 @@ export class KeyDerivationService {
           ['deriveKey', 'deriveBits']
         );
       } catch (pkcs8Error) {
-        // PKCS#8 failed, try alternative: generate ephemeral key and derive
+        // PKCS#8 failed, use @noble/curves to compute public key from private key
         console.warn(
-          '[KeyDerivation] PKCS#8 import failed, trying JWK workaround'
+          '[KeyDerivation] PKCS#8 import failed, using @noble/curves fallback'
         );
 
-        // Generate a temporary key pair to get the curve parameters
-        const tempKeyPair = await crypto.subtle.generateKey(
+        // Use noble-curves to get uncompressed public key (65 bytes: 0x04 + x + y)
+        const publicKeyBytes = p256.getPublicKey(privateKeyBytes, false);
+
+        // Extract x and y from uncompressed format (skip the 0x04 prefix)
+        const xBytes = publicKeyBytes.slice(1, 33);
+        const yBytes = publicKeyBytes.slice(33, 65);
+
+        // Convert to base64url
+        const x = this.toBase64Url(xBytes);
+        const y = this.toBase64Url(yBytes);
+
+        // Create complete JWK with computed public key
+        const jwk: JsonWebKey = {
+          kty: 'EC',
+          crv: CRYPTO_PARAMS.CURVE,
+          d,
+          x,
+          y,
+        };
+
+        // Import the JWK as a CryptoKey
+        return await crypto.subtle.importKey(
+          'jwk',
+          jwk,
           {
             name: CRYPTO_PARAMS.ALGORITHM,
             namedCurve: CRYPTO_PARAMS.CURVE,
           },
           true,
           ['deriveKey', 'deriveBits']
-        );
-
-        // Export to get curve info, then modify with our private key
-        const tempJwk = await crypto.subtle.exportKey(
-          'jwk',
-          tempKeyPair.privateKey
-        );
-
-        // Replace the 'd' parameter with our derived private key
-        tempJwk.d = d;
-
-        // We need to compute x,y from d for a valid JWK
-        // Since we can't easily do EC point multiplication in JS,
-        // we'll derive a deterministic key pair using the seed as entropy
-        // This is a fallback that maintains determinism
-
-        // For now, throw a more helpful error
-        throw new KeyDerivationError(
-          'Browser does not support PKCS#8 key import. Please try a different browser (Chrome, Firefox, Safari).'
         );
       }
     } catch (error) {
