@@ -11,12 +11,7 @@ import { removeAvatar } from '@/lib/avatar/upload';
 import DataExportButton from '@/components/atomic/DataExportButton';
 import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import {
-  validateUsername,
-  validateDisplayName,
-  validateBio,
-  checkUsernameAvailable,
-} from '@/lib/profile/validation';
+import { validateDisplayName, validateBio } from '@/lib/profile/validation';
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -41,7 +36,6 @@ export default function AccountSettings({
   } = useUserProfile();
 
   // Profile form state - initialize empty, populate from profile via useEffect
-  const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -49,7 +43,6 @@ export default function AccountSettings({
   // Load initial values from user_profiles table
   useEffect(() => {
     if (profile) {
-      setUsername(profile.username || '');
       setDisplayName(profile.display_name || '');
       setBio(profile.bio || '');
       setAvatarUrl(profile.avatar_url || null);
@@ -63,18 +56,12 @@ export default function AccountSettings({
   const [loading, setLoading] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
-
-    // Validate username
-    const usernameValidation = validateUsername(username);
-    if (!usernameValidation.valid) {
-      setError(usernameValidation.error || 'Invalid username');
-      return;
-    }
 
     // Validate display name
     const displayNameValidation = validateDisplayName(displayName);
@@ -91,47 +78,48 @@ export default function AccountSettings({
     }
 
     setLoading(true);
-
-    // Check username availability if username is provided
-    if (username && user?.id) {
-      const isAvailable = await checkUsernameAvailable(
-        supabase,
-        username,
-        user.id
-      );
-      if (!isAvailable) {
-        setError('This username is already taken');
-        setLoading(false);
-        return;
-      }
-    }
+    setIsUpdatingProfile(true);
 
     // Ensure user is authenticated before update
     if (!user?.id) {
       setError('You must be signed in to update your profile');
       setLoading(false);
+      setIsUpdatingProfile(false);
       return;
     }
 
-    // Save to user_profiles table (THE FIX: was saving to auth.users.user_metadata)
-    const { error: updateError } = await supabase
+    // Feature 035: Use .upsert() instead of .update() to handle missing rows
+    // .update() returns error:null even when 0 rows updated (silent failure)
+    // .upsert() with onConflict:'id' will INSERT if row missing, UPDATE if exists
+    const { data, error: updateError } = await supabase
       .from('user_profiles')
-      .update({
-        username: username.trim() || null,
-        display_name: displayName.trim() || null,
-        bio: bio.trim() || null,
-      })
-      .eq('id', user.id);
+      .upsert(
+        {
+          id: user.id,
+          display_name: displayName?.trim() || null,
+          bio: bio?.trim() || null,
+        },
+        { onConflict: 'id' }
+      )
+      .select()
+      .single();
 
     setLoading(false);
+    setIsUpdatingProfile(false);
 
+    // Feature 035: Check returned data exists, not just !error (FR-003)
     if (updateError) {
       console.error('Error updating profile:', updateError);
       setError('Failed to update profile. Please try again.');
+    } else if (!data) {
+      // FR-006: Show error if update failed silently (data is null)
+      setError('Profile update failed - please try again.');
     } else {
       setSuccess(true);
-      // Refetch profile to ensure UI shows fresh data
+      // FR-010: Refetch profile to ensure UI reflects database state
       await refetchProfile();
+      // FR-005: Auto-dismiss success message after 3 seconds
+      setTimeout(() => setSuccess(false), 3000);
     }
   };
 
@@ -242,28 +230,7 @@ export default function AccountSettings({
         <div className="card-body">
           <h3 className="card-title">Profile Settings</h3>
 
-          {/* Username Field */}
-          <div className="form-control">
-            <label htmlFor="username-input" className="label">
-              <span className="label-text">Username</span>
-            </label>
-            <input
-              id="username-input"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="input input-bordered min-h-11"
-              placeholder="e.g., john_doe"
-              disabled={loading}
-            />
-            <label className="label">
-              <span className="label-text-alt">
-                3-30 characters, letters, numbers, and underscores only
-              </span>
-            </label>
-          </div>
-
-          {/* Display Name Field (NEW) */}
+          {/* Display Name Field */}
           <div className="form-control">
             <label htmlFor="displayname-input" className="label">
               <span className="label-text">Display Name</span>
@@ -275,7 +242,7 @@ export default function AccountSettings({
               onChange={(e) => setDisplayName(e.target.value)}
               className="input input-bordered min-h-11"
               placeholder="e.g., John Doe"
-              disabled={loading}
+              disabled={loading || isUpdatingProfile}
             />
             <label className="label">
               <span className="label-text-alt">
@@ -296,7 +263,7 @@ export default function AccountSettings({
               className="textarea textarea-bordered"
               rows={3}
               placeholder="Tell us about yourself..."
-              disabled={loading}
+              disabled={loading || isUpdatingProfile}
             />
             <label className="label">
               <span className="label-text-alt">Maximum 500 characters</span>
@@ -306,9 +273,9 @@ export default function AccountSettings({
           <button
             type="submit"
             className="btn btn-primary min-h-11"
-            disabled={loading || profileLoading}
+            disabled={loading || profileLoading || isUpdatingProfile}
           >
-            {loading ? (
+            {isUpdatingProfile ? (
               <>
                 <span className="loading loading-spinner loading-sm"></span>
                 Saving...
@@ -329,7 +296,7 @@ export default function AccountSettings({
           <div className="mb-4 flex flex-col items-center gap-4 sm:flex-row">
             <AvatarDisplay
               avatarUrl={avatarUrl}
-              displayName={username || user?.email || 'User'}
+              displayName={displayName || user?.email || 'User'}
               size="xl"
             />
             <div className="text-sm opacity-70">
@@ -376,7 +343,7 @@ export default function AccountSettings({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input input-bordered min-h-11"
-              disabled={loading}
+              disabled={loading || isUpdatingProfile}
             />
           </div>
           <div className="form-control">
@@ -389,7 +356,7 @@ export default function AccountSettings({
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="input input-bordered min-h-11"
-              disabled={loading}
+              disabled={loading || isUpdatingProfile}
             />
           </div>
           <button
@@ -432,7 +399,7 @@ export default function AccountSettings({
             <button
               onClick={handleOpenDeleteModal}
               className="btn btn-error min-h-11"
-              disabled={loading}
+              disabled={loading || isUpdatingProfile}
             >
               Delete Account
             </button>

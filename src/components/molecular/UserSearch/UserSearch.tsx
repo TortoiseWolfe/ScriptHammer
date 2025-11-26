@@ -95,9 +95,7 @@ export default function UserSearch({
       <form onSubmit={handleSearch} className="mb-6">
         <div className="form-control">
           <label htmlFor="user-search-input" className="label">
-            <span className="label-text">
-              Search for users by username or name
-            </span>
+            <span className="label-text">Search for users by name</span>
           </label>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
             <input
@@ -105,7 +103,7 @@ export default function UserSearch({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter username or name"
+              placeholder="Enter name"
               className="input input-bordered min-h-11 flex-1"
               aria-label="Search for users"
               disabled={loading}
@@ -153,21 +151,19 @@ export default function UserSearch({
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={user.avatar_url}
-                              alt={user.display_name || user.username || 'User'}
+                              alt={user.display_name || 'User'}
                               loading="lazy"
                             />
                           ) : (
                             <span className="text-xl">
-                              {(user.display_name ||
-                                user.username ||
-                                'U')[0].toUpperCase()}
+                              {(user.display_name || 'U')[0].toUpperCase()}
                             </span>
                           )}
                         </div>
                       </div>
                       <div>
                         <p className="font-semibold">
-                          {user.display_name || user.username || 'Unknown User'}
+                          {user.display_name || 'Unknown User'}
                         </p>
                       </div>
                     </div>

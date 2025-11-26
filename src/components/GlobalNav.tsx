@@ -8,6 +8,7 @@ import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 
@@ -19,6 +20,7 @@ interface BeforeInstallPromptEvent extends Event {
 export function GlobalNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
+  const { profile } = useUserProfile();
   const unreadCount = useUnreadCount();
   const [theme, setTheme] = useState<string>('');
   const [deferredPrompt, setDeferredPrompt] =
@@ -220,11 +222,11 @@ export function GlobalNav() {
                 >
                   <AvatarDisplay
                     avatarUrl={
-                      (user.user_metadata?.avatar_url as string) || null
+                      profile?.avatar_url ||
+                      (user.user_metadata?.avatar_url as string) ||
+                      null
                     }
-                    displayName={
-                      user.user_metadata?.username || user.email || 'User'
-                    }
+                    displayName={profile?.display_name || user.email || 'User'}
                     size="sm"
                   />
                 </label>

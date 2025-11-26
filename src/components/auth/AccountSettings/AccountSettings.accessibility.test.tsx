@@ -8,7 +8,6 @@ vi.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: () => ({
     profile: {
       id: 'test-user-id',
-      username: 'testuser',
       display_name: 'Test User',
       bio: 'Test bio',
       avatar_url: null,
@@ -36,8 +35,18 @@ vi.mock('@/lib/supabase/client', () => ({
       updateUser: vi.fn().mockResolvedValue({ error: null }),
     },
     from: () => ({
-      update: () => ({
-        eq: vi.fn().mockResolvedValue({ error: null }),
+      // Changed from .update() to .upsert() for profile updates (Feature 035)
+      upsert: () => ({
+        select: () => ({
+          single: vi.fn().mockResolvedValue({
+            data: {
+              id: 'test-user-id',
+              display_name: 'Test User',
+              bio: 'Test bio',
+            },
+            error: null,
+          }),
+        }),
       }),
       select: () => ({
         eq: () => ({

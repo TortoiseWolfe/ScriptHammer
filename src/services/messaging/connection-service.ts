@@ -234,11 +234,11 @@ export class ConnectionService {
   }
 
   /**
-   * Search for users by username or display_name with partial matching
+   * Search for users by display_name with partial matching
    * Task: T019
    *
    * Searches the user_profiles table for users matching the query (partial match on
-   * username or display_name). Returns users with their connection status relative
+   * display_name). Returns users with their connection status relative
    * to the current user. Excludes the current user from results.
    *
    * @param input - SearchUsersInput containing search parameters
@@ -289,13 +289,13 @@ export class ConnectionService {
       );
     }
 
-    // Search for users by username or display_name (partial match, case-insensitive)
+    // Search for users by display_name (partial match, case-insensitive)
     // Uses ilike for PostgreSQL case-insensitive pattern matching
     const searchPattern = `%${query}%`;
     const { data: profiles, error } = await (supabase as any)
       .from('user_profiles')
-      .select('id, username, display_name, avatar_url')
-      .or(`username.ilike.${searchPattern},display_name.ilike.${searchPattern}`)
+      .select('id, display_name, avatar_url')
+      .ilike('display_name', searchPattern)
       .neq('id', user.id) // Exclude current user from results
       .limit(input.limit || 10);
 
@@ -371,10 +371,10 @@ export class ConnectionService {
         `
         *,
         requester:user_profiles!requester_id (
-          id, username, display_name, avatar_url
+          id, display_name, avatar_url
         ),
         addressee:user_profiles!addressee_id (
-          id, username, display_name, avatar_url
+          id, display_name, avatar_url
         )
       `
       )

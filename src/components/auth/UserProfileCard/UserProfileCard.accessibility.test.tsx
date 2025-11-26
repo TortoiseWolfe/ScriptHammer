@@ -1,7 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import UserProfileCard from './UserProfileCard';
+
+// Mock useUserProfile hook to return database profile
+vi.mock('@/hooks/useUserProfile', () => ({
+  useUserProfile: () => ({
+    profile: {
+      id: 'test-user-id',
+      display_name: 'Test User',
+      bio: 'Test bio',
+      avatar_url: null,
+      created_at: '2024-01-01T00:00:00Z',
+      updated_at: '2024-01-01T00:00:00Z',
+    },
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
 
 describe('UserProfileCard Accessibility', () => {
   it('should have no accessibility violations', async () => {

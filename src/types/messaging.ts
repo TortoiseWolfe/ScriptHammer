@@ -138,7 +138,7 @@ export interface ConversationWithParticipants extends Conversation {
 
 export interface UserProfile {
   id: string;
-  username: string | null;
+  username?: string | null; // Optional - removed from UI in Feature 036
   display_name: string | null;
   avatar_url: string | null;
 }

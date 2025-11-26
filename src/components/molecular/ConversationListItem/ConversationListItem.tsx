@@ -109,13 +109,13 @@ export default function ConversationListItem({
       <button
         onClick={onClick}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
-        aria-label={`Conversation with ${participant.display_name || participant.username || 'User'}${hasUnread ? `, ${unreadCount} unread message${unreadCount > 1 ? 's' : ''}` : ''}`}
+        aria-label={`Conversation with ${participant.display_name || 'User'}${hasUnread ? `, ${unreadCount} unread message${unreadCount > 1 ? 's' : ''}` : ''}`}
       >
         {/* Avatar */}
         <div className="shrink-0">
           <AvatarDisplay
             avatarUrl={participant.avatar_url}
-            displayName={participant.display_name || participant.username}
+            displayName={participant.display_name}
             size="md"
           />
         </div>
@@ -127,9 +127,7 @@ export default function ConversationListItem({
             <h3
               className={`truncate text-sm font-semibold ${hasUnread ? 'text-base-content' : 'text-base-content/90'}`}
             >
-              {participant.display_name ||
-                participant.username ||
-                'Unknown User'}
+              {participant.display_name || 'Unknown User'}
             </h3>
             {lastMessageAt && (
               <span className="text-base-content/60 shrink-0 text-xs">

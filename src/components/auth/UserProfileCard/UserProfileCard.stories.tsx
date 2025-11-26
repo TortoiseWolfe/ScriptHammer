@@ -88,17 +88,17 @@ const meta: Meta<typeof UserProfileCard> = {
     docs: {
       description: {
         component: `
-User profile card displaying authenticated user information from Supabase Auth.
+User profile card displaying authenticated user information from user_profiles database table.
 
 **Authentication Required**: This component uses the \`useAuth()\` hook and will return \`null\` if no user is authenticated.
 
 **Displays**:
-- User avatar (first letter of email if no avatar URL)
-- Username (from user_metadata.username, fallback to "User")
+- User avatar (first letter of display_name if no avatar URL)
+- Display name (from user_profiles.display_name, fallback to email)
 - Email address
-- Bio (from user_metadata.bio, if available)
+- Bio (from user_profiles.bio, if available)
 
-**Data Source**: User data comes from Supabase Auth via AuthContext.
+**Data Source**: Profile data comes from user_profiles table via useUserProfile hook (same source as AccountSettings).
         `,
       },
     },
@@ -117,7 +117,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * User profile card with authenticated user.
- * Shows user email, username, and bio from user_metadata.
+ * Shows user email, display_name, and bio from user_profiles database.
  */
 export const Authenticated: Story = {
   decorators: [withMockAuthenticatedUser],

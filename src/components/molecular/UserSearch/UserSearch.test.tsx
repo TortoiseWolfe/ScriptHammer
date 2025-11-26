@@ -23,7 +23,7 @@ describe('UserSearch', () => {
 
   it('disables search button when query is less than 3 characters', () => {
     render(<UserSearch />);
-    const input = screen.getByPlaceholderText(/enter username or name/i);
+    const input = screen.getByPlaceholderText(/enter name/i);
     const button = screen.getByRole('button', { name: /search/i });
 
     fireEvent.change(input, { target: { value: 'ab' } });
@@ -35,7 +35,7 @@ describe('UserSearch', () => {
 
   it('displays error for query less than 3 characters on submit', async () => {
     render(<UserSearch />);
-    const input = screen.getByPlaceholderText(/enter username or name/i);
+    const input = screen.getByPlaceholderText(/enter name/i);
     const form = screen
       .getByRole('button', { name: /search/i })
       .closest('form')!;
@@ -58,7 +58,7 @@ describe('UserSearch', () => {
     vi.mocked(connectionService.searchUsers).mockResolvedValue(mockResults);
 
     render(<UserSearch />);
-    const input = screen.getByPlaceholderText(/enter username or name/i);
+    const input = screen.getByPlaceholderText(/enter name/i);
     const button = screen.getByRole('button', { name: /search/i });
 
     fireEvent.change(input, { target: { value: 'test@example.com' } });
@@ -77,7 +77,6 @@ describe('UserSearch', () => {
       users: [
         {
           id: '1',
-          username: 'testuser',
           display_name: 'Test User',
           avatar_url: null,
         },
@@ -87,7 +86,7 @@ describe('UserSearch', () => {
     vi.mocked(connectionService.searchUsers).mockResolvedValue(mockResults);
 
     render(<UserSearch />);
-    const input = screen.getByPlaceholderText(/enter username or name/i);
+    const input = screen.getByPlaceholderText(/enter name/i);
     fireEvent.change(input, { target: { value: 'testuser' } });
     fireEvent.click(screen.getByRole('button', { name: /search/i }));
 
@@ -104,7 +103,6 @@ describe('UserSearch', () => {
       users: [
         {
           id: '1',
-          username: 'testuser',
           display_name: 'Test User',
           avatar_url: null,
         },
@@ -114,7 +112,7 @@ describe('UserSearch', () => {
     vi.mocked(connectionService.searchUsers).mockResolvedValue(mockResults);
 
     render(<UserSearch />);
-    fireEvent.change(screen.getByPlaceholderText(/enter username or name/i), {
+    fireEvent.change(screen.getByPlaceholderText(/enter name/i), {
       target: { value: 'testuser' },
     });
     fireEvent.click(screen.getByRole('button', { name: /search/i }));
@@ -130,10 +128,8 @@ describe('UserSearch', () => {
       users: [
         {
           id: '1',
-          username: 'testuser',
           display_name: 'Test User',
           avatar_url: null,
-          email: 'test@example.com',
         },
       ],
       already_connected: [],
@@ -144,7 +140,7 @@ describe('UserSearch', () => {
     const onRequestSent = vi.fn();
     render(<UserSearch onRequestSent={onRequestSent} />);
 
-    fireEvent.change(screen.getByPlaceholderText(/enter username or name/i), {
+    fireEvent.change(screen.getByPlaceholderText(/enter name/i), {
       target: { value: 'testuser' },
     });
     fireEvent.click(screen.getByRole('button', { name: /search/i }));
@@ -166,10 +162,8 @@ describe('UserSearch', () => {
       users: [
         {
           id: '1',
-          username: 'testuser',
           display_name: 'Test User',
           avatar_url: null,
-          email: 'test@example.com',
         },
       ],
       already_connected: [],
@@ -178,7 +172,7 @@ describe('UserSearch', () => {
     vi.mocked(connectionService.sendFriendRequest).mockResolvedValue({} as any);
 
     render(<UserSearch />);
-    fireEvent.change(screen.getByPlaceholderText(/enter username or name/i), {
+    fireEvent.change(screen.getByPlaceholderText(/enter name/i), {
       target: { value: 'testuser' },
     });
     fireEvent.click(screen.getByRole('button', { name: /search/i }));

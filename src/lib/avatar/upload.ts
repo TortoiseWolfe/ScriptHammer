@@ -68,7 +68,7 @@ export async function uploadAvatar(
 
     const publicUrl = urlData.publicUrl;
 
-    // Step 5: Update user profile
+    // Step 5: Update user profile (both auth metadata and user_profiles table)
     const { error: updateError } = await supabase.auth.updateUser({
       data: { avatar_url: publicUrl },
     });
@@ -81,6 +81,12 @@ export async function uploadAvatar(
         error: `Profile update failed: ${updateError.message}`,
       };
     }
+
+    // Also update user_profiles table for consistency
+    await supabase
+      .from('user_profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', userId);
 
     // Step 6: Delete old avatar if exists
     if (oldAvatarUrl) {
@@ -129,7 +135,7 @@ export async function removeAvatar(): Promise<RemoveAvatarResult> {
       return {}; // No avatar to remove
     }
 
-    // Step 1: Clear avatar URL from profile
+    // Step 1: Clear avatar URL from profile (both auth metadata and user_profiles table)
     const { error: updateError } = await supabase.auth.updateUser({
       data: { avatar_url: null },
     });
@@ -137,6 +143,12 @@ export async function removeAvatar(): Promise<RemoveAvatarResult> {
     if (updateError) {
       return { error: `Failed to remove avatar: ${updateError.message}` };
     }
+
+    // Also clear from user_profiles table
+    await supabase
+      .from('user_profiles')
+      .update({ avatar_url: null })
+      .eq('id', user.id);
 
     // Step 2: Delete file from storage
     const path = extractPathFromUrl(avatarUrl);
