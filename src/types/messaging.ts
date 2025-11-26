@@ -108,6 +108,16 @@ export interface SyncMetadata {
 }
 
 // =============================================================================
+// UI NAVIGATION TYPES
+// =============================================================================
+
+/**
+ * Tab options for the UnifiedSidebar component
+ * @see Feature 037 - Unified Messaging Sidebar
+ */
+export type SidebarTab = 'chats' | 'connections' | 'find';
+
+// =============================================================================
 // APPLICATION TYPES (UI/Business Logic)
 // =============================================================================
 

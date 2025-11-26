@@ -7,11 +7,14 @@ import type { ConnectionRequest } from '@/types/messaging';
 export interface ConnectionManagerProps {
   onRefreshAvailable?: (refresh: () => Promise<void>) => void;
   className?: string;
+  /** Callback when "Message" button clicked on accepted connection (Feature 037) */
+  onMessage?: (userId: string) => void;
 }
 
 export default function ConnectionManager({
   onRefreshAvailable,
   className = '',
+  onMessage,
 }: ConnectionManagerProps) {
   const {
     connections,
@@ -156,13 +159,24 @@ export default function ConnectionManager({
                 </button>
               )}
               {type === 'accepted' && (
-                <button
-                  onClick={() => handleRemove(item.connection.id)}
-                  disabled={actionLoading === item.connection.id}
-                  className="btn btn-ghost btn-sm min-h-11 min-w-11"
-                >
-                  Remove
-                </button>
+                <>
+                  {onMessage && (
+                    <button
+                      onClick={() => onMessage(otherUser.id)}
+                      className="btn btn-primary btn-sm min-h-11 min-w-11"
+                      data-testid="message-button"
+                    >
+                      Message
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleRemove(item.connection.id)}
+                    disabled={actionLoading === item.connection.id}
+                    className="btn btn-ghost btn-sm min-h-11 min-w-11"
+                  >
+                    Remove
+                  </button>
+                </>
               )}
             </div>
           </div>

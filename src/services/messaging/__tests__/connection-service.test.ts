@@ -132,4 +132,158 @@ describe('ConnectionService', () => {
       ).rejects.toThrow('Invalid connection_id format');
     });
   });
+
+  describe('getOrCreateConversation', () => {
+    const CONVERSATION_ID = '00000000-0000-0000-0000-000000000100';
+
+    it('should require authentication', async () => {
+      vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Not authenticated' },
+      } as any);
+
+      await expect(
+        connectionService.getOrCreateConversation(USER_2_ID)
+      ).rejects.toThrow('You must be signed in to start a conversation');
+    });
+
+    it('should validate UUID format', async () => {
+      await expect(
+        connectionService.getOrCreateConversation('invalid-uuid')
+      ).rejects.toThrow('Invalid otherUserId format');
+    });
+
+    it('should prevent self-conversation', async () => {
+      await expect(
+        connectionService.getOrCreateConversation(CURRENT_USER_ID)
+      ).rejects.toThrow('You cannot start a conversation with yourself');
+    });
+
+    it('should reject if users are not connected', async () => {
+      // Mock: no accepted connection found
+      const mockBuilder = createMockQueryBuilder(null, null);
+      vi.mocked(mockSupabase.from).mockReturnValue(mockBuilder as any);
+
+      await expect(
+        connectionService.getOrCreateConversation(USER_2_ID)
+      ).rejects.toThrow('You must be connected with this user');
+    });
+
+    it('should return existing conversation ID when conversation exists', async () => {
+      // Mock: connection exists and is accepted
+      const connectionBuilder = createMockQueryBuilder(
+        { status: 'accepted' },
+        null
+      );
+      // Mock: existing conversation found
+      const conversationBuilder = createMockQueryBuilder(
+        { id: CONVERSATION_ID },
+        null
+      );
+
+      let callCount = 0;
+      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
+        if (table === 'user_connections') {
+          return connectionBuilder as any;
+        }
+        if (table === 'conversations') {
+          callCount++;
+          if (callCount === 1) {
+            // First call - checking for existing
+            return conversationBuilder as any;
+          }
+        }
+        return conversationBuilder as any;
+      });
+
+      const result = await connectionService.getOrCreateConversation(USER_2_ID);
+      expect(result).toBe(CONVERSATION_ID);
+    });
+
+    it('should create new conversation when none exists', async () => {
+      // Mock: connection exists and is accepted
+      const connectionBuilder = createMockQueryBuilder(
+        { status: 'accepted' },
+        null
+      );
+      // Mock: no existing conversation, then successful creation
+      const noConversationBuilder = createMockQueryBuilder(null, null);
+      const createdConversationBuilder = createMockQueryBuilder(
+        { id: CONVERSATION_ID },
+        null
+      );
+
+      let conversationCallCount = 0;
+      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
+        if (table === 'user_connections') {
+          return connectionBuilder as any;
+        }
+        if (table === 'conversations') {
+          conversationCallCount++;
+          if (conversationCallCount === 1) {
+            // First call - checking for existing (none found)
+            return noConversationBuilder as any;
+          }
+          // Second call - creating new
+          return createdConversationBuilder as any;
+        }
+        return noConversationBuilder as any;
+      });
+
+      const result = await connectionService.getOrCreateConversation(USER_2_ID);
+      expect(result).toBe(CONVERSATION_ID);
+    });
+
+    it('should handle race condition with unique constraint violation', async () => {
+      // Mock: connection exists and is accepted
+      const connectionBuilder = createMockQueryBuilder(
+        { status: 'accepted' },
+        null
+      );
+      // Mock: no existing conversation initially
+      const noConversationBuilder = createMockQueryBuilder(null, null);
+      // Mock: creation fails with unique violation
+      const uniqueViolationBuilder = {
+        ...createMockQueryBuilder(null, {
+          code: '23505',
+          message: 'unique violation',
+        }),
+        insert: vi.fn().mockReturnThis(),
+        select: vi.fn().mockReturnThis(),
+        single: vi.fn().mockResolvedValue({
+          data: null,
+          error: { code: '23505', message: 'unique violation' },
+        }),
+      };
+      // Mock: retry finds the conversation
+      const retryBuilder = createMockQueryBuilder(
+        { id: CONVERSATION_ID },
+        null
+      );
+
+      let conversationCallCount = 0;
+      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
+        if (table === 'user_connections') {
+          return connectionBuilder as any;
+        }
+        if (table === 'conversations') {
+          conversationCallCount++;
+          if (conversationCallCount === 1) {
+            // First call - checking for existing (none found)
+            return noConversationBuilder as any;
+          }
+          if (conversationCallCount === 2) {
+            // Second call - insert fails with unique violation
+            return uniqueViolationBuilder as any;
+          }
+          // Third call - retry select succeeds
+          return retryBuilder as any;
+        }
+        return noConversationBuilder as any;
+      });
+
+      const result = await connectionService.getOrCreateConversation(USER_2_ID);
+      expect(result).toBe(CONVERSATION_ID);
+    });
+  });
 });

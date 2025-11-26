@@ -176,4 +176,107 @@ describe('ConnectionManager', () => {
       screen.getByText(/are you sure you want to block/i)
     ).toBeInTheDocument();
   });
+
+  describe('Message button (Feature 037)', () => {
+    const acceptedConnection = {
+      connection: {
+        id: 'conn-1',
+        requester_id: 'current-user',
+        addressee_id: 'other-user',
+        status: 'accepted' as const,
+        created_at: '',
+        updated_at: '',
+      },
+      requester: {
+        id: 'current-user',
+        username: 'me',
+        display_name: 'Me',
+        avatar_url: null,
+      },
+      addressee: {
+        id: 'other-user',
+        username: 'friend',
+        display_name: 'My Friend',
+        avatar_url: null,
+      },
+    };
+
+    it('renders Message button for accepted connections when onMessage prop provided', () => {
+      vi.mocked(useConnections).mockReturnValue({
+        connections: {
+          ...mockConnections,
+          accepted: [acceptedConnection],
+        },
+        loading: false,
+        error: null,
+        acceptRequest: vi.fn(),
+        declineRequest: vi.fn(),
+        blockUser: vi.fn(),
+        removeConnection: vi.fn(),
+        refreshConnections: vi.fn(),
+      });
+
+      const onMessage = vi.fn();
+      render(<ConnectionManager onMessage={onMessage} />);
+
+      // Switch to accepted tab
+      fireEvent.click(screen.getByRole('tab', { name: /accepted/i }));
+
+      expect(screen.getByTestId('message-button')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /message/i })
+      ).toBeInTheDocument();
+    });
+
+    it('does not render Message button when onMessage prop is undefined', () => {
+      vi.mocked(useConnections).mockReturnValue({
+        connections: {
+          ...mockConnections,
+          accepted: [acceptedConnection],
+        },
+        loading: false,
+        error: null,
+        acceptRequest: vi.fn(),
+        declineRequest: vi.fn(),
+        blockUser: vi.fn(),
+        removeConnection: vi.fn(),
+        refreshConnections: vi.fn(),
+      });
+
+      render(<ConnectionManager />);
+
+      // Switch to accepted tab
+      fireEvent.click(screen.getByRole('tab', { name: /accepted/i }));
+
+      expect(screen.queryByTestId('message-button')).not.toBeInTheDocument();
+    });
+
+    it('calls onMessage with correct userId when Message button clicked', async () => {
+      vi.mocked(useConnections).mockReturnValue({
+        connections: {
+          ...mockConnections,
+          accepted: [acceptedConnection],
+        },
+        loading: false,
+        error: null,
+        acceptRequest: vi.fn(),
+        declineRequest: vi.fn(),
+        blockUser: vi.fn(),
+        removeConnection: vi.fn(),
+        refreshConnections: vi.fn(),
+      });
+
+      const onMessage = vi.fn();
+      render(<ConnectionManager onMessage={onMessage} />);
+
+      // Switch to accepted tab
+      fireEvent.click(screen.getByRole('tab', { name: /accepted/i }));
+
+      // Click Message button
+      fireEvent.click(screen.getByTestId('message-button'));
+
+      // Should call onMessage with the other user's ID (addressee since requester is current user)
+      expect(onMessage).toHaveBeenCalledWith('other-user');
+    });
+  });
 });

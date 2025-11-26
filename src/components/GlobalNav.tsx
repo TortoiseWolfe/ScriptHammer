@@ -187,7 +187,7 @@ export function GlobalNav() {
             {/* Messages Icon (authenticated users only) */}
             {user && (
               <Link
-                href="/conversations"
+                href="/messages"
                 className="btn btn-ghost btn-circle indicator min-h-11 min-w-11"
                 title="Messages"
               >
@@ -245,7 +245,7 @@ export function GlobalNav() {
                   </li>
                   <li>
                     <Link
-                      href="/conversations"
+                      href="/messages"
                       className="flex items-center justify-between"
                     >
                       <span>Messages</span>
@@ -257,7 +257,7 @@ export function GlobalNav() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/messages/connections">Connections</Link>
+                    <Link href="/messages?tab=connections">Connections</Link>
                   </li>
                   <li>
                     <button
@@ -344,7 +344,7 @@ export function GlobalNav() {
                     </li>
                     <li>
                       <Link
-                        href="/conversations"
+                        href="/messages"
                         className="flex items-center justify-between"
                       >
                         <span>Messages</span>
@@ -356,7 +356,7 @@ export function GlobalNav() {
                       </Link>
                     </li>
                     <li>
-                      <Link href="/messages/connections">Connections</Link>
+                      <Link href="/messages?tab=connections">Connections</Link>
                     </li>
                     <li>
                       <button

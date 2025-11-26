@@ -498,6 +498,118 @@ export class ConnectionService {
       );
     }
   }
+
+  /**
+   * Get existing conversation or create a new one between current user and another user.
+   * Task: T003 - Feature 037 Unified Messaging Sidebar
+   *
+   * Looks up an existing conversation between the two users. If none exists, creates
+   * a new one. Enforces canonical ordering (smaller UUID = participant_1_id) to prevent
+   * duplicate conversations. Handles race conditions via database unique constraint.
+   *
+   * @param otherUserId - UUID of the other participant
+   * @returns Promise<string> - Conversation ID (existing or newly created)
+   * @throws AuthenticationError if user is not signed in
+   * @throws ValidationError if otherUserId is invalid UUID
+   * @throws ConnectionError if users are not connected (accepted status required)
+   *
+   * @example
+   * ```typescript
+   * // Get or create conversation with a connected user
+   * const conversationId = await connectionService.getOrCreateConversation(
+   *   '123e4567-e89b-12d3-a456-426614174000'
+   * );
+   * // Navigate to conversation
+   * router.push(`/messages?conversation=${conversationId}`);
+   * ```
+   */
+  async getOrCreateConversation(otherUserId: string): Promise<string> {
+    const supabase = createClient();
+
+    // Validate UUID format
+    validateUUID(otherUserId, 'otherUserId');
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new AuthenticationError(
+        'You must be signed in to start a conversation'
+      );
+    }
+
+    // Prevent self-conversation
+    if (otherUserId === user.id) {
+      throw new ValidationError(
+        'You cannot start a conversation with yourself',
+        'otherUserId'
+      );
+    }
+
+    // Verify connection is accepted
+    const { data: connection } = await (supabase as any)
+      .from('user_connections')
+      .select('status')
+      .or(
+        `and(requester_id.eq.${user.id},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${user.id})`
+      )
+      .eq('status', 'accepted')
+      .single();
+
+    if (!connection) {
+      throw new ConnectionError(
+        'You must be connected with this user to start a conversation'
+      );
+    }
+
+    // Apply canonical ordering (smaller UUID = participant_1_id)
+    const [participant_1, participant_2] =
+      user.id < otherUserId ? [user.id, otherUserId] : [otherUserId, user.id];
+
+    // Check for existing conversation
+    const { data: existing } = await (supabase as any)
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', participant_1)
+      .eq('participant_2_id', participant_2)
+      .single();
+
+    if (existing) {
+      return existing.id;
+    }
+
+    // Create new conversation
+    const { data: created, error: createError } = await (supabase as any)
+      .from('conversations')
+      .insert({
+        participant_1_id: participant_1,
+        participant_2_id: participant_2,
+      })
+      .select('id')
+      .single();
+
+    if (createError) {
+      // Handle race condition - conversation may have been created by other user
+      if (createError.code === '23505') {
+        // unique_violation
+        const { data: retry } = await (supabase as any)
+          .from('conversations')
+          .select('id')
+          .eq('participant_1_id', participant_1)
+          .eq('participant_2_id', participant_2)
+          .single();
+        if (retry) return retry.id;
+      }
+      throw new ConnectionError(
+        'Failed to create conversation: ' + createError.message
+      );
+    }
+
+    return created.id;
+  }
 }
 
 // Export singleton instance
