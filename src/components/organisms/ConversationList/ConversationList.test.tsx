@@ -15,14 +15,18 @@ vi.mock('next/navigation', () => ({
 vi.mock('./useConversationList', () => ({
   useConversationList: () => ({
     conversations: [],
+    counts: { all: 0, unread: 0, archived: 0, totalUnread: 0 },
     loading: false,
     error: null,
     searchQuery: '',
     setSearchQuery: vi.fn(),
-    filter: 'all',
-    setFilter: vi.fn(),
-    sort: 'recent',
-    setSort: vi.fn(),
+    filterType: 'all',
+    setFilterType: vi.fn(),
+    sortType: 'recent',
+    setSortType: vi.fn(),
+    reload: vi.fn(),
+    archiveConversation: vi.fn(),
+    unarchiveConversation: vi.fn(),
   }),
 }));
 
