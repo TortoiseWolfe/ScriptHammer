@@ -120,7 +120,22 @@ For features taking >1 day:
 
 1. Write PRP: `docs/prp-docs/<feature>-prp.md`
 2. Create branch: `./scripts/prp-to-feature.sh <feature> <number>`
-3. Run SpecKit: `/specify` → `/plan` → `/tasks` → `/implement`
+3. Run SpecKit (full 7-step workflow):
+   ```
+   /specify → /clarify → /plan → /checklist → /tasks → /analyze → /implement
+   ```
+
+### SpecKit Commands
+
+| Command      | Purpose                                              |
+| ------------ | ---------------------------------------------------- |
+| `/specify`   | Create feature specification from PRP                |
+| `/clarify`   | Ask clarifying questions, encode answers into spec   |
+| `/plan`      | Generate implementation plan from spec               |
+| `/checklist` | Generate custom checklist for the feature            |
+| `/tasks`     | Generate dependency-ordered tasks.md                 |
+| `/analyze`   | Cross-artifact consistency check (spec, plan, tasks) |
+| `/implement` | Execute the implementation plan                      |
 
 See `docs/prp-docs/SPECKIT-PRP-GUIDE.md` for details.
 
