@@ -47,7 +47,7 @@ export default function UserSearch({
       setSearchPerformed(true);
 
       if (result.users.length === 0) {
-        setError('No users found with that email or username');
+        setError('No users found matching your search');
       }
     } catch (err) {
       if (err instanceof ValidationError) {
@@ -96,7 +96,7 @@ export default function UserSearch({
         <div className="form-control">
           <label htmlFor="user-search-input" className="label">
             <span className="label-text">
-              Search for users by email or username
+              Search for users by username or name
             </span>
           </label>
           <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -105,7 +105,7 @@ export default function UserSearch({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter email or username"
+              placeholder="Enter username or name"
               className="input input-bordered min-h-11 flex-1"
               aria-label="Search for users"
               disabled={loading}

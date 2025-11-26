@@ -234,15 +234,15 @@ export class ConnectionService {
   }
 
   /**
-   * Search for users by username with exact match
+   * Search for users by username or display_name with partial matching
    * Task: T019
    *
-   * Searches the user_profiles table for users matching the query (exact username match).
-   * Returns users with their connection status relative to the current user.
-   * Excludes the current user from results.
+   * Searches the user_profiles table for users matching the query (partial match on
+   * username or display_name). Returns users with their connection status relative
+   * to the current user. Excludes the current user from results.
    *
    * @param input - SearchUsersInput containing search parameters
-   * @param input.query - Username to search for (exact match, minimum 3 characters)
+   * @param input.query - Text to search for (partial match, minimum 3 characters)
    * @param input.limit - Maximum number of results (default: 10)
    * @returns Promise<SearchUsersResult> - Matching users and list of already connected user IDs
    * @returns {UserProfile[]} users - Array of matching user profiles
@@ -254,7 +254,7 @@ export class ConnectionService {
    * @example
    * ```typescript
    * const result = await connectionService.searchUsers({
-   *   query: 'johndoe',
+   *   query: 'john',  // Matches "johndoe", "John Smith", etc.
    *   limit: 5
    * });
    *
@@ -289,12 +289,14 @@ export class ConnectionService {
       );
     }
 
-    // Search for users by username (exact match)
-    // Note: user_profiles table doesn't have email column
+    // Search for users by username or display_name (partial match, case-insensitive)
+    // Uses ilike for PostgreSQL case-insensitive pattern matching
+    const searchPattern = `%${query}%`;
     const { data: profiles, error } = await (supabase as any)
       .from('user_profiles')
       .select('id, username, display_name, avatar_url')
-      .eq('username', query)
+      .or(`username.ilike.${searchPattern},display_name.ilike.${searchPattern}`)
+      .neq('id', user.id) // Exclude current user from results
       .limit(input.limit || 10);
 
     if (error) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { validatePassword } from '@/lib/auth/password-validator';
@@ -10,6 +10,13 @@ import AvatarUpload from '@/components/atomic/AvatarUpload';
 import { removeAvatar } from '@/lib/avatar/upload';
 import DataExportButton from '@/components/atomic/DataExportButton';
 import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import {
+  validateUsername,
+  validateDisplayName,
+  validateBio,
+  checkUsernameAvailable,
+} from '@/lib/profile/validation';
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -27,11 +34,28 @@ export default function AccountSettings({
 }: AccountSettingsProps) {
   const supabase = createClient();
   const { user, refreshSession } = useAuth();
-  const [username, setUsername] = useState(user?.user_metadata?.username || '');
-  const [bio, setBio] = useState(user?.user_metadata?.bio || '');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(
-    (user?.user_metadata?.avatar_url as string) || null
-  );
+  const {
+    profile,
+    loading: profileLoading,
+    refetch: refetchProfile,
+  } = useUserProfile();
+
+  // Profile form state - initialize empty, populate from profile via useEffect
+  const [username, setUsername] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Load initial values from user_profiles table
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || '');
+      setDisplayName(profile.display_name || '');
+      setBio(profile.bio || '');
+      setAvatarUrl(profile.avatar_url || null);
+    }
+  }, [profile]);
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -44,18 +68,70 @@ export default function AccountSettings({
     e.preventDefault();
     setError(null);
     setSuccess(false);
+
+    // Validate username
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) {
+      setError(usernameValidation.error || 'Invalid username');
+      return;
+    }
+
+    // Validate display name
+    const displayNameValidation = validateDisplayName(displayName);
+    if (!displayNameValidation.valid) {
+      setError(displayNameValidation.error || 'Invalid display name');
+      return;
+    }
+
+    // Validate bio
+    const bioValidation = validateBio(bio);
+    if (!bioValidation.valid) {
+      setError(bioValidation.error || 'Invalid bio');
+      return;
+    }
+
     setLoading(true);
 
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { username, bio },
-    });
+    // Check username availability if username is provided
+    if (username && user?.id) {
+      const isAvailable = await checkUsernameAvailable(
+        supabase,
+        username,
+        user.id
+      );
+      if (!isAvailable) {
+        setError('This username is already taken');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Ensure user is authenticated before update
+    if (!user?.id) {
+      setError('You must be signed in to update your profile');
+      setLoading(false);
+      return;
+    }
+
+    // Save to user_profiles table (THE FIX: was saving to auth.users.user_metadata)
+    const { error: updateError } = await supabase
+      .from('user_profiles')
+      .update({
+        username: username.trim() || null,
+        display_name: displayName.trim() || null,
+        bio: bio.trim() || null,
+      })
+      .eq('id', user.id);
 
     setLoading(false);
 
     if (updateError) {
-      setError(updateError.message);
+      console.error('Error updating profile:', updateError);
+      setError('Failed to update profile. Please try again.');
     } else {
       setSuccess(true);
+      // Refetch profile to ensure UI shows fresh data
+      await refetchProfile();
     }
   };
 
@@ -143,12 +219,30 @@ export default function AccountSettings({
     }
   };
 
+  // Show loading state while profile is being fetched
+  if (profileLoading) {
+    return (
+      <div className={`space-y-6${className ? ` ${className}` : ''}`}>
+        <div className="card bg-base-200">
+          <div className="card-body">
+            <div className="flex items-center justify-center py-8">
+              <span className="loading loading-spinner loading-lg"></span>
+              <span className="ml-3">Loading profile...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-6${className ? ` ${className}` : ''}`}>
       {/* Profile Settings */}
       <form onSubmit={handleUpdateProfile} className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Profile Settings</h3>
+
+          {/* Username Field */}
           <div className="form-control">
             <label htmlFor="username-input" className="label">
               <span className="label-text">Username</span>
@@ -159,9 +253,38 @@ export default function AccountSettings({
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="input input-bordered min-h-11"
+              placeholder="e.g., john_doe"
               disabled={loading}
             />
+            <label className="label">
+              <span className="label-text-alt">
+                3-30 characters, letters, numbers, and underscores only
+              </span>
+            </label>
           </div>
+
+          {/* Display Name Field (NEW) */}
+          <div className="form-control">
+            <label htmlFor="displayname-input" className="label">
+              <span className="label-text">Display Name</span>
+            </label>
+            <input
+              id="displayname-input"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="input input-bordered min-h-11"
+              placeholder="e.g., John Doe"
+              disabled={loading}
+            />
+            <label className="label">
+              <span className="label-text-alt">
+                Your friendly name shown to other users
+              </span>
+            </label>
+          </div>
+
+          {/* Bio Field */}
           <div className="form-control">
             <label htmlFor="bio-textarea" className="label">
               <span className="label-text">Bio</span>
@@ -172,15 +295,27 @@ export default function AccountSettings({
               onChange={(e) => setBio(e.target.value)}
               className="textarea textarea-bordered"
               rows={3}
+              placeholder="Tell us about yourself..."
               disabled={loading}
             />
+            <label className="label">
+              <span className="label-text-alt">Maximum 500 characters</span>
+            </label>
           </div>
+
           <button
             type="submit"
             className="btn btn-primary min-h-11"
-            disabled={loading}
+            disabled={loading || profileLoading}
           >
-            Update Profile
+            {loading ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Saving...
+              </>
+            ) : (
+              'Update Profile'
+            )}
           </button>
         </div>
       </form>
