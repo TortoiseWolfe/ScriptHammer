@@ -23,6 +23,14 @@ const mockFrom = vi.fn(() => ({
   getPublicUrl: mockGetPublicUrl,
 }));
 
+// Mock for database queries (user_profiles table)
+const mockDbUpdate = vi.fn().mockReturnValue({
+  eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+});
+const mockDbFrom = vi.fn(() => ({
+  update: mockDbUpdate,
+}));
+
 // Mock Supabase client with persistent mocks
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
@@ -33,6 +41,7 @@ vi.mock('@/lib/supabase/client', () => ({
     storage: {
       from: mockFrom,
     },
+    from: mockDbFrom, // Database queries for user_profiles
   }),
 }));
 
