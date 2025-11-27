@@ -32,7 +32,6 @@ function MessagesContent() {
   const scrollPositions = useRef<Record<SidebarTab, number>>({
     chats: 0,
     connections: 0,
-    find: 0,
   });
 
   // Mobile drawer state
@@ -411,15 +410,15 @@ function MessagesContent() {
 /**
  * Messages Page with Unified Sidebar and Mobile Drawer Pattern
  *
- * Mobile: Drawer-based sidebar with tabs (Chats, Connections, Find People)
+ * Mobile: Drawer-based sidebar with tabs (Chats, Connections)
  * Tablet+: Side-by-side sidebar and chat window
  *
  * Usage:
  * - /messages → Chats tab (default)
- * - /messages?tab=connections → Connections tab
- * - /messages?tab=find → Find People tab
+ * - /messages?tab=connections → Connections tab (includes UserSearch)
  * - /messages?conversation=<id> → Open specific conversation
  *
+ * Feature 038: Consolidated to 2 tabs - UserSearch embedded in ConnectionManager
  * @see Feature 037 - Unified Messaging Sidebar
  */
 export default function MessagesPage() {

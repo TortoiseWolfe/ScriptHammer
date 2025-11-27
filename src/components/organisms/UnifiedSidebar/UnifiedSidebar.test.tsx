@@ -31,10 +31,6 @@ vi.mock('@/components/organisms/ConnectionManager', () => ({
   ),
 }));
 
-vi.mock('@/components/molecular/UserSearch', () => ({
-  default: () => <div data-testid="user-search">UserSearch</div>,
-}));
-
 const defaultProps = {
   onConversationSelect: vi.fn(),
   onStartConversation: vi.fn().mockResolvedValue('conv-123'),
@@ -58,15 +54,12 @@ describe('UnifiedSidebar', () => {
     expect(screen.getByTestId('unified-sidebar')).toHaveClass(customClass);
   });
 
-  it('renders all three tabs (Chats, Connections, Find People)', () => {
+  it('renders both tabs (Chats, Connections)', () => {
     render(<UnifiedSidebar {...defaultProps} />);
 
     expect(screen.getByRole('tab', { name: /chats/i })).toBeInTheDocument();
     expect(
       screen.getByRole('tab', { name: /connections/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole('tab', { name: /find people/i })
     ).toBeInTheDocument();
   });
 
@@ -85,9 +78,6 @@ describe('UnifiedSidebar', () => {
     fireEvent.click(screen.getByRole('tab', { name: /connections/i }));
     expect(onTabChange).toHaveBeenCalledWith('connections');
 
-    fireEvent.click(screen.getByRole('tab', { name: /find people/i }));
-    expect(onTabChange).toHaveBeenCalledWith('find');
-
     fireEvent.click(screen.getByRole('tab', { name: /chats/i }));
     expect(onTabChange).toHaveBeenCalledWith('chats');
   });
@@ -96,21 +86,12 @@ describe('UnifiedSidebar', () => {
     render(<UnifiedSidebar {...defaultProps} activeTab="chats" />);
     expect(screen.getByTestId('conversation-list')).toBeInTheDocument();
     expect(screen.queryByTestId('connection-manager')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('user-search')).not.toBeInTheDocument();
   });
 
   it('renders ConnectionManager when connections tab active', () => {
     render(<UnifiedSidebar {...defaultProps} activeTab="connections" />);
     expect(screen.getByTestId('connection-manager')).toBeInTheDocument();
     expect(screen.queryByTestId('conversation-list')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('user-search')).not.toBeInTheDocument();
-  });
-
-  it('renders UserSearch when find tab active', () => {
-    render(<UnifiedSidebar {...defaultProps} activeTab="find" />);
-    expect(screen.getByTestId('user-search')).toBeInTheDocument();
-    expect(screen.queryByTestId('conversation-list')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('connection-manager')).not.toBeInTheDocument();
   });
 
   it('displays unread count badge on Chats tab when count > 0', () => {

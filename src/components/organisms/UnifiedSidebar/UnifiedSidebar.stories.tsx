@@ -10,7 +10,7 @@ const meta: Meta<typeof UnifiedSidebar> = {
     docs: {
       description: {
         component:
-          'UnifiedSidebar provides tabbed navigation for Chats, Connections, and Find People sections in the messaging interface. Feature 037 - Unified Messaging Sidebar.',
+          'UnifiedSidebar provides tabbed navigation for Chats and Connections sections in the messaging interface. Feature 038: UserSearch now embedded in ConnectionManager.',
       },
     },
   },
@@ -18,7 +18,7 @@ const meta: Meta<typeof UnifiedSidebar> = {
   argTypes: {
     activeTab: {
       control: 'select',
-      options: ['chats', 'connections', 'find'],
+      options: ['chats', 'connections'],
       description: 'Currently active tab',
     },
     selectedConversationId: {
@@ -79,15 +79,6 @@ export const ConnectionsTab: Story = {
     selectedConversationId: null,
     unreadCount: 0,
     pendingConnectionCount: 3,
-  },
-};
-
-export const FindPeopleTab: Story = {
-  args: {
-    activeTab: 'find',
-    selectedConversationId: null,
-    unreadCount: 0,
-    pendingConnectionCount: 0,
   },
 };
 

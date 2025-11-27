@@ -51,8 +51,11 @@ export default function AccountSettings({
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  // Feature 038: Split error/success states for profile and password forms (FR-003)
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [removingAvatar, setRemovingAvatar] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -60,20 +63,21 @@ export default function AccountSettings({
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    // Feature 038: Use profile-specific states (FR-003)
+    setProfileError(null);
+    setProfileSuccess(false);
 
     // Validate display name
     const displayNameValidation = validateDisplayName(displayName);
     if (!displayNameValidation.valid) {
-      setError(displayNameValidation.error || 'Invalid display name');
+      setProfileError(displayNameValidation.error || 'Invalid display name');
       return;
     }
 
     // Validate bio
     const bioValidation = validateBio(bio);
     if (!bioValidation.valid) {
-      setError(bioValidation.error || 'Invalid bio');
+      setProfileError(bioValidation.error || 'Invalid bio');
       return;
     }
 
@@ -82,7 +86,7 @@ export default function AccountSettings({
 
     // Ensure user is authenticated before update
     if (!user?.id) {
-      setError('You must be signed in to update your profile');
+      setProfileError('You must be signed in to update your profile');
       setLoading(false);
       setIsUpdatingProfile(false);
       return;
@@ -110,32 +114,33 @@ export default function AccountSettings({
     // Feature 035: Check returned data exists, not just !error (FR-003)
     if (updateError) {
       console.error('Error updating profile:', updateError);
-      setError('Failed to update profile. Please try again.');
+      setProfileError('Failed to update profile. Please try again.');
     } else if (!data) {
       // FR-006: Show error if update failed silently (data is null)
-      setError('Profile update failed - please try again.');
+      setProfileError('Profile update failed - please try again.');
     } else {
-      setSuccess(true);
+      setProfileSuccess(true);
       // FR-010: Refetch profile to ensure UI reflects database state
       await refetchProfile();
-      // FR-005: Auto-dismiss success message after 3 seconds
-      setTimeout(() => setSuccess(false), 3000);
+      // Feature 038 FR-013: Auto-dismiss success message after 3 seconds
+      setTimeout(() => setProfileSuccess(false), 3000);
     }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    // Feature 038: Use password-specific states (FR-003)
+    setPasswordError(null);
+    setPasswordSuccess(false);
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
-      setError(passwordValidation.error);
+      setPasswordError(passwordValidation.error);
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setPasswordError('Passwords do not match');
       return;
     }
 
@@ -158,7 +163,7 @@ export default function AccountSettings({
         });
       }
 
-      setError(updateError.message);
+      setPasswordError(updateError.message);
     } else {
       // Log successful password change (T035)
       if (user) {
@@ -168,9 +173,12 @@ export default function AccountSettings({
         });
       }
 
-      setSuccess(true);
+      setPasswordSuccess(true);
+      // Feature 038 FR-014: Password fields NOT cleared on failure, but cleared on success
       setPassword('');
       setConfirmPassword('');
+      // Feature 038 FR-013: Auto-dismiss success message after 3 seconds
+      setTimeout(() => setPasswordSuccess(false), 3000);
     }
   };
 
@@ -185,6 +193,8 @@ export default function AccountSettings({
   const handleAvatarUploadComplete = async (url: string) => {
     setAvatarUrl(url);
     await refreshSession(); // Refresh to get updated user metadata
+    // Feature 038 FR-001: Refetch profile to update navbar avatar immediately
+    await refetchProfile();
   };
 
   const handleRemoveAvatar = async () => {
@@ -192,7 +202,8 @@ export default function AccountSettings({
       return;
     }
 
-    setError(null);
+    // Feature 038: Use profile-specific error state for avatar operations
+    setProfileError(null);
     setRemovingAvatar(true);
 
     const result = await removeAvatar();
@@ -200,10 +211,13 @@ export default function AccountSettings({
     setRemovingAvatar(false);
 
     if (result.error) {
-      setError(result.error);
+      // Feature 038 Edge Case 1: Avatar upload/removal fails - show error inline
+      setProfileError(result.error);
     } else {
       setAvatarUrl(null);
       await refreshSession(); // Refresh to get updated user metadata
+      // Feature 038 FR-001/FR-002: Refetch profile to update navbar avatar
+      await refetchProfile();
     }
   };
 
@@ -284,6 +298,26 @@ export default function AccountSettings({
               'Update Profile'
             )}
           </button>
+
+          {/* Feature 038 FR-004: Profile alerts inline within card */}
+          {profileError && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="alert alert-error mt-4"
+            >
+              <span>{profileError}</span>
+            </div>
+          )}
+          {profileSuccess && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="alert alert-success mt-4"
+            >
+              <span>Profile updated successfully!</span>
+            </div>
+          )}
         </div>
       </form>
 
@@ -366,6 +400,26 @@ export default function AccountSettings({
           >
             Change Password
           </button>
+
+          {/* Feature 038 FR-005: Password alerts inline within card */}
+          {passwordError && (
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="alert alert-error mt-4"
+            >
+              <span>{passwordError}</span>
+            </div>
+          )}
+          {passwordSuccess && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="alert alert-success mt-4"
+            >
+              <span>Password changed successfully!</span>
+            </div>
+          )}
         </div>
       </form>
 
@@ -413,17 +467,7 @@ export default function AccountSettings({
         onClose={handleCloseDeleteModal}
       />
 
-      {error && (
-        <div className="alert alert-error">
-          <span>{error}</span>
-        </div>
-      )}
-
-      {success && (
-        <div className="alert alert-success">
-          <span>Settings updated successfully!</span>
-        </div>
-      )}
+      {/* Feature 038 FR-006: Bottom-of-page alerts removed - now inline within cards */}
     </div>
   );
 }

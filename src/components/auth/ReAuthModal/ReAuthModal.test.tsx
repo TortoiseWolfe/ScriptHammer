@@ -8,7 +8,27 @@ vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {
     needsMigration: vi.fn(),
     deriveKeys: vi.fn(),
+    hasKeys: vi.fn().mockResolvedValue(true),
+    initializeKeys: vi.fn(),
   },
+}));
+
+// Mock AuthContext - email user by default
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(() => ({
+    user: {
+      id: 'test-user-id',
+      email: 'test@example.com',
+      app_metadata: { provider: 'email' },
+      identities: [{ provider: 'email' }],
+    },
+  })),
+}));
+
+// Mock OAuth utils
+vi.mock('@/lib/auth/oauth-utils', () => ({
+  isOAuthUser: vi.fn(() => false),
+  getOAuthProvider: vi.fn(() => null),
 }));
 
 describe('ReAuthModal', () => {
@@ -36,7 +56,7 @@ describe('ReAuthModal', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('should render when isOpen is true', () => {
+    it('should render when isOpen is true', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -46,10 +66,14 @@ describe('ReAuthModal', () => {
       );
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(screen.getByText('Unlock Messaging')).toBeInTheDocument();
+
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByText('Unlock Messaging')).toBeInTheDocument();
+      });
     });
 
-    it('should render password input', () => {
+    it('should render password input', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -58,13 +82,16 @@ describe('ReAuthModal', () => {
         />
       );
 
-      expect(screen.getByLabelText('Password')).toBeInTheDocument();
-      expect(
-        screen.getByPlaceholderText('Enter your password')
-      ).toBeInTheDocument();
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText('Enter your password')
+        ).toBeInTheDocument();
+      });
     });
 
-    it('should render unlock button', () => {
+    it('should render unlock button', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -73,12 +100,15 @@ describe('ReAuthModal', () => {
         />
       );
 
-      expect(
-        screen.getByRole('button', { name: 'Unlock' })
-      ).toBeInTheDocument();
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Unlock' })
+        ).toBeInTheDocument();
+      });
     });
 
-    it('should render close button when onClose is provided', () => {
+    it('should render close button when onClose is provided', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -87,16 +117,28 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Close modal button is always available in header
       expect(
         screen.getByRole('button', { name: 'Close modal' })
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: 'Cancel' })
-      ).toBeInTheDocument();
+
+      // Wait for the form to load for Cancel button
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Cancel' })
+        ).toBeInTheDocument();
+      });
     });
 
-    it('should not render close/cancel buttons when onClose is not provided', () => {
+    it('should not render close/cancel buttons when onClose is not provided', async () => {
       render(<ReAuthModal isOpen={true} onSuccess={mockOnSuccess} />);
+
+      // Wait for the form to load
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Unlock' })
+        ).toBeInTheDocument();
+      });
 
       expect(
         screen.queryByRole('button', { name: 'Close modal' })
@@ -119,6 +161,11 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
+
       const passwordInput = screen.getByLabelText('Password');
       expect(passwordInput).toHaveAttribute('type', 'password');
 
@@ -138,6 +185,11 @@ describe('ReAuthModal', () => {
           onClose={mockOnClose}
         />
       );
+
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
 
       const passwordInput = screen.getByLabelText('Password');
       const showButton = screen.getByRole('button', { name: 'Show password' });
@@ -164,12 +216,21 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Unlock' })
+        ).toBeInTheDocument();
+      });
+
       const unlockButton = screen.getByRole('button', { name: 'Unlock' });
       await user.click(unlockButton);
 
-      expect(
-        screen.getByText('Please enter your password')
-      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(
+          screen.getByText('Please enter your password')
+        ).toBeInTheDocument();
+      });
     });
   });
 
@@ -244,6 +305,11 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
+
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'correct-password');
 
@@ -274,6 +340,11 @@ describe('ReAuthModal', () => {
           onClose={mockOnClose}
         />
       );
+
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
 
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
@@ -307,6 +378,11 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
+
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'wrong-password');
 
@@ -335,6 +411,11 @@ describe('ReAuthModal', () => {
           onClose={mockOnClose}
         />
       );
+
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
 
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'any-password');
@@ -378,6 +459,11 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
+
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
 
@@ -416,6 +502,11 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(screen.getByLabelText('Password')).toBeInTheDocument();
+      });
+
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
 
@@ -433,7 +524,7 @@ describe('ReAuthModal', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have correct ARIA attributes', () => {
+    it('should have correct ARIA attributes', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -441,6 +532,13 @@ describe('ReAuthModal', () => {
           onClose={mockOnClose}
         />
       );
+
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Unlock' })
+        ).toBeInTheDocument();
+      });
 
       const dialog = screen.getByRole('dialog');
       expect(dialog).toHaveAttribute(
@@ -451,7 +549,7 @@ describe('ReAuthModal', () => {
       expect(dialog).toHaveAttribute('aria-describedby', 'reauth-description');
     });
 
-    it('should have description text', () => {
+    it('should have description text', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -460,9 +558,12 @@ describe('ReAuthModal', () => {
         />
       );
 
-      expect(
-        screen.getByText(/Your session has been restored/)
-      ).toBeInTheDocument();
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Your session has been restored/)
+        ).toBeInTheDocument();
+      });
     });
 
     it('should have error announced by screen reader', async () => {
@@ -476,11 +577,200 @@ describe('ReAuthModal', () => {
         />
       );
 
+      // Wait for the form to load after checking keys
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Unlock' })
+        ).toBeInTheDocument();
+      });
+
       const unlockButton = screen.getByRole('button', { name: 'Unlock' });
       await user.click(unlockButton);
 
-      const alert = screen.getByRole('alert');
-      expect(alert).toHaveAttribute('aria-live', 'assertive');
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toHaveAttribute('aria-live', 'assertive');
+      });
+    });
+  });
+
+  describe('OAuth user setup mode', () => {
+    beforeEach(async () => {
+      // Mock OAuth user without keys
+      const { isOAuthUser, getOAuthProvider } = await import(
+        '@/lib/auth/oauth-utils'
+      );
+      vi.mocked(isOAuthUser).mockReturnValue(true);
+      vi.mocked(getOAuthProvider).mockReturnValue('Google');
+
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.hasKeys).mockResolvedValue(false);
+    });
+
+    it('should show setup mode for OAuth user without keys', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      // Wait for key check to complete
+      await waitFor(() => {
+        expect(
+          screen.getByText('Set Up Encrypted Messaging')
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should show confirm password field in setup mode', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
+      });
+    });
+
+    it('should show Set Up Messaging button in setup mode', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: 'Set Up Messaging' })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should validate password match in setup mode', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Messaging Password')).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByLabelText('Messaging Password');
+      const confirmInput = screen.getByLabelText('Confirm Password');
+
+      await user.type(passwordInput, 'test-password123');
+      await user.type(confirmInput, 'different-password');
+
+      const setupButton = screen.getByRole('button', {
+        name: 'Set Up Messaging',
+      });
+      await user.click(setupButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
+      });
+    });
+
+    it('should call initializeKeys for OAuth user setup', async () => {
+      const user = userEvent.setup();
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.initializeKeys).mockResolvedValue(
+        {} as any
+      );
+
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText('Messaging Password')).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByLabelText('Messaging Password');
+      const confirmInput = screen.getByLabelText('Confirm Password');
+
+      await user.type(passwordInput, 'test-password123');
+      await user.type(confirmInput, 'test-password123');
+
+      const setupButton = screen.getByRole('button', {
+        name: 'Set Up Messaging',
+      });
+      await user.click(setupButton);
+
+      await waitFor(() => {
+        expect(keyManagementService.initializeKeys).toHaveBeenCalledWith(
+          'test-password123'
+        );
+        expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  describe('OAuth user with existing keys', () => {
+    beforeEach(async () => {
+      // Mock OAuth user WITH keys
+      const { isOAuthUser, getOAuthProvider } = await import(
+        '@/lib/auth/oauth-utils'
+      );
+      vi.mocked(isOAuthUser).mockReturnValue(true);
+      vi.mocked(getOAuthProvider).mockReturnValue('Google');
+
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.hasKeys).mockResolvedValue(true);
+    });
+
+    it('should show unlock mode for OAuth user with existing keys', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Unlock Messaging')).toBeInTheDocument();
+      });
+    });
+
+    it('should show OAuth-specific message', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/enter your messaging password/)
+        ).toBeInTheDocument();
+      });
     });
   });
 });
