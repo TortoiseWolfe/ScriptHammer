@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:atomic:CopyButton');
 
 export interface CopyButtonProps {
   content: string;
@@ -44,7 +47,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
         setIsAnimating(false);
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy', { error });
       setCopyState('error');
       setIsAnimating(true);
 

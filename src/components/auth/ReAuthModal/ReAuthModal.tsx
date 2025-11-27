@@ -3,6 +3,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOAuthUser, getOAuthProvider } from '@/lib/auth/oauth-utils';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:auth:ReAuthModal');
 
 export interface ReAuthModalProps {
   /** Whether the modal is visible */
@@ -62,7 +65,7 @@ export function ReAuthModal({
           const hasKeys = await keyManagementService.hasKeys();
           setIsSetupMode(!hasKeys);
         } catch (err) {
-          console.error('[ReAuthModal] Error checking keys:', err);
+          logger.error('Error checking keys', { error: err });
           setIsSetupMode(true); // Default to setup mode on error
         } finally {
           setCheckingKeys(false);
@@ -127,9 +130,7 @@ export function ReAuthModal({
 
         if (isSetupMode) {
           // User setting up encryption keys for first time
-          console.log(
-            '[ReAuthModal] Initializing encryption keys for new user'
-          );
+          logger.info('Initializing encryption keys for new user');
           await keyManagementService.initializeKeys(password);
         } else {
           // Check if user needs migration first
@@ -170,7 +171,7 @@ export function ReAuthModal({
         setLoading(false);
       }
     },
-    [password, confirmPassword, isSetupMode, onSuccess]
+    [password, confirmPassword, isSetupMode, onSuccess, oauthUser]
   );
 
   if (!isOpen) {

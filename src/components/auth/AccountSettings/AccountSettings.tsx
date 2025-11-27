@@ -12,6 +12,9 @@ import DataExportButton from '@/components/atomic/DataExportButton';
 import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { validateDisplayName, validateBio } from '@/lib/profile/validation';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:auth:AccountSettings');
 
 export interface AccountSettingsProps {
   /** Additional CSS classes */
@@ -113,7 +116,7 @@ export default function AccountSettings({
 
     // Feature 035: Check returned data exists, not just !error (FR-003)
     if (updateError) {
-      console.error('Error updating profile:', updateError);
+      logger.error('Error updating profile', { error: updateError });
       setProfileError('Failed to update profile. Please try again.');
     } else if (!data) {
       // FR-006: Show error if update failed silently (data is null)

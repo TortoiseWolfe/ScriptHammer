@@ -10,6 +10,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import type { Database } from '@/lib/supabase/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('lib:supabase:middleware');
 
 /**
  * Updates Supabase session in middleware
@@ -40,7 +43,7 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error(
+    logger.error(
       'Missing Supabase environment variables in middleware. Authentication will not work.'
     );
     return supabaseResponse;

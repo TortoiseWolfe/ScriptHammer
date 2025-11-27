@@ -2,6 +2,9 @@
 
 import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:auth:OAuthButtons');
 
 export interface OAuthButtonsProps {
   /** Additional CSS classes */
@@ -31,7 +34,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
         },
       });
     } catch (error) {
-      console.error('OAuth initialization error:', error);
+      logger.error('OAuth initialization error', { error, provider });
       setLoading(null);
       // Could show error to user here
     }

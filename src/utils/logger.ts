@@ -1,6 +1,13 @@
 /**
  * Development-only logging utility
  * Console statements are removed in production builds for Best Practices score
+ *
+ * @deprecated This logger is deprecated. Use the structured logger from @/lib/logger instead:
+ * ```typescript
+ * import { createLogger } from '@/lib/logger';
+ * const logger = createLogger('category:name');
+ * logger.info('message', { context });
+ * ```
  */
 
 const isDev = process.env.NODE_ENV === 'development';

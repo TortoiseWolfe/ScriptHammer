@@ -8,6 +8,9 @@ import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import fs from 'fs/promises';
 import path from 'path';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:blog:slug:page');
 
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
@@ -22,7 +25,7 @@ async function getPost(slug: string): Promise<BlogPost | null> {
 
     return post || null;
   } catch (error) {
-    console.error('Error fetching post:', error);
+    logger.error('Error fetching post', { error, slug });
     return null;
   }
 }
@@ -118,7 +121,7 @@ async function getAuthor(id: string): Promise<Author | null> {
       hideSocial: !authorConfig.preferences.showSocialLinks,
     };
   } catch (error) {
-    console.error('Error fetching author:', error);
+    logger.error('Error fetching author', { error, authorId: id });
     return null;
   }
 }
@@ -222,7 +225,7 @@ export async function generateStaticParams() {
       slug: post.slug,
     }));
   } catch (error) {
-    console.error('Error generating static params:', error);
+    logger.error('Error generating static params', { error });
     return [];
   }
 }

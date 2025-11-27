@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('hooks:codeBlockPreferences');
 
 export interface CodeBlockPreferences {
   showLineNumbers: boolean;
@@ -33,7 +36,7 @@ export function useCodeBlockPreferences() {
         setPreferences(parsed);
       }
     } catch (error) {
-      console.error('Failed to load code block preferences:', error);
+      logger.error('Failed to load code block preferences', { error });
     }
   }, []);
 
@@ -49,7 +52,7 @@ export function useCodeBlockPreferences() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       setPreferences(updated);
     } catch (error) {
-      console.error('Failed to save code block preferences:', error);
+      logger.error('Failed to save code block preferences', { error });
     }
   }, []);
 
@@ -90,7 +93,7 @@ export function useCodeBlockPreferences() {
         await navigator.clipboard.writeText(content);
         return true;
       } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
+        logger.error('Failed to copy to clipboard', { error });
         return false;
       }
     },

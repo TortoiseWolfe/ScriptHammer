@@ -4,6 +4,9 @@
  */
 
 import { FontConfig, FontLoadState } from './font-types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:font-loader');
 
 // Track loaded fonts to avoid duplicate loading
 const loadedFonts = new Set<string>();
@@ -68,9 +71,9 @@ export async function loadFont(fontConfig: FontConfig): Promise<void> {
       // Wait for font to load with timeout
       await new Promise<void>((resolve) => {
         const timeoutId: NodeJS.Timeout = setTimeout(() => {
-          console.warn(
-            `Font loading timeout for ${fontConfig.name}, continuing anyway`
-          );
+          logger.warn('Font loading timeout, continuing anyway', {
+            fontName: fontConfig.name,
+          });
           loadedFonts.add(fontConfig.id);
           resolve();
         }, 5000);
@@ -82,9 +85,9 @@ export async function loadFont(fontConfig: FontConfig): Promise<void> {
         };
         link.onerror = () => {
           clearTimeout(timeoutId);
-          console.warn(
-            `Failed to load font: ${fontConfig.name}, falling back to system font`
-          );
+          logger.warn('Failed to load font, falling back to system font', {
+            fontName: fontConfig.name,
+          });
           // Don't reject, just resolve and mark as loaded to prevent retries
           loadedFonts.add(fontConfig.id);
           resolve();
@@ -98,14 +101,14 @@ export async function loadFont(fontConfig: FontConfig): Promise<void> {
         try {
           await document.fonts.ready;
         } catch (error) {
-          console.warn(
-            `Font loading API failed for ${fontConfig.name}:`,
-            error
-          );
+          logger.warn('Font loading API failed', {
+            fontName: fontConfig.name,
+            error,
+          });
         }
       }
     } catch (error) {
-      console.error(`Error loading font ${fontConfig.name}:`, error);
+      logger.error('Error loading font', { fontName: fontConfig.name, error });
       throw error;
     } finally {
       loadingFonts.delete(fontConfig.id);

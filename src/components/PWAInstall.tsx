@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { projectConfig } from '@/config/project.config';
+import { createLogger } from '@/lib/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
+
+const logger = createLogger('components:pwa');
 
 export default function PWAInstall() {
   const [deferredPrompt, setDeferredPrompt] =
@@ -36,49 +39,37 @@ export default function PWAInstall() {
         // Use dynamic basePath from project config
         const swPath = projectConfig.swPath;
 
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`[PWA] Registering Service Worker from: ${swPath}`);
-        }
+        logger.debug('Registering Service Worker', { path: swPath });
 
         // Add timestamp to force update
         const swUrl = `${swPath}?v=${Date.now()}`;
 
         navigator.serviceWorker.register(swUrl).then(
           (registration) => {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[PWA] Service Worker registered:', registration);
-              console.log('[PWA] SW Scope:', registration.scope);
-              console.log(
-                '[PWA] SW State:',
-                registration.active?.state || 'installing'
-              );
-            }
+            logger.info('Service Worker registered', {
+              scope: registration.scope,
+              state: registration.active?.state || 'installing',
+            });
 
             // Force update check
             registration.update().catch((err) => {
-              if (process.env.NODE_ENV === 'development') {
-                console.log('SW update failed:', err);
-              }
+              logger.debug('SW update failed', { error: err });
             });
 
             // Check for updates periodically
             setInterval(() => {
               registration.update().catch((err) => {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log('SW update check failed:', err);
-                }
+                logger.debug('SW update check failed', { error: err });
               });
             }, 60000); // Check every minute
           },
           (error) => {
-            if (process.env.NODE_ENV === 'development') {
-              console.error('[PWA] Service Worker registration failed:', error);
-            }
+            logger.error('Service Worker registration failed', { error });
           }
         );
       });
-    } else if (process.env.NODE_ENV === 'development') {
-      console.log('[PWA] Service Worker not supported in this browser');
+    } else {
+      logger.debug('Service Worker not supported in this browser');
     }
 
     // Check if app is already installed
@@ -89,7 +80,7 @@ export default function PWAInstall() {
 
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('[PWA] Install prompt captured');
+      logger.info('Install prompt captured');
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallButton(true);
@@ -102,7 +93,7 @@ export default function PWAInstall() {
 
     // Check if the app was successfully installed
     window.addEventListener('appinstalled', () => {
-      console.log('PWA installed');
+      logger.info('PWA installed');
       setIsInstalled(true);
       setShowInstallButton(false);
       setDeferredPrompt(null);
@@ -130,7 +121,7 @@ export default function PWAInstall() {
 
     // Wait for the user choice
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User choice: ${outcome}`);
+    logger.info('User install choice', { outcome });
 
     // Track the outcome
     trackPWAEvent(
@@ -168,7 +159,7 @@ export default function PWAInstall() {
     const debugMode = urlParams.get('pwa-debug') === 'true';
 
     if (debugMode) {
-      console.log('[PWA] Debug mode enabled - forcing install prompt to show');
+      logger.debug('Debug mode enabled - forcing install prompt to show');
       setShowInstallButton(true);
       setIsMinimized(false);
       // Clear dismissal in debug mode
@@ -185,7 +176,7 @@ export default function PWAInstall() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('pwa-reset') === 'true') {
-      console.log('[PWA] Resetting install prompt dismissal');
+      logger.debug('Resetting install prompt dismissal');
       localStorage.removeItem('pwa-install-dismissed');
       // Remove the query parameter to avoid constant resets
       const newUrl = window.location.pathname + window.location.hash;
@@ -198,10 +189,11 @@ export default function PWAInstall() {
 
   // Log debug info
   if (isDebugMode) {
-    console.log('[PWA Debug] Component rendering in debug mode');
-    console.log('[PWA Debug] showInstallButton:', showInstallButton);
-    console.log('[PWA Debug] isInstalled:', isInstalled);
-    console.log('[PWA Debug] deferredPrompt:', deferredPrompt);
+    logger.debug('Component rendering in debug mode', {
+      showInstallButton,
+      isInstalled,
+      hasDeferredPrompt: !!deferredPrompt,
+    });
   }
 
   // Minimized CTA button

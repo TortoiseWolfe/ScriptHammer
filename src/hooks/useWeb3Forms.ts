@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { createLogger } from '@/lib/logger';
 import { formatErrorMessage } from '@/utils/web3forms';
 import { emailService } from '@/utils/email/email-service';
 import type { ContactFormData as EmailContactFormData } from '@/utils/email/types';
@@ -12,6 +13,8 @@ import {
 import { useOfflineQueue } from './useOfflineQueue';
 import { addToQueue, getQueueSize } from '@/utils/offline-queue';
 import { registerBackgroundSync } from '@/utils/background-sync';
+
+const logger = createLogger('hooks:web3Forms');
 
 /**
  * Hook configuration options
@@ -95,7 +98,7 @@ export const useWeb3Forms = (
         }
         return { id: '', queued: false };
       } catch (error) {
-        console.error('[Web3Forms] Failed to queue offline:', error);
+        logger.error('Failed to queue offline', { error });
         return { id: '', queued: false };
       }
     },
@@ -166,7 +169,7 @@ export const useWeb3Forms = (
       try {
         // Check if offline
         if (!isOnline) {
-          console.log('[Web3Forms] Offline - queuing submission');
+          logger.info('Offline - queuing submission');
 
           // Add to offline queue
           const result = await addToOfflineQueue(data);

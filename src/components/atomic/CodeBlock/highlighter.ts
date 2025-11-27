@@ -1,4 +1,7 @@
 import Prism from 'prismjs';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:atomic:CodeBlock:highlighter');
 
 // Import core language components
 import 'prismjs/components/prism-typescript';
@@ -35,7 +38,7 @@ export function highlightCode(
     // Check if language is supported
     const grammar = Prism.languages[language];
     if (!grammar) {
-      console.warn(`Language '${language}' not supported by Prism`);
+      logger.warn('Language not supported by Prism', { language });
       return addLineNumbers(escapeHtml(code), showLineNumbers);
     }
 
@@ -43,7 +46,7 @@ export function highlightCode(
     const highlighted = Prism.highlight(code, grammar, language);
     return addLineNumbers(highlighted, showLineNumbers);
   } catch (error) {
-    console.warn('Failed to highlight code:', error);
+    logger.warn('Failed to highlight code', { error });
     return addLineNumbers(escapeHtml(code), showLineNumbers);
   }
 }

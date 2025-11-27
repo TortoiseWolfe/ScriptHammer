@@ -11,6 +11,11 @@
 
 import { messagingDb } from '@/lib/messaging/database';
 import { createClient } from '@/lib/supabase/client';
+import {
+  createMessagingClient,
+  type MessageRow,
+  type ConversationRow,
+} from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
 import type {
@@ -136,6 +141,7 @@ export class OfflineQueueService {
 
     try {
       const supabase = createClient();
+      const msgClient = createMessagingClient(supabase);
 
       // Check authentication
       const {
@@ -179,7 +185,7 @@ export class OfflineQueueService {
           }
 
           // Get next sequence number for this conversation
-          const { data: lastMessage } = await (supabase as any)
+          const { data: lastMessage } = await msgClient
             .from('messages')
             .select('sequence_number')
             .eq('conversation_id', queuedMsg.conversation_id)
@@ -192,7 +198,7 @@ export class OfflineQueueService {
             : 1;
 
           // Insert message to Supabase
-          const { data: message, error: insertError } = await (supabase as any)
+          const { data: message, error: insertError } = await msgClient
             .from('messages')
             .insert({
               conversation_id: queuedMsg.conversation_id,
@@ -214,7 +220,7 @@ export class OfflineQueueService {
           }
 
           // Update conversation's last_message_at
-          await (supabase as any)
+          await msgClient
             .from('conversations')
             .update({ last_message_at: new Date().toISOString() })
             .eq('id', queuedMsg.conversation_id);

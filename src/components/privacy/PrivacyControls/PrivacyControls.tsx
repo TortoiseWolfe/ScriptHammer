@@ -7,6 +7,9 @@ import {
   downloadJSON,
   clearUserData,
 } from '../../../utils/privacy';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:privacy:PrivacyControls');
 
 export interface PrivacyControlsProps {
   className?: string;
@@ -81,7 +84,7 @@ export function PrivacyControls({
       downloadJSON(data);
       onExport?.();
     } catch (error) {
-      console.error('Failed to export data:', error);
+      logger.error('Failed to export data', { error });
     }
   };
 
@@ -104,7 +107,7 @@ export function PrivacyControls({
         setDeleteStatus('Failed to delete data. Please try again.');
       }
     } catch (error) {
-      console.error('Failed to delete data:', error);
+      logger.error('Failed to delete data', { error });
       setDeleteStatus('An error occurred while deleting your data.');
     }
 

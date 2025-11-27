@@ -10,6 +10,19 @@ import {
 } from './privacy';
 import { getConsentFromStorage, clearConsentFromStorage } from './consent';
 
+// Mock the logger - use vi.hoisted to ensure it's available before mock hoisting
+const mockLoggerFns = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
+// Mock the logger
+vi.mock('@/lib/logger', () => ({
+  createLogger: vi.fn(() => mockLoggerFns),
+}));
+
 // Mock the consent utilities
 vi.mock('./consent', () => ({
   getConsentFromStorage: vi.fn(),
@@ -365,12 +378,13 @@ describe('Privacy Utilities', () => {
     });
 
     it('should log deletion audit event', async () => {
-      const consoleLogSpy = vi.spyOn(console, 'log');
-
       await clearUserData();
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[AUDIT] User data deletion requested')
+      expect(mockLoggerFns.info).toHaveBeenCalledWith(
+        'User data deletion requested',
+        expect.objectContaining({
+          timestamp: expect.any(String),
+        })
       );
     });
 

@@ -24,7 +24,10 @@ import {
   hasUserConsented,
   setCurrentConsentState,
 } from '../utils/consent';
+import { createLogger } from '@/lib/logger';
 // Removed unused import - history tracking integrated inline
+
+const logger = createLogger('contexts:consent');
 
 /**
  * Consent Context
@@ -67,7 +70,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
         setShowBanner(true);
       }
     } catch (error) {
-      console.error('Failed to load consent:', error);
+      logger.error('Failed to load consent', { error });
       setShowBanner(true);
     } finally {
       setIsLoading(false);
@@ -83,7 +86,7 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
         saveConsentToStorage(consent);
         setCurrentConsentState(consent);
       } catch (error) {
-        console.error('Failed to save consent:', error);
+        logger.error('Failed to save consent', { error });
       }
     }
   }, [consent, isLoading]);

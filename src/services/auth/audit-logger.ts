@@ -4,6 +4,9 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('auth:audit');
 
 export enum AuthEventType {
   SIGN_UP = 'sign_up',
@@ -172,10 +175,10 @@ export class AuditLogger {
         .insert(entry);
 
       if (error) {
-        console.error('Audit log failed:', error);
+        logger.error('Audit log failed', { error: error.message });
       }
     } catch (error) {
-      console.error('Audit log exception:', error);
+      logger.error('Audit log exception', { error });
     }
   }
 

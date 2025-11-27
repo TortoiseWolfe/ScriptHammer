@@ -5,6 +5,9 @@
 
 import { isSupabaseOnline } from '@/lib/supabase/client';
 import { processPendingOperations, getPendingCount } from './offline-queue';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('payments:connection');
 
 let listenerInterval: NodeJS.Timeout | null = null;
 let isListening = false;
@@ -15,12 +18,12 @@ let isListening = false;
  */
 export function startConnectionListener(): () => void {
   if (isListening) {
-    console.warn('⚠️  Connection listener already running');
+    logger.warn('Connection listener already running');
     return stopConnectionListener;
   }
 
   isListening = true;
-  console.log('🎧 Starting connection listener...');
+  logger.info('Starting connection listener');
 
   const checkConnection = async () => {
     const isOnline = await isSupabaseOnline();
@@ -29,14 +32,14 @@ export function startConnectionListener(): () => void {
       const pendingCount = await getPendingCount();
 
       if (pendingCount > 0) {
-        console.log(
-          `📤 Connection restored! Processing ${pendingCount} queued operation(s)...`
-        );
+        logger.info('Connection restored! Processing queued operations', {
+          pendingCount,
+        });
         try {
           await processPendingOperations();
-          console.log('✅ Queue processed successfully');
+          logger.info('Queue processed successfully');
         } catch (error) {
-          console.error('❌ Failed to process queue:', error);
+          logger.error('Failed to process queue', { error });
         }
       }
     }
@@ -48,7 +51,7 @@ export function startConnectionListener(): () => void {
   // Check when page becomes visible
   const handleVisibilityChange = () => {
     if (!document.hidden) {
-      console.log('👁️  Page visible - checking connection...');
+      logger.debug('Page visible - checking connection');
       checkConnection();
     }
   };
@@ -56,7 +59,7 @@ export function startConnectionListener(): () => void {
 
   // Check when browser reports online
   const handleOnline = () => {
-    console.log('🌐 Browser online event - checking connection...');
+    logger.debug('Browser online event - checking connection');
     checkConnection();
   };
   window.addEventListener('online', handleOnline);
@@ -73,7 +76,7 @@ export function startConnectionListener(): () => void {
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     window.removeEventListener('online', handleOnline);
     isListening = false;
-    console.log('🛑 Connection listener stopped');
+    logger.info('Connection listener stopped');
   };
 }
 

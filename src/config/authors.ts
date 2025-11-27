@@ -3,6 +3,10 @@
  * Defines author profiles for the blog system
  */
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('config:authors');
+
 export interface AuthorSocialLinks {
   github?: string;
   twitter?: string;
@@ -106,7 +110,7 @@ try {
   authorConfigData = generatedConfig.authorConfig;
 } catch {
   // Fallback if generated config doesn't exist (will be created on next build)
-  console.warn(
+  logger.warn(
     'Author config not generated yet. Run build to generate from .env'
   );
 }

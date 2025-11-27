@@ -7,6 +7,10 @@
  * @module lib/auth/retry-utils
  */
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('auth:retry');
+
 /**
  * Sleep for a specified duration
  * @param ms - Duration in milliseconds
@@ -49,10 +53,12 @@ export async function retryWithBackoff<T>(
       // If we have more retries, wait before trying again
       if (attempt < maxRetries) {
         const delayMs = delays[attempt] || delays[delays.length - 1];
-        console.warn(
-          `Auth operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms...`,
-          lastError.message
-        );
+        logger.warn('Auth operation failed, retrying', {
+          attempt: attempt + 1,
+          maxAttempts: maxRetries + 1,
+          delayMs,
+          errorMessage: lastError.message,
+        });
         await sleep(delayMs);
       }
     }
@@ -106,9 +112,11 @@ export async function retrySupabaseAuth<T>(
     // If we have more retries, wait before trying again
     if (attempt < maxRetries) {
       const delayMs = delays[attempt] || delays[delays.length - 1];
-      console.warn(
-        `Auth operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delayMs}ms...`
-      );
+      logger.warn('Auth operation failed, retrying', {
+        attempt: attempt + 1,
+        maxAttempts: maxRetries + 1,
+        delayMs,
+      });
       await sleep(delayMs);
     }
   }

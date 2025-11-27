@@ -4,6 +4,9 @@
  */
 
 import { paypalConfig } from '@/config/payment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('payments:paypal');
 
 declare global {
   interface Window {
@@ -41,7 +44,7 @@ export async function loadPayPalSDK(): Promise<void> {
     script.src = `https://www.paypal.com/sdk/js?client-id=${paypalConfig.clientId}&vault=true&intent=subscription`;
     script.async = true;
     script.onload = () => {
-      console.log('✅ PayPal SDK loaded');
+      logger.info('PayPal SDK loaded');
       resolve();
     };
     script.onerror = () => {
@@ -189,11 +192,11 @@ export async function renderPayPalButtons(
         options.onApprove(data);
       },
       onError: (error: any) => {
-        console.error('PayPal button error:', error);
+        logger.error('PayPal button error', { error });
         options.onError?.(error);
       },
       onCancel: () => {
-        console.log('PayPal checkout cancelled');
+        logger.info('PayPal checkout cancelled');
         options.onCancel?.();
       },
     })

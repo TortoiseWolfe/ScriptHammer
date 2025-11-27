@@ -14,6 +14,9 @@ import {
   DEFAULT_CONSENT_STATE,
   isValidConsent,
 } from './consent-types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:consent');
 
 /**
  * Check if we can use cookies for a specific category
@@ -157,7 +160,7 @@ export function saveConsentToStorage(consent: ConsentState): void {
   try {
     localStorage.setItem(StorageKey.CONSENT, JSON.stringify(consent));
   } catch (error) {
-    console.error('Failed to save consent:', error);
+    logger.error('Failed to save consent', { error });
   }
 }
 
@@ -168,7 +171,7 @@ export function clearConsentFromStorage(): void {
   try {
     localStorage.removeItem(StorageKey.CONSENT);
   } catch (error) {
-    console.error('Failed to clear consent:', error);
+    logger.error('Failed to clear consent', { error });
   }
 }
 
@@ -279,7 +282,9 @@ export function deleteCookie(name: string, path: string = '/'): void {
 export function deleteCategoryCookies(category: CookieCategory): void {
   // This would need a registry of cookies by category
   // For now, we'll implement this when we have the cookie registry
-  console.warn(`Deleting cookies for category ${category} not yet implemented`);
+  logger.warn('Deleting cookies for category not yet implemented', {
+    category,
+  });
 }
 
 /**

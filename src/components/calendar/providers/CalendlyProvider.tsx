@@ -4,6 +4,7 @@ import {
   useCalendlyEventListener,
 } from 'react-calendly';
 import { useEffect } from 'react';
+import { createLogger } from '@/lib/logger';
 
 interface CalendlyProviderProps {
   url: string;
@@ -17,6 +18,8 @@ interface CalendlyProviderProps {
   };
 }
 
+const logger = createLogger('components:calendar:Calendly');
+
 export function CalendlyProvider({
   url,
   mode = 'inline',
@@ -27,13 +30,16 @@ export function CalendlyProvider({
   // Track calendar events
   useCalendlyEventListener({
     onProfilePageViewed: () => {
-      console.log('Calendar viewed - Calendly');
+      logger.info('Calendar viewed', { provider: 'Calendly' });
     },
     onDateAndTimeSelected: () => {
-      console.log('Calendar time selected - Calendly');
+      logger.info('Calendar time selected', { provider: 'Calendly' });
     },
     onEventScheduled: (e) => {
-      console.log('Calendar scheduled - Calendly', e.data.payload.invitee.uri);
+      logger.info('Calendar scheduled', {
+        provider: 'Calendly',
+        inviteeUri: e.data.payload.invitee.uri,
+      });
     },
   });
 
@@ -50,7 +56,7 @@ export function CalendlyProvider({
     ].includes(theme || '');
 
     // Theme will be applied through pageSettings below
-    console.log('Theme detected:', theme, 'isDark:', isDark);
+    logger.debug('Theme detected', { theme, isDark });
   }, []);
 
   const theme =

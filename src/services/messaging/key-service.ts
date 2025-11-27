@@ -15,8 +15,13 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import {
+  createMessagingClient,
+  type UserEncryptionKeyRow,
+} from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
+import { createLogger } from '@/lib/logger';
 import type { DerivedKeyPair } from '@/types/messaging';
 import {
   AuthenticationError,
@@ -25,6 +30,8 @@ import {
   KeyDerivationError,
   KeyMismatchError,
 } from '@/types/messaging';
+
+const logger = createLogger('messaging:keys');
 
 export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
@@ -51,6 +58,7 @@ export class KeyManagementService {
    */
   async initializeKeys(password: string): Promise<DerivedKeyPair> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -75,11 +83,13 @@ export class KeyManagementService {
       });
 
       // Step 3: Upload public key and salt to Supabase
-      const { error: uploadError } = await (supabase as any)
+      // Cast JsonWebKey to Json for database compatibility
+      const { error: uploadError } = await msgClient
         .from('user_encryption_keys')
         .insert({
           user_id: user.id,
-          public_key: keyPair.publicKeyJwk,
+          public_key:
+            keyPair.publicKeyJwk as unknown as import('@/lib/supabase/types').Json,
           encryption_salt: keyPair.salt, // Base64-encoded salt
           device_id: null,
           expires_at: null,
@@ -95,7 +105,7 @@ export class KeyManagementService {
       // Step 4: Store in memory
       this.derivedKeys = keyPair;
 
-      console.log('[KeyService] Keys initialized for user:', user.id);
+      logger.info('Keys initialized for user', { userId: user.id });
       return keyPair;
     } catch (error) {
       if (
@@ -130,6 +140,7 @@ export class KeyManagementService {
    */
   async deriveKeys(password: string): Promise<DerivedKeyPair> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -145,7 +156,7 @@ export class KeyManagementService {
     try {
       // Step 1: Fetch salt and public key from Supabase
       // Use maybeSingle() instead of single() to handle case where user has no keys yet
-      const { data, error } = await (supabase as any)
+      const { data, error } = await msgClient
         .from('user_encryption_keys')
         .select('encryption_salt, public_key')
         .eq('user_id', user.id)
@@ -179,9 +190,10 @@ export class KeyManagementService {
       });
 
       // Step 3: Verify public key matches stored
+      // Cast Json to JsonWebKey for verification
       const isMatch = this.keyDerivationService.verifyPublicKey(
         keyPair.publicKeyJwk,
-        data.public_key
+        data.public_key as unknown as JsonWebKey
       );
 
       if (!isMatch) {
@@ -191,7 +203,7 @@ export class KeyManagementService {
       // Step 4: Store in memory
       this.derivedKeys = keyPair;
 
-      console.log('[KeyService] Keys derived for user:', user.id);
+      logger.info('Keys derived for user', { userId: user.id });
       return keyPair;
     } catch (error) {
       if (
@@ -219,7 +231,7 @@ export class KeyManagementService {
    */
   clearKeys(): void {
     this.derivedKeys = null;
-    console.log('[KeyService] Keys cleared from memory');
+    logger.debug('Keys cleared from memory');
   }
 
   /**
@@ -230,6 +242,7 @@ export class KeyManagementService {
    */
   async needsMigration(): Promise<boolean> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -242,7 +255,7 @@ export class KeyManagementService {
 
     try {
       // Check if ANY active key has a valid salt
-      const { data: validKeys, error: validError } = await (supabase as any)
+      const { data: validKeys, error: validError } = await msgClient
         .from('user_encryption_keys')
         .select('id')
         .eq('user_id', user.id)
@@ -251,10 +264,9 @@ export class KeyManagementService {
         .limit(1);
 
       if (validError) {
-        console.error(
-          '[KeyService] needsMigration: Error checking valid keys:',
-          validError
-        );
+        logger.error('needsMigration: Error checking valid keys', {
+          error: validError,
+        });
         return false; // Safe default - don't block users on error
       }
 
@@ -264,7 +276,7 @@ export class KeyManagementService {
       }
 
       // Check if user has ANY keys at all (to distinguish new user from legacy user)
-      const { data: anyKeys, error: anyError } = await (supabase as any)
+      const { data: anyKeys, error: anyError } = await msgClient
         .from('user_encryption_keys')
         .select('id')
         .eq('user_id', user.id)
@@ -272,10 +284,9 @@ export class KeyManagementService {
         .limit(1);
 
       if (anyError) {
-        console.error(
-          '[KeyService] needsMigration: Error checking any keys:',
-          anyError
-        );
+        logger.error('needsMigration: Error checking any keys', {
+          error: anyError,
+        });
         return false;
       }
 
@@ -283,7 +294,7 @@ export class KeyManagementService {
       // (New users with no keys don't need migration - they need initialization)
       return anyKeys && anyKeys.length > 0;
     } catch (error) {
-      console.error('[KeyService] needsMigration: Unexpected error:', error);
+      logger.error('needsMigration: Unexpected error', { error });
       return false;
     }
   }
@@ -294,6 +305,7 @@ export class KeyManagementService {
    */
   async hasKeys(): Promise<boolean> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -305,7 +317,7 @@ export class KeyManagementService {
     }
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await msgClient
         .from('user_encryption_keys')
         .select('id')
         .eq('user_id', user.id)
@@ -328,13 +340,11 @@ export class KeyManagementService {
    * @throws AuthenticationError if not authenticated
    */
   async hasValidKeys(): Promise<boolean> {
-    console.log(
-      '[Decryption] hasValidKeys: Checking for valid encryption keys'
-    );
+    logger.debug('hasValidKeys: Checking for valid encryption keys');
 
     // First check in-memory keys
     if (this.derivedKeys !== null) {
-      console.log('[Decryption] hasValidKeys: FOUND in-memory keys');
+      logger.debug('hasValidKeys: FOUND in-memory keys');
       return true;
     }
 
@@ -347,7 +357,7 @@ export class KeyManagementService {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.error('[Decryption] hasValidKeys: Not authenticated');
+      logger.error('hasValidKeys: Not authenticated');
       throw new AuthenticationError(
         'You must be signed in to check encryption keys'
       );
@@ -356,15 +366,13 @@ export class KeyManagementService {
     try {
       const privateKey = await encryptionService.getPrivateKey(user.id);
       const hasKeys = privateKey !== null;
-      console.log(
-        '[Decryption] hasValidKeys:',
-        hasKeys ? 'FOUND (IndexedDB)' : 'MISSING',
-        'for user:',
-        user.id
-      );
+      logger.debug('hasValidKeys result', {
+        status: hasKeys ? 'FOUND (IndexedDB)' : 'MISSING',
+        userId: user.id,
+      });
       return hasKeys;
     } catch (error) {
-      console.error('[Decryption] hasValidKeys: Error checking keys', error);
+      logger.error('hasValidKeys: Error checking keys', { error });
       return false;
     }
   }
@@ -384,6 +392,7 @@ export class KeyManagementService {
    */
   async rotateKeys(password: string): Promise<boolean> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -398,7 +407,7 @@ export class KeyManagementService {
 
     try {
       // Mark old keys as revoked in Supabase
-      const { error: revokeError } = await (supabase as any)
+      const { error: revokeError } = await msgClient
         .from('user_encryption_keys')
         .update({ revoked: true })
         .eq('user_id', user.id)
@@ -418,11 +427,13 @@ export class KeyManagementService {
       });
 
       // Upload new public key AND salt to Supabase (no IndexedDB storage)
-      const { error: uploadError } = await (supabase as any)
+      // Cast JsonWebKey to Json for database compatibility
+      const { error: uploadError } = await msgClient
         .from('user_encryption_keys')
         .insert({
           user_id: user.id,
-          public_key: keyPair.publicKeyJwk,
+          public_key:
+            keyPair.publicKeyJwk as unknown as import('@/lib/supabase/types').Json,
           encryption_salt: keyPair.salt, // REQUIRED: Base64-encoded salt
           device_id: null,
           expires_at: null,
@@ -438,7 +449,7 @@ export class KeyManagementService {
       // Update in-memory keys (password-derived keys are never persisted to IndexedDB)
       this.derivedKeys = keyPair;
 
-      console.log('[KeyService] Keys rotated for user:', user.id);
+      logger.info('Keys rotated for user', { userId: user.id });
       return true;
     } catch (error) {
       if (
@@ -464,6 +475,7 @@ export class KeyManagementService {
    */
   async revokeKeys(): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -478,7 +490,7 @@ export class KeyManagementService {
 
     try {
       // Mark all keys as revoked in Supabase
-      const { error: revokeError } = await (supabase as any)
+      const { error: revokeError } = await msgClient
         .from('user_encryption_keys')
         .update({ revoked: true })
         .eq('user_id', user.id)
@@ -513,14 +525,12 @@ export class KeyManagementService {
    * @throws ConnectionError if query fails
    */
   async getUserPublicKey(userId: string): Promise<JsonWebKey | null> {
-    console.log(
-      '[Decryption] getUserPublicKey: Fetching public key for user:',
-      userId
-    );
+    logger.debug('getUserPublicKey: Fetching public key', { userId });
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await msgClient
         .from('user_encryption_keys')
         .select('public_key')
         .eq('user_id', userId)
@@ -532,31 +542,26 @@ export class KeyManagementService {
       if (error) {
         if (error.code === 'PGRST116') {
           // No rows returned
-          console.log(
-            '[Decryption] getUserPublicKey: NO KEY FOUND for user:',
-            userId
-          );
+          logger.debug('getUserPublicKey: NO KEY FOUND', { userId });
           return null;
         }
-        console.error(
-          '[Decryption] getUserPublicKey: Query error:',
-          error.message
-        );
+        logger.error('getUserPublicKey: Query error', {
+          error: error.message,
+          userId,
+        });
         throw new ConnectionError(
           'Failed to get user public key: ' + error.message
         );
       }
 
-      console.log(
-        '[Decryption] getUserPublicKey: FOUND public key for user:',
-        userId
-      );
-      return data?.public_key ?? null;
+      logger.debug('getUserPublicKey: FOUND public key', { userId });
+      // Cast Json to JsonWebKey for return type
+      return (data?.public_key as unknown as JsonWebKey) ?? null;
     } catch (error) {
       if (error instanceof ConnectionError) {
         throw error;
       }
-      console.error('[Decryption] getUserPublicKey: Unexpected error', error);
+      logger.error('getUserPublicKey: Unexpected error', { error, userId });
       throw new ConnectionError('Failed to get user public key', error);
     }
   }

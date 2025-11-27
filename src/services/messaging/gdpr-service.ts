@@ -12,6 +12,11 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import {
+  createMessagingClient,
+  type MessageRow,
+  type ConversationRow,
+} from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
 import { messagingDb } from '@/lib/messaging/database';
@@ -90,6 +95,7 @@ export class GDPRService {
    */
   async exportUserData(): Promise<UserDataExport> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -105,7 +111,7 @@ export class GDPRService {
 
     try {
       // 1. Get user profile
-      const { data: profile, error: profileError } = await (supabase as any)
+      const { data: profile, error: profileError } = await msgClient
         .from('user_profiles')
         .select('username, display_name')
         .eq('id', user.id)
@@ -118,9 +124,7 @@ export class GDPRService {
       }
 
       // 2. Get all connections
-      const { data: connections, error: connectionsError } = await (
-        supabase as any
-      )
+      const { data: connections, error: connectionsError } = await msgClient
         .from('user_connections')
         .select(
           `
@@ -166,24 +170,34 @@ export class GDPRService {
       });
 
       // 3. Get all conversations
-      const { data: conversations, error: conversationsError } = await (
-        supabase as any
-      )
-        .from('conversations')
-        .select(
-          `
+      // Type for joined conversation with participant usernames
+      type ConversationWithParticipants = {
+        id: string;
+        participant_1_id: string;
+        participant_2_id: string;
+        participant_1: { username: string | null } | null;
+        participant_2: { username: string | null } | null;
+      };
+      const { data: conversations, error: conversationsError } =
+        (await msgClient
+          .from('conversations')
+          .select(
+            `
           id,
           participant_1_id,
           participant_2_id,
           participant_1:user_profiles!conversations_participant_1_id_fkey(username),
           participant_2:user_profiles!conversations_participant_2_id_fkey(username)
         `
-        )
-        .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`);
+          )
+          .or(
+            `participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`
+          )) as { data: ConversationWithParticipants[] | null; error: unknown };
 
       if (conversationsError) {
+        const err = conversationsError as { message?: string };
         throw new ConnectionError(
-          'Failed to fetch conversations: ' + conversationsError.message
+          'Failed to fetch conversations: ' + (err.message || 'Unknown error')
         );
       }
 
@@ -204,7 +218,7 @@ export class GDPRService {
             : conv.participant_1?.username || 'Unknown';
 
         // Get all messages in this conversation (including deleted ones for export)
-        const { data: messages, error: messagesError } = await (supabase as any)
+        const { data: messages, error: messagesError } = await msgClient
           .from('messages')
           .select('*')
           .eq('conversation_id', conv.id)
@@ -375,6 +389,7 @@ export class GDPRService {
    */
   async deleteUserAccount(): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -413,7 +428,7 @@ export class GDPRService {
       // - conversations deletion (ON DELETE CASCADE)
       // - user_connections deletion (ON DELETE CASCADE)
       // - auth.users deletion (ON DELETE CASCADE from user_profiles)
-      const { error: deleteError } = await (supabase as any)
+      const { error: deleteError } = await msgClient
         .from('user_profiles')
         .delete()
         .eq('id', user.id);

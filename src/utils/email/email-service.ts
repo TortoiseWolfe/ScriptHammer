@@ -10,6 +10,9 @@ import {
   ProviderStatus,
   RateLimitConfig,
 } from './types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:email-service');
 
 const DEFAULT_CONFIG: EmailServiceConfig = {
   maxRetries: 2,
@@ -65,7 +68,9 @@ export class EmailService {
     // Try each provider in order
     for (const provider of availableProviders) {
       try {
-        console.log(`[EmailService] Attempting to send via ${provider.name}`);
+        logger.info('Attempting to send via provider', {
+          provider: provider.name,
+        });
 
         const result = await this.sendWithRetry(provider, data);
 
@@ -76,13 +81,18 @@ export class EmailService {
         // Record submission for rate limiting
         this.recordSubmission();
 
-        console.log(`[EmailService] Successfully sent via ${provider.name}`);
+        logger.info('Successfully sent via provider', {
+          provider: provider.name,
+        });
         return result;
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
 
-        console.error(`[EmailService] ${provider.name} failed:`, errorMessage);
+        logger.error('Provider failed', {
+          provider: provider.name,
+          error: errorMessage,
+        });
 
         // Track failures
         const failures = (this.failureLog.get(provider.name) || 0) + 1;
@@ -119,9 +129,11 @@ export class EmailService {
         throw error;
       }
 
-      console.log(
-        `[EmailService] Retrying ${provider.name} in ${delay}ms... (${retries} retries left)`
-      );
+      logger.info('Retrying provider', {
+        provider: provider.name,
+        delayMs: delay,
+        retriesLeft: retries,
+      });
 
       await new Promise((resolve) => setTimeout(resolve, delay));
 

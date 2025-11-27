@@ -2,6 +2,9 @@ import BlogPostCard from '@/components/molecular/BlogPostCard';
 import type { BlogPost, BlogPostListResponse } from '@/types/blog';
 import fs from 'fs/promises';
 import path from 'path';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:blog:page');
 
 async function getPosts(
   page = 1,
@@ -43,7 +46,7 @@ async function getPosts(
       hasMore: offset + pageSize < total,
     };
   } catch (error) {
-    console.error('Error fetching posts:', error);
+    logger.error('Error fetching posts', { error });
     return {
       posts: [],
       total: 0,

@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import blogData from '@/lib/blog/blog-data.json';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:route:blog-tags');
 
 // Required for static export - use error mode for static generation
 export const dynamic = 'error';
@@ -67,7 +70,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Error fetching tags:', error);
+    logger.error('Error fetching tags', { error });
     return NextResponse.json(
       { error: 'Failed to fetch tags' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import Cal, { getCalApi } from '@calcom/embed-react';
 import { useEffect } from 'react';
+import { createLogger } from '@/lib/logger';
 
 interface CalComProviderProps {
   calLink: string;
@@ -13,6 +14,8 @@ interface CalComProviderProps {
   };
   styles?: Record<string, string>;
 }
+
+const logger = createLogger('components:calendar:CalCom');
 
 export function CalComProvider({
   calLink,
@@ -29,14 +32,17 @@ export function CalComProvider({
         action: 'bookingSuccessful',
 
         callback: (e: any) => {
-          console.log('Calendar scheduled - Cal.com', e.detail?.name);
+          logger.info('Calendar scheduled', {
+            provider: 'Cal.com',
+            name: e.detail?.name,
+          });
         },
       });
 
       cal('on', {
         action: 'linkReady',
         callback: () => {
-          console.log('Calendar viewed - Cal.com');
+          logger.info('Calendar viewed', { provider: 'Cal.com' });
         },
       });
     })();

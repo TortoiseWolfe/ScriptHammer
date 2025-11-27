@@ -2,6 +2,10 @@
  * Parse TASKS.md to extract project progress dynamically
  */
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:tasks-parser');
+
 export interface SprintProgress {
   name: string;
   totalTasks: number;
@@ -74,7 +78,7 @@ export async function parseTasksFile(): Promise<TaskProgress> {
         archivedSprint1Content = await archiveResponse.text();
       }
     } catch (error) {
-      console.warn('Could not fetch archived Sprint 1 TASKS.md:', error);
+      logger.warn('Could not fetch archived Sprint 1 TASKS.md', { error });
     }
 
     // Extract last updated
@@ -233,7 +237,7 @@ export async function parseTasksFile(): Promise<TaskProgress> {
       sprints,
     };
   } catch (error) {
-    console.error('Failed to parse TASKS.md:', error);
+    logger.error('Failed to parse TASKS.md', { error });
     // Throw error instead of returning fallback data
     throw error;
   }

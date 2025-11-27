@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthErrorBoundary } from './error-boundary';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:auth:callback:page');
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -24,7 +27,7 @@ function AuthCallbackContent() {
       setErrorDetails(
         `Error: ${error}\nDescription: ${errorDescription || 'No description'}`
       );
-      console.error('OAuth error:', error, errorDescription);
+      logger.error('OAuth error', { error, errorDescription });
     }
   }, []);
 
@@ -42,13 +45,13 @@ function AuthCallbackContent() {
 
     if (!isLoading && !error) {
       if (user) {
-        console.log('User authenticated, redirecting to profile');
+        logger.info('User authenticated, redirecting to profile');
         router.push('/profile');
       } else {
-        console.log('No user after loading, waiting 2 more seconds...');
+        logger.debug('No user after loading, waiting 2 more seconds...');
         setTimeout(() => {
           if (!user) {
-            console.log('Still no user, redirecting to sign-in');
+            logger.warn('Still no user, redirecting to sign-in');
             router.push('/sign-in?error=auth_callback_failed');
           }
         }, 2000);

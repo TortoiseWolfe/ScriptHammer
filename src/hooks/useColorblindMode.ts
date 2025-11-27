@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '@/lib/logger';
 import {
   ColorblindType,
   ColorblindSettings,
@@ -8,6 +9,8 @@ import {
   COLORBLIND_STORAGE_KEY,
   COLORBLIND_FILTER_IDS,
 } from '@/utils/colorblind';
+
+const logger = createLogger('hooks:colorblindMode');
 
 /**
  * Custom hook for managing colorblind mode settings
@@ -40,7 +43,7 @@ export function useColorblindMode() {
           root.classList.remove('colorblind-patterns');
         }
       } catch (error) {
-        console.error('Failed to apply colorblind mode:', error);
+        logger.error('Failed to apply colorblind mode', { error });
       }
     },
     []
@@ -62,7 +65,7 @@ export function useColorblindMode() {
         }
       }
     } catch (error) {
-      console.error('Failed to load colorblind settings:', error);
+      logger.error('Failed to load colorblind settings', { error });
     }
   }, [applyColorblindMode]);
 
@@ -71,7 +74,7 @@ export function useColorblindMode() {
     try {
       localStorage.setItem(COLORBLIND_STORAGE_KEY, JSON.stringify(settings));
     } catch (error) {
-      console.error('Failed to save colorblind settings:', error);
+      logger.error('Failed to save colorblind settings', { error });
     }
   }, []);
 
@@ -80,7 +83,7 @@ export function useColorblindMode() {
     (type: ColorblindType) => {
       // Validate input
       if (!Object.values(ColorblindType).includes(type)) {
-        console.warn(`Invalid colorblind type: ${type}`);
+        logger.warn('Invalid colorblind type', { type });
         return;
       }
 

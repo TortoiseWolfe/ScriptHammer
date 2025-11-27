@@ -1,9 +1,34 @@
 /**
  * Payment Integration Configuration
  * Centralizes all payment-related environment variables and validation
+ *
+ * ## Security Classification
+ *
+ * ### Public Variables (Safe for Client-Side)
+ * These use NEXT_PUBLIC_ prefix and are bundled into the client:
+ * - NEXT_PUBLIC_SUPABASE_URL - Supabase project URL
+ * - NEXT_PUBLIC_SUPABASE_ANON_KEY - Supabase anonymous key (RLS protected)
+ * - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY - Stripe publishable key
+ * - NEXT_PUBLIC_PAYPAL_CLIENT_ID - PayPal client ID
+ * - NEXT_PUBLIC_CASHAPP_CASHTAG - Cash App cashtag
+ * - NEXT_PUBLIC_CHIME_SIGN - Chime sign
+ *
+ * ### Private Variables (Server-Only - NEVER expose to client)
+ * These must NEVER be prefixed with NEXT_PUBLIC_:
+ * - SUPABASE_SERVICE_ROLE_KEY - Full database access, bypasses RLS
+ * - STRIPE_SECRET_KEY - Can create charges, refunds, read customer data
+ * - STRIPE_WEBHOOK_SECRET - Validates webhook signatures
+ * - PAYPAL_CLIENT_SECRET - PayPal API authentication
+ * - PAYPAL_WEBHOOK_ID - Validates PayPal webhooks
+ * - RESEND_API_KEY - Email sending capability
+ *
+ * @see docs/project/SECURITY.md for security guidelines
  */
 
 import type { Currency, PaymentInterval } from '@/types/payment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('config:payment');
 
 // ============================================================================
 // Supabase Configuration
@@ -32,7 +57,7 @@ export function validateSupabaseConfig(): void {
   }
   // Service role key validation only on server-side (Edge Functions)
   if (typeof window === 'undefined' && !supabaseConfig.serviceRoleKey) {
-    console.warn(
+    logger.warn(
       'Missing SUPABASE_SERVICE_ROLE_KEY - webhook handlers may not work'
     );
   }
@@ -267,11 +292,11 @@ export function validatePaymentConfig(serverSide = false): void {
       validateEmailConfig();
     }
 
-    console.log(
-      `✅ Payment config validated. Enabled providers: ${enabledProviders.join(', ')}`
-    );
+    logger.info('Payment config validated', {
+      enabledProviders: enabledProviders.join(', '),
+    });
   } catch (error) {
-    console.error('❌ Payment configuration error:', error);
+    logger.error('Payment configuration error', { error });
     throw error;
   }
 }

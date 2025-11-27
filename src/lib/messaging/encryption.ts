@@ -20,6 +20,9 @@ import {
   EncryptionError,
   DecryptionError,
 } from '@/types/messaging';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('messaging:encryption');
 
 export class EncryptionService {
   /**
@@ -119,9 +122,7 @@ export class EncryptionService {
     privateKey: CryptoKey,
     publicKey: CryptoKey
   ): Promise<CryptoKey> {
-    console.log(
-      '[Decryption] deriveSharedSecret: Starting ECDH key derivation'
-    );
+    logger.debug('Starting ECDH key derivation');
     try {
       const sharedSecret = await crypto.subtle.deriveKey(
         {
@@ -137,11 +138,11 @@ export class EncryptionService {
         ['encrypt', 'decrypt']
       );
 
-      console.log('[Decryption] deriveSharedSecret: SUCCESS');
+      logger.debug('ECDH key derivation successful');
       return sharedSecret;
     } catch (error) {
       const err = error as Error;
-      console.error('[Decryption] deriveSharedSecret: FAILED', {
+      logger.error('ECDH key derivation failed', {
         errorName: err.name,
         errorMessage: err.message,
       });
@@ -210,7 +211,7 @@ export class EncryptionService {
     ivBase64: string,
     sharedSecret: CryptoKey
   ): Promise<string> {
-    console.log('[Decryption] decryptMessage: Starting AES-GCM decryption', {
+    logger.debug('Starting AES-GCM decryption', {
       ciphertextLength: ciphertext?.length || 0,
       ivLength: ivBase64?.length || 0,
     });
@@ -234,26 +235,18 @@ export class EncryptionService {
       // Convert bytes to string
       const decoder = new TextDecoder();
       const plaintext = decoder.decode(plaintextBuffer);
-      console.log(
-        '[Decryption] decryptMessage: SUCCESS (length:',
-        plaintext.length,
-        'chars)'
-      );
+      logger.debug('AES-GCM decryption successful', {
+        plaintextLength: plaintext.length,
+      });
       return plaintext;
     } catch (error) {
       const err = error as Error;
-      // Log as individual args to avoid DOMException serialization issues
-      console.error(
-        '[Decryption] decryptMessage: FAILED -',
-        'name:',
-        String(err.name || 'unknown'),
-        '| message:',
-        String(err.message || 'no message'),
-        '| ciphertext length:',
-        ciphertext?.length || 0,
-        '| IV length:',
-        ivBase64?.length || 0
-      );
+      logger.error('AES-GCM decryption failed', {
+        errorName: String(err.name || 'unknown'),
+        errorMessage: String(err.message || 'no message'),
+        ciphertextLength: ciphertext?.length || 0,
+        ivLength: ivBase64?.length || 0,
+      });
       throw new DecryptionError(
         'Failed to decrypt message (wrong key or corrupted data)',
         error

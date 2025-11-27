@@ -6,8 +6,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createLogger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import type { PaymentResult } from '@/types/payment';
+
+const logger = createLogger('hooks:paymentRealtime');
 
 export interface UsePaymentRealtimeReturn {
   paymentResult: PaymentResult | null;
@@ -89,7 +92,9 @@ export function usePaymentRealtime(
         },
         (payload) => {
           if (isMounted) {
-            console.log('📡 Payment result updated:', payload.new);
+            logger.debug('Payment result updated', {
+              paymentResult: payload.new,
+            });
             setPaymentResult(payload.new as PaymentResult);
           }
         }

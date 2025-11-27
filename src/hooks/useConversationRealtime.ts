@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createLogger } from '@/lib/logger';
 import { realtimeService } from '@/lib/messaging/realtime';
 import { messageService } from '@/services/messaging/message-service';
 import { encryptionService } from '@/lib/messaging/encryption';
@@ -26,6 +27,9 @@ import type {
   UseConversationRealtimeReturn,
 } from '@/types/messaging';
 import { createClient } from '@/lib/supabase/client';
+import { createMessagingClient } from '@/lib/supabase/messaging-client';
+
+const logger = createLogger('hooks:conversationRealtime');
 
 export function useConversationRealtime(
   conversationId: string
@@ -56,11 +60,17 @@ export function useConversationRealtime(
         if (!user) return null;
 
         // Get conversation details
-        const { data: conversation } = await (supabase as any)
+        const msgClient = createMessagingClient(supabase);
+        const result = await msgClient
           .from('conversations')
           .select('participant_1_id, participant_2_id')
           .eq('id', conversationId)
           .single();
+
+        const conversation = result.data as {
+          participant_1_id: string;
+          participant_2_id: string;
+        } | null;
 
         if (!conversation) return null;
 
@@ -132,7 +142,7 @@ export function useConversationRealtime(
             senderProfile?.display_name || senderProfile?.username || 'Unknown',
         };
       } catch (err) {
-        console.error('Failed to decrypt message:', err);
+        logger.error('Failed to decrypt message', { error: err });
         return null;
       }
     },

@@ -71,12 +71,23 @@ When using CRUDkit in production, we recommend:
 
 ### 5. Content Security Policy (CSP)
 
-The application implements a strict CSP in `next.config.ts`:
+The application implements a strict CSP in `src/app/layout.tsx` (via meta tag for static export compatibility):
 
-- Restricts script sources to self and trusted CDNs
-- Prevents inline scripts (except for theme initialization)
-- Restricts style sources
-- Prevents form submissions to external URLs
+**Current CSP Directives:**
+
+- `default-src 'self'` - Only allow resources from same origin
+- `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com` - Scripts from self, inline (for theme init), and Google Analytics
+- `style-src 'self' 'unsafe-inline' https://unpkg.com` - Styles from self, inline, and unpkg (Leaflet)
+- `img-src 'self' data: https: blob:` - Images from self, data URIs, HTTPS, and blob URLs
+- `font-src 'self' data:` - Fonts from self and data URIs
+- `connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org` - API connections
+- `frame-src 'self' https://www.google.com` - Frames from self and Google (reCAPTCHA)
+- `object-src 'none'` - No plugins (Flash, Java, etc.)
+- `base-uri 'self'` - Prevent base tag hijacking
+- `form-action 'self' https://api.web3forms.com` - Form submissions to self and Web3Forms
+- `upgrade-insecure-requests` - Upgrade HTTP to HTTPS
+
+**Security Note:** The `'unsafe-eval'` directive has been intentionally removed to prevent eval-based XSS attacks. This is a critical security improvement.
 
 ### 6. HTTPS & Security Headers
 

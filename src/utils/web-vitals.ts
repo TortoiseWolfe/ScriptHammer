@@ -1,6 +1,10 @@
 // Web Vitals monitoring utilities
 // Lightweight implementation without external dependencies
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:web-vitals');
+
 export interface Metric {
   name: string;
   value: number;
@@ -61,7 +65,7 @@ export function onFCP(callback: ReportCallback): void {
     });
     observer.observe({ entryTypes: ['paint'] });
   } catch (e) {
-    console.error('FCP observer failed:', e);
+    logger.error('FCP observer failed', { error: e });
   }
 }
 
@@ -109,7 +113,7 @@ export function onLCP(callback: ReportCallback): void {
       addEventListener('beforeunload', reportLCP, { once: true });
     }
   } catch (e) {
-    console.error('LCP observer failed:', e);
+    logger.error('LCP observer failed', { error: e });
   }
 }
 
@@ -139,7 +143,7 @@ export function onFID(callback: ReportCallback): void {
     });
     observer.observe({ entryTypes: ['first-input'] });
   } catch (e) {
-    console.error('FID observer failed:', e);
+    logger.error('FID observer failed', { error: e });
   }
 }
 
@@ -214,7 +218,7 @@ export function onCLS(callback: ReportCallback): void {
       addEventListener('beforeunload', reportCLS, { once: true });
     }
   } catch (e) {
-    console.error('CLS observer failed:', e);
+    logger.error('CLS observer failed', { error: e });
   }
 }
 
@@ -247,7 +251,7 @@ export function onTTFB(callback: ReportCallback): void {
       addEventListener('load', reportTTFB, { once: true });
     }
   } catch (e) {
-    console.error('TTFB measurement failed:', e);
+    logger.error('TTFB measurement failed', { error: e });
   }
 }
 
@@ -296,7 +300,7 @@ export function onINP(callback: ReportCallback): void {
       addEventListener('beforeunload', reportINP, { once: true });
     }
   } catch (e) {
-    console.error('INP observer failed:', e);
+    logger.error('INP observer failed', { error: e });
   }
 }
 
@@ -321,7 +325,7 @@ export function sendToAnalytics(metric: Metric): void {
       }
     })
     .catch((error) => {
-      console.error('Failed to load analytics module:', error);
+      logger.error('Failed to load analytics module', { error });
     });
 
   // Or send to custom endpoint
@@ -338,6 +342,10 @@ export function sendToAnalytics(metric: Metric): void {
 
   // Log to console in development
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Web Vitals] ${metric.name}:`, metric.value, metric.rating);
+    logger.debug('Web Vitals metric', {
+      name: metric.name,
+      value: metric.value,
+      rating: metric.rating,
+    });
   }
 }

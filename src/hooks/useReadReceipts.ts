@@ -15,8 +15,11 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { createLogger } from '@/lib/logger';
 import { messageService } from '@/services/messaging/message-service';
 import type { DecryptedMessage } from '@/types/messaging';
+
+const logger = createLogger('hooks:readReceipts');
 
 interface UseReadReceiptsOptions {
   /** Array of messages in the conversation */
@@ -48,12 +51,14 @@ export function useReadReceipts({
     const messageIds = Array.from(pendingReadRef.current);
     pendingReadRef.current.clear();
 
-    console.log('[ReadReceipts] Marking messages as read:', messageIds);
+    logger.debug('Marking messages as read', { messageIds });
     try {
       await messageService.markAsRead(messageIds);
-      console.log('[ReadReceipts] Successfully marked messages as read');
+      logger.debug('Successfully marked messages as read', {
+        count: messageIds.length,
+      });
     } catch (error) {
-      console.error('[ReadReceipts] Failed to mark messages as read:', error);
+      logger.error('Failed to mark messages as read', { error, messageIds });
       // Re-add to pending if failed (retry on next batch)
       messageIds.forEach((id) => pendingReadRef.current.add(id));
     }

@@ -90,7 +90,7 @@ export const metadata: Metadata = {
     // Note: HTTP headers are preferred but not available with static export
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://*.google-analytics.com",
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com",
       "style-src 'self' 'unsafe-inline' https://unpkg.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",

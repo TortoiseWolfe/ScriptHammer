@@ -5,6 +5,9 @@ import {
   isWithinEditWindow,
   isWithinDeleteWindow,
 } from '@/lib/messaging/validation';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:atomic:MessageBubble');
 
 export interface MessageBubbleProps {
   /** Message data */
@@ -100,7 +103,10 @@ const MessageBubble = memo(
         await onEdit(message.id, editContent.trim());
         setIsEditing(false);
       } catch (error) {
-        console.error('Failed to edit message:', error);
+        logger.error('Failed to edit message', {
+          messageId: message.id,
+          error,
+        });
         // Keep edit mode open so user can retry
       } finally {
         setIsSubmitting(false);
@@ -124,7 +130,10 @@ const MessageBubble = memo(
         await onDelete(message.id);
         setShowDeleteConfirm(false);
       } catch (error) {
-        console.error('Failed to delete message:', error);
+        logger.error('Failed to delete message', {
+          messageId: message.id,
+          error,
+        });
         // Keep modal open so user can retry
       } finally {
         setIsSubmitting(false);

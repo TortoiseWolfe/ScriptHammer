@@ -6,8 +6,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+
+const logger = createLogger('hooks:userProfile');
 
 export interface UserProfile {
   id: string;
@@ -55,14 +58,14 @@ export function useUserProfile(): UseUserProfileReturn {
         if (fetchError.code === 'PGRST116') {
           setProfile(null);
         } else {
-          console.error('Error fetching user profile:', fetchError);
+          logger.error('Error fetching user profile', { error: fetchError });
           setError('Failed to load profile');
         }
       } else {
         setProfile(data as UserProfile);
       }
     } catch (err) {
-      console.error('Error in useUserProfile:', err);
+      logger.error('Error in useUserProfile', { error: err });
       setError('Failed to load profile');
     } finally {
       setLoading(false);

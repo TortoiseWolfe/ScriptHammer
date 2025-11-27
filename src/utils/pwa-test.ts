@@ -1,6 +1,10 @@
 // PWA Test Utilities for offline functionality testing
 // These utilities help verify PWA features are working correctly
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:pwa-test');
+
 export interface PWATestResult {
   feature: string;
   status: 'pass' | 'fail' | 'warning';
@@ -303,7 +307,7 @@ export class PWATester {
     if ('onLine' in navigator) {
       // Dispatch offline event
       window.dispatchEvent(new Event('offline'));
-      console.log('Simulated offline mode - dispatched offline event');
+      logger.info('Simulated offline mode - dispatched offline event');
     }
   }
 
@@ -312,7 +316,7 @@ export class PWATester {
     if ('onLine' in navigator) {
       // Dispatch online event
       window.dispatchEvent(new Event('online'));
-      console.log('Simulated online mode - dispatched online event');
+      logger.info('Simulated online mode - dispatched online event');
     }
   }
 
@@ -323,7 +327,7 @@ export class PWATester {
       await Promise.all(
         cacheNames.map((cacheName) => caches.delete(cacheName))
       );
-      console.log(`Cleared ${cacheNames.length} caches`);
+      logger.info('Cleared caches', { count: cacheNames.length });
     }
   }
 

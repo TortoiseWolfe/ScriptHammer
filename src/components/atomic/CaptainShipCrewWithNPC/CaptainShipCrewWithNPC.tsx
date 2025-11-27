@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import DraggableDice from '../DraggableDice/DraggableDice';
 import { ValidatedInput } from '@/components/forms';
 import { playerNameSchema } from '@/schemas/forms';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:atomic:CaptainShipCrewWithNPC');
 
 // TODO: Add validation to other atomic components throughout the app
 // This is a demonstration of the new validation system in action.
@@ -104,7 +107,7 @@ export default function CaptainShipCrewWithNPC({
         return Array.isArray(parsed) ? parsed : [];
       }
     } catch (error) {
-      console.error('Error loading saved player names:', error);
+      logger.error('Error loading saved player names', { error });
     }
     return [];
   };
@@ -124,7 +127,7 @@ export default function CaptainShipCrewWithNPC({
         );
       }
     } catch (error) {
-      console.error('Error saving player names:', error);
+      logger.error('Error saving player names', { error });
     }
   };
 

@@ -10,6 +10,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/lib/supabase/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('lib:supabase:server');
 
 /**
  * Creates a Supabase client for server-side use
@@ -42,7 +45,7 @@ export async function createClient() {
   // Return a mock client to allow build to succeed
   // This is safe because server components won't actually run in static export
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn(
+    logger.warn(
       'Supabase environment variables not available during build. ' +
         'This is expected for static export. Client will be initialized at runtime.'
     );

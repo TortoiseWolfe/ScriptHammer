@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
+import { createLogger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { createMessagingClient } from '@/lib/supabase/messaging-client';
+
+const logger = createLogger('hooks:unreadCount');
 
 export function useUnreadCount() {
   const { user } = useAuth();
@@ -14,21 +18,25 @@ export function useUnreadCount() {
 
     const fetchUnreadCount = async () => {
       try {
+        const msgClient = createMessagingClient(supabase);
+
         // Get all conversations for this user
-        const { data: conversations } = await (supabase as any)
+        const result = await msgClient
           .from('conversations')
           .select('id')
           .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`);
+
+        const conversations = result.data as { id: string }[] | null;
 
         if (!conversations || conversations.length === 0) {
           setUnreadCount(0);
           return;
         }
 
-        const conversationIds = conversations.map((c: any) => c.id);
+        const conversationIds = conversations.map((c) => c.id);
 
         // Count unread messages (messages where read_at is null and sender is NOT current user)
-        const { count } = await (supabase as any)
+        const { count } = await msgClient
           .from('messages')
           .select('id', { count: 'exact', head: true })
           .in('conversation_id', conversationIds)
@@ -37,7 +45,7 @@ export function useUnreadCount() {
 
         setUnreadCount(count || 0);
       } catch (error) {
-        console.error('Failed to fetch unread count:', error);
+        logger.error('Failed to fetch unread count', { error });
         setUnreadCount(0);
       }
     };

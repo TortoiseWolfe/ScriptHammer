@@ -140,7 +140,11 @@ function MessagesContent() {
 
     try {
       const { createClient } = await import('@/lib/supabase/client');
+      const { createMessagingClient } = await import(
+        '@/lib/supabase/messaging-client'
+      );
       const supabase = createClient();
+      const msgClient = createMessagingClient(supabase);
 
       const {
         data: { user },
@@ -148,11 +152,16 @@ function MessagesContent() {
 
       if (!user) return;
 
-      const { data: conversation } = await (supabase as any)
+      const result = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', conversationId)
         .single();
+
+      const conversation = result.data as {
+        participant_1_id: string;
+        participant_2_id: string;
+      } | null;
 
       if (!conversation) return;
 

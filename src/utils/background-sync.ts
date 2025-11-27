@@ -10,6 +10,9 @@ import {
   type QueuedSubmission,
 } from './offline-queue';
 import type { ContactFormData } from '@/schemas/contact.schema';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:backgroundSync');
 
 const SYNC_TAG = 'form-submission-sync';
 const MAX_RETRIES = 3;
@@ -20,7 +23,7 @@ const RETRY_DELAY_BASE = 1000; // Start with 1 second
  */
 export async function registerBackgroundSync(): Promise<boolean> {
   if (!('serviceWorker' in navigator) || !('SyncManager' in window)) {
-    console.log('[Background Sync] Not supported in this browser');
+    logger.debug('Not supported in this browser');
     return false;
   }
 
@@ -32,10 +35,10 @@ export async function registerBackgroundSync(): Promise<boolean> {
       sync: { register: (tag: string) => Promise<void> };
     };
     await reg.sync.register(SYNC_TAG);
-    console.log('[Background Sync] Registered successfully');
+    logger.info('Registered successfully');
     return true;
   } catch (error) {
-    console.error('[Background Sync] Registration failed:', error);
+    logger.error('Registration failed', { error });
     return false;
   }
 }
@@ -47,7 +50,7 @@ async function processQueuedSubmission(
   submission: QueuedSubmission
 ): Promise<boolean> {
   try {
-    console.log(`[Background Sync] Processing submission ${submission.id}`);
+    logger.debug('Processing submission', { submissionId: submission.id });
 
     // Attempt to submit
     const response = await submitWithRetry(
@@ -56,25 +59,25 @@ async function processQueuedSubmission(
     );
 
     if (response.success) {
-      console.log(`[Background Sync] Submission ${submission.id} successful`);
+      logger.info('Submission successful', { submissionId: submission.id });
       await removeFromQueue(submission.id!);
       return true;
     } else {
       throw new Error(response.message || 'Submission failed');
     }
   } catch (error) {
-    console.error(
-      `[Background Sync] Submission ${submission.id} failed:`,
-      error
-    );
+    logger.error('Submission failed', {
+      submissionId: submission.id,
+      error,
+    });
 
     // Update retry count
     const newRetryCount = submission.retryCount + 1;
 
     if (newRetryCount >= MAX_RETRIES) {
-      console.log(
-        `[Background Sync] Max retries reached for ${submission.id}, removing from queue`
-      );
+      logger.warn('Max retries reached, removing from queue', {
+        submissionId: submission.id,
+      });
       await removeFromQueue(submission.id!);
 
       // Could store in a "failed" queue or notify user
@@ -91,11 +94,11 @@ async function processQueuedSubmission(
  * Called by Service Worker during sync event
  */
 export async function processQueue(): Promise<void> {
-  console.log('[Background Sync] Processing queue...');
+  logger.debug('Processing queue...');
 
   try {
     const items = await getQueuedItems();
-    console.log(`[Background Sync] Found ${items.length} items in queue`);
+    logger.debug('Found items in queue', { count: items.length });
 
     if (items.length === 0) {
       return;
@@ -109,9 +112,9 @@ export async function processQueue(): Promise<void> {
         const requiredDelay = RETRY_DELAY_BASE * Math.pow(2, item.retryCount);
 
         if (timeSinceLastAttempt < requiredDelay) {
-          console.log(
-            `[Background Sync] Skipping ${item.id}, not enough time since last attempt`
-          );
+          logger.debug('Skipping item, not enough time since last attempt', {
+            itemId: item.id,
+          });
           continue;
         }
       }
@@ -129,7 +132,7 @@ export async function processQueue(): Promise<void> {
       await registerBackgroundSync();
     }
   } catch (error) {
-    console.error('[Background Sync] Queue processing error:', error);
+    logger.error('Queue processing error', { error });
   }
 }
 
@@ -161,7 +164,7 @@ export async function getSyncStatus(): Promise<{
       const tags = await reg.sync.getTags();
       registered = tags.includes(SYNC_TAG);
     } catch (error) {
-      console.error('[Background Sync] Error getting sync tags:', error);
+      logger.error('Error getting sync tags', { error });
     }
   }
 
@@ -169,7 +172,7 @@ export async function getSyncStatus(): Promise<{
     const items = await getQueuedItems();
     queueSize = items.length;
   } catch (error) {
-    console.error('[Background Sync] Error getting queue size:', error);
+    logger.error('Error getting queue size', { error });
   }
 
   return { supported, registered, queueSize };

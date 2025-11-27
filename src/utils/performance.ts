@@ -1,4 +1,7 @@
 import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:performance');
 
 export interface PerformanceMetrics {
   CLS?: number;
@@ -49,9 +52,11 @@ function sendToAnalytics(metric: Metric) {
 
   // Log in development
   if (process.env.NODE_ENV === 'development') {
-    console.log(
-      `[Web Vitals] ${metric.name}: ${metric.value} (${metric.rating})`
-    );
+    logger.debug('Web Vitals metric', {
+      name: metric.name,
+      value: metric.value,
+      rating: metric.rating,
+    });
   }
 }
 
@@ -107,12 +112,18 @@ export function measurePerformance<T>(
   if (result instanceof Promise) {
     return result.finally(() => {
       const duration = performance.now() - startTime;
-      console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+      logger.debug('Performance measurement', {
+        operation: name,
+        durationMs: duration.toFixed(2),
+      });
     });
   }
 
   const duration = performance.now() - startTime;
-  console.log(`[Performance] ${name}: ${duration.toFixed(2)}ms`);
+  logger.debug('Performance measurement', {
+    operation: name,
+    durationMs: duration.toFixed(2),
+  });
   return result;
 }
 

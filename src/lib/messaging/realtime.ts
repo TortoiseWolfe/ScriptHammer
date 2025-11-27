@@ -17,6 +17,10 @@ import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Message, TypingIndicator } from '@/types/messaging';
 import { AuthenticationError } from '@/types/messaging';
+import { createLogger } from '@/lib/logger';
+import { createMessagingClient } from '@/lib/supabase/messaging-client';
+
+const logger = createLogger('messaging:realtime');
 
 export class RealtimeService {
   private channels: Map<string, RealtimeChannel> = new Map();
@@ -207,7 +211,7 @@ export class RealtimeService {
 
     if (authError || !user) {
       // Silent failure - don't disrupt typing UX
-      console.warn('Cannot set typing status: not authenticated');
+      logger.warn('Cannot set typing status: not authenticated');
       return;
     }
 
@@ -224,21 +228,22 @@ export class RealtimeService {
       // Debounce: Wait 1 second before sending typing indicator
       const timer = setTimeout(async () => {
         try {
+          const msgClient = createMessagingClient(supabase);
           // UPSERT typing indicator
-          await (supabase as any).from('typing_indicators').upsert(
-            {
-              conversation_id,
-              user_id: user.id,
-              is_typing: true,
-              updated_at: new Date().toISOString(),
-            },
-            {
+          const typingIndicator = {
+            conversation_id,
+            user_id: user.id,
+            is_typing: true,
+            updated_at: new Date().toISOString(),
+          };
+          await msgClient
+            .from('typing_indicators')
+            .upsert(typingIndicator as any, {
               onConflict: 'conversation_id,user_id',
-            }
-          );
+            });
         } catch (error) {
           // Silent failure - log but don't throw
-          console.error('Failed to set typing status:', error);
+          logger.error('Failed to set typing status', { error });
         } finally {
           this.typingTimers.delete(timerKey);
         }
@@ -248,14 +253,15 @@ export class RealtimeService {
     } else {
       // User stopped typing - immediately remove indicator
       try {
-        await (supabase as any)
+        const msgClient = createMessagingClient(supabase);
+        await msgClient
           .from('typing_indicators')
           .delete()
           .eq('conversation_id', conversation_id)
           .eq('user_id', user.id);
       } catch (error) {
         // Silent failure - log but don't throw
-        console.error('Failed to clear typing status:', error);
+        logger.error('Failed to clear typing status', { error });
       }
     }
   }

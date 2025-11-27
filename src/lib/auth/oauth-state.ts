@@ -3,6 +3,9 @@
 // Purpose: Generate and validate OAuth state tokens for CSRF protection
 
 import { supabase } from '@/lib/supabase/client';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('auth:oauth');
 
 // Generate UUID v4 using crypto API (available in modern browsers and Node 16+)
 function generateUUID(): string {
@@ -51,13 +54,21 @@ export async function generateOAuthState(
     });
 
     if (error) {
-      console.error('Failed to store OAuth state:', error);
+      logger.error('Failed to store OAuth state', {
+        error,
+        provider,
+        stateToken,
+      });
       // Still return the token - validation will fail later if needed
     }
 
     return stateToken;
   } catch (error) {
-    console.error('Error generating OAuth state:', error);
+    logger.error('Error generating OAuth state', {
+      error,
+      provider,
+      stateToken,
+    });
     // Return a token anyway - fail open for better UX
     return stateToken;
   }
@@ -133,7 +144,10 @@ export async function validateOAuthState(
       .eq('state_token', stateToken);
 
     if (updateError) {
-      console.error('Failed to mark state as used:', updateError);
+      logger.error('Failed to mark state as used', {
+        error: updateError,
+        stateToken,
+      });
       // Continue anyway - state was valid
     }
 
@@ -142,7 +156,7 @@ export async function validateOAuthState(
       provider: stateData.provider as 'github' | 'google',
     };
   } catch (error) {
-    console.error('Error validating OAuth state:', error);
+    logger.error('Error validating OAuth state', { error, stateToken });
     return {
       valid: false,
       error: 'validation_error',
@@ -183,13 +197,13 @@ export async function cleanupExpiredStates(): Promise<number> {
       .select();
 
     if (error) {
-      console.error('Failed to cleanup expired states:', error);
+      logger.error('Failed to cleanup expired states', { error });
       return 0;
     }
 
     return data?.length || 0;
   } catch (error) {
-    console.error('Error cleaning up expired states:', error);
+    logger.error('Error cleaning up expired states', { error });
     return 0;
   }
 }

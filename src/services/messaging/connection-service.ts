@@ -1,5 +1,3 @@
-// Messaging tables not yet in generated Supabase types - requires: supabase gen types typescript
-
 /**
  * Connection Service for Friend Request Management
  * Tasks: T015-T021
@@ -8,6 +6,15 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import {
+  createMessagingClient,
+  type UserConnectionRow,
+  type ConversationRow,
+  type ConnectionStatus,
+  type UserConnectionInsert,
+  type UserConnectionUpdate,
+  type ConversationInsert,
+} from '@/lib/supabase/messaging-client';
 import {
   validateEmail,
   sanitizeInput,
@@ -28,13 +35,6 @@ import {
   ConnectionError,
   ValidationError,
 } from '@/types/messaging';
-
-/**
- * NOTE: Type assertions used for messaging tables
- * The Supabase generated types in `/src/lib/supabase/types.ts` don't include
- * messaging tables yet (requires regeneration with Supabase CLI).
- * Using type assertions until types are regenerated.
- */
 
 export class ConnectionService {
   /**
@@ -62,6 +62,7 @@ export class ConnectionService {
     input: SendFriendRequestInput
   ): Promise<UserConnection> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate UUID format
     validateUUID(input.addressee_id, 'addressee_id');
@@ -89,16 +90,17 @@ export class ConnectionService {
     }
 
     // Check for existing connection (any status)
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await msgClient
       .from('user_connections')
       .select('*')
       .or(
         `and(requester_id.eq.${user.id},addressee_id.eq.${addressee_id}),and(requester_id.eq.${addressee_id},addressee_id.eq.${user.id})`
       )
-      .limit(1);
+      .limit(1)
+      .returns<UserConnectionRow[]>();
 
     if (existing && existing.length > 0) {
-      const existingConnection = existing[0] as any;
+      const existingConnection = existing[0];
       if (existingConnection.status === 'pending') {
         throw new ConnectionError('Friend request already sent or received');
       } else if (existingConnection.status === 'accepted') {
@@ -109,13 +111,15 @@ export class ConnectionService {
     }
 
     // Insert new connection request
-    const { data, error } = await (supabase as any)
+    const insertData: UserConnectionInsert = {
+      requester_id: user.id,
+      addressee_id,
+      status: 'pending',
+    };
+
+    const { data, error } = await (msgClient as any)
       .from('user_connections')
-      .insert({
-        requester_id: user.id,
-        addressee_id,
-        status: 'pending',
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -125,7 +129,7 @@ export class ConnectionService {
       );
     }
 
-    return data;
+    return data as UserConnection;
   }
 
   /**
@@ -156,6 +160,7 @@ export class ConnectionService {
     input: RespondToRequestInput
   ): Promise<UserConnection> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate connection_id
     validateUUID(input.connection_id, 'connection_id');
@@ -181,18 +186,18 @@ export class ConnectionService {
     }
 
     // Get the connection
-    const { data: connection, error: fetchError } = await (supabase as any)
+    const { data: connection, error: fetchError } = await msgClient
       .from('user_connections')
       .select('*')
       .eq('id', input.connection_id)
-      .single();
+      .single<UserConnectionRow>();
 
     if (fetchError || !connection) {
       throw new ValidationError('Friend request not found', 'connection_id');
     }
 
     // Verify user is the addressee
-    if ((connection as any).addressee_id !== user.id) {
+    if (connection.addressee_id !== user.id) {
       throw new ValidationError(
         'You can only respond to requests sent to you',
         'connection_id'
@@ -200,15 +205,15 @@ export class ConnectionService {
     }
 
     // Verify status is pending
-    if ((connection as any).status !== 'pending') {
+    if (connection.status !== 'pending') {
       throw new ValidationError(
-        `Request already ${(connection as any).status}`,
+        `Request already ${connection.status}`,
         'connection_id'
       );
     }
 
     // Map action to status
-    const statusMap: Record<string, string> = {
+    const statusMap: Record<string, ConnectionStatus> = {
       accept: 'accepted',
       decline: 'declined',
       block: 'blocked',
@@ -217,9 +222,13 @@ export class ConnectionService {
     const newStatus = statusMap[input.action];
 
     // Update connection status
-    const { data, error } = await (supabase as any)
+    const updateData: UserConnectionUpdate = {
+      status: newStatus,
+    };
+
+    const { data, error } = await (msgClient as any)
       .from('user_connections')
-      .update({ status: newStatus })
+      .update(updateData)
       .eq('id', input.connection_id)
       .select()
       .single();
@@ -230,7 +239,7 @@ export class ConnectionService {
       );
     }
 
-    return data;
+    return data as UserConnection;
   }
 
   /**
@@ -266,6 +275,7 @@ export class ConnectionService {
    */
   async searchUsers(input: SearchUsersInput): Promise<SearchUsersResult> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Sanitize query
     const query = sanitizeInput(input.query);
@@ -292,7 +302,7 @@ export class ConnectionService {
     // Search for users by display_name (partial match, case-insensitive)
     // Uses ilike for PostgreSQL case-insensitive pattern matching
     const searchPattern = `%${query}%`;
-    const { data: profiles, error } = await (supabase as any)
+    const { data: profiles, error } = await supabase
       .from('user_profiles')
       .select('id, display_name, avatar_url')
       .ilike('display_name', searchPattern)
@@ -304,14 +314,15 @@ export class ConnectionService {
     }
 
     // Get existing connections for current user
-    const { data: connections } = await (supabase as any)
+    const { data: connections } = await msgClient
       .from('user_connections')
       .select('requester_id, addressee_id')
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+      .returns<Pick<UserConnectionRow, 'requester_id' | 'addressee_id'>[]>();
 
     // Build list of already connected user IDs
     const connectedUserIds = new Set<string>();
-    connections?.forEach((conn: any) => {
+    connections?.forEach((conn) => {
       if (conn.requester_id === user.id) {
         connectedUserIds.add(conn.addressee_id);
       } else {
@@ -351,6 +362,7 @@ export class ConnectionService {
    */
   async getConnections(): Promise<ConnectionList> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -365,7 +377,7 @@ export class ConnectionService {
     }
 
     // Fetch all connections with user profiles via FK joins
-    const { data: connections, error } = await (supabase as any)
+    const { data: connections, error } = await msgClient
       .from('user_connections')
       .select(
         `
@@ -448,6 +460,7 @@ export class ConnectionService {
    */
   async removeConnection(connection_id: string): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate connection_id
     validateUUID(connection_id, 'connection_id');
@@ -465,11 +478,11 @@ export class ConnectionService {
     }
 
     // Get the connection
-    const { data: connection, error: fetchError } = await (supabase as any)
+    const { data: connection, error: fetchError } = await msgClient
       .from('user_connections')
       .select('*')
       .eq('id', connection_id)
-      .single();
+      .single<UserConnectionRow>();
 
     if (fetchError || !connection) {
       throw new ValidationError('Connection not found', 'connection_id');
@@ -477,8 +490,8 @@ export class ConnectionService {
 
     // Verify user is involved in this connection
     if (
-      (connection as any).requester_id !== user.id &&
-      (connection as any).addressee_id !== user.id
+      connection.requester_id !== user.id &&
+      connection.addressee_id !== user.id
     ) {
       throw new ValidationError(
         'You can only remove your own connections',
@@ -487,7 +500,7 @@ export class ConnectionService {
     }
 
     // Delete the connection
-    const { error } = await (supabase as any)
+    const { error } = await msgClient
       .from('user_connections')
       .delete()
       .eq('id', connection_id);
@@ -525,6 +538,7 @@ export class ConnectionService {
    */
   async getOrCreateConversation(otherUserId: string): Promise<string> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate UUID format
     validateUUID(otherUserId, 'otherUserId');
@@ -550,14 +564,14 @@ export class ConnectionService {
     }
 
     // Verify connection is accepted
-    const { data: connection } = await (supabase as any)
+    const { data: connection } = await msgClient
       .from('user_connections')
       .select('status')
       .or(
         `and(requester_id.eq.${user.id},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${user.id})`
       )
       .eq('status', 'accepted')
-      .single();
+      .single<Pick<UserConnectionRow, 'status'>>();
 
     if (!connection) {
       throw new ConnectionError(
@@ -570,24 +584,26 @@ export class ConnectionService {
       user.id < otherUserId ? [user.id, otherUserId] : [otherUserId, user.id];
 
     // Check for existing conversation
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await msgClient
       .from('conversations')
       .select('id')
       .eq('participant_1_id', participant_1)
       .eq('participant_2_id', participant_2)
-      .single();
+      .single<Pick<ConversationRow, 'id'>>();
 
     if (existing) {
       return existing.id;
     }
 
     // Create new conversation
-    const { data: created, error: createError } = await (supabase as any)
+    const insertData: ConversationInsert = {
+      participant_1_id: participant_1,
+      participant_2_id: participant_2,
+    };
+
+    const { data: created, error: createError } = await (msgClient as any)
       .from('conversations')
-      .insert({
-        participant_1_id: participant_1,
-        participant_2_id: participant_2,
-      })
+      .insert(insertData)
       .select('id')
       .single();
 
@@ -595,12 +611,12 @@ export class ConnectionService {
       // Handle race condition - conversation may have been created by other user
       if (createError.code === '23505') {
         // unique_violation
-        const { data: retry } = await (supabase as any)
+        const { data: retry } = await msgClient
           .from('conversations')
           .select('id')
           .eq('participant_1_id', participant_1)
           .eq('participant_2_id', participant_2)
-          .single();
+          .single<Pick<ConversationRow, 'id'>>();
         if (retry) return retry.id;
       }
       throw new ConnectionError(

@@ -7,6 +7,9 @@ import Dexie, { Table } from 'dexie';
 import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
 import type { CreatePaymentIntentInput } from '@/types/payment';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('payments:queue');
 
 export interface QueuedOperation {
   id?: number;
@@ -59,7 +62,10 @@ export async function processPendingOperations(): Promise<void> {
       await executeOperation(op);
       // Success - remove from queue
       await db.queuedOperations.delete(op.id!);
-      console.log(`✅ Processed queued operation ${op.id} (${op.type})`);
+      logger.info('Processed queued operation', {
+        operationId: op.id,
+        type: op.type,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -70,16 +76,18 @@ export async function processPendingOperations(): Promise<void> {
         lastError: errorMessage,
       });
 
-      console.error(
-        `❌ Failed to process operation ${op.id} (attempt ${op.attempts + 1}):`,
-        errorMessage
-      );
+      logger.error('Failed to process operation', {
+        operationId: op.id,
+        attempt: op.attempts + 1,
+        error: errorMessage,
+      });
 
       // If too many attempts, remove from queue (give up)
       if (op.attempts >= 5) {
-        console.warn(
-          `🗑️  Removing operation ${op.id} after ${op.attempts + 1} failed attempts`
-        );
+        logger.warn('Removing operation after too many failed attempts', {
+          operationId: op.id,
+          attempts: op.attempts + 1,
+        });
         await db.queuedOperations.delete(op.id!);
       }
     }
@@ -98,18 +106,20 @@ export async function retryFailedOperations(): Promise<void> {
     const timeSinceCreation = Date.now() - op.createdAt.getTime();
 
     if (timeSinceCreation < backoffMs) {
-      console.log(
-        `⏳ Skipping operation ${op.id} - backoff not complete (${Math.round((backoffMs - timeSinceCreation) / 1000)}s remaining)`
-      );
+      logger.debug('Skipping operation - backoff not complete', {
+        operationId: op.id,
+        remainingSeconds: Math.round((backoffMs - timeSinceCreation) / 1000),
+      });
       continue;
     }
 
     try {
       await executeOperation(op);
       await db.queuedOperations.delete(op.id!);
-      console.log(
-        `✅ Retried operation ${op.id} successfully after ${op.attempts} attempts`
-      );
+      logger.info('Retried operation successfully', {
+        operationId: op.id,
+        attempts: op.attempts,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -162,7 +172,7 @@ async function executePaymentIntent(
     throw new Error(`Failed to create payment intent: ${error.message}`);
   }
 
-  console.log('✅ Created payment intent:', intent.id);
+  logger.info('Created payment intent', { intentId: intent.id });
 }
 
 /**
@@ -180,7 +190,7 @@ async function executeSubscriptionUpdate(
     throw new Error(`Failed to update subscription: ${error.message}`);
   }
 
-  console.log('✅ Updated subscription:', data.id);
+  logger.info('Updated subscription', { subscriptionId: data.id });
 }
 
 /**
@@ -188,7 +198,7 @@ async function executeSubscriptionUpdate(
  */
 export async function clearQueue(): Promise<void> {
   await db.queuedOperations.clear();
-  console.log('🗑️  Cleared all queued operations');
+  logger.info('Cleared all queued operations');
 }
 
 /**

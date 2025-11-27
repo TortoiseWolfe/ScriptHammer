@@ -10,6 +10,9 @@ import {
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import PasswordStrengthIndicator from '@/components/atomic/PasswordStrengthIndicator';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:auth:SignUpForm');
 
 export interface SignUpFormProps {
   /** Callback on successful sign up */
@@ -49,7 +52,9 @@ export default function SignUpForm({
 
     // Show warning for disposable emails
     if (emailValidation.warnings.length > 0) {
-      console.warn('Email validation warnings:', emailValidation.warnings);
+      logger.warn('Email validation warnings', {
+        warnings: emailValidation.warnings,
+      });
     }
 
     if (password.length < 8) {

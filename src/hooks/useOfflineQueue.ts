@@ -13,7 +13,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { offlineQueueService } from '@/services/messaging/offline-queue-service';
+import { createLogger } from '@/lib/logger';
 import type { QueuedMessage } from '@/types/messaging';
+
+const logger = createLogger('hooks:offlineQueue');
 
 export interface UseOfflineQueueReturn {
   /** Queued messages (unsynced) */
@@ -82,7 +85,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       setQueueCount(queuedMessages.length);
       setFailedCount(failedMessages.length);
     } catch (error) {
-      console.error('Failed to load offline queue:', error);
+      logger.error('Failed to load offline queue', { error });
     }
   }, []);
 
@@ -96,14 +99,15 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
     try {
       const result = await offlineQueueService.syncQueue();
-      console.log(
-        `Sync complete: ${result.success} successful, ${result.failed} failed`
-      );
+      logger.info('Sync complete', {
+        success: result.success,
+        failed: result.failed,
+      });
 
       // Reload queue to reflect changes
       await loadQueue();
     } catch (error) {
-      console.error('Failed to sync queue:', error);
+      logger.error('Failed to sync queue', { error });
     } finally {
       setIsSyncing(false);
     }
@@ -113,7 +117,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   const retryFailed = useCallback(async () => {
     try {
       const count = await offlineQueueService.retryFailed();
-      console.log(`Reset ${count} failed messages for retry`);
+      logger.info('Reset failed messages for retry', { count });
 
       // Reload queue
       await loadQueue();
@@ -121,7 +125,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       // Trigger sync
       await syncQueue();
     } catch (error) {
-      console.error('Failed to retry messages:', error);
+      logger.error('Failed to retry messages', { error });
     }
   }, [loadQueue, syncQueue]);
 
@@ -129,11 +133,11 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   const clearSynced = useCallback(async () => {
     try {
       const count = await offlineQueueService.clearSyncedMessages();
-      console.log(`Cleared ${count} synced messages`);
+      logger.info('Cleared synced messages', { count });
 
       await loadQueue();
     } catch (error) {
-      console.error('Failed to clear synced messages:', error);
+      logger.error('Failed to clear synced messages', { error });
     }
   }, [loadQueue]);
 
@@ -145,13 +149,13 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // Handle online event - automatic sync
   useEffect(() => {
     const handleOnline = () => {
-      console.log('Network online - triggering queue sync');
+      logger.info('Network online - triggering queue sync');
       setIsOnline(true);
       syncQueue();
     };
 
     const handleOffline = () => {
-      console.log('Network offline');
+      logger.info('Network offline');
       setIsOnline(false);
     };
 

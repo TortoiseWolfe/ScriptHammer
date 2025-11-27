@@ -7,6 +7,14 @@ import { useOfflineQueue } from './useOfflineQueue';
 import { offlineQueueService } from '@/services/messaging/offline-queue-service';
 import type { QueuedMessage } from '@/types/messaging';
 
+// Mock the logger - use vi.hoisted to ensure it's available before mock hoisting
+const mockLoggerFns = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
 // Mock the offline queue service
 vi.mock('@/services/messaging/offline-queue-service', () => ({
   offlineQueueService: {
@@ -16,6 +24,11 @@ vi.mock('@/services/messaging/offline-queue-service', () => ({
     retryFailed: vi.fn(),
     clearSyncedMessages: vi.fn(),
   },
+}));
+
+// Mock the logger
+vi.mock('@/lib/logger', () => ({
+  createLogger: vi.fn(() => mockLoggerFns),
 }));
 
 describe('useOfflineQueue', () => {
@@ -57,6 +70,12 @@ describe('useOfflineQueue', () => {
       value: true,
       configurable: true,
     });
+
+    // Clear logger mocks
+    mockLoggerFns.debug.mockClear();
+    mockLoggerFns.info.mockClear();
+    mockLoggerFns.warn.mockClear();
+    mockLoggerFns.error.mockClear();
   });
 
   afterEach(() => {
@@ -124,9 +143,6 @@ describe('useOfflineQueue', () => {
     });
 
     it('should handle loading errors gracefully', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
       vi.mocked(offlineQueueService.getQueue).mockRejectedValue(
         new Error('Database error')
       );
@@ -134,9 +150,9 @@ describe('useOfflineQueue', () => {
       const { result } = renderHook(() => useOfflineQueue());
 
       await waitFor(() => {
-        expect(consoleError).toHaveBeenCalledWith(
-          'Failed to load offline queue:',
-          expect.any(Error)
+        expect(mockLoggerFns.error).toHaveBeenCalledWith(
+          'Failed to load offline queue',
+          expect.objectContaining({ error: expect.any(Error) })
         );
       });
 
@@ -268,9 +284,6 @@ describe('useOfflineQueue', () => {
     });
 
     it('should handle sync errors', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
       vi.mocked(offlineQueueService.syncQueue).mockRejectedValue(
         new Error('Sync failed')
       );
@@ -285,9 +298,9 @@ describe('useOfflineQueue', () => {
         await result.current.syncQueue();
       });
 
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to sync queue:',
-        expect.any(Error)
+      expect(mockLoggerFns.error).toHaveBeenCalledWith(
+        'Failed to sync queue',
+        expect.objectContaining({ error: expect.any(Error) })
       );
       expect(result.current.isSyncing).toBe(false);
     });
@@ -337,9 +350,6 @@ describe('useOfflineQueue', () => {
     });
 
     it('should handle retry errors', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
       vi.mocked(offlineQueueService.retryFailed).mockRejectedValue(
         new Error('Retry failed')
       );
@@ -354,9 +364,9 @@ describe('useOfflineQueue', () => {
         await result.current.retryFailed();
       });
 
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to retry messages:',
-        expect.any(Error)
+      expect(mockLoggerFns.error).toHaveBeenCalledWith(
+        'Failed to retry messages',
+        expect.objectContaining({ error: expect.any(Error) })
       );
     });
   });
@@ -401,9 +411,6 @@ describe('useOfflineQueue', () => {
     });
 
     it('should handle clear errors', async () => {
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
       vi.mocked(offlineQueueService.clearSyncedMessages).mockRejectedValue(
         new Error('Clear failed')
       );
@@ -418,9 +425,9 @@ describe('useOfflineQueue', () => {
         await result.current.clearSynced();
       });
 
-      expect(consoleError).toHaveBeenCalledWith(
-        'Failed to clear synced messages:',
-        expect.any(Error)
+      expect(mockLoggerFns.error).toHaveBeenCalledWith(
+        'Failed to clear synced messages',
+        expect.objectContaining({ error: expect.any(Error) })
       );
     });
   });

@@ -3,6 +3,19 @@ import { renderHook, act } from '@testing-library/react';
 import { useFontFamily } from './useFontFamily';
 import { fonts, DEFAULT_FONT_ID, FONT_STORAGE_KEYS } from '@/config/fonts';
 
+// Mock the logger - use vi.hoisted to ensure it's available before mock hoisting
+const mockLoggerFns = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
+// Mock the logger
+vi.mock('@/lib/logger', () => ({
+  createLogger: vi.fn(() => mockLoggerFns),
+}));
+
 // Mock the font-loader module
 vi.mock('@/utils/font-loader', () => ({
   loadFont: vi.fn(() => Promise.resolve()),
@@ -201,16 +214,15 @@ describe('useFontFamily', () => {
 
     it('should not change font for invalid ID', async () => {
       const { result } = renderHook(() => useFontFamily());
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       await act(async () => {
         await result.current.setFontFamily('invalid-font');
       });
 
       expect(result.current.fontFamily).toBe(DEFAULT_FONT_ID);
-      expect(consoleSpy).toHaveBeenCalledWith('Invalid font ID: invalid-font');
-
-      consoleSpy.mockRestore();
+      expect(mockLoggerFns.warn).toHaveBeenCalledWith('Invalid font ID', {
+        fontId: 'invalid-font',
+      });
     });
 
     it('should reset to default font', async () => {

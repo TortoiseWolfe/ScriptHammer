@@ -6,6 +6,10 @@ import type {
   ConversationWithParticipants,
   UserProfile,
 } from '@/types/messaging';
+import { createLogger } from '@/lib/logger/logger';
+import { createMessagingClient } from '@/lib/supabase/messaging-client';
+
+const logger = createLogger('components:organisms:ConversationList:hook');
 
 export interface ConversationListItem {
   id: string;
@@ -64,19 +68,33 @@ export function useConversationList() {
       setError(null);
 
       const supabase = createClient();
+      const msgClient = createMessagingClient(supabase);
 
       // Get all conversations for this user
-      const { data: conversationsData, error: convsError } = await (
-        supabase as any
-      )
+      const result = await msgClient
         .from('conversations')
-        .select('*')
+        .select(
+          'id, participant_1_id, participant_2_id, last_message_at, archived_by_participant_1, archived_by_participant_2'
+        )
         .or(`participant_1_id.eq.${user.id},participant_2_id.eq.${user.id}`)
         .order('last_message_at', { ascending: false, nullsFirst: false });
 
+      const conversationsData = result.data as Array<{
+        id: string;
+        participant_1_id: string;
+        participant_2_id: string;
+        last_message_at: string | null;
+        archived_by_participant_1: boolean | null;
+        archived_by_participant_2: boolean | null;
+      }> | null;
+
+      const convsError = result.error;
+
       // DEBUG: Log query results
-      console.log('[ConversationList] Query error:', convsError);
-      console.log('[ConversationList] Query data:', conversationsData);
+      logger.debug('Query results', {
+        error: convsError,
+        dataCount: conversationsData?.length,
+      });
 
       if (convsError) throw convsError;
       if (!conversationsData) {
@@ -87,7 +105,7 @@ export function useConversationList() {
 
       // For each conversation, get participant info and unread count
       const conversationItems: ConversationListItem[] = await Promise.all(
-        conversationsData.map(async (conv: any) => {
+        conversationsData.map(async (conv) => {
           // Determine other participant and archive status based on user's role
           const isParticipant1 = conv.participant_1_id === user.id;
           const otherParticipantId = isParticipant1
@@ -107,7 +125,7 @@ export function useConversationList() {
             .single();
 
           // Get unread count (messages not sent by current user, not read)
-          const { count: unreadCount } = await (supabase as any)
+          const { count: unreadCount } = await msgClient
             .from('messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', conv.id)
@@ -115,7 +133,7 @@ export function useConversationList() {
             .is('read_at', null);
 
           // Get last message preview
-          const { data: lastMessageData } = await (supabase as any)
+          const { data: lastMessageData } = await msgClient
             .from('messages')
             .select('encrypted_content')
             .eq('conversation_id', conv.id)
@@ -267,24 +285,17 @@ export function useConversationList() {
   // Archive a conversation
   const archiveConversation = useCallback(
     async (conversationId: string) => {
-      console.log(
-        '[Archive] Attempting to archive conversation:',
-        conversationId
-      );
+      logger.debug('Attempting to archive conversation', { conversationId });
       try {
         await messageService.archiveConversation(conversationId);
-        console.log(
-          '[Archive] Successfully archived conversation:',
-          conversationId
-        );
+        logger.info('Successfully archived conversation', { conversationId });
         // Reload to update the list
         loadConversations();
       } catch (err: any) {
-        console.error(
-          '[Archive] Failed to archive conversation:',
+        logger.error('Failed to archive conversation', {
           conversationId,
-          err
-        );
+          error: err,
+        });
         setError(err.message || 'Failed to archive conversation');
       }
     },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '@/lib/logger';
 import type { UseFontFamilyReturn, FontSettings } from '@/utils/font-types';
 import { loadFont, isFontLoaded as checkFontLoaded } from '@/utils/font-loader';
 import {
@@ -11,6 +12,8 @@ import {
   FONT_CSS_VARS,
   MAX_RECENT_FONTS,
 } from '@/config/fonts';
+
+const logger = createLogger('hooks:fontFamily');
 
 /**
  * Custom hook for managing font family settings
@@ -74,7 +77,7 @@ export function useFontFamily(): UseFontFamilyReturn {
         }
       }
     } catch (error) {
-      console.error('Failed to load font settings:', error);
+      logger.error('Failed to load font settings', { error });
       setFontFamilyState(DEFAULT_FONT_ID);
       applyFontToDOM(DEFAULT_FONT_ID);
     }
@@ -97,7 +100,7 @@ export function useFontFamily(): UseFontFamilyReturn {
         JSON.stringify(settings)
       );
     } catch (error) {
-      console.error('Failed to save font settings:', error);
+      logger.error('Failed to save font settings', { error });
     }
   }, []);
 
@@ -107,7 +110,7 @@ export function useFontFamily(): UseFontFamilyReturn {
       // Validate font ID
       const font = getFontById(fontId);
       if (!font) {
-        console.warn(`Invalid font ID: ${fontId}`);
+        logger.warn('Invalid font ID', { fontId });
         return;
       }
 
@@ -117,7 +120,7 @@ export function useFontFamily(): UseFontFamilyReturn {
           await loadFont(font);
           setLoadedFonts((prev) => new Set([...prev, fontId]));
         } catch (error) {
-          console.error(`Failed to load font ${fontId}:`, error);
+          logger.error('Failed to load font', { fontId, error });
         }
       }
 

@@ -3,6 +3,9 @@
 // Purpose: Client-side wrapper for server-side rate limiting functions
 
 import { supabase } from '@/lib/supabase/client';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('auth:rateLimit');
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -38,7 +41,12 @@ export async function checkRateLimit(
     });
 
     if (error) {
-      console.error('Rate limit check failed:', error);
+      logger.error('Rate limit check failed', {
+        error,
+        identifier,
+        attemptType,
+        ipAddress,
+      });
       // Fail open - allow attempt if rate limit check fails
       // This prevents rate limiting from becoming a DoS vector
       return {
@@ -50,7 +58,12 @@ export async function checkRateLimit(
 
     return data as unknown as RateLimitResult;
   } catch (error) {
-    console.error('Rate limit check error:', error);
+    logger.error('Rate limit check error', {
+      error,
+      identifier,
+      attemptType,
+      ipAddress,
+    });
     // Fail open
     return {
       allowed: true,
@@ -88,11 +101,21 @@ export async function recordFailedAttempt(
     });
 
     if (error) {
-      console.error('Failed to record failed attempt:', error);
+      logger.error('Failed to record failed attempt', {
+        error,
+        identifier,
+        attemptType,
+        ipAddress,
+      });
       // Non-critical failure - don't throw
     }
   } catch (error) {
-    console.error('Error recording failed attempt:', error);
+    logger.error('Error recording failed attempt', {
+      error,
+      identifier,
+      attemptType,
+      ipAddress,
+    });
     // Non-critical failure - don't throw
   }
 }

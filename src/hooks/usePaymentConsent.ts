@@ -6,6 +6,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('hooks:paymentConsent');
 
 export interface PaymentConsentState {
   hasConsent: boolean;
@@ -64,7 +67,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       }
     } catch (error) {
       // localStorage blocked by tracking prevention - default to showing modal
-      console.warn('localStorage access blocked:', error);
+      logger.warn('localStorage access blocked', { error });
       setHasConsent(false);
       setShowModal(true);
     }
@@ -76,15 +79,15 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       localStorage.setItem('payment_consent', 'granted');
       localStorage.setItem('payment_consent_date', now);
     } catch (error) {
-      console.warn(
-        'localStorage access blocked, consent stored in memory only:',
-        error
+      logger.warn(
+        'localStorage access blocked, consent stored in memory only',
+        { error }
       );
     }
     setHasConsent(true);
     setConsentDate(now);
     setShowModal(false);
-    console.log('✅ Payment consent granted');
+    logger.info('Payment consent granted');
   };
 
   const declineConsent = () => {
@@ -92,14 +95,14 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       // Store decline but allow retry on next visit
       localStorage.setItem('payment_consent', 'declined');
     } catch (error) {
-      console.warn(
-        'localStorage access blocked, consent stored in memory only:',
-        error
+      logger.warn(
+        'localStorage access blocked, consent stored in memory only',
+        { error }
       );
     }
     setHasConsent(false);
     setShowModal(false);
-    console.log('❌ Payment consent declined');
+    logger.info('Payment consent declined');
   };
 
   const resetConsent = () => {
@@ -107,7 +110,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       localStorage.removeItem('payment_consent');
       localStorage.removeItem('payment_consent_date');
     } catch (error) {
-      console.warn('localStorage access blocked:', error);
+      logger.warn('localStorage access blocked', { error });
     }
     setHasConsent(false);
     setConsentDate(null);

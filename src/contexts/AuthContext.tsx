@@ -16,7 +16,10 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { retryWithBackoff } from '@/lib/auth/retry-utils';
+import { createLogger } from '@/lib/logger';
 import IdleTimeoutModal from '@/components/molecular/IdleTimeoutModal';
+
+const logger = createLogger('contexts:auth');
 
 /**
  * Auth error types for user feedback
@@ -88,7 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Fallback timeout - prevent infinite loading (FR-001)
     // Must be longer than retry delays (1s + 2s + 4s = 7s) to allow retries to complete
     const loadingTimeout = setTimeout(() => {
-      console.warn('Auth loading timeout - setting error state');
+      logger.warn('Auth loading timeout - setting error state');
       setError({
         code: 'TIMEOUT',
         message: AUTH_ERROR_MESSAGES.TIMEOUT,
@@ -118,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       } catch (err) {
         clearTimeout(loadingTimeout);
-        console.error('Failed to get session after retries:', err);
+        logger.error('Failed to get session after retries', { error: err });
         setError({
           code: 'AUTH_FAILED',
           message: AUTH_ERROR_MESSAGES.AUTH_FAILED,
@@ -141,7 +144,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // FR-009: Cross-tab sign-out detection
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
         // Sign-out detected from another tab - redirect to home
-        console.log('Cross-tab sign-out detected, redirecting to home');
+        logger.info('Cross-tab sign-out detected, redirecting to home');
         window.location.href = '/';
         return;
       }
@@ -156,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           );
           keyManagementService.clearKeys();
         } catch (error) {
-          console.error('Failed to clear encryption keys:', error);
+          logger.error('Failed to clear encryption keys', { error });
         }
       }
 
@@ -211,7 +214,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await supabase.auth.signOut();
     } catch (err) {
       // Log but don't throw - local state already cleared
-      console.error('Supabase signOut failed (local state cleared):', err);
+      logger.error('Supabase signOut failed (local state cleared)', {
+        error: err,
+      });
     }
 
     // FR-005: Force page reload to clear any stale React state
@@ -236,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
     } catch (err) {
-      console.error('Retry failed:', err);
+      logger.error('Retry failed', { error: err });
       setError({
         code: 'AUTH_FAILED',
         message: AUTH_ERROR_MESSAGES.AUTH_FAILED,

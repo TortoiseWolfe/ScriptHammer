@@ -4,6 +4,9 @@ import React from 'react';
 import ConversationList from '@/components/organisms/ConversationList';
 import ConnectionManager from '@/components/organisms/ConnectionManager';
 import type { SidebarTab } from '@/types/messaging';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:organisms:UnifiedSidebar');
 
 export interface UnifiedSidebarProps {
   /** Currently selected conversation ID */
@@ -46,7 +49,7 @@ export default function UnifiedSidebar({
       // Switch to chats tab after starting conversation
       onTabChange('chats');
     } catch (error) {
-      console.error('Failed to start conversation:', error);
+      logger.error('Failed to start conversation', { userId, error });
     }
   };
 

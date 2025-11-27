@@ -9,6 +9,9 @@ import {
 } from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:auth:SignInForm');
 
 export interface SignInFormProps {
   /** Callback on successful sign in */
@@ -60,10 +63,9 @@ export default function SignInForm({
     try {
       rateLimit = await checkRateLimit(email, 'sign_in');
     } catch (rateLimitError) {
-      console.warn(
-        'Rate limit check failed, allowing sign-in attempt:',
-        rateLimitError
-      );
+      logger.warn('Rate limit check failed, allowing sign-in attempt', {
+        error: rateLimitError,
+      });
       // Continue with sign-in (fail-open for UX)
     }
 
@@ -134,7 +136,7 @@ export default function SignInForm({
 
         if (!hasKeys) {
           // New user: initialize keys with password
-          console.log('[SignIn] New user - initializing encryption keys');
+          logger.info('New user - initializing encryption keys');
           await keyManagementService.initializeKeys(password);
         } else {
           // Check if user needs migration (legacy random keys)
@@ -142,21 +144,18 @@ export default function SignInForm({
 
           if (needsMigration) {
             // Legacy user with ONLY NULL-salt keys - auto-initialize new keys (Feature 033)
-            console.log(
-              '[SignIn] Legacy user - auto-initializing new encryption keys'
-            );
+            logger.info('Legacy user - auto-initializing new encryption keys');
             await keyManagementService.initializeKeys(password);
           } else {
             // Existing user: derive keys from password
-            console.log('[SignIn] Existing user - deriving encryption keys');
+            logger.info('Existing user - deriving encryption keys');
             await keyManagementService.deriveKeys(password);
           }
         }
       } catch (keyError) {
-        console.error(
-          '[SignIn] Failed to initialize/derive encryption keys:',
-          keyError
-        );
+        logger.error('Failed to initialize/derive encryption keys', {
+          error: keyError,
+        });
         // Don't block sign-in flow, but log the error
         // User will be prompted to re-authenticate when accessing messages
       }

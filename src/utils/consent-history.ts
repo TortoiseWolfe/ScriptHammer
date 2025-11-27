@@ -1,4 +1,7 @@
 import { ConsentState } from './consent-types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:consent-history');
 
 /**
  * Consent history entry structure
@@ -80,7 +83,7 @@ function saveConsentHistory(history: ConsentHistoryEntry[]): void {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   } catch (error) {
-    console.error('Failed to save consent history:', error);
+    logger.error('Failed to save consent history', { error });
   }
 }
 

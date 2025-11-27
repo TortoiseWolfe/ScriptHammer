@@ -190,6 +190,7 @@ export function GlobalNav() {
                 href="/messages"
                 className="btn btn-ghost btn-circle indicator min-h-11 min-w-11"
                 title="Messages"
+                aria-label="Messages"
               >
                 {unreadCount > 0 && (
                   <span className="indicator-item badge badge-primary badge-sm">
@@ -219,6 +220,7 @@ export function GlobalNav() {
                 <label
                   tabIndex={0}
                   className="btn btn-ghost btn-circle avatar min-h-11 min-w-11"
+                  aria-label="User account menu"
                 >
                   <AvatarDisplay
                     avatarUrl={
@@ -301,6 +303,7 @@ export function GlobalNav() {
               <label
                 tabIndex={0}
                 className="btn btn-ghost btn-circle min-h-11 min-w-11"
+                aria-label="Navigation menu"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -429,6 +432,7 @@ export function GlobalNav() {
                 tabIndex={0}
                 className="btn btn-ghost btn-circle min-h-11 min-w-11"
                 title="Change theme"
+                aria-label="Change theme"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

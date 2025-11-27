@@ -13,6 +13,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import MessageBubble from '@/components/atomic/MessageBubble';
 import TypingIndicator from '@/components/atomic/TypingIndicator';
 import type { DecryptedMessage } from '@/types/messaging';
+import { createLogger } from '@/lib/logger/logger';
+
+const logger = createLogger('components:molecular:MessageThread');
 
 export interface MessageThreadProps {
   /** Array of decrypted messages */
@@ -98,7 +101,7 @@ export default function MessageThread({
     (id, phase, actualDuration, baseDuration, startTime, commitTime) => {
       // Log render time for large conversations (>500 messages)
       if (messages.length > 500) {
-        console.log('[MessageThread Performance]', {
+        logger.info('MessageThread performance metrics', {
           messageCount: messages.length,
           phase,
           actualDuration: `${actualDuration.toFixed(2)}ms`,

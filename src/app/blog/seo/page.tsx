@@ -2,6 +2,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 import SEOAnalysisPanel from '@/components/molecular/SEOAnalysisPanel';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:blog:seo:page');
 
 async function getAllPosts() {
   try {
@@ -35,7 +38,7 @@ async function getAllPosts() {
       (a: any, b: any) => a.analysis.score.overall - b.analysis.score.overall
     );
   } catch (error) {
-    console.error('Error loading posts:', error);
+    logger.error('Error loading posts', { error });
     return [];
   }
 }

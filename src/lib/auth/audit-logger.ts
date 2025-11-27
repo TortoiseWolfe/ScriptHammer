@@ -6,6 +6,9 @@
 
 import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('lib:auth:audit-logger');
 
 export type AuditEventType =
   | 'sign_in'
@@ -70,11 +73,17 @@ export async function logAuthEvent(entry: AuditLogEntry): Promise<void> {
     const { error } = await supabase.from('auth_audit_logs').insert(logEntry);
 
     if (error) {
-      console.error('Failed to log audit event:', error);
+      logger.error('Failed to log audit event', {
+        error,
+        eventType: entry.event_type,
+      });
       // Non-critical failure - don't throw
     }
   } catch (error) {
-    console.error('Error logging audit event:', error);
+    logger.error('Error logging audit event', {
+      error,
+      eventType: entry.event_type,
+    });
     // Non-critical failure - don't throw
   }
 }
@@ -113,13 +122,13 @@ export async function getUserAuditLogs(
       .limit(limit);
 
     if (error) {
-      console.error('Failed to fetch audit logs:', error);
+      logger.error('Failed to fetch audit logs', { error, userId });
       return [];
     }
 
     return (data || []) as AuditLogEntry[];
   } catch (error) {
-    console.error('Error fetching audit logs:', error);
+    logger.error('Error fetching audit logs', { error, userId });
     return [];
   }
 }

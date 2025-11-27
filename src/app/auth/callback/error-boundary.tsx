@@ -8,6 +8,9 @@
 
 import React, { Component, ReactNode } from 'react';
 import Link from 'next/link';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:auth:callback:error-boundary');
 
 interface Props {
   children: ReactNode;
@@ -29,7 +32,7 @@ export class OAuthErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('OAuth callback error:', error, errorInfo);
+    logger.error('OAuth callback error', { error, errorInfo });
   }
 
   override render() {

@@ -2,6 +2,10 @@
  * Offline queue management for form submissions using IndexedDB
  */
 
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:offline-queue');
+
 const DB_NAME = 'OfflineFormSubmissions';
 const DB_VERSION = 1;
 const STORE_NAME = 'submissions';
@@ -73,7 +77,7 @@ export async function addToQueue(
       };
     });
   } catch (error) {
-    console.error('Error adding to offline queue:', error);
+    logger.error('Error adding to offline queue', { error });
     return false;
   }
 }
@@ -108,7 +112,7 @@ export async function getQueuedItems(): Promise<QueuedSubmission[]> {
       };
     });
   } catch (error) {
-    console.error('Error getting queued items:', error);
+    logger.error('Error getting queued items', { error });
     return [];
   }
 }
@@ -136,7 +140,7 @@ export async function removeFromQueue(id: number): Promise<boolean> {
       };
     });
   } catch (error) {
-    console.error('Error removing from queue:', error);
+    logger.error('Error removing from queue', { error });
     return false;
   }
 }
@@ -164,7 +168,7 @@ export async function clearQueue(): Promise<boolean> {
       };
     });
   } catch (error) {
-    console.error('Error clearing queue:', error);
+    logger.error('Error clearing queue', { error });
     return false;
   }
 }
@@ -192,7 +196,7 @@ export async function getQueueSize(): Promise<number> {
       };
     });
   } catch (error) {
-    console.error('Error getting queue size:', error);
+    logger.error('Error getting queue size', { error });
     return 0;
   }
 }
@@ -235,7 +239,7 @@ export async function updateRetryCount(
       };
     });
   } catch (error) {
-    console.error('Error updating retry count:', error);
+    logger.error('Error updating retry count', { error });
     return false;
   }
 }

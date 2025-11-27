@@ -1,5 +1,8 @@
 import { ConsentState } from './consent-types';
 import { getConsentFromStorage, clearConsentFromStorage } from './consent';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:privacy');
 
 // Import consent history (will be implemented next)
 let getConsentHistory: () => unknown[] = () => [];
@@ -183,9 +186,9 @@ export async function clearUserData(
 
   try {
     // Log audit event
-    console.log(
-      `[AUDIT] User data deletion requested at ${new Date().toISOString()}`
-    );
+    logger.info('User data deletion requested', {
+      timestamp: new Date().toISOString(),
+    });
 
     // Clear localStorage (except necessary items)
     const localKeys = Object.keys(localStorage);
@@ -210,9 +213,9 @@ export async function clearUserData(
     clearConsentHistory();
 
     // Log completion
-    console.log(
-      `[AUDIT] User data deletion completed. Cleared ${clearedItems.length} items.`
-    );
+    logger.info('User data deletion completed', {
+      clearedCount: clearedItems.length,
+    });
 
     return {
       success: true,
@@ -223,7 +226,7 @@ export async function clearUserData(
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error';
 
-    console.error('[AUDIT] User data deletion failed:', errorMessage);
+    logger.error('User data deletion failed', { error: errorMessage });
 
     return {
       success: false,

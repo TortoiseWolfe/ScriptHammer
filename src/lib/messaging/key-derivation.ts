@@ -23,6 +23,9 @@ import {
   KeyDerivationError,
 } from '@/types/messaging';
 import { p256 } from '@noble/curves/nist.js';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('messaging:key-derivation');
 
 /**
  * P-256 curve order (n) for scalar reduction
@@ -254,9 +257,7 @@ export class KeyDerivationService {
         );
       } catch (pkcs8Error) {
         // PKCS#8 failed, use @noble/curves to compute public key from private key
-        console.warn(
-          '[KeyDerivation] PKCS#8 import failed, using @noble/curves fallback'
-        );
+        logger.warn('PKCS#8 import failed, using @noble/curves fallback');
 
         // Use noble-curves to get uncompressed public key (65 bytes: 0x04 + x + y)
         const publicKeyBytes = p256.getPublicKey(privateKeyBytes, false);

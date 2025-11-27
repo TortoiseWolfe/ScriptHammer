@@ -168,6 +168,23 @@ fi
 
 # 8. Accessibility Tests (only if server is running)
 print_header "8. Accessibility Tests"
+
+# Production build corrupts .next permissions - restart container to fix
+if ! in_docker; then
+    echo "Restarting container to restore dev server after build..."
+    docker compose restart scripthammer > /dev/null 2>&1
+
+    # Wait for dev server to be ready
+    echo "Waiting for dev server to recover..."
+    for i in $(seq 1 30); do
+        if curl -s http://localhost:3000 | grep -q "html" 2>/dev/null; then
+            echo "Dev server ready."
+            break
+        fi
+        sleep 2
+    done
+fi
+
 echo "Checking if dev server is available..."
 if curl -s http://localhost:3000 > /dev/null 2>&1; then
     echo "Dev server detected, running accessibility tests..."

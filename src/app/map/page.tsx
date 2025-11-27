@@ -9,6 +9,9 @@ import {
   GeolocationPurpose,
 } from '@/components/map/GeolocationConsent';
 import type { LatLngTuple } from 'leaflet';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('app:map:page');
 
 // Dynamic import for MapContainer to avoid SSR issues
 const MapContainer = dynamicImport(
@@ -119,7 +122,10 @@ export default function MapPage() {
 
   const handleLocationError = useCallback(
     (geolocationError: GeolocationPositionError) => {
-      console.error('Location error:', geolocationError);
+      logger.error('Location error', {
+        code: geolocationError.code,
+        message: geolocationError.message,
+      });
     },
     []
   );

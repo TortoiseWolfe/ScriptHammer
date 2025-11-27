@@ -456,6 +456,195 @@ export type Database = {
           },
         ];
       };
+      // ========================================================================
+      // Messaging Tables (added for type safety)
+      // ========================================================================
+      user_connections: {
+        Row: {
+          id: string;
+          requester_id: string;
+          addressee_id: string;
+          status: 'pending' | 'accepted' | 'blocked' | 'declined';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          requester_id: string;
+          addressee_id: string;
+          status: 'pending' | 'accepted' | 'blocked' | 'declined';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          requester_id?: string;
+          addressee_id?: string;
+          status?: 'pending' | 'accepted' | 'blocked' | 'declined';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      conversations: {
+        Row: {
+          id: string;
+          participant_1_id: string;
+          participant_2_id: string;
+          last_message_at: string | null;
+          archived_by_participant_1: boolean;
+          archived_by_participant_2: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          participant_1_id: string;
+          participant_2_id: string;
+          last_message_at?: string | null;
+          archived_by_participant_1?: boolean;
+          archived_by_participant_2?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          participant_1_id?: string;
+          participant_2_id?: string;
+          last_message_at?: string | null;
+          archived_by_participant_1?: boolean;
+          archived_by_participant_2?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          encrypted_content: string;
+          initialization_vector: string;
+          sequence_number: number;
+          deleted: boolean;
+          edited: boolean;
+          edited_at: string | null;
+          delivered_at: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          encrypted_content: string;
+          initialization_vector: string;
+          sequence_number?: number;
+          deleted?: boolean;
+          edited?: boolean;
+          edited_at?: string | null;
+          delivered_at?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          encrypted_content?: string;
+          initialization_vector?: string;
+          sequence_number?: number;
+          deleted?: boolean;
+          edited?: boolean;
+          edited_at?: string | null;
+          delivered_at?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_encryption_keys: {
+        Row: {
+          id: string;
+          user_id: string;
+          public_key: Json;
+          encryption_salt: string | null;
+          device_id: string | null;
+          expires_at: string | null;
+          revoked: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          public_key: Json;
+          encryption_salt?: string | null;
+          device_id?: string | null;
+          expires_at?: string | null;
+          revoked?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          public_key?: Json;
+          encryption_salt?: string | null;
+          device_id?: string | null;
+          expires_at?: string | null;
+          revoked?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      conversation_keys: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          encrypted_shared_secret: string;
+          key_version: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          encrypted_shared_secret: string;
+          key_version?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          encrypted_shared_secret?: string;
+          key_version?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      typing_indicators: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          is_typing: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          is_typing?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          is_typing?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

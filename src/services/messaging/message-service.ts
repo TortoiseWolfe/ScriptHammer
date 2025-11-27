@@ -13,6 +13,12 @@ import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
 import { offlineQueueService } from './offline-queue-service';
 import { cacheService } from '@/lib/messaging/cache';
+import { createLogger } from '@/lib/logger';
+import {
+  createMessagingClient,
+  type ConversationRow,
+  type MessageRow,
+} from '@/lib/supabase/messaging-client';
 import type {
   SendMessageInput,
   SendMessageResult,
@@ -30,6 +36,8 @@ import {
   ValidationError,
   MESSAGE_CONSTRAINTS,
 } from '@/types/messaging';
+
+const logger = createLogger('messaging:messages');
 
 export class MessageService {
   /**
@@ -54,6 +62,7 @@ export class MessageService {
    */
   async sendMessage(input: SendMessageInput): Promise<SendMessageResult> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate message content
     const content = input.content.trim();
@@ -89,7 +98,7 @@ export class MessageService {
       }
 
       // Get conversation details
-      const { data: conversation, error: convError } = await (supabase as any)
+      const { data: conversation, error: convError } = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', input.conversation_id)
@@ -176,7 +185,7 @@ export class MessageService {
       // Online - attempt to send to database
       try {
         // Get next sequence number for this conversation
-        const { data: lastMessage } = await (supabase as any)
+        const { data: lastMessage } = await msgClient
           .from('messages')
           .select('sequence_number')
           .eq('conversation_id', input.conversation_id)
@@ -189,7 +198,7 @@ export class MessageService {
           : 1;
 
         // Insert encrypted message
-        const { data: message, error: insertError } = await (supabase as any)
+        const { data: message, error: insertError } = await msgClient
           .from('messages')
           .insert({
             conversation_id: input.conversation_id,
@@ -212,7 +221,7 @@ export class MessageService {
         }
 
         // Update conversation's last_message_at
-        await (supabase as any)
+        await msgClient
           .from('conversations')
           .update({ last_message_at: new Date().toISOString() })
           .eq('id', input.conversation_id);
@@ -305,6 +314,7 @@ export class MessageService {
     limit: number = 50
   ): Promise<MessageHistory> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -318,9 +328,9 @@ export class MessageService {
 
     try {
       // Variables to hold messages across different code paths
-      let messages: any = [];
+      let messages: MessageRow[] = [];
       let hasMore: boolean = false;
-      let messagesToDecrypt: any[] = [];
+      let messagesToDecrypt: MessageRow[] = [];
 
       // If offline, try to load from cache
       if (!navigator.onLine) {
@@ -352,7 +362,7 @@ export class MessageService {
       // Online - fetch from database
       if (navigator.onLine) {
         // Build query
-        let query = (supabase as any)
+        let query = msgClient
           .from('messages')
           .select('*')
           .eq('conversation_id', conversationId)
@@ -401,7 +411,7 @@ export class MessageService {
       // Variables messages, hasMore, messagesToDecrypt are set above in either path
 
       // Get conversation details for decryption
-      const { data: conversation } = await (supabase as any)
+      const { data: conversation } = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', conversationId)
@@ -418,14 +428,14 @@ export class MessageService {
           : conversation.participant_1_id;
 
       // Get both users' profiles for display names
-      const { data: profiles } = await (supabase as any)
+      const { data: profiles } = await msgClient
         .from('user_profiles')
-        .select('id, username, display_name')
+        .select('id, username, display_name, avatar_url')
         .in('id', [user.id, otherParticipantId]);
 
       const profileMap = new Map<string, UserProfile>();
-      profiles?.forEach((profile: any) => {
-        profileMap.set(profile.id, profile);
+      profiles?.forEach((profile) => {
+        profileMap.set(profile.id, profile as UserProfile);
       });
 
       // If no messages, just return empty array (no need for keys)
@@ -438,37 +448,36 @@ export class MessageService {
       }
 
       // Get private key for decryption from memory (derived on login)
-      console.log('[Decryption] Starting for conversation:', conversationId);
+      logger.debug('Starting decryption', { conversationId });
       const currentKeys = keyManagementService.getCurrentKeys();
 
       if (!currentKeys) {
-        console.error(
-          '[Decryption] CRITICAL: Encryption keys not available - user needs to re-authenticate'
+        logger.error(
+          'CRITICAL: Encryption keys not available - user needs to re-authenticate'
         );
         throw new EncryptionLockedError(
           'Your encryption keys are not available. Please sign in again to view messages.'
         );
       }
 
-      console.log('[Decryption] Keys available in memory for user:', user.id);
+      logger.debug('Keys available in memory', { userId: user.id });
 
       // Get other participant's public key
-      console.log(
-        '[Decryption] Fetching public key for other user:',
-        otherParticipantId
-      );
+      logger.debug('Fetching public key for other user', {
+        otherParticipantId,
+      });
       const otherPublicKey =
         await keyManagementService.getUserPublicKey(otherParticipantId);
-      console.log(
-        '[Decryption] Other user public key:',
-        otherPublicKey ? 'FOUND' : 'MISSING'
-      );
+      logger.debug('Other user public key', {
+        status: otherPublicKey ? 'FOUND' : 'MISSING',
+      });
 
       if (!otherPublicKey) {
         // Cannot decrypt messages without other user's public key
         // This shouldn't happen if messages exist, but handle gracefully
-        console.error(
-          '[Decryption] CRITICAL: Cannot decrypt - other user has no public key'
+        logger.error(
+          'CRITICAL: Cannot decrypt - other user has no public key',
+          { otherParticipantId }
         );
         return {
           messages: [],
@@ -477,9 +486,7 @@ export class MessageService {
         };
       }
 
-      console.log(
-        '[Decryption] Importing other user public key via crypto.subtle...'
-      );
+      logger.debug('Importing other user public key via crypto.subtle');
       const otherPublicKeyCrypto = await crypto.subtle.importKey(
         'jwk',
         otherPublicKey,
@@ -490,37 +497,27 @@ export class MessageService {
         false,
         []
       );
-      console.log('[Decryption] Other user public key imported successfully');
+      logger.debug('Other user public key imported successfully');
 
       // Derive shared secret using our derived private key
-      console.log('[Decryption] Deriving ECDH shared secret...');
-      console.log(
-        '[Decryption] Key setup: currentUser =',
-        user.id,
-        '| otherParticipant =',
-        otherParticipantId
-      );
+      logger.debug('Deriving ECDH shared secret', {
+        currentUser: user.id,
+        otherParticipant: otherParticipantId,
+      });
       const sharedSecret = await encryptionService.deriveSharedSecret(
         currentKeys.privateKey,
         otherPublicKeyCrypto
       );
-      console.log('[Decryption] Shared secret derived successfully');
+      logger.debug('Shared secret derived successfully');
 
       // Decrypt all messages
-      console.log(
-        '[Decryption] Decrypting',
-        messagesToDecrypt.length,
-        'messages...'
-      );
-      console.log(
-        '[Decryption] Note: Messages from',
-        user.id,
-        '= sent by me, from',
+      logger.debug('Decrypting messages', {
+        count: messagesToDecrypt.length,
+        currentUserId: user.id,
         otherParticipantId,
-        '= received'
-      );
+      });
       const decryptedMessages: DecryptedMessage[] = await Promise.all(
-        messagesToDecrypt.map(async (msg: any) => {
+        messagesToDecrypt.map(async (msg) => {
           try {
             const content = await encryptionService.decryptMessage(
               msg.encrypted_content,
@@ -551,23 +548,15 @@ export class MessageService {
           } catch (decryptError) {
             // Log the decryption failure with details (but not sensitive data)
             const err = decryptError as Error;
-            // Log as individual args to avoid DOMException serialization issues
-            console.error(
-              '[Decryption] FAILED for message:',
-              msg.id,
-              '| error:',
-              String(err.name || 'unknown'),
-              '-',
-              String(err.message || 'no message'),
-              '| sender:',
-              msg.sender_id,
-              '| content length:',
-              msg.encrypted_content?.length || 0,
-              '| IV length:',
-              msg.initialization_vector?.length || 0,
-              '| created:',
-              msg.created_at
-            );
+            logger.error('Decryption FAILED for message', {
+              messageId: msg.id,
+              errorName: String(err.name || 'unknown'),
+              errorMessage: String(err.message || 'no message'),
+              senderId: msg.sender_id,
+              contentLength: msg.encrypted_content?.length || 0,
+              ivLength: msg.initialization_vector?.length || 0,
+              createdAt: msg.created_at,
+            });
             return {
               id: msg.id,
               conversation_id: msg.conversation_id,
@@ -586,11 +575,7 @@ export class MessageService {
           }
         })
       );
-      console.log(
-        '[Decryption] Completed decryption for',
-        decryptedMessages.length,
-        'messages'
-      );
+      logger.debug('Completed decryption', { count: decryptedMessages.length });
 
       // Reverse to chronological order (oldest first)
       decryptedMessages.reverse();
@@ -640,6 +625,7 @@ export class MessageService {
    */
   async markAsRead(messageIds: string[]): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -656,29 +642,21 @@ export class MessageService {
       return;
     }
 
-    console.log(
-      '[MessageService] markAsRead called with',
-      messageIds.length,
-      'messages'
-    );
+    logger.debug('markAsRead called', { count: messageIds.length });
     try {
-      const { error, count } = await (supabase as any)
+      const { error, count } = await msgClient
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .in('id', messageIds)
         .is('read_at', null); // Only update if not already read
 
       if (error) {
-        console.error('[MessageService] markAsRead error:', error);
+        logger.error('markAsRead error', { error: error.message });
         throw new ConnectionError(
           'Failed to mark messages as read: ' + error.message
         );
       }
-      console.log(
-        '[MessageService] markAsRead success, updated',
-        count,
-        'messages'
-      );
+      logger.debug('markAsRead success', { updatedCount: count });
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
@@ -720,6 +698,7 @@ export class MessageService {
     new_content: string;
   }): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Validate new content
     const content = input.new_content.trim();
@@ -747,7 +726,7 @@ export class MessageService {
 
     try {
       // Get the message to edit
-      const { data: message, error: fetchError } = await (supabase as any)
+      const { data: message, error: fetchError } = await msgClient
         .from('messages')
         .select('*')
         .eq('id', input.message_id)
@@ -786,7 +765,7 @@ export class MessageService {
       }
 
       // Get conversation details for encryption
-      const { data: conversation, error: convError } = await (supabase as any)
+      const { data: conversation, error: convError } = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', message.conversation_id)
@@ -842,7 +821,7 @@ export class MessageService {
       );
 
       // Update message in database
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await msgClient
         .from('messages')
         .update({
           encrypted_content: encrypted.ciphertext,
@@ -894,6 +873,7 @@ export class MessageService {
    */
   async deleteMessage(message_id: string): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -907,7 +887,7 @@ export class MessageService {
 
     try {
       // Get the message to delete
-      const { data: message, error: fetchError } = await (supabase as any)
+      const { data: message, error: fetchError } = await msgClient
         .from('messages')
         .select('*')
         .eq('id', message_id)
@@ -943,7 +923,7 @@ export class MessageService {
       }
 
       // Soft delete - set deleted flag
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await msgClient
         .from('messages')
         .update({
           deleted: true,
@@ -979,6 +959,7 @@ export class MessageService {
    */
   async archiveConversation(conversationId: string): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -994,7 +975,7 @@ export class MessageService {
 
     try {
       // Get conversation to determine which participant the user is
-      const { data: conversation, error: fetchError } = await (supabase as any)
+      const { data: conversation, error: fetchError } = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', conversationId)
@@ -1017,31 +998,28 @@ export class MessageService {
         );
       }
 
-      console.log(
-        '[MessageService] archiveConversation:',
+      logger.debug('archiveConversation', {
         conversationId,
-        'column:',
-        updateColumn
-      );
+        column: updateColumn,
+      });
 
       // Update the archive status
-      const { error: updateError, data: updateData } = await (supabase as any)
+      const { error: updateError, data: updateData } = await msgClient
         .from('conversations')
         .update({ [updateColumn]: true })
         .eq('id', conversationId)
         .select();
 
       if (updateError) {
-        console.error(
-          '[MessageService] archiveConversation error:',
-          updateError
-        );
+        logger.error('archiveConversation error', {
+          error: updateError.message,
+        });
         throw new ConnectionError(
           'Failed to archive conversation: ' + updateError.message
         );
       }
 
-      console.log('[MessageService] archiveConversation success:', updateData);
+      logger.debug('archiveConversation success', { updateData });
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
@@ -1065,6 +1043,7 @@ export class MessageService {
    */
   async unarchiveConversation(conversationId: string): Promise<void> {
     const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
     const {
@@ -1080,7 +1059,7 @@ export class MessageService {
 
     try {
       // Get conversation to determine which participant the user is
-      const { data: conversation, error: fetchError } = await (supabase as any)
+      const { data: conversation, error: fetchError } = await msgClient
         .from('conversations')
         .select('participant_1_id, participant_2_id')
         .eq('id', conversationId)
@@ -1104,7 +1083,7 @@ export class MessageService {
       }
 
       // Update the archive status
-      const { error: updateError } = await (supabase as any)
+      const { error: updateError } = await msgClient
         .from('conversations')
         .update({ [updateColumn]: false })
         .eq('id', conversationId);

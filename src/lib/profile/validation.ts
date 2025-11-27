@@ -4,6 +4,9 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('lib:profile:validation');
 
 export interface ValidationResult {
   valid: boolean;
@@ -114,7 +117,11 @@ export async function checkUsernameAvailable(
     .limit(1);
 
   if (error) {
-    console.error('Error checking username availability:', error);
+    logger.error('Error checking username availability', {
+      error,
+      username,
+      currentUserId,
+    });
     return false; // Fail safely - assume taken if error
   }
 

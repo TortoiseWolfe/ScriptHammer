@@ -4,6 +4,9 @@
  */
 
 import { isAnalyticsEnabled } from './analytics';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:analytics-debug');
 
 interface DebugEvent {
   timestamp: Date;
@@ -41,7 +44,7 @@ class AnalyticsDebugger {
   enable(): void {
     this.isDebugMode = true;
     localStorage.setItem('ga_debug', 'true');
-    console.log('🔍 GA Debug Mode: ENABLED');
+    logger.info('GA Debug Mode: ENABLED');
     this.logStatus();
   }
 
@@ -51,28 +54,25 @@ class AnalyticsDebugger {
   disable(): void {
     this.isDebugMode = false;
     localStorage.removeItem('ga_debug');
-    console.log('🔍 GA Debug Mode: DISABLED');
+    logger.info('GA Debug Mode: DISABLED');
   }
 
   /**
    * Log current analytics status
    */
   logStatus(): void {
-    console.group('📊 Google Analytics Status');
-    console.log('Enabled:', isAnalyticsEnabled());
-    console.log(
-      'Measurement ID:',
-      process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'Not configured'
-    );
-    console.log('Debug Mode:', this.isDebugMode);
-    console.log('Consent:', this.getConsentStatus());
-    console.log('Events Tracked:', this.events.length);
-
-    if (typeof window !== 'undefined' && window.dataLayer) {
-      console.log('DataLayer Size:', window.dataLayer.length);
-    }
-
-    console.groupEnd();
+    logger.info('Google Analytics Status', {
+      enabled: isAnalyticsEnabled(),
+      measurementId:
+        process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || 'Not configured',
+      debugMode: this.isDebugMode,
+      consent: this.getConsentStatus(),
+      eventsTracked: this.events.length,
+      dataLayerSize:
+        typeof window !== 'undefined' && window.dataLayer
+          ? window.dataLayer.length
+          : 0,
+    });
   }
 
   /**
@@ -122,14 +122,12 @@ class AnalyticsDebugger {
     }
 
     // Log to console
-    console.group(`📈 GA Event: ${action}`);
-    console.log('Category:', category || 'N/A');
-    console.log('Label:', label || 'N/A');
-    console.log('Value:', value || 'N/A');
-    if (parameters) {
-      console.log('Parameters:', parameters);
-    }
-    console.groupEnd();
+    logger.debug(`GA Event: ${action}`, {
+      category: category || 'N/A',
+      label: label || 'N/A',
+      value: value || 'N/A',
+      parameters: parameters || undefined,
+    });
   }
 
   /**
@@ -144,7 +142,7 @@ class AnalyticsDebugger {
    */
   clearEvents(): void {
     this.events = [];
-    console.log('🧹 Event history cleared');
+    logger.info('Event history cleared');
   }
 
   /**
@@ -152,12 +150,9 @@ class AnalyticsDebugger {
    */
   inspectDataLayer(): void {
     if (typeof window === 'undefined' || !window.dataLayer) {
-      console.log('❌ DataLayer not available');
+      logger.warn('DataLayer not available');
       return;
     }
-
-    console.group('🔍 DataLayer Inspection');
-    console.log('Total Entries:', window.dataLayer.length);
 
     // Group by event type
     const eventTypes = new Map<string, number>();
@@ -168,26 +163,22 @@ class AnalyticsDebugger {
       }
     });
 
-    console.log('Event Types:', Object.fromEntries(eventTypes));
-
-    // Show last 5 entries
-    console.log('Last 5 Entries:');
-    window.dataLayer.slice(-5).forEach((entry, i) => {
-      console.log(`  ${i + 1}.`, entry);
+    logger.info('DataLayer Inspection', {
+      totalEntries: window.dataLayer.length,
+      eventTypes: Object.fromEntries(eventTypes),
+      lastEntries: window.dataLayer.slice(-5),
     });
-
-    console.groupEnd();
   }
 
   /**
    * Test event tracking
    */
   testEvent(): void {
-    console.log('🧪 Sending test event...');
+    logger.info('Sending test event...');
 
     if (!window.gtag) {
-      console.error(
-        '❌ gtag not available - ensure analytics is loaded and consent granted'
+      logger.error(
+        'gtag not available - ensure analytics is loaded and consent granted'
       );
       return;
     }
@@ -199,15 +190,13 @@ class AnalyticsDebugger {
       debug_timestamp: new Date().toISOString(),
     });
 
-    console.log('✅ Test event sent - check GA4 DebugView');
+    logger.info('Test event sent - check GA4 DebugView');
   }
 
   /**
    * Validate implementation
    */
   validate(): void {
-    console.group('✅ GA Implementation Validation');
-
     const checks = [
       {
         name: 'Measurement ID configured',
@@ -234,14 +223,15 @@ class AnalyticsDebugger {
       },
     ];
 
-    checks.forEach((check) => {
-      console.log(`${check.pass ? '✅' : '❌'} ${check.name}`);
-    });
-
     const passed = checks.filter((c) => c.pass).length;
-    console.log(`\nResult: ${passed}/${checks.length} checks passed`);
+    const failed = checks.filter((c) => !c.pass);
 
-    console.groupEnd();
+    logger.info('GA Implementation Validation', {
+      passed,
+      total: checks.length,
+      checks: checks.map((c) => ({ name: c.name, pass: c.pass })),
+      failedChecks: failed.map((c) => c.name),
+    });
   }
 
   /**
@@ -249,30 +239,30 @@ class AnalyticsDebugger {
    */
   startMonitoring(): void {
     if (typeof window === 'undefined' || !window.dataLayer) {
-      console.error('❌ Cannot monitor - dataLayer not available');
+      logger.error('Cannot monitor - dataLayer not available');
       return;
     }
 
-    console.log('📡 Starting event monitoring...');
+    logger.info('Starting event monitoring...');
 
     // Override push to intercept new events
     const originalPush = window.dataLayer.push;
     window.dataLayer.push = function (...args: unknown[]) {
-      console.log('📊 New dataLayer entry:', ...args);
+      logger.debug('New dataLayer entry', { args });
       return originalPush.apply(window.dataLayer, args);
     };
 
-    console.log('✅ Monitoring active - all new events will be logged');
+    logger.info('Monitoring active - all new events will be logged');
   }
 
   /**
    * Stop monitoring
    */
   stopMonitoring(): void {
-    console.log('📡 Stopping event monitoring...');
+    logger.info('Stopping event monitoring...');
     // Note: This would need to restore the original push function
     // For simplicity, recommend page refresh
-    console.log('ℹ️ Refresh the page to fully stop monitoring');
+    logger.info('Refresh the page to fully stop monitoring');
   }
 
   /**
@@ -336,7 +326,7 @@ export const gaDebug = {
 
 // Auto-initialize in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  console.log(
-    '💡 GA Debug utilities available: window.__GA_DEBUG__ or import { gaDebug }'
+  logger.info(
+    'GA Debug utilities available: window.__GA_DEBUG__ or import { gaDebug }'
   );
 }

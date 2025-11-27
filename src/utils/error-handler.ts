@@ -4,6 +4,9 @@
  */
 
 import { trackError } from '@/utils/analytics';
+import { createLogger } from '@/lib/logger';
+
+const logger = createLogger('utils:errorHandler');
 
 // Error severity levels
 export enum ErrorSeverity {
@@ -204,13 +207,13 @@ class ErrorHandler {
     switch (error.severity) {
       case ErrorSeverity.CRITICAL:
       case ErrorSeverity.HIGH:
-        console.error('🚨 Error:', logData);
+        logger.error('Error occurred', logData);
         break;
       case ErrorSeverity.MEDIUM:
-        console.warn('⚠️ Warning:', logData);
+        logger.warn('Warning occurred', logData);
         break;
       case ErrorSeverity.LOW:
-        console.log('ℹ️ Info:', logData);
+        logger.info('Info', logData);
         break;
     }
   }
@@ -233,7 +236,7 @@ class ErrorHandler {
     // TODO: Implement additional integration with logging service
     // Example: Sentry, LogRocket, DataDog, etc.
     if (this.config.isDevelopment) {
-      console.log('Error tracked to analytics:', {
+      logger.debug('Error tracked to analytics', {
         message: error.message,
         severity: error.severity,
         category: error.category,
@@ -250,9 +253,9 @@ class ErrorHandler {
     const userMessage = this.getUserMessage(error);
 
     // TODO: Integrate with your notification system
-    // For now, just log to console
+    // For now, just log to logger
     if (typeof window !== 'undefined') {
-      console.log(`User notification: ${userMessage}`);
+      logger.info('User notification', { message: userMessage });
     }
   }
 
