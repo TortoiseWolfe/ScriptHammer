@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useConnections } from '@/hooks/useConnections';
+import UserSearch from '@/components/molecular/UserSearch';
 import type { ConnectionRequest } from '@/types/messaging';
 
 export interface ConnectionManagerProps {
@@ -190,6 +191,12 @@ export default function ConnectionManager({
       className={`connection-manager${className ? ` ${className}` : ''}`}
       data-testid="connection-manager"
     >
+      {/* Search for new connections */}
+      <div className="mb-6">
+        <UserSearch />
+      </div>
+
+      {/* Manage existing connections */}
       <div role="tablist" className="tabs tabs-bordered mb-6">
         <button
           role="tab"

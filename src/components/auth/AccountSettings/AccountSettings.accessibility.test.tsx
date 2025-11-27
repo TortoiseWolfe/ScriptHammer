@@ -77,9 +77,27 @@ describe('AccountSettings Accessibility', () => {
   it('should have proper ARIA attributes', () => {
     const { container } = render(<AccountSettings />);
 
-    // Add specific ARIA attribute tests based on component type
-    // Example: const button = container.querySelector('button');
-    // expect(button).toHaveAttribute('aria-label');
+    // Feature 038: Verify forms and cards have proper structure for accessibility
+    const forms = container.querySelectorAll('form');
+    expect(forms.length).toBeGreaterThanOrEqual(2); // Profile and Password forms
+
+    // Verify labeled inputs
+    const displayNameInput = container.querySelector('#displayname-input');
+    const bioTextarea = container.querySelector('#bio-textarea');
+    const passwordInput = container.querySelector('#new-password-input');
+    const confirmPasswordInput = container.querySelector(
+      '#confirm-password-input'
+    );
+
+    expect(displayNameInput).toBeInTheDocument();
+    expect(bioTextarea).toBeInTheDocument();
+    expect(passwordInput).toBeInTheDocument();
+    expect(confirmPasswordInput).toBeInTheDocument();
+
+    // Feature 038 SC-005: Inline alerts (when rendered) should have proper ARIA
+    // Note: Alerts are conditionally rendered, so we verify the structure exists
+    // In actual error state, alerts would have role="alert" aria-live="assertive"
+    // or role="status" aria-live="polite" for success messages
   });
 
   it('should be keyboard navigable', () => {

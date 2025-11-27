@@ -3,7 +3,6 @@
 import React from 'react';
 import ConversationList from '@/components/organisms/ConversationList';
 import ConnectionManager from '@/components/organisms/ConnectionManager';
-import UserSearch from '@/components/molecular/UserSearch';
 import type { SidebarTab } from '@/types/messaging';
 
 export interface UnifiedSidebarProps {
@@ -26,7 +25,8 @@ export interface UnifiedSidebarProps {
 }
 
 /**
- * UnifiedSidebar - Tabbed sidebar for messaging with Chats, Connections, and Find People tabs
+ * UnifiedSidebar - Tabbed sidebar for messaging with Chats and Connections tabs
+ * UserSearch is now embedded inside ConnectionManager (Feature 038 UX Polish)
  * @see Feature 037 - Unified Messaging Sidebar
  */
 export default function UnifiedSidebar({
@@ -55,15 +55,15 @@ export default function UnifiedSidebar({
       className={`unified-sidebar flex h-full flex-col ${className}`}
       data-testid="unified-sidebar"
     >
-      {/* Tab Navigation */}
+      {/* Tab Navigation - Feature 038: Consolidated to 2 tabs */}
       <div
         role="tablist"
-        className="tabs tabs-bordered flex-shrink-0 px-4 pt-4"
+        className="tabs tabs-bordered flex-shrink-0 overflow-x-auto px-4 pt-4"
       >
         <button
           role="tab"
           aria-selected={activeTab === 'chats'}
-          className={`tab min-h-11 gap-2 ${activeTab === 'chats' ? 'tab-active' : ''}`}
+          className={`tab min-h-11 flex-shrink-0 gap-2 ${activeTab === 'chats' ? 'tab-active' : ''}`}
           onClick={() => onTabChange('chats')}
         >
           Chats
@@ -74,7 +74,7 @@ export default function UnifiedSidebar({
         <button
           role="tab"
           aria-selected={activeTab === 'connections'}
-          className={`tab min-h-11 gap-2 ${activeTab === 'connections' ? 'tab-active' : ''}`}
+          className={`tab min-h-11 flex-shrink-0 gap-2 ${activeTab === 'connections' ? 'tab-active' : ''}`}
           onClick={() => onTabChange('connections')}
         >
           Connections
@@ -83,14 +83,6 @@ export default function UnifiedSidebar({
               {pendingConnectionCount}
             </span>
           )}
-        </button>
-        <button
-          role="tab"
-          aria-selected={activeTab === 'find'}
-          className={`tab min-h-11 ${activeTab === 'find' ? 'tab-active' : ''}`}
-          onClick={() => onTabChange('find')}
-        >
-          Find People
         </button>
       </div>
 
@@ -102,11 +94,6 @@ export default function UnifiedSidebar({
         {activeTab === 'connections' && (
           <div className="p-4">
             <ConnectionManager onMessage={handleMessage} />
-          </div>
-        )}
-        {activeTab === 'find' && (
-          <div className="p-4">
-            <UserSearch />
           </div>
         )}
       </div>

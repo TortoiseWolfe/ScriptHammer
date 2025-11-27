@@ -144,6 +144,7 @@ export class KeyManagementService {
 
     try {
       // Step 1: Fetch salt and public key from Supabase
+      // Use maybeSingle() instead of single() to handle case where user has no keys yet
       const { data, error } = await (supabase as any)
         .from('user_encryption_keys')
         .select('encryption_salt, public_key')
@@ -151,9 +152,10 @@ export class KeyManagementService {
         .eq('revoked', false)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error) {
+      // Only throw connection error for actual database errors, not "no rows" errors
+      if (error && error.code !== 'PGRST116') {
         throw new ConnectionError(
           'Failed to fetch user key data: ' + error.message
         );

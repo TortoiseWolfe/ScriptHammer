@@ -113,9 +113,10 @@ export interface SyncMetadata {
 
 /**
  * Tab options for the UnifiedSidebar component
+ * Feature 038: Consolidated to 2 tabs - UserSearch now inside ConnectionManager
  * @see Feature 037 - Unified Messaging Sidebar
  */
-export type SidebarTab = 'chats' | 'connections' | 'find';
+export type SidebarTab = 'chats' | 'connections';
 
 // =============================================================================
 // APPLICATION TYPES (UI/Business Logic)

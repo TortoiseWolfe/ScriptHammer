@@ -237,7 +237,7 @@ export default function ConversationList({
             {!searchQuery && (
               <button
                 className="btn btn-primary min-h-11"
-                onClick={() => router.push('/messages/connections')}
+                onClick={() => router.push('/messages?tab=connections')}
               >
                 Find Connections
               </button>

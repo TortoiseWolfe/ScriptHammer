@@ -14,10 +14,6 @@ vi.mock('@/components/organisms/ConnectionManager', () => ({
   default: () => <div data-testid="connection-manager">ConnectionManager</div>,
 }));
 
-vi.mock('@/components/molecular/UserSearch', () => ({
-  default: () => <div data-testid="user-search">UserSearch</div>,
-}));
-
 const defaultProps = {
   onConversationSelect: vi.fn(),
   onStartConversation: vi.fn().mockResolvedValue('conv-123'),
@@ -35,14 +31,6 @@ describe('UnifiedSidebar Accessibility', () => {
   it('should have no violations with connections tab active', async () => {
     const { container } = render(
       <UnifiedSidebar {...defaultProps} activeTab="connections" />
-    );
-    const results = await axe(container);
-    expect(results).toHaveNoViolations();
-  });
-
-  it('should have no violations with find tab active', async () => {
-    const { container } = render(
-      <UnifiedSidebar {...defaultProps} activeTab="find" />
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -90,9 +78,9 @@ describe('UnifiedSidebar Accessibility', () => {
     // Check tablist exists
     expect(screen.getByRole('tablist')).toBeInTheDocument();
 
-    // Check all tabs have role="tab"
+    // Check all tabs have role="tab" (Feature 038: 2 tabs only)
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(2);
 
     // Check active tab has aria-selected="true"
     const chatsTab = screen.getByRole('tab', { name: /chats/i });
