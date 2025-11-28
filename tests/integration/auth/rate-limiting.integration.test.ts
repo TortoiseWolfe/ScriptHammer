@@ -7,7 +7,7 @@ import {
   checkRateLimit,
   recordFailedAttempt,
 } from '@/lib/auth/rate-limit-check';
-import { supabaseAdmin } from '@/test/supabase-admin';
+import { supabaseAdmin } from '@tests/supabase-admin';
 
 /**
  * Integration Tests for Rate Limiting

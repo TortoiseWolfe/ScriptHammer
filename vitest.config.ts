@@ -7,7 +7,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: './src/test/setup.ts',
+    setupFiles: './tests/setup.ts',
     css: {
       modules: {
         classNameStrategy: 'non-scoped',
@@ -19,7 +19,7 @@ export default defineConfig({
       'out/**',
       'scripts/**/*.test.js', // Exclude Node.js test runner tests
       'scripts/__tests__/**', // Exclude all script tests
-      'e2e/**', // Exclude Playwright E2E tests
+      'tests/e2e/**', // Exclude Playwright E2E tests
       '**/.component-backup-*/**', // Exclude backup directories
       // Exclude intentional TDD placeholder tests (not yet implemented)
       'tests/contract/email-notifications.test.ts', // 17 TDD failures
@@ -62,8 +62,7 @@ export default defineConfig({
         '**/test/**',
         '**/*.test.*',
         '**/*.accessibility.test.*',
-        'src/test/**',
-        'e2e/**',
+        'tests/**',
         'scripts/**',
       ],
       thresholds: {
@@ -77,6 +76,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@tests': path.resolve(__dirname, './tests'),
     },
   },
 });

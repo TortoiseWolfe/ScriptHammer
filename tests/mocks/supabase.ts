@@ -8,7 +8,7 @@ import { vi } from 'vitest';
  *
  * Usage:
  * ```typescript
- * import { createMockSupabaseClient } from '@/test/mocks/supabase';
+ * import { createMockSupabaseClient } from '@tests/mocks/supabase';
  *
  * vi.mock('@/lib/supabase/client', () => ({
  *   supabase: createMockSupabaseClient()

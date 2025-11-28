@@ -36,7 +36,7 @@ git add . && git commit && git push
     ↓
 [2. Create Branch] → ./scripts/prp-to-feature.sh
     ↓
-[3. /specify] → specs/<branch>/spec.md
+[3. /specify] → docs/specs/<branch>/spec.md
     ↓
 [4. /clarify] → (optional) updated spec.md
     ↓
@@ -55,20 +55,20 @@ git add . && git commit && git push
 
 ## 📁 Artifact Map
 
-| Command             | Generates           | Location                       | Purpose                        |
-| ------------------- | ------------------- | ------------------------------ | ------------------------------ |
-| Manual              | PRP document        | `docs/prp-docs/<name>-prp.md`  | Product requirements           |
-| `prp-to-feature.sh` | Initial spec        | `specs/<branch>/spec.md`       | PRP copied to specs            |
-| `/specify`          | Specification       | `specs/<branch>/spec.md`       | SpecKit-formatted requirements |
-| `/clarify`          | Clarifications      | `specs/<branch>/spec.md`       | Resolved ambiguities           |
-| `/plan`             | Implementation plan | `specs/<branch>/plan.md`       | Architecture & approach        |
-| `/plan`             | Research            | `specs/<branch>/research.md`   | Technical decisions            |
-| `/plan`             | Data model          | `specs/<branch>/data-model.md` | Entities & schemas             |
-| `/plan`             | Quickstart          | `specs/<branch>/quickstart.md` | Integration scenarios          |
-| `/plan`             | Contracts           | `specs/<branch>/contracts/`    | API specs (if applicable)      |
-| `/tasks`            | Task list           | `specs/<branch>/tasks.md`      | Implementation tasks           |
-| `/implement`        | Code & tests        | `src/`, tests/                 | Feature implementation         |
-| `/analyze`          | Report              | Console output                 | Consistency validation         |
+| Command             | Generates           | Location                            | Purpose                        |
+| ------------------- | ------------------- | ----------------------------------- | ------------------------------ |
+| Manual              | PRP document        | `docs/prp-docs/<name>-prp.md`       | Product requirements           |
+| `prp-to-feature.sh` | Initial spec        | `docs/specs/<branch>/spec.md`       | PRP copied to specs            |
+| `/specify`          | Specification       | `docs/specs/<branch>/spec.md`       | SpecKit-formatted requirements |
+| `/clarify`          | Clarifications      | `docs/specs/<branch>/spec.md`       | Resolved ambiguities           |
+| `/plan`             | Implementation plan | `docs/specs/<branch>/plan.md`       | Architecture & approach        |
+| `/plan`             | Research            | `docs/specs/<branch>/research.md`   | Technical decisions            |
+| `/plan`             | Data model          | `docs/specs/<branch>/data-model.md` | Entities & schemas             |
+| `/plan`             | Quickstart          | `docs/specs/<branch>/quickstart.md` | Integration scenarios          |
+| `/plan`             | Contracts           | `docs/specs/<branch>/contracts/`    | API specs (if applicable)      |
+| `/tasks`            | Task list           | `docs/specs/<branch>/tasks.md`      | Implementation tasks           |
+| `/implement`        | Code & tests        | `src/`, tests/                      | Feature implementation         |
+| `/analyze`          | Report              | Console output                      | Consistency validation         |
 
 ---
 
@@ -362,7 +362,7 @@ If **yes** to all → Documentation successful!
 
 **Solution**: You're on a feature branch with existing spec.md. Either:
 
-- Delete `specs/<branch>/spec.md` and run `/specify` again
+- Delete `docs/specs/<branch>/spec.md` and run `/specify` again
 - Switch to a different branch
 - Use the existing spec.md if it's current
 
@@ -393,7 +393,7 @@ If **yes** to all → Documentation successful!
 
 ### Issue: Forgot to mark tasks complete
 
-**Solution**: Edit `specs/<branch>/tasks.md` and change `[ ]` to `[x]` for completed tasks. Helps track progress.
+**Solution**: Edit `docs/specs/<branch>/tasks.md` and change `[ ]` to `[x]` for completed tasks. Helps track progress.
 
 ---
 

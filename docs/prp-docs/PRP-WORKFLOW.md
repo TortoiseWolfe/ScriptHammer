@@ -120,8 +120,8 @@ git checkout -b 002-component-structure
 
 ```bash
 # Copy PRP content to feature spec
-mkdir -p specs/001-prp-methodology
-cp docs/prp-docs/prp-methodology-prp.md specs/001-prp-methodology/spec.md
+mkdir -p docs/specs/001-prp-methodology
+cp docs/prp-docs/prp-methodology-prp.md docs/specs/001-prp-methodology/spec.md
 
 # Run plan command
 ./plan
@@ -225,7 +225,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 **What**: Convert PRP to feature branch
 **Command**: `./scripts/prp-to-feature.sh <feature-name> <number>`
-**Output**: Branch created, PRP copied to `specs/<branch>/spec.md`
+**Output**: Branch created, PRP copied to `docs/specs/<branch>/spec.md`
 
 ```bash
 # Example
@@ -233,7 +233,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 # Creates:
 # - Branch: 012-visual-regression
-# - File: specs/012-visual-regression/spec.md (PRP copied)
+# - File: docs/specs/012-visual-regression/spec.md (PRP copied)
 # - Updates: docs/prp-docs/PRP-STATUS.md (status → "In Progress")
 ```
 
@@ -241,7 +241,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 **What**: Convert PRP to SpecKit-formatted specification
 **Command**: `/specify <feature description>`
-**Output**: `specs/<branch>/spec.md` (SpecKit format)
+**Output**: `docs/specs/<branch>/spec.md` (SpecKit format)
 
 **PRP Format vs SpecKit Format**:
 
@@ -266,7 +266,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 **What**: Resolve ambiguities in specification
 **Command**: `/clarify`
-**Output**: Updated `specs/<branch>/spec.md` with Clarifications section
+**Output**: Updated `docs/specs/<branch>/spec.md` with Clarifications section
 
 **When to Use**:
 
@@ -287,7 +287,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 **What**: Generate technical implementation plan and design artifacts
 **Command**: `/plan <optional technical context>`
-**Output**: Multiple files in `specs/<branch>/`
+**Output**: Multiple files in `docs/specs/<branch>/`
 
 **Generated Artifacts**:
 
@@ -324,7 +324,7 @@ PRPs remain the **product thinking** layer - defining WHAT and WHY from a busine
 
 **What**: Convert plan into actionable, dependency-ordered tasks
 **Command**: `/tasks <optional context>`
-**Output**: `specs/<branch>/tasks.md`
+**Output**: `docs/specs/<branch>/tasks.md`
 
 **Task Categories**:
 
@@ -389,11 +389,11 @@ vim docs/prp-docs/visual-regression-testing-prp.md
 # 2. Create feature branch
 ./scripts/prp-to-feature.sh visual-regression 012
 # Creates branch: 012-visual-regression
-# Copies PRP to specs/012-visual-regression/spec.md
+# Copies PRP to docs/specs/012-visual-regression/spec.md
 
 # 3. Generate specification
 /specify Visual regression testing with Chromatic for Storybook themes
-# Generates: specs/012-visual-regression/spec.md (SpecKit format)
+# Generates: docs/specs/012-visual-regression/spec.md (SpecKit format)
 # - User scenarios (Given/When/Then)
 # - FR-001 through FR-008
 # - NFR-001 through NFR-003
@@ -494,9 +494,9 @@ prp-to-feature.sh → /specify → /clarify → /plan → /tasks → /implement 
 **Key Files**:
 
 - PRP: `docs/prp-docs/<name>-prp.md`
-- Spec: `specs/<branch>/spec.md`
-- Plan: `specs/<branch>/plan.md`
-- Tasks: `specs/<branch>/tasks.md`
+- Spec: `docs/specs/<branch>/spec.md`
+- Plan: `docs/specs/<branch>/plan.md`
+- Tasks: `docs/specs/<branch>/tasks.md`
 
 ---
 
@@ -505,7 +505,7 @@ prp-to-feature.sh → /specify → /clarify → /plan → /tasks → /implement 
 _Note: This section describes the original manual workflow. See "SpecKit Integration" above for the current automated approach._
 
 1. Create feature branch with sequential numbering
-2. Copy PRP content to `specs/[branch-name]/spec.md`
+2. Copy PRP content to `docs/specs/[branch-name]/spec.md`
 3. Run `/plan` to generate implementation plan
 4. Review and adjust generated plan
 
@@ -542,8 +542,8 @@ BRANCH_NAME="${BRANCH_NUMBER}-${PRP_NAME}"
 git checkout -b $BRANCH_NAME
 
 # Setup feature directory
-mkdir -p specs/$BRANCH_NAME
-cp docs/prp-docs/${PRP_NAME}-prp.md specs/$BRANCH_NAME/spec.md
+mkdir -p docs/specs/$BRANCH_NAME
+cp docs/prp-docs/${PRP_NAME}-prp.md docs/specs/$BRANCH_NAME/spec.md
 
 # Run plan command
 ./plan

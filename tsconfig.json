@@ -40,6 +40,7 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      "@tests/*": ["./tests/*"],
       "@blog/*": ["./src/lib/blog/*"],
       "@blog-components/*": ["./src/components/blog/*"],
       "@blog-services/*": ["./src/services/blog/*"]

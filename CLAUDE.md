@@ -112,6 +112,20 @@ src/
 ├── lib/           # Core libraries
 ├── services/      # Business logic
 └── types/         # TypeScript definitions
+
+tests/
+├── unit/          # Unit tests
+├── integration/   # Integration tests
+├── contract/      # Contract tests
+├── e2e/           # Playwright E2E tests
+└── setup.ts       # Vitest setup
+
+docker/            # Docker configuration
+├── Dockerfile     # Main Dockerfile
+└── docker-compose.e2e.yml  # E2E testing compose
+
+docs/specs/        # Feature specifications (SpecKit artifacts)
+tools/templates/   # Component generator templates
 ```
 
 ## PRP/SpecKit Workflow

@@ -7,7 +7,7 @@
  * @example
  * ```typescript
  * import { vi } from 'vitest';
- * import { mockLogger, createMockLogger } from '@/test/mocks/logger';
+ * import { mockLogger, createMockLogger } from '@tests/mocks/logger';
  *
  * vi.mock('@/lib/logger', () => ({
  *   createLogger: vi.fn(() => mockLogger),

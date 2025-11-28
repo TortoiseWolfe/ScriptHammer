@@ -66,9 +66,9 @@ git checkout -b "$BRANCH_NAME"
 echo -e "${GREEN}✓ Created branch: $BRANCH_NAME${NC}"
 
 # Setup feature directory
-mkdir -p "specs/$BRANCH_NAME"
-cp "$PRP_FILE" "specs/$BRANCH_NAME/spec.md"
-echo -e "${GREEN}✓ Copied PRP to specs/$BRANCH_NAME/spec.md${NC}"
+mkdir -p "docs/specs/$BRANCH_NAME"
+cp "$PRP_FILE" "docs/specs/$BRANCH_NAME/spec.md"
+echo -e "${GREEN}✓ Copied PRP to docs/specs/$BRANCH_NAME/spec.md${NC}"
 
 # Update PRP status in tracking dashboard
 if [ -f "docs/prp-docs/PRP-STATUS.md" ]; then
@@ -85,9 +85,9 @@ echo -e "${GREEN}Feature branch setup complete!${NC}"
 echo ""
 echo "Next steps:"
 echo "1. Run ${YELLOW}./plan${NC} to generate implementation plan"
-echo "2. Review the generated plan in specs/$BRANCH_NAME/plan.md"
+echo "2. Review the generated plan in docs/specs/$BRANCH_NAME/plan.md"
 echo "3. Run ${YELLOW}./tasks${NC} to generate task list"
 echo "4. Begin implementation following TDD principles"
 echo ""
 echo "Current branch: ${GREEN}$BRANCH_NAME${NC}"
-echo "Spec location: specs/$BRANCH_NAME/spec.md"
+echo "Spec location: docs/specs/$BRANCH_NAME/spec.md"

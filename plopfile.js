@@ -54,28 +54,28 @@ module.exports = function (plop) {
       actions.push({
         type: 'add',
         path: `${componentPath}/index.tsx`,
-        templateFile: 'plop-templates/component/index.tsx.hbs',
+        templateFile: 'tools/templates/component/index.tsx.hbs',
       });
 
       // Add Component.tsx
       actions.push({
         type: 'add',
         path: `${componentPath}/{{pascalCase name}}.tsx`,
-        templateFile: 'plop-templates/component/Component.tsx.hbs',
+        templateFile: 'tools/templates/component/Component.tsx.hbs',
       });
 
       // Add Component.test.tsx
       actions.push({
         type: 'add',
         path: `${componentPath}/{{pascalCase name}}.test.tsx`,
-        templateFile: 'plop-templates/component/Component.test.tsx.hbs',
+        templateFile: 'tools/templates/component/Component.test.tsx.hbs',
       });
 
       // Add Component.stories.tsx
       actions.push({
         type: 'add',
         path: `${componentPath}/{{pascalCase name}}.stories.tsx`,
-        templateFile: 'plop-templates/component/Component.stories.tsx.hbs',
+        templateFile: 'tools/templates/component/Component.stories.tsx.hbs',
       });
 
       // Add Component.accessibility.test.tsx
@@ -83,7 +83,7 @@ module.exports = function (plop) {
         type: 'add',
         path: `${componentPath}/{{pascalCase name}}.accessibility.test.tsx`,
         templateFile:
-          'plop-templates/component/Component.accessibility.test.tsx.hbs',
+          'tools/templates/component/Component.accessibility.test.tsx.hbs',
       });
 
       // Add custom hook if requested

@@ -56,7 +56,7 @@
 # 1. Create feature branch
 ./scripts/prp-to-feature.sh e2e-testing-framework 003
 # Output: Creates branch 003-e2e-testing-framework
-#         Copies PRP to specs/003-e2e-testing-framework/spec.md
+#         Copies PRP to docs/specs/003-e2e-testing-framework/spec.md
 
 # 2. Tell Claude to execute plan
 You: "execute /plan"
@@ -119,7 +119,7 @@ These are NOT shell scripts. They're instructions that tell Claude what artifact
 After running the workflow, you should have:
 
 ```
-specs/<number>-<feature-name>/
+docs/specs/<number>-<feature-name>/
 ├── spec.md           # From PRP (copied by prp-to-feature.sh)
 ├── plan.md           # From /plan command
 ├── research.md       # From /plan command
