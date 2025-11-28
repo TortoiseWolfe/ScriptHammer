@@ -149,7 +149,11 @@ export function useConversationList() {
               display_name: null,
               avatar_url: null,
             },
-            lastMessage: lastMessageData ? '[Encrypted message]' : null, // We can't decrypt here without full message object
+            lastMessage: lastMessageData
+              ? unreadCount && unreadCount > 0
+                ? 'New message'
+                : 'Tap to view'
+              : null,
             lastMessageAt: conv.last_message_at,
             unreadCount: unreadCount || 0,
             isArchived,
