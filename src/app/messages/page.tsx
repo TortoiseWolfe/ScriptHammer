@@ -264,7 +264,7 @@ function MessagesContent() {
 
   if (checkingKeys) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="fixed inset-0 top-16 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
@@ -274,7 +274,7 @@ function MessagesContent() {
     <>
       <ReAuthModal isOpen={needsReAuth} onSuccess={handleReAuthSuccess} />
 
-      <div className="bg-base-100 fixed inset-0">
+      <div className="bg-base-100 fixed inset-0 top-16">
         {/* Mobile Drawer Pattern */}
         <div className="drawer md:drawer-open h-full">
           <input
