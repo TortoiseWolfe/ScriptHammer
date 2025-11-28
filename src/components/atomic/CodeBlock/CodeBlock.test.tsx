@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CodeBlock } from './CodeBlock';
 
-describe.skip('CodeBlock', () => {
+describe('CodeBlock', () => {
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks();

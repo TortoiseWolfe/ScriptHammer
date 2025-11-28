@@ -14,6 +14,39 @@ This file provides guidance to Claude Code when working with this repository.
 
 **CRITICAL**: This project REQUIRES Docker. Local pnpm/npm commands are NOT supported.
 
+### NEVER Install Packages Locally
+
+**ABSOLUTELY FORBIDDEN** - Never run these commands on the host machine:
+
+```bash
+# ❌ CRITICAL NO - NEVER do any of these locally
+npm install
+npm install --no-save <package>
+pnpm install
+pnpm add <package>
+yarn install
+npx <anything>
+
+# ✅ CORRECT - Always use Docker
+docker compose exec scripthammer pnpm install
+docker compose exec scripthammer pnpm add <package>
+```
+
+**Why this is critical:**
+
+- Creates local `node_modules` with wrong permissions (Docker-owned)
+- Causes conflicts between host and container dependencies
+- Breaks the Docker-first architecture
+- Creates cleanup nightmares (Docker-owned files can't be deleted by host user)
+
+**If you accidentally installed locally:**
+
+```bash
+docker compose down
+docker compose run --rm scripthammer rm -rf node_modules
+docker compose up
+```
+
 ### NEVER Use sudo - Use Docker Instead
 
 When encountering permission errors, **NEVER use `sudo`**. Use Docker:
@@ -222,7 +255,29 @@ supabase/migrations/20251006_complete_monolithic_setup.sql
 1. **Edit the monolithic file directly** - Add new tables, columns, indexes to the appropriate section
 2. **Use `IF NOT EXISTS`** - All CREATE statements must be idempotent
 3. **Add to existing transaction** - New schema goes inside the `BEGIN;`...`COMMIT;` block
-4. **Run via Supabase Dashboard** - Copy the entire monolithic file to SQL Editor and execute
+4. **Execute via Supabase Management API** - Use `SUPABASE_ACCESS_TOKEN` from `.env`
+
+### Executing Migrations (Claude Code)
+
+**NEVER tell the user to run migrations manually.** Use the Supabase Management API:
+
+```bash
+# Check for access token in .env
+SUPABASE_ACCESS_TOKEN=<token>
+NEXT_PUBLIC_SUPABASE_PROJECT_REF=<project-ref>
+
+# Execute SQL via Management API
+curl -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "SELECT 1"}'
+```
+
+**DO NOT:**
+
+- Tell user to copy SQL to dashboard manually
+- Install database clients locally (pg, psql, etc.)
+- Try direct database connections from Docker (DNS issues)
 
 ### Example: Adding a Column
 

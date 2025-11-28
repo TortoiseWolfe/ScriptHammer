@@ -6,7 +6,7 @@ import { CodeBlock } from './CodeBlock';
 
 expect.extend(toHaveNoViolations);
 
-describe.skip('CodeBlock Accessibility', () => {
+describe('CodeBlock Accessibility', () => {
   it('should not have basic accessibility violations', async () => {
     const { container } = render(
       <CodeBlock>{`console.log("Hello, World!");`}</CodeBlock>

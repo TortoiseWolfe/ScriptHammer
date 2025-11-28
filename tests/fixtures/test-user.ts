@@ -48,3 +48,22 @@ export function hasSecondaryUser(): boolean {
 export function hasTertiaryUser(): boolean {
   return !!(TEST_EMAIL_TERTIARY && TEST_PASSWORD_TERTIARY);
 }
+
+/**
+ * Admin user for system welcome messages (Feature 002)
+ * Fixed UUID: 00000000-0000-0000-0000-000000000001
+ */
+export const TEST_EMAIL_ADMIN =
+  process.env.TEST_USER_ADMIN_EMAIL || 'admin@scripthammer.com';
+export const TEST_PASSWORD_ADMIN = process.env.TEST_USER_ADMIN_PASSWORD;
+export const ADMIN_USER_ID =
+  process.env.NEXT_PUBLIC_ADMIN_USER_ID ||
+  '00000000-0000-0000-0000-000000000001';
+
+/**
+ * Check if admin user is configured
+ * @returns true if password is set (email has default)
+ */
+export function hasAdminUser(): boolean {
+  return !!TEST_PASSWORD_ADMIN;
+}
