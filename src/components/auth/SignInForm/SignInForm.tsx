@@ -137,7 +137,27 @@ export default function SignInForm({
         if (!hasKeys) {
           // New user: initialize keys with password
           logger.info('New user - initializing encryption keys');
-          await keyManagementService.initializeKeys(password);
+          const keyPair = await keyManagementService.initializeKeys(password);
+
+          // Send welcome message (non-blocking, Feature 002)
+          import('@/services/messaging/welcome-service')
+            .then(({ welcomeService }) => {
+              // Get current user ID from auth context or session
+              const { createClient } = require('@/lib/supabase/client');
+              const supabase = createClient();
+              supabase.auth.getUser().then(({ data }: any) => {
+                if (data?.user?.id && keyPair.publicKeyJwk) {
+                  welcomeService
+                    .sendWelcomeMessage(data.user.id, keyPair.publicKeyJwk)
+                    .catch((err: Error) => {
+                      logger.error('Welcome message failed', { error: err });
+                    });
+                }
+              });
+            })
+            .catch((err: Error) => {
+              logger.error('Failed to load welcome service', { error: err });
+            });
         } else {
           // Check if user needs migration (legacy random keys)
           const needsMigration = await keyManagementService.needsMigration();

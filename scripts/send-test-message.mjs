@@ -24,7 +24,10 @@ async function main() {
     ['deriveBits', 'deriveKey']
   );
 
-  const senderPublicJwk = await subtle.exportKey('jwk', senderKeyPair.publicKey);
+  const senderPublicJwk = await subtle.exportKey(
+    'jwk',
+    senderKeyPair.publicKey
+  );
   console.log('   Sender public key generated');
 
   console.log('2. Fetching recipient public key...');
@@ -32,8 +35,8 @@ async function main() {
     `${SUPABASE_URL}/rest/v1/user_encryption_keys?user_id=eq.${RECIPIENT_ID}&select=public_key`,
     {
       headers: {
-        'apikey': SERVICE_KEY,
-        'Authorization': `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
       },
     }
   );
@@ -64,7 +67,8 @@ async function main() {
   );
 
   console.log('5. Encrypting message...');
-  const message = 'Hello Jon! This is a real encrypted message from the test user.';
+  const message =
+    'Hello Jon! This is a real encrypted message from the test user.';
   const iv = webcrypto.getRandomValues(new Uint8Array(12));
   const encoder = new TextEncoder();
   const ciphertext = await subtle.encrypt(
@@ -85,8 +89,8 @@ async function main() {
     {
       method: 'DELETE',
       headers: {
-        'apikey': SERVICE_KEY,
-        'Authorization': `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
       },
     }
   );
@@ -95,8 +99,8 @@ async function main() {
   await fetch(`${SUPABASE_URL}/rest/v1/user_encryption_keys`, {
     method: 'POST',
     headers: {
-      'apikey': SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
@@ -113,8 +117,8 @@ async function main() {
     {
       method: 'DELETE',
       headers: {
-        'apikey': SERVICE_KEY,
-        'Authorization': `Bearer ${SERVICE_KEY}`,
+        apikey: SERVICE_KEY,
+        Authorization: `Bearer ${SERVICE_KEY}`,
       },
     }
   );
@@ -123,10 +127,10 @@ async function main() {
   const msgRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
     method: 'POST',
     headers: {
-      'apikey': SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
+      Prefer: 'return=representation',
     },
     body: JSON.stringify({
       conversation_id: CONVERSATION_ID,
@@ -140,7 +144,9 @@ async function main() {
   const msgData = await msgRes.json();
   console.log('   Message inserted:', msgData[0]?.id);
 
-  console.log('\n✅ Done! Refresh the messages page to see the encrypted message.');
+  console.log(
+    '\n✅ Done! Refresh the messages page to see the encrypted message.'
+  );
 }
 
 main().catch(console.error);

@@ -166,12 +166,14 @@ CREATE TABLE user_profiles (
   display_name TEXT CHECK (length(display_name) <= 100),
   avatar_url TEXT,
   bio TEXT CHECK (length(bio) <= 500),
+  welcome_message_sent BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_user_profiles_username ON user_profiles(username);
 CREATE INDEX idx_user_profiles_updated_at ON user_profiles(updated_at DESC);
+CREATE INDEX idx_user_profiles_welcome_pending ON user_profiles(id) WHERE welcome_message_sent = FALSE;
 
 COMMENT ON TABLE user_profiles IS 'User profile information 1:1 with auth.users';
 
@@ -731,6 +733,12 @@ CREATE POLICY "Users can create conversations with connections" ON conversations
     )
   );
 
+-- Admin can create conversations with any user (Feature 002 - welcome messages)
+CREATE POLICY "Admin can create any conversation" ON conversations
+  FOR INSERT WITH CHECK (
+    auth.uid() = '00000000-0000-0000-0000-000000000001'::uuid
+  );
+
 CREATE POLICY "System can update last_message_at" ON conversations
   FOR UPDATE TO service_role USING (true);
 
@@ -990,7 +998,14 @@ GRANT ALL ON typing_indicators TO authenticated, service_role;
 --   ✅ Messaging policies: 17 policies (E2E encryption, user isolation, 15-min edit window)
 --   ✅ Permissions: Authenticated users + service role (all tables)
 --   ✅ Test user: test@example.com (primary, email confirmed)
+--   ✅ Admin user: scripthammer (Feature 002 - welcome messages)
 -- ============================================================================
+
+-- Admin profile for system welcome messages (Feature 002)
+-- Fixed UUID: 00000000-0000-0000-0000-000000000001
+INSERT INTO user_profiles (id, username, display_name, welcome_message_sent)
+VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE)
+ON CONFLICT (id) DO NOTHING;
 
 -- Commit the transaction - everything succeeded
 COMMIT;

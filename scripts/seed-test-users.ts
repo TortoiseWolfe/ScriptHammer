@@ -2,8 +2,12 @@
 /**
  * Seed script for creating all test users
  * Creates:
- *   - Primary: test@example.com / TestPassword123! (username: testuser)
- *   - Secondary: test-user-b@example.com / TestPassword456! (username: testuser-b)
+ *   - Primary: test@example.com (username: testuser)
+ *   - Secondary: test-user-b@example.com (username: testuser-b)
+ *
+ * Passwords are read from environment variables:
+ *   - TEST_USER_PRIMARY_PASSWORD (default: TestPassword123!)
+ *   - TEST_USER_TERTIARY_PASSWORD (default: TestPassword456!)
  *
  * Usage: docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
  * Environment: Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
@@ -13,6 +17,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Get passwords from env vars (same source as tests use)
+const PRIMARY_PASSWORD =
+  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+const TERTIARY_PASSWORD =
+  process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!';
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ ERROR: Missing Supabase credentials');
@@ -40,13 +50,13 @@ interface TestUser {
 const TEST_USERS: TestUser[] = [
   {
     email: 'test@example.com',
-    password: 'TestPassword123!',
+    password: PRIMARY_PASSWORD,
     username: 'testuser',
     displayName: 'Test User',
   },
   {
     email: 'test-user-b@example.com',
-    password: 'TestPassword456!',
+    password: TERTIARY_PASSWORD,
     username: 'testuser-b',
     displayName: 'Test User B',
   },

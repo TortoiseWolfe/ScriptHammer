@@ -11,6 +11,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import UnifiedSidebar from '@/components/organisms/UnifiedSidebar';
 import { ReAuthModal } from '@/components/auth/ReAuthModal';
+import { MessagingGate } from '@/components/auth/MessagingGate';
 import { messageService } from '@/services/messaging/message-service';
 import { keyManagementService } from '@/services/messaging/key-service';
 import { connectionService } from '@/services/messaging/connection-service';
@@ -432,14 +433,16 @@ function MessagesContent() {
  */
 export default function MessagesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      }
-    >
-      <MessagesContent />
-    </Suspense>
+    <MessagingGate>
+      <Suspense
+        fallback={
+          <div className="flex h-screen items-center justify-center">
+            <span className="loading loading-spinner loading-lg"></span>
+          </div>
+        }
+      >
+        <MessagesContent />
+      </Suspense>
+    </MessagingGate>
   );
 }

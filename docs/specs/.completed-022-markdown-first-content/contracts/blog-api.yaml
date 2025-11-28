@@ -599,7 +599,19 @@ components:
       properties:
         platform:
           type: string
-          enum: [twitter, linkedin, github, facebook, instagram, youtube, reddit, mastodon, website, email]
+          enum:
+            [
+              twitter,
+              linkedin,
+              github,
+              facebook,
+              instagram,
+              youtube,
+              reddit,
+              mastodon,
+              website,
+              email,
+            ]
         url:
           type: string
         username:
