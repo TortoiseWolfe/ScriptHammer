@@ -21,6 +21,8 @@ export interface UnifiedSidebarProps {
   onTabChange: (tab: SidebarTab) => void;
   /** Unread message count for badge display */
   unreadCount?: number;
+  /** Callback when unread count changes */
+  onUnreadCountChange?: (count: number) => void;
   /** Pending connection count for badge display */
   pendingConnectionCount?: number;
   /** Additional CSS classes */
@@ -39,6 +41,7 @@ export default function UnifiedSidebar({
   activeTab,
   onTabChange,
   unreadCount = 0,
+  onUnreadCountChange,
   pendingConnectionCount = 0,
   className = '',
 }: UnifiedSidebarProps) {
@@ -92,7 +95,10 @@ export default function UnifiedSidebar({
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto" role="tabpanel">
         {activeTab === 'chats' && (
-          <ConversationList selectedConversationId={selectedConversationId} />
+          <ConversationList
+            selectedConversationId={selectedConversationId}
+            onUnreadCountChange={onUnreadCountChange}
+          />
         )}
         {activeTab === 'connections' && (
           <div className="p-4">

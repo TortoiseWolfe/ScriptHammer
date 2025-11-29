@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ConversationListItem from '@/components/molecular/ConversationListItem';
 import {
@@ -13,6 +13,8 @@ import { useKeyboardShortcuts, shortcuts } from '@/hooks/useKeyboardShortcuts';
 export interface ConversationListProps {
   /** Currently selected conversation ID */
   selectedConversationId?: string | null;
+  /** Callback when unread count changes */
+  onUnreadCountChange?: (count: number) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -32,6 +34,7 @@ export interface ConversationListProps {
  */
 export default function ConversationList({
   selectedConversationId,
+  onUnreadCountChange,
   className = '',
 }: ConversationListProps) {
   const router = useRouter();
@@ -56,6 +59,13 @@ export default function ConversationList({
   const [searchDebounce, setSearchDebounce] = useState<NodeJS.Timeout | null>(
     null
   );
+
+  // Notify parent of unread count changes
+  useEffect(() => {
+    if (onUnreadCountChange) {
+      onUnreadCountChange(counts.unread);
+    }
+  }, [counts.unread, onUnreadCountChange]);
 
   // Keyboard shortcuts integration (T215)
   useKeyboardShortcuts([
