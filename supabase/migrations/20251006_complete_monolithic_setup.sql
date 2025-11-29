@@ -739,6 +739,15 @@ CREATE POLICY "Admin can create any conversation" ON conversations
     auth.uid() = '00000000-0000-0000-0000-000000000001'::uuid
   );
 
+-- Users can create conversations with admin for welcome messages (Feature 004)
+-- This allows the client-side welcome service to create the conversation
+CREATE POLICY "Users can create conversation with admin" ON conversations
+  FOR INSERT WITH CHECK (
+    (auth.uid() = participant_1_id OR auth.uid() = participant_2_id) AND
+    (participant_1_id = '00000000-0000-0000-0000-000000000001'::uuid OR
+     participant_2_id = '00000000-0000-0000-0000-000000000001'::uuid)
+  );
+
 CREATE POLICY "System can update last_message_at" ON conversations
   FOR UPDATE TO service_role USING (true);
 
@@ -794,6 +803,23 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
       WHERE conversations.id = conversation_id AND (
         conversations.participant_1_id = auth.uid() OR
         conversations.participant_2_id = auth.uid()
+      )
+    )
+  );
+
+-- Users can insert welcome messages from admin (Feature 004)
+-- Allows client-side welcome service to insert message with sender_id = admin
+-- Only allowed in conversations where user is a participant with admin
+CREATE POLICY "Users can insert welcome message from admin" ON messages
+  FOR INSERT WITH CHECK (
+    sender_id = '00000000-0000-0000-0000-000000000001'::uuid AND
+    EXISTS (
+      SELECT 1 FROM conversations
+      WHERE conversations.id = conversation_id AND (
+        (conversations.participant_1_id = auth.uid() AND
+         conversations.participant_2_id = '00000000-0000-0000-0000-000000000001'::uuid) OR
+        (conversations.participant_2_id = auth.uid() AND
+         conversations.participant_1_id = '00000000-0000-0000-0000-000000000001'::uuid)
       )
     )
   );
