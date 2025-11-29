@@ -117,7 +117,7 @@ export default function ChatWindow({
 
   return (
     <div
-      className={`flex h-full flex-col${className ? ` ${className}` : ''}`}
+      className={`flex min-h-0 flex-1 flex-col${className ? ` ${className}` : ''}`}
       data-testid="chat-window"
     >
       {/* Chat Header */}
