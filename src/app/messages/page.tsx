@@ -367,9 +367,9 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 fixed inset-0 top-16 pb-[env(safe-area-inset-bottom)]">
-        {/* Mobile Drawer Pattern */}
-        <div className="drawer md:drawer-open h-full">
+      <div className="bg-base-100 fixed top-16 right-0 bottom-0 left-0">
+        {/* Mobile Drawer Pattern - use explicit height calc instead of h-full */}
+        <div className="drawer md:drawer-open h-[calc(100dvh-4rem)]">
           <input
             id="sidebar-drawer"
             type="checkbox"
@@ -379,9 +379,9 @@ function MessagesContent() {
           />
 
           {/* Main Content (Chat Window) - CSS Grid for reliable height */}
-          <div className="drawer-content grid h-full min-h-0 grid-rows-[auto_1fr] md:grid-rows-[1fr]">
-            {/* Mobile header with menu button */}
-            <div className="navbar bg-base-100 border-base-300 border-b md:hidden">
+          <div className="drawer-content flex h-full flex-col">
+            {/* Mobile header with menu button - shrink-0 keeps fixed height */}
+            <div className="navbar bg-base-100 border-base-300 shrink-0 border-b md:hidden">
               <div className="flex-none">
                 <label
                   htmlFor="sidebar-drawer"
@@ -410,8 +410,8 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Chat content - overflow-hidden contains scroll, h-full fills grid cell */}
-            <main className="h-full overflow-hidden">
+            {/* Chat content - min-h-0 flex-1 fills remaining space */}
+            <main className="min-h-0 flex-1 overflow-hidden">
               {conversationId ? (
                 <div className="flex h-full flex-col overflow-hidden">
                   {error && (
