@@ -300,8 +300,9 @@ export class KeyManagementService {
   }
 
   /**
-   * Check if user has any encryption keys (new or legacy)
-   * @returns true if user has keys in Supabase
+   * Check if user has any valid (non-revoked) encryption keys
+   * Feature 006: Fixed to use .maybeSingle() instead of .single() to handle 0 rows without throwing
+   * @returns true if user has valid keys in Supabase (where revoked=false)
    */
   async hasKeys(): Promise<boolean> {
     const supabase = createClient();
@@ -317,16 +318,30 @@ export class KeyManagementService {
     }
 
     try {
+      // Use maybeSingle() to handle 0 rows without throwing PGRST116
+      // Only count valid keys where revoked=false (per FR-007)
       const { data, error } = await msgClient
         .from('user_encryption_keys')
         .select('id')
         .eq('user_id', user.id)
         .eq('revoked', false)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      return !error && data !== null;
-    } catch {
+      // Only return false for no rows, throw on actual errors
+      if (error && error.code !== 'PGRST116') {
+        logger.error('hasKeys: Database error', { error: error.message });
+        throw new ConnectionError(
+          'Failed to check encryption keys: ' + error.message
+        );
+      }
+
+      return data !== null;
+    } catch (error) {
+      if (error instanceof ConnectionError) {
+        throw error;
+      }
+      logger.error('hasKeys: Unexpected error', { error });
       return false;
     }
   }

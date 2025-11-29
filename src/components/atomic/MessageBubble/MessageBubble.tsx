@@ -171,6 +171,55 @@ const MessageBubble = memo(
       );
     }
 
+    // Decryption error placeholder with lock icon (Feature 006)
+    if (message.decryptionError) {
+      return (
+        <div
+          className={`chat ${message.isOwn ? 'chat-end' : 'chat-start'}${className ? ` ${className}` : ''}`}
+          data-testid="message-bubble"
+          data-message-id={message.id}
+        >
+          <div className="chat-header mb-1">
+            <span className="text-sm opacity-70">{message.senderName}</span>
+            <time className="ml-2 text-xs opacity-50">
+              {formatTimestamp(message.created_at)}
+            </time>
+          </div>
+          <div
+            className="chat-bubble bg-base-300 text-base-content/70"
+            role="group"
+            aria-label="Encrypted message that cannot be decrypted"
+          >
+            <div className="flex items-center gap-2">
+              <button
+                className="btn btn-ghost btn-xs p-0"
+                aria-label="This message was encrypted before your current encryption keys were set up"
+                title="This message was encrypted before your current encryption keys were set up"
+                tabIndex={0}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </button>
+              <p className="text-sm italic">Encrypted with previous keys</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         className={`chat ${message.isOwn ? 'chat-end' : 'chat-start'}${className ? ` ${className}` : ''}`}
@@ -319,6 +368,7 @@ const MessageBubble = memo(
       prevProps.message.deleted === nextProps.message.deleted &&
       prevProps.message.read_at === nextProps.message.read_at &&
       prevProps.message.delivered_at === nextProps.message.delivered_at &&
+      prevProps.message.decryptionError === nextProps.message.decryptionError &&
       prevProps.className === nextProps.className &&
       prevProps.onEdit === nextProps.onEdit &&
       prevProps.onDelete === nextProps.onDelete

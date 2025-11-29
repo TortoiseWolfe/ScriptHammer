@@ -73,6 +73,10 @@ export default function ChatWindow({
     isVisible: true,
   });
 
+  // Check if ALL messages have decryption errors (Feature 006)
+  const allMessagesUndecryptable =
+    messages.length > 0 && messages.every((m) => m.decryptionError === true);
+
   // Auto-focus message input on mount (T216)
   useEffect(() => {
     if (messageInputRef.current && !isBlocked) {
@@ -134,6 +138,30 @@ export default function ChatWindow({
         </div>
       )}
 
+      {/* All Messages Undecryptable Banner (Feature 006) */}
+      {allMessagesUndecryptable && (
+        <div className="alert m-2" role="alert">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <span>
+            All messages in this conversation were encrypted with previous keys
+            and cannot be read.
+          </span>
+        </div>
+      )}
+
       {/* Message Thread - Grid row 2 (1fr) */}
       <MessageThread
         messages={messages}
@@ -145,8 +173,8 @@ export default function ChatWindow({
         className="min-h-0 overflow-hidden"
       />
 
-      {/* Message Input */}
-      <div className="border-base-300 bg-base-100 border-t p-4">
+      {/* Message Input - flex-shrink-0 prevents compression, safe-area for mobile keyboards */}
+      <div className="border-base-300 bg-base-100 flex-shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}

@@ -21,13 +21,16 @@ export interface ReAuthModalProps {
 /**
  * ReAuthModal component
  * Prompts user to re-enter password to unlock encryption keys
- * Used when session is restored but keys are not in memory
+ * Used ONLY when session is restored but keys are not in memory (unlock mode)
  *
- * For OAuth users (Google, GitHub): Prompts to set/enter a messaging password
+ * For OAuth users (Google, GitHub): Prompts to enter their messaging password
  * For email users: Prompts for their account password
  *
- * Feature: 032-fix-e2e-encryption
- * Task: T017
+ * IMPORTANT: This modal is for UNLOCK mode only. Users without keys should be
+ * redirected to /messages/setup for full-page setup (better password manager support).
+ *
+ * Feature: 032-fix-e2e-encryption, 006-feature-006-critical
+ * Task: T017, T018, T019
  *
  * @category molecular
  */
@@ -39,11 +42,9 @@ export function ReAuthModal({
 }: ReAuthModalProps) {
   const { user } = useAuth();
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isSetupMode, setIsSetupMode] = useState(false);
   const [checkingKeys, setCheckingKeys] = useState(true);
 
   const modalRef = useRef<HTMLDivElement>(null);
@@ -53,7 +54,8 @@ export function ReAuthModal({
   const oauthUser = isOAuthUser(user);
   const providerName = getOAuthProvider(user);
 
-  // Check if user needs to set up encryption keys (applies to ALL users, not just OAuth)
+  // Check if user needs to set up encryption keys
+  // If no keys exist, this modal shouldn't be shown - redirect to /messages/setup instead
   useEffect(() => {
     if (isOpen) {
       const checkKeys = async () => {
@@ -63,10 +65,22 @@ export function ReAuthModal({
             '@/services/messaging/key-service'
           );
           const hasKeys = await keyManagementService.hasKeys();
-          setIsSetupMode(!hasKeys);
+
+          if (!hasKeys) {
+            // User has no keys - redirect to full-page setup for better password manager support
+            logger.info(
+              'ReAuthModal: User has no keys, redirecting to setup page'
+            );
+            window.location.href = '/messages/setup';
+            return;
+          }
+
+          // User has keys but they're not in memory - this is unlock mode
+          // No state to set - modal is already unlock-only
         } catch (err) {
           logger.error('Error checking keys', { error: err });
-          setIsSetupMode(true); // Default to setup mode on error
+          // On error, redirect to setup page to be safe
+          window.location.href = '/messages/setup';
         } finally {
           setCheckingKeys(false);
         }
@@ -109,18 +123,6 @@ export function ReAuthModal({
         return;
       }
 
-      // Validate password confirmation for OAuth users creating new messaging password
-      if (isSetupMode && oauthUser) {
-        if (password.length < 8) {
-          setError('Password must be at least 8 characters');
-          return;
-        }
-        if (password !== confirmPassword) {
-          setError('Passwords do not match');
-          return;
-        }
-      }
-
       setLoading(true);
 
       try {
@@ -128,49 +130,24 @@ export function ReAuthModal({
           '@/services/messaging/key-service'
         );
 
-        if (isSetupMode) {
-          // User setting up encryption keys for first time
-          logger.info('Initializing encryption keys for new user');
-          const keyPair = await keyManagementService.initializeKeys(password);
+        // This modal is unlock-only - derive keys from password
+        // Check if user needs migration first
+        const needsMigration = await keyManagementService.needsMigration();
 
-          // Send welcome message (Feature 004)
-          if (user?.id && keyPair.privateKey && keyPair.publicKeyJwk) {
-            import('@/services/messaging/welcome-service')
-              .then(({ welcomeService }) => {
-                welcomeService
-                  .sendWelcomeMessage(
-                    user.id,
-                    keyPair.privateKey,
-                    keyPair.publicKeyJwk
-                  )
-                  .catch((err: Error) => {
-                    logger.error('Welcome message failed', { error: err });
-                  });
-              })
-              .catch((err: Error) => {
-                logger.error('Failed to load welcome service', { error: err });
-              });
-          }
-        } else {
-          // Check if user needs migration first
-          const needsMigration = await keyManagementService.needsMigration();
-
-          if (needsMigration) {
-            // Legacy user - can't derive keys without migration
-            setError(
-              'Your account needs to be updated. Please sign out and sign back in.'
-            );
-            setLoading(false);
-            return;
-          }
-
-          // Derive keys from password
-          await keyManagementService.deriveKeys(password);
+        if (needsMigration) {
+          // Legacy user - can't derive keys without migration
+          setError(
+            'Your account needs to be updated. Please sign out and sign back in.'
+          );
+          setLoading(false);
+          return;
         }
+
+        // Derive keys from password
+        await keyManagementService.deriveKeys(password);
 
         // Success - clear form and notify parent
         setPassword('');
-        setConfirmPassword('');
         setError(null);
         onSuccess();
       } catch (err) {
@@ -190,7 +167,7 @@ export function ReAuthModal({
         setLoading(false);
       }
     },
-    [password, confirmPassword, isSetupMode, onSuccess, oauthUser]
+    [password, onSuccess]
   );
 
   if (!isOpen) {
@@ -214,9 +191,7 @@ export function ReAuthModal({
       >
         {/* Header */}
         <div className="border-base-300 flex items-center justify-between border-b p-6">
-          <h2 className="text-xl font-bold">
-            {isSetupMode ? 'Set Up Encrypted Messaging' : 'Unlock Messaging'}
-          </h2>
+          <h2 className="text-xl font-bold">Enter Your Messaging Password</h2>
           {onClose && (
             <button
               onClick={onClose}
@@ -250,26 +225,9 @@ export function ReAuthModal({
         ) : (
           <form onSubmit={handleSubmit} className="p-6">
             <p id="reauth-description" className="text-base-content/80 mb-4">
-              {isSetupMode ? (
-                oauthUser ? (
-                  <>
-                    Your messages are end-to-end encrypted. Since you signed in
-                    with {providerName || 'OAuth'}, we need a separate password
-                    to protect your encryption keys.
-                    <strong className="mt-2 block">
-                      Save this password in your password manager
-                    </strong>{' '}
-                    &ndash; you&apos;ll need it when signing in on new devices.
-                  </>
-                ) : (
-                  <>
-                    Welcome! To enable encrypted messaging, please enter your
-                    account password to set up your encryption keys.
-                  </>
-                )
-              ) : oauthUser ? (
+              {oauthUser ? (
                 <>
-                  Please enter your messaging password to access your encrypted
+                  Please enter your messaging password to unlock your encrypted
                   messages.
                 </>
               ) : (
@@ -301,7 +259,7 @@ export function ReAuthModal({
             <div className="form-control">
               <label className="label" htmlFor="reauth-password">
                 <span className="label-text">
-                  {isSetupMode ? 'Messaging Password' : 'Password'}
+                  {oauthUser ? 'Messaging Password' : 'Password'}
                 </span>
               </label>
               <div className="relative">
@@ -312,14 +270,8 @@ export function ReAuthModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input input-bordered min-h-11 w-full pr-12"
-                  placeholder={
-                    isSetupMode
-                      ? 'Create a messaging password'
-                      : 'Enter your password'
-                  }
-                  autoComplete={
-                    isSetupMode ? 'new-password' : 'current-password'
-                  }
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
                   disabled={loading}
                 />
                 <button
@@ -369,24 +321,8 @@ export function ReAuthModal({
               </div>
             </div>
 
-            {/* Confirm password field for OAuth users only (they're creating a new password) */}
-            {isSetupMode && oauthUser && (
-              <div className="form-control mt-4">
-                <label className="label" htmlFor="confirm-password">
-                  <span className="label-text">Confirm Password</span>
-                </label>
-                <input
-                  id="confirm-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input input-bordered min-h-11 w-full"
-                  placeholder="Confirm your messaging password"
-                  autoComplete="new-password"
-                  disabled={loading}
-                />
-              </div>
-            )}
+            {/* Note: Setup mode uses /messages/setup page for better password manager support */}
+            {/* This modal is unlock-only, so no confirm password field needed */}
 
             {error && (
               <div
@@ -416,10 +352,8 @@ export function ReAuthModal({
               >
                 {loading ? (
                   <span className="loading loading-spinner loading-md"></span>
-                ) : isSetupMode ? (
-                  'Set Up Messaging'
                 ) : (
-                  'Unlock'
+                  'Unlock Messages'
                 )}
               </button>
             </div>

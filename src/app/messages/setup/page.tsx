@@ -111,8 +111,13 @@ export default function MessagingSetupPage() {
             });
         }
 
-        // Success - redirect to messages
+        // Success - show toast reminder and redirect to messages
         logger.info('Encryption setup complete, redirecting to messages');
+
+        // Show toast reminder about password (browser native alert as fallback)
+        // Using sessionStorage to show a toast on the messages page
+        sessionStorage.setItem('messaging_setup_complete', 'true');
+
         router.push('/messages');
       } catch (err) {
         const errorMessage =
@@ -216,6 +221,7 @@ export default function MessagingSetupPage() {
             <div className="form-control">
               <label className="label" htmlFor="setup-password">
                 <span className="label-text">Messaging Password</span>
+                <span className="label-text-alt text-warning">Save this!</span>
               </label>
               <div className="relative">
                 <input
@@ -259,6 +265,11 @@ export default function MessagingSetupPage() {
                 disabled={loading}
                 required
               />
+              <label className="label">
+                <span className="label-text-alt text-warning">
+                  Your password manager should prompt to save this password
+                </span>
+              </label>
             </div>
 
             {error && (
