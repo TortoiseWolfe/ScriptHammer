@@ -117,7 +117,7 @@ export default function ChatWindow({
 
   return (
     <div
-      className={`flex min-h-0 flex-1 flex-col${className ? ` ${className}` : ''}`}
+      className={`grid h-full grid-rows-[auto_1fr_auto]${className ? ` ${className}` : ''}`}
       data-testid="chat-window"
     >
       {/* Chat Header */}
@@ -134,7 +134,7 @@ export default function ChatWindow({
         </div>
       )}
 
-      {/* Message Thread */}
+      {/* Message Thread - Grid row 2 (1fr) */}
       <MessageThread
         messages={messages}
         onEditMessage={onEditMessage}
@@ -142,6 +142,7 @@ export default function ChatWindow({
         onLoadMore={onLoadMore}
         hasMore={hasMore}
         loading={loading}
+        className="min-h-0 overflow-hidden"
       />
 
       {/* Message Input */}

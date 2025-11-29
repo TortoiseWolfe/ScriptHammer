@@ -334,7 +334,7 @@ export default function MessageThread({
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="btn btn-circle btn-primary fixed right-4 bottom-24 min-h-11 min-w-11 shadow-lg"
+            className="btn btn-circle btn-primary absolute right-4 bottom-4 min-h-11 min-w-11 shadow-lg"
             aria-label="Jump to bottom"
             data-testid="jump-to-bottom"
           >
