@@ -171,14 +171,42 @@ export default function SignInForm({
           // Check if user needs migration (legacy random keys)
           const needsMigration = await keyManagementService.needsMigration();
 
+          let keyPair;
           if (needsMigration) {
             // Legacy user with ONLY NULL-salt keys - auto-initialize new keys (Feature 033)
             logger.info('Legacy user - auto-initializing new encryption keys');
-            await keyManagementService.initializeKeys(password);
+            keyPair = await keyManagementService.initializeKeys(password);
           } else {
             // Existing user: derive keys from password
             logger.info('Existing user - deriving encryption keys');
-            await keyManagementService.deriveKeys(password);
+            keyPair = await keyManagementService.deriveKeys(password);
+          }
+
+          // Check if user needs welcome message (Feature 004)
+          // This handles cases where keys exist but welcome message wasn't sent
+          if (keyPair?.privateKey && keyPair?.publicKeyJwk) {
+            import('@/services/messaging/welcome-service')
+              .then(({ welcomeService }) => {
+                const { createClient } = require('@/lib/supabase/client');
+                const supabase = createClient();
+                supabase.auth.getUser().then(({ data }: any) => {
+                  if (data?.user?.id) {
+                    // welcomeService.sendWelcomeMessage checks welcome_message_sent flag
+                    welcomeService
+                      .sendWelcomeMessage(
+                        data.user.id,
+                        keyPair.privateKey,
+                        keyPair.publicKeyJwk
+                      )
+                      .catch((err: Error) => {
+                        logger.error('Welcome message failed', { error: err });
+                      });
+                  }
+                });
+              })
+              .catch((err: Error) => {
+                logger.error('Failed to load welcome service', { error: err });
+              });
           }
         }
       } catch (keyError) {
