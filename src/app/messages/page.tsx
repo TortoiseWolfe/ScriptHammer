@@ -329,8 +329,8 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Chat content */}
-            <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {/* Chat content - h-full ensures height propagates to ChatWindow Grid */}
+            <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
               {conversationId ? (
                 <>
                   {error && (
@@ -418,6 +418,7 @@ function MessagesContent() {
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
                 unreadCount={unreadCount}
+                onUnreadCountChange={setUnreadCount}
                 pendingConnectionCount={pendingConnectionCount}
               />
             </aside>
