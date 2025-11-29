@@ -2,6 +2,7 @@
 /**
  * Seed script for creating all test users
  * Creates:
+ *   - Admin: admin@scripthammer.com (username: scripthammer) - for welcome messages
  *   - Primary: test@example.com (username: testuser)
  *   - Secondary: test-user-b@example.com (username: testuser-b)
  *
@@ -11,9 +12,14 @@
  *
  * Usage: docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
  * Environment: Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+ *
+ * Feature: 003-feature-004-welcome
+ * - Admin user has ECDH P-256 public key for welcome message encryption
+ * - Private key is discarded (not needed at runtime)
  */
 
 import { createClient } from '@supabase/supabase-js';
+import * as crypto from 'crypto';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -23,6 +29,17 @@ const PRIMARY_PASSWORD =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 const TERTIARY_PASSWORD =
   process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!';
+
+/**
+ * Admin user configuration (T004)
+ * Fixed UUID for consistent welcome message sender
+ */
+const ADMIN_USER = {
+  id: '00000000-0000-0000-0000-000000000001',
+  email: 'admin@scripthammer.com',
+  username: 'scripthammer',
+  displayName: 'ScriptHammer',
+};
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ ERROR: Missing Supabase credentials');
@@ -61,6 +78,163 @@ const TEST_USERS: TestUser[] = [
     displayName: 'Test User B',
   },
 ];
+
+/**
+ * Setup admin user with ECDH P-256 public key (T005)
+ *
+ * Creates:
+ * 1. Auth user with fixed UUID
+ * 2. User profile
+ * 3. ECDH P-256 keypair (public key stored, private key discarded)
+ *
+ * @returns true if setup successful
+ */
+async function setupAdminUser(): Promise<boolean> {
+  console.log(`\n${'═'.repeat(60)}`);
+  console.log('🔑 Setting up Admin User for Welcome Messages');
+  console.log(`${'═'.repeat(60)}`);
+
+  try {
+    // Step 1: Check if admin auth user already exists
+    console.log('  🔍 Checking for existing admin user...');
+    const { data: authUsers } = await supabase.auth.admin.listUsers();
+    const existingAdmin = authUsers?.users?.find(
+      (u) => u.id === ADMIN_USER.id || u.email === ADMIN_USER.email
+    );
+
+    let adminUserId = ADMIN_USER.id;
+
+    if (existingAdmin) {
+      console.log(`  ℹ️  Admin user already exists (ID: ${existingAdmin.id})`);
+      adminUserId = existingAdmin.id;
+    } else {
+      // Create admin auth user with fixed UUID
+      console.log('  🔐 Creating admin auth user...');
+      const { data: authData, error: authError } =
+        await supabase.auth.admin.createUser({
+          email: ADMIN_USER.email,
+          password: 'AdminPassword123!', // Not used - no login needed
+          email_confirm: true,
+          user_metadata: { username: ADMIN_USER.username },
+        });
+
+      if (authError) {
+        // If email exists but different ID, we have a problem
+        if (authError.code === 'email_exists') {
+          console.log(
+            '  ⚠️  Email exists with different ID, using existing...'
+          );
+          const existing = authUsers?.users?.find(
+            (u) => u.email === ADMIN_USER.email
+          );
+          if (existing) {
+            adminUserId = existing.id;
+          }
+        } else {
+          console.error(`  ❌ Auth error: ${authError.message}`);
+          return false;
+        }
+      } else if (authData?.user) {
+        adminUserId = authData.user.id;
+        console.log(`  ✅ Admin auth user created (ID: ${adminUserId})`);
+      }
+    }
+
+    // Step 2: Create or update admin profile
+    console.log('  👤 Creating admin profile...');
+    const { error: profileError } = await supabase.from('user_profiles').upsert(
+      {
+        id: adminUserId,
+        username: ADMIN_USER.username,
+        display_name: ADMIN_USER.displayName,
+        welcome_message_sent: true, // Admin doesn't receive welcome messages
+      },
+      { onConflict: 'id' }
+    );
+
+    if (profileError) {
+      console.error(`  ❌ Profile error: ${profileError.message}`);
+      return false;
+    }
+    console.log('  ✅ Admin profile created');
+
+    // Step 3: Check if admin already has a public key
+    console.log('  🔑 Checking for existing public key...');
+    const { data: existingKey } = await supabase
+      .from('user_encryption_keys')
+      .select('id, public_key')
+      .eq('user_id', adminUserId)
+      .eq('revoked', false)
+      .maybeSingle();
+
+    if (existingKey?.public_key) {
+      console.log('  ℹ️  Admin public key already exists, skipping generation');
+      console.log(`     Key ID: ${existingKey.id}`);
+      return true;
+    }
+
+    // Step 4: Generate ECDH P-256 keypair
+    console.log('  🔐 Generating ECDH P-256 keypair...');
+
+    // Use Node.js crypto for key generation (Web Crypto API style)
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+      namedCurve: 'P-256',
+    });
+
+    // Export public key to JWK format
+    const publicKeyJwk = publicKey.export({ format: 'jwk' });
+
+    // Verify the JWK has correct structure
+    if (
+      publicKeyJwk.kty !== 'EC' ||
+      publicKeyJwk.crv !== 'P-256' ||
+      !publicKeyJwk.x ||
+      !publicKeyJwk.y
+    ) {
+      console.error('  ❌ Invalid JWK structure generated');
+      return false;
+    }
+
+    console.log('  ✅ Keypair generated');
+    console.log(`     Curve: ${publicKeyJwk.crv}`);
+    console.log(`     x: ${publicKeyJwk.x?.substring(0, 20)}...`);
+    console.log(`     y: ${publicKeyJwk.y?.substring(0, 20)}...`);
+
+    // Step 5: Store public key in database
+    console.log('  💾 Storing public key in database...');
+    const { error: keyError } = await supabase
+      .from('user_encryption_keys')
+      .insert({
+        user_id: adminUserId,
+        public_key: publicKeyJwk,
+        encryption_salt: null, // No password derivation for admin
+        device_id: null,
+        expires_at: null, // Never expires
+        revoked: false,
+      });
+
+    if (keyError) {
+      console.error(`  ❌ Key storage error: ${keyError.message}`);
+      return false;
+    }
+
+    console.log('  ✅ Public key stored');
+
+    // Step 6: Discard private key (not needed)
+    // privateKey goes out of scope and is garbage collected
+    console.log('  🗑️  Private key discarded (not needed at runtime)');
+
+    console.log(`\n  ✨ Admin user setup complete!`);
+    console.log(`     Email: ${ADMIN_USER.email}`);
+    console.log(`     Username: ${ADMIN_USER.username}`);
+    console.log(`     User ID: ${adminUserId}`);
+
+    return true;
+  } catch (error) {
+    console.error('  ❌ Admin setup failed:', error);
+    return false;
+  }
+}
 
 async function cleanupUserData(userId: string): Promise<void> {
   // Delete in order to respect foreign key constraints
@@ -214,7 +388,18 @@ async function createTestUser(user: TestUser): Promise<boolean> {
 async function main() {
   console.log('🔧 Seed Test Users Script');
   console.log(`📍 Supabase URL: ${supabaseUrl}`);
-  console.log(`📋 Creating ${TEST_USERS.length} test users...`);
+
+  // T006: Setup admin user FIRST (required for welcome messages)
+  console.log('\n📋 Step 1: Setting up admin user for welcome messages...');
+  const adminSuccess = await setupAdminUser();
+
+  if (!adminSuccess) {
+    console.error('\n❌ Admin setup failed - cannot continue');
+    process.exit(1);
+  }
+
+  // Then create test users
+  console.log(`\n📋 Step 2: Creating ${TEST_USERS.length} test users...`);
 
   const results: boolean[] = [];
 
@@ -226,15 +411,17 @@ async function main() {
   const successCount = results.filter(Boolean).length;
 
   console.log(`\n${'='.repeat(60)}`);
-  if (successCount === TEST_USERS.length) {
-    console.log('✨ All test users created successfully!');
+  if (successCount === TEST_USERS.length && adminSuccess) {
+    console.log('✨ All users created successfully!');
   } else {
-    console.log(`⚠️  Created ${successCount}/${TEST_USERS.length} users`);
+    console.log(`⚠️  Created ${successCount}/${TEST_USERS.length} test users`);
+    console.log(`   Admin: ${adminSuccess ? '✅' : '❌'}`);
   }
 
-  console.log('\n📋 Test User Credentials:');
+  console.log('\n📋 Users:');
+  console.log(`   Admin: ${ADMIN_USER.email} (for welcome messages)`);
   for (const user of TEST_USERS) {
-    console.log(`   ${user.email} / ${user.password}`);
+    console.log(`   Test: ${user.email} / ${user.password}`);
   }
 
   console.log('\n📋 Next steps:');

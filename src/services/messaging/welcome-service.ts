@@ -1,16 +1,18 @@
 /**
  * Welcome Service for Admin Welcome Messages
- * Feature: 002-feature-002-admin
- * Tasks: T016-T020
+ * Feature: 003-feature-004-welcome
  *
  * Sends encrypted welcome messages from the admin user (ScriptHammer)
  * to new users on their first key initialization.
  *
+ * REDESIGNED: Uses admin's pre-stored public key instead of password derivation.
+ * This works on GitHub Pages static hosting where server-side env vars are unavailable.
+ *
  * Key features:
- * - Lazy key derivation (FR-011): Admin keys derived on first send attempt
- * - Self-healing (FR-012): Re-derives keys if corruption detected
- * - Non-blocking: Errors logged but don't interrupt user flow
- * - Idempotent: Uses welcome_message_sent flag to prevent duplicates
+ * - No admin password required at runtime (FR-002)
+ * - Fetches admin public key from database (FR-001)
+ * - Non-blocking: Errors logged but don't interrupt user flow (FR-008)
+ * - Idempotent: Uses welcome_message_sent flag to prevent duplicates (FR-005)
  */
 
 import { createClient } from '@/lib/supabase/client';
@@ -18,27 +20,16 @@ import {
   createMessagingClient,
   type ConversationInsert,
 } from '@/lib/supabase/messaging-client';
-import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { createLogger } from '@/lib/logger';
-import type { DerivedKeyPair } from '@/types/messaging';
 
 const logger = createLogger('messaging:welcome');
 
 /**
- * Admin user configuration from environment
+ * Admin user ID constant (FR-010)
+ * Fixed UUID for consistent welcome message sender
  */
-const ADMIN_CONFIG = {
-  get userId(): string {
-    return (
-      process.env.NEXT_PUBLIC_ADMIN_USER_ID ||
-      '00000000-0000-0000-0000-000000000001'
-    );
-  },
-  get password(): string | undefined {
-    return process.env.TEST_USER_ADMIN_PASSWORD;
-  },
-};
+export const ADMIN_USER_ID = '00000000-0000-0000-0000-000000000001';
 
 /**
  * Welcome message content (FR-010)
@@ -78,55 +69,69 @@ export interface SendWelcomeResult {
  * Welcome Service
  *
  * Manages sending encrypted welcome messages from admin to new users.
- * Admin keys are derived lazily and cached in memory.
+ * Uses admin's pre-stored public key from database instead of password derivation.
  */
 export class WelcomeService {
-  /** Cached admin keys (derived lazily) */
-  private adminKeys: DerivedKeyPair | null = null;
+  /**
+   * Fetch admin's public key from database (FR-001, FR-010)
+   *
+   * @returns Admin's ECDH public key in JWK format
+   * @throws Error if admin key not found
+   */
+  async getAdminPublicKey(): Promise<JsonWebKey> {
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
 
-  /** Key derivation service */
-  private keyDerivationService = new KeyDerivationService();
+    const { data, error } = await msgClient
+      .from('user_encryption_keys')
+      .select('public_key')
+      .eq('user_id', ADMIN_USER_ID)
+      .eq('revoked', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data) {
+      throw new Error('Admin public key not found');
+    }
+
+    return data.public_key as unknown as JsonWebKey;
+  }
 
   /**
-   * Send welcome message to a new user (FR-007)
+   * Send welcome message to a new user
    *
-   * Flow:
-   * 1. Check welcome_message_sent flag
-   * 2. Initialize admin keys if needed (lazy derivation, FR-011)
-   * 3. Get/create conversation between admin and user
-   * 4. Encrypt message with user's public key
-   * 5. Insert message into database
-   * 6. Set welcome_message_sent = TRUE
+   * Flow (per contract):
+   * 1. Check welcome_message_sent flag (idempotency, FR-005)
+   * 2. Fetch admin's public key from database (FR-001)
+   * 3. Derive shared secret: ECDH(user_private, admin_public) (FR-003)
+   * 4. Encrypt WELCOME_MESSAGE_CONTENT (FR-004)
+   * 5. Create conversation (canonical ordering, FR-006)
+   * 6. Insert message with sender_id = admin
+   * 7. Update welcome_message_sent = true (FR-007)
    *
    * @param userId - Target user's UUID
+   * @param userPrivateKey - User's ECDH private key (CryptoKey)
    * @param userPublicKey - Target user's public key (JWK format)
    * @returns Result of send operation
    *
    * @remarks
-   * - Non-blocking: Errors logged but don't interrupt flow
-   * - Idempotent: Checks welcome_message_sent before sending
+   * - Non-blocking: Errors logged but don't interrupt flow (FR-008)
+   * - Idempotent: Checks welcome_message_sent before sending (FR-005)
+   * - No retries, 10 second timeout max (FR-008)
    */
   async sendWelcomeMessage(
     userId: string,
+    userPrivateKey: CryptoKey,
     userPublicKey: JsonWebKey
   ): Promise<SendWelcomeResult> {
     logger.debug('sendWelcomeMessage called', { userId });
 
     try {
-      // Step 1: Check if admin password is configured
-      if (!ADMIN_CONFIG.password) {
-        logger.warn('Admin password not configured, skipping welcome message');
-        return {
-          success: false,
-          skipped: true,
-          reason: 'Admin password not configured',
-        };
-      }
-
       const supabase = createClient();
       const msgClient = createMessagingClient(supabase);
 
-      // Step 2: Check if user already received welcome message (FR-006)
+      // Step 1: Check if user already received welcome message (FR-005)
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('welcome_message_sent')
@@ -152,18 +157,43 @@ export class WelcomeService {
         };
       }
 
-      // Step 3: Initialize admin keys if needed (FR-011 lazy derivation)
-      await this.ensureAdminKeys();
-
-      if (!this.adminKeys) {
-        logger.error('Failed to initialize admin keys');
+      // Step 2: Fetch admin's public key (FR-001) - with error handling (US3)
+      let adminPublicKeyJwk: JsonWebKey;
+      try {
+        adminPublicKeyJwk = await this.getAdminPublicKey();
+      } catch (error) {
+        logger.error('Failed to fetch admin public key', { error });
         return {
           success: false,
-          error: 'Failed to initialize admin keys',
+          skipped: true,
+          reason: 'Admin public key not found',
         };
       }
 
-      // Step 4: Get or create conversation between admin and user
+      // Step 3: Import admin public key and derive shared secret (FR-003)
+      const adminPublicKeyCrypto = await crypto.subtle.importKey(
+        'jwk',
+        adminPublicKeyJwk,
+        {
+          name: 'ECDH',
+          namedCurve: 'P-256',
+        },
+        false,
+        []
+      );
+
+      const sharedSecret = await encryptionService.deriveSharedSecret(
+        userPrivateKey,
+        adminPublicKeyCrypto
+      );
+
+      // Step 4: Encrypt welcome message (FR-004)
+      const encrypted = await encryptionService.encryptMessage(
+        WELCOME_MESSAGE_CONTENT,
+        sharedSecret
+      );
+
+      // Step 5: Get or create conversation with canonical ordering (FR-006)
       const conversationId = await this.getOrCreateAdminConversation(
         userId,
         msgClient
@@ -177,30 +207,7 @@ export class WelcomeService {
         };
       }
 
-      // Step 5: Import user's public key and derive shared secret
-      const userPublicKeyCrypto = await crypto.subtle.importKey(
-        'jwk',
-        userPublicKey,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        []
-      );
-
-      const sharedSecret = await encryptionService.deriveSharedSecret(
-        this.adminKeys.privateKey,
-        userPublicKeyCrypto
-      );
-
-      // Step 6: Encrypt welcome message
-      const encrypted = await encryptionService.encryptMessage(
-        WELCOME_MESSAGE_CONTENT,
-        sharedSecret
-      );
-
-      // Step 7: Get next sequence number
+      // Step 6: Get next sequence number
       const { data: lastMessage } = await msgClient
         .from('messages')
         .select('sequence_number')
@@ -213,12 +220,12 @@ export class WelcomeService {
         ? lastMessage.sequence_number + 1
         : 1;
 
-      // Step 8: Insert encrypted message
+      // Step 7: Insert encrypted message with sender_id = admin
       const { data: message, error: insertError } = await msgClient
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          sender_id: ADMIN_CONFIG.userId,
+          sender_id: ADMIN_USER_ID,
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
           sequence_number: nextSequenceNumber,
@@ -239,13 +246,13 @@ export class WelcomeService {
         };
       }
 
-      // Step 9: Update conversation's last_message_at
+      // Step 8: Update conversation's last_message_at
       await msgClient
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', conversationId);
 
-      // Step 10: Mark welcome message as sent
+      // Step 9: Mark welcome message as sent (FR-007)
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({ welcome_message_sent: true })
@@ -307,120 +314,10 @@ export class WelcomeService {
   }
 
   /**
-   * Initialize admin encryption keys from password (FR-011)
-   *
-   * Derives keys lazily on first send attempt.
-   * If keys exist but are corrupted, re-derives them (FR-012 self-healing).
-   *
-   * @returns Admin's public key in JWK format
-   * @throws If admin password not configured
-   */
-  async initializeAdminKeys(): Promise<JsonWebKey> {
-    const password = ADMIN_CONFIG.password;
-    if (!password) {
-      throw new Error('Admin password not configured in environment');
-    }
-
-    const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
-
-    // Check if admin already has keys stored
-    const { data: existingKey, error: keyError } = await msgClient
-      .from('user_encryption_keys')
-      .select('public_key, encryption_salt')
-      .eq('user_id', ADMIN_CONFIG.userId)
-      .eq('revoked', false)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (existingKey?.encryption_salt) {
-      // Admin has keys - verify they match derived keys (self-healing check)
-      const saltBytes = Uint8Array.from(
-        atob(existingKey.encryption_salt),
-        (c) => c.charCodeAt(0)
-      );
-
-      const derivedKeys = await this.keyDerivationService.deriveKeyPair({
-        password,
-        salt: saltBytes,
-      });
-
-      const storedPublicKey = existingKey.public_key as unknown as JsonWebKey;
-      const isMatch = this.keyDerivationService.verifyPublicKey(
-        derivedKeys.publicKeyJwk,
-        storedPublicKey
-      );
-
-      if (isMatch) {
-        // Keys match - cache and return
-        this.adminKeys = derivedKeys;
-        logger.debug('Admin keys verified and cached');
-        return derivedKeys.publicKeyJwk;
-      }
-
-      // Keys don't match - self-heal by replacing (FR-012)
-      logger.warn('Admin keys corrupted, re-deriving (self-healing)');
-
-      // Revoke old key
-      await msgClient
-        .from('user_encryption_keys')
-        .update({ revoked: true })
-        .eq('user_id', ADMIN_CONFIG.userId)
-        .eq('revoked', false);
-    }
-
-    // Generate new salt and derive keys
-    const salt = this.keyDerivationService.generateSalt();
-    const keyPair = await this.keyDerivationService.deriveKeyPair({
-      password,
-      salt,
-    });
-
-    // Store public key and salt
-    const { error: insertError } = await msgClient
-      .from('user_encryption_keys')
-      .insert({
-        user_id: ADMIN_CONFIG.userId,
-        public_key:
-          keyPair.publicKeyJwk as unknown as import('@/lib/supabase/types').Json,
-        encryption_salt: keyPair.salt,
-        device_id: null,
-        expires_at: null,
-        revoked: false,
-      });
-
-    if (insertError) {
-      logger.error('Failed to store admin public key', {
-        error: insertError.message,
-      });
-      throw new Error(
-        'Failed to store admin public key: ' + insertError.message
-      );
-    }
-
-    this.adminKeys = keyPair;
-    logger.info('Admin keys initialized and stored');
-
-    return keyPair.publicKeyJwk;
-  }
-
-  /**
-   * Ensure admin keys are available (lazy initialization)
-   * @private
-   */
-  private async ensureAdminKeys(): Promise<void> {
-    if (this.adminKeys) {
-      return; // Already cached
-    }
-    await this.initializeAdminKeys();
-  }
-
-  /**
    * Get or create conversation between admin and user
    *
    * Admin bypasses normal connection requirement via RLS policy.
-   * Uses canonical ordering (smaller UUID = participant_1_id).
+   * Uses canonical ordering (smaller UUID = participant_1_id) (FR-006).
    *
    * @param userId - Target user's UUID
    * @param msgClient - Messaging client
@@ -431,9 +328,9 @@ export class WelcomeService {
     userId: string,
     msgClient: ReturnType<typeof createMessagingClient>
   ): Promise<string | null> {
-    const adminId = ADMIN_CONFIG.userId;
+    const adminId = ADMIN_USER_ID;
 
-    // Apply canonical ordering
+    // Apply canonical ordering (FR-006): participant_1 = min, participant_2 = max
     const [participant_1, participant_2] =
       adminId < userId ? [adminId, userId] : [userId, adminId];
 
@@ -462,7 +359,7 @@ export class WelcomeService {
       .single();
 
     if (createError) {
-      // Handle race condition
+      // Handle race condition with upsert pattern (US2)
       if (createError.code === '23505') {
         const { data: retry } = await msgClient
           .from('conversations')
@@ -479,14 +376,6 @@ export class WelcomeService {
     }
 
     return created.id;
-  }
-
-  /**
-   * Clear cached admin keys (for testing)
-   */
-  clearCache(): void {
-    this.adminKeys = null;
-    logger.debug('Admin keys cache cleared');
   }
 }
 

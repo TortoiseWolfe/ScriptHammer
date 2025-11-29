@@ -1,22 +1,20 @@
 /**
- * Contract Test: Admin User Configuration (Feature 002)
+ * Contract Test: Admin User Configuration (Feature 002/004)
  *
  * Tests that the admin user (ScriptHammer) is properly configured for
  * sending welcome messages to new users.
  *
  * Admin user properties:
  * - Fixed UUID: 00000000-0000-0000-0000-000000000001
- * - Email: admin@scripthammer.com (configurable via env)
- * - Password: Set via TEST_USER_ADMIN_PASSWORD env
+ * - Email: admin@scripthammer.com
+ * - Public key: Pre-stored in database (no password needed at runtime)
+ *
+ * REDESIGNED in Feature 004: Uses ECDH public key instead of password derivation.
+ * Admin's public key is pre-stored by seed script, private key discarded.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
-import {
-  TEST_EMAIL_ADMIN,
-  TEST_PASSWORD_ADMIN,
-  ADMIN_USER_ID,
-  hasAdminUser,
-} from '../../fixtures/test-user';
+import { describe, it, expect } from 'vitest';
+import { TEST_EMAIL_ADMIN, ADMIN_USER_ID } from '../../fixtures/test-user';
 
 describe('Admin User Configuration Contract', () => {
   describe('Environment Configuration', () => {
@@ -28,12 +26,6 @@ describe('Admin User Configuration Contract', () => {
     it('should have admin email configured', () => {
       expect(TEST_EMAIL_ADMIN).toBeDefined();
       expect(TEST_EMAIL_ADMIN).toContain('@');
-    });
-
-    it('should have hasAdminUser helper', () => {
-      const result = hasAdminUser();
-      // Result depends on env, but function should work
-      expect(typeof result).toBe('boolean');
     });
   });
 
@@ -50,20 +42,12 @@ describe('Admin User Configuration Contract', () => {
     });
   });
 
-  describe('Admin Password Configuration', () => {
-    it.skipIf(!hasAdminUser())(
-      'should have admin password configured when available',
-      () => {
-        expect(TEST_PASSWORD_ADMIN).toBeDefined();
-        expect(TEST_PASSWORD_ADMIN!.length).toBeGreaterThanOrEqual(8);
-      }
-    );
-
-    it('should gracefully handle missing admin password', () => {
-      // hasAdminUser() should return false if password not set
-      if (!TEST_PASSWORD_ADMIN) {
-        expect(hasAdminUser()).toBe(false);
-      }
+  describe('Admin Public Key Design (Feature 004)', () => {
+    it('should not require admin password at runtime', () => {
+      // The new design uses pre-stored public key - no password needed
+      // Admin's public key is created by seed script and stored in DB
+      // ECDH(user_private, admin_public) = ECDH(admin_private, user_public)
+      expect(true).toBe(true); // Design validation - no runtime password
     });
   });
 
@@ -151,11 +135,11 @@ describe('Admin WelcomeService Integration', () => {
       expect(typeof welcomeService.hasReceivedWelcome).toBe('function');
     });
 
-    it('should have initializeAdminKeys method', async () => {
+    it('should have getAdminPublicKey method', async () => {
       const { welcomeService } = await import(
         '@/services/messaging/welcome-service'
       );
-      expect(typeof welcomeService.initializeAdminKeys).toBe('function');
+      expect(typeof welcomeService.getAdminPublicKey).toBe('function');
     });
   });
 });

@@ -139,16 +139,25 @@ export default function SignInForm({
           logger.info('New user - initializing encryption keys');
           const keyPair = await keyManagementService.initializeKeys(password);
 
-          // Send welcome message (non-blocking, Feature 002)
+          // Send welcome message (non-blocking, Feature 003-feature-004-welcome)
+          // Pass privateKey for ECDH shared secret derivation with admin's public key
           import('@/services/messaging/welcome-service')
             .then(({ welcomeService }) => {
               // Get current user ID from auth context or session
               const { createClient } = require('@/lib/supabase/client');
               const supabase = createClient();
               supabase.auth.getUser().then(({ data }: any) => {
-                if (data?.user?.id && keyPair.publicKeyJwk) {
+                if (
+                  data?.user?.id &&
+                  keyPair.privateKey &&
+                  keyPair.publicKeyJwk
+                ) {
                   welcomeService
-                    .sendWelcomeMessage(data.user.id, keyPair.publicKeyJwk)
+                    .sendWelcomeMessage(
+                      data.user.id,
+                      keyPair.privateKey,
+                      keyPair.publicKeyJwk
+                    )
                     .catch((err: Error) => {
                       logger.error('Welcome message failed', { error: err });
                     });
