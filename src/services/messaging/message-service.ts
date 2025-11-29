@@ -557,11 +557,12 @@ export class MessageService {
               ivLength: msg.initialization_vector?.length || 0,
               createdAt: msg.created_at,
             });
+            const senderProfile = profileMap.get(msg.sender_id);
             return {
               id: msg.id,
               conversation_id: msg.conversation_id,
               sender_id: msg.sender_id,
-              content: '[Message could not be decrypted]',
+              content: 'Encrypted with previous keys',
               sequence_number: msg.sequence_number,
               deleted: msg.deleted,
               edited: msg.edited,
@@ -570,7 +571,11 @@ export class MessageService {
               read_at: msg.read_at,
               created_at: msg.created_at,
               isOwn: msg.sender_id === user.id,
-              senderName: 'Unknown',
+              senderName:
+                senderProfile?.display_name ||
+                senderProfile?.username ||
+                'Unknown User',
+              decryptionError: true,
             };
           }
         })

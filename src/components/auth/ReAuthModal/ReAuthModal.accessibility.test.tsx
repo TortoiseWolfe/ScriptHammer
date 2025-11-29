@@ -46,7 +46,7 @@ describe('ReAuthModal Accessibility', () => {
     // Wait for the form to load after checking keys
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: 'Unlock' })
+        screen.getByRole('button', { name: 'Unlock Messages' })
       ).toBeInTheDocument();
     });
 
@@ -60,7 +60,7 @@ describe('ReAuthModal Accessibility', () => {
     // Wait for the form to load
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: 'Unlock' })
+        screen.getByRole('button', { name: 'Unlock Messages' })
       ).toBeInTheDocument();
     });
 
@@ -119,7 +119,9 @@ describe('ReAuthModal Accessibility', () => {
     render(<ReAuthModal {...defaultProps} />);
 
     await waitFor(() => {
-      const submitButton = screen.getByRole('button', { name: 'Unlock' });
+      const submitButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       expect(submitButton).toBeInTheDocument();
       expect(submitButton).toHaveAttribute('type', 'submit');
     });
@@ -140,7 +142,9 @@ describe('ReAuthModal Accessibility', () => {
 
     await waitFor(() => {
       // Check submit button
-      const submitButton = screen.getByRole('button', { name: 'Unlock' });
+      const submitButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       expect(submitButton).toHaveClass('min-h-11');
 
       // Check cancel button
@@ -169,12 +173,14 @@ describe('ReAuthModal Accessibility', () => {
     // Wait for the form to load
     await waitFor(() => {
       expect(
-        screen.getByRole('button', { name: 'Unlock' })
+        screen.getByRole('button', { name: 'Unlock Messages' })
       ).toBeInTheDocument();
     });
 
     // Trigger form submission with empty password to show error
-    const submitButton = screen.getByRole('button', { name: 'Unlock' });
+    const submitButton = screen.getByRole('button', {
+      name: 'Unlock Messages',
+    });
     submitButton.click();
 
     // Wait for error to appear

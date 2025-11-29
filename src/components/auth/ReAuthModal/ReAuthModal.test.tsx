@@ -69,7 +69,9 @@ describe('ReAuthModal', () => {
 
       // Wait for the form to load after checking keys
       await waitFor(() => {
-        expect(screen.getByText('Unlock Messaging')).toBeInTheDocument();
+        expect(
+          screen.getByText('Enter Your Messaging Password')
+        ).toBeInTheDocument();
       });
     });
 
@@ -103,7 +105,7 @@ describe('ReAuthModal', () => {
       // Wait for the form to load after checking keys
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: 'Unlock' })
+          screen.getByRole('button', { name: 'Unlock Messages' })
         ).toBeInTheDocument();
       });
     });
@@ -136,7 +138,7 @@ describe('ReAuthModal', () => {
       // Wait for the form to load
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: 'Unlock' })
+          screen.getByRole('button', { name: 'Unlock Messages' })
         ).toBeInTheDocument();
       });
 
@@ -219,11 +221,13 @@ describe('ReAuthModal', () => {
       // Wait for the form to load after checking keys
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: 'Unlock' })
+          screen.getByRole('button', { name: 'Unlock Messages' })
         ).toBeInTheDocument();
       });
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -313,7 +317,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'correct-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -349,7 +355,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -386,7 +394,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'wrong-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -420,7 +430,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'any-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -467,7 +479,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       // Should show loading spinner - button changes to spinner so check for submit button disabled
@@ -510,7 +524,9 @@ describe('ReAuthModal', () => {
       const passwordInput = screen.getByLabelText('Password');
       await user.type(passwordInput, 'test-password');
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       // Password input should be disabled
@@ -536,7 +552,7 @@ describe('ReAuthModal', () => {
       // Wait for the form to load after checking keys
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: 'Unlock' })
+          screen.getByRole('button', { name: 'Unlock Messages' })
         ).toBeInTheDocument();
       });
 
@@ -580,11 +596,13 @@ describe('ReAuthModal', () => {
       // Wait for the form to load after checking keys
       await waitFor(() => {
         expect(
-          screen.getByRole('button', { name: 'Unlock' })
+          screen.getByRole('button', { name: 'Unlock Messages' })
         ).toBeInTheDocument();
       });
 
-      const unlockButton = screen.getByRole('button', { name: 'Unlock' });
+      const unlockButton = screen.getByRole('button', {
+        name: 'Unlock Messages',
+      });
       await user.click(unlockButton);
 
       await waitFor(() => {
@@ -594,7 +612,7 @@ describe('ReAuthModal', () => {
     });
   });
 
-  describe('OAuth user setup mode', () => {
+  describe('OAuth user without keys (redirect to setup)', () => {
     beforeEach(async () => {
       // Mock OAuth user without keys
       const { isOAuthUser, getOAuthProvider } = await import(
@@ -607,9 +625,15 @@ describe('ReAuthModal', () => {
         '@/services/messaging/key-service'
       );
       vi.mocked(keyManagementService.hasKeys).mockResolvedValue(false);
+
+      // Mock window.location for redirect testing
+      Object.defineProperty(window, 'location', {
+        value: { href: '' },
+        writable: true,
+      });
     });
 
-    it('should show setup mode for OAuth user without keys', async () => {
+    it('should redirect to setup page for OAuth user without keys', async () => {
       render(
         <ReAuthModal
           isOpen={true}
@@ -618,112 +642,9 @@ describe('ReAuthModal', () => {
         />
       );
 
-      // Wait for key check to complete
+      // Wait for key check to complete and redirect to happen
       await waitFor(() => {
-        expect(
-          screen.getByText('Set Up Encrypted Messaging')
-        ).toBeInTheDocument();
-      });
-    });
-
-    it('should show confirm password field in setup mode', async () => {
-      render(
-        <ReAuthModal
-          isOpen={true}
-          onSuccess={mockOnSuccess}
-          onClose={mockOnClose}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText('Confirm Password')).toBeInTheDocument();
-      });
-    });
-
-    it('should show Set Up Messaging button in setup mode', async () => {
-      render(
-        <ReAuthModal
-          isOpen={true}
-          onSuccess={mockOnSuccess}
-          onClose={mockOnClose}
-        />
-      );
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: 'Set Up Messaging' })
-        ).toBeInTheDocument();
-      });
-    });
-
-    it('should validate password match in setup mode', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <ReAuthModal
-          isOpen={true}
-          onSuccess={mockOnSuccess}
-          onClose={mockOnClose}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText('Messaging Password')).toBeInTheDocument();
-      });
-
-      const passwordInput = screen.getByLabelText('Messaging Password');
-      const confirmInput = screen.getByLabelText('Confirm Password');
-
-      await user.type(passwordInput, 'test-password123');
-      await user.type(confirmInput, 'different-password');
-
-      const setupButton = screen.getByRole('button', {
-        name: 'Set Up Messaging',
-      });
-      await user.click(setupButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Passwords do not match')).toBeInTheDocument();
-      });
-    });
-
-    it('should call initializeKeys for OAuth user setup', async () => {
-      const user = userEvent.setup();
-      const { keyManagementService } = await import(
-        '@/services/messaging/key-service'
-      );
-      vi.mocked(keyManagementService.initializeKeys).mockResolvedValue(
-        {} as any
-      );
-
-      render(
-        <ReAuthModal
-          isOpen={true}
-          onSuccess={mockOnSuccess}
-          onClose={mockOnClose}
-        />
-      );
-
-      await waitFor(() => {
-        expect(screen.getByLabelText('Messaging Password')).toBeInTheDocument();
-      });
-
-      const passwordInput = screen.getByLabelText('Messaging Password');
-      const confirmInput = screen.getByLabelText('Confirm Password');
-
-      await user.type(passwordInput, 'test-password123');
-      await user.type(confirmInput, 'test-password123');
-
-      const setupButton = screen.getByRole('button', {
-        name: 'Set Up Messaging',
-      });
-      await user.click(setupButton);
-
-      await waitFor(() => {
-        expect(keyManagementService.initializeKeys).toHaveBeenCalledWith(
-          'test-password123'
-        );
-        expect(mockOnSuccess).toHaveBeenCalledTimes(1);
+        expect(window.location.href).toBe('/messages/setup');
       });
     });
   });
@@ -753,7 +674,9 @@ describe('ReAuthModal', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Unlock Messaging')).toBeInTheDocument();
+        expect(
+          screen.getByText('Enter Your Messaging Password')
+        ).toBeInTheDocument();
       });
     });
 

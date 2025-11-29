@@ -44,7 +44,7 @@ function MessagesContent() {
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [participantName, setParticipantName] = useState('User');
+  const [participantName, setParticipantName] = useState('Unknown User');
   const [needsReAuth, setNeedsReAuth] = useState(false);
   const [checkingKeys, setCheckingKeys] = useState(true);
 
@@ -109,6 +109,9 @@ function MessagesContent() {
     []
   );
 
+  // State for post-setup toast
+  const [showSetupToast, setShowSetupToast] = useState(false);
+
   // Check if encryption keys are available on mount
   useEffect(() => {
     const checkKeys = async () => {
@@ -128,6 +131,19 @@ function MessagesContent() {
         setNeedsReAuth(true);
       }
       setCheckingKeys(false);
+
+      // Check for post-setup toast
+      if (typeof sessionStorage !== 'undefined') {
+        const setupComplete = sessionStorage.getItem(
+          'messaging_setup_complete'
+        );
+        if (setupComplete === 'true') {
+          setShowSetupToast(true);
+          sessionStorage.removeItem('messaging_setup_complete');
+          // Auto-dismiss after 10 seconds
+          setTimeout(() => setShowSetupToast(false), 10000);
+        }
+      }
     };
     checkKeys();
   }, [router]);
@@ -175,24 +191,54 @@ function MessagesContent() {
         participant_2_id: string;
       } | null;
 
-      if (!conversation) return;
+      if (!conversation) {
+        console.warn(
+          '[loadConversationInfo] Conversation not found:',
+          conversationId
+        );
+        return;
+      }
 
       const otherParticipantId =
         conversation.participant_1_id === user.id
           ? conversation.participant_2_id
           : conversation.participant_1_id;
 
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('username, display_name')
         .eq('id', otherParticipantId)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.warn(
+          '[loadConversationInfo] Profile query error:',
+          profileError.message
+        );
+        setParticipantName('Unknown User');
+        return;
+      }
 
       if (profile) {
-        setParticipantName(profile.display_name || profile.username || 'User');
+        // Prefer display_name, fallback to username, then "Unknown User"
+        setParticipantName(
+          profile.display_name || profile.username || 'Unknown User'
+        );
+      } else {
+        // Profile not found - could be deleted user or orphaned conversation
+        console.warn(
+          '[loadConversationInfo] Profile not found for:',
+          otherParticipantId
+        );
+        setParticipantName('Deleted User');
       }
     } catch (err) {
-      // Silently fail - participant name will default to "User"
+      // Log the error for debugging (Feature 006)
+      console.warn(
+        '[loadConversationInfo] Error loading participant info:',
+        err
+      );
+      setParticipantName('Unknown User');
     }
   };
 
@@ -286,7 +332,42 @@ function MessagesContent() {
     <>
       <ReAuthModal isOpen={needsReAuth} onSuccess={handleReAuthSuccess} />
 
-      <div className="bg-base-100 fixed inset-0 top-16">
+      {/* Post-setup toast reminder to save password */}
+      {showSetupToast && (
+        <div className="toast toast-top toast-center z-50">
+          <div className="alert alert-success">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 shrink-0 stroke-current"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <span className="font-semibold">Encryption set up!</span>
+              <p className="text-sm">
+                Make sure you saved your messaging password - you&apos;ll need
+                it on new devices.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowSetupToast(false)}
+              className="btn btn-ghost btn-sm"
+              aria-label="Dismiss"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-base-100 fixed inset-0 top-16 pb-[env(safe-area-inset-bottom)]">
         {/* Mobile Drawer Pattern */}
         <div className="drawer md:drawer-open h-full">
           <input
@@ -297,8 +378,8 @@ function MessagesContent() {
             onChange={toggleDrawer}
           />
 
-          {/* Main Content (Chat Window) */}
-          <div className="drawer-content flex h-full flex-col">
+          {/* Main Content (Chat Window) - CSS Grid for reliable height */}
+          <div className="drawer-content grid h-full min-h-0 grid-rows-[auto_1fr] md:grid-rows-[1fr]">
             {/* Mobile header with menu button */}
             <div className="navbar bg-base-100 border-base-300 border-b md:hidden">
               <div className="flex-none">
@@ -329,12 +410,12 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Chat content - h-full ensures height propagates to ChatWindow Grid */}
-            <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+            {/* Chat content - min-h-0 prevents grid blowout, h-full fills grid cell */}
+            <main className="h-full min-h-0 overflow-hidden">
               {conversationId ? (
-                <>
+                <div className="flex h-full flex-col">
                   {error && (
-                    <div className="alert alert-info m-4" role="alert">
+                    <div className="alert alert-info m-4 shrink-0" role="alert">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -366,8 +447,9 @@ function MessagesContent() {
                     loading={loading}
                     sending={sending}
                     participantName={participantName}
+                    className="min-h-0 flex-1"
                   />
-                </>
+                </div>
               ) : (
                 <div className="bg-base-200 flex h-full items-center justify-center">
                   <div className="text-center">

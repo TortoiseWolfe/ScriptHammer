@@ -136,6 +136,8 @@ export interface DecryptedMessage {
   created_at: string;
   isOwn: boolean; // Convenience flag
   senderName: string; // From user profile
+  /** True if message could not be decrypted (e.g., encrypted with old/revoked keys) */
+  decryptionError?: boolean;
 }
 
 export interface ConversationWithParticipants extends Conversation {
