@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { OAuthErrorBoundary } from './error-boundary';
 import { createLogger } from '@/lib/logger';
+import { isOAuthUser, populateOAuthProfile } from '@/lib/auth/oauth-utils';
 
 const logger = createLogger('app:auth:callback:page');
 
@@ -43,8 +44,19 @@ function AuthCallbackContent() {
       `URL has code: ${hasCode}, has error: ${!!error}, isLoading: ${isLoading}, user: ${user?.email || 'null'}`
     );
 
-    if (!isLoading && !error) {
+    const handleAuthComplete = async () => {
       if (user) {
+        // Populate OAuth profile before redirect (FR-001)
+        // Non-blocking per NFR-001 - errors logged but don't block redirect
+        if (isOAuthUser(user)) {
+          try {
+            await populateOAuthProfile(user);
+          } catch (err) {
+            logger.error('Failed to populate OAuth profile', { error: err });
+            // Continue with redirect - non-blocking
+          }
+        }
+
         logger.info('User authenticated, redirecting to profile');
         router.push('/profile');
       } else {
@@ -56,6 +68,10 @@ function AuthCallbackContent() {
           }
         }, 2000);
       }
+    };
+
+    if (!isLoading && !error) {
+      handleAuthComplete();
     }
   }, [user, isLoading, router]);
 

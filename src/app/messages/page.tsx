@@ -287,7 +287,7 @@ function MessagesContent() {
           />
 
           {/* Main Content (Chat Window) */}
-          <div className="drawer-content flex flex-col">
+          <div className="drawer-content flex h-full flex-col">
             {/* Mobile header with menu button */}
             <div className="navbar bg-base-100 border-base-300 border-b md:hidden">
               <div className="flex-none">
