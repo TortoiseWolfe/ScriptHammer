@@ -306,7 +306,7 @@ export default function MessageThread({
   return (
     <Profiler id="MessageThread" onRender={onRenderCallback}>
       <div
-        className={`relative min-h-0 flex-1 overflow-hidden${className ? ` ${className}` : ''}`}
+        className={`relative h-full overflow-hidden${className ? ` ${className}` : ''}`}
       >
         <div
           ref={parentRef}

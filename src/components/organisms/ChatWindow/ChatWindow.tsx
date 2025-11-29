@@ -121,26 +121,26 @@ export default function ChatWindow({
 
   return (
     <div
-      className={`grid h-full grid-rows-[auto_1fr_auto]${className ? ` ${className}` : ''}`}
+      className={`flex h-full flex-col overflow-hidden${className ? ` ${className}` : ''}`}
       data-testid="chat-window"
     >
-      {/* Chat Header */}
-      <div className="border-base-300 bg-base-200 border-b px-4 py-3">
+      {/* Chat Header - fixed height */}
+      <header className="border-base-300 bg-base-200 shrink-0 border-b px-4 py-3">
         <h2 className="text-lg font-semibold">{participantName}</h2>
-      </div>
+      </header>
 
-      {/* Blocked User Banner */}
+      {/* Blocked User Banner - fixed height when shown */}
       {isBlocked && (
-        <div className="alert alert-warning" role="alert">
+        <div className="alert alert-warning shrink-0" role="alert">
           <span>
             {participantName} has blocked you. You cannot send messages.
           </span>
         </div>
       )}
 
-      {/* All Messages Undecryptable Banner (Feature 006) */}
+      {/* All Messages Undecryptable Banner (Feature 006) - fixed height when shown */}
       {allMessagesUndecryptable && (
-        <div className="alert m-2" role="alert">
+        <div className="alert m-2 shrink-0" role="alert">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-6 w-6 shrink-0"
@@ -162,19 +162,21 @@ export default function ChatWindow({
         </div>
       )}
 
-      {/* Message Thread - Grid row 2 (1fr) */}
-      <MessageThread
-        messages={messages}
-        onEditMessage={onEditMessage}
-        onDeleteMessage={onDeleteMessage}
-        onLoadMore={onLoadMore}
-        hasMore={hasMore}
-        loading={loading}
-        className="min-h-0 overflow-hidden"
-      />
+      {/* Message Thread - takes remaining space, allows internal scroll */}
+      <div className="min-h-0 flex-1">
+        <MessageThread
+          messages={messages}
+          onEditMessage={onEditMessage}
+          onDeleteMessage={onDeleteMessage}
+          onLoadMore={onLoadMore}
+          hasMore={hasMore}
+          loading={loading}
+          className="h-full"
+        />
+      </div>
 
-      {/* Message Input - flex-shrink-0 prevents compression, safe-area for mobile keyboards */}
-      <div className="border-base-300 bg-base-100 flex-shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Message Input - fixed height, safe-area for mobile keyboards */}
+      <div className="border-base-300 bg-base-100 shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}

@@ -410,10 +410,10 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Chat content - min-h-0 prevents grid blowout, h-full fills grid cell */}
-            <main className="h-full min-h-0 overflow-hidden">
+            {/* Chat content - overflow-hidden contains scroll, h-full fills grid cell */}
+            <main className="h-full overflow-hidden">
               {conversationId ? (
-                <div className="flex h-full flex-col">
+                <div className="flex h-full flex-col overflow-hidden">
                   {error && (
                     <div className="alert alert-info m-4 shrink-0" role="alert">
                       <svg
