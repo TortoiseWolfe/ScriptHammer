@@ -169,7 +169,7 @@
 - [ ] T045 Manual browser test with Chrome password manager on /messages/setup
 - [ ] T046 Manual browser test with Firefox password manager on /messages/setup
 - [ ] T047 Verify all 52 checklist items in `specs/006-feature-006-critical/checklists/ux-release.md`
-- [ ] T048 Create commit with all changes
+- [x] T048 Create commit with all changes
 
 ---
 
