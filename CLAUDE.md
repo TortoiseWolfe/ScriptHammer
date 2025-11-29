@@ -134,6 +134,25 @@ See `docs/CREATING_COMPONENTS.md` for details.
 - **PWA** with Service Worker (offline support)
 - **Testing**: Vitest (unit), Playwright (E2E), Pa11y (a11y)
 
+## Static Hosting Constraint
+
+This app is deployed to GitHub Pages (static hosting). This means:
+
+- NO server-side API routes (`src/app/api/` won't work in production)
+- NO access to non-NEXT*PUBLIC* environment variables in browser
+- All server-side logic must be in Supabase (database, Edge Functions, or triggers)
+
+When implementing features that need secrets:
+
+- Use Supabase Vault for secure storage
+- Use Edge Functions for server-side logic
+- Or design client-side solutions that don't require secrets
+
+**Example**: The welcome message system uses ECDH shared secret symmetry to encrypt
+messages "from" admin without needing admin's password at runtime. The admin's
+public key is pre-stored in the database, and `ECDH(user_private, admin_public)`
+produces the same shared secret as `ECDH(admin_private, user_public)`.
+
 ### Key Paths
 
 ```

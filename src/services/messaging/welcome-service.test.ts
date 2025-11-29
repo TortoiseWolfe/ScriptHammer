@@ -2,9 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock implementations - use vi.hoisted to ensure they're defined before mocks
 const mockFns = vi.hoisted(() => ({
-  mockDeriveKeyPair: vi.fn(),
-  mockGenerateSalt: vi.fn(),
-  mockVerifyPublicKey: vi.fn(),
   mockSupabaseFrom: vi.fn(),
   mockMessagingFrom: vi.fn(),
 }));
@@ -21,21 +18,6 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
   createMessagingClient: () => ({
     from: mockFns.mockMessagingFrom,
   }),
-}));
-
-// Mock key derivation service
-vi.mock('@/lib/messaging/key-derivation', () => ({
-  KeyDerivationService: class MockKeyDerivationService {
-    generateSalt() {
-      return mockFns.mockGenerateSalt();
-    }
-    deriveKeyPair(params: unknown) {
-      return mockFns.mockDeriveKeyPair(params);
-    }
-    verifyPublicKey(a: unknown, b: unknown) {
-      return mockFns.mockVerifyPublicKey(a, b);
-    }
-  },
 }));
 
 // Mock encryption service
@@ -60,7 +42,11 @@ Object.defineProperty(global, 'crypto', {
 });
 
 // Import after mocks
-import { WelcomeService, WELCOME_MESSAGE_CONTENT } from './welcome-service';
+import {
+  WelcomeService,
+  WELCOME_MESSAGE_CONTENT,
+  ADMIN_USER_ID,
+} from './welcome-service';
 
 describe('WelcomeService', () => {
   let welcomeService: WelcomeService;
@@ -71,28 +57,10 @@ describe('WelcomeService', () => {
     x: 'test-x',
     y: 'test-y',
   };
+  const mockPrivateKey = {} as CryptoKey;
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Reset environment
-    vi.stubEnv('TEST_USER_ADMIN_PASSWORD', 'test-admin-password-64chars');
-    vi.stubEnv(
-      'NEXT_PUBLIC_ADMIN_USER_ID',
-      '00000000-0000-0000-0000-000000000001'
-    );
-
-    // Default mock responses
-    mockFns.mockGenerateSalt.mockReturnValue(new Uint8Array(16));
-    mockFns.mockDeriveKeyPair.mockResolvedValue({
-      privateKey: {},
-      publicKey: {},
-      publicKeyJwk: { kty: 'EC', crv: 'P-256', x: 'admin-x', y: 'admin-y' },
-      salt: 'base64-salt',
-    });
-    mockFns.mockVerifyPublicKey.mockReturnValue(true);
-
-    // Create fresh instance
     welcomeService = new WelcomeService();
   });
 
@@ -100,8 +68,67 @@ describe('WelcomeService', () => {
     vi.unstubAllEnvs();
   });
 
+  describe('ADMIN_USER_ID', () => {
+    it('is fixed UUID for admin', () => {
+      expect(ADMIN_USER_ID).toBe('00000000-0000-0000-0000-000000000001');
+    });
+  });
+
+  describe('getAdminPublicKey', () => {
+    it('returns valid JWK when admin key exists (T010)', async () => {
+      const adminPublicKey = {
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'admin-x',
+        y: 'admin-y',
+      };
+
+      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
+        if (table === 'user_encryption_keys') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { public_key: adminPublicKey },
+              error: null,
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
+
+      const result = await welcomeService.getAdminPublicKey();
+
+      expect(result).toEqual(adminPublicKey);
+    });
+
+    it('throws when admin key missing (T011)', async () => {
+      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
+        if (table === 'user_encryption_keys') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Not found' },
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
+
+      await expect(welcomeService.getAdminPublicKey()).rejects.toThrow(
+        'Admin public key not found'
+      );
+    });
+  });
+
   describe('sendWelcomeMessage', () => {
-    it('sends welcome message to new user', async () => {
+    it('sends welcome message with new signature (T012)', async () => {
       // Setup: User profile without welcome message sent
       mockFns.mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'user_profiles') {
@@ -127,11 +154,17 @@ describe('WelcomeService', () => {
             eq: vi.fn().mockReturnThis(),
             order: vi.fn().mockReturnThis(),
             limit: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: null,
+            single: vi.fn().mockResolvedValue({
+              data: {
+                public_key: {
+                  kty: 'EC',
+                  crv: 'P-256',
+                  x: 'admin-x',
+                  y: 'admin-y',
+                },
+              },
               error: null,
             }),
-            insert: vi.fn().mockReturnThis(),
           };
         }
         if (table === 'conversations') {
@@ -173,6 +206,7 @@ describe('WelcomeService', () => {
 
       const result = await welcomeService.sendWelcomeMessage(
         testUserId,
+        mockPrivateKey,
         testPublicKey
       );
 
@@ -181,7 +215,91 @@ describe('WelcomeService', () => {
       expect(insertCalled).toBe(true);
     });
 
-    it('skips if welcome_message_sent is true', async () => {
+    it('derives shared secret using ECDH(userPrivate, adminPublic) (T013)', async () => {
+      // Import the mocked encryptionService
+      const { encryptionService } = await import('@/lib/messaging/encryption');
+
+      // Setup mocks
+      mockFns.mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === 'user_profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { welcome_message_sent: false },
+              error: null,
+            }),
+            update: vi.fn().mockReturnThis(),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
+
+      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
+        if (table === 'user_encryption_keys') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: {
+                public_key: {
+                  kty: 'EC',
+                  crv: 'P-256',
+                  x: 'admin-x',
+                  y: 'admin-y',
+                },
+              },
+              error: null,
+            }),
+          };
+        }
+        if (table === 'conversations') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { id: 'conv-123' },
+              error: null,
+            }),
+            insert: vi.fn().mockReturnThis(),
+            update: vi.fn().mockReturnThis(),
+          };
+        }
+        if (table === 'messages') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnThis(),
+              single: vi.fn().mockResolvedValue({
+                data: { id: 'msg-123' },
+                error: null,
+              }),
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
+
+      await welcomeService.sendWelcomeMessage(
+        testUserId,
+        mockPrivateKey,
+        testPublicKey
+      );
+
+      // Verify deriveSharedSecret was called with userPrivateKey
+      expect(encryptionService.deriveSharedSecret).toHaveBeenCalledWith(
+        mockPrivateKey,
+        expect.anything() // The imported admin public key
+      );
+    });
+
+    it('skips if welcome_message_sent is true (T021)', async () => {
       mockFns.mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'user_profiles') {
           return {
@@ -198,6 +316,7 @@ describe('WelcomeService', () => {
 
       const result = await welcomeService.sendWelcomeMessage(
         testUserId,
+        mockPrivateKey,
         testPublicKey
       );
 
@@ -206,83 +325,48 @@ describe('WelcomeService', () => {
       expect(result.reason).toBe('Welcome message already sent');
     });
 
-    it('handles missing admin password gracefully', async () => {
-      vi.stubEnv('TEST_USER_ADMIN_PASSWORD', '');
+    it('returns skipped when admin key missing (T026)', async () => {
+      // Profile check succeeds
+      mockFns.mockSupabaseFrom.mockImplementation((table: string) => {
+        if (table === 'user_profiles') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: { welcome_message_sent: false },
+              error: null,
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
+
+      // Admin key not found
+      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
+        if (table === 'user_encryption_keys') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Not found' },
+            }),
+          };
+        }
+        return { select: vi.fn().mockReturnThis() };
+      });
 
       const result = await welcomeService.sendWelcomeMessage(
         testUserId,
+        mockPrivateKey,
         testPublicKey
       );
 
       expect(result.success).toBe(false);
       expect(result.skipped).toBe(true);
-      expect(result.reason).toBe('Admin password not configured');
-    });
-  });
-
-  describe('initializeAdminKeys', () => {
-    it('derives admin keys lazily on first send', async () => {
-      // No existing keys
-      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
-        if (table === 'user_encryption_keys') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockReturnThis(),
-            limit: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: null,
-              error: null,
-            }),
-            insert: vi.fn().mockReturnThis(),
-          };
-        }
-        return { select: vi.fn().mockReturnThis() };
-      });
-
-      const publicKey = await welcomeService.initializeAdminKeys();
-
-      expect(publicKey).toBeDefined();
-      expect(mockFns.mockDeriveKeyPair).toHaveBeenCalled();
-      expect(mockFns.mockGenerateSalt).toHaveBeenCalled();
-    });
-
-    it('self-heals if admin keys corrupted', async () => {
-      // Existing keys with mismatched public key
-      mockFns.mockMessagingFrom.mockImplementation((table: string) => {
-        if (table === 'user_encryption_keys') {
-          return {
-            select: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockReturnThis(),
-            limit: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({
-              data: {
-                public_key: {
-                  kty: 'EC',
-                  crv: 'P-256',
-                  x: 'wrong-x',
-                  y: 'wrong-y',
-                },
-                encryption_salt: btoa('test-salt-bytes'),
-              },
-              error: null,
-            }),
-            update: vi.fn().mockReturnThis(),
-            insert: vi.fn().mockReturnThis(),
-          };
-        }
-        return { select: vi.fn().mockReturnThis() };
-      });
-
-      // Verify returns false (corruption detected)
-      mockFns.mockVerifyPublicKey.mockReturnValue(false);
-
-      const publicKey = await welcomeService.initializeAdminKeys();
-
-      expect(publicKey).toBeDefined();
-      // Should have generated new salt after detecting corruption
-      expect(mockFns.mockGenerateSalt).toHaveBeenCalled();
+      expect(result.reason).toBe('Admin public key not found');
     });
   });
 
