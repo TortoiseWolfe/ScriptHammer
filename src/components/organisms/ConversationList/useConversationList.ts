@@ -250,8 +250,11 @@ export function useConversationList() {
           schema: 'public',
           table: 'conversations',
         },
-        () => {
+        (payload) => {
           // Reload conversations when any conversation changes
+          logger.debug('Realtime: conversations change', {
+            event: payload.eventType,
+          });
           loadConversations();
         }
       )
@@ -262,8 +265,9 @@ export function useConversationList() {
           schema: 'public',
           table: 'messages',
         },
-        () => {
+        (payload) => {
           // Reload when new messages arrive (updates last_message_at)
+          logger.debug('Realtime: new message', { event: payload.eventType });
           loadConversations();
         }
       )
@@ -274,12 +278,25 @@ export function useConversationList() {
           schema: 'public',
           table: 'messages',
         },
-        () => {
+        (payload) => {
           // Reload when messages are updated (e.g., read_at changes)
+          logger.debug('Realtime: message updated', {
+            event: payload.eventType,
+          });
           loadConversations();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          logger.info('Realtime subscription active for conversations-list');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.error('Realtime subscription failed', { error: err?.message });
+        } else if (status === 'TIMED_OUT') {
+          logger.warn('Realtime subscription timed out');
+        } else {
+          logger.debug('Realtime subscription status', { status });
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);

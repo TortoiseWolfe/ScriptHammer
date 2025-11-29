@@ -1052,5 +1052,24 @@ WHERE p.id = u.id
   AND p.display_name IS NULL
   AND u.raw_app_meta_data->>'provider' IS DISTINCT FROM 'email';
 
+-- ============================================================================
+-- PART 10: REALTIME CONFIGURATION
+-- Enable realtime subscriptions for messaging tables
+-- ============================================================================
+
+-- Set replica identity to FULL for realtime updates
+-- This allows Supabase Realtime to track changes to these tables
+ALTER TABLE conversations REPLICA IDENTITY FULL;
+ALTER TABLE messages REPLICA IDENTITY FULL;
+
+-- Note: The supabase_realtime publication is managed by Supabase.
+-- To enable realtime for these tables, run this in the Supabase SQL Editor
+-- (outside of transaction, as publication changes require it):
+--
+-- ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
+-- ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+--
+-- Or enable via Supabase Dashboard: Database > Replication
+
 -- Commit the transaction - everything succeeded
 COMMIT;
