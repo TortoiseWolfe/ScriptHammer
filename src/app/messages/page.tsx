@@ -111,15 +111,26 @@ function MessagesContent() {
 
   // Check if encryption keys are available on mount
   useEffect(() => {
-    const checkKeys = () => {
+    const checkKeys = async () => {
+      // First check if user has keys stored in database
+      const hasStoredKeys = await keyManagementService.hasKeys();
+
+      if (!hasStoredKeys) {
+        // No keys at all - redirect to setup page (full page for password manager)
+        router.push('/messages/setup');
+        return;
+      }
+
+      // User has keys in database, check if they're in memory
       const keys = keyManagementService.getCurrentKeys();
       if (!keys) {
+        // Keys exist but not in memory - need to unlock
         setNeedsReAuth(true);
       }
       setCheckingKeys(false);
     };
     checkKeys();
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (conversationId && !needsReAuth && !checkingKeys) {
