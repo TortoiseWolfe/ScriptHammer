@@ -131,7 +131,26 @@ export function ReAuthModal({
         if (isSetupMode) {
           // User setting up encryption keys for first time
           logger.info('Initializing encryption keys for new user');
-          await keyManagementService.initializeKeys(password);
+          const keyPair = await keyManagementService.initializeKeys(password);
+
+          // Send welcome message (Feature 004)
+          if (user?.id && keyPair.privateKey && keyPair.publicKeyJwk) {
+            import('@/services/messaging/welcome-service')
+              .then(({ welcomeService }) => {
+                welcomeService
+                  .sendWelcomeMessage(
+                    user.id,
+                    keyPair.privateKey,
+                    keyPair.publicKeyJwk
+                  )
+                  .catch((err: Error) => {
+                    logger.error('Welcome message failed', { error: err });
+                  });
+              })
+              .catch((err: Error) => {
+                logger.error('Failed to load welcome service', { error: err });
+              });
+          }
         } else {
           // Check if user needs migration first
           const needsMigration = await keyManagementService.needsMigration();
