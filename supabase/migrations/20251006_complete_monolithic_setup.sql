@@ -1033,5 +1033,24 @@ INSERT INTO user_profiles (id, username, display_name, welcome_message_sent)
 VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
+-- ============================================================================
+-- Feature 004: Populate OAuth user profiles (one-time migration)
+-- Only updates NULL display_name for OAuth users
+-- Idempotent: Safe to run multiple times (FR-006)
+-- ============================================================================
+UPDATE public.user_profiles p
+SET
+  display_name = COALESCE(
+    u.raw_user_meta_data->>'full_name',
+    u.raw_user_meta_data->>'name',
+    split_part(u.email, '@', 1),
+    'Anonymous User'
+  ),
+  avatar_url = COALESCE(p.avatar_url, u.raw_user_meta_data->>'avatar_url')
+FROM auth.users u
+WHERE p.id = u.id
+  AND p.display_name IS NULL
+  AND u.raw_app_meta_data->>'provider' IS DISTINCT FROM 'email';
+
 -- Commit the transaction - everything succeeded
 COMMIT;
