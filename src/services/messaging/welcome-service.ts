@@ -125,7 +125,16 @@ export class WelcomeService {
     userPrivateKey: CryptoKey,
     userPublicKey: JsonWebKey
   ): Promise<SendWelcomeResult> {
-    logger.debug('sendWelcomeMessage called', { userId });
+    logger.info('sendWelcomeMessage called', { userId });
+
+    // Debug: Check if user is authenticated
+    const supabaseDebug = createClient();
+    const { data: authData } = await supabaseDebug.auth.getUser();
+    logger.info('Auth state in welcome service', {
+      authUserId: authData?.user?.id,
+      targetUserId: userId,
+      isAuthenticated: !!authData?.user,
+    });
 
     try {
       const supabase = createClient();
@@ -352,6 +361,11 @@ export class WelcomeService {
       participant_2_id: participant_2,
     };
 
+    logger.info('Attempting to create conversation', {
+      participant_1,
+      participant_2,
+    });
+
     const { data: created, error: createError } = await (msgClient as any)
       .from('conversations')
       .insert(insertData)
@@ -359,6 +373,12 @@ export class WelcomeService {
       .single();
 
     if (createError) {
+      logger.error('Conversation insert failed', {
+        code: createError.code,
+        message: createError.message,
+        details: createError.details,
+        hint: createError.hint,
+      });
       // Handle race condition with upsert pattern (US2)
       if (createError.code === '23505') {
         const { data: retry } = await msgClient
