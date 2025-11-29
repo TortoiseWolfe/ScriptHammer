@@ -92,6 +92,27 @@ export default function MessagingSetupPage() {
         logger.info('Initializing encryption keys');
         const keyPair = await keyManagementService.initializeKeys(password);
 
+        // Save credentials to password manager using Credential Management API
+        // This is required because React's e.preventDefault() blocks native form submission
+        // which is what password managers normally hook into
+        if ('credentials' in navigator && 'PasswordCredential' in window) {
+          try {
+            // @ts-expect-error - PasswordCredential not in all TS libs
+            const cred = new PasswordCredential({
+              id: user?.email || '',
+              password: password,
+              name: user?.email || 'Messaging Password',
+            });
+            await navigator.credentials.store(cred);
+            logger.info('Credentials saved to password manager');
+          } catch (credErr) {
+            // Non-fatal - some browsers may not support this
+            logger.warn('Could not save to password manager', {
+              error: credErr,
+            });
+          }
+        }
+
         // Send welcome message
         if (user?.id && keyPair.privateKey && keyPair.publicKeyJwk) {
           import('@/services/messaging/welcome-service')

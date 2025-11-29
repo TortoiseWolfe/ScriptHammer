@@ -175,8 +175,8 @@ export default function ChatWindow({
         />
       </div>
 
-      {/* Message Input - fixed height, safe-area for mobile keyboards */}
-      <div className="border-base-300 bg-base-100 shrink-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Message Input - fixed height with generous bottom padding for UX */}
+      <div className="border-base-300 bg-base-100 shrink-0 border-t px-4 pt-4 pb-[max(2rem,calc(1.5rem+env(safe-area-inset-bottom)))]">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}

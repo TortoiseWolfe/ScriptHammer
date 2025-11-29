@@ -367,9 +367,9 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 fixed top-16 right-0 bottom-0 left-0">
-        {/* Mobile Drawer Pattern - use explicit height calc instead of h-full */}
-        <div className="drawer md:drawer-open h-[calc(100dvh-4rem)]">
+      <div className="bg-base-100 fixed top-16 right-0 bottom-4 left-0">
+        {/* Mobile Drawer Pattern - h-full fills the fixed container with bottom clearance */}
+        <div className="drawer md:drawer-open h-full">
           <input
             id="sidebar-drawer"
             type="checkbox"

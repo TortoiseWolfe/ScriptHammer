@@ -89,6 +89,31 @@ export function ReAuthModal({
     }
   }, [isOpen]);
 
+  // Try to auto-fill from password manager using Credential Management API
+  useEffect(() => {
+    if (isOpen && !checkingKeys && user?.email) {
+      const tryAutoFill = async () => {
+        if ('credentials' in navigator && 'PasswordCredential' in window) {
+          try {
+            // @ts-expect-error - PasswordCredential not in all TS libs
+            const cred = await navigator.credentials.get({
+              password: true,
+              mediation: 'optional',
+            });
+            if (cred && 'password' in cred && cred.password) {
+              setPassword(cred.password as string);
+              logger.info('Auto-filled password from credential manager');
+            }
+          } catch (err) {
+            // Non-fatal - user can still type manually
+            logger.debug('Credential auto-fill not available', { error: err });
+          }
+        }
+      };
+      tryAutoFill();
+    }
+  }, [isOpen, checkingKeys, user?.email]);
+
   // Focus password input when modal opens
   useEffect(() => {
     if (isOpen && passwordInputRef.current) {
@@ -239,22 +264,29 @@ export function ReAuthModal({
               )}
             </p>
 
-            {/* Email field for password manager compatibility */}
-            {oauthUser && (
-              <div className="form-control mb-4">
-                <label className="label" htmlFor="reauth-email">
-                  <span className="label-text">Account</span>
-                </label>
-                <input
-                  id="reauth-email"
-                  type="email"
-                  value={user?.email || ''}
-                  readOnly
-                  className="input input-bordered bg-base-200 min-h-11 w-full"
-                  autoComplete="username"
-                />
-              </div>
-            )}
+            {/* Hidden username field for password manager matching */}
+            <input
+              type="hidden"
+              name="username"
+              autoComplete="username"
+              value={user?.email || ''}
+            />
+
+            {/* Email field for password manager compatibility - shown for all users */}
+            <div className="form-control mb-4">
+              <label className="label" htmlFor="reauth-email">
+                <span className="label-text">Account</span>
+              </label>
+              <input
+                id="reauth-email"
+                type="email"
+                name="email"
+                value={user?.email || ''}
+                readOnly
+                className="input input-bordered bg-base-200 min-h-11 w-full"
+                autoComplete="username email"
+              />
+            </div>
 
             <div className="form-control">
               <label className="label" htmlFor="reauth-password">
@@ -266,6 +298,7 @@ export function ReAuthModal({
                 <input
                   ref={passwordInputRef}
                   id="reauth-password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
