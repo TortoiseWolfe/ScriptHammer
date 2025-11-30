@@ -189,7 +189,7 @@ export default function MessageInput({
         }`}
         aria-live="polite"
       >
-        {charCount} / {charLimit} characters
+        {charCount || 0} / {charLimit} characters
         {remaining < 100 && ` (${remaining} remaining)`}
       </div>
     </div>
