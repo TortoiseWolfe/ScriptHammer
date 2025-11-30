@@ -25,6 +25,8 @@ export interface UnifiedSidebarProps {
   onUnreadCountChange?: (count: number) => void;
   /** Pending connection count for badge display */
   pendingConnectionCount?: number;
+  /** Callback when pending connection count changes (FR-006) */
+  onPendingConnectionCountChange?: (count: number) => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -43,6 +45,7 @@ export default function UnifiedSidebar({
   unreadCount = 0,
   onUnreadCountChange,
   pendingConnectionCount = 0,
+  onPendingConnectionCountChange,
   className = '',
 }: UnifiedSidebarProps) {
   const handleMessage = async (userId: string) => {
@@ -102,7 +105,10 @@ export default function UnifiedSidebar({
         )}
         {activeTab === 'connections' && (
           <div className="p-4">
-            <ConnectionManager onMessage={handleMessage} />
+            <ConnectionManager
+              onMessage={handleMessage}
+              onPendingConnectionCountChange={onPendingConnectionCountChange}
+            />
           </div>
         )}
       </div>

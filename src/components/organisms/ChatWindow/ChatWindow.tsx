@@ -4,6 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import MessageThread from '@/components/molecular/MessageThread';
 import MessageInput from '@/components/atomic/MessageInput';
 import type { DecryptedMessage } from '@/types/messaging';
+import { cn } from '@/lib/utils';
 import { useKeyboardShortcuts, shortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useReadReceipts } from '@/hooks/useReadReceipts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -121,7 +122,7 @@ export default function ChatWindow({
 
   return (
     <div
-      className={`grid h-full grid-rows-[auto_1fr_auto]${className ? ` ${className}` : ''}`}
+      className={cn('grid h-full grid-rows-[auto_1fr_auto]', className)}
       data-testid="chat-window"
     >
       {/* Row 1: Header + Banners (auto height) */}

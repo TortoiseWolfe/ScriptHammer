@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MESSAGE_CONSTRAINTS } from '@/types/messaging';
+import { cn } from '@/lib/utils';
 
 export interface MessageInputProps {
   /** Callback when message is sent */
@@ -141,7 +142,7 @@ export default function MessageInput({
   const isDisabled = disabled || sending || charCount > charLimit;
 
   return (
-    <div className={`flex flex-col gap-2${className ? ` ${className}` : ''}`}>
+    <div className={cn('flex flex-col gap-2', className)}>
       {error && (
         <div className="alert alert-error" role="alert">
           <span>{error}</span>
