@@ -95,11 +95,10 @@ export function ReAuthModal({
       const tryAutoFill = async () => {
         if ('credentials' in navigator && 'PasswordCredential' in window) {
           try {
-            // @ts-expect-error - PasswordCredential not in all TS libs
             const cred = await navigator.credentials.get({
               password: true,
               mediation: 'optional',
-            });
+            } as CredentialRequestOptions);
             if (cred && 'password' in cred && cred.password) {
               setPassword(cred.password as string);
               logger.info('Auto-filled password from credential manager');
@@ -284,7 +283,7 @@ export function ReAuthModal({
                 value={user?.email || ''}
                 readOnly
                 className="input input-bordered bg-base-200 min-h-11 w-full"
-                autoComplete="username email"
+                autoComplete="username"
               />
             </div>
 
