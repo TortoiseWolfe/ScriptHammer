@@ -42,6 +42,8 @@ export default defineConfig({
       'src/lib/avatar/__tests__/image-processing.test.ts', // 6 tests - requires real Canvas
       'src/lib/avatar/__tests__/validation.test.ts', // 7 tests - createImageBitmap dimension checks need real browser
       'tests/integration/avatar/upload-flow.integration.test.ts', // 4 tests - requires real browser
+      // Exclude messaging schema verification - hits real Supabase, rate limit / transient failures
+      'tests/integration/messaging/database-setup.test.ts', // DB schema verification - run manually after migrations
     ],
     coverage: {
       provider: 'v8',
