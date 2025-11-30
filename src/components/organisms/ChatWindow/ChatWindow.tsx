@@ -121,49 +121,52 @@ export default function ChatWindow({
 
   return (
     <div
-      className={`flex h-full flex-col overflow-hidden${className ? ` ${className}` : ''}`}
+      className={`grid h-full grid-rows-[auto_1fr_auto]${className ? ` ${className}` : ''}`}
       data-testid="chat-window"
     >
-      {/* Chat Header - fixed height */}
-      <header className="border-base-300 bg-base-200 shrink-0 border-b px-4 py-3">
-        <h2 className="text-lg font-semibold">{participantName}</h2>
-      </header>
+      {/* Row 1: Header + Banners (auto height) */}
+      <div>
+        {/* Chat Header */}
+        <header className="border-base-300 bg-base-200 border-b px-4 py-3">
+          <h2 className="text-lg font-semibold">{participantName}</h2>
+        </header>
 
-      {/* Blocked User Banner - fixed height when shown */}
-      {isBlocked && (
-        <div className="alert alert-warning shrink-0" role="alert">
-          <span>
-            {participantName} has blocked you. You cannot send messages.
-          </span>
-        </div>
-      )}
+        {/* Blocked User Banner */}
+        {isBlocked && (
+          <div className="alert alert-warning" role="alert">
+            <span>
+              {participantName} has blocked you. You cannot send messages.
+            </span>
+          </div>
+        )}
 
-      {/* All Messages Undecryptable Banner (Feature 006) - fixed height when shown */}
-      {allMessagesUndecryptable && (
-        <div className="alert m-2 shrink-0" role="alert">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 shrink-0"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-            />
-          </svg>
-          <span>
-            All messages in this conversation were encrypted with previous keys
-            and cannot be read.
-          </span>
-        </div>
-      )}
+        {/* All Messages Undecryptable Banner (Feature 006) */}
+        {allMessagesUndecryptable && (
+          <div className="alert m-2" role="alert">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            <span>
+              All messages in this conversation were encrypted with previous
+              keys and cannot be read.
+            </span>
+          </div>
+        )}
+      </div>
 
-      {/* Message Thread - takes remaining space, allows internal scroll */}
-      <div className="min-h-0 flex-1">
+      {/* Row 2: Message Thread (1fr - fills remaining space) */}
+      <div className="h-full min-h-0">
         <MessageThread
           messages={messages}
           onEditMessage={onEditMessage}
@@ -175,8 +178,8 @@ export default function ChatWindow({
         />
       </div>
 
-      {/* Message Input - fixed height with generous bottom padding for UX */}
-      <div className="border-base-300 bg-base-100 shrink-0 border-t px-4 pt-4 pb-[max(2rem,calc(1.5rem+env(safe-area-inset-bottom)))]">
+      {/* Row 3: Message Input (auto height) */}
+      <div className="border-base-300 bg-base-100 border-t px-4 pt-4 pb-[max(3rem,calc(2rem+env(safe-area-inset-bottom)))]">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}
