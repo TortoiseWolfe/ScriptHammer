@@ -9,6 +9,35 @@ import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:atomic:MessageBubble');
 
+/**
+ * Parse basic markdown: **bold**, *italic*, `code`
+ * Feature: 008-feature-008-ux
+ * @param text - The text to parse for markdown syntax
+ * @returns React nodes with markdown rendered as HTML elements
+ */
+const parseMarkdown = (text: string): React.ReactNode => {
+  // Pattern matches: **bold**, *italic*, `code` (bold must come before italic)
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+  const parts = text.split(pattern);
+
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={i} className="bg-base-300 rounded px-1">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    return part;
+  });
+};
+
 export interface MessageBubbleProps {
   /** Message data */
   message: DecryptedMessage;
@@ -279,7 +308,7 @@ const MessageBubble = memo(
           ) : (
             <>
               <p className="break-words whitespace-pre-wrap">
-                {message.content}
+                {parseMarkdown(message.content)}
               </p>
               {(canEdit || canDelete) && (
                 <div className="mt-2 flex justify-end gap-1">
