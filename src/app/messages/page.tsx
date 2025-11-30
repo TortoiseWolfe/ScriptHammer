@@ -367,7 +367,7 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 fixed top-16 right-0 bottom-4 left-0">
+      <div className="bg-base-100 fixed top-16 right-0 bottom-0 left-0">
         {/* Mobile Drawer Pattern - h-full fills the fixed container with bottom clearance */}
         <div className="drawer md:drawer-open h-full">
           <input
