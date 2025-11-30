@@ -56,6 +56,9 @@ function MessagesContent() {
   useEffect(() => {
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
+    } else if (!tabParam && activeTab !== 'chats') {
+      // Reset to chats tab when no tab param in URL
+      setActiveTab('chats');
     }
   }, [tabParam, activeTab]);
 
