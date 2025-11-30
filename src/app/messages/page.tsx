@@ -486,13 +486,13 @@ function MessagesContent() {
           </div>
 
           {/* Sidebar Drawer */}
-          <div className="drawer-side z-40">
+          <div className="drawer-side !top-0 z-40 !h-full">
             <label
               htmlFor="sidebar-drawer"
               aria-label="Close sidebar"
               className="drawer-overlay"
             ></label>
-            <aside className="bg-base-100 border-base-300 h-full w-80 border-r lg:w-96">
+            <aside className="bg-base-100 border-base-300 h-full w-80 overflow-y-auto border-r lg:w-96">
               <UnifiedSidebar
                 selectedConversationId={conversationId}
                 onConversationSelect={handleConversationSelect}
