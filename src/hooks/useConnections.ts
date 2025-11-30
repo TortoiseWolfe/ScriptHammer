@@ -19,8 +19,10 @@ export function useConnections() {
     try {
       const data = await connectionService.getConnections();
       setConnections(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load connections');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load connections';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -34,8 +36,10 @@ export function useConnections() {
         action: 'accept',
       });
       await fetchConnections();
-    } catch (err: any) {
-      setError(err.message || 'Failed to accept request');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to accept request';
+      setError(message);
       throw err;
     }
   };
@@ -48,8 +52,10 @@ export function useConnections() {
         action: 'decline',
       });
       await fetchConnections();
-    } catch (err: any) {
-      setError(err.message || 'Failed to decline request');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to decline request';
+      setError(message);
       throw err;
     }
   };
@@ -62,8 +68,10 @@ export function useConnections() {
         action: 'block',
       });
       await fetchConnections();
-    } catch (err: any) {
-      setError(err.message || 'Failed to block user');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to block user';
+      setError(message);
       throw err;
     }
   };
@@ -73,8 +81,10 @@ export function useConnections() {
     try {
       await connectionService.removeConnection(connectionId);
       await fetchConnections();
-    } catch (err: any) {
-      setError(err.message || 'Failed to remove connection');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to remove connection';
+      setError(message);
       throw err;
     }
   };

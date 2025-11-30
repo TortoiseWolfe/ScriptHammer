@@ -78,8 +78,10 @@ export default function UserSearch({
       if (onRequestSent) {
         onRequestSent(addresseeId);
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to send friend request');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to send friend request';
+      setError(message);
     } finally {
       setSendingRequest(null);
     }
