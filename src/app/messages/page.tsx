@@ -334,7 +334,7 @@ function MessagesContent() {
 
   if (checkingKeys) {
     return (
-      <div className="fixed inset-0 top-16 flex items-center justify-center">
+      <div className="fixed inset-x-0 top-16 bottom-28 flex items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
@@ -379,8 +379,8 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-24 overflow-hidden">
-        {/* Mobile Drawer Pattern - h-full fills the fixed container with bottom clearance */}
+      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-28 overflow-hidden">
+        {/* Mobile Drawer Pattern - fixed positioning with footer clearance */}
         <div className="drawer md:drawer-open h-full">
           <input
             id="sidebar-drawer"
@@ -391,7 +391,7 @@ function MessagesContent() {
           />
 
           {/* Main Content (Chat Window) - CSS Grid for reliable height */}
-          <div className="drawer-content flex h-full flex-col overflow-hidden">
+          <div className="drawer-content flex h-full flex-col overflow-hidden md:ml-80 lg:ml-96">
             {/* Mobile header with menu button - shrink-0 keeps fixed height */}
             <div className="navbar bg-base-100 border-base-300 shrink-0 border-b md:hidden">
               <div className="flex-none">
@@ -500,7 +500,7 @@ function MessagesContent() {
           </div>
 
           {/* Sidebar Drawer */}
-          <div className="drawer-side z-40 h-full">
+          <div className="drawer-side z-40">
             <label
               htmlFor="sidebar-drawer"
               aria-label="Close sidebar"

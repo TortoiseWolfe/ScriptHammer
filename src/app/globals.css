@@ -20,6 +20,17 @@
     lemonade, night, coffee, winter, dim, nord, sunset;
 }
 
+/* Override DaisyUI drawer-side to respect container bounds
+ * DaisyUI's default uses position:fixed + height:100dvh which is viewport-relative.
+ * This makes it absolute (relative to nearest positioned ancestor) so it stays
+ * within containers like the messages page which has bottom-24 for footer clearance.
+ */
+.drawer-side {
+  position: absolute !important;
+  height: 100% !important;
+  top: 0 !important;
+}
+
 /* Font Loading Optimization */
 @font-face {
   font-family: 'Geist';
