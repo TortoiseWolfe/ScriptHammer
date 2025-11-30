@@ -305,13 +305,11 @@ export default function MessageThread({
 
   return (
     <Profiler id="MessageThread" onRender={onRenderCallback}>
-      <div
-        className={`relative h-full overflow-hidden${className ? ` ${className}` : ''}`}
-      >
+      <div className={`relative h-full${className ? ` ${className}` : ''}`}>
         <div
           ref={parentRef}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto"
+          className="absolute inset-0 overflow-y-auto"
           data-testid="message-thread"
           style={{ overscrollBehavior: 'contain' }}
         >
@@ -334,7 +332,7 @@ export default function MessageThread({
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="btn btn-circle btn-primary absolute right-4 bottom-4 min-h-11 min-w-11 shadow-lg"
+            className="btn btn-circle btn-primary absolute right-4 bottom-4 z-10 min-h-11 min-w-11 shadow-lg"
             aria-label="Jump to bottom"
             data-testid="jump-to-bottom"
           >

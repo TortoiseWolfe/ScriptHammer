@@ -410,10 +410,10 @@ function MessagesContent() {
               </div>
             </div>
 
-            {/* Chat content - min-h-0 flex-1 fills remaining space */}
-            <main className="min-h-0 flex-1 overflow-hidden">
+            {/* Chat content - flex column for error banner + ChatWindow */}
+            <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {conversationId ? (
-                <div className="flex h-full flex-col overflow-hidden">
+                <>
                   {error && (
                     <div className="alert alert-info m-4 shrink-0" role="alert">
                       <svg
@@ -449,7 +449,7 @@ function MessagesContent() {
                     participantName={participantName}
                     className="min-h-0 flex-1"
                   />
-                </div>
+                </>
               ) : (
                 <div className="bg-base-200 flex h-full items-center justify-center">
                   <div className="text-center">
