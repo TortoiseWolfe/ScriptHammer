@@ -162,8 +162,10 @@ export function useConversationList() {
       );
 
       setConversations(conversationItems);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load conversations');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load conversations';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -313,12 +315,14 @@ export function useConversationList() {
         logger.info('Successfully archived conversation', { conversationId });
         // Reload to update the list
         loadConversations();
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('Failed to archive conversation', {
           conversationId,
           error: err,
         });
-        setError(err.message || 'Failed to archive conversation');
+        const message =
+          err instanceof Error ? err.message : 'Failed to archive conversation';
+        setError(message);
       }
     },
     [loadConversations]
@@ -331,8 +335,12 @@ export function useConversationList() {
         await messageService.unarchiveConversation(conversationId);
         // Reload to update the list
         loadConversations();
-      } catch (err: any) {
-        setError(err.message || 'Failed to unarchive conversation');
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Failed to unarchive conversation';
+        setError(message);
       }
     },
     [loadConversations]
