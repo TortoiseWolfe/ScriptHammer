@@ -379,7 +379,7 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-24 z-20 overflow-hidden">
+      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-24 overflow-hidden">
         {/* Mobile Drawer Pattern - h-full fills the fixed container with bottom clearance */}
         <div className="drawer md:drawer-open h-full">
           <input
@@ -500,7 +500,7 @@ function MessagesContent() {
           </div>
 
           {/* Sidebar Drawer */}
-          <div className="drawer-side !top-0 z-40 !h-full">
+          <div className="drawer-side z-40 h-full">
             <label
               htmlFor="sidebar-drawer"
               aria-label="Close sidebar"

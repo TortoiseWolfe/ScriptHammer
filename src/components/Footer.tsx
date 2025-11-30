@@ -2,7 +2,7 @@ import React from 'react';
 
 export function Footer() {
   return (
-    <footer className="bg-base-200/50 border-base-300 z-10 mt-auto border-t py-4 text-center sm:py-6">
+    <footer className="bg-base-200/50 border-base-300 mt-auto border-t py-4 text-center sm:py-6">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <p className="text-base-content/60 text-sm leading-relaxed">
           Made by{' '}
