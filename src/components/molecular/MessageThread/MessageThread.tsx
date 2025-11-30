@@ -17,6 +17,12 @@ import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:molecular:MessageThread');
 
+/** Conditional Profiler wrapper - only active in development (FR-013) */
+const ProfilerWrapper =
+  process.env.NODE_ENV === 'development'
+    ? Profiler
+    : ({ children }: { children: React.ReactNode }) => <>{children}</>;
+
 export interface MessageThreadProps {
   /** Array of decrypted messages */
   messages: DecryptedMessage[];
@@ -38,8 +44,10 @@ export interface MessageThreadProps {
   className?: string;
 }
 
-// Performance monitoring: 100 messages is the threshold for virtual scrolling
+/** Minimum messages for virtual scrolling (performance threshold) */
 const VIRTUAL_SCROLL_THRESHOLD = 100;
+/** Distance from bottom (px) to show "jump to bottom" button */
+const SHOW_JUMP_BUTTON_THRESHOLD = 500;
 
 /**
  * MessageThread component
@@ -182,8 +190,8 @@ export default function MessageThread({
     const { scrollTop, scrollHeight, clientHeight } = parent;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
-    // Show scroll button if more than 500px from bottom
-    const shouldShowButton = distanceFromBottom > 500;
+    // Show scroll button if more than threshold from bottom
+    const shouldShowButton = distanceFromBottom > SHOW_JUMP_BUTTON_THRESHOLD;
     setShowScrollButton(shouldShowButton);
 
     // Update auto-scroll behavior
@@ -248,7 +256,7 @@ export default function MessageThread({
             const message = messages[virtualItem.index];
             return (
               <div
-                key={virtualItem.key}
+                key={message.id}
                 data-index={virtualItem.index}
                 ref={virtualizer.measureElement}
                 style={{
@@ -304,7 +312,7 @@ export default function MessageThread({
   };
 
   return (
-    <Profiler id="MessageThread" onRender={onRenderCallback}>
+    <ProfilerWrapper id="MessageThread" onRender={onRenderCallback}>
       <div className={`relative h-full${className ? ` ${className}` : ''}`}>
         <div
           ref={parentRef}
@@ -340,6 +348,6 @@ export default function MessageThread({
           </button>
         )}
       </div>
-    </Profiler>
+    </ProfilerWrapper>
   );
 }

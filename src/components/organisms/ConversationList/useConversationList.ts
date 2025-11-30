@@ -299,6 +299,7 @@ export function useConversationList() {
       });
 
     return () => {
+      channel.unsubscribe(); // Explicit unsubscribe first (FR-015)
       supabase.removeChannel(channel);
     };
   }, [loadConversations]);

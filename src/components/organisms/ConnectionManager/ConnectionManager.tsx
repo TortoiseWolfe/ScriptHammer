@@ -10,12 +10,15 @@ export interface ConnectionManagerProps {
   className?: string;
   /** Callback when "Message" button clicked on accepted connection (Feature 037) */
   onMessage?: (userId: string) => void;
+  /** Callback when pending connection count changes (FR-007) */
+  onPendingConnectionCountChange?: (count: number) => void;
 }
 
 export default function ConnectionManager({
   onRefreshAvailable,
   className = '',
   onMessage,
+  onPendingConnectionCountChange,
 }: ConnectionManagerProps) {
   const {
     connections,
@@ -34,6 +37,11 @@ export default function ConnectionManager({
       onRefreshAvailable(refreshConnections);
     }
   }, [refreshConnections, onRefreshAvailable]);
+
+  // Report pending connection count changes to parent (FR-007)
+  React.useEffect(() => {
+    onPendingConnectionCountChange?.(connections.pending_received.length);
+  }, [connections.pending_received.length, onPendingConnectionCountChange]);
   const [activeTab, setActiveTab] = useState<
     'sent' | 'received' | 'accepted' | 'blocked'
   >('received');

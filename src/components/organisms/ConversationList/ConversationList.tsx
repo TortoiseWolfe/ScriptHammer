@@ -140,7 +140,7 @@ export default function ConversationList({
               <button
                 className="btn btn-square min-h-11 min-w-11"
                 onClick={handleClearSearch}
-                aria-label="Clear search"
+                aria-label="Clear conversation search"
               >
                 ✕
               </button>

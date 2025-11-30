@@ -10,12 +10,16 @@ import React, {
 import { useSearchParams, useRouter } from 'next/navigation';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import UnifiedSidebar from '@/components/organisms/UnifiedSidebar';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { ReAuthModal } from '@/components/auth/ReAuthModal';
 import { MessagingGate } from '@/components/auth/MessagingGate';
 import { messageService } from '@/services/messaging/message-service';
 import { keyManagementService } from '@/services/messaging/key-service';
 import { connectionService } from '@/services/messaging/connection-service';
+import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage, SidebarTab } from '@/types/messaging';
+
+const logger = createLogger('app:messages');
 
 /**
  * Messages Content Component - wrapped in Suspense boundary
@@ -114,6 +118,7 @@ function MessagesContent() {
 
   // State for post-setup toast
   const [showSetupToast, setShowSetupToast] = useState(false);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Check if encryption keys are available on mount
   useEffect(() => {
@@ -143,20 +148,30 @@ function MessagesContent() {
         if (setupComplete === 'true') {
           setShowSetupToast(true);
           sessionStorage.removeItem('messaging_setup_complete');
-          // Auto-dismiss after 10 seconds
-          setTimeout(() => setShowSetupToast(false), 10000);
+          // Auto-dismiss after 10 seconds - store in ref for cleanup (FR-003)
+          toastTimeoutRef.current = setTimeout(
+            () => setShowSetupToast(false),
+            10000
+          );
         }
       }
     };
     checkKeys();
+
+    // Cleanup toast timeout on unmount (FR-003)
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
   }, [router]);
 
   useEffect(() => {
     if (conversationId && !needsReAuth && !checkingKeys) {
-      loadConversationInfo();
-      loadMessages();
+      // Chain loadConversationInfo then loadMessages to ensure participant info is available before messages render (FR-019)
+      loadConversationInfo().then(() => loadMessages());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadConversationInfo and loadMessages are intentionally excluded to prevent re-fetching when other state changes; they should only run when conversationId/auth state changes (FR-005)
   }, [conversationId, needsReAuth, checkingKeys]);
 
   // Update drawer state when conversation changes
@@ -195,10 +210,7 @@ function MessagesContent() {
       } | null;
 
       if (!conversation) {
-        console.warn(
-          '[loadConversationInfo] Conversation not found:',
-          conversationId
-        );
+        logger.warn('Conversation not found', { conversationId });
         return;
       }
 
@@ -214,10 +226,7 @@ function MessagesContent() {
         .maybeSingle();
 
       if (profileError) {
-        console.warn(
-          '[loadConversationInfo] Profile query error:',
-          profileError.message
-        );
+        logger.warn('Profile query error', { error: profileError.message });
         setParticipantName('Unknown User');
         return;
       }
@@ -229,18 +238,12 @@ function MessagesContent() {
         );
       } else {
         // Profile not found - could be deleted user or orphaned conversation
-        console.warn(
-          '[loadConversationInfo] Profile not found for:',
-          otherParticipantId
-        );
-        setParticipantName('Deleted User');
+        logger.warn('Profile not found', { otherParticipantId });
+        setParticipantName('Unknown User');
       }
     } catch (err) {
-      // Log the error for debugging (Feature 006)
-      console.warn(
-        '[loadConversationInfo] Error loading participant info:',
-        err
-      );
+      // Log the error for debugging (FR-004)
+      logger.warn('Error loading participant info', { error: err });
       setParticipantName('Unknown User');
     }
   };
@@ -281,8 +284,10 @@ function MessagesContent() {
 
       setHasMore(result.has_more);
       setCursor(result.cursor);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load messages');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load messages';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -301,8 +306,12 @@ function MessagesContent() {
       });
 
       await loadMessages();
-    } catch (err: any) {
-      setError(err.message || 'Failed to send message. Please try again.');
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Failed to send message. Please try again.';
+      setError(message);
     } finally {
       setSending(false);
     }
@@ -441,17 +450,19 @@ function MessagesContent() {
                       </button>
                     </div>
                   )}
-                  <ChatWindow
-                    conversationId={conversationId}
-                    messages={messages}
-                    onSendMessage={handleSendMessage}
-                    onLoadMore={handleLoadMore}
-                    hasMore={hasMore}
-                    loading={loading}
-                    sending={sending}
-                    participantName={participantName}
-                    className="min-h-0 flex-1"
-                  />
+                  <ErrorBoundary level="component">
+                    <ChatWindow
+                      conversationId={conversationId}
+                      messages={messages}
+                      onSendMessage={handleSendMessage}
+                      onLoadMore={handleLoadMore}
+                      hasMore={hasMore}
+                      loading={loading}
+                      sending={sending}
+                      participantName={participantName}
+                      className="min-h-0 flex-1"
+                    />
+                  </ErrorBoundary>
                 </>
               ) : (
                 <div className="bg-base-200 flex h-full items-center justify-center">
@@ -505,6 +516,7 @@ function MessagesContent() {
                 unreadCount={unreadCount}
                 onUnreadCountChange={setUnreadCount}
                 pendingConnectionCount={pendingConnectionCount}
+                onPendingConnectionCountChange={setPendingConnectionCount}
               />
             </aside>
           </div>
