@@ -125,7 +125,9 @@ export default function RootLayout({
               <GlobalNav />
               <CountdownBanner />
               <ErrorBoundary level="page">
-                <main className="flex-1">{children}</main>
+                <main className="min-h-0 flex-1 overflow-hidden">
+                  {children}
+                </main>
               </ErrorBoundary>
               <Footer />
               <CookieConsent />

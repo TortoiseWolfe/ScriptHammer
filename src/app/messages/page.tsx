@@ -367,7 +367,7 @@ function MessagesContent() {
         </div>
       )}
 
-      <div className="bg-base-100 absolute inset-x-0 top-0 bottom-0">
+      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-20 overflow-hidden">
         {/* Mobile Drawer Pattern - h-full fills the fixed container with bottom clearance */}
         <div className="drawer md:drawer-open h-full">
           <input
@@ -379,7 +379,7 @@ function MessagesContent() {
           />
 
           {/* Main Content (Chat Window) - CSS Grid for reliable height */}
-          <div className="drawer-content flex h-full flex-col">
+          <div className="drawer-content flex h-full flex-col overflow-hidden">
             {/* Mobile header with menu button - shrink-0 keeps fixed height */}
             <div className="navbar bg-base-100 border-base-300 shrink-0 border-b md:hidden">
               <div className="flex-none">

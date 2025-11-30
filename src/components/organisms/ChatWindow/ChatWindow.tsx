@@ -179,7 +179,7 @@ export default function ChatWindow({
       </div>
 
       {/* Row 3: Message Input (auto height) */}
-      <div className="border-base-300 bg-base-100 border-t px-4 pt-4 pb-[max(3rem,calc(2rem+env(safe-area-inset-bottom)))]">
+      <div className="border-base-300 bg-base-100 border-t px-4 pt-4 pb-6">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}
