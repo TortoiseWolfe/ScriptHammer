@@ -1,6 +1,55 @@
 {
   "posts": [
     {
+      "id": "post_sec_encrypt_01",
+      "slug": "message-encryption-security-explained",
+      "title": "How We Protect Your Messages: E2E Encryption",
+      "content": "\n# How ScriptHammer Protects Your Messages\n\n## The Bottom Line\n\nYour messages on ScriptHammer are **end-to-end encrypted**. This means we literally cannot read them—only you and the person you're messaging can. Even if someone broke into our servers, your message content would be scrambled nonsense to them.\n\n## Why We Built This\n\nMost social networks can read your private messages. Not because they're nosy (hopefully), but because of how they're built. Your messages sit on their servers in readable form, protected only by company policies and employee access controls.\n\nWe wanted something different. We believe private conversations should actually be private—not just from hackers, but from us too. Learn more about our [authentication system](/blog/authentication-supabase-oauth) that works alongside this encryption.\n\n## How It Works (The Simple Version)\n\nImagine you have a special lockbox:\n\n1. **Your password creates your unique key** - When you set up messaging, your password transforms into a digital key that only you have. We never see this key.\n\n2. **Every message gets locked before sending** - Before your message leaves your device, it gets scrambled using your key and the recipient's key together.\n\n3. **Only the recipient can unlock it** - The scrambled message travels through our servers to the other person. They use their key to unscramble it.\n\n4. **We only see scrambled text** - Our servers store your messages, but they're just random-looking characters to us. We couldn't read them even if we wanted to.\n\n## How We Compare to Other Platforms\n\n![Platform comparison chart showing ScriptHammer vs Facebook, Instagram, Twitter, and WhatsApp - only ScriptHammer and WhatsApp use encryption](/blog-images/message-encryption-security-explained/comparison-chart.png)\n\nWhatsApp also uses encryption, but there's a key difference: they control the key generation process. With ScriptHammer, your keys come from your password on your device—we're never involved in creating them.\n\n## What We're Honest About\n\nNo security system is perfect, and we believe you deserve to know our limitations:\n\n### We protect your message content, not everything\n\n- **Protected**: The actual words you write\n- **Not protected**: Who you message and when (we need this to deliver messages)\n\nThink of it like the postal service: they can see you sent a letter to someone, but they can't read what's inside.\n\n### Your password is crucial\n\nIf you forget your messaging password, we cannot recover your old messages. This is actually a security feature—it means we truly don't have access—but it also means **write down your password somewhere safe**.\n\n### We haven't had a professional security audit yet\n\nWe built this using industry-standard techniques recommended by [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password%5FStorage%5FCheat%5FSheet.html) (the same math that protects banking websites), but we're a small team and haven't paid for a formal security audit. We're transparent about this.\n\n### One password, all messages\n\nIf someone gets your password, they could read all your messages (not just new ones). Some messaging apps like [Signal](https://signal.org/) rotate keys constantly to prevent this, but it would mean you couldn't access messages from a new device. We chose convenience here—but it's a tradeoff you should understand.\n\n## Your Questions Answered\n\n**Q: What happens if you get hacked?**\nA: Hackers would get scrambled data. Without your password (which we don't have), they can't unscramble it.\n\n**Q: Can you read my messages if law enforcement asks?**\nA: No. We literally don't have the ability. We can only provide the scrambled version, which is useless without your password.\n\n**Q: What if I forget my password?**\nA: You'll need to set up encryption again with a new password. Old messages will be unreadable. Sorry—that's the price of real privacy.\n\n**Q: Is this the same as Signal?**\nA: Similar concept, different implementation. [Signal](https://signal.org/) uses a more advanced protocol with additional protections. We use proven cryptography but simpler key management.\n\n**Q: Should I trust this for highly sensitive information?**\nA: We'd recommend dedicated secure messengers ([Signal](https://signal.org/), etc.) for extremely sensitive communications. ScriptHammer's encryption is solid for normal private conversations, but hasn't been audited like those specialized apps.\n\n## The Technical Details (For the Curious)\n\nIf you're interested in the specifics:\n\n- **Key derivation**: [Argon2id](https://cheatsheetseries.owasp.org/cheatsheets/Password%5FStorage%5FCheat%5FSheet.html#argon2id) (memory-hard, time-hard)\n- **Key exchange**: ECDH with P-256 curve\n- **Message encryption**: AES-256-GCM\n- **Random IV**: 96 bits per message\n\nThese are all industry-standard, [OWASP-recommended](https://owasp.org/) algorithms.\n\n---\n\n**Have questions about our security?** We're happy to discuss—transparency is part of our commitment to you. Check out our [other blog posts](/blog/) or reach out anytime.\n",
+      "excerpt": "Your messages on ScriptHammer are end-to-end encrypted. We explain how it works, how we compare to other platforms, and what limitations exist—honestly.",
+      "publishedAt": "2025-11-30T00:00:00.000Z",
+      "updatedAt": "2025-11-30T00:00:00.000Z",
+      "status": "published",
+      "author": {
+        "id": "default",
+        "name": "ScriptHammer Team"
+      },
+      "metadata": {
+        "tags": [
+          "security",
+          "encryption",
+          "privacy",
+          "e2e",
+          "messaging"
+        ],
+        "categories": [
+          "security",
+          "transparency"
+        ],
+        "readingTime": 5,
+        "wordCount": 850,
+        "showToc": true,
+        "showAuthor": true,
+        "showShareButtons": true,
+        "featured": true,
+        "featuredImage": "/blog-images/message-encryption-security-explained/featured.png",
+        "featuredImageAlt": "End-to-end encryption explained with lock icons and security badges showing AES-256 and Argon2id"
+      },
+      "seo": {
+        "title": "Message Encryption: How We Protect Your Privacy",
+        "description": "Learn how ScriptHammer's E2E encryption protects your messages. Discover our security vs Facebook, honest limitations, and why we can't read your DMs.",
+        "keywords": [
+          "end-to-end encryption",
+          "private messaging",
+          "secure messaging",
+          "E2E encryption"
+        ],
+        "ogTitle": "Message Encryption: 5 Ways We Protect Your Privacy",
+        "ogDescription": "Learn how ScriptHammer's E2E encryption works, compare to Facebook/Instagram/WhatsApp, and discover our honest security limitations.",
+        "ogImage": "/blog-images/message-encryption-security-explained/featured-og.png",
+        "twitterCard": "summary_large_image"
+      }
+    },
+    {
       "id": "post_e6f87f22",
       "slug": "offline-payment-system-stripe-paypal",
       "title": "Offline Payment Integration: Stripe, PayPal & GDPR",
