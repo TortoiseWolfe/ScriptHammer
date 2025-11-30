@@ -7,45 +7,39 @@
     </linearGradient>
   </defs>
 
-  <!-- Background -->
+  <!-- Background - clean gradient without grid -->
   <rect width="800" height="450" fill="url(#bg-gradient)"/>
 
-  <!-- Grid pattern -->
-  <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-    <path d="M 30 0 L 0 0 0 30" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/>
-  </pattern>
-  <rect width="800" height="450" fill="url(#grid)"/>
-
-  <!-- Decorative circles -->
-  <circle cx="700" cy="100" r="50" fill="white" opacity="0.05"/>
-  <circle cx="100" cy="350" r="40" fill="white" opacity="0.05"/>
+  <!-- Subtle decorative circles -->
+  <circle cx="720" cy="80" r="60" fill="white" opacity="0.03"/>
+  <circle cx="80" cy="370" r="50" fill="white" opacity="0.03"/>
 
   <!-- Large lock icon -->
   <text x="400" y="140" font-family="Arial, sans-serif" font-size="72" text-anchor="middle" fill="white">🔒</text>
 
   <!-- Main Title -->
-  <text x="400" y="220" font-family="Arial, sans-serif" font-size="36" font-weight="bold" text-anchor="middle" fill="white">
+  <text x="400" y="220" font-family="Arial, sans-serif" font-size="38" font-weight="bold" text-anchor="middle" fill="white">
     Message Encryption
   </text>
 
   <!-- Subtitle -->
-  <text x="400" y="265" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="white" opacity="0.9">
+  <text x="400" y="268" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="white" opacity="0.9">
     An Honest Look at Our Security
   </text>
 
-  <!-- Tech badges -->
+  <!-- Tech badges with better contrast -->
   <g transform="translate(200, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.2"/>
+    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
     <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">AES-256</text>
   </g>
 
   <g transform="translate(340, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.2"/>
+    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
     <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">Argon2id</text>
   </g>
 
   <g transform="translate(480, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.2"/>
+    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
     <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">ECDH P-256</text>
   </g>
 
