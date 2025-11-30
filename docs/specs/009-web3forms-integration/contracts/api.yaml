@@ -27,21 +27,21 @@ paths:
               basic_submission:
                 summary: Basic contact form submission
                 value:
-                  access_key: "your-access-key-here"
-                  name: "John Doe"
-                  email: "john.doe@example.com"
-                  subject: "General Inquiry"
-                  message: "Hello, I have a question about your service."
+                  access_key: 'your-access-key-here'
+                  name: 'John Doe'
+                  email: 'john.doe@example.com'
+                  subject: 'General Inquiry'
+                  message: 'Hello, I have a question about your service.'
               detailed_submission:
                 summary: Detailed submission with metadata
                 value:
-                  access_key: "your-access-key-here"
-                  name: "Jane Smith"
-                  email: "jane.smith@example.com"
-                  subject: "Technical Support Request"
+                  access_key: 'your-access-key-here'
+                  name: 'Jane Smith'
+                  email: 'jane.smith@example.com'
+                  subject: 'Technical Support Request'
                   message: "I'm experiencing an issue with the application and need assistance."
-                  from_name: "CRUDkit Contact Form"
-                  _replyto: "jane.smith@example.com"
+                  from_name: 'CRUDkit Contact Form'
+                  _replyto: 'jane.smith@example.com'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/ContactFormSubmission'
@@ -57,14 +57,14 @@ paths:
                   summary: Successful submission
                   value:
                     success: true
-                    message: "Email sent successfully"
+                    message: 'Email sent successfully'
                     data:
-                      access_key: "your-access-key-here"
-                      from_name: "John Doe"
-                      from_email: "john.doe@example.com"
-                      date: "2025-09-15T19:47:00Z"
-                      subject: "General Inquiry"
-                      message: "Hello, I have a question about your service."
+                      access_key: 'your-access-key-here'
+                      from_name: 'John Doe'
+                      from_email: 'john.doe@example.com'
+                      date: '2025-09-15T19:47:00Z'
+                      subject: 'General Inquiry'
+                      message: 'Hello, I have a question about your service.'
         '400':
           description: Bad request - validation error
           content:
@@ -76,15 +76,15 @@ paths:
                   summary: Validation error
                   value:
                     success: false
-                    message: "Validation failed"
+                    message: 'Validation failed'
                     errors:
-                      - field: "email"
-                        message: "Invalid email address"
+                      - field: 'email'
+                        message: 'Invalid email address'
                 missing_access_key:
                   summary: Missing access key
                   value:
                     success: false
-                    message: "Missing access key"
+                    message: 'Missing access key'
         '429':
           description: Rate limit exceeded
           content:
@@ -96,7 +96,7 @@ paths:
                   summary: Rate limit exceeded
                   value:
                     success: false
-                    message: "Rate limit exceeded. Please try again later."
+                    message: 'Rate limit exceeded. Please try again later.'
         '500':
           description: Internal server error
           content:
@@ -108,7 +108,7 @@ paths:
                   summary: Server error
                   value:
                     success: false
-                    message: "Internal server error"
+                    message: 'Internal server error'
 
 components:
   schemas:
@@ -123,59 +123,59 @@ components:
         access_key:
           type: string
           description: Web3Forms access key (public)
-          example: "your-access-key-here"
+          example: 'your-access-key-here'
         name:
           type: string
           minLength: 2
           maxLength: 100
-          pattern: '^[a-zA-Z\s\-\'\.]+$'
+          pattern: "^[a-zA-Z\\s\\-'.]+$"
           description: Sender's full name
-          example: "John Doe"
+          example: 'John Doe'
         email:
           type: string
           format: email
           maxLength: 254
           description: Sender's email address
-          example: "john.doe@example.com"
+          example: 'john.doe@example.com'
         subject:
           type: string
           minLength: 5
           maxLength: 200
           description: Email subject line
-          example: "General Inquiry"
+          example: 'General Inquiry'
         message:
           type: string
           minLength: 10
           maxLength: 5000
           description: Message content
-          example: "Hello, I have a question about your service."
+          example: 'Hello, I have a question about your service.'
         from_name:
           type: string
           description: Optional display name for the sender
-          example: "CRUDkit Contact Form"
+          example: 'CRUDkit Contact Form'
         _replyto:
           type: string
           format: email
           description: Reply-to email address
-          example: "john.doe@example.com"
+          example: 'john.doe@example.com'
         _template:
           type: string
           description: Email template to use
-          example: "basic"
+          example: 'basic'
         _next:
           type: string
           format: uri
           description: Redirect URL after submission
-          example: "https://example.com/thank-you"
+          example: 'https://example.com/thank-you'
         _cc:
           type: string
           description: CC recipients (comma-separated)
-          example: "admin@example.com,manager@example.com"
+          example: 'admin@example.com,manager@example.com'
         _gotcha:
           type: string
           maxLength: 0
           description: Honeypot field for spam protection (must be empty)
-          example: ""
+          example: ''
 
     SuccessResponse:
       type: object
@@ -190,7 +190,7 @@ components:
         message:
           type: string
           description: Success message
-          example: "Email sent successfully"
+          example: 'Email sent successfully'
         data:
           type: object
           description: Submission data
@@ -234,7 +234,7 @@ components:
         message:
           type: string
           description: Error message
-          example: "Validation failed"
+          example: 'Validation failed'
         errors:
           type: array
           description: Detailed error information
@@ -244,11 +244,11 @@ components:
               field:
                 type: string
                 description: Field that caused the error
-                example: "email"
+                example: 'email'
               message:
                 type: string
                 description: Field-specific error message
-                example: "Invalid email address"
+                example: 'Invalid email address'
 
   securitySchemes:
     AccessKey:
@@ -266,114 +266,114 @@ tags:
 
 # Additional documentation for internal API contracts
 x-internal-docs:
-  description: "Internal API contracts for CRUDkit Web3Forms integration"
+  description: 'Internal API contracts for CRUDkit Web3Forms integration'
 
   react-hooks:
     useWeb3Forms:
-      description: "Custom hook for form submission management"
+      description: 'Custom hook for form submission management'
       parameters:
-        - name: "config"
-          type: "Web3FormsConfig"
+        - name: 'config'
+          type: 'Web3FormsConfig'
           required: false
-          description: "Optional configuration overrides"
+          description: 'Optional configuration overrides'
       returns:
-        type: "UseWeb3FormsReturn"
+        type: 'UseWeb3FormsReturn'
         properties:
-          - name: "submitForm"
-            type: "function"
-            description: "Submit form data"
-          - name: "state"
-            type: "FormSubmissionState"
-            description: "Current submission state"
-          - name: "reset"
-            type: "function"
-            description: "Reset form state"
+          - name: 'submitForm'
+            type: 'function'
+            description: 'Submit form data'
+          - name: 'state'
+            type: 'FormSubmissionState'
+            description: 'Current submission state'
+          - name: 'reset'
+            type: 'function'
+            description: 'Reset form state'
 
     useFormValidation:
-      description: "Form validation hook (existing)"
+      description: 'Form validation hook (existing)'
       parameters:
-        - name: "schema"
-          type: "ZodSchema"
+        - name: 'schema'
+          type: 'ZodSchema'
           required: true
-          description: "Validation schema"
-        - name: "options"
-          type: "ValidationOptions"
+          description: 'Validation schema'
+        - name: 'options'
+          type: 'ValidationOptions'
           required: false
-          description: "Validation configuration"
+          description: 'Validation configuration'
 
   utilities:
     web3forms:
       submitToWeb3Forms:
-        description: "Core submission function"
+        description: 'Core submission function'
         parameters:
-          - name: "data"
-            type: "ContactFormData"
+          - name: 'data'
+            type: 'ContactFormData'
             required: true
-          - name: "config"
-            type: "Web3FormsConfig"
+          - name: 'config'
+            type: 'Web3FormsConfig'
             required: false
         returns:
-          type: "Promise<Web3FormsResponse>"
+          type: 'Promise<Web3FormsResponse>'
         errors:
-          - "NetworkError"
-          - "ValidationError"
-          - "RateLimitError"
-          - "ServerError"
+          - 'NetworkError'
+          - 'ValidationError'
+          - 'RateLimitError'
+          - 'ServerError'
 
       validateFormData:
-        description: "Validate and sanitize form data"
+        description: 'Validate and sanitize form data'
         parameters:
-          - name: "data"
-            type: "unknown"
+          - name: 'data'
+            type: 'unknown'
             required: true
         returns:
-          type: "ContactFormData"
+          type: 'ContactFormData'
         errors:
-          - "ValidationError"
+          - 'ValidationError'
 
   components:
     ContactForm:
-      description: "Main contact form component"
+      description: 'Main contact form component'
       props:
-        - name: "className"
-          type: "string"
+        - name: 'className'
+          type: 'string'
           required: false
-          description: "Additional CSS classes"
-        - name: "onSuccess"
-          type: "(data: ContactFormData) => void"
+          description: 'Additional CSS classes'
+        - name: 'onSuccess'
+          type: '(data: ContactFormData) => void'
           required: false
-          description: "Success callback"
-        - name: "onError"
-          type: "(error: FormError) => void"
+          description: 'Success callback'
+        - name: 'onError'
+          type: '(error: FormError) => void'
           required: false
-          description: "Error callback"
-        - name: "initialData"
-          type: "Partial<ContactFormData>"
+          description: 'Error callback'
+        - name: 'initialData'
+          type: 'Partial<ContactFormData>'
           required: false
-          description: "Initial form values"
+          description: 'Initial form values'
 
     FormField:
-      description: "Reusable form field wrapper (existing)"
-      usage: "Used for consistent field layout and accessibility"
+      description: 'Reusable form field wrapper (existing)'
+      usage: 'Used for consistent field layout and accessibility'
 
   error-handling:
     strategies:
-      - name: "Retry Logic"
-        description: "Exponential backoff for network errors"
+      - name: 'Retry Logic'
+        description: 'Exponential backoff for network errors'
         configuration:
           maxRetries: 3
           baseDelay: 1000
           backoffFactor: 2
 
-      - name: "Offline Queue"
-        description: "Queue submissions when offline"
+      - name: 'Offline Queue'
+        description: 'Queue submissions when offline'
         configuration:
           maxQueueSize: 100
           retryInterval: 60000
           expirationTime: 86400000
 
-      - name: "Rate Limiting"
-        description: "Client-side rate limiting"
+      - name: 'Rate Limiting'
+        description: 'Client-side rate limiting'
         configuration:
           maxSubmissions: 5
           timeWindow: 300000
@@ -381,53 +381,53 @@ x-internal-docs:
 
   privacy:
     consent-integration:
-      description: "Integration with existing consent system"
+      description: 'Integration with existing consent system'
       requirements:
-        - "Check analytics consent before tracking events"
-        - "Check functional consent before saving drafts"
-        - "Respect user privacy preferences"
+        - 'Check analytics consent before tracking events'
+        - 'Check functional consent before saving drafts'
+        - 'Respect user privacy preferences'
 
     data-handling:
-      description: "Privacy-conscious data handling"
+      description: 'Privacy-conscious data handling'
       principles:
-        - "Minimal data collection"
-        - "No unnecessary persistence"
-        - "User control over data"
-        - "Transparent processing"
+        - 'Minimal data collection'
+        - 'No unnecessary persistence'
+        - 'User control over data'
+        - 'Transparent processing'
 
   performance:
     targets:
-      - metric: "Form render time"
-        target: "< 200ms"
-      - metric: "Validation feedback"
-        target: "< 100ms"
-      - metric: "Submission response"
-        target: "< 3000ms"
-      - metric: "Bundle size impact"
-        target: "< 8KB"
+      - metric: 'Form render time'
+        target: '< 200ms'
+      - metric: 'Validation feedback'
+        target: '< 100ms'
+      - metric: 'Submission response'
+        target: '< 3000ms'
+      - metric: 'Bundle size impact'
+        target: '< 8KB'
 
     optimizations:
-      - "Lazy load contact form component"
-      - "Debounced validation"
-      - "Progressive enhancement"
-      - "Code splitting"
+      - 'Lazy load contact form component'
+      - 'Debounced validation'
+      - 'Progressive enhancement'
+      - 'Code splitting'
 
   testing:
     strategies:
-      - name: "Unit Tests"
-        coverage: "Form validation, utilities, hooks"
-      - name: "Integration Tests"
-        coverage: "Form submission, error handling"
-      - name: "E2E Tests"
-        coverage: "Complete user flows"
-      - name: "Accessibility Tests"
-        coverage: "WCAG compliance, keyboard navigation"
+      - name: 'Unit Tests'
+        coverage: 'Form validation, utilities, hooks'
+      - name: 'Integration Tests'
+        coverage: 'Form submission, error handling'
+      - name: 'E2E Tests'
+        coverage: 'Complete user flows'
+      - name: 'Accessibility Tests'
+        coverage: 'WCAG compliance, keyboard navigation'
 
     mocking:
       web3forms-api:
         success-response:
           success: true
-          message: "Email sent successfully"
+          message: 'Email sent successfully'
         error-response:
           success: false
-          message: "Server error"
+          message: 'Server error'
