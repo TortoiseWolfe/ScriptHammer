@@ -487,12 +487,8 @@ describe('GroupKeyService', () => {
 
     it('should import key bytes', async () => {
       const keyBytes = crypto.getRandomValues(new Uint8Array(32));
-      // Use slice to get a proper ArrayBuffer (not a view of a shared buffer)
-      const keyBuffer = keyBytes.buffer.slice(
-        keyBytes.byteOffset,
-        keyBytes.byteOffset + keyBytes.byteLength
-      );
-      const key = await service.importKeyBytes(keyBuffer);
+      // Pass Uint8Array directly - service handles conversion
+      const key = await service.importKeyBytes(keyBytes);
 
       expect(key.algorithm.name).toBe('AES-GCM');
       expect((key.algorithm as AesKeyAlgorithm).length).toBe(256);

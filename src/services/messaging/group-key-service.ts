@@ -763,13 +763,16 @@ export class GroupKeyService {
 
   /**
    * Import group key from bytes
-   * @param keyBytes - Raw key bytes
+   * @param keyBytes - Raw key bytes (ArrayBuffer or Uint8Array)
    * @returns CryptoKey
    */
-  async importKeyBytes(keyBytes: ArrayBuffer): Promise<CryptoKey> {
+  async importKeyBytes(keyBytes: ArrayBuffer | Uint8Array): Promise<CryptoKey> {
+    // Ensure we have a proper Uint8Array for cross-platform compatibility
+    const bytes =
+      keyBytes instanceof Uint8Array ? keyBytes : new Uint8Array(keyBytes);
     return crypto.subtle.importKey(
       'raw',
-      keyBytes,
+      bytes as Uint8Array<ArrayBuffer>,
       { name: 'AES-GCM', length: 256 },
       true, // extractable for distribution
       ['encrypt', 'decrypt']
