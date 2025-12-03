@@ -325,6 +325,7 @@ function NewGroupContent() {
                     <div className="avatar placeholder">
                       <div className="bg-neutral text-neutral-content h-10 w-10 rounded-full">
                         {user.avatar_url ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
                           <img
                             src={user.avatar_url}
                             alt=""

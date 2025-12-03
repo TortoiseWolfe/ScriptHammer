@@ -270,10 +270,11 @@ export function CreateGroupModal({
                   <div className="avatar placeholder">
                     <div className="bg-neutral text-neutral-content h-8 w-8 rounded-full">
                       {user.avatar_url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={user.avatar_url}
                           alt=""
-                          className="rounded-full"
+                          className="rounded-full object-cover"
                         />
                       ) : (
                         <span className="text-sm">
