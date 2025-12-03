@@ -492,30 +492,111 @@ export type Database = {
       conversations: {
         Row: {
           id: string;
-          participant_1_id: string;
-          participant_2_id: string;
+          participant_1_id: string | null;
+          participant_2_id: string | null;
           last_message_at: string | null;
           archived_by_participant_1: boolean;
           archived_by_participant_2: boolean;
           created_at: string;
+          is_group: boolean;
+          group_name: string | null;
+          created_by: string | null;
+          current_key_version: number;
         };
         Insert: {
           id?: string;
-          participant_1_id: string;
-          participant_2_id: string;
+          participant_1_id?: string | null;
+          participant_2_id?: string | null;
           last_message_at?: string | null;
           archived_by_participant_1?: boolean;
           archived_by_participant_2?: boolean;
           created_at?: string;
+          is_group?: boolean;
+          group_name?: string | null;
+          created_by?: string | null;
+          current_key_version?: number;
         };
         Update: {
           id?: string;
-          participant_1_id?: string;
-          participant_2_id?: string;
+          participant_1_id?: string | null;
+          participant_2_id?: string | null;
           last_message_at?: string | null;
           archived_by_participant_1?: boolean;
           archived_by_participant_2?: boolean;
           created_at?: string;
+          is_group?: boolean;
+          group_name?: string | null;
+          created_by?: string | null;
+          current_key_version?: number;
+        };
+        Relationships: [];
+      };
+      conversation_members: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          role: 'owner' | 'member';
+          joined_at: string;
+          left_at: string | null;
+          key_version_joined: number;
+          key_status: 'active' | 'pending';
+          archived: boolean;
+          muted: boolean;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          role?: 'owner' | 'member';
+          joined_at?: string;
+          left_at?: string | null;
+          key_version_joined?: number;
+          key_status?: 'active' | 'pending';
+          archived?: boolean;
+          muted?: boolean;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          role?: 'owner' | 'member';
+          joined_at?: string;
+          left_at?: string | null;
+          key_version_joined?: number;
+          key_status?: 'active' | 'pending';
+          archived?: boolean;
+          muted?: boolean;
+        };
+        Relationships: [];
+      };
+      group_keys: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          key_version: number;
+          encrypted_key: string;
+          created_at: string;
+          created_by: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          key_version?: number;
+          encrypted_key: string;
+          created_at?: string;
+          created_by: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          key_version?: number;
+          encrypted_key?: string;
+          created_at?: string;
+          created_by?: string;
         };
         Relationships: [];
       };
@@ -533,6 +614,9 @@ export type Database = {
           delivered_at: string | null;
           read_at: string | null;
           created_at: string;
+          key_version: number;
+          is_system_message: boolean;
+          system_message_type: string | null;
         };
         Insert: {
           id?: string;
@@ -547,6 +631,9 @@ export type Database = {
           delivered_at?: string | null;
           read_at?: string | null;
           created_at?: string;
+          key_version?: number;
+          is_system_message?: boolean;
+          system_message_type?: string | null;
         };
         Update: {
           id?: string;
@@ -561,6 +648,9 @@ export type Database = {
           delivered_at?: string | null;
           read_at?: string | null;
           created_at?: string;
+          key_version?: number;
+          is_system_message?: boolean;
+          system_message_type?: string | null;
         };
         Relationships: [];
       };

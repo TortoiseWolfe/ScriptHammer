@@ -160,4 +160,28 @@ describe('UnifiedSidebar', () => {
     render(<UnifiedSidebar {...defaultProps} />);
     expect(screen.getByRole('tabpanel')).toBeInTheDocument();
   });
+
+  // Feature 010: Group Chats - New Group link tests
+  describe('New Group link', () => {
+    it('renders New Group link when chats tab active', () => {
+      render(<UnifiedSidebar {...defaultProps} activeTab="chats" />);
+      const newGroupLink = screen.getByRole('link', {
+        name: /create new group/i,
+      });
+      expect(newGroupLink).toBeInTheDocument();
+      expect(newGroupLink).toHaveAttribute('href', '/messages/new-group');
+    });
+
+    it('does not render New Group link on connections tab', () => {
+      render(<UnifiedSidebar {...defaultProps} activeTab="connections" />);
+      expect(
+        screen.queryByRole('link', { name: /create new group/i })
+      ).not.toBeInTheDocument();
+    });
+
+    it('New Group link has correct text content', () => {
+      render(<UnifiedSidebar {...defaultProps} activeTab="chats" />);
+      expect(screen.getByText('New Group')).toBeInTheDocument();
+    });
+  });
 });

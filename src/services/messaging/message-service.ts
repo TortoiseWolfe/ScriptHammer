@@ -100,7 +100,7 @@ export class MessageService {
       // Get conversation details
       const { data: conversation, error: convError } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', input.conversation_id)
         .single();
 
@@ -108,11 +108,26 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversation_id');
       }
 
-      // Determine recipient ID
+      // For 1-to-1 conversations, determine recipient ID
+      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      if (conversation.is_group) {
+        throw new ValidationError(
+          'Group message encryption not yet implemented',
+          'conversation_id'
+        );
+      }
+
       const recipientId =
         conversation.participant_1_id === user.id
           ? conversation.participant_2_id
           : conversation.participant_1_id;
+
+      if (!recipientId) {
+        throw new ValidationError(
+          'Invalid conversation: no recipient found',
+          'conversation_id'
+        );
+      }
 
       // Get recipient's public key
       const recipientPublicKey =
@@ -174,6 +189,9 @@ export class MessageService {
           delivered_at: null,
           read_at: null,
           created_at: new Date().toISOString(),
+          key_version: 1,
+          is_system_message: false,
+          system_message_type: null,
         };
 
         return {
@@ -255,6 +273,9 @@ export class MessageService {
           delivered_at: null,
           read_at: null,
           created_at: new Date().toISOString(),
+          key_version: 1,
+          is_system_message: false,
+          system_message_type: null,
         };
 
         return {
@@ -413,7 +434,7 @@ export class MessageService {
       // Get conversation details for decryption
       const { data: conversation } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', conversationId)
         .single();
 
@@ -421,11 +442,26 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Determine other participant
+      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      if (conversation.is_group) {
+        throw new ValidationError(
+          'Group message decryption not yet implemented',
+          'conversationId'
+        );
+      }
+
+      // Determine other participant (1-to-1 only)
       const otherParticipantId =
         conversation.participant_1_id === user.id
           ? conversation.participant_2_id
           : conversation.participant_1_id;
+
+      if (!otherParticipantId) {
+        throw new ValidationError(
+          'Invalid conversation: no recipient found',
+          'conversationId'
+        );
+      }
 
       // Get both users' profiles for display names
       const { data: profiles } = await msgClient
@@ -772,7 +808,7 @@ export class MessageService {
       // Get conversation details for encryption
       const { data: conversation, error: convError } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', message.conversation_id)
         .single();
 
@@ -780,11 +816,26 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversation_id');
       }
 
-      // Determine recipient ID
+      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      if (conversation.is_group) {
+        throw new ValidationError(
+          'Group message editing not yet implemented',
+          'conversation_id'
+        );
+      }
+
+      // Determine recipient ID (1-to-1 only)
       const recipientId =
         conversation.participant_1_id === user.id
           ? conversation.participant_2_id
           : conversation.participant_1_id;
+
+      if (!recipientId) {
+        throw new ValidationError(
+          'Invalid conversation: no recipient found',
+          'conversation_id'
+        );
+      }
 
       // Get sender's derived keys from memory
       const senderKeys = keyManagementService.getCurrentKeys();
@@ -982,7 +1033,7 @@ export class MessageService {
       // Get conversation to determine which participant the user is
       const { data: conversation, error: fetchError } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', conversationId)
         .single();
 
@@ -990,7 +1041,15 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Determine which column to update based on user's participant role
+      // Group conversations use conversation_members.archived field
+      if (conversation.is_group) {
+        throw new ValidationError(
+          'Group conversation archiving not yet implemented',
+          'conversationId'
+        );
+      }
+
+      // Determine which column to update based on user's participant role (1-to-1 only)
       let updateColumn: string;
       if (conversation.participant_1_id === user.id) {
         updateColumn = 'archived_by_participant_1';
@@ -1066,7 +1125,7 @@ export class MessageService {
       // Get conversation to determine which participant the user is
       const { data: conversation, error: fetchError } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', conversationId)
         .single();
 
@@ -1074,7 +1133,15 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Determine which column to update based on user's participant role
+      // Group conversations use conversation_members.archived field
+      if (conversation.is_group) {
+        throw new ValidationError(
+          'Group conversation unarchiving not yet implemented',
+          'conversationId'
+        );
+      }
+
+      // Determine which column to update based on user's participant role (1-to-1 only)
       let updateColumn: string;
       if (conversation.participant_1_id === user.id) {
         updateColumn = 'archived_by_participant_1';

@@ -101,6 +101,9 @@ describe('RealtimeService', () => {
         delivered_at: new Date().toISOString(),
         read_at: null,
         created_at: new Date().toISOString(),
+        key_version: 1,
+        is_system_message: false,
+        system_message_type: null,
       };
 
       insertHandler!({ new: mockMessage });
@@ -168,6 +171,9 @@ describe('RealtimeService', () => {
         delivered_at: new Date().toISOString(),
         read_at: null,
         created_at: new Date().toISOString(),
+        key_version: 1,
+        is_system_message: false,
+        system_message_type: null,
       };
 
       const newMessage: Message = {

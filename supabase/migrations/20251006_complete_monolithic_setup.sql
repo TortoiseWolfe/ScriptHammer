@@ -1009,6 +1009,247 @@ GRANT ALL ON conversation_keys TO authenticated, service_role;
 GRANT ALL ON typing_indicators TO authenticated, service_role;
 
 -- ============================================================================
+-- PART 10.5: GROUP CHAT SUPPORT (Feature 010)
+-- ============================================================================
+-- Symmetric key encryption for group messages
+-- Features: Up to 200 members, key versioning, history restriction, key rotation
+-- Tables modified: conversations, messages
+-- Tables new: conversation_members, group_keys
+
+-- T006: Add group columns to conversations table
+ALTER TABLE conversations
+  ADD COLUMN IF NOT EXISTS is_group BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS group_name TEXT CHECK (length(group_name) <= 100),
+  ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES user_profiles(id),
+  ADD COLUMN IF NOT EXISTS current_key_version INTEGER NOT NULL DEFAULT 1;
+
+-- Make participant columns nullable for groups (they must be NULL for is_group=true)
+ALTER TABLE conversations
+  ALTER COLUMN participant_1_id DROP NOT NULL,
+  ALTER COLUMN participant_2_id DROP NOT NULL;
+
+-- CHK023: Enforce is_group validation via CHECK constraint
+-- Drop existing constraint if it exists (for idempotency)
+ALTER TABLE conversations DROP CONSTRAINT IF EXISTS check_group_participants;
+ALTER TABLE conversations ADD CONSTRAINT check_group_participants CHECK (
+  (is_group = false AND participant_1_id IS NOT NULL AND participant_2_id IS NOT NULL)
+  OR
+  (is_group = true AND participant_1_id IS NULL AND participant_2_id IS NULL AND created_by IS NOT NULL)
+);
+
+-- T007: Add key_version column to messages table
+ALTER TABLE messages
+  ADD COLUMN IF NOT EXISTS key_version INTEGER NOT NULL DEFAULT 1;
+
+-- T008: Add system message columns to messages table
+ALTER TABLE messages
+  ADD COLUMN IF NOT EXISTS is_system_message BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS system_message_type TEXT;
+
+-- CHK027: Validate system_message_type enum values
+ALTER TABLE messages DROP CONSTRAINT IF EXISTS check_system_message_type;
+ALTER TABLE messages ADD CONSTRAINT check_system_message_type CHECK (
+  system_message_type IS NULL
+  OR system_message_type IN (
+    'member_joined',
+    'member_left',
+    'member_removed',
+    'group_created',
+    'group_renamed',
+    'ownership_transferred'
+  )
+);
+
+-- T009: Create conversation_members junction table
+CREATE TABLE IF NOT EXISTS conversation_members (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('owner', 'member')),
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  left_at TIMESTAMPTZ,
+  key_version_joined INTEGER NOT NULL DEFAULT 1,
+  key_status TEXT NOT NULL DEFAULT 'active' CHECK (key_status IN ('active', 'pending')),
+  archived BOOLEAN NOT NULL DEFAULT FALSE,
+  muted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- CHK025: Unique active membership per user per conversation
+-- This constraint allows same user_id + conversation_id only if one has left_at set
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_membership
+  ON conversation_members(conversation_id, user_id) WHERE left_at IS NULL;
+
+-- T010: Create group_keys table
+CREATE TABLE IF NOT EXISTS group_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
+  key_version INTEGER NOT NULL DEFAULT 1,
+  encrypted_key TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_by UUID NOT NULL REFERENCES user_profiles(id),
+  CONSTRAINT unique_group_key_version UNIQUE (conversation_id, user_id, key_version)
+);
+
+-- T011: Add indexes for conversation_members and group_keys tables
+-- CHK026: Indexes for fast member list lookup
+CREATE INDEX IF NOT EXISTS idx_conversation_members_conversation
+  ON conversation_members(conversation_id) WHERE left_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_conversation_members_user
+  ON conversation_members(user_id) WHERE left_at IS NULL;
+
+-- Indexes for group_keys
+CREATE INDEX IF NOT EXISTS idx_group_keys_conversation
+  ON group_keys(conversation_id, key_version DESC);
+CREATE INDEX IF NOT EXISTS idx_group_keys_user
+  ON group_keys(user_id, conversation_id);
+
+-- T012: Enable RLS on conversation_members and group_keys tables
+ALTER TABLE conversation_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_keys ENABLE ROW LEVEL SECURITY;
+
+-- T013: RLS policies for conversation_members
+
+-- SELECT: Members can see other members of their conversations
+DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_members;
+CREATE POLICY "Members can view conversation members" ON conversation_members
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = conversation_members.conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.left_at IS NULL
+    )
+  );
+
+-- INSERT: Any member can add (connection validation in service layer)
+DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
+CREATE POLICY "Members can add to their conversations" ON conversation_members
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.left_at IS NULL
+    )
+    OR user_id = auth.uid()  -- Self-join on creation
+  );
+
+-- UPDATE: Members can update own preferences, owners can update others
+DROP POLICY IF EXISTS "Members can update membership" ON conversation_members;
+CREATE POLICY "Members can update membership" ON conversation_members
+  FOR UPDATE USING (
+    user_id = auth.uid()
+    OR EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = conversation_members.conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.role = 'owner'
+        AND cm.left_at IS NULL
+    )
+  );
+
+-- DELETE: No direct deletes - use soft delete via left_at
+DROP POLICY IF EXISTS "No direct member deletes" ON conversation_members;
+CREATE POLICY "No direct member deletes" ON conversation_members
+  FOR DELETE USING (false);
+
+-- T014: RLS policies for group_keys
+
+-- SELECT: Users can only see their own encrypted keys (and must be active member)
+DROP POLICY IF EXISTS "Users can view their own keys" ON group_keys;
+CREATE POLICY "Users can view their own keys" ON group_keys
+  FOR SELECT USING (
+    user_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = group_keys.conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.left_at IS NULL
+    )
+  );
+
+-- INSERT: Active members can distribute keys
+DROP POLICY IF EXISTS "Members can distribute keys" ON group_keys;
+CREATE POLICY "Members can distribute keys" ON group_keys
+  FOR INSERT WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.left_at IS NULL
+    )
+  );
+
+-- UPDATE: No updates allowed - keys are immutable
+DROP POLICY IF EXISTS "Keys are immutable" ON group_keys;
+CREATE POLICY "Keys are immutable" ON group_keys
+  FOR UPDATE USING (false);
+
+-- DELETE: No direct deletes - orphaned keys are harmless
+DROP POLICY IF EXISTS "No direct key deletes" ON group_keys;
+CREATE POLICY "No direct key deletes" ON group_keys
+  FOR DELETE USING (false);
+
+-- T014a: Update messages table RLS for group membership
+
+-- Drop and recreate SELECT policy to support both 1-to-1 and groups
+DROP POLICY IF EXISTS "Users can view messages in own conversations" ON messages;
+CREATE POLICY "Users can view messages in own conversations" ON messages
+  FOR SELECT USING (
+    -- 1-to-1 conversations: check participant columns
+    EXISTS (
+      SELECT 1 FROM conversations c
+      WHERE c.id = messages.conversation_id
+        AND c.is_group = false
+        AND (c.participant_1_id = auth.uid() OR c.participant_2_id = auth.uid())
+    )
+    OR
+    -- Group conversations: check membership via junction table
+    EXISTS (
+      SELECT 1 FROM conversation_members cm
+      WHERE cm.conversation_id = messages.conversation_id
+        AND cm.user_id = auth.uid()
+        AND cm.left_at IS NULL
+    )
+  );
+
+-- Drop and recreate INSERT policy to support both 1-to-1 and groups
+DROP POLICY IF EXISTS "Users can send messages to own conversations" ON messages;
+CREATE POLICY "Users can send messages to own conversations" ON messages
+  FOR INSERT WITH CHECK (
+    sender_id = auth.uid()
+    AND (
+      -- 1-to-1: existing logic
+      EXISTS (
+        SELECT 1 FROM conversations c
+        WHERE c.id = conversation_id
+          AND c.is_group = false
+          AND (c.participant_1_id = auth.uid() OR c.participant_2_id = auth.uid())
+      )
+      OR
+      -- Group: check active membership
+      EXISTS (
+        SELECT 1 FROM conversation_members cm
+        WHERE cm.conversation_id = conversation_id
+          AND cm.user_id = auth.uid()
+          AND cm.left_at IS NULL
+      )
+    )
+  );
+
+-- Grant permissions for new tables
+GRANT ALL ON conversation_members TO authenticated, service_role;
+GRANT ALL ON group_keys TO authenticated, service_role;
+
+-- Enable realtime for group tables
+ALTER TABLE conversation_members REPLICA IDENTITY FULL;
+ALTER TABLE group_keys REPLICA IDENTITY FULL;
+
+COMMENT ON TABLE conversation_members IS 'Junction table linking users to group conversations with membership metadata';
+COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per version';
+
+-- ============================================================================
 -- MIGRATION COMPLETE
 -- ============================================================================
 -- Created:
@@ -1016,12 +1257,14 @@ GRANT ALL ON typing_indicators TO authenticated, service_role;
 --   ✅ Auth tables: user_profiles, auth_audit_logs
 --   ✅ Security tables: rate_limit_attempts, oauth_states
 --   ✅ Messaging tables: user_connections, conversations, messages, user_encryption_keys, conversation_keys, typing_indicators
+--   ✅ Group chat tables: conversation_members, group_keys (Feature 010)
 --   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt, update_conversation_timestamp, assign_sequence_number
 --   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert
---   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (27 total policies)
+--   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 total policies)
 --   ✅ Avatar policies: 4 policies (user isolation + public read)
 --   ✅ Messaging policies: 17 policies (E2E encryption, user isolation, 15-min edit window)
+--   ✅ Group chat policies: 8 policies (membership access, key distribution)
 --   ✅ Permissions: Authenticated users + service role (all tables)
 --   ✅ Test user: test@example.com (primary, email confirmed)
 --   ✅ Admin user: scripthammer (Feature 002 - welcome messages)

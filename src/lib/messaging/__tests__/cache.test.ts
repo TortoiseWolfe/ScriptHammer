@@ -43,6 +43,9 @@ describe('CacheService', () => {
     delivered_at: new Date().toISOString(),
     read_at: null,
     created_at: timestamp || new Date().toISOString(),
+    key_version: 1,
+    is_system_message: false,
+    system_message_type: null,
   });
 
   describe('cacheMessages', () => {
