@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import ConversationList from '@/components/organisms/ConversationList';
 import ConnectionManager from '@/components/organisms/ConnectionManager';
 import type { SidebarTab } from '@/types/messaging';
@@ -94,6 +95,33 @@ export default function UnifiedSidebar({
           )}
         </button>
       </div>
+
+      {/* New Group Button - Feature 010: Group Chats */}
+      {activeTab === 'chats' && (
+        <div className="px-4 py-2">
+          <Link
+            href="/messages/new-group"
+            className="btn btn-sm btn-ghost min-h-11 w-full gap-2"
+            aria-label="Create new group"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Group
+          </Link>
+        </div>
+      )}
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto" role="tabpanel">

@@ -262,6 +262,10 @@ export default function ConversationList({
                 key={conv.id}
                 conversationId={conv.id}
                 participant={conv.participant}
+                isGroup={conv.isGroup}
+                groupName={conv.groupName}
+                groupMembers={conv.groupMembers}
+                memberCount={conv.memberCount}
                 lastMessage={conv.lastMessage}
                 lastMessageAt={conv.lastMessageAt}
                 unreadCount={conv.unreadCount}

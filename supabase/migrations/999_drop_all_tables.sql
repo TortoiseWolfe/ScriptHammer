@@ -46,6 +46,9 @@ DROP TABLE IF EXISTS typing_indicators CASCADE;
 DROP TABLE IF EXISTS conversation_keys CASCADE;
 DROP TABLE IF EXISTS user_encryption_keys CASCADE;
 DROP TABLE IF EXISTS messages CASCADE;
+-- Group chat tables (Feature 010) - drop before conversations
+DROP TABLE IF EXISTS group_keys CASCADE;
+DROP TABLE IF EXISTS conversation_members CASCADE;
 DROP TABLE IF EXISTS conversations CASCADE;
 DROP TABLE IF EXISTS user_connections CASCADE;
 

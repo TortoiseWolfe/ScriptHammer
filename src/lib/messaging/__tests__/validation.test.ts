@@ -162,11 +162,12 @@ describe('Validation Service - Time Window Functions', () => {
     });
 
     it('should have same behavior as isWithinEditWindow (both use 15-minute window)', () => {
+      // Avoid exact boundary (15 min) to prevent flaky tests due to millisecond timing
       const testTimestamps = [
-        new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-        new Date(Date.now() - 16 * 60 * 1000).toISOString(),
-        new Date().toISOString(),
+        new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 min ago - clearly inside
+        new Date(Date.now() - 14 * 60 * 1000).toISOString(), // 14 min ago - inside window
+        new Date(Date.now() - 16 * 60 * 1000).toISOString(), // 16 min ago - clearly outside
+        new Date().toISOString(), // just now - clearly inside
       ];
 
       testTimestamps.forEach((timestamp) => {

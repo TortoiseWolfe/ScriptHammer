@@ -24,10 +24,14 @@ export interface UserConnection {
 
 export interface Conversation {
   id: string;
-  participant_1_id: string;
-  participant_2_id: string;
+  participant_1_id: string | null;
+  participant_2_id: string | null;
   last_message_at: string | null;
   created_at: string;
+  is_group: boolean;
+  group_name: string | null;
+  created_by: string | null;
+  current_key_version: number;
 }
 
 export interface Message {
@@ -43,6 +47,9 @@ export interface Message {
   delivered_at: string | null;
   read_at: string | null;
   created_at: string;
+  key_version: number;
+  is_system_message: boolean;
+  system_message_type: string | null;
 }
 
 export interface UserEncryptionKey {
@@ -461,3 +468,216 @@ export const CACHE_CONFIG = {
   MESSAGE_RETENTION_DAYS: 30,
   PAGINATION_PAGE_SIZE: 50,
 } as const;
+
+// =============================================================================
+// GROUP CHAT TYPES (Feature 010)
+// =============================================================================
+
+/**
+ * Group conversation - has is_group=true, group_name, created_by
+ */
+export interface GroupConversation {
+  id: string;
+  is_group: true;
+  group_name: string | null;
+  created_by: string;
+  current_key_version: number;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Direct (1-to-1) conversation - has participant_1_id, participant_2_id
+ */
+export interface DirectConversation {
+  id: string;
+  is_group: false;
+  participant_1_id: string;
+  participant_2_id: string;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Union type for all conversation types
+ */
+export type ConversationType = GroupConversation | DirectConversation;
+
+/**
+ * Member role in a group conversation
+ */
+export type MemberRole = 'owner' | 'member';
+
+/**
+ * Key distribution status for group members
+ */
+export type KeyStatus = 'active' | 'pending';
+
+/**
+ * Junction table linking users to group conversations
+ */
+export interface ConversationMember {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: MemberRole;
+  joined_at: string;
+  left_at: string | null;
+  key_version_joined: number;
+  key_status: KeyStatus;
+  archived: boolean;
+  muted: boolean;
+  profile?: UserProfile;
+}
+
+/**
+ * Encrypted symmetric group key stored per member per version
+ */
+export interface GroupKey {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  key_version: number;
+  encrypted_key: string; // Base64(IV || Ciphertext || AuthTag)
+  created_at: string;
+  created_by: string;
+}
+
+/**
+ * System message types for group events
+ */
+export type SystemMessageType =
+  | 'member_joined'
+  | 'member_left'
+  | 'member_removed'
+  | 'group_created'
+  | 'group_renamed'
+  | 'ownership_transferred';
+
+/**
+ * Data payload for system messages
+ */
+export interface SystemMessageData {
+  type: SystemMessageType;
+  actor_id: string;
+  target_id?: string;
+  old_value?: string;
+  new_value?: string;
+}
+
+/**
+ * Input for creating a new group
+ */
+export interface CreateGroupInput {
+  name?: string;
+  member_ids: string[]; // User IDs to add (excluding creator)
+}
+
+/**
+ * Input for adding members to a group
+ */
+export interface AddMembersInput {
+  conversation_id: string;
+  member_ids: string[];
+}
+
+/**
+ * Result of adding members
+ */
+export interface AddMembersResult {
+  added: string[]; // Successfully added member IDs
+  pending: string[]; // Members with pending key distribution
+  new_key_version: number;
+}
+
+/**
+ * Input for transferring group ownership
+ */
+export interface TransferOwnershipInput {
+  conversation_id: string;
+  new_owner_id: string;
+}
+
+/**
+ * Input for upgrading 1-to-1 to group
+ */
+export interface UpgradeToGroupInput {
+  conversation_id: string;
+  name?: string;
+  member_ids: string[]; // New members to add
+}
+
+/**
+ * Extended conversation for groups with member list
+ */
+export interface GroupConversationWithMembers extends GroupConversation {
+  members: ConversationMember[];
+  unread_count: number;
+  last_message_preview: string | null;
+}
+
+/**
+ * Group key cache entry
+ */
+export interface CachedGroupKey {
+  key: CryptoKey;
+  version: number;
+  cached_at: number;
+}
+
+// =============================================================================
+// GROUP CHAT CONSTANTS
+// =============================================================================
+
+export const GROUP_CONSTRAINTS = {
+  MIN_MEMBERS: 2, // At creation
+  MAX_MEMBERS: 200,
+  MAX_NAME_LENGTH: 100,
+  KEY_DISTRIBUTION_BATCH_SIZE: 50,
+  KEY_DISTRIBUTION_RETRY_COUNT: 3,
+  KEY_DISTRIBUTION_RETRY_DELAYS: [1000, 2000, 4000], // ms
+} as const;
+
+export const GROUP_KEY_CACHE_CONFIG = {
+  MAX_KEYS: 50, // LRU eviction
+  TTL_MS: 0, // No expiry (cleared on logout)
+} as const;
+
+// =============================================================================
+// GROUP CHAT ERRORS
+// =============================================================================
+
+export class GroupError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'GroupError';
+  }
+}
+
+export class GroupKeyError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'GroupKeyError';
+  }
+}
+
+export class MembershipError extends Error {
+  constructor(
+    message: string,
+    public code?:
+      | 'NOT_MEMBER'
+      | 'NOT_OWNER'
+      | 'ALREADY_MEMBER'
+      | 'NOT_CONNECTED'
+      | 'AT_CAPACITY'
+  ) {
+    super(message);
+    this.name = 'MembershipError';
+  }
+}
