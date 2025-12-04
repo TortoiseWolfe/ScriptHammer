@@ -78,6 +78,110 @@ docker compose up --build
 
 **NOTE**: Local pnpm/npm commands are NOT supported. All development MUST use Docker.
 
+## 🔐 GitHub Actions Secrets
+
+To enable CI/CD deployment and full functionality, add these secrets to your repository at **Settings → Secrets and variables → Actions → Repository secrets**:
+
+### Author Information
+
+```
+NEXT_PUBLIC_AUTHOR_AVATAR
+```
+
+```
+NEXT_PUBLIC_AUTHOR_BIO
+```
+
+```
+NEXT_PUBLIC_AUTHOR_GITHUB
+```
+
+```
+NEXT_PUBLIC_AUTHOR_LINKEDIN
+```
+
+```
+NEXT_PUBLIC_AUTHOR_NAME
+```
+
+```
+NEXT_PUBLIC_AUTHOR_ROLE
+```
+
+```
+NEXT_PUBLIC_AUTHOR_TWITCH
+```
+
+```
+NEXT_PUBLIC_AUTHOR_TWITTER
+```
+
+### Calendar Integration
+
+```
+NEXT_PUBLIC_CALENDAR_PROVIDER
+```
+
+```
+NEXT_PUBLIC_CALENDAR_URL
+```
+
+### Site Configuration
+
+```
+NEXT_PUBLIC_DEPLOY_URL
+```
+
+```
+NEXT_PUBLIC_DISQUS_SHORTNAME
+```
+
+```
+NEXT_PUBLIC_PAGESPEED_API_KEY
+```
+
+```
+NEXT_PUBLIC_SITE_URL
+```
+
+```
+NEXT_PUBLIC_SOCIAL_PLATFORMS
+```
+
+### Supabase (Public)
+
+```
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+```
+
+```
+NEXT_PUBLIC_SUPABASE_URL
+```
+
+### Supabase (Private - Server Only)
+
+```
+SUPABASE_ACCESS_TOKEN
+```
+
+```
+SUPABASE_DB_PASSWORD
+```
+
+```
+SUPABASE_PROJECT_REF
+```
+
+```
+SUPABASE_SERVICE_ROLE_KEY
+```
+
+### Testing
+
+```
+TEST_USER_PRIMARY_PASSWORD
+```
+
 ## ⚙️ Auto-Configuration
 
 The project automatically detects your repository name and owner from git remote URL at build time:

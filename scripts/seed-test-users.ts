@@ -3,17 +3,19 @@
  * Seed script for creating all test users
  * Creates:
  *   - Admin: admin@scripthammer.com (username: scripthammer) - for welcome messages
- *   - Primary: test@example.com (username: testuser)
- *   - Secondary: test-user-b@example.com (username: testuser-b)
+ *   - Primary: test@example.com (username: testuser) - runs E2E tests
+ *   - Secondary: test-user-b@example.com (username: testuser-b) - multi-user tests
+ *   - Tertiary: test-user-c@example.com (username: testuser-c) - group chat tests
  *
  * Passwords are read from environment variables:
  *   - TEST_USER_PRIMARY_PASSWORD (default: TestPassword123!)
- *   - TEST_USER_TERTIARY_PASSWORD (default: TestPassword456!)
+ *   - TEST_USER_SECONDARY_PASSWORD (default: TestPassword456!)
+ *   - TEST_USER_TERTIARY_PASSWORD (default: TestPassword789!)
  *
  * Usage: docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
  * Environment: Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
  *
- * Feature: 003-feature-004-welcome
+ * Feature: 003-feature-004-welcome (admin), 010-feature-010-group-chats (3 users)
  * - Admin user has ECDH P-256 public key for welcome message encryption
  * - Private key is discarded (not needed at runtime)
  */
@@ -24,11 +26,21 @@ import * as crypto from 'crypto';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Get passwords from env vars (same source as tests use)
-const PRIMARY_PASSWORD =
-  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
-const TERTIARY_PASSWORD =
-  process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!';
+// Get passwords from env vars - REQUIRED, no fallbacks
+const PRIMARY_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD;
+const SECONDARY_PASSWORD = process.env.TEST_USER_SECONDARY_PASSWORD;
+const TERTIARY_PASSWORD = process.env.TEST_USER_TERTIARY_PASSWORD;
+
+// Validate required env vars
+if (!PRIMARY_PASSWORD || !SECONDARY_PASSWORD || !TERTIARY_PASSWORD) {
+  console.error('❌ ERROR: Missing test user passwords in environment');
+  console.error('Required environment variables:');
+  if (!PRIMARY_PASSWORD) console.error('  - TEST_USER_PRIMARY_PASSWORD');
+  if (!SECONDARY_PASSWORD) console.error('  - TEST_USER_SECONDARY_PASSWORD');
+  if (!TERTIARY_PASSWORD) console.error('  - TEST_USER_TERTIARY_PASSWORD');
+  console.error('\nAdd these to your .env file');
+  process.exit(1);
+}
 
 /**
  * Admin user configuration (T004)
@@ -73,9 +85,15 @@ const TEST_USERS: TestUser[] = [
   },
   {
     email: 'test-user-b@example.com',
-    password: TERTIARY_PASSWORD,
+    password: SECONDARY_PASSWORD,
     username: 'testuser-b',
     displayName: 'Test User B',
+  },
+  {
+    email: 'test-user-c@example.com',
+    password: TERTIARY_PASSWORD,
+    username: 'testuser-c',
+    displayName: 'Test User C',
   },
 ];
 

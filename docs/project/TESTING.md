@@ -286,13 +286,128 @@ Before committing:
 - [ ] Tests follow naming conventions
 - [ ] Mocks are properly cleaned up
 
+## E2E Testing with Playwright
+
+### Overview
+
+End-to-end tests use Playwright to test complete user workflows in real browsers. E2E tests are local-only (not run in CI) due to requiring authenticated sessions.
+
+### Test Users Setup
+
+E2E tests require multiple test users for multi-user scenarios (messaging, connections, group chats).
+
+**Test Users:**
+| User | Email | Purpose |
+|------|-------|---------|
+| Primary | test@example.com | Runs E2E tests |
+| Secondary | test-user-b@example.com | Multi-user tests (connections, messaging) |
+| Tertiary | test-user-c@example.com | Group chat tests (3+ members) |
+| Admin | admin@scripthammer.com | Welcome messages |
+
+**Setup (one-time):**
+
+```bash
+# 1. Create test users in Supabase
+docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
+
+# 2. Create connections between users
+docker compose exec scripthammer pnpm exec tsx scripts/seed-connections.ts
+```
+
+**Environment Variables (in .env):**
+
+```bash
+TEST_USER_PRIMARY_EMAIL=test@example.com
+TEST_USER_PRIMARY_PASSWORD=<secure-password>
+TEST_USER_SECONDARY_EMAIL=test-user-b@example.com
+TEST_USER_SECONDARY_PASSWORD=<secure-password>
+TEST_USER_TERTIARY_EMAIL=test-user-c@example.com
+TEST_USER_TERTIARY_PASSWORD=<secure-password>
+```
+
+### Running E2E Tests
+
+```bash
+# Run all E2E tests (starts dev server automatically)
+docker compose exec scripthammer pnpm exec playwright test
+
+# Run specific test file
+docker compose exec scripthammer pnpm exec playwright test tests/e2e/messaging/
+
+# Run with existing dev server (faster)
+SKIP_WEBSERVER=true docker compose exec -e SKIP_WEBSERVER=true scripthammer pnpm exec playwright test
+
+# Run specific browser
+docker compose exec scripthammer pnpm exec playwright test --project=chromium
+
+# Run with UI (headed mode)
+docker compose exec scripthammer pnpm exec playwright test --ui
+
+# Generate HTML report
+docker compose exec scripthammer pnpm exec playwright show-report
+```
+
+### Test Structure
+
+```
+tests/e2e/
+├── messaging/
+│   ├── complete-user-workflow.spec.ts    # Full messaging flow
+│   ├── encrypted-messaging.spec.ts       # E2E encryption tests
+│   ├── friend-requests.spec.ts           # Connection flows
+│   ├── group-chat-multiuser.spec.ts      # Group chat with 3+ users
+│   └── ...
+└── auth/
+    └── ...
+```
+
+### Writing E2E Tests
+
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Feature Name', () => {
+  test('should do something', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+
+    try {
+      // Sign in
+      await page.goto('/sign-in');
+      await page.fill('#email', process.env.TEST_USER_PRIMARY_EMAIL!);
+      await page.fill('#password', process.env.TEST_USER_PRIMARY_PASSWORD!);
+      await page.click('button[type="submit"]');
+
+      // Test actions...
+      await expect(page.locator('...')).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});
+```
+
+### Debugging E2E Tests
+
+```bash
+# Run with trace on failure
+docker compose exec scripthammer pnpm exec playwright test --trace on
+
+# View trace
+docker compose exec scripthammer pnpm exec playwright show-trace test-results/*/trace.zip
+
+# Run in debug mode (step through)
+docker compose exec scripthammer pnpm exec playwright test --debug
+```
+
 ## Resources
 
 - [Vitest Documentation](https://vitest.dev/)
 - [React Testing Library](https://testing-library.com/react)
+- [Playwright Documentation](https://playwright.dev/)
 - [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
 - [Jest DOM Matchers](https://github.com/testing-library/jest-dom)
 
 ---
 
-_Last Updated: Sprint 2, Phase 1 - Testing Foundation Complete_
+_Last Updated: Feature 010 - Group Chats E2E Testing_
