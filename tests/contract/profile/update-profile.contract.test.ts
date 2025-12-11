@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('User Profile UPDATE Contract', () => {

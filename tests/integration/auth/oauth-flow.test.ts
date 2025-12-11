@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 
 describe('OAuth Flow Integration', () => {
   let supabase: ReturnType<typeof createClient>;

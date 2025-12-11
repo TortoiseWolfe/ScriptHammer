@@ -52,6 +52,7 @@ playwright-report/
 
 # Generated files (copied during build)
 public/TASKS.md
+public/manifest.json
 /src/config/project-detected.ts
 /src/config/project-detected.json
 /public/rss.xml

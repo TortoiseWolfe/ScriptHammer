@@ -11,8 +11,10 @@ function detectProjectConfig() {
   }
 
   // Use environment variable if set (from .env.local or CI/CD)
-  if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
-    return process.env.NEXT_PUBLIC_BASE_PATH;
+  // Treat empty string as undefined to allow auto-detection in forks
+  const envBasePath = process.env.NEXT_PUBLIC_BASE_PATH;
+  if (envBasePath !== undefined && envBasePath !== '') {
+    return envBasePath;
   }
 
   // Read the auto-detected configuration using require

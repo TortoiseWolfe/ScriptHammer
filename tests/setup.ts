@@ -48,6 +48,153 @@ vi.mock('leaflet/dist/leaflet.css', () => ({}));
 vi.mock('prismjs/themes/prism-tomorrow.css', () => ({}));
 vi.mock('@/styles/prism-override.css', () => ({}));
 
+// =============================================================================
+// Comprehensive Supabase Client Mock
+// Enables tests to run without Supabase environment variables
+// =============================================================================
+const mockSupabaseClient = {
+  auth: {
+    getSession: vi.fn(() =>
+      Promise.resolve({
+        data: { session: null },
+        error: null,
+      })
+    ),
+    getUser: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null },
+        error: null,
+      })
+    ),
+    signInWithPassword: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null, session: null },
+        error: null,
+      })
+    ),
+    signInWithOAuth: vi.fn(() =>
+      Promise.resolve({
+        data: { provider: 'github', url: 'https://example.com/oauth' },
+        error: null,
+      })
+    ),
+    signUp: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null, session: null },
+        error: null,
+      })
+    ),
+    signOut: vi.fn(() => Promise.resolve({ error: null })),
+    resetPasswordForEmail: vi.fn(() =>
+      Promise.resolve({ data: {}, error: null })
+    ),
+    updateUser: vi.fn(() =>
+      Promise.resolve({
+        data: { user: null },
+        error: null,
+      })
+    ),
+    onAuthStateChange: vi.fn(() => ({
+      data: { subscription: { unsubscribe: vi.fn() } },
+    })),
+    exchangeCodeForSession: vi.fn(() =>
+      Promise.resolve({
+        data: { session: null },
+        error: null,
+      })
+    ),
+  },
+  from: vi.fn((table: string) => ({
+    select: vi.fn((columns?: string) => ({
+      eq: vi.fn((column: string, value: unknown) => ({
+        single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+        order: vi.fn(() => ({
+          limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        })),
+      })),
+      neq: vi.fn(() => ({
+        order: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      in: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      order: vi.fn((column: string) => ({
+        limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+        range: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      range: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      single: vi.fn(() => Promise.resolve({ data: null, error: null })),
+      maybeSingle: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    })),
+    insert: vi.fn((data: unknown) => ({
+      select: vi.fn(() => ({
+        single: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+      })),
+    })),
+    update: vi.fn((data: unknown) => ({
+      eq: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+      match: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+    })),
+    delete: vi.fn(() => ({
+      eq: vi.fn(() => Promise.resolve({ error: null })),
+      match: vi.fn(() => Promise.resolve({ error: null })),
+    })),
+    upsert: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+  })),
+  channel: vi.fn((name: string) => {
+    const channel = {
+      on: vi.fn(() => channel),
+      subscribe: vi.fn((callback?: (status: string) => void) => {
+        if (callback) callback('SUBSCRIBED');
+        return channel;
+      }),
+      unsubscribe: vi.fn(() => Promise.resolve('ok')),
+      send: vi.fn(() => Promise.resolve('ok')),
+      track: vi.fn(() => Promise.resolve('ok')),
+      untrack: vi.fn(() => Promise.resolve('ok')),
+    };
+    return channel;
+  }),
+  removeChannel: vi.fn(() => Promise.resolve('ok')),
+  removeAllChannels: vi.fn(() => Promise.resolve([])),
+  getChannels: vi.fn(() => []),
+  storage: {
+    from: vi.fn((bucket: string) => ({
+      upload: vi.fn((path: string, file: unknown) =>
+        Promise.resolve({ data: { path }, error: null })
+      ),
+      getPublicUrl: vi.fn((path: string) => ({
+        data: { publicUrl: `https://example.com/storage/${bucket}/${path}` },
+      })),
+      remove: vi.fn((paths: string[]) => Promise.resolve({ error: null })),
+      download: vi.fn((path: string) =>
+        Promise.resolve({ data: new Blob(), error: null })
+      ),
+      list: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    })),
+  },
+  rpc: vi.fn((fn: string, params?: unknown) =>
+    Promise.resolve({ data: null, error: null })
+  ),
+};
+
+// Mock Supabase client modules for unit tests
+// Note: Contract and integration tests should import directly from @supabase/supabase-js
+// or use vi.unmock('@/lib/supabase/client') at the top of the test file
+vi.mock('@/lib/supabase/client', () => ({
+  createClient: vi.fn(() => mockSupabaseClient),
+  getSupabase: vi.fn(() => mockSupabaseClient),
+  supabase: mockSupabaseClient,
+  isSupabaseConfigured: vi.fn(() => false),
+}));
+
+vi.mock('@/lib/supabase/server', () => ({
+  createServerClient: vi.fn(() => mockSupabaseClient),
+}));
+
+// Export mock for tests that need to override specific methods
+export { mockSupabaseClient };
+
 // Extend Vitest matchers with jest-axe accessibility matchers
 expect.extend(toHaveNoViolations);
 

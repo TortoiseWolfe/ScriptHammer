@@ -96,6 +96,23 @@ docker compose exec scripthammer pnpm run lint
 docker compose exec scripthammer pnpm run docker:clean
 ```
 
+### Git Commits from Docker
+
+Git hooks may fail when running locally if the repo was set up inside Docker. Always commit from inside the container:
+
+```bash
+# Configure git identity (add to .env)
+GIT_AUTHOR_NAME=Your Name
+GIT_AUTHOR_EMAIL=your@email.com
+
+# Commit from container (hooks run correctly)
+docker compose exec scripthammer git add -A
+docker compose exec scripthammer git commit -m "Your commit message"
+
+# Push from host (uses your SSH keys)
+git push
+```
+
 ### Supabase Keep-Alive
 
 Supabase Cloud free tier auto-pauses after 7 days. If paused:
@@ -248,6 +265,28 @@ kill -9 <PID>
 
 - Configure in `.env`: `TEST_USER_SECONDARY_EMAIL`, `TEST_USER_SECONDARY_PASSWORD`
 
+## GitHub Actions Secrets
+
+For CI/CD deployment, add these secrets in **Settings → Secrets and variables → Actions → Repository secrets**:
+
+### Required for Deployment
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Optional but Recommended
+
+```
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
+NEXT_PUBLIC_AUTHOR_NAME=Your Name
+NEXT_PUBLIC_AUTHOR_EMAIL=your@email.com
+```
+
+See `README.md` for the complete list of available secrets.
+
 ## Documentation
 
 | Topic               | Location                               |
@@ -260,6 +299,7 @@ kill -9 <PID>
 | Component Creation  | `docs/CREATING_COMPONENTS.md`          |
 | Template Setup      | `docs/TEMPLATE-GUIDE.md`               |
 | Testing Guide       | `docs/project/TESTING.md`              |
+| Forking Guide       | `docs/FORKING.md`                      |
 
 ## Supabase Database Migrations (CRITICAL)
 

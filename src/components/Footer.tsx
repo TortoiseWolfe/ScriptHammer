@@ -25,7 +25,16 @@ export function Footer() {
           </a>
         </p>
         <p className="text-base-content/40 mt-1 text-xs">
-          Open source template available
+          Built with{' '}
+          <a
+            href="https://github.com/TortoiseWolfe/ScriptHammer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-hover link"
+          >
+            ScriptHammer
+          </a>{' '}
+          template
         </p>
       </div>
     </footer>

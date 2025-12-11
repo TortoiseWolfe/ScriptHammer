@@ -45,6 +45,9 @@ export function useGeolocation(
   useEffect(() => {
     if (!isSupported) return;
 
+    let permissionStatus: PermissionStatus | null = null;
+    let handleChange: (() => void) | null = null;
+
     if ('permissions' in navigator && navigator.permissions) {
       try {
         const permissionsQuery = navigator.permissions.query({
@@ -53,24 +56,24 @@ export function useGeolocation(
 
         if (permissionsQuery && typeof permissionsQuery.then === 'function') {
           permissionsQuery
-            .then((permissionStatus) => {
+            .then((status) => {
+              permissionStatus = status;
               setState((prev) => ({
                 ...prev,
-                permission: permissionStatus.state,
+                permission: status.state,
               }));
 
-              // Listen for permission changes
-              const handleChange = () => {
-                setState((prev) => ({
-                  ...prev,
-                  permission: permissionStatus.state,
-                }));
-              };
+              // Listen for permission changes (if supported)
+              if (typeof status.addEventListener === 'function') {
+                handleChange = () => {
+                  setState((prev) => ({
+                    ...prev,
+                    permission: status.state,
+                  }));
+                };
 
-              permissionStatus.addEventListener('change', handleChange);
-              return () => {
-                permissionStatus.removeEventListener('change', handleChange);
-              };
+                status.addEventListener('change', handleChange);
+              }
             })
             .catch(() => {
               // Permissions API not supported or failed, continue with default
@@ -80,6 +83,16 @@ export function useGeolocation(
         // Permissions API not available, continue without it
       }
     }
+
+    return () => {
+      if (
+        permissionStatus &&
+        handleChange &&
+        typeof permissionStatus.removeEventListener === 'function'
+      ) {
+        permissionStatus.removeEventListener('change', handleChange);
+      }
+    };
   }, [isSupported]);
 
   // Handle success

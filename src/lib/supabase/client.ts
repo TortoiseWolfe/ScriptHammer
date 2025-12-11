@@ -11,8 +11,92 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/**
+ * Creates a disabled mock client for when Supabase is not configured.
+ * Returns a client that won't crash but all operations return errors.
+ */
+function createDisabledClient(): SupabaseClient<Database> {
+  const notConfiguredError = {
+    message: 'Supabase not configured',
+    status: 503,
+  };
+
+  const errorResponse = Promise.resolve({
+    data: null,
+    error: notConfiguredError,
+  });
+
+  const chainableMock = () => ({
+    select: chainableMock,
+    eq: chainableMock,
+    neq: chainableMock,
+    in: chainableMock,
+    order: chainableMock,
+    limit: chainableMock,
+    range: chainableMock,
+    single: () => errorResponse,
+    maybeSingle: () => errorResponse,
+    insert: chainableMock,
+    update: chainableMock,
+    delete: chainableMock,
+    upsert: () => errorResponse,
+    then: (resolve: (value: unknown) => void) =>
+      resolve({ data: null, error: notConfiguredError }),
+  });
+
+  return {
+    auth: {
+      getSession: () => errorResponse,
+      getUser: () => errorResponse,
+      signInWithPassword: () => errorResponse,
+      signInWithOAuth: () => errorResponse,
+      signUp: () => errorResponse,
+      signOut: () => errorResponse,
+      resetPasswordForEmail: () => errorResponse,
+      updateUser: () => errorResponse,
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+      exchangeCodeForSession: () => errorResponse,
+    },
+    from: () => chainableMock(),
+    channel: () => ({
+      on: function () {
+        return this;
+      },
+      subscribe: function () {
+        return this;
+      },
+      unsubscribe: () => Promise.resolve('ok'),
+      send: () => Promise.resolve('ok'),
+    }),
+    removeChannel: () => Promise.resolve('ok'),
+    removeAllChannels: () => Promise.resolve([]),
+    getChannels: () => [],
+    storage: {
+      from: () => ({
+        upload: () => errorResponse,
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        remove: () => errorResponse,
+        download: () => errorResponse,
+        list: () => errorResponse,
+      }),
+    },
+    rpc: () => errorResponse,
+  } as unknown as SupabaseClient<Database>;
+}
+
 // Global singleton instance (persists across hot reloads in development)
 let supabaseInstance: SupabaseClient<Database> | null = null;
+let isConfigured = false;
+
+/**
+ * Check if Supabase is properly configured
+ * @returns true if environment variables are set
+ */
+export function isSupabaseConfigured(): boolean {
+  return isConfigured;
+}
 
 /**
  * Creates a Supabase client for browser use
@@ -39,11 +123,16 @@ export function createClient(): SupabaseClient<Database> {
   }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error(
-      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env file.'
+    // Log warning instead of throwing - allows graceful degradation
+    console.warn(
+      'Supabase environment variables not configured. Some features will be unavailable.'
     );
+    isConfigured = false;
+    // Return a disabled mock client that won't crash
+    return createDisabledClient();
   }
 
+  isConfigured = true;
   supabaseInstance = createSupabaseClient<Database>(
     supabaseUrl,
     supabaseAnonKey,

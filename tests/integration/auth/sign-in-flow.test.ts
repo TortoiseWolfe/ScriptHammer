@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { RateLimiter } from '@/lib/auth/rate-limiter';
 

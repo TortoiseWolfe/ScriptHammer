@@ -2,10 +2,28 @@
 // Feature 017 - Task T017
 // Purpose: Client-side wrapper for server-side rate limiting functions
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase as defaultSupabase } from '@/lib/supabase/client';
 import { createLogger } from '@/lib/logger';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const logger = createLogger('auth:rateLimit');
+
+// Allow injection of custom client for testing
+let supabaseClient: SupabaseClient = defaultSupabase;
+
+/**
+ * Set a custom Supabase client (for testing with real database)
+ */
+export function setSupabaseClient(client: SupabaseClient): void {
+  supabaseClient = client;
+}
+
+/**
+ * Reset to default Supabase client
+ */
+export function resetSupabaseClient(): void {
+  supabaseClient = defaultSupabase;
+}
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -34,7 +52,7 @@ export async function checkRateLimit(
   ipAddress?: string
 ): Promise<RateLimitResult> {
   try {
-    const { data, error } = await supabase.rpc('check_rate_limit', {
+    const { data, error } = await supabaseClient.rpc('check_rate_limit', {
       p_identifier: identifier,
       p_attempt_type: attemptType,
       p_ip_address: ipAddress || null,
@@ -94,7 +112,7 @@ export async function recordFailedAttempt(
   ipAddress?: string
 ): Promise<void> {
   try {
-    const { error } = await supabase.rpc('record_failed_attempt', {
+    const { error } = await supabaseClient.rpc('record_failed_attempt', {
       p_identifier: identifier,
       p_attempt_type: attemptType,
       p_ip_address: ipAddress || null,
