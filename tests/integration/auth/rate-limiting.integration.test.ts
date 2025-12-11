@@ -2,10 +2,20 @@
 // Feature 017 - Task T009 (Integration Tests with Real Database)
 // Purpose: Test rate limiting with actual database to verify SQL logic
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'vitest';
 import {
   checkRateLimit,
   recordFailedAttempt,
+  setSupabaseClient,
+  resetSupabaseClient,
 } from '@/lib/auth/rate-limit-check';
 import { supabaseAdmin } from '@tests/supabase-admin';
 
@@ -25,6 +35,15 @@ import { supabaseAdmin } from '@tests/supabase-admin';
 describe('Rate Limiting - Integration Tests (Real Database)', () => {
   const testEmail = `test-${Date.now()}@example.com`; // Unique per test run
   const testIP = '192.168.1.1';
+
+  // Use real Supabase client for integration tests
+  beforeAll(() => {
+    setSupabaseClient(supabaseAdmin);
+  });
+
+  afterAll(() => {
+    resetSupabaseClient();
+  });
 
   beforeEach(async () => {
     // Clean up any existing data for this test email

@@ -1,10 +1,11 @@
 name: Supabase Keep-Alive
 
-# Runs every 6 days to prevent Supabase Cloud free tier from auto-pausing (pauses after 7 days)
+# Runs every 5 days to prevent Supabase Cloud free tier from auto-pausing (pauses after 7 days)
+# Using 5-day interval for safety margin
 on:
   schedule:
-    # Runs at 3:00 AM UTC every 6 days
-    - cron: '0 3 */6 * *'
+    # Runs at 3:00 AM UTC on days 1, 6, 11, 16, 21, 26 of each month (never more than 5 days apart)
+    - cron: '0 3 1,6,11,16,21,26 * *'
   workflow_dispatch: # Allows manual trigger from Actions tab
 
 jobs:

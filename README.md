@@ -182,6 +182,52 @@ SUPABASE_SERVICE_ROLE_KEY
 TEST_USER_PRIMARY_PASSWORD
 ```
 
+## 🍴 Forking This Template
+
+The quickest way to create your own project from ScriptHammer:
+
+### 5-Minute Setup
+
+```bash
+# 1. Fork and clone
+gh repo fork TortoiseWolfe/ScriptHammer --clone
+cd YourProjectName
+
+# 2. Run the rebrand script (updates 200+ files automatically)
+./scripts/rebrand.sh MyProject myusername "My awesome project description"
+
+# 3. Create environment file
+cp .env.example .env
+# Edit .env with your UID/GID (run: id -u && id -g)
+
+# 4. Start development
+docker compose up -d
+
+# 5. Verify everything works
+docker compose exec myproject pnpm run build
+docker compose exec myproject pnpm test
+
+# 6. Commit and push
+docker compose exec myproject git add -A
+docker compose exec myproject git commit -m "Rebrand to MyProject"
+git push
+```
+
+### Rebrand Script Options
+
+```bash
+# Preview changes without modifying files
+./scripts/rebrand.sh MyProject myuser "Description" --dry-run
+
+# Skip confirmation prompts
+./scripts/rebrand.sh MyProject myuser "Description" --force
+
+# Keep CNAME file (for custom domains)
+./scripts/rebrand.sh MyProject myuser "Description" --keep-cname
+```
+
+For detailed setup instructions, see [docs/FORKING.md](./docs/FORKING.md).
+
 ## ⚙️ Auto-Configuration
 
 The project automatically detects your repository name and owner from git remote URL at build time:

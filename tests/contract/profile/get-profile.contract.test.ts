@@ -5,16 +5,14 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('User Profile GET Contract', () => {
-  let supabase: ReturnType<typeof createClient>;
+  const supabase = createClient();
   let testUserId: string;
 
   beforeAll(async () => {
-    supabase = createClient();
-
     // Sign in with pre-confirmed static test user
     const { data } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,

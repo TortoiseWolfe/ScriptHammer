@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 import {
   TEST_EMAIL_SECONDARY,
   TEST_PASSWORD_SECONDARY,

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '../../helpers/real-supabase';
 
 describe('Supabase Auth Sign-Out Contract', () => {
   let supabase: ReturnType<typeof createClient>;

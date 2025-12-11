@@ -1,7 +1,8 @@
 // ScriptHammer Service Worker v1.0.0
 // Provides offline support, caching, and background sync
+// Note: Cache name includes project name - updated by rebrand script
 
-const CACHE_VERSION = 'scripthammer-v1.0.0';
+const CACHE_VERSION = 'scripthammer-v1.0.0'; // Updated by scripts/rebrand.sh
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;

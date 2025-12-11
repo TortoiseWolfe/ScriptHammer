@@ -72,19 +72,21 @@ export function GlobalNav() {
       setShowInstallButton(true);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       setIsInstalled(true);
       setShowInstallButton(false);
       setDeferredPrompt(null);
-    });
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
         handleBeforeInstallPrompt
       );
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
 

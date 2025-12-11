@@ -6,14 +6,18 @@
  */
 
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
+
+// Contract tests use real Supabase - create client directly
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 describe('Supabase Auth Sign-In Contract', () => {
   let supabase: ReturnType<typeof createClient>;
 
   beforeAll(async () => {
-    supabase = createClient();
+    supabase = createClient(supabaseUrl, supabaseKey);
   });
 
   afterEach(async () => {
