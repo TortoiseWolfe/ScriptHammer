@@ -253,6 +253,58 @@ sudo rm -rf node_modules
 docker compose exec <project> rm -rf node_modules
 ```
 
+## Syncing with Upstream (ScriptHammer)
+
+Keep your fork updated with improvements from ScriptHammer:
+
+### One-Time Setup
+
+```bash
+# Add ScriptHammer as upstream remote
+git remote add upstream https://github.com/TortoiseWolfe/ScriptHammer.git
+
+# Verify remotes
+git remote -v
+# origin    https://github.com/YOU/YOUR-PROJECT.git (fetch)
+# upstream  https://github.com/TortoiseWolfe/ScriptHammer.git (fetch)
+```
+
+### Pulling Updates
+
+```bash
+# Fetch upstream changes
+git fetch upstream
+
+# Merge upstream into your main branch
+git checkout main
+git merge upstream/main
+
+# Resolve any conflicts, then push
+git push origin main
+```
+
+### Cherry-Picking Specific Commits
+
+If you only want specific fixes:
+
+```bash
+# View upstream commits
+git log upstream/main --oneline -20
+
+# Cherry-pick specific commits
+git cherry-pick <commit-hash>
+```
+
+### After Pulling Updates
+
+1. Rebuild Docker: `docker compose down && docker compose up --build`
+2. Run tests: `docker compose exec <project> pnpm test`
+3. Check for new environment variables in `.env.example`
+
+### If Merge Conflicts Are Too Complex
+
+See [FORKING-FEEDBACK.md](./FORKING-FEEDBACK.md) for a changelog of fixes you can apply manually.
+
 ## Getting Help
 
 - **GitHub Issues**: [ScriptHammer Issues](https://github.com/TortoiseWolfe/ScriptHammer/issues)

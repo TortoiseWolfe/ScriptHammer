@@ -191,6 +191,17 @@ git push
 
 For detailed setup instructions, see [docs/FORKING.md](./docs/FORKING.md).
 
+### Keeping Your Fork Updated
+
+```bash
+# Add upstream and pull changes
+git remote add upstream https://github.com/TortoiseWolfe/ScriptHammer.git
+git fetch upstream
+git merge upstream/main
+```
+
+See [docs/FORKING.md](./docs/FORKING.md) for detailed sync instructions and [docs/FORKING-FEEDBACK.md](./docs/FORKING-FEEDBACK.md) for manual fixes if merging fails.
+
 ## ⚙️ Auto-Configuration
 
 The project automatically detects your repository name and owner from git remote URL at build time:
