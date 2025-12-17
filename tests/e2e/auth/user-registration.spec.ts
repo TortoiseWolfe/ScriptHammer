@@ -6,13 +6,19 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  generateTestEmail,
+  dismissCookieBanner,
+  DEFAULT_TEST_PASSWORD,
+} from '../utils/test-user-factory';
 
 test.describe('User Registration E2E', () => {
-  const testEmail = `e2e-registration-${Date.now()}@example.com`;
-  const testPassword = 'ValidPass123!';
+  const testEmail = generateTestEmail('registration');
+  const testPassword = DEFAULT_TEST_PASSWORD;
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
   });
 
   test('should complete full registration flow from sign-up to protected access', async ({
@@ -24,8 +30,9 @@ test.describe('User Registration E2E', () => {
     await expect(page.getByRole('heading', { name: 'Sign Up' })).toBeVisible();
 
     // Step 2: Fill sign-up form
+    await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
 
     // Step 3: Check Remember Me (optional)
@@ -72,10 +79,11 @@ test.describe('User Registration E2E', () => {
 
   test('should show validation errors for invalid email', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Fill with invalid email
     await page.getByLabel('Email').fill('not-an-email');
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
 
     // Submit form
@@ -87,10 +95,12 @@ test.describe('User Registration E2E', () => {
 
   test('should show validation errors for weak password', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Fill with weak password
-    await page.getByLabel('Email').fill(`${Date.now()}@example.com`);
-    await page.getByLabel('Password').fill('weak');
+    const weakEmail = generateTestEmail('weak-pass');
+    await page.getByLabel('Email').fill(weakEmail);
+    await page.getByLabel('Password', { exact: true }).fill('weak');
     await page.getByLabel('Confirm Password').fill('weak');
 
     // Submit form
@@ -104,10 +114,12 @@ test.describe('User Registration E2E', () => {
 
   test('should show error for password mismatch', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Fill with mismatched passwords
-    await page.getByLabel('Email').fill(`${Date.now()}@example.com`);
-    await page.getByLabel('Password').fill(testPassword);
+    const mismatchEmail = generateTestEmail('mismatch');
+    await page.getByLabel('Email').fill(mismatchEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill('DifferentPass123!');
 
     // Submit form

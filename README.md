@@ -80,107 +80,70 @@ docker compose up --build
 
 ## 🔐 GitHub Actions Secrets
 
-To enable CI/CD deployment and full functionality, add these secrets to your repository at **Settings → Secrets and variables → Actions → Repository secrets**:
+Add these secrets to your repository at **Settings → Secrets and variables → Actions → Repository secrets**.
 
-### Author Information
+### ⚠️ Required for CI/CD (Add These First)
 
-```
-NEXT_PUBLIC_AUTHOR_AVATAR
-```
+These secrets are **required** for the build and deployment workflows to succeed:
 
-```
-NEXT_PUBLIC_AUTHOR_BIO
-```
+| Secret                          | Description                                                    |
+| ------------------------------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL (e.g., `https://abc123.supabase.co`) |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anonymous/public key                             |
 
-```
-NEXT_PUBLIC_AUTHOR_GITHUB
-```
+### 🧪 Recommended for E2E Testing
 
-```
-NEXT_PUBLIC_AUTHOR_LINKEDIN
-```
+These secrets enable full E2E test coverage. Without them, E2E tests will be skipped or fail:
 
-```
-NEXT_PUBLIC_AUTHOR_NAME
-```
+| Secret                         | Description                                                            |
+| ------------------------------ | ---------------------------------------------------------------------- |
+| `SUPABASE_SERVICE_ROLE_KEY`    | Service role key for admin operations in tests                         |
+| `TEST_USER_PRIMARY_EMAIL`      | Primary test user email (use Gmail plus alias: `you+test-a@gmail.com`) |
+| `TEST_USER_PRIMARY_PASSWORD`   | Primary test user password                                             |
+| `TEST_USER_SECONDARY_EMAIL`    | Secondary test user for multi-user tests                               |
+| `TEST_USER_SECONDARY_PASSWORD` | Secondary test user password                                           |
+| `TEST_USER_TERTIARY_EMAIL`     | Tertiary test user for group chat tests                                |
+| `TEST_USER_TERTIARY_PASSWORD`  | Tertiary test user password                                            |
+| `TEST_EMAIL_DOMAIN`            | Email domain for generated test emails (e.g., `you+e2e@gmail.com`)     |
 
-```
-NEXT_PUBLIC_AUTHOR_ROLE
-```
+**Note**: Supabase validates email domains have MX records. Use Gmail plus aliases (`user+tag@gmail.com`) instead of `@example.com` which is always blocked.
 
-```
-NEXT_PUBLIC_AUTHOR_TWITCH
-```
+### 📝 Optional - Author & Site Configuration
 
-```
-NEXT_PUBLIC_AUTHOR_TWITTER
-```
+These customize the site appearance but aren't required for builds:
 
-### Calendar Integration
+| Secret                         | Description                       |
+| ------------------------------ | --------------------------------- |
+| `NEXT_PUBLIC_AUTHOR_NAME`      | Your display name                 |
+| `NEXT_PUBLIC_AUTHOR_EMAIL`     | Contact email                     |
+| `NEXT_PUBLIC_AUTHOR_BIO`       | Short biography                   |
+| `NEXT_PUBLIC_AUTHOR_ROLE`      | Job title/role                    |
+| `NEXT_PUBLIC_AUTHOR_AVATAR`    | Avatar image URL                  |
+| `NEXT_PUBLIC_AUTHOR_GITHUB`    | GitHub username                   |
+| `NEXT_PUBLIC_AUTHOR_LINKEDIN`  | LinkedIn profile URL              |
+| `NEXT_PUBLIC_AUTHOR_TWITTER`   | Twitter/X handle                  |
+| `NEXT_PUBLIC_AUTHOR_TWITCH`    | Twitch username                   |
+| `NEXT_PUBLIC_SITE_URL`         | Production site URL               |
+| `NEXT_PUBLIC_DEPLOY_URL`       | Custom deployment URL             |
+| `NEXT_PUBLIC_SOCIAL_PLATFORMS` | Comma-separated list of platforms |
 
-```
-NEXT_PUBLIC_CALENDAR_PROVIDER
-```
+### 📝 Optional - Integrations
 
-```
-NEXT_PUBLIC_CALENDAR_URL
-```
+| Secret                          | Description                         |
+| ------------------------------- | ----------------------------------- |
+| `NEXT_PUBLIC_CALENDAR_PROVIDER` | Calendar service (e.g., `calendly`) |
+| `NEXT_PUBLIC_CALENDAR_URL`      | Calendar booking URL                |
+| `NEXT_PUBLIC_DISQUS_SHORTNAME`  | Disqus comments integration         |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY` | Google PageSpeed API key            |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics measurement ID     |
 
-### Site Configuration
+### 📝 Optional - Supabase Admin (for migrations)
 
-```
-NEXT_PUBLIC_DEPLOY_URL
-```
-
-```
-NEXT_PUBLIC_DISQUS_SHORTNAME
-```
-
-```
-NEXT_PUBLIC_PAGESPEED_API_KEY
-```
-
-```
-NEXT_PUBLIC_SITE_URL
-```
-
-```
-NEXT_PUBLIC_SOCIAL_PLATFORMS
-```
-
-### Supabase (Public)
-
-```
-NEXT_PUBLIC_SUPABASE_ANON_KEY
-```
-
-```
-NEXT_PUBLIC_SUPABASE_URL
-```
-
-### Supabase (Private - Server Only)
-
-```
-SUPABASE_ACCESS_TOKEN
-```
-
-```
-SUPABASE_DB_PASSWORD
-```
-
-```
-SUPABASE_PROJECT_REF
-```
-
-```
-SUPABASE_SERVICE_ROLE_KEY
-```
-
-### Testing
-
-```
-TEST_USER_PRIMARY_PASSWORD
-```
+| Secret                  | Description                              |
+| ----------------------- | ---------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN` | Personal access token for Management API |
+| `SUPABASE_DB_PASSWORD`  | Database password                        |
+| `SUPABASE_PROJECT_REF`  | Project reference ID                     |
 
 ## 🍴 Forking This Template
 

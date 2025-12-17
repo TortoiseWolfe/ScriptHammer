@@ -220,6 +220,63 @@ The following tests are currently failing due to test implementation issues, not
 
 These failures do not affect the actual functionality of the colorblind assistance feature, which works correctly in the application. The issues are related to test setup and expectations.
 
+## Test Suite Architecture
+
+### Vitest Exclusions (vitest.config.ts)
+
+The main vitest suite excludes 105 tests across three categories:
+
+#### TDD Placeholders (47 tests) - Features Not Yet Implemented
+
+These tests intentionally fail with `expect(true).toBe(false)` until features are built:
+
+- `tests/contract/email-notifications.test.ts` (17 tests) - Email Edge Function
+- `tests/contract/stripe-webhook.test.ts` (14 tests) - Stripe webhook handling
+- `tests/contract/paypal-webhook.test.ts` (15 tests) - PayPal webhook handling
+- `tests/contract/profile/delete-account.contract.test.ts` (1 test) - Cascade delete
+
+#### Real Tests Excluded for Rate Limits (52 tests)
+
+Fully implemented but excluded to avoid hitting shared Supabase instance:
+
+- `tests/integration/auth/oauth-flow.test.ts` (10 tests)
+- `tests/integration/auth/password-reset-flow.test.ts` (7 tests)
+- `tests/integration/auth/sign-in-flow.test.ts` (7 tests)
+- `tests/integration/auth/sign-up-flow.test.ts` (6 tests)
+- `tests/integration/auth/protected-routes.test.ts` (10 tests)
+- `tests/contract/auth/*.test.ts` (7 tests)
+- `tests/integration/messaging/database-setup.test.ts` (14 tests)
+
+**Future work:** Re-enable when dedicated test Supabase instance available.
+
+#### Canvas API Tests (6 tests) - Covered by E2E
+
+Need real browser Canvas API, covered by Playwright E2E tests:
+
+- `src/lib/avatar/__tests__/image-processing.test.ts` (6 tests)
+- `src/lib/avatar/__tests__/validation.test.ts` (7 tests)
+- `tests/integration/avatar/upload-flow.integration.test.ts` (5 tests)
+
+### Test Count Summary
+
+| Suite                  | Tests    | Notes                              |
+| ---------------------- | -------- | ---------------------------------- |
+| Vitest (main)          | ~2,300   | Runs by default                    |
+| Excluded (TDD)         | 47       | Waiting for feature implementation |
+| Excluded (rate limits) | 52       | Re-enable with dedicated test DB   |
+| Excluded (Canvas)      | 6        | Covered by E2E                     |
+| E2E (Playwright)       | 54 files | Run separately                     |
+
+### Running Excluded Tests Manually
+
+```bash
+# Run integration auth tests (requires dedicated Supabase)
+docker compose exec scripthammer pnpm test tests/integration/auth/ -- --run
+
+# Run contract tests (some will fail - TDD placeholders)
+docker compose exec scripthammer pnpm test tests/contract/ -- --run
+```
+
 ## CI/CD Integration
 
 Tests run automatically on:

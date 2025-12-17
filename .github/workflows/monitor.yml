@@ -8,6 +8,10 @@ on:
     branches: [main]
   workflow_dispatch: # Allow manual triggering
 
+env:
+  # Dynamic site URL for GitHub Pages deployment
+  SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
@@ -34,7 +38,7 @@ jobs:
         run: |
           echo "Waiting for deployment to be ready..."
           for i in {1..30}; do
-            if curl -s -o /dev/null -w "%{http_code}" https://scripthammer.com/ | grep -q "200"; then
+            if curl -s -o /dev/null -w "%{http_code}" ${{ env.SITE_URL }}/ | grep -q "200"; then
               echo "Site is ready!"
               break
             fi
@@ -49,9 +53,9 @@ jobs:
         continue-on-error: true
         with:
           urls: |
-            https://scripthammer.com
-            https://scripthammer.com/status
-            https://scripthammer.com/components
+            ${{ env.SITE_URL }}
+            ${{ env.SITE_URL }}/status
+            ${{ env.SITE_URL }}/components
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 3
@@ -81,7 +85,7 @@ jobs:
             "seo": ${{ steps.lighthouse.outputs.seo || 0 }},
             "pwa": ${{ steps.lighthouse.outputs.pwa || 0 }},
             "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "url": "https://scripthammer.com/",
+            "url": "${{ env.SITE_URL }}/",
             "source": "github-actions"
           }
           EOF
@@ -160,7 +164,7 @@ jobs:
     steps:
       - name: Check Main Site
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://scripthammer.com/)
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.SITE_URL }}/)
           if [ "$response" = "200" ]; then
             echo "✅ Main site is up (HTTP $response)"
           else
@@ -169,7 +173,7 @@ jobs:
 
       - name: Check Storybook
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://scripthammer.com/storybook/)
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.SITE_URL }}/storybook/)
           if [ "$response" = "200" ]; then
             echo "✅ Storybook is up (HTTP $response)"
           else
@@ -178,7 +182,7 @@ jobs:
 
       - name: Check Status Page
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://scripthammer.com/status/)
+          response=$(curl -s -o /dev/null -w "%{http_code}" ${{ env.SITE_URL }}/status/)
           if [ "$response" = "200" ]; then
             echo "✅ Status page is up (HTTP $response)"
           else
@@ -198,9 +202,9 @@ jobs:
           if [ "${{ needs.lighthouse.result }}" = "success" ] && \
              [ "${{ needs.pwa-tests.result }}" = "success" ] && \
              [ "${{ needs.deployment-check.result }}" = "success" ]; then
-            echo "[![Status](https://img.shields.io/badge/Status-Operational-success)](https://scripthammer.com/status/)" > status.md
+            echo "[![Status](https://img.shields.io/badge/Status-Operational-success)](${{ env.SITE_URL }}/status/)" > status.md
           else
-            echo "[![Status](https://img.shields.io/badge/Status-Issues_Detected-warning)](https://scripthammer.com/status/)" > status.md
+            echo "[![Status](https://img.shields.io/badge/Status-Issues_Detected-warning)](${{ env.SITE_URL }}/status/)" > status.md
           fi
           echo "Last checked: $(date)" >> status.md
 

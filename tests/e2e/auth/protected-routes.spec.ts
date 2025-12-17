@@ -8,10 +8,15 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  generateTestEmail,
+  dismissCookieBanner,
+  DEFAULT_TEST_PASSWORD,
+} from '../utils/test-user-factory';
 
 test.describe('Protected Routes E2E', () => {
-  const testEmail = `e2e-protected-${Date.now()}@example.com`;
-  const testPassword = 'ValidPass123!';
+  const testEmail = generateTestEmail('protected');
+  const testPassword = DEFAULT_TEST_PASSWORD;
 
   test('should redirect unauthenticated users to sign-in', async ({ page }) => {
     // Attempt to access protected routes without authentication
@@ -31,8 +36,9 @@ test.describe('Protected Routes E2E', () => {
   }) => {
     // Step 1: Sign up
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
 
@@ -60,10 +66,11 @@ test.describe('Protected Routes E2E', () => {
 
   test('should enforce RLS policies on payment access', async ({ page }) => {
     // Step 1: Create first user
-    const user1Email = `e2e-rls-1-${Date.now()}@example.com`;
+    const user1Email = generateTestEmail('rls-1');
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(user1Email);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);
@@ -77,10 +84,11 @@ test.describe('Protected Routes E2E', () => {
     await page.waitForURL('/sign-in');
 
     // Step 4: Create second user
-    const user2Email = `e2e-rls-2-${Date.now()}@example.com`;
+    const user2Email = generateTestEmail('rls-2');
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(user2Email);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);
@@ -97,9 +105,11 @@ test.describe('Protected Routes E2E', () => {
     page,
   }) => {
     // Sign up with new user
+    const verifyEmail = generateTestEmail('verify-notice');
     await page.goto('/sign-up');
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(verifyEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
 
@@ -119,9 +129,11 @@ test.describe('Protected Routes E2E', () => {
 
   test('should preserve session across page navigation', async ({ page }) => {
     // Sign up and sign in
+    const navEmail = generateTestEmail('nav-session');
     await page.goto('/sign-up');
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(navEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);
@@ -142,9 +154,11 @@ test.describe('Protected Routes E2E', () => {
 
   test('should handle session expiration gracefully', async ({ page }) => {
     // Sign up
+    const expireEmail = generateTestEmail('expire-session');
     await page.goto('/sign-up');
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(expireEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);
@@ -169,10 +183,11 @@ test.describe('Protected Routes E2E', () => {
     // Attempt to access protected route while unauthenticated
     await page.goto('/account');
     await page.waitForURL('/sign-in');
+    await dismissCookieBanner(page);
 
-    // Sign in
+    // Sign in (note: uses existing user from earlier test or test fixtures)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Note: If redirect-after-auth is implemented, should redirect to /account
@@ -191,11 +206,11 @@ test.describe('Protected Routes E2E', () => {
     // 4. Verify all related records deleted via admin API
 
     // For now, test the UI flow
+    const deleteEmail = generateTestEmail('delete-test');
     await page.goto('/sign-up');
-    await page
-      .getByLabel('Email')
-      .fill(`delete-test-${Date.now()}@example.com`);
-    await page.getByLabel('Password').fill(testPassword);
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(deleteEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);

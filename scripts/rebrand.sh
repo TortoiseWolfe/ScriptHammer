@@ -13,10 +13,12 @@
 #   DESCRIPTION   Project description (must be quoted if contains spaces)
 #
 # Options:
-#   --force       Skip all confirmation prompts
-#   --dry-run     Show what would change without modifying files
-#   --keep-cname  Do not delete public/CNAME file
-#   --help        Show this help message
+#   --force               Skip all confirmation prompts
+#   --dry-run             Show what would change without modifying files
+#   --keep-cname          Do not delete public/CNAME file
+#   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
+#   --preserve-attribution Keep ScriptHammer attribution link in Footer
+#   --help                Show this help message
 #
 # Exit Codes:
 #   0  Success
@@ -28,6 +30,7 @@
 #   ./scripts/rebrand.sh MyApp myuser "My awesome application"
 #   ./scripts/rebrand.sh "My Cool App" myuser "Description" --dry-run
 #   ./scripts/rebrand.sh MyApp myuser "Description" --force
+#   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --preserve-attribution
 # =============================================================================
 
 set -euo pipefail
@@ -54,6 +57,8 @@ START_TIME=$(date +%s)
 DRY_RUN=false
 FORCE=false
 KEEP_CNAME=false
+PRESERVE_SSH=false
+PRESERVE_ATTRIBUTION=false
 
 # Original project name to search for
 ORIGINAL_NAME="ScriptHammer"
@@ -203,6 +208,12 @@ replace_in_files() {
 
     while IFS= read -r -d '' file; do
         if [ -f "$file" ]; then
+            # Skip Footer.tsx if --preserve-attribution is set
+            if [ "$PRESERVE_ATTRIBUTION" = true ] && [[ "$file" == *"Footer"* ]]; then
+                log_verbose "Skipping (--preserve-attribution): ${file#$REPO_ROOT/}"
+                continue
+            fi
+
             if grep -q "$search" "$file" 2>/dev/null; then
                 if [ "$DRY_RUN" = true ]; then
                     log_verbose "[DRY-RUN] Would update: ${file#$REPO_ROOT/}"
@@ -332,7 +343,21 @@ update_git_remote() {
     current_url=$(git remote get-url origin 2>/dev/null || echo "")
 
     if [ -n "$current_url" ]; then
-        local new_url="https://github.com/${OWNER}/${SANITIZED_NAME}.git"
+        local new_url
+        local is_ssh=false
+
+        # Detect if current URL is SSH format
+        if [[ "$current_url" == git@* ]]; then
+            is_ssh=true
+        fi
+
+        # Preserve SSH format if flag is set and current URL is SSH
+        if [ "$PRESERVE_SSH" = true ] && [ "$is_ssh" = true ]; then
+            new_url="git@github.com:${OWNER}/${SANITIZED_NAME}.git"
+            log_info "Preserving SSH format for git remote (--preserve-ssh)"
+        else
+            new_url="https://github.com/${OWNER}/${SANITIZED_NAME}.git"
+        fi
 
         if [ "$DRY_RUN" = true ]; then
             log_verbose "[DRY-RUN] Would update git remote: $new_url"
@@ -365,6 +390,14 @@ main() {
                 ;;
             --keep-cname)
                 KEEP_CNAME=true
+                shift
+                ;;
+            --preserve-ssh)
+                PRESERVE_SSH=true
+                shift
+                ;;
+            --preserve-attribution)
+                PRESERVE_ATTRIBUTION=true
                 shift
                 ;;
             -*)

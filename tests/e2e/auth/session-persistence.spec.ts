@@ -8,32 +8,54 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  generateTestEmail,
+  dismissCookieBanner,
+  DEFAULT_TEST_PASSWORD,
+} from '../utils/test-user-factory';
 
 test.describe('Session Persistence E2E', () => {
-  const testEmail = `e2e-session-${Date.now()}@example.com`;
-  const testPassword = 'ValidPass123!';
+  // Generate email once per test file (not per test)
+  const testEmail = generateTestEmail('session');
+  const testPassword = DEFAULT_TEST_PASSWORD;
 
-  test.beforeEach(async ({ page }) => {
-    // Create test user
+  // Create user ONCE before all tests in this file
+  test.beforeAll(async ({ browser }) => {
+    const page = await browser.newPage();
+
     await page.goto('/sign-up');
+    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
+
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill(testPassword);
     await page.getByRole('button', { name: 'Sign Up' }).click();
     await page.waitForURL(/\/(verify-email|profile)/);
 
-    // Sign out to test sign-in with Remember Me
-    await page.getByRole('button', { name: 'Sign Out' }).click();
-    await page.waitForURL('/sign-in');
+    // Sign out to prepare for tests
+    const signOutButton = page.getByRole('button', { name: 'Sign Out' });
+    if (await signOutButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await signOutButton.click();
+      await page.waitForURL('/sign-in');
+    }
+
+    await page.close();
+  });
+
+  // Each test starts fresh on sign-in page
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/sign-in');
+    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
   });
 
   test('should extend session duration with Remember Me checked', async ({
     page,
   }) => {
-    // Sign in with Remember Me
-    await page.goto('/sign-in');
+    // Sign in with Remember Me (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Remember Me').check();
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -69,10 +91,9 @@ test.describe('Session Persistence E2E', () => {
   });
 
   test('should use short session without Remember Me', async ({ page }) => {
-    // Sign in WITHOUT Remember Me
-    await page.goto('/sign-in');
+    // Sign in WITHOUT Remember Me (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     // Do NOT check Remember Me
     await page.getByRole('button', { name: 'Sign In' }).click();
 
@@ -92,10 +113,9 @@ test.describe('Session Persistence E2E', () => {
   test('should automatically refresh token before expiration', async ({
     page,
   }) => {
-    // Sign in
-    await page.goto('/sign-in');
+    // Sign in (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
 
@@ -135,8 +155,9 @@ test.describe('Session Persistence E2E', () => {
 
     // Sign in with Remember Me
     await page.goto('/sign-in');
+    await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Remember Me').check();
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
@@ -161,10 +182,9 @@ test.describe('Session Persistence E2E', () => {
   });
 
   test('should clear session on sign out', async ({ page }) => {
-    // Sign in
-    await page.goto('/sign-in');
+    // Sign in (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
 
@@ -207,8 +227,9 @@ test.describe('Session Persistence E2E', () => {
 
     // Sign in on page 1
     await page1.goto('/sign-in');
+    await dismissCookieBanner(page1);
     await page1.getByLabel('Email').fill(testEmail);
-    await page1.getByLabel('Password').fill(testPassword);
+    await page1.getByLabel('Password', { exact: true }).fill(testPassword);
     await page1.getByRole('button', { name: 'Sign In' }).click();
     await page1.waitForURL(/\/(profile|verify-email)/);
 
@@ -233,10 +254,9 @@ test.describe('Session Persistence E2E', () => {
   test('should refresh session automatically on page reload', async ({
     page,
   }) => {
-    // Sign in
-    await page.goto('/sign-in');
+    // Sign in (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
 
@@ -259,10 +279,9 @@ test.describe('Session Persistence E2E', () => {
     // 3. Try to access protected route
     // 4. Verify redirected to sign-in
 
-    // For demonstration, test the refresh mechanism
-    await page.goto('/sign-in');
+    // For demonstration, test the refresh mechanism (already on sign-in page from beforeEach)
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(testPassword);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
 

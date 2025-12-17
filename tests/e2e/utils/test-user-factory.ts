@@ -11,6 +11,24 @@
  */
 
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
+import type { Page } from '@playwright/test';
+
+/**
+ * Email domain for test users.
+ *
+ * IMPORTANT: Supabase validates email domains for MX (mail exchange) records.
+ * - `@example.com` is BLOCKED (reserved domain)
+ * - Custom domains without email infrastructure are BLOCKED
+ * - Gmail with plus aliases WORKS: `yourname+tag@gmail.com`
+ *
+ * Set TEST_EMAIL_DOMAIN in .env to override the default.
+ * For Gmail plus aliases, use format: `yourname+e2e@gmail.com`
+ *
+ * @example
+ * // .env
+ * TEST_EMAIL_DOMAIN=myname+e2e@gmail.com
+ */
+export const TEST_EMAIL_DOMAIN = process.env.TEST_EMAIL_DOMAIN || 'example.com';
 
 export interface TestUser {
   id: string;
@@ -251,13 +269,76 @@ export function isAdminClientAvailable(): boolean {
 }
 
 /**
- * Generate a unique test email
+ * Generate a unique test email using TEST_EMAIL_DOMAIN
+ *
+ * Supports Gmail plus aliases (e.g., myname+test@gmail.com)
+ * When using Gmail, the prefix is added as a plus-alias tag.
+ *
+ * @param prefix - Prefix for the email (default: 'e2e-test')
+ * @returns Unique email address
+ *
+ * @example
+ * // With TEST_EMAIL_DOMAIN=example.com (default)
+ * generateTestEmail('signup') // => 'signup-1234567890-abc123@example.com'
+ *
+ * // With TEST_EMAIL_DOMAIN=myname+e2e@gmail.com
+ * generateTestEmail('signup') // => 'myname+signup-1234567890-abc123@gmail.com'
  */
 export function generateTestEmail(prefix = 'e2e-test'): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
+  const domain = TEST_EMAIL_DOMAIN;
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Handle Gmail plus alias format (e.g., myname+e2e@gmail.com)
+  if (domain.includes('@gmail.com')) {
+    const [baseUser] = domain.split('@');
+    // Append prefix to the existing plus alias or create new one
+    if (baseUser.includes('+')) {
+      const [user, existingTag] = baseUser.split('+');
+      return `${user}+${existingTag}-${prefix}-${uniqueSuffix}@gmail.com`;
+    }
+    return `${baseUser}+${prefix}-${uniqueSuffix}@gmail.com`;
+  }
+
+  // Standard domain format
+  return `${prefix}-${uniqueSuffix}@${domain}`;
 }
 
 /**
  * Default test password that meets Supabase requirements
  */
 export const DEFAULT_TEST_PASSWORD = 'TestPassword123!';
+
+/**
+ * Dismiss cookie consent banner if visible.
+ *
+ * Call this after page.goto() and before interacting with forms.
+ * The cookie banner overlays the page and can intercept button clicks.
+ *
+ * @param page - Playwright page object
+ * @param options - Configuration options
+ * @param options.timeout - Max time to wait for banner (default: 1000ms)
+ *
+ * @example
+ * await page.goto('/sign-up');
+ * await dismissCookieBanner(page);
+ * // Now safe to interact with the sign-up form
+ */
+export async function dismissCookieBanner(
+  page: Page,
+  options: { timeout?: number } = {}
+): Promise<void> {
+  const { timeout = 1000 } = options;
+
+  try {
+    const cookieAccept = page.getByRole('button', { name: /accept/i });
+    if (await cookieAccept.isVisible({ timeout }).catch(() => false)) {
+      await cookieAccept.click();
+      // Wait for banner to disappear
+      await cookieAccept
+        .waitFor({ state: 'hidden', timeout: 2000 })
+        .catch(() => {});
+    }
+  } catch {
+    // Banner not present or already dismissed - continue silently
+  }
+}

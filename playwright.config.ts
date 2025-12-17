@@ -116,7 +116,7 @@ export default defineConfig({
     ? undefined
     : process.env.CI
       ? {
-          command: 'npx serve -s out -l 3000',
+          command: 'npx serve out -l 3000',
           url: 'http://localhost:3000',
           reuseExistingServer: false,
           timeout: 60 * 1000,

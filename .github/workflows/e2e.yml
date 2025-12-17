@@ -55,6 +55,9 @@ jobs:
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY }}
           NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ secrets.EMAILJS_SERVICE_ID }}
           NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: ${{ secrets.EMAILJS_TEMPLATE_ID }}
+          # Supabase credentials for app build
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Debug - Check build output
         run: |
@@ -65,8 +68,8 @@ jobs:
 
       - name: Start server
         run: |
-          # Serve static files from out directory at root
-          npx serve -s out -l 3000 --single &
+          # Serve static files from out directory at root (no SPA mode for Next.js static export)
+          npx serve out -l 3000 &
           sleep 5
           npx wait-on http://localhost:3000 --timeout 60000
         env:
@@ -87,9 +90,21 @@ jobs:
           CI: true
           PLAYWRIGHT_BROWSER: ${{ matrix.browser }}
           SKIP_WEBSERVER: true
-          # Tests expect app at root, not with base path
           BASE_URL: http://localhost:3000
           DEBUG: pw:api
+          # Supabase credentials
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Primary test user
+          TEST_USER_PRIMARY_EMAIL: ${{ secrets.TEST_USER_PRIMARY_EMAIL }}
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          # Secondary test user (multi-user tests)
+          TEST_USER_SECONDARY_EMAIL: ${{ secrets.TEST_USER_SECONDARY_EMAIL }}
+          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
+          # Tertiary test user (group chat/friend tests)
+          TEST_USER_TERTIARY_EMAIL: ${{ secrets.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
 
       - name: Upload test results
         if: always()

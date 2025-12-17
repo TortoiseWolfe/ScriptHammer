@@ -3,6 +3,10 @@
 // Purpose: Test rate limiting from user perspective
 
 import { test, expect } from '@playwright/test';
+import {
+  generateTestEmail,
+  dismissCookieBanner,
+} from '../utils/test-user-factory';
 
 /**
  * E2E Tests for Rate Limiting
@@ -12,12 +16,13 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('Rate Limiting - User Experience', () => {
-  const testEmail = `ratelimit-test-${Date.now()}@example.com`;
+  const testEmail = generateTestEmail('ratelimit-test');
   const testPassword = 'WrongPassword123!';
 
   test.beforeEach(async ({ page }) => {
     // Navigate to sign-in page
     await page.goto('/sign-in');
+    await dismissCookieBanner(page);
     await expect(page).toHaveTitle(/Sign In/i);
   });
 
@@ -75,7 +80,7 @@ test.describe('Rate Limiting - User Experience', () => {
   });
 
   test('should show remaining time until unlock', async ({ page }) => {
-    const uniqueEmail = `ratelimit-timer-${Date.now()}@example.com`;
+    const uniqueEmail = generateTestEmail('ratelimit-timer');
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
@@ -98,8 +103,8 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should allow different users to sign in independently', async ({
     page,
   }) => {
-    const blockedEmail = `blocked-${Date.now()}@example.com`;
-    const allowedEmail = `allowed-${Date.now()}@example.com`;
+    const blockedEmail = generateTestEmail('blocked');
+    const allowedEmail = generateTestEmail('allowed');
 
     // Block first user
     for (let i = 0; i < 5; i++) {
@@ -135,7 +140,7 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should track sign-up and sign-in attempts separately', async ({
     page,
   }) => {
-    const email = `separate-limits-${Date.now()}@example.com`;
+    const email = generateTestEmail('separate-limits');
 
     // Exhaust sign-in attempts
     for (let i = 0; i < 5; i++) {
@@ -173,7 +178,7 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should show clear error message with actionable information', async ({
     page,
   }) => {
-    const email = `clear-message-${Date.now()}@example.com`;
+    const email = generateTestEmail('clear-message');
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
@@ -206,9 +211,10 @@ test.describe('Rate Limiting - User Experience', () => {
 
 test.describe('Rate Limiting - Password Reset', () => {
   test('should rate limit password reset requests', async ({ page }) => {
-    const email = `password-reset-${Date.now()}@example.com`;
+    const email = generateTestEmail('password-reset');
 
     await page.goto('/forgot-password');
+    await dismissCookieBanner(page);
 
     // Attempt 5 password resets
     for (let i = 0; i < 5; i++) {

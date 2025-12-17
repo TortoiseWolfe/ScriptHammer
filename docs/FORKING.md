@@ -56,9 +56,23 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 # Keep CNAME file
 ./scripts/rebrand.sh MyProject myuser "Description" --keep-cname
 
+# Preserve SSH format for git remote (if your origin is SSH)
+./scripts/rebrand.sh MyProject myuser "Description" --preserve-ssh
+
+# Keep ScriptHammer attribution link in Footer component
+./scripts/rebrand.sh MyProject myuser "Description" --preserve-attribution
+
 # Combine options
-./scripts/rebrand.sh MyProject myuser "Description" --dry-run --force
+./scripts/rebrand.sh MyProject myuser "Description" --dry-run --preserve-ssh --preserve-attribution
 ```
+
+| Option                   | Description                                                |
+| ------------------------ | ---------------------------------------------------------- |
+| `--dry-run`              | Preview changes without modifying files                    |
+| `--force`                | Skip all confirmation prompts                              |
+| `--keep-cname`           | Don't delete `public/CNAME` file                           |
+| `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH |
+| `--preserve-attribution` | Skip Footer.tsx to keep ScriptHammer attribution link      |
 
 ### Exit Codes
 
@@ -81,23 +95,50 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 
 Add these secrets in **Settings → Secrets and variables → Actions → Repository secrets**:
 
-#### Minimal (Required)
+#### Required for CI/CD (Add These First)
+
+These are **required** for the build and deployment workflows to succeed:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 ```
 
-#### Recommended
+#### Recommended for E2E Testing
+
+These enable full E2E test coverage:
+
+```
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+TEST_USER_PRIMARY_EMAIL=yourname+test-a@gmail.com
+TEST_USER_PRIMARY_PASSWORD=TestPassword123!
+TEST_USER_SECONDARY_EMAIL=yourname+test-b@gmail.com
+TEST_USER_SECONDARY_PASSWORD=TestPassword456!
+TEST_USER_TERTIARY_EMAIL=yourname+test-c@gmail.com
+TEST_USER_TERTIARY_PASSWORD=TestPassword789!
+TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
+```
+
+> **Important: Email Domain Requirements**
+>
+> Supabase Auth validates that email domains have valid MX (mail exchange) records.
+> `@example.com` is a reserved domain and will **always be blocked**.
+>
+> **Use Gmail plus aliases** instead: `yourname+test@gmail.com`
+>
+> The plus alias format allows unlimited unique emails that all arrive at your
+> inbox but Supabase treats each as a separate user.
+
+#### Optional
 
 ```
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_AUTHOR_NAME=Your Name
 NEXT_PUBLIC_AUTHOR_EMAIL=your@email.com
+NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 ```
 
-See `.env.example` for the complete list of available secrets.
+See [README.md](../README.md#-github-actions-secrets) for the complete prioritized list of secrets.
 
 ### basePath Auto-Detection
 
@@ -161,10 +202,31 @@ After forking, verify everything works:
 
 ### Tests Fail Without Supabase
 
-Tests should pass without Supabase environment variables thanks to comprehensive mocks in `tests/setup.ts`. If tests fail:
+Unit tests should pass without Supabase environment variables thanks to comprehensive mocks in `tests/setup.ts`. If tests fail:
 
 1. Ensure you have the latest version of the template
 2. Check that no test is directly importing from `@supabase/supabase-js`
+
+### E2E Tests Fail with "Invalid email" Errors
+
+Supabase Auth validates email domains have MX records. Common causes:
+
+1. **Using `@example.com`**: This reserved domain is always blocked
+2. **Missing TEST_EMAIL_DOMAIN**: Set this env var to use Gmail plus aliases
+
+**Fix**: Use Gmail plus alias format in your `.env`:
+
+```bash
+TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
+TEST_USER_PRIMARY_EMAIL=yourname+test-a@gmail.com
+```
+
+### E2E Tests Create Multiple Users per Test
+
+The `session-persistence.spec.ts` test previously created users in `beforeEach` instead of `beforeAll`, causing rate limits. This is fixed in the template but if you see rate limit errors:
+
+1. Check that `beforeAll` is used for user creation (not `beforeEach`)
+2. Use unique email prefixes via `generateTestEmail('unique-prefix')`
 
 ### Build Fails After Rebrand
 
