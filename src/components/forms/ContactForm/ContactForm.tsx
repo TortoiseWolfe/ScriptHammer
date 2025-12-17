@@ -24,6 +24,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
     formState: { errors },
     reset,
     watch,
+    setFocus,
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
     mode: 'onSubmit',
@@ -71,6 +72,16 @@ export const ContactForm: React.FC<ContactFormProps> = ({
       reset();
     }
   }, [isSuccess, reset]);
+
+  // Focus on first error field for accessibility
+  useEffect(() => {
+    const errorFields = Object.keys(errors) as (keyof ContactFormData)[];
+    // Filter out honeypot field from focus
+    const firstErrorField = errorFields.find((field) => field !== '_gotcha');
+    if (firstErrorField) {
+      setFocus(firstErrorField);
+    }
+  }, [errors, setFocus]);
 
   return (
     <div className="mx-auto w-full max-w-2xl">

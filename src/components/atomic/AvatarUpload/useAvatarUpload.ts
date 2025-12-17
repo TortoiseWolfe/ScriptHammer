@@ -33,6 +33,9 @@ export interface UseAvatarUploadResult {
   handleCancelCrop: () => void;
   clearError: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  // Focus management refs
+  triggerButtonRef: React.RefObject<HTMLButtonElement | null>;
+  modalRef: React.RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -47,6 +50,10 @@ export function useAvatarUpload(
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Focus management refs for accessibility
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // Crop state
   const [showCropModal, setShowCropModal] = useState(false);
@@ -220,5 +227,8 @@ export function useAvatarUpload(
     handleCancelCrop,
     clearError,
     inputRef,
+    // Focus management refs
+    triggerButtonRef,
+    modalRef,
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Cropper from 'react-easy-crop';
 import { useAvatarUpload } from './useAvatarUpload';
 
@@ -45,7 +45,58 @@ export default function AvatarUpload({
     handleCancelCrop,
     clearError,
     inputRef,
+    triggerButtonRef,
+    modalRef,
   } = useAvatarUpload(onUploadComplete);
+
+  // Escape key handler to close modal
+  useEffect(() => {
+    if (!showCropModal) return;
+
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isUploading) {
+        handleCancelCrop();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [showCropModal, isUploading, handleCancelCrop]);
+
+  // Focus trap within modal
+  useEffect(() => {
+    if (!showCropModal || !modalRef.current) return;
+
+    const handleTabKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      const focusable = modalRef.current?.querySelectorAll(
+        'input[type="range"], button:not(:disabled)'
+      );
+      if (!focusable?.length) return;
+
+      const first = focusable[0] as HTMLElement;
+      const last = focusable[focusable.length - 1] as HTMLElement;
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleTabKey);
+    return () => document.removeEventListener('keydown', handleTabKey);
+  }, [showCropModal, modalRef]);
+
+  // Restore focus to trigger button when modal closes
+  useEffect(() => {
+    if (!showCropModal && triggerButtonRef.current) {
+      triggerButtonRef.current.focus();
+    }
+  }, [showCropModal, triggerButtonRef]);
 
   return (
     <div className={`flex flex-col gap-4${className ? ` ${className}` : ''}`}>
@@ -64,6 +115,7 @@ export default function AvatarUpload({
           aria-label="Upload profile picture"
         />
         <button
+          ref={triggerButtonRef}
           type="button"
           onClick={() => inputRef.current?.click()}
           className="btn btn-primary min-h-11 min-w-11"
@@ -105,7 +157,7 @@ export default function AvatarUpload({
           aria-modal="true"
           aria-labelledby="crop-title"
         >
-          <div className="modal-box max-w-2xl">
+          <div ref={modalRef} className="modal-box max-w-2xl">
             <h3 id="crop-title" className="mb-4 text-lg font-bold">
               Crop Your Avatar
             </h3>

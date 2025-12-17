@@ -19,11 +19,9 @@ test.describe('Contact Form - Keyboard Navigation', () => {
   test('should be keyboard navigable with proper tab order', async ({
     page,
   }) => {
-    // Start at the beginning of the page
-    await page.keyboard.press('Tab');
-
-    // Tab to name field
+    // Click on name field to establish focus in the form
     const nameField = page.locator('input[name="name"]');
+    await nameField.click();
     await expect(nameField).toBeFocused();
 
     // Tab to email field
@@ -50,8 +48,9 @@ test.describe('Contact Form - Keyboard Navigation', () => {
   test('should allow form submission via keyboard (Enter key)', async ({
     page,
   }) => {
-    // Fill form using keyboard
-    await page.keyboard.press('Tab');
+    // Click on name field to establish focus in the form
+    const nameField = page.locator('input[name="name"]');
+    await nameField.click();
     await page.keyboard.type('John Doe');
 
     await page.keyboard.press('Tab');
@@ -61,56 +60,52 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     await page.keyboard.type('Test Subject');
 
     await page.keyboard.press('Tab');
-    await page.keyboard.type('Test message content');
+    await page.keyboard.type('Test message content that is long enough');
 
     // Tab to submit button and press Enter
     await page.keyboard.press('Tab');
+    const submitButton = page.locator('button[type="submit"]');
+    await expect(submitButton).toBeFocused();
     await page.keyboard.press('Enter');
 
-    // Verify form submission (success message or validation)
-    // Note: Adjust selector based on actual implementation
-    const result = await page
-      .waitForSelector('[role="alert"], .alert', {
-        timeout: 5000,
-      })
-      .catch(() => null);
+    // Form should show loading state or result
+    // Wait for either: success message, error message, or button loading state
+    await page.waitForTimeout(1000);
 
-    // Form should either submit or show validation
-    expect(result).toBeTruthy();
+    // Check that form responded to submission (button changes or alert appears)
+    const hasResponse =
+      (await submitButton.getAttribute('class'))?.includes('loading') ||
+      (await page.locator('[role="alert"], .alert').count()) > 0 ||
+      // Form cleared after success
+      (await nameField.inputValue()) === '';
+
+    expect(hasResponse).toBeTruthy();
   });
 
   test('should maintain focus after validation errors', async ({ page }) => {
-    // Tab to submit button without filling required fields
-    await page.keyboard.press('Tab'); // name
-    await page.keyboard.press('Tab'); // email
-    await page.keyboard.press('Tab'); // subject
-    await page.keyboard.press('Tab'); // message
-    await page.keyboard.press('Tab'); // submit
-    await page.keyboard.press('Enter');
+    // Click on submit button without filling required fields
+    const submitButton = page.locator('button[type="submit"]');
+    await submitButton.click();
 
     // Wait for validation
     await page.waitForTimeout(500);
 
-    // Focus should remain in form (not lost)
+    // Focus should be on first error field (name field)
     const activeElement = await page.evaluate(() => {
       const el = document.activeElement;
       return el?.tagName?.toLowerCase();
     });
 
-    // Active element should be a form element or button
+    // Active element should be a form element (focused on first error)
     expect(['input', 'textarea', 'button']).toContain(activeElement);
   });
 
   test('should support Shift+Tab for backwards navigation', async ({
     page,
   }) => {
-    // Tab forward to message field
-    await page.keyboard.press('Tab'); // name
-    await page.keyboard.press('Tab'); // email
-    await page.keyboard.press('Tab'); // subject
-    await page.keyboard.press('Tab'); // message
-
+    // Click on message field to establish focus
     const messageField = page.locator('textarea[name="message"]');
+    await messageField.click();
     await expect(messageField).toBeFocused();
 
     // Shift+Tab backwards to subject

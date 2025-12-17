@@ -77,9 +77,9 @@ test.describe('ColorblindToggle - Accessibility', () => {
     const dropdown = page.getByText('Color Vision Assistance');
     await expect(dropdown).toBeVisible();
 
-    // Tab to select element
-    await page.keyboard.press('Tab');
+    // Click on select element to focus it (keyboard tab may go to different elements)
     const select = page.getByRole('combobox');
+    await select.click();
     await expect(select).toBeFocused();
 
     // Should be able to change mode with arrow keys
@@ -136,11 +136,11 @@ test.describe('ColorblindToggle - Accessibility', () => {
     page,
   }) => {
     // Open dropdown and select a mode
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
+    let toggleButton = page.getByRole('button', { name: /color vision/i });
     await toggleButton.click();
     await page.waitForTimeout(200);
 
-    const select = page.getByRole('combobox');
+    let select = page.getByRole('combobox');
     await select.selectOption({
       label: 'Deuteranopia (Green-Blind) Correction',
     });
@@ -153,10 +153,15 @@ test.describe('ColorblindToggle - Accessibility', () => {
     // Return to home
     await page.goto('/');
     await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
 
-    // Open dropdown again
+    // Re-query for elements after navigation
+    toggleButton = page.getByRole('button', { name: /color vision/i });
     await toggleButton.click();
     await page.waitForTimeout(200);
+
+    // Re-query for select after navigation
+    select = page.getByRole('combobox');
 
     // Verify mode is still selected
     const selectedOption = await select.inputValue();

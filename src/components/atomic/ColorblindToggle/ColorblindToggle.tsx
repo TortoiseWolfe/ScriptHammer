@@ -34,6 +34,22 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Escape key handler to close dropdown
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        const activeElement = document.activeElement as HTMLElement;
+        if (activeElement && dropdownRef.current?.contains(activeElement)) {
+          const trigger = dropdownRef.current.querySelector('button');
+          trigger?.blur();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const colorblindOptions = [
     { value: ColorblindType.NONE, label: 'No Correction Needed' },
     {
