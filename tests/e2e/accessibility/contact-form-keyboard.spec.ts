@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**
  * E2E Test: Contact Form Keyboard Navigation
@@ -11,6 +12,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Contact Form - Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/contact');
+    // Dismiss cookie banner to prevent it from intercepting focus/keyboard
+    await dismissCookieBanner(page);
   });
 
   test('should be keyboard navigable with proper tab order', async ({

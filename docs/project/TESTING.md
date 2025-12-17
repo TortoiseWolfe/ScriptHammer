@@ -353,12 +353,23 @@ End-to-end tests use Playwright to test complete user workflows in real browsers
 
 E2E tests require multiple test users for multi-user scenarios (messaging, connections, group chats).
 
-**Test Users:**
-| User | Email | Purpose |
-|------|-------|---------|
-| Primary | test@example.com | Runs E2E tests |
-| Secondary | test-user-b@example.com | Multi-user tests (connections, messaging) |
-| Tertiary | test-user-c@example.com | Group chat tests (3+ members) |
+**⚠️ CRITICAL: Email Domain Requirement**
+
+Supabase validates email domains and **rejects `@example.com`** emails. You MUST use a real email domain. Gmail plus aliases work perfectly:
+
+```bash
+# REQUIRED in .env for dynamically generated test emails
+TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
+```
+
+Without `TEST_EMAIL_DOMAIN`, E2E tests will fail with "Email address is invalid" errors.
+
+**Test Users (use Gmail plus aliases):**
+| User | Email Example | Purpose |
+|------|---------------|---------|
+| Primary | yourname+test-a@gmail.com | Runs E2E tests |
+| Secondary | yourname+test-b@gmail.com | Multi-user tests (connections, messaging) |
+| Tertiary | yourname+test-c@gmail.com | Group chat tests (3+ members) |
 | Admin | admin@scripthammer.com | Welcome messages |
 
 **Setup (one-time):**
@@ -374,11 +385,15 @@ docker compose exec scripthammer pnpm exec tsx scripts/seed-connections.ts
 **Environment Variables (in .env):**
 
 ```bash
-TEST_USER_PRIMARY_EMAIL=test@example.com
+# REQUIRED - Dynamic test email generation
+TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
+
+# Pre-seeded test users (use Gmail plus aliases)
+TEST_USER_PRIMARY_EMAIL=yourname+test-a@gmail.com
 TEST_USER_PRIMARY_PASSWORD=<secure-password>
-TEST_USER_SECONDARY_EMAIL=test-user-b@example.com
+TEST_USER_SECONDARY_EMAIL=yourname+test-b@gmail.com
 TEST_USER_SECONDARY_PASSWORD=<secure-password>
-TEST_USER_TERTIARY_EMAIL=test-user-c@example.com
+TEST_USER_TERTIARY_EMAIL=yourname+test-c@gmail.com
 TEST_USER_TERTIARY_PASSWORD=<secure-password>
 ```
 

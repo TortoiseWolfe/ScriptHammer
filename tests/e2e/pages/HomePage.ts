@@ -18,7 +18,8 @@ export class HomePage extends BasePage {
 
     // Navigation buttons
     browseThemesButton: 'text=Browse Themes',
-    exploreComponentsButton: 'text=Explore Components',
+    viewStorybookButton: 'text=View Storybook',
+    readBlogButton: 'text=Read Blog',
     viewSourceButton: 'text=View Source',
 
     // Game demo section
@@ -72,11 +73,24 @@ export class HomePage extends BasePage {
   }
 
   /**
-   * Navigate to the components page
+   * Navigate to the Storybook (opens in new tab)
+   * @returns The new page object for the Storybook tab
    */
-  async navigateToComponents() {
-    await this.clickWithRetry(this.selectors.exploreComponentsButton);
-    await this.expectURL(/.*components/);
+  async navigateToStorybook() {
+    const [newPage] = await Promise.all([
+      this.page.context().waitForEvent('page'),
+      this.clickWithRetry(this.selectors.viewStorybookButton),
+    ]);
+    await newPage.waitForLoadState();
+    return newPage;
+  }
+
+  /**
+   * Navigate to the blog page
+   */
+  async navigateToBlog() {
+    await this.clickWithRetry(this.selectors.readBlogButton);
+    await this.expectURL(/.*blog/);
   }
 
   /**
@@ -202,9 +216,8 @@ export class HomePage extends BasePage {
   async isHeroSectionVisible(): Promise<boolean> {
     const title = await this.isVisible(this.selectors.heroTitle);
     const description = await this.isVisible(this.selectors.heroDescription);
-    const badge = await this.isVisible(this.selectors.progressBadge);
-
-    return title && description && badge;
+    // Progress badge is optional - homepage layout varies
+    return title && description;
   }
 
   /**
@@ -231,11 +244,11 @@ export class HomePage extends BasePage {
     const themesButton = await this.isVisible(
       this.selectors.browseThemesButton
     );
-    const componentsButton = await this.isVisible(
-      this.selectors.exploreComponentsButton
+    const storybookButton = await this.isVisible(
+      this.selectors.viewStorybookButton
     );
 
-    if (!themesButton || !componentsButton) {
+    if (!themesButton || !storybookButton) {
       throw new Error('Navigation buttons not visible');
     }
   }

@@ -10,7 +10,8 @@ export class BasePage {
 
   constructor(page: Page) {
     this.page = page;
-    this.baseURL = process.env.BASE_URL || 'http://localhost:3000/ScriptHammer';
+    // Use BASE_URL from env, or localhost without base path for local dev
+    this.baseURL = process.env.BASE_URL || 'http://localhost:3000';
   }
 
   /**

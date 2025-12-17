@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { HomePage } from '../pages/HomePage';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**
  * Example of refactoring tests to use Page Object Model
@@ -11,6 +12,8 @@ test.describe('Homepage Navigation (with Page Objects)', () => {
   test.beforeEach(async ({ page }) => {
     homePage = new HomePage(page);
     await homePage.goto();
+    // Dismiss cookie banner to prevent it from intercepting clicks
+    await dismissCookieBanner(page);
   });
 
   test('homepage loads with correct title', async ({ page }) => {
@@ -30,17 +33,26 @@ test.describe('Homepage Navigation (with Page Objects)', () => {
     // Navigation and URL check is handled in the page object
   });
 
-  test('navigate to components page', async () => {
-    await homePage.navigateToComponents();
+  test('navigate to storybook', async () => {
+    const storybookPage = await homePage.navigateToStorybook();
+    // Storybook opens in a new tab
+    expect(storybookPage.url()).toContain('storybook');
+    await storybookPage.close();
+  });
+
+  test('navigate to blog page', async () => {
+    await homePage.navigateToBlog();
     // Navigation and URL check is handled in the page object
   });
 
-  test('progress badge displays correctly', async () => {
+  // Skip: Progress badge not present on current homepage design
+  test.skip('progress badge displays correctly', async () => {
     const progressText = await homePage.getProgressBadgeText();
     expect(progressText).toMatch(/\d+% Complete/);
   });
 
-  test('game demo section is present', async () => {
+  // Skip: Game demo section not present on current homepage design
+  test.skip('game demo section is present', async () => {
     const isVisible = await homePage.isGameDemoVisible();
     expect(isVisible).toBe(true);
 
@@ -53,7 +65,8 @@ test.describe('Homepage Navigation (with Page Objects)', () => {
     expect(gameSection).toBe(true);
   });
 
-  test('navigation links in footer work', async ({ page }) => {
+  // Skip: Status/Accessibility footer links not present on current design
+  test.skip('navigation links in footer work', async ({ page }) => {
     // Test Status Dashboard link
     await homePage.navigateToStatus();
     await page.goBack();
@@ -69,7 +82,8 @@ test.describe('Homepage Navigation (with Page Objects)', () => {
     await newPage.close();
   });
 
-  test('skip to game demo link works', async () => {
+  // Skip: Skip link to game demo not present on current design
+  test.skip('skip to game demo link works', async () => {
     const skipWorked = await homePage.testSkipLink();
     expect(skipWorked).toBe(true);
   });

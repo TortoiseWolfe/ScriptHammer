@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**
  * E2E Test: ColorblindToggle Accessibility
@@ -14,6 +15,8 @@ test.describe('ColorblindToggle - Accessibility', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to home page where ColorblindToggle is in navigation
     await page.goto('/');
+    // Dismiss cookie banner to prevent it from intercepting clicks
+    await dismissCookieBanner(page);
   });
 
   test('should maintain focus management in dropdown', async ({ page }) => {

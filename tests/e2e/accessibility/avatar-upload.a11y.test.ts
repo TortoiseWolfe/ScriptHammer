@@ -16,6 +16,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,6 +26,8 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
       process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
     await page.goto('/sign-in');
+    // Dismiss cookie banner before interacting with form
+    await dismissCookieBanner(page);
     await page.fill('input[type="email"]', testEmail);
     await page.fill('input[type="password"]', testPassword);
     await page.click('button[type="submit"]');
@@ -33,6 +36,8 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
     // Navigate to Account Settings
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
+    // Dismiss cookie banner again after navigation
+    await dismissCookieBanner(page);
   });
 
   test('A11y-001: Upload button meets touch target requirements', async ({

@@ -30,6 +30,15 @@ import type { Page } from '@playwright/test';
  */
 export const TEST_EMAIL_DOMAIN = process.env.TEST_EMAIL_DOMAIN || 'example.com';
 
+// Warn if using default domain (will fail with Supabase)
+if (!process.env.TEST_EMAIL_DOMAIN) {
+  console.warn(
+    '\n⚠️  WARNING: TEST_EMAIL_DOMAIN not set!\n' +
+      '   E2E tests will fail because Supabase rejects @example.com emails.\n' +
+      '   Set TEST_EMAIL_DOMAIN in .env (e.g., TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com)\n'
+  );
+}
+
 export interface TestUser {
   id: string;
   email: string;
@@ -309,14 +318,18 @@ export function generateTestEmail(prefix = 'e2e-test'): string {
 export const DEFAULT_TEST_PASSWORD = 'TestPassword123!';
 
 /**
- * Dismiss cookie consent banner if visible.
+ * Dismiss cookie consent banner and promotional banners if visible.
  *
  * Call this after page.goto() and before interacting with forms.
- * The cookie banner overlays the page and can intercept button clicks.
+ * These banners overlay the page and can intercept button clicks.
+ *
+ * Dismisses:
+ * - Cookie consent banner ("Accept All" button)
+ * - Promotional countdown banner ("Dismiss countdown banner" button)
  *
  * @param page - Playwright page object
  * @param options - Configuration options
- * @param options.timeout - Max time to wait for banner (default: 1000ms)
+ * @param options.timeout - Max time to wait for banner (default: 2000ms)
  *
  * @example
  * await page.goto('/sign-up');
@@ -327,16 +340,33 @@ export async function dismissCookieBanner(
   page: Page,
   options: { timeout?: number } = {}
 ): Promise<void> {
-  const { timeout = 1000 } = options;
+  const { timeout = 2000 } = options;
 
+  // Wait for page to stabilize first
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(500);
+
+  // Dismiss cookie consent banner using force click
   try {
-    const cookieAccept = page.getByRole('button', { name: /accept/i });
-    if (await cookieAccept.isVisible({ timeout }).catch(() => false)) {
-      await cookieAccept.click();
-      // Wait for banner to disappear
-      await cookieAccept
-        .waitFor({ state: 'hidden', timeout: 2000 })
-        .catch(() => {});
+    const acceptButton = page
+      .getByRole('button', { name: /accept all/i })
+      .first();
+    if (await acceptButton.isVisible({ timeout }).catch(() => false)) {
+      await acceptButton.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+  } catch {
+    // Banner not present or already dismissed - continue silently
+  }
+
+  // Dismiss promotional countdown banner using force click
+  try {
+    const countdownDismiss = page.getByRole('button', {
+      name: /dismiss countdown banner/i,
+    });
+    if (await countdownDismiss.isVisible({ timeout }).catch(() => false)) {
+      await countdownDismiss.click({ force: true });
+      await page.waitForTimeout(500);
     }
   } catch {
     // Banner not present or already dismissed - continue silently
