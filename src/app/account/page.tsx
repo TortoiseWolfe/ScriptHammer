@@ -7,6 +7,14 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Account Settings - ScriptHammer',
   description: 'Manage your account settings and preferences',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export default function AccountPage() {

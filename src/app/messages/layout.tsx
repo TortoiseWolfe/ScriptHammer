@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Sign Up - ScriptHammer',
-  description: 'Create a new ScriptHammer account',
+  title: 'Messages - ScriptHammer',
+  description: 'Your private messages',
   robots: {
     index: false,
     follow: false,
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SignUpLayout({
+export default function MessagesLayout({
   children,
 }: {
   children: React.ReactNode;

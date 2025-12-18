@@ -7,6 +7,14 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Your Profile - ScriptHammer',
   description: 'View and manage your user profile',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
 };
 
 export default function ProfilePage() {

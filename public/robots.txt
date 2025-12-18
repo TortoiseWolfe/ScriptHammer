@@ -2,4 +2,17 @@
 User-agent: *
 Allow: /
 
+# Auth and protected pages (also have noindex meta tags)
+Disallow: /sign-in/
+Disallow: /sign-up/
+Disallow: /forgot-password/
+Disallow: /reset-password/
+Disallow: /verify-email/
+Disallow: /auth/
+Disallow: /account/
+Disallow: /profile/
+Disallow: /messages/
+Disallow: /conversations/
+Disallow: /payment-demo/
+
 Sitemap: https://tortoisewolfe.github.io/ScriptHammer/sitemap.xml
