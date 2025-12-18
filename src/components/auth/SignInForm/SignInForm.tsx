@@ -33,6 +33,7 @@ export default function SignInForm({
   const { signIn, user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
@@ -259,6 +260,24 @@ export default function SignInForm({
           required
           disabled={loading}
         />
+      </div>
+
+      <div className="form-control">
+        <label
+          htmlFor="remember-me"
+          className="label cursor-pointer justify-start gap-3"
+        >
+          <input
+            id="remember-me"
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="checkbox checkbox-primary"
+            disabled={loading}
+            aria-label="Remember Me"
+          />
+          <span className="label-text">Remember Me</span>
+        </label>
       </div>
 
       {error && (

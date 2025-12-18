@@ -7,9 +7,16 @@ describe('SignInForm', () => {
     render(<SignInForm />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/remember me/i)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: /sign in/i })
     ).toBeInTheDocument();
+  });
+
+  it('renders Remember Me checkbox unchecked by default', () => {
+    render(<SignInForm />);
+    const checkbox = screen.getByLabelText(/remember me/i);
+    expect(checkbox).not.toBeChecked();
   });
 
   it('applies custom className when provided', () => {
