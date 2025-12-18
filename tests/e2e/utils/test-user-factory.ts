@@ -401,3 +401,85 @@ export async function dismissCookieBanner(
     // Banner not present or already dismissed - continue silently
   }
 }
+
+/**
+ * Handle ReAuthModal that appears when accessing /messages after session restore.
+ * Enters the messaging password to unlock encryption keys.
+ *
+ * The ReAuthModal appears when:
+ * - User navigates to /messages after session restore
+ * - Session is valid but encryption keys are not in memory
+ *
+ * @param page - Playwright page object
+ * @param password - Password to enter (defaults to TEST_USER_PRIMARY_PASSWORD)
+ * @returns true if modal was handled, false if modal was not present
+ *
+ * @example
+ * await page.goto('/messages');
+ * await handleReAuthModal(page);
+ * // Now messaging UI is accessible
+ */
+export async function handleReAuthModal(
+  page: Page,
+  password?: string
+): Promise<boolean> {
+  const testPassword =
+    password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+
+  // Check for ReAuthModal
+  const modal = page.locator('[role="dialog"]').first();
+  const isVisible = await modal.isVisible({ timeout: 3000 }).catch(() => false);
+
+  if (!isVisible) return false;
+
+  const modalText = await modal.textContent();
+  if (
+    !modalText?.toLowerCase().includes('password') &&
+    !modalText?.toLowerCase().includes('encryption') &&
+    !modalText?.toLowerCase().includes('messaging')
+  ) {
+    return false;
+  }
+
+  // Fill password and submit
+  const passwordInput = modal.locator('input[type="password"]').first();
+  await passwordInput.fill(testPassword);
+
+  const submitBtn = modal.locator('button[type="submit"]').first();
+  await submitBtn.click();
+
+  // Wait for modal to close
+  await modal.waitFor({ state: 'hidden', timeout: 10000 });
+  return true;
+}
+
+/**
+ * Wait for authenticated state to fully hydrate.
+ * Waits for Sign Out button to be visible in GlobalNav.
+ *
+ * This addresses the race condition where:
+ * 1. Sign-in completes and URL redirects
+ * 2. But AuthContext hasn't updated yet
+ * 3. GlobalNav still shows Sign In/Sign Up buttons
+ *
+ * @param page - Playwright page object
+ * @param timeout - Max time to wait (default: 15000ms)
+ *
+ * @example
+ * await page.getByRole('button', { name: 'Sign In' }).click();
+ * await waitForAuthenticatedState(page);
+ * // Now Sign Out button is guaranteed visible
+ */
+export async function waitForAuthenticatedState(
+  page: Page,
+  timeout = 15000
+): Promise<void> {
+  // Wait for URL to not be sign-in
+  await page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
+    timeout,
+  });
+
+  // Wait for Sign Out button (indicates GlobalNav has user context)
+  const signOutButton = page.getByRole('button', { name: /sign out/i });
+  await signOutButton.waitFor({ state: 'visible', timeout });
+}

@@ -5,6 +5,11 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import {
+  handleReAuthModal,
+  waitForAuthenticatedState,
+  dismissCookieBanner,
+} from '../utils/test-user-factory';
 
 const USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
@@ -163,10 +168,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 1: User A signing in...');
       await pageA.goto('/sign-in');
       await pageA.waitForLoadState('networkidle');
-      await pageA.fill('#email', USER_A.email);
-      await pageA.fill('#password', USER_A.password);
-      await pageA.click('button[type="submit"]');
-      await pageA.waitForURL(/.*\/profile/, { timeout: 15000 });
+      await dismissCookieBanner(pageA);
+      await pageA.getByLabel('Email').fill(USER_A.email);
+      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
+      await pageA.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(pageA);
       console.log('Step 1: User A signed in');
 
       // STEP 2: Navigate to connections
@@ -220,10 +226,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 5: User B signing in...');
       await pageB.goto('/sign-in');
       await pageB.waitForLoadState('networkidle');
-      await pageB.fill('#email', USER_B.email);
-      await pageB.fill('#password', USER_B.password);
-      await pageB.click('button[type="submit"]');
-      await pageB.waitForURL(/.*\/profile/, { timeout: 15000 });
+      await dismissCookieBanner(pageB);
+      await pageB.getByLabel('Email').fill(USER_B.email);
+      await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
+      await pageB.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(pageB);
       console.log('Step 5: User B signed in');
 
       // STEP 6: User B views pending requests
@@ -266,6 +273,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       await pageA.goto('/messages?conversation=' + conversationId);
       await pageA.waitForLoadState('networkidle');
+      await handleReAuthModal(pageA, USER_A.password);
 
       testMessage = 'Hello from User A - ' + Date.now();
       const messageInput = pageA.locator(
@@ -285,6 +293,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 9: User B receiving message...');
       await pageB.goto('/messages?conversation=' + conversationId);
       await pageB.waitForLoadState('networkidle');
+      await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB.getByText(testMessage)).toBeVisible({
         timeout: 10000,
       });
@@ -306,6 +315,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       // STEP 11: User A receives reply
       console.log('Step 11: User A receiving reply...');
       await pageA.reload();
+      await handleReAuthModal(pageA, USER_A.password);
       await expect(pageA.getByText(replyMessage)).toBeVisible({
         timeout: 10000,
       });
@@ -367,22 +377,24 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     // Sign in
     await page.goto('/sign-in');
     await page.waitForLoadState('networkidle');
-    await page.fill('#email', USER_A.email);
-    await page.fill('#password', USER_A.password);
-    await page.click('button[type="submit"]', { force: true });
-    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(USER_A.email);
+    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
 
-    // Navigate to conversations page and time it
+    // Navigate to messages page and time it
     const startTime = Date.now();
-    await page.goto('/conversations');
+    await page.goto('/messages');
+    await handleReAuthModal(page, USER_A.password);
 
     // Wait for page title to load - NOT spinner
-    await expect(
-      page.locator('h1:has-text("Conversations")').first()
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('h1:has-text("Messages")').first()).toBeVisible({
+      timeout: 5000,
+    });
 
     const loadTime = Date.now() - startTime;
-    console.log('[Test] Conversations page loaded in ' + loadTime + 'ms');
+    console.log('[Test] Messages page loaded in ' + loadTime + 'ms');
 
     // Verify page loaded within 5 seconds (SC-001)
     expect(loadTime).toBeLessThan(5000);
@@ -398,14 +410,16 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     // Sign in
     await page.goto('/sign-in');
     await page.waitForLoadState('networkidle');
-    await page.fill('#email', USER_A.email);
-    await page.fill('#password', USER_A.password);
-    await page.click('button[type="submit"]', { force: true });
-    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(USER_A.email);
+    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
 
-    // Navigate to conversations
-    await page.goto('/conversations');
+    // Navigate to messages
+    await page.goto('/messages');
     await page.waitForLoadState('networkidle');
+    await handleReAuthModal(page, USER_A.password);
 
     // If error is shown, verify retry button exists
     const errorAlert = page.locator('.alert-error');

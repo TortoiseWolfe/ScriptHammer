@@ -10,7 +10,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Use pre-existing test users (must exist in Supabase)
 const testUser = {
@@ -59,8 +62,8 @@ test.describe('Protected Routes E2E', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Wait for redirect to profile
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Step 2: Access protected routes
     const protectedRoutes = [
@@ -77,7 +80,7 @@ test.describe('Protected Routes E2E', () => {
       ).toBeVisible();
     }
 
-    // Clean up
+    // Clean up (Sign Out button already guaranteed visible)
     await page.getByRole('button', { name: 'Sign Out' }).click();
   });
 
@@ -97,13 +100,15 @@ test.describe('Protected Routes E2E', () => {
     await page.getByLabel('Email').fill(testUser.email);
     await page.getByLabel('Password', { exact: true }).fill(testUser.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Step 2: Access payment demo and verify user's own data
     await page.goto('/payment-demo');
     await expect(page.getByText(testUser.email)).toBeVisible();
 
-    // Step 3: Sign out
+    // Step 3: Sign out (already visible due to waitForAuthenticatedState)
     await page.getByRole('button', { name: 'Sign Out' }).click();
     await page.waitForURL('/sign-in');
 
@@ -112,7 +117,9 @@ test.describe('Protected Routes E2E', () => {
     await page.getByLabel('Email').fill(testUser2.email);
     await page.getByLabel('Password', { exact: true }).fill(testUser2.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Step 5: Verify user 2 sees their own email, not user 1's
     await page.goto('/payment-demo');
@@ -135,7 +142,9 @@ test.describe('Protected Routes E2E', () => {
     await page.getByLabel('Email').fill(testEmail);
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Navigate to payment demo
     await page.goto('/payment-demo');
@@ -167,7 +176,9 @@ test.describe('Protected Routes E2E', () => {
     await page.getByLabel('Email').fill(testEmail);
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Navigate between protected routes
     await page.goto('/profile');

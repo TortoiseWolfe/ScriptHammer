@@ -10,7 +10,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Use pre-existing test user (must exist in Supabase)
 const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
@@ -161,7 +164,9 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Email').fill(testEmail);
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(profile|verify-email)/);
+
+    // Wait for auth state to fully hydrate (Sign Out button visible)
+    await waitForAuthenticatedState(page);
 
     // Verify localStorage has session data
     const beforeSignOut = await page.evaluate(() =>
@@ -169,7 +174,7 @@ test.describe('Session Persistence E2E', () => {
     );
     expect(beforeSignOut).toContain('supabase');
 
-    // Sign out
+    // Sign out (now guaranteed visible)
     await page.getByRole('button', { name: 'Sign Out' }).click();
     await page.waitForURL('/sign-in');
 
@@ -206,14 +211,16 @@ test.describe('Session Persistence E2E', () => {
     await page1.getByLabel('Email').fill(testEmail);
     await page1.getByLabel('Password', { exact: true }).fill(testPassword);
     await page1.getByRole('button', { name: 'Sign In' }).click();
-    await page1.waitForURL(/\/(profile|verify-email)/);
+
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page1);
 
     // Page 2 should also be authenticated (shared storage)
     await page2.goto('/profile');
     await expect(page2).toHaveURL('/profile');
     await expect(page2.getByText(testEmail)).toBeVisible();
 
-    // Sign out on page 1
+    // Sign out on page 1 (guaranteed visible due to waitForAuthenticatedState)
     await page1.getByRole('button', { name: 'Sign Out' }).click();
     await page1.waitForURL('/sign-in');
 
