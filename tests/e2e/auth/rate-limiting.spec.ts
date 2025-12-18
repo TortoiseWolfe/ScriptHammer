@@ -3,10 +3,27 @@
 // Purpose: Test rate limiting from user perspective
 
 import { test, expect } from '@playwright/test';
-import {
-  generateTestEmail,
-  dismissCookieBanner,
-} from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
+
+/**
+ * Generate a test email for rate limiting tests.
+ * These tests don't need real users - just valid-looking email addresses
+ * that won't trigger client-side validation errors.
+ */
+function generateRateLimitEmail(prefix: string): string {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+
+  // Derive domain from primary test user
+  if (baseEmail.includes('@gmail.com')) {
+    const baseUser = baseEmail.split('+')[0] || baseEmail.split('@')[0];
+    return `${baseUser}+ratelimit-${prefix}-${timestamp}-${random}@gmail.com`;
+  }
+
+  const domain = baseEmail.split('@')[1] || 'test.example.com';
+  return `ratelimit-${prefix}-${timestamp}-${random}@${domain}`;
+}
 
 /**
  * E2E Tests for Rate Limiting
@@ -16,7 +33,7 @@ import {
  */
 
 test.describe('Rate Limiting - User Experience', () => {
-  const testEmail = generateTestEmail('ratelimit-test');
+  const testEmail = generateRateLimitEmail('test');
   const testPassword = 'WrongPassword123!';
 
   test.beforeEach(async ({ page }) => {
@@ -80,7 +97,7 @@ test.describe('Rate Limiting - User Experience', () => {
   });
 
   test('should show remaining time until unlock', async ({ page }) => {
-    const uniqueEmail = generateTestEmail('ratelimit-timer');
+    const uniqueEmail = generateRateLimitEmail('timer');
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
@@ -103,8 +120,8 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should allow different users to sign in independently', async ({
     page,
   }) => {
-    const blockedEmail = generateTestEmail('blocked');
-    const allowedEmail = generateTestEmail('allowed');
+    const blockedEmail = generateRateLimitEmail('blocked');
+    const allowedEmail = generateRateLimitEmail('allowed');
 
     // Block first user
     for (let i = 0; i < 5; i++) {
@@ -140,7 +157,7 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should track sign-up and sign-in attempts separately', async ({
     page,
   }) => {
-    const email = generateTestEmail('separate-limits');
+    const email = generateRateLimitEmail('separate-limits');
 
     // Exhaust sign-in attempts
     for (let i = 0; i < 5; i++) {
@@ -178,7 +195,7 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should show clear error message with actionable information', async ({
     page,
   }) => {
-    const email = generateTestEmail('clear-message');
+    const email = generateRateLimitEmail('clear-message');
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
@@ -211,7 +228,7 @@ test.describe('Rate Limiting - User Experience', () => {
 
 test.describe('Rate Limiting - Password Reset', () => {
   test('should rate limit password reset requests', async ({ page }) => {
-    const email = generateTestEmail('password-reset');
+    const email = generateRateLimitEmail('password-reset');
 
     await page.goto('/forgot-password');
     await dismissCookieBanner(page);

@@ -5,44 +5,19 @@
  * - Verify Remember Me extends session to 30 days
  * - Verify automatic token refresh before expiration
  * - Verify session persists across browser restarts
+ *
+ * Uses pre-existing test users from environment variables.
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  generateTestEmail,
-  dismissCookieBanner,
-  DEFAULT_TEST_PASSWORD,
-} from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
+
+// Use pre-existing test user (must exist in Supabase)
+const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
+const testPassword =
+  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
 test.describe('Session Persistence E2E', () => {
-  // Generate email once per test file (not per test)
-  const testEmail = generateTestEmail('session');
-  const testPassword = DEFAULT_TEST_PASSWORD;
-
-  // Create user ONCE before all tests in this file
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-
-    await page.goto('/sign-up');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByLabel('Confirm Password').fill(testPassword);
-    await page.getByRole('button', { name: 'Sign Up' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/);
-
-    // Sign out to prepare for tests
-    const signOutButton = page.getByRole('button', { name: 'Sign Out' });
-    if (await signOutButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await signOutButton.click();
-      await page.waitForURL('/sign-in');
-    }
-
-    await page.close();
-  });
-
   // Each test starts fresh on sign-in page
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in');

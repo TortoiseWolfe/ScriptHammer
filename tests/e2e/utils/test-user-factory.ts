@@ -21,21 +21,50 @@ import type { Page } from '@playwright/test';
  * - Custom domains without email infrastructure are BLOCKED
  * - Gmail with plus aliases WORKS: `yourname+tag@gmail.com`
  *
- * Set TEST_EMAIL_DOMAIN in .env to override the default.
- * For Gmail plus aliases, use format: `yourname+e2e@gmail.com`
+ * Priority order:
+ * 1. TEST_EMAIL_DOMAIN (explicit setting)
+ * 2. Domain derived from TEST_USER_PRIMARY_EMAIL (recommended)
+ * 3. 'example.com' (fallback - will fail with Supabase)
  *
  * @example
- * // .env
+ * // .env - Option 1: Use explicit domain
  * TEST_EMAIL_DOMAIN=myname+e2e@gmail.com
+ *
+ * // .env - Option 2: Derive from primary test user (recommended)
+ * TEST_USER_PRIMARY_EMAIL=myname+test@gmail.com
  */
-export const TEST_EMAIL_DOMAIN = process.env.TEST_EMAIL_DOMAIN || 'example.com';
+function getDerivedEmailDomain(): string {
+  // First check if TEST_EMAIL_DOMAIN is explicitly set
+  if (process.env.TEST_EMAIL_DOMAIN) {
+    return process.env.TEST_EMAIL_DOMAIN;
+  }
 
-// Warn if using default domain (will fail with Supabase)
-if (!process.env.TEST_EMAIL_DOMAIN) {
+  // Try to derive from TEST_USER_PRIMARY_EMAIL
+  const primaryEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  if (primaryEmail.includes('@gmail.com')) {
+    // Extract base user from Gmail (e.g., "user+test@gmail.com" -> "user")
+    const baseUser = primaryEmail.split('+')[0] || primaryEmail.split('@')[0];
+    return `${baseUser}+e2e@gmail.com`;
+  }
+
+  if (primaryEmail.includes('@')) {
+    // Use the same domain as primary email
+    return primaryEmail.split('@')[1];
+  }
+
+  // Fallback - will fail with Supabase
+  return 'example.com';
+}
+
+export const TEST_EMAIL_DOMAIN = getDerivedEmailDomain();
+
+// Warn if using fallback domain (will fail with Supabase)
+if (TEST_EMAIL_DOMAIN === 'example.com') {
   console.warn(
-    '\n⚠️  WARNING: TEST_EMAIL_DOMAIN not set!\n' +
+    '\n⚠️  WARNING: No valid email domain configured!\n' +
       '   E2E tests will fail because Supabase rejects @example.com emails.\n' +
-      '   Set TEST_EMAIL_DOMAIN in .env (e.g., TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com)\n'
+      '   Set TEST_USER_PRIMARY_EMAIL or TEST_EMAIL_DOMAIN in .env\n' +
+      '   (e.g., TEST_USER_PRIMARY_EMAIL=yourname+test@gmail.com)\n'
   );
 }
 

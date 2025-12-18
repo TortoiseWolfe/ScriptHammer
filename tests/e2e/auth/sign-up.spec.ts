@@ -8,16 +8,35 @@
  * - Validation errors (weak password, invalid email)
  *
  * Uses test-user-factory for dynamic user creation and cleanup.
+ * Email domain is derived from TEST_USER_PRIMARY_EMAIL.
  */
 
 import { test, expect } from '@playwright/test';
 import {
   createTestUser,
   deleteTestUserByEmail,
-  generateTestEmail,
   isAdminClientAvailable,
   DEFAULT_TEST_PASSWORD,
 } from '../utils/test-user-factory';
+
+/**
+ * Generate a test email for sign-up tests.
+ * Derives domain from TEST_USER_PRIMARY_EMAIL to ensure valid emails.
+ */
+function generateSignUpEmail(prefix: string): string {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+
+  // Derive domain from primary test user
+  if (baseEmail.includes('@gmail.com')) {
+    const baseUser = baseEmail.split('+')[0] || baseEmail.split('@')[0];
+    return `${baseUser}+signup-${prefix}-${timestamp}-${random}@gmail.com`;
+  }
+
+  const domain = baseEmail.split('@')[1] || 'example.com';
+  return `signup-${prefix}-${timestamp}-${random}@${domain}`;
+}
 
 test.describe('Sign-up E2E Tests (Feature 027)', () => {
   const createdEmails: string[] = [];
@@ -30,9 +49,8 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
   });
 
   test('should complete sign-up with valid credentials', async ({ page }) => {
-    // Use a simple email format that Supabase accepts
-    const timestamp = Date.now();
-    const testEmail = `test-signup-${timestamp}@example.com`;
+    // Generate email from TEST_USER_PRIMARY_EMAIL domain
+    const testEmail = generateSignUpEmail('valid');
     createdEmails.push(testEmail);
 
     await page.goto('/sign-up');
@@ -97,7 +115,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     }
 
     // Create a user first
-    const existingEmail = generateTestEmail('signup-existing');
+    const existingEmail = generateSignUpEmail('existing');
     const user = await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
 
     if (!user) {
@@ -150,7 +168,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
   test('should show validation error for weak password', async ({ page }) => {
     await page.goto('/sign-up');
 
-    const testEmail = generateTestEmail('signup-weak');
+    const testEmail = generateSignUpEmail('weak');
     createdEmails.push(testEmail);
 
     // Fill with weak password
@@ -198,7 +216,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
   test('should show error for password mismatch', async ({ page }) => {
     await page.goto('/sign-up');
 
-    const testEmail = generateTestEmail('signup-mismatch');
+    const testEmail = generateSignUpEmail('mismatch');
 
     await page.getByLabel('Email').fill(testEmail);
     await page
@@ -253,7 +271,7 @@ test.describe('Sign-up with Admin Confirmation', () => {
     }
 
     // Create user via admin API (email auto-confirmed)
-    const testEmail = generateTestEmail('signup-admin');
+    const testEmail = generateSignUpEmail('admin');
     const user = await createTestUser(testEmail, DEFAULT_TEST_PASSWORD, {
       createProfile: true,
     });

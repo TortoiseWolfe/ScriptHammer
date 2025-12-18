@@ -3,17 +3,37 @@
  *
  * Tests the complete registration journey from quickstart.md:
  * sign-up → verify email → sign-in → access protected pages
+ *
+ * Email domain is derived from TEST_USER_PRIMARY_EMAIL.
  */
 
 import { test, expect } from '@playwright/test';
 import {
-  generateTestEmail,
   dismissCookieBanner,
   DEFAULT_TEST_PASSWORD,
 } from '../utils/test-user-factory';
 
+/**
+ * Generate a test email for registration tests.
+ * Derives domain from TEST_USER_PRIMARY_EMAIL to ensure valid emails.
+ */
+function generateRegistrationEmail(prefix: string): string {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
+
+  // Derive domain from primary test user
+  if (baseEmail.includes('@gmail.com')) {
+    const baseUser = baseEmail.split('+')[0] || baseEmail.split('@')[0];
+    return `${baseUser}+reg-${prefix}-${timestamp}-${random}@gmail.com`;
+  }
+
+  const domain = baseEmail.split('@')[1] || 'example.com';
+  return `reg-${prefix}-${timestamp}-${random}@${domain}`;
+}
+
 test.describe('User Registration E2E', () => {
-  const testEmail = generateTestEmail('registration');
+  const testEmail = generateRegistrationEmail('main');
   const testPassword = DEFAULT_TEST_PASSWORD;
 
   test.beforeEach(async ({ page }) => {
@@ -104,7 +124,7 @@ test.describe('User Registration E2E', () => {
     await dismissCookieBanner(page);
 
     // Fill with weak password
-    const weakEmail = generateTestEmail('weak-pass');
+    const weakEmail = generateRegistrationEmail('weak-pass');
     await page.getByLabel('Email').fill(weakEmail);
     await page.getByLabel('Password', { exact: true }).fill('weak');
     await page.getByLabel('Confirm Password').fill('weak');
@@ -123,7 +143,7 @@ test.describe('User Registration E2E', () => {
     await dismissCookieBanner(page);
 
     // Fill with mismatched passwords
-    const mismatchEmail = generateTestEmail('mismatch');
+    const mismatchEmail = generateRegistrationEmail('mismatch');
     await page.getByLabel('Email').fill(mismatchEmail);
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByLabel('Confirm Password').fill('DifferentPass123!');
