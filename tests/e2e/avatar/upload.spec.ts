@@ -16,6 +16,10 @@
 
 import { test, expect } from '@playwright/test';
 import path from 'path';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 test.describe('Avatar Upload Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -25,16 +29,18 @@ test.describe('Avatar Upload Flow', () => {
       process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', testEmail);
-    await page.fill('input[type="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(testEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Wait for redirect to profile or verify-email after sign-in
-    await page.waitForURL(/\/(profile|verify-email)/, { timeout: 10000 });
+    // Wait for auth state to fully hydrate
+    await waitForAuthenticatedState(page);
 
     // Navigate to Account Settings
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
   });
 
   test.afterEach(async ({ page }) => {

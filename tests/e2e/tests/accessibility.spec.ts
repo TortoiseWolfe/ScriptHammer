@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { injectAxe, checkA11y } from 'axe-playwright';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
   });
 
   test('homepage passes automated accessibility checks', async ({ page }) => {
@@ -20,6 +22,7 @@ test.describe('Accessibility', () => {
     page,
   }) => {
     await page.goto('/themes');
+    await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page);
   });
@@ -28,6 +31,7 @@ test.describe('Accessibility', () => {
     page,
   }) => {
     await page.goto('/components');
+    await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page);
   });
@@ -36,6 +40,7 @@ test.describe('Accessibility', () => {
     page,
   }) => {
     await page.goto('/accessibility');
+    await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page);
   });
@@ -73,6 +78,7 @@ test.describe('Accessibility', () => {
 
   test('all form inputs have labels', async ({ page }) => {
     await page.goto('/components');
+    await dismissCookieBanner(page);
 
     const inputs = page
       .locator('input, select, textarea')
@@ -192,6 +198,7 @@ test.describe('Accessibility', () => {
 
   test('font size controls work', async ({ page }) => {
     await page.goto('/accessibility');
+    await dismissCookieBanner(page);
 
     // Find font size controls
     const increaseFontBtn = page
@@ -321,6 +328,7 @@ test.describe('Accessibility', () => {
 
   test('error messages are associated with form fields', async ({ page }) => {
     await page.goto('/components');
+    await dismissCookieBanner(page);
 
     // Look for error messages
     const errorMessages = page.locator('.text-error, [role="alert"]');

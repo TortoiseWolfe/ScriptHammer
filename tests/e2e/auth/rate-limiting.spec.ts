@@ -48,9 +48,9 @@ test.describe('Rate Limiting - User Experience', () => {
   }) => {
     // Attempt to sign in 5 times with wrong password
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(testEmail);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
 
       // Wait for error message
       await page.waitForSelector('[role="alert"]', { timeout: 3000 });
@@ -60,9 +60,9 @@ test.describe('Rate Limiting - User Experience', () => {
     }
 
     // 6th attempt should show rate limit message
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(testEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Should see rate limit error message
     const errorMessage = await page.locator('[role="alert"]').textContent();
@@ -72,18 +72,18 @@ test.describe('Rate Limiting - User Experience', () => {
   test('should disable submit button when rate limited', async ({ page }) => {
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', testEmail);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(testEmail);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(200);
     }
 
     // Try to submit again
-    await page.fill('input[name="email"]', testEmail);
-    await page.fill('input[name="password"]', testPassword);
+    await page.getByLabel('Email').fill(testEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
 
     // Button might be disabled or show loading state
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.getByRole('button', { name: 'Sign In' });
 
     // Wait a moment for UI to update
     await page.waitForTimeout(500);
@@ -101,16 +101,16 @@ test.describe('Rate Limiting - User Experience', () => {
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', uniqueEmail);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(uniqueEmail);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(200);
     }
 
     // One more attempt to see lockout message
-    await page.fill('input[name="email"]', uniqueEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(uniqueEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Should see time remaining (e.g., "15 minutes", "14 minutes", etc.)
     const errorMessage = await page.locator('[role="alert"]').textContent();
@@ -125,24 +125,24 @@ test.describe('Rate Limiting - User Experience', () => {
 
     // Block first user
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', blockedEmail);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(blockedEmail);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(200);
     }
 
     // Try with blocked email - should see rate limit
-    await page.fill('input[name="email"]', blockedEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(blockedEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     let errorMessage = await page.locator('[role="alert"]').textContent();
     expect(errorMessage).toMatch(/rate.*limit|too many/i);
 
     // Try with different email - should NOT be blocked
-    await page.fill('input[name="email"]', allowedEmail);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(allowedEmail);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for response
     await page.waitForTimeout(500);
@@ -161,27 +161,30 @@ test.describe('Rate Limiting - User Experience', () => {
 
     // Exhaust sign-in attempts
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(200);
     }
 
     // Sign-in should be blocked
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     const signInError = await page.locator('[role="alert"]').textContent();
     expect(signInError).toMatch(/rate.*limit|too many/i);
 
     // Navigate to sign-up page
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Sign-up should still be allowed (different rate limit)
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', 'ValidPassword123!');
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(email);
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill('ValidPassword123!');
+    await page.getByRole('button', { name: 'Sign Up' }).click();
 
     await page.waitForTimeout(500);
 
@@ -199,16 +202,16 @@ test.describe('Rate Limiting - User Experience', () => {
 
     // Trigger rate limit
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', testPassword);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password', { exact: true }).fill(testPassword);
+      await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(200);
     }
 
     // Attempt once more
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', testPassword);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(testPassword);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Check error message quality
     const errorMessage = await page.locator('[role="alert"]').textContent();
@@ -235,20 +238,21 @@ test.describe('Rate Limiting - Password Reset', () => {
 
     // Attempt 5 password resets
     for (let i = 0; i < 5; i++) {
-      await page.fill('input[name="email"]', email);
-      await page.click('button[type="submit"]');
+      await page.getByLabel('Email').fill(email);
+      await page.getByRole('button', { name: /reset|send|submit/i }).click();
       await page.waitForTimeout(500);
 
       // Might need to navigate back if redirect happens
       const currentUrl = page.url();
       if (!currentUrl.includes('forgot-password')) {
         await page.goto('/forgot-password');
+        await dismissCookieBanner(page);
       }
     }
 
     // 6th attempt should be rate limited
-    await page.fill('input[name="email"]', email);
-    await page.click('button[type="submit"]');
+    await page.getByLabel('Email').fill(email);
+    await page.getByRole('button', { name: /reset|send|submit/i }).click();
 
     await page.waitForTimeout(500);
 

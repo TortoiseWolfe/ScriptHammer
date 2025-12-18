@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { dismissCookieBanner } from './utils/test-user-factory';
 
 // Helper to mock geolocation
 async function mockGeolocation(
@@ -48,10 +49,12 @@ test.describe('Geolocation Map Page', () => {
     await page.context().clearCookies();
     await page.goto('/map');
     await page.evaluate(() => localStorage.clear());
+    await dismissCookieBanner(page);
   });
 
   test('should load map page successfully', async ({ page }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Map container should be visible
     await expect(page.locator('[data-testid="map-container"]')).toBeVisible();
@@ -67,6 +70,7 @@ test.describe('Geolocation Map Page', () => {
     page,
   }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Location button should be visible
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -78,6 +82,7 @@ test.describe('Geolocation Map Page', () => {
   }) => {
     await mockGeolocation(page);
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Click location button
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -93,6 +98,7 @@ test.describe('Geolocation Map Page', () => {
   test('should get user location after accepting consent', async ({ page }) => {
     await mockGeolocation(page);
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Request location
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -140,6 +146,7 @@ test.describe('Geolocation Map Page', () => {
     });
 
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Request location
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -157,6 +164,7 @@ test.describe('Geolocation Map Page', () => {
   test('should remember consent decision', async ({ page }) => {
     await mockGeolocation(page);
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // First visit - accept consent
     let locationButton = page.getByRole('button', { name: /location/i });
@@ -185,6 +193,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should display custom markers', async ({ page }) => {
     await page.goto('/map?markers=true');
+    await dismissCookieBanner(page);
 
     // Custom markers should be visible
     const markers = page.locator('.leaflet-marker-icon');
@@ -193,6 +202,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should show marker popups on click', async ({ page }) => {
     await page.goto('/map?markers=true');
+    await dismissCookieBanner(page);
 
     // Click first marker
     const firstMarker = page.locator('.leaflet-marker-icon').first();
@@ -207,6 +217,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should handle map zoom controls', async ({ page }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Get initial zoom
     const initialZoom = await page.evaluate(() => {
@@ -239,6 +250,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should handle keyboard navigation', async ({ page }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Focus on map
     await page.locator('[data-testid="map-container"]').focus();
@@ -269,6 +281,7 @@ test.describe('Geolocation Map Page', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Map should be visible
     await expect(page.locator('[data-testid="map-container"]')).toBeVisible();
@@ -283,6 +296,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should handle map pan gestures', async ({ page }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Get initial center
     const initialCenter = await page.evaluate(() => {
@@ -314,6 +328,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should work offline with cached tiles', async ({ page, context }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Load some tiles
     await page.locator('.leaflet-control-zoom-in').click();
@@ -335,6 +350,7 @@ test.describe('Geolocation Map Page', () => {
   test('should handle dark mode theme', async ({ page }) => {
     // Set dark theme
     await page.goto('/map');
+    await dismissCookieBanner(page);
     await page.evaluate(() => {
       document.documentElement.setAttribute('data-theme', 'dark');
     });
@@ -352,6 +368,7 @@ test.describe('Geolocation Map Page', () => {
   test('should display accuracy circle when available', async ({ page }) => {
     await mockGeolocation(page);
     await page.goto('/map?showAccuracy=true');
+    await dismissCookieBanner(page);
 
     // Request location
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -406,6 +423,7 @@ test.describe('Geolocation Map Page', () => {
     });
 
     await page.goto('/map?watch=true');
+    await dismissCookieBanner(page);
 
     // Start watching location
     const locationButton = page.getByRole('button', { name: /location/i });
@@ -433,6 +451,7 @@ test.describe('Geolocation Map Page', () => {
 
   test('should handle accessibility requirements', async ({ page }) => {
     await page.goto('/map');
+    await dismissCookieBanner(page);
 
     // Check ARIA labels
     const mapContainer = page.locator('[data-testid="map-container"]');
