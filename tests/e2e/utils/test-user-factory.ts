@@ -426,12 +426,18 @@ export async function handleReAuthModal(
   const testPassword =
     password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
-  // Check for ReAuthModal
+  // Wait for ReAuthModal to potentially appear (give it time to load)
   const modal = page.locator('[role="dialog"]').first();
-  const isVisible = await modal.isVisible({ timeout: 3000 }).catch(() => false);
 
-  if (!isVisible) return false;
+  // Try to wait for the modal to be visible, but don't fail if it doesn't appear
+  try {
+    await modal.waitFor({ state: 'visible', timeout: 5000 });
+  } catch {
+    // Modal didn't appear within timeout - that's fine
+    return false;
+  }
 
+  // Verify it's the ReAuthModal by checking content
   const modalText = await modal.textContent();
   if (
     !modalText?.toLowerCase().includes('password') &&
