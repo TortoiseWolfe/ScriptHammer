@@ -24,6 +24,9 @@ import {
 /**
  * Generate a test email for sign-up tests.
  * Derives domain from TEST_USER_PRIMARY_EMAIL to ensure valid emails.
+ *
+ * IMPORTANT: Requires TEST_USER_PRIMARY_EMAIL to be set.
+ * Falls back to example.com which Supabase WILL REJECT.
  */
 function generateSignUpEmail(prefix: string): string {
   const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
@@ -36,12 +39,37 @@ function generateSignUpEmail(prefix: string): string {
     return `${baseUser}+signup-${prefix}-${timestamp}-${random}@gmail.com`;
   }
 
-  const domain = baseEmail.split('@')[1] || 'example.com';
-  return `signup-${prefix}-${timestamp}-${random}@${domain}`;
+  // Non-gmail domain
+  if (baseEmail.includes('@')) {
+    const domain = baseEmail.split('@')[1];
+    return `signup-${prefix}-${timestamp}-${random}@${domain}`;
+  }
+
+  // Fallback - this WILL fail with Supabase
+  console.error(
+    '❌ TEST_USER_PRIMARY_EMAIL not configured - sign-up tests will fail'
+  );
+  return `signup-${prefix}-${timestamp}-${random}@example.com`;
+}
+
+// Check if email configuration is valid
+function isEmailConfigValid(): boolean {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  return baseEmail.includes('@') && !baseEmail.includes('@example.com');
 }
 
 test.describe('Sign-up E2E Tests (Feature 027)', () => {
   const createdEmails: string[] = [];
+
+  // Skip all tests if email configuration is invalid
+  test.beforeEach(async ({}, testInfo) => {
+    if (!isEmailConfigValid()) {
+      testInfo.skip(
+        true,
+        'TEST_USER_PRIMARY_EMAIL not configured or using @example.com (blocked by Supabase)'
+      );
+    }
+  });
 
   test.afterAll(async () => {
     // Clean up any test users created during tests

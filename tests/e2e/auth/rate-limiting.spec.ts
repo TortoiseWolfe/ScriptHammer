@@ -9,6 +9,8 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
  * Generate a test email for rate limiting tests.
  * These tests don't need real users - just valid-looking email addresses
  * that won't trigger client-side validation errors.
+ *
+ * IMPORTANT: Must use a real email domain or Supabase will reject with validation error.
  */
 function generateRateLimitEmail(prefix: string): string {
   const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
@@ -21,8 +23,23 @@ function generateRateLimitEmail(prefix: string): string {
     return `${baseUser}+ratelimit-${prefix}-${timestamp}-${random}@gmail.com`;
   }
 
-  const domain = baseEmail.split('@')[1] || 'test.example.com';
-  return `ratelimit-${prefix}-${timestamp}-${random}@${domain}`;
+  // Non-gmail but valid domain
+  if (baseEmail.includes('@')) {
+    const domain = baseEmail.split('@')[1];
+    return `ratelimit-${prefix}-${timestamp}-${random}@${domain}`;
+  }
+
+  // Fallback - will likely fail but better error message
+  console.error(
+    '❌ TEST_USER_PRIMARY_EMAIL not configured - rate limit tests may fail'
+  );
+  return `ratelimit-${prefix}-${timestamp}-${random}@gmail.com`;
+}
+
+// Check if email configuration is valid for rate limit tests
+function isRateLimitEmailConfigValid(): boolean {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  return baseEmail.includes('@');
 }
 
 /**
@@ -36,7 +53,16 @@ test.describe('Rate Limiting - User Experience', () => {
   const testEmail = generateRateLimitEmail('test');
   const testPassword = 'WrongPassword123!';
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    // Skip if email configuration is invalid
+    if (!isRateLimitEmailConfigValid()) {
+      testInfo.skip(
+        true,
+        'TEST_USER_PRIMARY_EMAIL not configured - rate limit tests require valid email domain'
+      );
+      return;
+    }
+
     // Navigate to sign-in page
     await page.goto('/sign-in');
     await dismissCookieBanner(page);

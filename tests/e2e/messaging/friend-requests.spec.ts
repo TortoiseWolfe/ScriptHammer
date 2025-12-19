@@ -116,7 +116,27 @@ const cleanupConnections = async (): Promise<void> => {
 };
 
 test.describe('Friend Request Flow', () => {
-  test.beforeEach(async () => {
+  // Track setup status
+  let setupError = '';
+
+  test.beforeEach(async ({}, testInfo) => {
+    // Validate required environment variables
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+      testInfo.skip(true, setupError);
+      return;
+    }
+
+    if (
+      USER_A.email === 'test@example.com' ||
+      USER_B.email === 'test-user-b@example.com'
+    ) {
+      setupError =
+        'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured - using fallback emails that do not exist';
+      testInfo.skip(true, setupError);
+      return;
+    }
+
     // Look up display names dynamically (only once, then cached)
     if (!userADisplayName) {
       userADisplayName = await getDisplayNameByEmail(USER_A.email);

@@ -47,12 +47,36 @@ const getAdminClient = () => {
 };
 
 test.describe('Encrypted Messaging Flow', () => {
+  // Track if setup succeeded - tests will skip if not
+  let setupSucceeded = false;
+  let setupError = '';
+
   // Establish connection between test users BEFORE all tests
   // This fixes the "No conversations" state that causes tests to fail
   test.beforeAll(async () => {
+    // Validate required environment variables
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      setupError =
+        'SUPABASE_SERVICE_ROLE_KEY not configured - cannot setup test users';
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    if (
+      USER_A.email === 'test@example.com' ||
+      USER_B.email === 'test-user-b@example.com'
+    ) {
+      setupError =
+        'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured - using fallback emails that do not exist';
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
     const adminClient = getTestAdminClient();
     if (!adminClient) {
-      console.warn('⚠️ Admin client unavailable - connection setup skipped');
+      setupError =
+        'Admin client unavailable - SUPABASE_SERVICE_ROLE_KEY may be invalid';
+      console.error(`❌ ${setupError}`);
       return;
     }
 
@@ -60,8 +84,15 @@ test.describe('Encrypted Messaging Flow', () => {
     const userA = await getUserByEmail(USER_A.email);
     const userB = await getUserByEmail(USER_B.email);
 
-    if (!userA || !userB) {
-      console.warn('⚠️ Test users not found - connection setup skipped');
+    if (!userA) {
+      setupError = `Test user A not found: ${USER_A.email} - user may not exist in Supabase`;
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    if (!userB) {
+      setupError = `Test user B not found: ${USER_B.email} - user may not exist in Supabase`;
+      console.error(`❌ ${setupError}`);
       return;
     }
 
@@ -74,33 +105,79 @@ test.describe('Encrypted Messaging Flow', () => {
       )
       .maybeSingle();
 
-    if (existing?.status === 'accepted') {
+    // Create or update connection to 'accepted' status
+    if (existing?.status !== 'accepted') {
+      if (!existing) {
+        const { error } = await adminClient.from('user_connections').insert({
+          requester_id: userA.id,
+          addressee_id: userB.id,
+          status: 'accepted',
+        });
+        if (error) {
+          setupError = `Failed to create connection: ${error.message}`;
+          console.error(`❌ ${setupError}`);
+          return;
+        }
+        console.log('✓ Connection created between test users');
+      } else {
+        const { error } = await adminClient
+          .from('user_connections')
+          .update({ status: 'accepted' })
+          .eq('id', existing.id);
+        if (error) {
+          setupError = `Failed to update connection: ${error.message}`;
+          console.error(`❌ ${setupError}`);
+          return;
+        }
+        console.log('✓ Connection updated to accepted');
+      }
+    } else {
       console.log('✓ Users already connected');
+    }
+
+    // NOW also create a conversation so tests can find it
+    // Conversations use canonical ordering (smaller UUID = participant_1)
+    const [participant_1, participant_2] =
+      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+
+    // Check if conversation already exists
+    const { data: existingConv } = await adminClient
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', participant_1)
+      .eq('participant_2_id', participant_2)
+      .maybeSingle();
+
+    if (existingConv) {
+      console.log('✓ Conversation already exists:', existingConv.id);
+      setupSucceeded = true;
       return;
     }
 
-    // Create or update connection to 'accepted' status
-    if (!existing) {
-      const { error } = await adminClient.from('user_connections').insert({
-        requester_id: userA.id,
-        addressee_id: userB.id,
-        status: 'accepted',
-      });
-      if (error) {
-        console.error('Failed to create connection:', error.message);
-      } else {
-        console.log('✓ Connection created between test users');
-      }
-    } else {
-      const { error } = await adminClient
-        .from('user_connections')
-        .update({ status: 'accepted' })
-        .eq('id', existing.id);
-      if (error) {
-        console.error('Failed to update connection:', error.message);
-      } else {
-        console.log('✓ Connection updated to accepted');
-      }
+    // Create conversation
+    const { data: newConv, error: convError } = await adminClient
+      .from('conversations')
+      .insert({
+        participant_1_id: participant_1,
+        participant_2_id: participant_2,
+      })
+      .select('id')
+      .single();
+
+    if (convError) {
+      setupError = `Failed to create conversation: ${convError.message}`;
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    console.log('✓ Conversation created:', newConv.id);
+    setupSucceeded = true;
+  });
+
+  // Skip all tests if setup failed
+  test.beforeEach(async ({}, testInfo) => {
+    if (!setupSucceeded) {
+      testInfo.skip(true, `Test setup failed: ${setupError}`);
     }
   });
 
