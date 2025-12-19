@@ -55,19 +55,22 @@ const getAdminClient = (): SupabaseClient | null => {
 /**
  * Look up a user's display_name by their email address.
  * This is necessary because UserSearch searches by display_name, not email or username.
+ * If display_name is not set, this function will SET it so subsequent searches work.
  */
-const getDisplayNameByEmail = async (email: string): Promise<string | null> => {
+const getDisplayNameByEmail = async (email: string): Promise<string> => {
   const client = getAdminClient();
+  const fallbackName = email.split('@')[0];
+
   if (!client) {
-    // Fallback: derive from email prefix if admin client unavailable
-    return email.split('@')[0];
+    console.warn('getDisplayNameByEmail: No admin client, using email prefix');
+    return fallbackName;
   }
 
   const { data: users } = await client.auth.admin.listUsers();
   const user = users?.users?.find((u) => u.email === email);
   if (!user) {
-    // Fallback: derive from email prefix
-    return email.split('@')[0];
+    console.warn(`getDisplayNameByEmail: User not found for ${email}`);
+    return fallbackName;
   }
 
   const { data: profile } = await client
@@ -76,8 +79,21 @@ const getDisplayNameByEmail = async (email: string): Promise<string | null> => {
     .eq('id', user.id)
     .single();
 
-  // Return display_name if available, otherwise derive from email
-  return profile?.display_name || email.split('@')[0];
+  // If display_name exists, use it
+  if (profile?.display_name) {
+    return profile.display_name;
+  }
+
+  // display_name is null - SET IT so searches work
+  console.log(
+    `getDisplayNameByEmail: Setting display_name for ${email} to "${fallbackName}"`
+  );
+  await client
+    .from('user_profiles')
+    .update({ display_name: fallbackName })
+    .eq('id', user.id);
+
+  return fallbackName;
 };
 
 const cleanupConnections = async (): Promise<void> => {
