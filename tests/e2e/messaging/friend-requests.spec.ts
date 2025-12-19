@@ -10,7 +10,7 @@
  *
  * Prerequisites:
  * - PRIMARY and TERTIARY test users exist in Supabase
- * - /messages/connections page exists
+ * - /messages?tab=connections page exists
  * - UserSearch component exists
  * - ConnectionManager component exists
  */
@@ -96,10 +96,10 @@ test.describe('Friend Request Flow', () => {
       await pageA.getByRole('button', { name: 'Sign In' }).click();
       await waitForAuthenticatedState(pageA);
 
-      // ===== STEP 2: User A navigates to connections page =====
-      await pageA.goto('/messages/connections');
+      // ===== STEP 2: User A navigates to connections tab =====
+      await pageA.goto('/messages?tab=connections');
       await handleReAuthModal(pageA, USER_A.password);
-      await expect(pageA).toHaveURL(/.*\/messages\/connections/);
+      await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
       // ===== STEP 3: User A searches for User B by username =====
       const searchInput = pageA.locator('#user-search-input');
@@ -137,7 +137,7 @@ test.describe('Friend Request Flow', () => {
       await waitForAuthenticatedState(pageB);
 
       // ===== STEP 6: User B navigates to connections page =====
-      await pageB.goto('/messages/connections');
+      await pageB.goto('/messages?tab=connections');
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB).toHaveURL(/.*\/messages\/connections/);
 
@@ -212,7 +212,7 @@ test.describe('Friend Request Flow', () => {
       await pageB.getByRole('button', { name: 'Sign In' }).click();
       await waitForAuthenticatedState(pageB);
 
-      await pageB.goto('/messages/connections');
+      await pageB.goto('/messages?tab=connections');
       await handleReAuthModal(pageB, USER_B.password);
       const searchInput = pageB.locator('#user-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
@@ -239,7 +239,7 @@ test.describe('Friend Request Flow', () => {
       await pageA.getByRole('button', { name: 'Sign In' }).click();
       await waitForAuthenticatedState(pageA);
 
-      await pageA.goto('/messages/connections');
+      await pageA.goto('/messages?tab=connections');
       await handleReAuthModal(pageA, USER_A.password);
       const receivedTab = pageA.getByRole('tab', {
         name: /pending received|received/i,
@@ -279,7 +279,7 @@ test.describe('Friend Request Flow', () => {
     await waitForAuthenticatedState(page);
 
     // Send friend request to User B
-    await page.goto('/messages/connections');
+    await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
     const searchInput = page.locator('#user-search-input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
@@ -327,7 +327,7 @@ test.describe('Friend Request Flow', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
-    await page.goto('/messages/connections');
+    await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
 
     // Send first request
@@ -379,7 +379,7 @@ test.describe('Accessibility', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
-    await page.goto('/messages/connections');
+    await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
 
     // Verify keyboard navigation
@@ -411,7 +411,7 @@ test.describe('Accessibility', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
-    await page.goto('/messages/connections');
+    await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
     await page.waitForLoadState('networkidle');
 

@@ -24,9 +24,9 @@ const TEST_USER_2 = {
  */
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/sign-in');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign In' }).click();
   await page.waitForURL('/'); // Wait for redirect to home page
 }
 
@@ -38,7 +38,7 @@ async function setupConversation(
   page2: Page
 ): Promise<string | null> {
   // User 1: Navigate to connections page and send friend request if not already connected
-  await page1.goto('/messages/connections');
+  await page1.goto('/messages?tab=connections');
 
   // Check if already connected
   const alreadyConnected = await page1
@@ -61,7 +61,7 @@ async function setupConversation(
     }
 
     // User 2: Accept friend request
-    await page2.goto('/messages/connections');
+    await page2.goto('/messages?tab=connections');
     await page2.click('button:has-text("Pending Received")');
 
     const acceptButton = page2.locator(

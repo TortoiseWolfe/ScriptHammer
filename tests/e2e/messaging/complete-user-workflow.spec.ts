@@ -177,7 +177,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 2: Navigate to connections
       console.log('Step 2: Navigating to connections...');
-      await pageA.goto('/messages/connections');
+      await pageA.goto('/messages?tab=connections');
       await expect(pageA).toHaveURL(/.*\/messages\/connections/);
       await expect(pageA.locator('h1')).toContainText('Connections');
       console.log('Step 2: Connections page loaded');
@@ -235,7 +235,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 6: User B views pending requests
       console.log('Step 6: User B viewing pending requests...');
-      await pageB.goto('/messages/connections');
+      await pageB.goto('/messages?tab=connections');
       await expect(pageB).toHaveURL(/.*\/messages\/connections/);
 
       const receivedTab = pageB.getByRole('tab', {

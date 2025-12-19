@@ -26,9 +26,9 @@ const TEST_USER_2 = {
  */
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/sign-in');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign In' }).click();
   await page.waitForURL('/');
 }
 
@@ -36,7 +36,7 @@ async function signIn(page: Page, email: string, password: string) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
-  await page.goto('/messages/connections');
+  await page.goto('/messages?tab=connections');
 
   // Find first accepted connection and click to open conversation
   const firstConnection = page

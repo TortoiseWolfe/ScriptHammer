@@ -22,10 +22,10 @@ test.describe('Virtual Scrolling Performance', () => {
     // Navigate to sign-in page
     await page.goto('/sign-in');
 
-    // Sign in
-    await page.fill('input[type="email"]', TEST_USER_EMAIL);
-    await page.fill('input[type="password"]', TEST_USER_PASSWORD);
-    await page.click('button[type="submit"]');
+    // Sign in using role-based selectors
+    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER_PASSWORD);
+    await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for redirect to home page
     await page.waitForURL('/');
@@ -35,7 +35,7 @@ test.describe('Virtual Scrolling Performance', () => {
     page,
   }) => {
     // Navigate to messages page
-    await page.goto('/messages/connections');
+    await page.goto('/messages?tab=connections');
 
     // Create a test connection (simplified - assumes helper exists)
     // In real implementation, would use ConnectionService to establish connection
