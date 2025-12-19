@@ -38,8 +38,9 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Remember Me').check();
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Verify session created
+    // Verify session created and auth state fully hydrated
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Check session storage/cookies
     const cookies = await page.context().cookies();
@@ -76,8 +77,9 @@ test.describe('Session Persistence E2E', () => {
     // Do NOT check Remember Me
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Verify session created
+    // Verify session created and auth state fully hydrated
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Check session is in sessionStorage (not localStorage for short-lived)
     const sessionStorage = await page.evaluate(() =>
@@ -97,6 +99,7 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Get initial access token
     const initialToken = await page.evaluate(() => {
@@ -126,6 +129,8 @@ test.describe('Session Persistence E2E', () => {
   test('should persist session across browser restarts', async ({
     browser,
   }) => {
+    test.setTimeout(60000); // Increase timeout for multi-context auth
+
     // Create persistent context
     const context = await browser.newContext({
       storageState: undefined, // Start fresh
@@ -140,6 +145,7 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Remember Me').check();
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Save storage state
     const storageState = await context.storageState();
@@ -200,6 +206,8 @@ test.describe('Session Persistence E2E', () => {
   test('should handle concurrent tab sessions correctly', async ({
     browser,
   }) => {
+    test.setTimeout(60000); // Increase timeout for multi-tab auth
+
     // Create two tabs with same user
     const context = await browser.newContext();
     const page1 = await context.newPage();
@@ -215,8 +223,12 @@ test.describe('Session Persistence E2E', () => {
     // Wait for auth state to fully hydrate
     await waitForAuthenticatedState(page1);
 
+    // Allow storage to sync across tabs
+    await page1.waitForTimeout(1000);
+
     // Page 2 should also be authenticated (shared storage)
     await page2.goto('/profile');
+    await dismissCookieBanner(page2);
     await expect(page2).toHaveURL('/profile');
     await expect(page2.getByText(testEmail)).toBeVisible();
 
@@ -240,6 +252,7 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Reload page
     await page.reload();
@@ -265,6 +278,7 @@ test.describe('Session Persistence E2E', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await page.waitForURL(/\/(profile|verify-email)/);
+    await waitForAuthenticatedState(page);
 
     // Clear refresh token to simulate expired session
     await page.evaluate(() => {
