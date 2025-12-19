@@ -247,7 +247,7 @@ test.describe('Group Chat E2E', () => {
       await page.waitForLoadState('networkidle');
 
       // Handle any auth flow if needed
-      await handleMessagingAuth(page);
+      await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Wait for page to load
       const pageTitle = page.locator('h1:has-text("New Group")');
