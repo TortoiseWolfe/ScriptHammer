@@ -3,6 +3,10 @@
 // Purpose: Test end-to-end payment data isolation between users
 
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Test users
 const USER_A = {
@@ -27,12 +31,13 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     // Step 1: User A signs in
     await pageA.goto('/sign-in');
-    await pageA.fill('input[type="email"]', USER_A.email);
-    await pageA.fill('input[type="password"]', USER_A.password);
-    await pageA.click('button[type="submit"]');
+    await dismissCookieBanner(pageA);
+    await pageA.getByLabel('Email').fill(USER_A.email);
+    await pageA.getByLabel('Password').fill(USER_A.password);
+    await pageA.getByRole('button', { name: 'Sign In' }).click();
 
     // Wait for redirect after sign-in
-    await pageA.waitForURL(/profile|dashboard|$/, { timeout: 5000 });
+    await waitForAuthenticatedState(pageA);
 
     // Step 2: User A creates a payment
     await pageA.goto('/payment-demo');
@@ -68,11 +73,12 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     // Step 4: User B signs in (different session)
     await pageB.goto('/sign-in');
-    await pageB.fill('input[type="email"]', USER_B.email);
-    await pageB.fill('input[type="password"]', USER_B.password);
-    await pageB.click('button[type="submit"]');
+    await dismissCookieBanner(pageB);
+    await pageB.getByLabel('Email').fill(USER_B.email);
+    await pageB.getByLabel('Password').fill(USER_B.password);
+    await pageB.getByRole('button', { name: 'Sign In' }).click();
 
-    await pageB.waitForURL(/profile|dashboard|$/, { timeout: 5000 });
+    await waitForAuthenticatedState(pageB);
 
     // Step 5: User B goes to payment page
     await pageB.goto('/payment-demo');
@@ -115,16 +121,18 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     // Sign in both users
     await pageA.goto('/sign-in');
-    await pageA.fill('input[type="email"]', USER_A.email);
-    await pageA.fill('input[type="password"]', USER_A.password);
-    await pageA.click('button[type="submit"]');
-    await pageA.waitForURL(/\/$/, { timeout: 5000 }).catch(() => {});
+    await dismissCookieBanner(pageA);
+    await pageA.getByLabel('Email').fill(USER_A.email);
+    await pageA.getByLabel('Password').fill(USER_A.password);
+    await pageA.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(pageA);
 
     await pageB.goto('/sign-in');
-    await pageB.fill('input[type="email"]', USER_B.email);
-    await pageB.fill('input[type="password"]', USER_B.password);
-    await pageB.click('button[type="submit"]');
-    await pageB.waitForURL(/\/$/, { timeout: 5000 }).catch(() => {});
+    await dismissCookieBanner(pageB);
+    await pageB.getByLabel('Email').fill(USER_B.email);
+    await pageB.getByLabel('Password').fill(USER_B.password);
+    await pageB.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(pageB);
 
     // Both users create payments
     await pageA.goto('/payment-demo');
@@ -175,6 +183,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   test('Unauthenticated users cannot create payments', async ({ page }) => {
     // Try to access payment page without signing in
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Should be redirected to sign-in
     await expect(page).toHaveURL(/sign-in/, { timeout: 3000 });
@@ -190,6 +199,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   }) => {
     // Try to access payment history without auth
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Should require authentication
     await expect(page).toHaveURL(/sign-in/, { timeout: 3000 });
@@ -203,10 +213,11 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     // Sign in
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', USER_A.email);
-    await page.fill('input[type="password"]', USER_A.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/$/, { timeout: 5000 }).catch(() => {});
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(USER_A.email);
+    await page.getByLabel('Password').fill(USER_A.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
 
     // Create payment and inspect network request
     let paymentIntentData: any = null;

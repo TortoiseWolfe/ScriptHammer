@@ -148,6 +148,7 @@ export default function ConversationListItem({
         isSelected ? 'bg-base-300' : ''
       } ${hasUnread ? 'bg-base-200' : ''} ${className}`}
       data-conversation-id={conversationId}
+      data-testid={`conversation-${conversationId}`}
     >
       {/* Main clickable area */}
       <button

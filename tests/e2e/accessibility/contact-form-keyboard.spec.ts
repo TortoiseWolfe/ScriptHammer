@@ -20,28 +20,28 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on name field to establish focus in the form
-    const nameField = page.locator('input[name="name"]');
+    const nameField = page.getByLabel('Name');
     await nameField.click();
     await expect(nameField).toBeFocused();
 
     // Tab to email field
     await page.keyboard.press('Tab');
-    const emailField = page.locator('input[name="email"]');
+    const emailField = page.getByLabel('Email');
     await expect(emailField).toBeFocused();
 
     // Tab to subject field
     await page.keyboard.press('Tab');
-    const subjectField = page.locator('input[name="subject"]');
+    const subjectField = page.getByLabel('Subject');
     await expect(subjectField).toBeFocused();
 
     // Tab to message field
     await page.keyboard.press('Tab');
-    const messageField = page.locator('textarea[name="message"]');
+    const messageField = page.getByLabel('Message');
     await expect(messageField).toBeFocused();
 
     // Tab to submit button
     await page.keyboard.press('Tab');
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.getByRole('button', { name: /send|submit/i });
     await expect(submitButton).toBeFocused();
   });
 
@@ -49,7 +49,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on name field to establish focus in the form
-    const nameField = page.locator('input[name="name"]');
+    const nameField = page.getByLabel('Name');
     await nameField.click();
     await page.keyboard.type('John Doe');
 
@@ -64,7 +64,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
 
     // Tab to submit button and press Enter
     await page.keyboard.press('Tab');
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.getByRole('button', { name: /send|submit/i });
     await expect(submitButton).toBeFocused();
     await page.keyboard.press('Enter');
 
@@ -84,7 +84,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
 
   test('should maintain focus after validation errors', async ({ page }) => {
     // Click on submit button without filling required fields
-    const submitButton = page.locator('button[type="submit"]');
+    const submitButton = page.getByRole('button', { name: /send|submit/i });
     await submitButton.click();
 
     // Wait for validation
@@ -104,18 +104,18 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on message field to establish focus
-    const messageField = page.locator('textarea[name="message"]');
+    const messageField = page.getByLabel('Message');
     await messageField.click();
     await expect(messageField).toBeFocused();
 
     // Shift+Tab backwards to subject
     await page.keyboard.press('Shift+Tab');
-    const subjectField = page.locator('input[name="subject"]');
+    const subjectField = page.getByLabel('Subject');
     await expect(subjectField).toBeFocused();
 
     // Shift+Tab backwards to email
     await page.keyboard.press('Shift+Tab');
-    const emailField = page.locator('input[name="email"]');
+    const emailField = page.getByLabel('Email');
     await expect(emailField).toBeFocused();
   });
 });

@@ -10,6 +10,11 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Test configuration
 const TEST_USER_EMAIL =
@@ -21,14 +26,15 @@ test.describe('Virtual Scrolling Performance', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to sign-in page
     await page.goto('/sign-in');
+    await dismissCookieBanner(page);
 
     // Sign in using role-based selectors
     await page.getByLabel('Email').fill(TEST_USER_EMAIL);
     await page.getByLabel('Password', { exact: true }).fill(TEST_USER_PASSWORD);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    // Wait for redirect to home page
-    await page.waitForURL('/');
+    // Wait for authenticated state
+    await waitForAuthenticatedState(page);
   });
 
   test('T172b: Virtual scrolling activates at exactly 100 messages', async ({
@@ -252,10 +258,11 @@ test.describe('Virtual Scrolling Performance', () => {
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', TEST_USER_EMAIL);
-    await page.fill('input[type="password"]', TEST_USER_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
+    await page.getByLabel('Password').fill(TEST_USER_PASSWORD);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
   });
 
   test('T169: Keyboard navigation through messages', async ({ page }) => {
@@ -329,10 +336,11 @@ test.describe('Keyboard Navigation', () => {
 test.describe('Scroll Restoration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', TEST_USER_EMAIL);
-    await page.fill('input[type="password"]', TEST_USER_PASSWORD);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
+    await page.getByLabel('Password').fill(TEST_USER_PASSWORD);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
   });
 
   test('Scroll position maintained during pagination', async ({ page }) => {

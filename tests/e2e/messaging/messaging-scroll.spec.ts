@@ -1,4 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 /**
  * Messaging Scroll E2E Tests
@@ -43,17 +48,16 @@ async function isElementInViewport(
 test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test.beforeEach(async ({ page }) => {
     // Login as test user
-    await page.goto('/auth/signin');
-    await page.fill(
-      'input[type="email"]',
-      process.env.TEST_USER_EMAIL || 'test@example.com'
-    );
-    await page.fill(
-      'input[type="password"]',
-      process.env.TEST_USER_PASSWORD || 'TestPassword123!'
-    );
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(dashboard|messages|$)/);
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page
+      .getByLabel('Email')
+      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
+    await page
+      .getByLabel('Password')
+      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
   });
 
   test('T003: Message input visible on mobile viewport (375x667)', async ({
@@ -61,6 +65,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     // Wait for page to load
     await page.waitForSelector(
@@ -96,6 +101,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.tablet);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     await page.waitForSelector(
       '[data-testid="chat-window"], [data-testid="message-thread"]',
@@ -127,6 +133,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     await page.waitForSelector(
       '[data-testid="chat-window"], [data-testid="message-thread"]',
@@ -156,17 +163,16 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
 
 test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/auth/signin');
-    await page.fill(
-      'input[type="email"]',
-      process.env.TEST_USER_EMAIL || 'test@example.com'
-    );
-    await page.fill(
-      'input[type="password"]',
-      process.env.TEST_USER_PASSWORD || 'TestPassword123!'
-    );
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(dashboard|messages|$)/);
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page
+      .getByLabel('Email')
+      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
+    await page
+      .getByLabel('Password')
+      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
   });
 
   test('T006: Scroll container constrained to MessageThread', async ({
@@ -174,6 +180,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     await page.waitForSelector(
       '[data-testid="chat-window"], [data-testid="message-thread"]',
@@ -216,17 +223,16 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
 
 test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/auth/signin');
-    await page.fill(
-      'input[type="email"]',
-      process.env.TEST_USER_EMAIL || 'test@example.com'
-    );
-    await page.fill(
-      'input[type="password"]',
-      process.env.TEST_USER_PASSWORD || 'TestPassword123!'
-    );
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/(dashboard|messages|$)/);
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page
+      .getByLabel('Email')
+      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
+    await page
+      .getByLabel('Password')
+      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
   });
 
   test('T007-T008: Jump button appears when scrolled and does not overlap input', async ({
@@ -234,6 +240,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     await page.waitForSelector(
       '[data-testid="chat-window"], [data-testid="message-thread"]',
@@ -288,6 +295,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test('T009: Jump button click scrolls to bottom', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
+    await handleReAuthModal(page);
 
     await page.waitForSelector(
       '[data-testid="chat-window"], [data-testid="message-thread"]',

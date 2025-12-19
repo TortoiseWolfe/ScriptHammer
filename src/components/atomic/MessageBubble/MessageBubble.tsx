@@ -336,7 +336,10 @@ const MessageBubble = memo(
           )}
         </div>
         {message.isOwn && (
-          <div className="chat-footer mt-1 flex items-center gap-1">
+          <div
+            className="chat-footer mt-1 flex items-center gap-1"
+            data-testid="delivery-status"
+          >
             <ReadReceipt status={deliveryStatus} />
           </div>
         )}

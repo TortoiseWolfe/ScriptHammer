@@ -9,6 +9,11 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Test user credentials (from .env or defaults)
 const TEST_USER_1 = {
@@ -26,10 +31,11 @@ const TEST_USER_2 = {
  */
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/sign-in');
+  await dismissCookieBanner(page);
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.waitForURL('/');
+  await waitForAuthenticatedState(page);
 }
 
 /**
@@ -37,6 +43,7 @@ async function signIn(page: Page, email: string, password: string) {
  */
 async function navigateToConversation(page: Page) {
   await page.goto('/messages?tab=connections');
+  await handleReAuthModal(page);
 
   // Find first accepted connection and click to open conversation
   const firstConnection = page

@@ -7,6 +7,11 @@
  */
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Test user credentials (from .env or defaults)
 const TEST_USER_1 = {
@@ -24,10 +29,11 @@ const TEST_USER_2 = {
  */
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/sign-in');
+  await dismissCookieBanner(page);
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign In' }).click();
-  await page.waitForURL('/'); // Wait for redirect to home page
+  await waitForAuthenticatedState(page);
 }
 
 /**
@@ -75,7 +81,9 @@ async function setupConversation(
 
   // Both users navigate to messages page
   await page1.goto('/messages');
+  await handleReAuthModal(page1);
   await page2.goto('/messages');
+  await handleReAuthModal(page2);
 
   // User 1: Click on conversation with User 2
   const conversationLink = page1.locator(

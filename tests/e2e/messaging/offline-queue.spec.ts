@@ -11,6 +11,11 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
 
@@ -48,13 +53,15 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: User A signs in =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('#email', USER_A.email);
-      await page.fill('#password', USER_A.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      await dismissCookieBanner(page);
+      await page.getByLabel('Email').fill(USER_A.email);
+      await page.getByLabel('Password').fill(USER_A.password);
+      await page.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(page);
 
       // ===== STEP 2: Navigate to conversation =====
-      await page.goto(`${BASE_URL}/conversations`);
+      await page.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(page);
       const conversationItem = page
         .locator('[data-testid*="conversation"]')
         .first();
@@ -121,12 +128,14 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('#email', USER_A.email);
-      await page.fill('#password', USER_A.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      await dismissCookieBanner(page);
+      await page.getByLabel('Email').fill(USER_A.email);
+      await page.getByLabel('Password').fill(USER_A.password);
+      await page.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(page);
 
-      await page.goto(`${BASE_URL}/conversations`);
+      await page.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(page);
       const conversationItem = page
         .locator('[data-testid*="conversation"]')
         .first();
@@ -190,12 +199,14 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('#email', USER_A.email);
-      await page.fill('#password', USER_A.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      await dismissCookieBanner(page);
+      await page.getByLabel('Email').fill(USER_A.email);
+      await page.getByLabel('Password').fill(USER_A.password);
+      await page.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(page);
 
-      await page.goto(`${BASE_URL}/conversations`);
+      await page.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(page);
       const conversationItem = page
         .locator('[data-testid*="conversation"]')
         .first();
@@ -275,19 +286,22 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Both users sign in =====
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.fill('#email', USER_A.email);
-      await pageA.fill('#password', USER_A.password);
-      await pageA.click('button[type="submit"]');
-      await pageA.waitForURL('/');
+      await dismissCookieBanner(pageA);
+      await pageA.getByLabel('Email').fill(USER_A.email);
+      await pageA.getByLabel('Password').fill(USER_A.password);
+      await pageA.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(pageA);
 
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await pageB.fill('#email', USER_B.email);
-      await pageB.fill('#password', USER_B.password);
-      await pageB.click('button[type="submit"]');
-      await pageB.waitForURL('/');
+      await dismissCookieBanner(pageB);
+      await pageB.getByLabel('Email').fill(USER_B.email);
+      await pageB.getByLabel('Password').fill(USER_B.password);
+      await pageB.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(pageB);
 
       // ===== STEP 2: Both navigate to same conversation =====
-      await pageA.goto(`${BASE_URL}/conversations`);
+      await pageA.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(pageA);
       const conversationA = pageA
         .locator('[data-testid*="conversation"]')
         .first();
@@ -299,7 +313,8 @@ test.describe('Offline Message Queue', () => {
       const urlA = pageA.url();
       const conversationId = new URL(urlA).searchParams.get('conversation');
 
-      await pageB.goto(`${BASE_URL}/conversations`);
+      await pageB.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(pageB);
       const conversationB = pageB
         .locator('[data-testid*="conversation"]')
         .first();
@@ -379,12 +394,14 @@ test.describe('Offline Message Queue', () => {
     try {
       // ===== STEP 1: Sign in and navigate to conversation =====
       await page.goto(`${BASE_URL}/sign-in`);
-      await page.fill('#email', USER_A.email);
-      await page.fill('#password', USER_A.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL('/');
+      await dismissCookieBanner(page);
+      await page.getByLabel('Email').fill(USER_A.email);
+      await page.getByLabel('Password').fill(USER_A.password);
+      await page.getByRole('button', { name: 'Sign In' }).click();
+      await waitForAuthenticatedState(page);
 
-      await page.goto(`${BASE_URL}/conversations`);
+      await page.goto(`${BASE_URL}/messages?tab=conversations`);
+      await handleReAuthModal(page);
       const conversationItem = page
         .locator('[data-testid*="conversation"]')
         .first();

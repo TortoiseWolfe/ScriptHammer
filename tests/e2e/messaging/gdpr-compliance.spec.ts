@@ -7,6 +7,10 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Test user - use PRIMARY from standardized test fixtures (Feature 026)
 const TEST_USER = {
@@ -18,14 +22,15 @@ test.describe('GDPR Data Export', () => {
   test.beforeEach(async ({ page }) => {
     // Sign in as test user
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await page.fill('#email', TEST_USER.email);
-    await page.fill('#password', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
 
     // Navigate to account settings
     await page.goto('/account');
+    await dismissCookieBanner(page);
   });
 
   test('should show data export button in account settings (T191)', async ({
@@ -162,14 +167,15 @@ test.describe('GDPR Account Deletion', () => {
     // Sign in as test user
     // NOTE: Account deletion tests use mocked responses to prevent actual deletion
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await page.fill('#email', TEST_USER.email);
-    await page.fill('#password', TEST_USER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/.*\/profile/, { timeout: 15000 });
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
 
     // Navigate to account settings
     await page.goto('/account');
+    await dismissCookieBanner(page);
   });
 
   test('should show account deletion button in account settings (T192)', async ({
@@ -352,11 +358,13 @@ test.describe('GDPR Account Deletion', () => {
 test.describe('GDPR Accessibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'TestPassword123!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/', { timeout: 10000 });
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
     await page.goto('/account');
+    await dismissCookieBanner(page);
   });
 
   test('should have ARIA live regions for status updates (T193)', async ({

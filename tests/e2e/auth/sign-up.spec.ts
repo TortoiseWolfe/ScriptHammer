@@ -17,6 +17,8 @@ import {
   deleteTestUserByEmail,
   isAdminClientAvailable,
   DEFAULT_TEST_PASSWORD,
+  dismissCookieBanner,
+  waitForAuthenticatedState,
 } from '../utils/test-user-factory';
 
 /**
@@ -54,13 +56,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     createdEmails.push(testEmail);
 
     await page.goto('/sign-up');
-    await page.waitForLoadState('networkidle');
-
-    // Dismiss cookie banner if visible
-    const cookieAccept = page.getByRole('button', { name: /accept/i });
-    if (await cookieAccept.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await cookieAccept.click();
-    }
+    await dismissCookieBanner(page);
 
     // Page heading is "Create Account"
     await expect(
@@ -126,7 +122,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     createdEmails.push(existingEmail);
 
     await page.goto('/sign-up');
-    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
 
     // Try to sign up with the same email
     await page.getByLabel('Email').fill(existingEmail);
@@ -167,6 +163,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
   test('should show validation error for weak password', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     const testEmail = generateSignUpEmail('weak');
     createdEmails.push(testEmail);
@@ -192,6 +189,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     page,
   }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Use email that passes HTML5 validation but fails app's TLD validation
     // The app validates against a set of known TLDs
@@ -215,6 +213,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
   test('should show error for password mismatch', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     const testEmail = generateSignUpEmail('mismatch');
 
@@ -238,6 +237,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
   test('should navigate to sign-in from sign-up page', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Click the inline sign-in link (not the header button)
     await page.getByRole('link', { name: 'Sign in', exact: true }).click();
@@ -250,6 +250,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
   test('should display OAuth buttons on sign-up page', async ({ page }) => {
     await page.goto('/sign-up');
+    await dismissCookieBanner(page);
 
     // Verify OAuth buttons present (may be GitHub, Google, etc.)
     const oauthButtons = page
@@ -284,23 +285,14 @@ test.describe('Sign-up with Admin Confirmation', () => {
     try {
       // Now sign in with the created user
       await page.goto('/sign-in');
-      await page.fill('#email', testEmail);
-      await page.fill('#password', DEFAULT_TEST_PASSWORD);
-      await page.click('button[type="submit"]');
+      await dismissCookieBanner(page);
+      await page.getByLabel('Email').fill(testEmail);
+      await page.getByLabel('Password').fill(DEFAULT_TEST_PASSWORD);
+      await page.getByRole('button', { name: 'Sign In' }).click();
 
-      // Should redirect to profile
-      await page.waitForURL(/.*\/profile/, { timeout: 15000 });
-      await expect(page).toHaveURL(/.*\/profile/);
-
+      // Should redirect and authenticate
+      await waitForAuthenticatedState(page);
       console.log('Admin-created user signed in successfully');
-
-      // Sign out
-      const signOutButton = page.getByRole('button', {
-        name: /sign out|logout/i,
-      });
-      if (await signOutButton.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await signOutButton.click({ force: true });
-      }
     } finally {
       // Clean up
       await deleteTestUserByEmail(testEmail);

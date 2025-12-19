@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to a page with forms
     await page.goto('/components');
+    await dismissCookieBanner(page);
   });
 
   test('form fields have proper labels and ARIA attributes', async ({

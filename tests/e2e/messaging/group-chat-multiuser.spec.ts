@@ -9,6 +9,11 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
 
 // Always use localhost for E2E tests - we're testing local development
 const BASE_URL = 'http://localhost:3000';
@@ -19,9 +24,6 @@ const PRIMARY_USER = {
   password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
 };
 
-// Messaging password is the same as login password for encryption key derivation
-const MESSAGING_PASSWORD = PRIMARY_USER.password;
-
 /**
  * Helper: Sign in as the primary user and navigate to messages page
  * Handles encryption setup flow if needed
@@ -29,99 +31,26 @@ const MESSAGING_PASSWORD = PRIMARY_USER.password;
 async function signInAndNavigateToMessages(page: Page) {
   // Step 1: Navigate to sign-in page
   await page.goto(BASE_URL + '/sign-in');
-  await page.waitForLoadState('networkidle');
+  await dismissCookieBanner(page);
 
   // Check if already signed in (redirected away from sign-in)
   if (!page.url().includes('sign-in')) {
     await page.goto(BASE_URL + '/messages');
-    await page.waitForLoadState('networkidle');
-    return handleMessagingAuth(page);
-  }
-
-  // Step 2: Fill in credentials and submit
-  await page.fill('#email', PRIMARY_USER.email);
-  await page.fill('#password', PRIMARY_USER.password);
-  await page.click('button[type="submit"]');
-
-  // Step 3: Wait for redirect to profile page (confirms auth success)
-  await page.waitForURL(/.*\/profile/, { timeout: 15000 });
-
-  // Step 4: Navigate to messages page
-  await page.goto(BASE_URL + '/messages');
-  await page.waitForLoadState('networkidle');
-
-  // Step 5: Handle messaging auth (setup or re-auth)
-  await handleMessagingAuth(page);
-}
-
-/**
- * Helper: Handle messaging authentication flow
- * - If redirected to /messages/setup, complete the setup flow
- * - If ReAuthModal appears, enter the messaging password
- */
-async function handleMessagingAuth(page: Page) {
-  // Wait for page to stabilize
-  await page.waitForTimeout(2000);
-
-  // Check if we got redirected to setup
-  if (page.url().includes('/messages/setup')) {
-    await completeEncryptionSetup(page);
+    await handleReAuthModal(page, PRIMARY_USER.password);
     return;
   }
 
-  // Check for ReAuth modal
-  const modal = page.locator('[role="dialog"]').first();
-  const isModalVisible = await modal
-    .isVisible({ timeout: 3000 })
-    .catch(() => false);
+  // Step 2: Fill in credentials and submit
+  await page.getByLabel('Email').fill(PRIMARY_USER.email);
+  await page.getByLabel('Password').fill(PRIMARY_USER.password);
+  await page.getByRole('button', { name: 'Sign In' }).click();
 
-  if (isModalVisible) {
-    const modalText = await modal.textContent();
+  // Step 3: Wait for authenticated state
+  await waitForAuthenticatedState(page);
 
-    // Check if it's asking for password
-    if (
-      modalText?.toLowerCase().includes('password') ||
-      modalText?.toLowerCase().includes('encryption')
-    ) {
-      const passwordInput = modal.locator('input[type="password"]').first();
-      await passwordInput.fill(MESSAGING_PASSWORD);
-
-      // Look for submit/unlock button
-      const submitBtn = modal.locator('button[type="submit"]').first();
-      await submitBtn.click();
-
-      // Wait for modal to close
-      await page.waitForTimeout(2000);
-    }
-  }
-
-  // Final wait for messaging UI to be ready
-  await page.waitForTimeout(1000);
-}
-
-/**
- * Helper: Complete the encryption setup flow on /messages/setup
- */
-async function completeEncryptionSetup(page: Page) {
-  await page.waitForSelector('form', { timeout: 10000 });
-
-  const passwordInputs = page.locator('input[type="password"]');
-  const count = await passwordInputs.count();
-
-  if (count >= 2) {
-    // New user setup: password + confirm password
-    await passwordInputs.nth(0).fill(MESSAGING_PASSWORD);
-    await passwordInputs.nth(1).fill(MESSAGING_PASSWORD);
-  } else if (count === 1) {
-    // Single password field
-    await passwordInputs.nth(0).fill(MESSAGING_PASSWORD);
-  }
-
-  await page.click('button[type="submit"]');
-
-  // Wait for redirect back to messages
-  await page.waitForURL(/.*\/messages(?!.*setup)/, { timeout: 20000 });
-  await page.waitForTimeout(2000);
+  // Step 4: Navigate to messages page
+  await page.goto(BASE_URL + '/messages');
+  await handleReAuthModal(page, PRIMARY_USER.password);
 }
 
 test.describe('Group Chat E2E', () => {
