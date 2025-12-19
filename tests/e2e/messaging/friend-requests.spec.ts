@@ -193,7 +193,7 @@ test.describe('Friend Request Flow', () => {
       // ===== STEP 6: User B navigates to connections page =====
       await pageB.goto('/messages?tab=connections');
       await handleReAuthModal(pageB, USER_B.password);
-      await expect(pageB).toHaveURL(/.*\/messages\/connections/);
+      await expect(pageB).toHaveURL(/.*\/messages.*tab=connections/);
 
       // ===== STEP 7: User B sees pending request in "Received" tab =====
       const receivedTab = pageB.getByRole('tab', {
@@ -221,24 +221,23 @@ test.describe('Friend Request Flow', () => {
       // ===== STEP 9: Verify connection appears in "Accepted" tab for User B =====
       const acceptedTab = pageB.getByRole('tab', { name: /accepted/i });
       await acceptedTab.click({ force: true });
-      await pageB.waitForTimeout(1000);
 
-      // Connection should now appear
+      // Connection should now appear - wait for it
       const acceptedConnection = pageB.locator(
         '[data-testid="accepted-connection"]'
       );
-      await expect(acceptedConnection.first()).toBeVisible({ timeout: 5000 });
+      await expect(acceptedConnection.first()).toBeVisible({ timeout: 10000 });
 
       // ===== STEP 10: Verify connection appears in User A's "Accepted" tab =====
       await pageA.reload();
+      await handleReAuthModal(pageA, USER_A.password);
       const acceptedTabA = pageA.getByRole('tab', { name: /accepted/i });
       await acceptedTabA.click({ force: true });
-      await pageA.waitForTimeout(1000);
 
       const acceptedConnectionA = pageA.locator(
         '[data-testid="accepted-connection"]'
       );
-      await expect(acceptedConnectionA.first()).toBeVisible({ timeout: 5000 });
+      await expect(acceptedConnectionA.first()).toBeVisible({ timeout: 10000 });
     } finally {
       // Clean up: close contexts
       await contextA.close();

@@ -17,6 +17,8 @@ import {
   handleReAuthModal,
   waitForAuthenticatedState,
   dismissCookieBanner,
+  getAdminClient as getTestAdminClient,
+  getUserByEmail,
 } from '../utils/test-user-factory';
 
 const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
@@ -45,6 +47,63 @@ const getAdminClient = () => {
 };
 
 test.describe('Encrypted Messaging Flow', () => {
+  // Establish connection between test users BEFORE all tests
+  // This fixes the "No conversations" state that causes tests to fail
+  test.beforeAll(async () => {
+    const adminClient = getTestAdminClient();
+    if (!adminClient) {
+      console.warn('⚠️ Admin client unavailable - connection setup skipped');
+      return;
+    }
+
+    // Get user IDs
+    const userA = await getUserByEmail(USER_A.email);
+    const userB = await getUserByEmail(USER_B.email);
+
+    if (!userA || !userB) {
+      console.warn('⚠️ Test users not found - connection setup skipped');
+      return;
+    }
+
+    // Check if already connected
+    const { data: existing } = await adminClient
+      .from('user_connections')
+      .select('id, status')
+      .or(
+        `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+      )
+      .maybeSingle();
+
+    if (existing?.status === 'accepted') {
+      console.log('✓ Users already connected');
+      return;
+    }
+
+    // Create or update connection to 'accepted' status
+    if (!existing) {
+      const { error } = await adminClient.from('user_connections').insert({
+        requester_id: userA.id,
+        addressee_id: userB.id,
+        status: 'accepted',
+      });
+      if (error) {
+        console.error('Failed to create connection:', error.message);
+      } else {
+        console.log('✓ Connection created between test users');
+      }
+    } else {
+      const { error } = await adminClient
+        .from('user_connections')
+        .update({ status: 'accepted' })
+        .eq('id', existing.id);
+      if (error) {
+        console.error('Failed to update connection:', error.message);
+      } else {
+        console.log('✓ Connection updated to accepted');
+      }
+    }
+  });
+
   test('should send and receive encrypted message between two users', async ({
     browser,
   }) => {

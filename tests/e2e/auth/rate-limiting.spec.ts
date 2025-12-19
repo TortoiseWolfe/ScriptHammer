@@ -67,8 +67,9 @@ test.describe('Rate Limiting - User Experience', () => {
     // Should see either rate limit or invalid credentials error
     const errorMessage = await page.locator('[role="alert"]').textContent();
     // Rate limiting may or may not be configured - accept either response
+    // Actual rate limit message: "Too many failed attempts. Your account has been temporarily locked. Please try again in 15 minutes."
     expect(errorMessage).toMatch(
-      /rate.*limit|too many|try again|invalid|incorrect|wrong|credentials/i
+      /too many.*attempts|temporarily locked|try again in \d+|rate.*limit|invalid|incorrect|wrong|credentials/i
     );
   });
 
@@ -119,8 +120,9 @@ test.describe('Rate Limiting - User Experience', () => {
     // Should see either time remaining OR invalid credentials (rate limiting may not be configured)
     const errorMessage = await page.locator('[role="alert"]').textContent();
     // Accept time-based message OR standard error (rate limiting is optional)
+    // Actual rate limit message: "...try again in 15 minutes"
     expect(errorMessage).toMatch(
-      /\d+\s*(minute|min|second|sec)|invalid|incorrect|wrong|credentials/i
+      /try again in \d+|temporarily locked|too many.*attempts|\d+\s*(minute|min|second|sec)|invalid|incorrect|wrong|credentials/i
     );
   });
 
@@ -145,9 +147,9 @@ test.describe('Rate Limiting - User Experience', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     let errorMessage = await page.locator('[role="alert"]').textContent();
-    // Accept any error response
+    // Accept any error response (rate limit or invalid credentials)
     expect(errorMessage).toMatch(
-      /rate.*limit|too many|invalid|incorrect|wrong|credentials/i
+      /too many.*attempts|temporarily locked|try again in \d+|rate.*limit|invalid|incorrect|wrong|credentials/i
     );
 
     // Try with different email - should get independent error handling
@@ -186,7 +188,7 @@ test.describe('Rate Limiting - User Experience', () => {
     const signInError = await page.locator('[role="alert"]').textContent();
     // Accept any error (rate limit may or may not be configured)
     expect(signInError).toMatch(
-      /rate.*limit|too many|invalid|incorrect|wrong|credentials/i
+      /too many.*attempts|temporarily locked|try again in \d+|rate.*limit|invalid|incorrect|wrong|credentials/i
     );
 
     // Navigate to sign-up page
@@ -237,8 +239,9 @@ test.describe('Rate Limiting - User Experience', () => {
     const errorMessage = await page.locator('[role="alert"]').textContent();
 
     // Should contain some error indication (rate limit OR credentials error)
+    // Actual rate limit message: "Too many failed attempts. Your account has been temporarily locked. Please try again in 15 minutes."
     expect(errorMessage).toMatch(
-      /rate|limit|too many|attempts|invalid|incorrect|wrong|credentials|error/i
+      /too many.*attempts|temporarily locked|try again in \d+|rate.*limit|invalid|incorrect|wrong|credentials|error/i
     );
 
     // Error should be screen-reader accessible
