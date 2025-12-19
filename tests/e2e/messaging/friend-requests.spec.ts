@@ -30,10 +30,13 @@ const USER_A = {
 };
 
 const USER_B = {
-  username: 'testuser-b', // Search uses username, not email
   email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
   password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
 };
+
+// Store display names looked up at runtime
+let userADisplayName: string | null = null;
+let userBDisplayName: string | null = null;
 
 // Admin client for cleanup
 let adminClient: SupabaseClient | null = null;
@@ -47,6 +50,34 @@ const getAdminClient = (): SupabaseClient | null => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   return adminClient;
+};
+
+/**
+ * Look up a user's display_name by their email address.
+ * This is necessary because UserSearch searches by display_name, not email or username.
+ */
+const getDisplayNameByEmail = async (email: string): Promise<string | null> => {
+  const client = getAdminClient();
+  if (!client) {
+    // Fallback: derive from email prefix if admin client unavailable
+    return email.split('@')[0];
+  }
+
+  const { data: users } = await client.auth.admin.listUsers();
+  const user = users?.users?.find((u) => u.email === email);
+  if (!user) {
+    // Fallback: derive from email prefix
+    return email.split('@')[0];
+  }
+
+  const { data: profile } = await client
+    .from('user_profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single();
+
+  // Return display_name if available, otherwise derive from email
+  return profile?.display_name || email.split('@')[0];
 };
 
 const cleanupConnections = async (): Promise<void> => {
@@ -70,6 +101,13 @@ const cleanupConnections = async (): Promise<void> => {
 
 test.describe('Friend Request Flow', () => {
   test.beforeEach(async () => {
+    // Look up display names dynamically (only once, then cached)
+    if (!userADisplayName) {
+      userADisplayName = await getDisplayNameByEmail(USER_A.email);
+    }
+    if (!userBDisplayName) {
+      userBDisplayName = await getDisplayNameByEmail(USER_B.email);
+    }
     // Clean up any existing connections between test users
     await cleanupConnections();
   });
@@ -101,10 +139,10 @@ test.describe('Friend Request Flow', () => {
       await handleReAuthModal(pageA, USER_A.password);
       await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
-      // ===== STEP 3: User A searches for User B by username =====
+      // ===== STEP 3: User A searches for User B by display_name =====
       const searchInput = pageA.locator('#user-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
-      await searchInput.fill(USER_B.username);
+      await searchInput.fill(userBDisplayName!);
       await searchInput.press('Enter');
 
       // Wait for search results
@@ -216,8 +254,8 @@ test.describe('Friend Request Flow', () => {
       await handleReAuthModal(pageB, USER_B.password);
       const searchInput = pageB.locator('#user-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
-      // Search for User A by username (testuser which is PRIMARY user's username)
-      await searchInput.fill('testuser');
+      // Search for User A by display_name
+      await searchInput.fill(userADisplayName!);
       await searchInput.press('Enter');
       await pageB.waitForSelector(
         '[data-testid="search-results"], .alert-error',
@@ -283,7 +321,7 @@ test.describe('Friend Request Flow', () => {
     await handleReAuthModal(page, USER_A.password);
     const searchInput = page.locator('#user-search-input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
-    await searchInput.fill(USER_B.username);
+    await searchInput.fill(userBDisplayName!);
     await searchInput.press('Enter');
     await page.waitForSelector('[data-testid="search-results"], .alert-error', {
       timeout: 15000,
@@ -333,7 +371,7 @@ test.describe('Friend Request Flow', () => {
     // Send first request
     const searchInput = page.locator('#user-search-input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
-    await searchInput.fill(USER_B.username);
+    await searchInput.fill(userBDisplayName!);
     await searchInput.press('Enter');
     await page.waitForSelector('[data-testid="search-results"], .alert-error', {
       timeout: 15000,
@@ -349,7 +387,7 @@ test.describe('Friend Request Flow', () => {
 
     // Search again and verify button state changed
     await searchInput.clear();
-    await searchInput.fill(USER_B.username);
+    await searchInput.fill(userBDisplayName!);
     await searchInput.press('Enter');
     await page.waitForSelector('[data-testid="search-results"], .alert-error', {
       timeout: 15000,
