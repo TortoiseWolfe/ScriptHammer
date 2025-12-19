@@ -13,6 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   waitForAuthenticatedState,
+  signOutViaDropdown,
 } from '../utils/test-user-factory';
 
 // Use pre-existing test user (must exist in Supabase)
@@ -174,9 +175,8 @@ test.describe('Session Persistence E2E', () => {
     );
     expect(beforeSignOut).toContain('supabase');
 
-    // Sign out (now guaranteed visible)
-    await page.getByRole('button', { name: 'Sign Out' }).click();
-    await page.waitForURL('/sign-in');
+    // Sign out via dropdown menu
+    await signOutViaDropdown(page);
 
     // Verify session cleared from storage
     const afterSignOut = await page.evaluate(() =>
@@ -220,9 +220,8 @@ test.describe('Session Persistence E2E', () => {
     await expect(page2).toHaveURL('/profile');
     await expect(page2.getByText(testEmail)).toBeVisible();
 
-    // Sign out on page 1 (guaranteed visible due to waitForAuthenticatedState)
-    await page1.getByRole('button', { name: 'Sign Out' }).click();
-    await page1.waitForURL('/sign-in');
+    // Sign out on page 1 via dropdown menu
+    await signOutViaDropdown(page1);
 
     // Page 2 should detect sign out (if using realtime sync)
     // Note: This depends on implementation - may require page reload

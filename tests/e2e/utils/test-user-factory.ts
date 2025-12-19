@@ -454,13 +454,46 @@ export async function handleReAuthModal(
 }
 
 /**
+ * Click the Sign Out button in GlobalNav dropdown.
+ *
+ * The Sign Out button is inside the user avatar dropdown menu.
+ * This helper opens the dropdown and clicks Sign Out.
+ *
+ * @param page - Playwright page object
+ *
+ * @example
+ * await signOutViaDropdown(page);
+ * // User is now signed out
+ */
+export async function signOutViaDropdown(page: Page): Promise<void> {
+  // Click the avatar to open dropdown (has aria-label="User account menu")
+  const avatarButton = page.getByLabel('User account menu');
+  await avatarButton.click();
+
+  // Wait for dropdown to open and click Sign Out
+  const signOutButton = page.getByRole('button', { name: 'Sign Out' });
+  await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
+  await signOutButton.click();
+
+  // Wait for sign-out to complete (redirects to home page)
+  await page.waitForURL('/', { timeout: 10000 });
+
+  // Wait for Sign In link to appear (indicates signed out state)
+  const signInLink = page.getByRole('link', { name: 'Sign In' });
+  await signInLink.waitFor({ state: 'visible', timeout: 5000 });
+}
+
+/**
  * Wait for authenticated state to fully hydrate.
- * Waits for Sign Out button to be visible in GlobalNav.
+ * Waits for Messages link to be visible in GlobalNav (indicates user is logged in).
  *
  * This addresses the race condition where:
  * 1. Sign-in completes and URL redirects
  * 2. But AuthContext hasn't updated yet
  * 3. GlobalNav still shows Sign In/Sign Up buttons
+ *
+ * Note: Sign Out button is inside a dropdown menu and not directly visible,
+ * so we check for the Messages link which only appears for authenticated users.
  *
  * @param page - Playwright page object
  * @param timeout - Max time to wait (default: 15000ms)
@@ -468,7 +501,7 @@ export async function handleReAuthModal(
  * @example
  * await page.getByRole('button', { name: 'Sign In' }).click();
  * await waitForAuthenticatedState(page);
- * // Now Sign Out button is guaranteed visible
+ * // Now user is authenticated and Messages link is visible
  */
 export async function waitForAuthenticatedState(
   page: Page,
@@ -479,7 +512,8 @@ export async function waitForAuthenticatedState(
     timeout,
   });
 
-  // Wait for Sign Out button (indicates GlobalNav has user context)
-  const signOutButton = page.getByRole('button', { name: /sign out/i });
-  await signOutButton.waitFor({ state: 'visible', timeout });
+  // Wait for Messages link (indicates GlobalNav has user context)
+  // Messages link only appears for authenticated users
+  const messagesLink = page.getByRole('link', { name: /messages/i });
+  await messagesLink.waitFor({ state: 'visible', timeout });
 }

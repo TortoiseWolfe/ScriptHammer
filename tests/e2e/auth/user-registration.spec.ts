@@ -11,6 +11,7 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   DEFAULT_TEST_PASSWORD,
+  signOutViaDropdown,
 } from '../utils/test-user-factory';
 
 /**
@@ -90,11 +91,11 @@ test.describe('User Registration E2E', () => {
       page.getByRole('heading', { name: 'Payment Integration Demo' })
     ).toBeVisible();
 
-    // Step 10: Sign out
-    await page.getByRole('button', { name: 'Sign Out' }).click();
+    // Step 10: Sign out via dropdown menu
+    await signOutViaDropdown(page);
 
-    // Step 11: Verify redirected to sign-in
-    await page.waitForURL('/sign-in');
+    // Step 11: Verify redirected to home then can access sign-in
+    await page.goto('/sign-in');
     await expect(page).toHaveURL('/sign-in');
 
     // Clean up: Delete test user (would need admin API or manual cleanup)

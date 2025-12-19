@@ -13,6 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   waitForAuthenticatedState,
+  signOutViaDropdown,
 } from '../utils/test-user-factory';
 
 // Use pre-existing test users (must exist in Supabase)
@@ -80,8 +81,8 @@ test.describe('Protected Routes E2E', () => {
       ).toBeVisible();
     }
 
-    // Clean up (Sign Out button already guaranteed visible)
-    await page.getByRole('button', { name: 'Sign Out' }).click();
+    // Clean up via dropdown menu
+    await signOutViaDropdown(page);
   });
 
   test('should enforce RLS policies on payment access', async ({ page }) => {
@@ -108,9 +109,9 @@ test.describe('Protected Routes E2E', () => {
     await page.goto('/payment-demo');
     await expect(page.getByText(testUser.email)).toBeVisible();
 
-    // Step 3: Sign out (already visible due to waitForAuthenticatedState)
-    await page.getByRole('button', { name: 'Sign Out' }).click();
-    await page.waitForURL('/sign-in');
+    // Step 3: Sign out via dropdown menu
+    await signOutViaDropdown(page);
+    await page.goto('/sign-in');
 
     // Step 4: Sign in as second user
     await dismissCookieBanner(page);
@@ -128,8 +129,8 @@ test.describe('Protected Routes E2E', () => {
 
     // RLS policy prevents user 2 from seeing user 1's payment data
 
-    // Clean up - sign out
-    await page.getByRole('button', { name: 'Sign Out' }).click();
+    // Clean up - sign out via dropdown menu
+    await signOutViaDropdown(page);
   });
 
   test('should show email verification notice for unverified users', async ({
@@ -165,8 +166,8 @@ test.describe('Protected Routes E2E', () => {
       );
     }
 
-    // Clean up
-    await page.getByRole('button', { name: 'Sign Out' }).click();
+    // Clean up via dropdown menu
+    await signOutViaDropdown(page);
   });
 
   test('should preserve session across page navigation', async ({ page }) => {
@@ -193,8 +194,8 @@ test.describe('Protected Routes E2E', () => {
     // Verify still authenticated (no redirect to sign-in)
     await expect(page).toHaveURL('/payment-demo');
 
-    // Clean up
-    await page.getByRole('button', { name: 'Sign Out' }).click();
+    // Clean up via dropdown menu
+    await signOutViaDropdown(page);
   });
 
   test('should handle session expiration gracefully', async ({ page }) => {
