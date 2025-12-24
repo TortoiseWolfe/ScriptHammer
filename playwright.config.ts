@@ -29,6 +29,8 @@ function createDeviceConfig(viewport: TestViewport) {
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  /* Global setup runs once before all tests - validates prerequisites */
+  globalSetup: './tests/e2e/global-setup.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
