@@ -1,0 +1,51 @@
+# Gitleaks configuration for ScriptHammer
+# Scans for secrets and credentials before commits/pushes
+
+[extend]
+useDefault = true  # Use default secret patterns
+
+# Custom rules for ScriptHammer stack
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase Service Role Key"
+regex = '''sbp_[a-zA-Z0-9]{40}'''
+severity = "high"
+
+[[rules]]
+id = "supabase-anon-key"
+description = "Supabase Anon Key (JWT format)"
+regex = '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+'''
+severity = "medium"
+
+[[rules]]
+id = "github-pat-fine-grained"
+description = "GitHub Fine-Grained Personal Access Token"
+regex = '''github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}'''
+severity = "critical"
+
+[[rules]]
+id = "stripe-live-key"
+description = "Stripe Live Secret Key"
+regex = '''sk_live_[a-zA-Z0-9]{24,}'''
+severity = "critical"
+
+[[rules]]
+id = "stripe-test-key"
+description = "Stripe Test Secret Key"
+regex = '''sk_test_[a-zA-Z0-9]{24,}'''
+severity = "medium"
+
+# Allowlist false positives
+[allowlist]
+paths = [
+  '''\.env\.example''',
+  '''.*\.test\.ts''',
+  '''.*\.test\.tsx''',
+  '''.*\.spec\.ts''',
+  '''docs/.*\.md''',
+  '''tests/.*''',
+]
+
+# To allowlist specific commits, add their SHA hashes:
+# [allowlist]
+# commits = ["abc123...", "def456..."]

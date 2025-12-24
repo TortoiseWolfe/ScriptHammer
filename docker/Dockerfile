@@ -82,6 +82,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/* \
     && git config --global --add safe.directory /app
 
+# Install gitleaks for secret scanning
+RUN curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz \
+    | tar -xz -C /usr/local/bin gitleaks \
+    && chmod +x /usr/local/bin/gitleaks
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 

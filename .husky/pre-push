@@ -1,5 +1,43 @@
 #!/bin/bash
 
+# Function to run full gitleaks scan
+run_gitleaks_full() {
+  echo "🔐 Running full repository secret scan..."
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks detect --source . --config .gitleaks.toml --verbose
+    return $?
+  elif [ -f "node_modules/.bin/gitleaks" ]; then
+    node_modules/.bin/gitleaks detect --source . --config .gitleaks.toml --verbose
+    return $?
+  else
+    echo "⚠️  gitleaks not found, skipping secret scan"
+    return 0
+  fi
+}
+
+# Run gitleaks full scan first
+echo "🔒 Pre-push secret scanning..."
+
+if [ -d "/app" ] && [ "$PWD" = "/app" ]; then
+  # Inside Docker
+  run_gitleaks_full
+  GITLEAKS_EXIT=$?
+elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
+  # Host with Docker running
+  docker compose exec -T scripthammer pnpm run gitleaks
+  GITLEAKS_EXIT=$?
+else
+  # Host without Docker
+  run_gitleaks_full
+  GITLEAKS_EXIT=$?
+fi
+
+if [ $GITLEAKS_EXIT -ne 0 ]; then
+  echo "❌ Secrets detected in repository! Push blocked."
+  echo "Review the findings above and remove any secrets before pushing."
+  exit 1
+fi
+
 # Run full CI validation before pushing to catch all issues
 echo "🚀 Running CI validation before push..."
 

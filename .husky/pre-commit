@@ -3,17 +3,65 @@
 echo "🧹 Cleaning .next directory before checks..."
 rm -rf .next/* .next/.* 2>/dev/null || true
 
+# Function to run gitleaks on staged files
+run_gitleaks_staged() {
+  echo "🔐 Scanning staged files for secrets..."
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks protect --staged --config .gitleaks.toml --verbose
+    return $?
+  elif [ -f "node_modules/.bin/gitleaks" ]; then
+    node_modules/.bin/gitleaks protect --staged --config .gitleaks.toml --verbose
+    return $?
+  else
+    echo "⚠️  gitleaks not found, skipping secret scan"
+    return 0
+  fi
+}
+
 # Detect if we're running inside the Docker container
 if [ -d "/app" ] && [ "$PWD" = "/app" ]; then
-  # We're inside the Docker container, run directly with --no-stash
-  echo "📦 Running lint-staged inside Docker container..."
+  # We're inside the Docker container
+  echo "📦 Running inside Docker container..."
+
+  # Run gitleaks first
+  run_gitleaks_staged
+  GITLEAKS_EXIT=$?
+  if [ $GITLEAKS_EXIT -ne 0 ]; then
+    echo "❌ Secrets detected! Commit blocked."
+    exit 1
+  fi
+
+  # Run lint-staged
+  echo "🔍 Running lint-staged..."
   pnpm exec lint-staged --no-stash
 elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
   # We're on the host and Docker is running
-  echo "🐳 Running lint-staged via Docker..."
+  echo "🐳 Running via Docker..."
+
+  # Run gitleaks via Docker
+  echo "🔐 Scanning staged files for secrets..."
+  docker compose exec -T scripthammer pnpm run gitleaks:staged
+  GITLEAKS_EXIT=$?
+  if [ $GITLEAKS_EXIT -ne 0 ]; then
+    echo "❌ Secrets detected! Commit blocked."
+    exit 1
+  fi
+
+  # Run lint-staged via Docker
+  echo "🔍 Running lint-staged..."
   docker compose exec -T scripthammer pnpm exec lint-staged --no-stash
 else
   # We're on the host without Docker or Docker isn't running
-  echo "💻 Running lint-staged locally..."
+  echo "💻 Running locally..."
+
+  # Run gitleaks locally
+  run_gitleaks_staged
+  GITLEAKS_EXIT=$?
+  if [ $GITLEAKS_EXIT -ne 0 ]; then
+    echo "❌ Secrets detected! Commit blocked."
+    exit 1
+  fi
+
+  # Run lint-staged
   pnpm lint:staged
 fi

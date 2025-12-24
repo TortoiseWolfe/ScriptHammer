@@ -145,6 +145,54 @@ These customize the site appearance but aren't required for builds:
 | `SUPABASE_DB_PASSWORD`  | Database password                        |
 | `SUPABASE_PROJECT_REF`  | Project reference ID                     |
 
+## 🔑 GitHub Personal Access Token (For Claude Code & SpecKit)
+
+Claude Code and SpecKit use a GitHub token for **API access only** (reading issues, creating issues).
+Git pushes use **SSH authentication** - keeping you in control of what gets committed.
+
+### Creating Your Token (Read-Only API Access)
+
+1. Go to **[GitHub Token Settings](https://github.com/settings/personal-access-tokens/new)** (fine-grained tokens)
+
+2. Configure the token:
+   - **Token name**: `ScriptHammer` or `Claude Code`
+   - **Expiration**: 90 days recommended
+   - **Repository access**: Select "Only select repositories" → choose your repository
+
+3. Grant these **read-only** permissions:
+
+   | Permission    | Access        | Used For                         |
+   | ------------- | ------------- | -------------------------------- |
+   | Contents      | **Read-only** | Reading files, checking status   |
+   | Issues        | Read & Write  | `/speckit.taskstoissues` command |
+   | Pull requests | **Read-only** | Viewing PR status                |
+   | Actions       | **Read-only** | Checking CI status               |
+
+4. Click **Generate token** and copy it immediately (shown only once)
+
+### Setup
+
+**GitHub CLI**:
+
+```bash
+gh auth login
+# Choose: GitHub.com → SSH → Paste token for API access
+```
+
+**Git pushes use SSH** (your existing SSH key):
+
+```bash
+# Verify SSH is configured
+ssh -T git@github.com
+# Should show: Hi USERNAME! You've successfully authenticated...
+```
+
+### Why SSH + Limited Token?
+
+- **You control commits** - AI can't push without your SSH key
+- **API access only** - Token reads issues, creates issues, checks CI
+- **No accidental pushes** - All pushes require explicit user action
+
 ## 🍴 Forking This Template
 
 The quickest way to create your own project from ScriptHammer:
