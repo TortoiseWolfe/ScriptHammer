@@ -35,6 +35,28 @@ These are **instruction files** that tell Claude how to generate artifacts for t
 **File**: `specify.md`
 **Purpose**: Initialize a spec-kit project (rarely used, project already initialized)
 
+---
+
+## Test Result Analysis
+
+### `/fetch-test-results`
+
+**File**: `fetch-test-results.md`
+**Purpose**: Automated workflow - finds latest failed run, downloads artifacts, analyzes failures
+**Requires**: GitHub CLI (`gh`) authenticated in Docker container
+
+```bash
+# One-time setup (after rebuilding container)
+docker compose exec scripthammer gh auth login
+
+# Then just run:
+/fetch-test-results
+```
+
+Automatically: clears old results → finds latest CI run → downloads playwright artifacts → reads screenshots → outputs categorized fix plan.
+
+---
+
 ## How They Work
 
 1. These files contain instructions for Claude to follow

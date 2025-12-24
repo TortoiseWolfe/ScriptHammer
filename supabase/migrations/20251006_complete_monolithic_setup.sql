@@ -1110,28 +1110,52 @@ ALTER TABLE group_keys ENABLE ROW LEVEL SECURITY;
 
 -- T013: RLS policies for conversation_members
 
+-- FIX: Create SECURITY DEFINER function to check membership without triggering RLS
+-- This prevents infinite recursion when RLS policies query conversation_members
+CREATE OR REPLACE FUNCTION is_conversation_member(conv_id UUID, check_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_members
+    WHERE conversation_id = conv_id
+      AND user_id = check_user_id
+      AND left_at IS NULL
+  );
+$$;
+
+-- FIX: Check if user is owner of conversation (for permission checks)
+CREATE OR REPLACE FUNCTION is_conversation_owner(conv_id UUID, check_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversation_members
+    WHERE conversation_id = conv_id
+      AND user_id = check_user_id
+      AND role = 'owner'
+      AND left_at IS NULL
+  );
+$$;
+
 -- SELECT: Members can see other members of their conversations
 DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_members;
 CREATE POLICY "Members can view conversation members" ON conversation_members
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = conversation_members.conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.left_at IS NULL
-    )
+    is_conversation_member(conversation_id)
   );
 
 -- INSERT: Any member can add (connection validation in service layer)
 DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
 CREATE POLICY "Members can add to their conversations" ON conversation_members
   FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.left_at IS NULL
-    )
+    is_conversation_member(conversation_id)
     OR user_id = auth.uid()  -- Self-join on creation
   );
 
@@ -1140,13 +1164,7 @@ DROP POLICY IF EXISTS "Members can update membership" ON conversation_members;
 CREATE POLICY "Members can update membership" ON conversation_members
   FOR UPDATE USING (
     user_id = auth.uid()
-    OR EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = conversation_members.conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.role = 'owner'
-        AND cm.left_at IS NULL
-    )
+    OR is_conversation_owner(conversation_id)
   );
 
 -- DELETE: No direct deletes - use soft delete via left_at
@@ -1161,24 +1179,14 @@ DROP POLICY IF EXISTS "Users can view their own keys" ON group_keys;
 CREATE POLICY "Users can view their own keys" ON group_keys
   FOR SELECT USING (
     user_id = auth.uid()
-    AND EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = group_keys.conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.left_at IS NULL
-    )
+    AND is_conversation_member(conversation_id)
   );
 
 -- INSERT: Active members can distribute keys
 DROP POLICY IF EXISTS "Members can distribute keys" ON group_keys;
 CREATE POLICY "Members can distribute keys" ON group_keys
   FOR INSERT WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.left_at IS NULL
-    )
+    is_conversation_member(conversation_id)
   );
 
 -- UPDATE: No updates allowed - keys are immutable
@@ -1205,13 +1213,8 @@ CREATE POLICY "Users can view messages in own conversations" ON messages
         AND (c.participant_1_id = auth.uid() OR c.participant_2_id = auth.uid())
     )
     OR
-    -- Group conversations: check membership via junction table
-    EXISTS (
-      SELECT 1 FROM conversation_members cm
-      WHERE cm.conversation_id = messages.conversation_id
-        AND cm.user_id = auth.uid()
-        AND cm.left_at IS NULL
-    )
+    -- Group conversations: check membership via SECURITY DEFINER function
+    is_conversation_member(conversation_id)
   );
 
 -- Drop and recreate INSERT policy to support both 1-to-1 and groups
@@ -1228,13 +1231,8 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
           AND (c.participant_1_id = auth.uid() OR c.participant_2_id = auth.uid())
       )
       OR
-      -- Group: check active membership
-      EXISTS (
-        SELECT 1 FROM conversation_members cm
-        WHERE cm.conversation_id = conversation_id
-          AND cm.user_id = auth.uid()
-          AND cm.left_at IS NULL
-      )
+      -- Group: check active membership via SECURITY DEFINER function
+      is_conversation_member(conversation_id)
     )
   );
 
