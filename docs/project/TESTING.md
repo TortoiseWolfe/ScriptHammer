@@ -459,6 +459,129 @@ test.describe('Feature Name', () => {
 });
 ```
 
+### Supabase Rate Limiting in E2E Tests
+
+Supabase enforces rate limits that can cause E2E test failures. Understanding these limits is critical for reliable testing.
+
+#### How Supabase Rate Limiting Works
+
+| Type            | Scope       | Default            | Configurable             |
+| --------------- | ----------- | ------------------ | ------------------------ |
+| API Rate Limits | Per IP      | 30-360/hour        | Yes (via Management API) |
+| Account Lockout | Per Email   | 5 failed attempts  | No (built-in security)   |
+| Email Sending   | Per Project | 4/hour (free tier) | Yes (custom SMTP)        |
+
+**Key Insight**: Login rate limiting is **IP-based**, not email-based. All tests running from the same CI runner share the same IP and rate limit bucket.
+
+#### Symptoms of Rate Limiting
+
+```
+"Too many failed attempts. Your account has been temporarily locked. Please try again in 15 minutes."
+```
+
+This error indicates the account lockout feature triggered after 5+ failed login attempts.
+
+#### Solutions for Rate Limiting Tests
+
+**1. Run rate limiting tests in SERIAL mode:**
+
+```typescript
+// tests/e2e/auth/rate-limiting.spec.ts
+test.describe.configure({ mode: 'serial' });
+
+test.describe('Rate Limiting', () => {
+  let sharedEmail: string;
+
+  test.beforeAll(() => {
+    // Generate ONE email for all tests
+    sharedEmail = generateTestEmail('ratelimit');
+  });
+
+  test('1. triggers rate limit', async ({ page }) => {
+    // Only THIS test triggers rate limiting
+    for (let i = 0; i < 6; i++) {
+      /* failed attempts */
+    }
+  });
+
+  test('2. verifies lockout message', async ({ page }) => {
+    // Verifies the ALREADY triggered rate limit
+    // Only 1 attempt, not 6
+  });
+});
+```
+
+**2. Increase Supabase rate limits via Management API:**
+
+```bash
+# Check current limits
+docker compose exec scripthammer node -e "
+const token = process.env.SUPABASE_ACCESS_TOKEN;
+const ref = 'your-project-ref';
+fetch(\`https://api.supabase.com/v1/projects/\${ref}/config/auth\`)
+  .then(r => r.json())
+  .then(d => console.log({
+    rate_limit_verify: d.rate_limit_verify,
+    rate_limit_token_refresh: d.rate_limit_token_refresh
+  }));
+"
+
+# Increase limits for testing
+docker compose exec scripthammer node -e "
+fetch(\`https://api.supabase.com/v1/projects/\${ref}/config/auth\`, {
+  method: 'PATCH',
+  headers: { 'Authorization': \`Bearer \${token}\`, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ rate_limit_verify: 360 })
+}).then(r => r.json()).then(console.log);
+"
+```
+
+**3. Required environment variables:**
+
+```bash
+# .env - for Management API access
+SUPABASE_ACCESS_TOKEN=sbp_xxx...
+SUPABASE_PROJECT_REF=your-project-ref
+```
+
+#### Anti-Patterns to Avoid
+
+```typescript
+// ❌ BAD: Each test independently triggers rate limiting
+test.describe('Rate Limiting', () => {
+  test('test 1', async () => {
+    for (i = 0; i < 6; i++) {
+      /* attempt */
+    }
+  });
+  test('test 2', async () => {
+    for (i = 0; i < 6; i++) {
+      /* attempt */
+    }
+  });
+  test('test 3', async () => {
+    for (i = 0; i < 6; i++) {
+      /* attempt */
+    }
+  });
+  // Result: 18+ attempts = IP blocked, tests 2 and 3 fail
+});
+
+// ❌ BAD: Assuming unique emails bypass rate limits
+const email1 = generateEmail('test1');
+const email2 = generateEmail('test2');
+// This doesn't help - rate limiting is IP-based, not email-based
+```
+
+#### For Forked Projects
+
+If you're experiencing rate limiting issues in a fork:
+
+1. **Increase rate limits** via Management API (see above)
+2. **Run rate limiting tests in serial** with shared state
+3. **Reduce login attempts** - only trigger rate limiting once per test suite
+4. **Consider skipping** rate limiting tests in CI if they test Supabase behavior, not your code
+
 ### Debugging E2E Tests
 
 ```bash
