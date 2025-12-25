@@ -13,6 +13,7 @@ import {
   getInteractiveElementSelector,
 } from '@/config/touch-targets';
 import { CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Touch Target Standards', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minWidth;
@@ -24,6 +25,7 @@ test.describe('Touch Target Standards', () => {
     // Test on most common mobile viewport
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Get all interactive elements
     const selector = getInteractiveElementSelector();
@@ -69,6 +71,7 @@ test.describe('Touch Target Standards', () => {
   test('Navigation buttons meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Specifically test navigation buttons
     const navButtons = await page.locator('nav button').all();
@@ -96,6 +99,7 @@ test.describe('Touch Target Standards', () => {
     for (const width of CRITICAL_MOBILE_WIDTHS) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
+      await dismissCookieBanner(page);
 
       // Check a sample of common interactive elements
       const buttons = await page.locator('button').all();
@@ -119,6 +123,7 @@ test.describe('Touch Target Standards', () => {
   test('Links in content meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
+    await dismissCookieBanner(page);
 
     // Test links in blog card elements
     const links = await page.locator('a[href*="/blog/"]').all();

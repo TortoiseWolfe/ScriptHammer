@@ -8,6 +8,7 @@
  */
 
 import { test, expect, devices } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Orientation Detection', () => {
   test('iPhone 12 portrait uses mobile styles', async ({ browser }) => {
@@ -15,6 +16,7 @@ test.describe('Mobile Orientation Detection', () => {
     const page = await context.newPage();
 
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Check viewport dimensions
     const viewportSize = page.viewportSize();
@@ -53,6 +55,7 @@ test.describe('Mobile Orientation Detection', () => {
     const page = await context.newPage();
 
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Even though width is 844px (which might trigger tablet breakpoint),
     // orientation detection should keep us in mobile mode

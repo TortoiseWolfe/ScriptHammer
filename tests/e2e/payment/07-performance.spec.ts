@@ -4,6 +4,16 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
+
+// Test user credentials
+const TEST_USER = {
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+};
 
 test.describe('Payment System Performance', () => {
   test('should handle concurrent payment requests', async ({ browser }) => {
@@ -21,7 +31,18 @@ test.describe('Payment System Performance', () => {
       const page = await context.newPage();
 
       try {
+        // Sign in first
+        await page.goto('/sign-in');
+        await dismissCookieBanner(page);
+        await page.getByLabel('Email').fill(TEST_USER.email);
+        await page
+          .getByLabel('Password', { exact: true })
+          .fill(TEST_USER.password);
+        await page.getByRole('button', { name: 'Sign In' }).click();
+        await waitForAuthenticatedState(page);
+
         await page.goto('/payment-demo');
+        await dismissCookieBanner(page);
 
         // Grant consent
         const consentModal = page.getByRole('dialog', {
@@ -74,9 +95,18 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should load dashboard quickly with many payments', async ({ page }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     // Navigate to dashboard
     const startTime = Date.now();
     await page.goto('/payment/dashboard');
+    await dismissCookieBanner(page);
 
     // Wait for payments to load
     await page.waitForSelector('[data-testid="payment-list"]');
@@ -97,7 +127,16 @@ test.describe('Payment System Performance', () => {
   test('should handle rapid payment status updates efficiently', async ({
     page,
   }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment/dashboard');
+    await dismissCookieBanner(page);
 
     // Measure memory usage before
     const memoryBefore = await page.evaluate(() => {
@@ -148,7 +187,16 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should paginate large payment lists efficiently', async ({ page }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment/history');
+    await dismissCookieBanner(page);
 
     // Should show pagination controls
     await expect(
@@ -174,6 +222,17 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should handle offline queue efficiently', async ({ page, context }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
+    await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
+
     // Go offline
     await context.setOffline(true);
 
@@ -208,7 +267,16 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should maintain 60fps during animations', async ({ page }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Enable performance monitoring
     await page.evaluate(() => {
@@ -250,7 +318,16 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should bundle payment scripts efficiently', async ({ page }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Grant consent to load payment scripts
     const consentModal = page.getByRole('dialog', {

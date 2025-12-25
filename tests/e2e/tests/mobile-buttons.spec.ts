@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Button Standards', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minWidth;
@@ -13,6 +14,7 @@ test.describe('Mobile Button Standards', () => {
   test('All buttons meet 44x44px minimum on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const buttons = await page.locator('button, [role="button"]').all();
     const failures: string[] = [];
@@ -53,6 +55,7 @@ test.describe('Mobile Button Standards', () => {
   test('Buttons have 8px minimum spacing', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const buttonGroups = await page.locator('[class*="gap"]').all();
 

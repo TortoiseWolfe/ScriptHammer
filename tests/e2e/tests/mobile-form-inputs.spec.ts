@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Form Inputs', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minHeight;
@@ -13,6 +14,7 @@ test.describe('Mobile Form Inputs', () => {
   test('Form inputs meet 44px height minimum', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const inputs = await page
       .locator('input[type="text"], input[type="email"], textarea, select')
@@ -35,6 +37,7 @@ test.describe('Mobile Form Inputs', () => {
   test('Form fields have adequate spacing', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const formGroups = await page
       .locator('[class*="form-control"], [class*="input-group"]')

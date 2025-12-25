@@ -1,4 +1,5 @@
 import { test, devices } from '@playwright/test';
+import { dismissCookieBanner } from './utils/test-user-factory';
 
 test('mobile status check', async ({ browser }) => {
   const context = await browser.newContext({
@@ -6,6 +7,7 @@ test('mobile status check', async ({ browser }) => {
   });
   const page = await context.newPage();
   await page.goto('http://localhost:3000/status');
+  await dismissCookieBanner(page);
   await page.waitForLoadState('networkidle');
   await page.screenshot({
     path: 'mobile-check.png',

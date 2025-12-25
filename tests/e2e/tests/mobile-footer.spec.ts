@@ -5,6 +5,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Footer', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minHeight;
@@ -13,6 +14,7 @@ test.describe('Mobile Footer', () => {
   test('Footer links stack vertically on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(300);
@@ -34,6 +36,7 @@ test.describe('Mobile Footer', () => {
   test('Footer links meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(300);
@@ -60,6 +63,7 @@ test.describe('Mobile Footer', () => {
     for (const width of widths) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
+      await dismissCookieBanner(page);
 
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
       await page.waitForTimeout(200);

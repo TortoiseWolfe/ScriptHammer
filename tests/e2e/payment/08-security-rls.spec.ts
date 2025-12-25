@@ -5,6 +5,16 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
+
+// Test user credentials
+const TEST_USER = {
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+};
 
 // Note: These tests require Supabase credentials
 // In CI/CD, use test database with known test users
@@ -168,7 +178,16 @@ test.describe('Row Level Security Policies', () => {
   test('should rate limit payment creation attempts', async ({ page }) => {
     // This tests application-level rate limiting
 
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Grant consent
     const consentModal = page.getByRole('dialog', {
@@ -236,7 +255,16 @@ test.describe('Row Level Security Policies', () => {
   test('should prevent users from bypassing webhook verification', async ({
     page,
   }) => {
+    // Sign in first
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
     // Grant consent
     const consentModal = page.getByRole('dialog', {

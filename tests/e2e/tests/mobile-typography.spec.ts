@@ -8,6 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Typography', () => {
   test('Body text is readable without zoom (≥14px minimum)', async ({
@@ -15,6 +16,7 @@ test.describe('Mobile Typography', () => {
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-react-tutorial');
+    await dismissCookieBanner(page);
 
     // Test article body paragraphs
     const bodyText = page.locator('article p, .prose p, main p').first();
@@ -36,6 +38,7 @@ test.describe('Mobile Typography', () => {
   test('Line height is comfortable (≥1.5)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-react-tutorial');
+    await dismissCookieBanner(page);
 
     const bodyText = page.locator('article p, .prose p, main p').first();
 
@@ -58,6 +61,7 @@ test.describe('Mobile Typography', () => {
   test('Headings scale appropriately on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-react-tutorial');
+    await dismissCookieBanner(page);
 
     // Test heading hierarchy
     const h1 = page.locator('h1').first();

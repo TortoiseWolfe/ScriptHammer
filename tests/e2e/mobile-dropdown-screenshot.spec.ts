@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from './utils/test-user-factory';
 
 test.describe('Mobile Dropdown Menu Screenshots', () => {
   test('should capture dropdown menu on mobile', async ({ page }) => {
     // Navigate to the home page
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Wait for page to load
     await page.waitForLoadState('networkidle');

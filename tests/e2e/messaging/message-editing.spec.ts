@@ -45,11 +45,33 @@ async function navigateToConversation(page: Page) {
   await page.goto('/messages?tab=connections');
   await handleReAuthModal(page);
 
+  // Click on the "Accepted" tab to see accepted connections
+  const acceptedTab = page.getByRole('tab', { name: /Accepted/i });
+  await acceptedTab.click();
+
+  // Wait for the accepted connections list to load
+  await page.waitForTimeout(500);
+
   // Find first accepted connection and click to open conversation
   const firstConnection = page
     .locator('[data-testid="connection-item"]')
     .first();
-  await firstConnection.click();
+
+  // If no connection items found, try clicking on conversation in Chats tab instead
+  if ((await firstConnection.count()) === 0) {
+    // Switch to Chats tab
+    const chatsTab = page.getByRole('tab', { name: /Chats/i });
+    await chatsTab.click();
+    await page.waitForTimeout(500);
+
+    // Find first conversation
+    const firstConversation = page
+      .locator('[data-testid="conversation-item"]')
+      .first();
+    await firstConversation.click();
+  } else {
+    await firstConnection.click();
+  }
 
   // Wait for conversation to load
   await page.waitForSelector('[data-testid="message-bubble"]', {

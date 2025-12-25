@@ -9,6 +9,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TEST_PAGES, CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Horizontal Scroll Detection', () => {
   // Test all critical pages at all critical mobile widths
@@ -20,6 +21,7 @@ test.describe('Horizontal Scroll Detection', () => {
 
         // Navigate to page
         await page.goto(url);
+        await dismissCookieBanner(page);
 
         // Wait for page to fully render
         await page.waitForLoadState('networkidle');
@@ -59,6 +61,7 @@ test.describe('Horizontal Scroll Detection', () => {
     const width = 320;
     await page.setViewportSize({ width, height: 800 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Get all elements
     const allElements = await page.locator('*').all();

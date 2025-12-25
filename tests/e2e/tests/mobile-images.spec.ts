@@ -4,6 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Responsive Images', () => {
   const widths = [320, 390, 428];
@@ -12,6 +13,7 @@ test.describe('Mobile Responsive Images', () => {
     test(`Images fit within ${width}px viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/blog/countdown-timer-react-tutorial');
+      await dismissCookieBanner(page);
 
       const images = await page.locator('img').all();
 
@@ -33,6 +35,7 @@ test.describe('Mobile Responsive Images', () => {
   test('Images use lazy loading', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
+    await dismissCookieBanner(page);
 
     const images = await page.locator('img').all();
 

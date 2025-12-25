@@ -4,10 +4,29 @@
  */
 
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  waitForAuthenticatedState,
+} from '../utils/test-user-factory';
+
+// Test user credentials
+const TEST_USER = {
+  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+};
 
 test.describe('Payment Dashboard Real-Time Updates', () => {
   test.beforeEach(async ({ page }) => {
+    // Sign in first - /payment/dashboard is a protected route
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(TEST_USER.email);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
+    await page.getByRole('button', { name: 'Sign In' }).click();
+    await waitForAuthenticatedState(page);
+
     await page.goto('/payment/dashboard');
+    await dismissCookieBanner(page);
   });
 
   test('should show real-time payment status updates', async ({ page }) => {

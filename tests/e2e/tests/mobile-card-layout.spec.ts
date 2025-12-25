@@ -4,11 +4,13 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Card Layout', () => {
   test('Cards stack vertically on mobile (320px-767px)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const cards = await page.locator('[class*="card"]').all();
     if (cards.length >= 2) {
@@ -30,6 +32,7 @@ test.describe('Mobile Card Layout', () => {
   test('Cards use grid layout on tablet (768px+)', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const container = page.locator('[class*="grid"]').first();
 
@@ -48,6 +51,7 @@ test.describe('Mobile Card Layout', () => {
     for (const width of widths) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
+      await dismissCookieBanner(page);
 
       const cards = await page.locator('[class*="card"]').all();
 

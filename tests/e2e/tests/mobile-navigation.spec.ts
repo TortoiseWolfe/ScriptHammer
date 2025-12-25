@@ -9,6 +9,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TEST_VIEWPORTS } from '@/config/test-viewports';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Mobile Navigation', () => {
   // Test at multiple mobile viewports
@@ -26,6 +27,7 @@ test.describe('Mobile Navigation', () => {
 
       // Navigate to homepage
       await page.goto('/');
+      await dismissCookieBanner(page);
 
       // Wait for navigation to be visible
       const nav = page.locator('nav').first();
@@ -67,6 +69,7 @@ test.describe('Mobile Navigation', () => {
     // Test at absolute minimum supported width
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
@@ -97,6 +100,7 @@ test.describe('Mobile Navigation', () => {
   test('Mobile menu toggle works on narrow viewports', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Look for mobile menu button (hamburger icon)
     const menuButton = page
@@ -128,6 +132,7 @@ test.describe('Mobile Navigation', () => {
     // Start in portrait
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
