@@ -15,7 +15,7 @@ test.use({
 
 test.describe('Blog Post Mobile UX - Pixel 5', () => {
   test('should display footer at bottom', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await page.waitForTimeout(500);
 
@@ -25,7 +25,7 @@ test.describe('Blog Post Mobile UX - Pixel 5', () => {
   });
 
   test('should not have horizontal scroll', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
 
     const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
     const viewportWidth = page.viewportSize()?.width || 0;

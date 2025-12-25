@@ -93,7 +93,7 @@ test.describe('Horizontal Scroll Detection', () => {
 
   test('Images do not cause horizontal overflow', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
 
     const images = await page.locator('img').all();
 
@@ -148,7 +148,7 @@ test.describe('Horizontal Scroll Detection', () => {
 
   test('Pre/code blocks are responsive', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
 
     const codeBlocks = await page.locator('pre, code').all();
 

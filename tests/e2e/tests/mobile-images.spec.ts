@@ -12,7 +12,7 @@ test.describe('Mobile Responsive Images', () => {
   for (const width of widths) {
     test(`Images fit within ${width}px viewport`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto('/blog/countdown-timer-react-tutorial');
+      await page.goto('/blog/countdown-timer-tutorial');
       await dismissCookieBanner(page);
 
       const images = await page.locator('img').all();

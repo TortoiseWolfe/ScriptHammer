@@ -204,5 +204,5 @@ export const CRITICAL_MOBILE_WIDTHS = [320, 375, 390, 428] as const;
 export const TEST_PAGES = [
   '/',
   '/blog',
-  '/blog/countdown-timer-react-tutorial',
+  '/blog/countdown-timer-tutorial',
 ] as const;

@@ -17,7 +17,7 @@ test.use({
 test.describe('Blog Post Mobile UX - iPhone 12', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to a blog post
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     // Wait for content to load
     await page.waitForLoadState('networkidle');
   });

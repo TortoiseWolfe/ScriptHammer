@@ -54,7 +54,7 @@ test.describe('Blog Touch Target Standards - iPhone 12', () => {
   });
 
   test('Blog post interactive elements meet 44x44px', async ({ page }) => {
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     await page.waitForLoadState('networkidle');
 
     // Test buttons (SEO badge, TOC, etc.)

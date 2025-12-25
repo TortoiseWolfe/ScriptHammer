@@ -13,6 +13,8 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   waitForAuthenticatedState,
+  getAdminClient,
+  getUserByEmail,
 } from '../utils/test-user-factory';
 
 // Test user credentials (from .env or defaults)
@@ -22,9 +24,124 @@ const TEST_USER_1 = {
 };
 
 const TEST_USER_2 = {
-  email: process.env.TEST_USER_SECONDARY_EMAIL || 'test2@example.com',
-  password: process.env.TEST_USER_SECONDARY_PASSWORD || 'TestPassword123!',
+  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
+  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
 };
+
+// Track setup status
+let setupSucceeded = false;
+let setupError = '';
+
+// Setup connection and conversation before all tests
+test.beforeAll(async () => {
+  // Validate required environment variables
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  if (
+    TEST_USER_1.email === 'test@example.com' ||
+    TEST_USER_2.email === 'test-user-b@example.com'
+  ) {
+    setupError =
+      'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    setupError = 'Admin client unavailable';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  // Get user IDs
+  const userA = await getUserByEmail(TEST_USER_1.email);
+  const userB = await getUserByEmail(TEST_USER_2.email);
+
+  if (!userA || !userB) {
+    setupError = `Test users not found: ${!userA ? TEST_USER_1.email : ''} ${!userB ? TEST_USER_2.email : ''}`;
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  // Check if already connected
+  const { data: existing } = await adminClient
+    .from('user_connections')
+    .select('id, status')
+    .or(
+      `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+    )
+    .maybeSingle();
+
+  // Create or update connection to 'accepted' status
+  if (existing?.status !== 'accepted') {
+    if (!existing) {
+      const { error } = await adminClient.from('user_connections').insert({
+        requester_id: userA.id,
+        addressee_id: userB.id,
+        status: 'accepted',
+      });
+      if (error) {
+        setupError = `Failed to create connection: ${error.message}`;
+        console.error(`❌ ${setupError}`);
+        return;
+      }
+      console.log('✓ Connection created between test users');
+    } else {
+      const { error } = await adminClient
+        .from('user_connections')
+        .update({ status: 'accepted' })
+        .eq('id', existing.id);
+      if (error) {
+        setupError = `Failed to update connection: ${error.message}`;
+        console.error(`❌ ${setupError}`);
+        return;
+      }
+      console.log('✓ Connection updated to accepted');
+    }
+  } else {
+    console.log('✓ Users already connected');
+  }
+
+  // Create conversation if it doesn't exist
+  const [participant_1, participant_2] =
+    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+
+  const { data: existingConv } = await adminClient
+    .from('conversations')
+    .select('id')
+    .eq('participant_1_id', participant_1)
+    .eq('participant_2_id', participant_2)
+    .maybeSingle();
+
+  if (existingConv) {
+    console.log('✓ Conversation already exists:', existingConv.id);
+    setupSucceeded = true;
+    return;
+  }
+
+  const { data: newConv, error: convError } = await adminClient
+    .from('conversations')
+    .insert({
+      participant_1_id: participant_1,
+      participant_2_id: participant_2,
+    })
+    .select('id')
+    .single();
+
+  if (convError) {
+    setupError = `Failed to create conversation: ${convError.message}`;
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  console.log('✓ Conversation created:', newConv.id);
+  setupSucceeded = true;
+});
 
 /**
  * Sign in helper function

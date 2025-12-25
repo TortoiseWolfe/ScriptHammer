@@ -15,7 +15,7 @@ test.describe('Mobile Typography', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
 
     // Test article body paragraphs
@@ -37,7 +37,7 @@ test.describe('Mobile Typography', () => {
 
   test('Line height is comfortable (≥1.5)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
 
     const bodyText = page.locator('article p, .prose p, main p').first();
@@ -60,7 +60,7 @@ test.describe('Mobile Typography', () => {
 
   test('Headings scale appropriately on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
 
     // Test heading hierarchy
@@ -185,7 +185,7 @@ test.describe('Mobile Typography', () => {
 
   test('Text does not overflow containers on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog/countdown-timer-react-tutorial');
+    await page.goto('/blog/countdown-timer-tutorial');
 
     // Check that text containers don't overflow
     const textContainers = await page

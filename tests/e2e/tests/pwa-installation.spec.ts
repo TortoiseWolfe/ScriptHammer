@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('PWA Installation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
   });
 
   test('service worker registers successfully', async ({ page }) => {
@@ -86,8 +88,7 @@ test.describe('PWA Installation', () => {
     page,
     context,
   }) => {
-    // First visit to register service worker
-    await page.goto('/');
+    // First visit to register service worker (already done in beforeEach)
 
     // Wait for service worker to be active
     await page.evaluate(async () => {
