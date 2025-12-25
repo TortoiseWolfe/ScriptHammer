@@ -42,11 +42,14 @@ test.describe('PayPal Subscription Creation Flow', () => {
   test('should create PayPal subscription successfully', async ({ page }) => {
     // Step 1: Grant payment consent (inline section, not a dialog)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Step 2: Select PayPal as payment provider
@@ -185,11 +188,14 @@ test.describe('PayPal Subscription Creation Flow', () => {
 
     // Grant consent (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Select PayPal subscription

@@ -45,11 +45,14 @@ test.describe('Stripe One-Time Payment Flow', () => {
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
     const acceptButton = page.getByRole('button', { name: /Accept/i });
 
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await acceptButton.click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Step 2: Select Stripe as payment provider
@@ -97,11 +100,14 @@ test.describe('Stripe One-Time Payment Flow', () => {
   test('should handle payment cancellation gracefully', async ({ page }) => {
     // Grant consent (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Select Stripe and initiate payment
@@ -127,11 +133,14 @@ test.describe('Stripe One-Time Payment Flow', () => {
   test('should display error for declined card', async ({ page }) => {
     // Grant consent (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Select Stripe and initiate payment
@@ -175,11 +184,14 @@ test.describe('Stripe One-Time Payment Flow', () => {
   }) => {
     // Grant consent first (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Go offline

@@ -13,9 +13,11 @@ import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 
 function PaymentDemoContent() {
   const { user } = useAuth();
+  const { hasConsent, grantConsent } = usePaymentConsent();
   const [showConsent, setShowConsent] = useState(true);
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
@@ -23,7 +25,11 @@ function PaymentDemoContent() {
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    // Sync showConsent with persisted consent state
+    if (hasConsent) {
+      setShowConsent(false);
+    }
+  }, [hasConsent]);
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setPaymentResultId(paymentIntentId);
@@ -93,7 +99,10 @@ function PaymentDemoContent() {
                 <button
                   type="button"
                   className="btn btn-primary min-h-11 flex-1"
-                  onClick={() => setShowConsent(false)}
+                  onClick={() => {
+                    grantConsent(); // Persist consent to localStorage
+                    setShowConsent(false);
+                  }}
                 >
                   Accept & Continue
                 </button>

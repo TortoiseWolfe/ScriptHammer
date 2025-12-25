@@ -40,11 +40,14 @@ test.describe('Failed Payment Retry Logic', () => {
 
     // Grant consent (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
   });
 
@@ -230,11 +233,14 @@ test.describe('Failed Payment Retry Logic', () => {
 
       // Grant consent if needed (inline section)
       const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-      if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      try {
+        await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
         await page.getByRole('button', { name: /Accept/i }).click();
         await page
           .getByRole('heading', { name: /Step 2/i })
           .waitFor({ timeout: 5000 });
+      } catch {
+        // Consent may already be granted
       }
 
       await page.getByRole('tab', { name: /stripe/i }).click();

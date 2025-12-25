@@ -48,11 +48,14 @@ test.describe('Payment System Performance', () => {
         const gdprHeading = page.getByRole('heading', {
           name: /GDPR Consent/i,
         });
-        if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+        try {
+          await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
           await page.getByRole('button', { name: /Accept/i }).click();
           await page
             .getByRole('heading', { name: /Step 2/i })
             .waitFor({ timeout: 5000 });
+        } catch {
+          // Consent may already be granted
         }
 
         // Select payment method
@@ -302,11 +305,14 @@ test.describe('Payment System Performance', () => {
 
     // Grant consent (triggers animation)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Wait for animation to complete
@@ -335,11 +341,14 @@ test.describe('Payment System Performance', () => {
 
     // Grant consent to load payment scripts (inline section)
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await page.getByRole('button', { name: /Accept/i }).click();
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted
     }
 
     // Select Stripe to trigger script load

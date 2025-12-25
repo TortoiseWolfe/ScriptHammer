@@ -43,13 +43,16 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
     const acceptButton = page.getByRole('button', { name: /Accept/i });
 
-    // Wait for GDPR section to appear
-    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+    // Wait for GDPR section to appear (use waitFor, not isVisible)
+    try {
+      await gdprHeading.waitFor({ state: 'visible', timeout: 5000 });
       await acceptButton.click();
       // Wait for Step 2 to appear (consent accepted)
       await page
         .getByRole('heading', { name: /Step 2/i })
         .waitFor({ timeout: 5000 });
+    } catch {
+      // Consent may already be granted from localStorage
     }
   });
 
