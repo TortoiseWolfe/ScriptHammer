@@ -16,10 +16,20 @@ const TEST_USER = {
 };
 
 test.describe('PayPal Subscription Creation Flow', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
+    // Clear cookies and storage to reset consent state
+    await context.clearCookies();
+
     // Sign in first - /payment-demo is a protected route
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
+
+    // Clear localStorage to reset consent state
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('gdpr_consent');
+    });
+
     await page.getByLabel('Email').fill(TEST_USER.email);
     await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -30,13 +40,13 @@ test.describe('PayPal Subscription Creation Flow', () => {
   });
 
   test('should create PayPal subscription successfully', async ({ page }) => {
-    // Step 1: Grant payment consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
-      await expect(consentModal).not.toBeVisible();
+    // Step 1: Grant payment consent (inline section, not a dialog)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Step 2: Select PayPal as payment provider
@@ -171,13 +181,15 @@ test.describe('PayPal Subscription Creation Flow', () => {
   test('should prevent duplicate subscriptions', async ({ page }) => {
     // Try to create second subscription for same product
     await page.goto('/payment-demo');
+    await dismissCookieBanner(page);
 
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Select PayPal subscription

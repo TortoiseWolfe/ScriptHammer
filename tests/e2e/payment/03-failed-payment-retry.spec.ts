@@ -16,10 +16,20 @@ const TEST_USER = {
 };
 
 test.describe('Failed Payment Retry Logic', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
+    // Clear cookies and storage to reset consent state
+    await context.clearCookies();
+
     // Sign in first - /payment-demo is a protected route
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
+
+    // Clear localStorage to reset consent state
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('gdpr_consent');
+    });
+
     await page.getByLabel('Email').fill(TEST_USER.email);
     await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -28,12 +38,13 @@ test.describe('Failed Payment Retry Logic', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
   });
 
@@ -215,13 +226,15 @@ test.describe('Failed Payment Retry Logic', () => {
 
     for (const scenario of errorScenarios) {
       await page.goto('/payment-demo');
+      await dismissCookieBanner(page);
 
-      // Grant consent if needed
-      const consentModal = page.getByRole('dialog', {
-        name: /payment consent/i,
-      });
-      if (await consentModal.isVisible()) {
-        await page.getByRole('button', { name: /accept.*continue/i }).click();
+      // Grant consent if needed (inline section)
+      const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+      if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await page.getByRole('button', { name: /Accept/i }).click();
+        await page
+          .getByRole('heading', { name: /Step 2/i })
+          .waitFor({ timeout: 5000 });
       }
 
       await page.getByRole('tab', { name: /stripe/i }).click();

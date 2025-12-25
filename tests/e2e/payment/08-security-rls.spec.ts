@@ -189,12 +189,13 @@ test.describe('Row Level Security Policies', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Try to create many payments rapidly
@@ -266,12 +267,13 @@ test.describe('Row Level Security Policies', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Initiate payment

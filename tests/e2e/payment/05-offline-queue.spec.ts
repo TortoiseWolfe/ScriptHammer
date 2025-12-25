@@ -16,10 +16,20 @@ const TEST_USER = {
 };
 
 test.describe('Offline Payment Queue', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
+    // Clear cookies and storage to reset consent state
+    await context.clearCookies();
+
     // Sign in first - /payment-demo is a protected route
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
+
+    // Clear localStorage to reset consent state
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('gdpr_consent');
+    });
+
     await page.getByLabel('Email').fill(TEST_USER.email);
     await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -28,11 +38,17 @@ test.describe('Offline Payment Queue', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent if GDPR section is visible
+    // Wait for and accept GDPR consent (Step 1)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
     const acceptButton = page.getByRole('button', { name: /Accept/i });
-    if (await acceptButton.isVisible().catch(() => false)) {
+
+    // Wait for GDPR section to appear
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
       await acceptButton.click();
-      await page.waitForTimeout(500);
+      // Wait for Step 2 to appear (consent accepted)
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
   });
 

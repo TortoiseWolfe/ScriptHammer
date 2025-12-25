@@ -16,10 +16,20 @@ const TEST_USER = {
 };
 
 test.describe('Stripe One-Time Payment Flow', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
+    // Clear cookies and storage to reset consent state
+    await context.clearCookies();
+
     // Sign in first - /payment-demo is a protected route
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
+
+    // Clear localStorage to reset consent state
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('gdpr_consent');
+    });
+
     await page.getByLabel('Email').fill(TEST_USER.email);
     await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
@@ -31,13 +41,15 @@ test.describe('Stripe One-Time Payment Flow', () => {
   });
 
   test('should complete one-time payment successfully', async ({ page }) => {
-    // Step 1: Grant payment consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
-      await expect(consentModal).not.toBeVisible();
+    // Step 1: Grant payment consent (inline section, not a dialog)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    const acceptButton = page.getByRole('button', { name: /Accept/i });
+
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await acceptButton.click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Step 2: Select Stripe as payment provider
@@ -83,12 +95,13 @@ test.describe('Stripe One-Time Payment Flow', () => {
   });
 
   test('should handle payment cancellation gracefully', async ({ page }) => {
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Select Stripe and initiate payment
@@ -112,12 +125,13 @@ test.describe('Stripe One-Time Payment Flow', () => {
   });
 
   test('should display error for declined card', async ({ page }) => {
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Select Stripe and initiate payment
@@ -159,12 +173,13 @@ test.describe('Stripe One-Time Payment Flow', () => {
     page,
     context,
   }) => {
-    // Grant consent first
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent first (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Go offline

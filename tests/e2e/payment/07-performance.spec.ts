@@ -44,12 +44,15 @@ test.describe('Payment System Performance', () => {
         await page.goto('/payment-demo');
         await dismissCookieBanner(page);
 
-        // Grant consent
-        const consentModal = page.getByRole('dialog', {
-          name: /payment consent/i,
+        // Grant consent (inline section)
+        const gdprHeading = page.getByRole('heading', {
+          name: /GDPR Consent/i,
         });
-        if (await consentModal.isVisible()) {
-          await page.getByRole('button', { name: /accept.*continue/i }).click();
+        if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await page.getByRole('button', { name: /Accept/i }).click();
+          await page
+            .getByRole('heading', { name: /Step 2/i })
+            .waitFor({ timeout: 5000 });
         }
 
         // Select payment method
@@ -297,12 +300,13 @@ test.describe('Payment System Performance', () => {
       countFrames();
     });
 
-    // Grant consent (triggers modal animation)
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent (triggers animation)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Wait for animation to complete
@@ -329,12 +333,13 @@ test.describe('Payment System Performance', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent to load payment scripts
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent to load payment scripts (inline section)
+    const gdprHeading = page.getByRole('heading', { name: /GDPR Consent/i });
+    if (await gdprHeading.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await page.getByRole('button', { name: /Accept/i }).click();
+      await page
+        .getByRole('heading', { name: /Step 2/i })
+        .waitFor({ timeout: 5000 });
     }
 
     // Select Stripe to trigger script load
