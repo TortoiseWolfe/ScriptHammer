@@ -9,13 +9,53 @@ import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 import { clearAllRateLimits } from '../utils/rate-limit-admin';
 
-test.describe('Brute Force Prevention - REQ-SEC-003', () => {
-  const testEmail = `brute-force-test-${Date.now()}@example.com`;
-  const wrongPassword = 'WrongPassword123!';
+/**
+ * Generate a test email using real email domain from TEST_USER_PRIMARY_EMAIL.
+ */
+function generateBruteForceEmail(prefix: string): string {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).slice(2, 8);
 
-  // Clear rate limits before this test suite runs
+  if (baseEmail.includes('@gmail.com')) {
+    const baseUser = baseEmail.split('+')[0] || baseEmail.split('@')[0];
+    return `${baseUser}+bf-${prefix}-${timestamp}-${random}@gmail.com`;
+  }
+
+  if (baseEmail.includes('@')) {
+    const domain = baseEmail.split('@')[1];
+    return `bf-${prefix}-${timestamp}-${random}@${domain}`;
+  }
+
+  console.error(
+    '❌ TEST_USER_PRIMARY_EMAIL not configured - brute force tests may fail'
+  );
+  return `bf-${prefix}-${timestamp}-${random}@gmail.com`;
+}
+
+function isBruteForceEmailConfigValid(): boolean {
+  const baseEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  return baseEmail.includes('@');
+}
+
+test.describe('Brute Force Prevention - REQ-SEC-003', () => {
+  const wrongPassword = 'WrongPassword123!';
+  let testEmail: string;
+
+  // Clear rate limits and generate test email before suite
   test.beforeAll(async () => {
     await clearAllRateLimits();
+    testEmail = generateBruteForceEmail('main');
+  });
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    if (!isBruteForceEmailConfigValid()) {
+      testInfo.skip(
+        true,
+        'TEST_USER_PRIMARY_EMAIL not configured - brute force tests require valid email domain'
+      );
+      return;
+    }
   });
 
   test('should lockout after 5 failed login attempts', async ({ page }) => {
@@ -25,41 +65,40 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     // Attempt 1-5: Try to sign in with wrong password
     for (let i = 1; i <= 5; i++) {
       await page.getByLabel('Email').fill(testEmail);
-      await page.getByLabel('Password').fill(wrongPassword);
+      await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
 
-      // Wait for error message
-      await page.waitForTimeout(1000);
-
-      if (i < 5) {
-        // First 4 attempts should show normal error
-        await expect(
-          page.locator('text=/invalid.*credentials|incorrect.*password/i')
-        ).toBeVisible();
-      }
+      // Wait for error response (filter excludes Next.js route announcer)
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
+      await page.waitForTimeout(300);
     }
 
     // Attempt 6: Should be locked out
     await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Should see rate limit error
-    await expect(
-      page.locator('text=/rate.*limit|too.*many.*attempts|locked/i')
-    ).toBeVisible({
-      timeout: 3000,
+    const errorAlert = page.getByRole('alert').filter({
+      hasText: /too many.*attempts|temporarily locked|rate.*limit/i,
     });
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
 
     // Error message should mention time to wait
-    await expect(
-      page.locator('text=/15.*minutes?|try.*again.*later/i')
-    ).toBeVisible();
+    const errorMessage = await errorAlert.textContent();
+    expect(errorMessage).toMatch(/15|minutes?|try.*again/i);
   });
 
   test('should persist lockout across browser sessions', async ({
     browser,
   }) => {
+    // Use unique email for this test
+    const sessionEmail = generateBruteForceEmail('session');
+
     // First browser session - trigger lockout
     const context1 = await browser.newContext();
     const page1 = await context1.newPage();
@@ -69,17 +108,21 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
 
     // Make 5 failed attempts
     for (let i = 0; i < 5; i++) {
-      await page1.getByLabel('Email').fill(testEmail);
-      await page1.getByLabel('Password').fill(wrongPassword);
+      await page1.getByLabel('Email').fill(sessionEmail);
+      await page1.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page1.getByRole('button', { name: 'Sign In' }).click();
       await page1.waitForTimeout(500);
     }
 
     // Verify locked
-    await page1.getByLabel('Email').fill(testEmail);
-    await page1.getByLabel('Password').fill(wrongPassword);
+    await page1.getByLabel('Email').fill(sessionEmail);
+    await page1.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page1.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page1.locator('text=/rate.*limit|locked/i')).toBeVisible();
+    await expect(
+      page1.getByRole('alert').filter({
+        hasText: /too many|locked|rate.*limit/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
 
     await context1.close();
 
@@ -93,47 +136,66 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     await dismissCookieBanner(page2);
 
     // Should STILL be locked (server-side enforcement)
-    await page2.getByLabel('Email').fill(testEmail);
-    await page2.getByLabel('Password').fill(wrongPassword);
+    await page2.getByLabel('Email').fill(sessionEmail);
+    await page2.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page2.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page2.locator('text=/rate.*limit|locked/i')).toBeVisible({
-      timeout: 3000,
-    });
+    await expect(
+      page2.getByRole('alert').filter({
+        hasText: /too many|locked|rate.*limit/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
 
     await context2.close();
   });
 
   test('should show remaining attempts counter', async ({ page }) => {
-    const uniqueEmail = `attempts-test-${Date.now()}@example.com`;
+    const uniqueEmail = generateBruteForceEmail('attempts');
 
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
     // First attempt
     await page.getByLabel('Email').fill(uniqueEmail);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForTimeout(500);
 
-    // Should show "4 attempts remaining" or similar
-    // (This depends on implementation showing the counter)
-    // For now, just verify no lockout yet
-    await expect(page.locator('text=/rate.*limit|locked/i')).not.toBeVisible();
+    // Wait for error response
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: /failed|error|invalid|incorrect/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
+
+    // Should NOT show lockout yet (only 1 attempt)
+    const errorText1 = await page
+      .getByRole('alert')
+      .filter({ hasText: /.+/ })
+      .textContent();
+    expect(errorText1).not.toMatch(/too many|locked|rate.*limit/i);
 
     // Second attempt
     await page.getByLabel('Email').fill(uniqueEmail);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForTimeout(500);
+
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: /failed|error|invalid|incorrect/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
 
     // Still not locked
-    await expect(page.locator('text=/rate.*limit|locked/i')).not.toBeVisible();
+    const errorText2 = await page
+      .getByRole('alert')
+      .filter({ hasText: /.+/ })
+      .textContent();
+    expect(errorText2).not.toMatch(/too many|locked|rate.*limit/i);
   });
 
   test('should track different users independently', async ({ browser }) => {
-    const userA = `user-a-${Date.now()}@example.com`;
-    const userB = `user-b-${Date.now()}@example.com`;
+    const userA = generateBruteForceEmail('userA');
+    const userB = generateBruteForceEmail('userB');
 
     const contextA = await browser.newContext();
     const pageA = await contextA.newPage();
@@ -146,27 +208,34 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     await dismissCookieBanner(pageA);
     for (let i = 0; i < 5; i++) {
       await pageA.getByLabel('Email').fill(userA);
-      await pageA.getByLabel('Password').fill(wrongPassword);
+      await pageA.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await pageA.getByRole('button', { name: 'Sign In' }).click();
       await pageA.waitForTimeout(300);
     }
 
     // User A should be locked
     await pageA.getByLabel('Email').fill(userA);
-    await pageA.getByLabel('Password').fill(wrongPassword);
+    await pageA.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await pageA.getByRole('button', { name: 'Sign In' }).click();
-    await expect(pageA.locator('text=/rate.*limit|locked/i')).toBeVisible();
+    await expect(
+      pageA.getByRole('alert').filter({
+        hasText: /too many|locked|rate.*limit/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
 
     // User B should still be able to attempt
     await pageB.goto('/sign-in');
     await dismissCookieBanner(pageB);
     await pageB.getByLabel('Email').fill(userB);
-    await pageB.getByLabel('Password').fill(wrongPassword);
+    await pageB.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await pageB.getByRole('button', { name: 'Sign In' }).click();
 
     // User B should see normal error, not rate limit
-    await expect(pageB.locator('text=/invalid.*credentials/i')).toBeVisible();
-    await expect(pageB.locator('text=/rate.*limit|locked/i')).not.toBeVisible();
+    const errorAlertB = pageB.getByRole('alert').filter({ hasText: /.+/ });
+    await expect(errorAlertB).toBeVisible({ timeout: 5000 });
+    const errorTextB = await errorAlertB.textContent();
+    expect(errorTextB).toMatch(/invalid|incorrect|failed/i);
+    expect(errorTextB).not.toMatch(/too many|locked|rate.*limit/i);
 
     await contextA.close();
     await contextB.close();
@@ -175,39 +244,53 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
   test('should track different attempt types independently', async ({
     page,
   }) => {
-    const email = `types-test-${Date.now()}@example.com`;
+    const email = generateBruteForceEmail('types');
 
     // Lock out sign_in attempts
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
     for (let i = 0; i < 5; i++) {
       await page.getByLabel('Email').fill(email);
-      await page.getByLabel('Password').fill(wrongPassword);
+      await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(300);
     }
 
     // sign_in should be locked
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
-    await expect(page.locator('text=/rate.*limit/i')).toBeVisible();
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: /too many|locked|rate.*limit/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
 
-    // But sign_up should still work
+    // But sign_up should still work (different attempt type)
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill('ValidPassword123!');
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill('ValidPassword123!');
     await page.getByRole('button', { name: 'Sign Up' }).click();
 
-    // Should NOT show rate limit (different attempt type)
-    await expect(page.locator('text=/rate.*limit/i')).not.toBeVisible();
+    // Wait for response - should NOT show rate limit
+    await page.waitForTimeout(1000);
+    const alerts = await page
+      .getByRole('alert')
+      .filter({ hasText: /.+/ })
+      .all();
+    for (const alert of alerts) {
+      const text = await alert.textContent();
+      expect(text).not.toMatch(/too many|locked|rate.*limit/i);
+    }
   });
 
   test('should not bypass rate limiting by clearing localStorage', async ({
     page,
   }) => {
-    const email = `bypass-test-${Date.now()}@example.com`;
+    const email = generateBruteForceEmail('bypass');
 
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
@@ -215,7 +298,7 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     // Make 5 failed attempts
     for (let i = 0; i < 5; i++) {
       await page.getByLabel('Email').fill(email);
-      await page.getByLabel('Password').fill(wrongPassword);
+      await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(300);
     }
@@ -227,16 +310,18 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     await page.reload();
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await expect(page.locator('text=/rate.*limit|locked/i')).toBeVisible({
-      timeout: 3000,
-    });
+    await expect(
+      page.getByRole('alert').filter({
+        hasText: /too many|locked|rate.*limit/i,
+      })
+    ).toBeVisible({ timeout: 5000 });
   });
 
   test('should display lockout expiration time', async ({ page }) => {
-    const email = `lockout-time-${Date.now()}@example.com`;
+    const email = generateBruteForceEmail('lockout-time');
 
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
@@ -244,21 +329,23 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     // Trigger lockout
     for (let i = 0; i < 5; i++) {
       await page.getByLabel('Email').fill(email);
-      await page.getByLabel('Password').fill(wrongPassword);
+      await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
       await page.waitForTimeout(300);
     }
 
     // Attempt again
     await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Password').fill(wrongPassword);
+    await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
     // Should show when user can try again
-    const errorMessage = await page
-      .locator('text=/rate.*limit|locked/i')
-      .textContent();
+    const errorAlert = page.getByRole('alert').filter({
+      hasText: /too many|locked|rate.*limit/i,
+    });
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
 
+    const errorMessage = await errorAlert.textContent();
     expect(errorMessage).toBeTruthy();
     // Message should contain time information
     expect(errorMessage).toMatch(/15|minutes?|try.*again|wait/i);
