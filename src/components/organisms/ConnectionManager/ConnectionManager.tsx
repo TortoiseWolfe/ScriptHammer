@@ -201,7 +201,7 @@ export default function ConnectionManager({
     >
       {/* Search for new connections */}
       <div className="mb-6">
-        <UserSearch />
+        <UserSearch onRequestSent={() => refreshConnections()} />
       </div>
 
       {/* Manage existing connections */}
