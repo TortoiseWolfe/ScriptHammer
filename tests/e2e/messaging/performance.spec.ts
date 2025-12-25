@@ -136,14 +136,15 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
     await page.waitForTimeout(500);
   }
 
-  // Click first conversation button
+  // Find first conversation button by aria-label pattern
   const firstConversation = page
-    .locator('button[class*="conversation"], [data-testid="conversation-item"]')
+    .getByRole('button', { name: /Conversation with/ })
     .first();
-  if (await firstConversation.isVisible()) {
-    await firstConversation.click();
-    await page.waitForTimeout(500);
-  }
+
+  // Wait for and click conversation
+  await expect(firstConversation).toBeVisible({ timeout: 5000 });
+  await firstConversation.click();
+  await page.waitForTimeout(500);
 }
 
 test.describe('Virtual Scrolling Performance', () => {

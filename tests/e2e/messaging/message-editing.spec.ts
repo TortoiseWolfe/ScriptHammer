@@ -159,40 +159,28 @@ async function signIn(page: Page, email: string, password: string) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
-  await page.goto('/messages?tab=connections');
+  await page.goto('/messages');
   await handleReAuthModal(page);
 
-  // Click on the "Accepted" tab to see accepted connections
-  const acceptedTab = page.getByRole('tab', { name: /Accepted/i });
-  await acceptedTab.click();
-
-  // Wait for the accepted connections list to load
-  await page.waitForTimeout(500);
-
-  // Find first accepted connection and click to open conversation
-  const firstConnection = page
-    .locator('[data-testid="connection-item"]')
-    .first();
-
-  // If no connection items found, try clicking on conversation in Chats tab instead
-  if ((await firstConnection.count()) === 0) {
-    // Switch to Chats tab
-    const chatsTab = page.getByRole('tab', { name: /Chats/i });
+  // Click on Chats tab to see conversations
+  const chatsTab = page.getByRole('tab', { name: /Chats/i });
+  if (await chatsTab.isVisible()) {
     await chatsTab.click();
     await page.waitForTimeout(500);
-
-    // Find first conversation
-    const firstConversation = page
-      .locator('[data-testid="conversation-item"]')
-      .first();
-    await firstConversation.click();
-  } else {
-    await firstConnection.click();
   }
 
-  // Wait for conversation to load
-  await page.waitForSelector('[data-testid="message-bubble"]', {
-    timeout: 5000,
+  // Find first conversation button by aria-label pattern
+  const firstConversation = page
+    .getByRole('button', { name: /Conversation with/ })
+    .first();
+
+  // Wait for conversation to be visible
+  await expect(firstConversation).toBeVisible({ timeout: 5000 });
+  await firstConversation.click();
+
+  // Wait for message input to be visible (indicates conversation is loaded)
+  await page.waitForSelector('[data-testid="message-input"]', {
+    timeout: 10000,
   });
 }
 
