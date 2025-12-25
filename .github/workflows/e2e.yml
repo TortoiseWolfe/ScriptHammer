@@ -84,6 +84,28 @@ jobs:
           echo "=== Checking for ScriptHammer text ==="
           curl -s http://localhost:3000 | grep -o 'ScriptHammer' | head -5 || echo "No ScriptHammer text found"
 
+      # Run rate-limiting tests FIRST (clean IP quota)
+      # These use project dependencies for ordering
+      - name: Run rate-limiting tests (ordered)
+        run: pnpm test:e2e --project=rate-limiting --project=brute-force --project=signup --reporter=list --trace=on-first-retry
+        env:
+          CI: true
+          PLAYWRIGHT_BROWSER: chromium
+          SKIP_WEBSERVER: true
+          BASE_URL: http://localhost:3000
+          # Supabase credentials
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Test users
+          TEST_USER_PRIMARY_EMAIL: ${{ secrets.TEST_USER_PRIMARY_EMAIL }}
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          TEST_USER_SECONDARY_EMAIL: ${{ secrets.TEST_USER_SECONDARY_EMAIL }}
+          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
+          TEST_USER_TERTIARY_EMAIL: ${{ secrets.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
+
+      # Then run remaining tests in parallel (rate-limiting tests excluded via testIgnore)
       - name: Run E2E tests - ${{ matrix.browser }}
         run: pnpm test:e2e --project=${{ matrix.browser }} --reporter=list --trace=on-first-retry
         env:

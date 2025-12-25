@@ -69,20 +69,72 @@ export default defineConfig({
     },
   },
 
-  /* Configure projects for major browsers */
+  /* Configure projects with ordered execution for rate-limiting isolation */
   projects: [
+    // ============================================================
+    // ORDERED PROJECTS: Rate-limiting tests run FIRST
+    // This prevents sign-up tests from exhausting Supabase's
+    // IP-based rate limits before rate-limiting tests can run.
+    // ============================================================
+
+    // Rate-limiting tests - run FIRST with clean IP quota
+    {
+      name: 'rate-limiting',
+      testDir: './tests/e2e/auth',
+      testMatch: /rate-limiting\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Brute-force tests - run after rate-limiting
+    {
+      name: 'brute-force',
+      testDir: './tests/e2e/security',
+      testMatch: /brute-force\.spec\.ts/,
+      dependencies: ['rate-limiting'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    // Sign-up tests - run LAST (consumes rate limit quota)
+    {
+      name: 'signup',
+      testDir: './tests/e2e/auth',
+      testMatch: /sign-up\.spec\.ts/,
+      dependencies: ['brute-force'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+
+    // ============================================================
+    // PARALLEL PROJECTS: All other tests can run in parallel
+    // These exclude rate-limiting, brute-force, and sign-up tests
+    // ============================================================
+
     {
       name: 'chromium',
+      testIgnore: [
+        '**/rate-limiting.spec.ts',
+        '**/brute-force.spec.ts',
+        '**/sign-up.spec.ts',
+      ],
       use: { ...devices['Desktop Chrome'] },
     },
 
     {
       name: 'firefox',
+      testIgnore: [
+        '**/rate-limiting.spec.ts',
+        '**/brute-force.spec.ts',
+        '**/sign-up.spec.ts',
+      ],
       use: { ...devices['Desktop Firefox'] },
     },
 
     {
       name: 'webkit',
+      testIgnore: [
+        '**/rate-limiting.spec.ts',
+        '**/brute-force.spec.ts',
+        '**/sign-up.spec.ts',
+      ],
       use: { ...devices['Desktop Safari'] },
     },
 
@@ -90,6 +142,11 @@ export default defineConfig({
     ...TEST_VIEWPORTS.filter((v) => v.category === 'mobile').map(
       (viewport) => ({
         name: `Mobile - ${viewport.name}`,
+        testIgnore: [
+          '**/rate-limiting.spec.ts',
+          '**/brute-force.spec.ts',
+          '**/sign-up.spec.ts',
+        ],
         use: createDeviceConfig(viewport),
       })
     ),
@@ -98,6 +155,11 @@ export default defineConfig({
     ...TEST_VIEWPORTS.filter((v) => v.category === 'tablet').map(
       (viewport) => ({
         name: `Tablet - ${viewport.name}`,
+        testIgnore: [
+          '**/rate-limiting.spec.ts',
+          '**/brute-force.spec.ts',
+          '**/sign-up.spec.ts',
+        ],
         use: createDeviceConfig(viewport),
       })
     ),

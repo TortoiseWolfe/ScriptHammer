@@ -4,9 +4,13 @@
 //
 // IMPORTANT: These tests run in SERIAL mode because Supabase rate limits
 // by IP address. We trigger rate limiting ONCE, then verify multiple behaviors.
+//
+// This test suite uses Playwright project ordering to run FIRST, before
+// sign-up tests consume the IP-based rate limit quota.
 
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { clearAllRateLimits } from '../utils/rate-limit-admin';
 
 // Run tests in serial - rate limiting is IP-based, so tests must coordinate
 test.describe.configure({ mode: 'serial' });
@@ -54,7 +58,11 @@ test.describe('Rate Limiting - User Experience', () => {
   let rateLimitEmail: string;
   let rateLimitTriggered = false;
 
-  test.beforeAll(() => {
+  test.beforeAll(async () => {
+    // Clear application-level rate limits to ensure clean slate
+    // This uses service role to delete from rate_limit_attempts table
+    await clearAllRateLimits();
+
     // Generate ONE email for all rate limit tests
     rateLimitEmail = generateRateLimitEmail('serial');
   });

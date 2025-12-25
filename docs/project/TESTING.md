@@ -573,13 +573,52 @@ const email2 = generateEmail('test2');
 // This doesn't help - rate limiting is IP-based, not email-based
 ```
 
+#### Playwright Project Ordering (Implemented Solution)
+
+This project uses **Playwright project dependencies** to ensure rate-limiting tests run before sign-up tests can consume the IP quota:
+
+```
+playwright.config.ts project execution order:
+┌──────────────────┐
+│  rate-limiting   │  ← Runs FIRST (clean IP state)
+└────────┬─────────┘
+         │ depends on
+┌────────▼─────────┐
+│   brute-force    │  ← Runs second
+└────────┬─────────┘
+         │ depends on
+┌────────▼─────────┐
+│     signup       │  ← Runs LAST (can consume quota)
+└──────────────────┘
+
+┌──────────────────┐
+│    chromium      │  ← Runs in parallel (excludes above tests)
+│    firefox       │
+│    webkit        │
+│    Mobile-*      │
+└──────────────────┘
+```
+
+**Key files:**
+
+- `playwright.config.ts` - Defines project dependencies via `dependencies: ['rate-limiting']`
+- `tests/e2e/utils/rate-limit-admin.ts` - Clears `rate_limit_attempts` table before tests
+- `.github/workflows/e2e.yml` - Runs ordered projects first, then parallel tests
+
+**How it works:**
+
+1. Rate-limiting tests use `test.beforeAll()` to clear the custom `rate_limit_attempts` table
+2. Playwright enforces project execution order via `dependencies`
+3. The `chromium` project uses `testIgnore` to exclude rate-limiting/brute-force/signup tests
+4. CI workflow runs ordered projects first, then remaining tests
+
 #### For Forked Projects
 
 If you're experiencing rate limiting issues in a fork:
 
-1. **Increase rate limits** via Management API (see above)
-2. **Run rate limiting tests in serial** with shared state
-3. **Reduce login attempts** - only trigger rate limiting once per test suite
+1. **The project ordering is already configured** - tests should work out of the box
+2. **Increase rate limits** via Management API if still seeing issues (see above)
+3. **Verify SUPABASE_SERVICE_ROLE_KEY is set** - needed for rate limit table cleanup
 4. **Consider skipping** rate limiting tests in CI if they test Supabase behavior, not your code
 
 ### Debugging E2E Tests

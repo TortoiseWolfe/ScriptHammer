@@ -1,13 +1,22 @@
 // Security Hardening: Brute Force Prevention E2E Test
 // Feature 017 - Task T015
 // Purpose: Test server-side rate limiting prevents brute force attacks
+//
+// This test suite uses Playwright project ordering to run after rate-limiting
+// tests but before sign-up tests, preserving IP-based rate limit quota.
 
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { clearAllRateLimits } from '../utils/rate-limit-admin';
 
 test.describe('Brute Force Prevention - REQ-SEC-003', () => {
   const testEmail = `brute-force-test-${Date.now()}@example.com`;
   const wrongPassword = 'WrongPassword123!';
+
+  // Clear rate limits before this test suite runs
+  test.beforeAll(async () => {
+    await clearAllRateLimits();
+  });
 
   test('should lockout after 5 failed login attempts', async ({ page }) => {
     await page.goto('/sign-in');
