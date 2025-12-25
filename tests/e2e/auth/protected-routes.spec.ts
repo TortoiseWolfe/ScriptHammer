@@ -14,6 +14,7 @@ import {
   dismissCookieBanner,
   waitForAuthenticatedState,
   signOutViaDropdown,
+  performSignIn,
 } from '../utils/test-user-factory';
 
 // Use pre-existing test users (must exist in Supabase)
@@ -59,12 +60,12 @@ test.describe('Protected Routes E2E', () => {
     // Step 1: Sign in with pre-existing test user
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    const signInResult = await performSignIn(page, testEmail, testPassword);
 
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    // Fail fast with clear error if sign-in failed
+    if (!signInResult.success) {
+      throw new Error(`Sign-in failed: ${signInResult.error}`);
+    }
 
     // Step 2: Access protected routes
     const protectedRoutes = [

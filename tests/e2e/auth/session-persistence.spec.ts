@@ -14,6 +14,7 @@ import {
   dismissCookieBanner,
   waitForAuthenticatedState,
   signOutViaDropdown,
+  performSignIn,
 } from '../utils/test-user-factory';
 
 // Use pre-existing test user (must exist in Supabase)
@@ -213,15 +214,16 @@ test.describe('Session Persistence E2E', () => {
     const page1 = await context.newPage();
     const page2 = await context.newPage();
 
-    // Sign in on page 1
+    // Sign in on page 1 with proper error detection
     await page1.goto('/sign-in');
     await dismissCookieBanner(page1);
-    await page1.getByLabel('Email').fill(testEmail);
-    await page1.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page1.getByRole('button', { name: 'Sign In' }).click();
+    const signInResult = await performSignIn(page1, testEmail, testPassword);
 
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page1);
+    // Fail fast with clear error if sign-in failed
+    if (!signInResult.success) {
+      await context.close();
+      throw new Error(`Sign-in failed on page1: ${signInResult.error}`);
+    }
 
     // Wait for storage to actually contain auth data before page2 navigates
     await page1.waitForFunction(

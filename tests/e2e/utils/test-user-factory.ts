@@ -523,3 +523,102 @@ export async function waitForAuthenticatedState(
   const messagesLink = page.getByRole('link', { name: /messages/i });
   await messagesLink.waitFor({ state: 'visible', timeout });
 }
+
+/**
+ * Perform sign-in with proper error detection.
+ *
+ * Unlike just filling forms and clicking, this helper:
+ * 1. Fills credentials
+ * 2. Clicks sign-in
+ * 3. Waits for EITHER success OR failure
+ * 4. Returns detailed error if sign-in failed
+ *
+ * @param page - Playwright page object
+ * @param email - User email
+ * @param password - User password
+ * @param options - Configuration options
+ * @returns Object with success boolean and optional error message
+ *
+ * @example
+ * const result = await performSignIn(page, 'test@example.com', 'password');
+ * if (!result.success) {
+ *   throw new Error(`Sign-in failed: ${result.error}`);
+ * }
+ */
+export async function performSignIn(
+  page: Page,
+  email: string,
+  password: string,
+  options: { rememberMe?: boolean; timeout?: number } = {}
+): Promise<{ success: boolean; error?: string }> {
+  const { rememberMe = false, timeout = 15000 } = options;
+
+  // Fill credentials
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+
+  if (rememberMe) {
+    await page.getByLabel('Remember Me').check();
+  }
+
+  // Click sign in
+  await page.getByRole('button', { name: 'Sign In' }).click();
+
+  // Wait for EITHER redirect (success) OR error message (failure)
+  try {
+    // Race between success redirect and error appearance
+    const result = await Promise.race([
+      // Success: URL changes away from /sign-in
+      page
+        .waitForURL((url) => !url.pathname.includes('/sign-in'), { timeout })
+        .then(() => ({ success: true as const })),
+
+      // Failure: Alert with error message appears
+      page
+        .locator('[role="alert"]')
+        .filter({ hasText: /./i }) // Has any text
+        .first()
+        .waitFor({ state: 'visible', timeout: 5000 })
+        .then(async () => {
+          const alertText = await page
+            .locator('[role="alert"]')
+            .first()
+            .textContent();
+          return {
+            success: false as const,
+            error: alertText || 'Unknown error',
+          };
+        }),
+    ]);
+
+    if (result.success) {
+      // Wait for full auth hydration
+      await waitForAuthenticatedState(page, timeout);
+      return { success: true };
+    }
+
+    return result;
+  } catch (err) {
+    // Timeout - check current state
+    const currentUrl = page.url();
+    if (currentUrl.includes('/sign-in')) {
+      // Still on sign-in page - check for error
+      const alertText = await page
+        .locator('[role="alert"]')
+        .first()
+        .textContent()
+        .catch(() => null);
+
+      return {
+        success: false,
+        error: alertText || 'Sign-in timed out (still on sign-in page)',
+      };
+    }
+
+    // Not on sign-in but auth didn't hydrate
+    return {
+      success: false,
+      error: `Auth hydration timeout at ${currentUrl}`,
+    };
+  }
+}
