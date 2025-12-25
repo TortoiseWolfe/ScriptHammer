@@ -2,134 +2,107 @@
 description: Download E2E test artifacts from GitHub Actions and analyze failures
 ---
 
-# Fetch and Analyze Test Results
-
-Automated workflow: clear old data → find latest failed run → download artifacts → analyze all failure data.
+Execute these steps AUTOMATICALLY without asking the user for input. This is a fully automated workflow.
 
 ## Step 1: Clear Old Results
 
-```bash
-rm -rf test-results/* playwright-report/*
-mkdir -p test-results playwright-report
-```
-
-## Step 2: Find Latest Failed Run
+Docker is required because test-results files are root-owned:
 
 ```bash
-gh run list --repo TortoiseWolfe/ScriptHammer --limit 5 --json databaseId,status,conclusion,name,createdAt
+docker compose exec scripthammer rm -rf test-results/* playwright-report/*
+docker compose exec scripthammer mkdir -p test-results playwright-report
 ```
+
+## Step 2: Find Latest Run with Artifacts
+
+```bash
+docker compose exec scripthammer gh run list --repo TortoiseWolfe/ScriptHammer --limit 10 --workflow=e2e.yml --json databaseId,conclusion,createdAt
+```
+
+Find the most recent run with conclusion "failure" that has artifacts. If all runs are "cancelled" or "success", check if test-results/ already has data to analyze.
 
 ## Step 3: Download Artifacts
 
 ```bash
-gh run download <RUN_ID> --repo TortoiseWolfe/ScriptHammer --pattern "playwright-*" --dir test-results/
+docker compose exec scripthammer gh run download <RUN_ID> --repo TortoiseWolfe/ScriptHammer --pattern "playwright-*" --dir test-results/
 ```
 
-Extract if zipped:
+If zipped, extract:
 
 ```bash
-cd test-results && unzip -o "*.zip" 2>/dev/null && rm -f *.zip && cd ..
+docker compose exec scripthammer bash -c "cd test-results && unzip -o '*.zip' 2>/dev/null; rm -f *.zip"
 ```
 
-## Step 4: Analyze All Failure Data
-
-Each failure directory contains:
-
-| File                  | What It Contains                                        | How to Use                                                      |
-| --------------------- | ------------------------------------------------------- | --------------------------------------------------------------- |
-| **error-context.md**  | DOM snapshot, element refs, alert messages, form values | **READ THIS FIRST** - shows exact error messages and page state |
-| **trace.zip**         | Network requests, console logs, action timeline         | Unzip and check for API errors, 401/403, timeouts               |
-| **video.webm**        | Video recording of test execution                       | Watch for timing issues, UI glitches                            |
-| **test-failed-1.png** | Screenshot at failure moment                            | Visual confirmation of state                                    |
-
-### Priority: Read error-context.md files first
+## Step 4: Get Stats
 
 ```bash
-# List all error context files
-find test-results -name "error-context.md" -type f
-
-# Quick scan for common errors
-grep -r "alert\|error\|Error\|failed\|401\|403\|timeout" test-results/*/error-context.md | head -30
+docker compose exec scripthammer bash -c "ls -1d test-results/*/ 2>/dev/null | wc -l"
+docker compose exec scripthammer bash -c "ls -1d test-results/*-retry*/ 2>/dev/null | wc -l"
+docker compose exec scripthammer bash -c "find test-results -name 'error-context.md' | wc -l"
+docker compose exec scripthammer bash -c "ls -1 test-results/ | cut -d'-' -f1-2 | sort | uniq -c | sort -rn"
 ```
 
-The error-context.md contains the accessibility tree showing:
+## Step 5: DEEP ANALYSIS (Critical - Do Not Skip)
 
-- **Alert messages** with actual error text (e.g., "Too many failed attempts...")
-- **Form field values** at failure time
-- **Button states** (disabled, active)
-- **Element refs** for debugging selectors
+For EACH failure category with 3+ failures:
 
-### Extract trace data
+1. Find error-context.md files for that category:
 
-```bash
-# Unzip traces for deeper analysis
-for f in test-results/*/trace.zip; do
-  dir=$(dirname "$f")
-  unzip -o "$f" -d "$dir/trace" 2>/dev/null
-done
+   ```bash
+   find test-results -path "*<category>*" -name "error-context.md" | head -3
+   ```
 
-# Check for network errors in traces
-find test-results -path "*/trace/*" -name "*.json" -exec grep -l "error\|failed\|401\|403" {} \;
+2. **READ each file using the Read tool** - do NOT grep
+
+3. In each error-context.md, look for:
+   - `alert [ref=...]` elements - these contain the actual error message
+   - `heading` elements showing what page/state the user sees
+   - Form field values (textbox contents)
+   - Button states: `[disabled]`, `[active]`
+   - Text like "No conversations", "Invalid credentials", "No users found"
+
+4. Identify the ROOT CAUSE:
+   - Is it missing data? (RLS policy, beforeAll setup)
+   - Is it wrong selector? (element not found)
+   - Is it timing? (element not ready)
+   - Is it environment? (missing secrets, wrong config)
+   - Is it a real bug? (wrong behavior)
+
+## Step 6: Report Findings
+
+For each issue, provide:
+
+```
+### [Category] - X failures
+
+**Exact Error**: "[quote the alert text from error-context.md]"
+
+**Page State**: [what heading/UI shows - e.g., "Select a conversation", "Sign In page"]
+
+**Root Cause**: [why this happened - specific, not generic]
+
+**Affected Tests**:
+- test-name-1
+- test-name-2
+
+**Fix Required**: [specific action - file to change, what to add/modify]
 ```
 
-## Step 5: Quick Stats
+## Step 7: Prioritize Fixes
 
-```bash
-total=$(ls -1d test-results/*/ 2>/dev/null | wc -l)
-retries=$(ls -1d test-results/*-retry*/ 2>/dev/null | wc -l)
-contexts=$(find test-results -name "error-context.md" | wc -l)
-echo "Failures: $total, Retries: $retries, Error contexts: $contexts"
-```
+Group by fix type:
 
-### Group by Category
+1. **RLS/Database Issues** - Policies blocking data visibility
+2. **Test Setup** - beforeAll/beforeEach not creating required data
+3. **Environment** - Missing GitHub Secrets or Supabase config
+4. **Timing/Selectors** - waitFor, wrong refs
+5. **Real Bugs** - Application code defects
 
-```bash
-ls -1 test-results/ | cut -d'-' -f1-2 | sort | uniq -c | sort -rn
-```
+## IMPORTANT RULES
 
-## Step 6: Categorize Issues
-
-| Category             | Symptoms in error-context.md             | Fix Type                            |
-| -------------------- | ---------------------------------------- | ----------------------------------- |
-| **Auth/Environment** | "Invalid credentials", 401, missing user | GitHub Secrets                      |
-| **Rate Limiting**    | "Too many attempts", "locked"            | Test isolation or Supabase config   |
-| **Timing**           | Element not found, retry folders         | Increase waits, fix race conditions |
-| **Selector**         | Wrong element ref, "not found"           | Update test selectors               |
-| **Real Bug**         | Wrong alert text, unexpected state       | Application code fix                |
-
-## Output Format
-
-```markdown
-## Test Failure Analysis
-
-**Run ID**: <id>
-**Total Failures**: X (Y after retries)
-**Error Contexts**: Z
-
-### Root Causes (from error-context.md analysis)
-
-#### 1. [Category] - X failures
-
-- **Error**: [exact error text from alert/message]
-- **Page State**: [what the DOM showed]
-- **Tests**: [list affected tests]
-- **Fix**: [specific recommendation]
-
-### Action Items
-
-**Immediate fixes**:
-
-- [ ] ...
-
-**Needs investigation** (review traces/videos):
-
-- [ ] ...
-
-**GitHub Secrets**:
-
-- [ ] ...
-```
-
-## Key Insight
-
-The `error-context.md` files contain the actual error messages shown to users. Always read these first - they tell you exactly what went wrong without guessing from folder names or screenshots.
+1. **ALL commands via Docker**: `docker compose exec scripthammer <cmd>`
+2. **These results are from the last push** - never claim they're "old" or "previous"
+3. **READ the error-context.md files** - don't just grep patterns
+4. **Quote actual errors** - copy the exact text from alert elements
+5. **Provide specific fixes** - not "investigate timing issues"
+6. **No manual steps** - execute everything automatically
