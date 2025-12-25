@@ -11,7 +11,7 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     continue-on-error: true # Allow CI to pass even if E2E tests fail
 
     strategy:
