@@ -553,6 +553,9 @@ export async function performSignIn(
 ): Promise<{ success: boolean; error?: string }> {
   const { rememberMe = false, timeout = 15000 } = options;
 
+  // Dismiss cookie banner first - it can block form interactions
+  await dismissCookieBanner(page);
+
   // Fill credentials
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);

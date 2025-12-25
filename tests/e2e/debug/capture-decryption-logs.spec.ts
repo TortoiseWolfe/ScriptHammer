@@ -7,6 +7,7 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 const USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
@@ -81,9 +82,10 @@ test.describe('Capture Decryption Logs', () => {
       console.log('[Test] User A signing in...');
       await pageA.goto('/sign-in');
       await pageA.waitForLoadState('networkidle');
-      await pageA.fill('#email', USER_A.email);
-      await pageA.fill('#password', USER_A.password);
-      await pageA.click('button[type="submit"]', { force: true });
+      await dismissCookieBanner(pageA);
+      await pageA.getByLabel('Email').fill(USER_A.email);
+      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
+      await pageA.getByRole('button', { name: 'Sign In' }).click();
       await pageA.waitForURL(/.*\/profile/, { timeout: 15000 });
       console.log('[Test] User A signed in');
 
