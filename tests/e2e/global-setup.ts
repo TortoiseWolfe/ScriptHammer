@@ -117,44 +117,6 @@ async function globalSetup(): Promise<void> {
     }
   }
 
-  // 4. Verify PRIMARY test user password is correct (prevents all sign-in tests from failing)
-  if (errors.length === 0) {
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const testEmail = process.env.TEST_USER_PRIMARY_EMAIL!;
-    const testPassword = process.env.TEST_USER_PRIMARY_PASSWORD!;
-
-    try {
-      const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-
-      const { error: signInError } = await anonClient.auth.signInWithPassword({
-        email: testEmail,
-        password: testPassword,
-      });
-
-      if (signInError) {
-        errors.push({
-          category: 'Password Verification',
-          message: `Cannot sign in as PRIMARY test user: ${signInError.message}`,
-          fix: signInError.message.includes('Invalid login credentials')
-            ? 'TEST_USER_PRIMARY_PASSWORD in GitHub secrets does not match the password in Supabase'
-            : `Check Supabase auth settings: ${signInError.message}`,
-        });
-      } else {
-        console.log(`✓ Password verified for ${testEmail}`);
-        // Sign out to clean up
-        await anonClient.auth.signOut();
-      }
-    } catch (err) {
-      errors.push({
-        category: 'Password Verification',
-        message: `Error testing sign-in: ${err instanceof Error ? err.message : String(err)}`,
-        fix: 'Check Supabase connection and auth configuration',
-      });
-    }
-  }
-
   // Final check
   if (errors.length > 0) {
     printErrors(errors);
