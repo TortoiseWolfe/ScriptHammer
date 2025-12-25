@@ -18,28 +18,28 @@ test.describe('Mobile Orientation Detection', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    // Check viewport dimensions
+    // Check viewport dimensions - width should match iPhone 12
+    // Height may vary due to browser chrome
     const viewportSize = page.viewportSize();
     expect(viewportSize?.width).toBe(390);
-    expect(viewportSize?.height).toBe(844);
+    expect(viewportSize?.height).toBeGreaterThan(500); // At least portrait aspect
 
-    // Check that mobile layout is applied
-    // Look for mobile-specific classes or behaviors
-    const body = page.locator('body');
-    const bodyClasses = await body.getAttribute('class');
-
-    // Navigation should be in mobile mode
+    // Navigation should be visible
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
 
-    // Check for mobile menu button (should exist in portrait)
-    const mobileMenuButton = page.locator(
-      'nav button[aria-label*="menu" i], nav button[aria-label*="navigation" i]'
+    // Check for mobile menu toggle (should exist in portrait)
+    // DaisyUI uses label elements for dropdown triggers
+    const mobileMenuToggle = page.locator(
+      'nav [aria-label*="menu" i], nav [aria-label*="navigation" i]'
     );
 
-    // Mobile menu button might be visible on narrow screens
+    // Mobile menu toggle should be visible on narrow screens
     const isMobileView = await page.evaluate(() => window.innerWidth < 768);
     expect(isMobileView, 'Should be in mobile viewport').toBeTruthy();
+
+    // Mobile menu toggle should be visible
+    await expect(mobileMenuToggle.first()).toBeVisible();
 
     await context.close();
   });

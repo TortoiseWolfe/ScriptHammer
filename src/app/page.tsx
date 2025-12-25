@@ -43,7 +43,7 @@ export default function Home() {
         aria-label="Welcome hero"
         className="hero relative flex-1"
       >
-        <div className="hero-content px-4 py-6 sm:px-6 sm:py-8 md:py-10 lg:px-8">
+        <div className="hero-content max-w-full overflow-hidden px-4 py-6 sm:px-6 sm:py-8 md:py-10 lg:px-8">
           <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16">
             {/* Logo - responsive sizes */}
             <div className="flex-shrink-0">
@@ -53,12 +53,12 @@ export default function Home() {
             </div>
 
             {/* Content - stacked below logo on mobile */}
-            <div className="max-w-full px-6 text-center sm:max-w-2xl sm:px-6 lg:max-w-4xl lg:px-0 lg:text-left">
+            <div className="max-w-[calc(100vw-3rem)] overflow-hidden px-6 text-center sm:max-w-2xl sm:px-6 lg:max-w-4xl lg:px-0 lg:text-left">
               {/* Main Title with Animation */}
               <h1 className="mb-4 sm:mb-6">
                 <AnimatedLogo
                   text={detectedConfig.projectName}
-                  className="!text-lg font-bold min-[400px]:!text-xl min-[480px]:!text-2xl sm:!text-5xl md:!text-6xl lg:!text-7xl"
+                  className="!text-lg font-bold min-[400px]:!text-xl min-[480px]:!text-2xl min-[520px]:!text-3xl md:!text-5xl lg:!text-6xl xl:!text-7xl"
                   animationSpeed="normal"
                 />
               </h1>

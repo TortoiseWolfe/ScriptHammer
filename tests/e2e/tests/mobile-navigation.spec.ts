@@ -74,26 +74,40 @@ test.describe('Mobile Navigation', () => {
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
 
-    // All navigation buttons should be visible
-    const buttons = nav.locator('button');
-    const buttonCount = await buttons.count();
+    // Check that nav doesn't overflow
+    const navBox = await nav.boundingBox();
+    if (navBox) {
+      expect(
+        navBox.width,
+        'Navigation width exceeds viewport'
+      ).toBeLessThanOrEqual(320 + 1);
+    }
 
-    for (let i = 0; i < buttonCount; i++) {
-      const button = buttons.nth(i);
-      await expect(button, `Button ${i} not visible at 320px`).toBeVisible();
+    // Check for visible interactive elements in the nav (not hidden dropdown contents)
+    // At 320px, we expect: logo link, hamburger menu button
+    const logo = nav.locator('a').first();
+    await expect(logo, 'Logo should be visible').toBeVisible();
 
-      // Button should be within viewport
-      const box = await button.boundingBox();
-      if (box) {
-        expect(
-          box.x,
-          `Button ${i} positioned off-screen`
-        ).toBeGreaterThanOrEqual(0);
-        expect(
-          box.x + box.width,
-          `Button ${i} extends beyond viewport`
-        ).toBeLessThanOrEqual(320 + 1);
-      }
+    // Mobile menu toggle (label or button with menu icon)
+    const menuToggle = nav
+      .locator('[aria-label*="menu" i], [aria-label*="navigation" i]')
+      .first();
+    await expect(
+      menuToggle,
+      'Mobile menu toggle should be visible'
+    ).toBeVisible();
+
+    // Verify menu toggle is within viewport
+    const menuBox = await menuToggle.boundingBox();
+    if (menuBox) {
+      expect(
+        menuBox.x,
+        'Menu toggle positioned off-screen'
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        menuBox.x + menuBox.width,
+        'Menu toggle extends beyond viewport'
+      ).toBeLessThanOrEqual(320 + 1);
     }
   });
 
@@ -102,7 +116,7 @@ test.describe('Mobile Navigation', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    // Look for mobile menu button (hamburger icon)
+    // Look for mobile menu button (hamburger icon) - it's a label in DaisyUI dropdown
     const menuButton = page
       .locator('[aria-label*="menu" i], [aria-label*="navigation" i]')
       .first();
@@ -111,10 +125,8 @@ test.describe('Mobile Navigation', () => {
       // Click to open mobile menu
       await menuButton.click();
 
-      // Menu content should become visible
-      const menuContent = page
-        .locator('nav [role="menu"], nav .menu, nav [class*="mobile"]')
-        .first();
+      // Menu content should become visible (DaisyUI uses dropdown-content class)
+      const menuContent = page.locator('nav .dropdown-content').first();
 
       // Allow time for animation
       await page.waitForTimeout(300);
@@ -122,9 +134,15 @@ test.describe('Mobile Navigation', () => {
       // Menu should be visible after click
       await expect(menuContent).toBeVisible();
 
-      // Click again to close
-      await menuButton.click();
-      await page.waitForTimeout(300);
+      // Verify menu contains navigation items
+      const menuLinks = menuContent.locator('a');
+      const linkCount = await menuLinks.count();
+      expect(linkCount, 'Menu should contain navigation links').toBeGreaterThan(
+        0
+      );
+
+      // Close by clicking outside (DaisyUI dropdowns are focus-based)
+      await page.locator('body').click({ position: { x: 10, y: 10 } });
     }
   });
 

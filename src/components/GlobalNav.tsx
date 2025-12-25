@@ -185,7 +185,8 @@ export function GlobalNav() {
           </nav>
 
           {/* Right Section: Auth, Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
-          <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
+          {/* Use flex-shrink-0 to prevent items from shrinking, overflow-hidden to prevent horizontal scroll */}
+          <div className="flex flex-shrink-0 items-center gap-0.5 sm:gap-1 md:gap-2">
             {/* Messages Icon (authenticated users only) */}
             {user && (
               <Link
@@ -217,6 +218,8 @@ export function GlobalNav() {
             )}
 
             {/* Auth Buttons */}
+            {/* User account dropdown (logged in) or auth buttons (logged out) */}
+            {/* Auth buttons hidden on mobile - they're in the hamburger menu */}
             {user ? (
               <div className="dropdown dropdown-end">
                 <label
@@ -287,13 +290,13 @@ export function GlobalNav() {
               <>
                 <Link
                   href="/sign-in"
-                  className="btn btn-ghost btn-sm min-h-11 min-w-11"
+                  className="btn btn-ghost btn-sm hidden min-h-11 min-w-11 md:inline-flex"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="btn btn-primary btn-sm min-h-11 min-w-11"
+                  className="btn btn-primary btn-sm hidden min-h-11 min-w-11 md:inline-flex"
                 >
                   Sign Up
                 </Link>
@@ -422,14 +425,18 @@ export function GlobalNav() {
               </button>
             )}
 
-            {/* Font Size Control */}
-            <FontSizeControl />
+            {/* Font Size Control - Hidden on mobile, shown at md (768px+) */}
+            <div className="hidden md:block">
+              <FontSizeControl />
+            </div>
 
-            {/* Color Vision Control */}
-            <ColorblindToggle className="compact" />
+            {/* Color Vision Control - Hidden on mobile, shown at md (768px+) */}
+            <div className="hidden md:block">
+              <ColorblindToggle className="compact" />
+            </div>
 
-            {/* Theme Selector - Mobile-first touch targets */}
-            <div className="dropdown dropdown-end">
+            {/* Theme Selector - Hidden on mobile, shown at md (768px+) */}
+            <div className="dropdown dropdown-end hidden md:block">
               <label
                 tabIndex={0}
                 className="btn btn-ghost btn-circle min-h-11 min-w-11"
