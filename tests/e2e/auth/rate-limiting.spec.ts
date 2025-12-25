@@ -91,13 +91,24 @@ test.describe('Rate Limiting - User Experience', () => {
       await page.getByLabel('Password', { exact: true }).fill(testPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
 
-      // Wait for response
-      await page.waitForSelector('[role="alert"]', { timeout: 5000 });
+      // Wait for error response (filter excludes Next.js route announcer)
+      await expect(
+        page
+          .getByRole('alert')
+          .filter({
+            hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+          })
+      ).toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(300);
     }
 
     // Should see either rate limit message or invalid credentials
-    const errorMessage = await page.locator('[role="alert"]').textContent();
+    // Use filter to select the error alert, not Next.js route announcer
+    const errorAlert = page
+      .getByRole('alert')
+      .filter({ hasText: /failed|error|locked|invalid|incorrect|attempts/i });
+    await expect(errorAlert).toBeVisible();
+    const errorMessage = await errorAlert.textContent();
     expect(errorMessage).toMatch(
       /too many.*attempts|temporarily locked|try again in \d+|rate.*limit|invalid|incorrect|credentials/i
     );
@@ -115,8 +126,12 @@ test.describe('Rate Limiting - User Experience', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForSelector('[role="alert"]', { timeout: 5000 });
-    const errorMessage = await page.locator('[role="alert"]').textContent();
+    // Use filter to select the error alert, not Next.js route announcer
+    const errorAlert = page
+      .getByRole('alert')
+      .filter({ hasText: /failed|error|locked|invalid|incorrect|attempts/i });
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    const errorMessage = await errorAlert.textContent();
 
     // Should see lockout OR credentials error
     expect(errorMessage).toMatch(
@@ -130,13 +145,16 @@ test.describe('Rate Limiting - User Experience', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForSelector('[role="alert"]', { timeout: 5000 });
+    // Use filter to select the error alert, not Next.js route announcer
+    const errorAlert = page
+      .getByRole('alert')
+      .filter({ hasText: /failed|error|locked|invalid|incorrect|attempts/i });
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
 
     // Error should be screen-reader accessible
-    const errorElement = page.locator('[role="alert"]');
-    await expect(errorElement).toHaveAttribute('role', 'alert');
+    await expect(errorAlert).toHaveAttribute('role', 'alert');
 
-    const errorMessage = await errorElement.textContent();
+    const errorMessage = await errorAlert.textContent();
     expect(errorMessage).toBeTruthy();
     expect(errorMessage!.length).toBeGreaterThan(5);
   });
@@ -151,8 +169,12 @@ test.describe('Rate Limiting - User Experience', () => {
     await page.getByLabel('Password', { exact: true }).fill(testPassword);
     await page.getByRole('button', { name: 'Sign In' }).click();
 
-    await page.waitForSelector('[role="alert"]', { timeout: 5000 });
-    const errorMessage = await page.locator('[role="alert"]').textContent();
+    // Use filter to select the error alert, not Next.js route announcer
+    const errorAlert = page
+      .getByRole('alert')
+      .filter({ hasText: /failed|error|locked|invalid|incorrect|attempts/i });
+    await expect(errorAlert).toBeVisible({ timeout: 5000 });
+    const errorMessage = await errorAlert.textContent();
 
     // This new email should get "invalid credentials", not "locked"
     // (unless IP-based rate limiting kicked in for the whole IP)
@@ -188,8 +210,10 @@ test.describe('Rate Limiting - Password Reset', () => {
     await page.waitForTimeout(500);
 
     // Any response is acceptable - we're just verifying the endpoint works
+    // Use filter to avoid Next.js route announcer conflict
     const alert = await page
-      .locator('[role="alert"]')
+      .getByRole('alert')
+      .filter({ hasText: /.+/ }) // Any non-empty alert
       .textContent()
       .catch(() => null);
     // Test passes if no crash - rate limiting behavior varies by config
