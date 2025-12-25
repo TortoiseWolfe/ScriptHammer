@@ -28,12 +28,11 @@ test.describe('Offline Payment Queue', () => {
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Grant consent
-    const consentModal = page.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await page.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent if GDPR section is visible
+    const acceptButton = page.getByRole('button', { name: /Accept/i });
+    if (await acceptButton.isVisible().catch(() => false)) {
+      await acceptButton.click();
+      await page.waitForTimeout(500);
     }
   });
 

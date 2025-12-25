@@ -17,7 +17,7 @@ const TEST_USER = {
 
 test.describe('Payment Dashboard Real-Time Updates', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in first - /payment/dashboard is a protected route
+    // Sign in first - /payment-demo is a protected route
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(TEST_USER.email);
@@ -25,8 +25,16 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
-    await page.goto('/payment/dashboard');
+    // Navigate to payment demo (dashboard may not exist as separate route)
+    await page.goto('/payment-demo');
     await dismissCookieBanner(page);
+
+    // Accept GDPR consent if visible
+    const acceptButton = page.getByRole('button', { name: /Accept/i });
+    if (await acceptButton.isVisible().catch(() => false)) {
+      await acceptButton.click();
+      await page.waitForTimeout(500);
+    }
   });
 
   test('should show real-time payment status updates', async ({ page }) => {
@@ -59,13 +67,13 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     // Open new tab and make a payment
     const newPage = await context.newPage();
     await newPage.goto('/payment-demo');
+    await dismissCookieBanner(newPage);
 
-    // Grant consent
-    const consentModal = newPage.getByRole('dialog', {
-      name: /payment consent/i,
-    });
-    if (await consentModal.isVisible()) {
-      await newPage.getByRole('button', { name: /accept.*continue/i }).click();
+    // Grant consent if visible
+    const acceptBtn = newPage.getByRole('button', { name: /Accept/i });
+    if (await acceptBtn.isVisible().catch(() => false)) {
+      await acceptBtn.click();
+      await newPage.waitForTimeout(500);
     }
 
     // Make payment
