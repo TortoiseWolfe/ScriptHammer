@@ -93,11 +93,9 @@ test.describe('Rate Limiting - User Experience', () => {
 
       // Wait for error response (filter excludes Next.js route announcer)
       await expect(
-        page
-          .getByRole('alert')
-          .filter({
-            hasText: /failed|error|locked|invalid|incorrect|attempts/i,
-          })
+        page.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
       ).toBeVisible({ timeout: 5000 });
       await page.waitForTimeout(300);
     }
@@ -197,11 +195,9 @@ test.describe('Rate Limiting - Password Reset', () => {
       await page.getByRole('button', { name: /reset|send|submit/i }).click();
       await page.waitForTimeout(500);
 
-      // Navigate back if redirected
-      if (!page.url().includes('forgot-password')) {
-        await page.goto('/forgot-password');
-        await dismissCookieBanner(page);
-      }
+      // Always reload - form is replaced with success message after submit
+      await page.goto('/forgot-password');
+      await dismissCookieBanner(page);
     }
 
     // Should see some response (success or rate limit)
