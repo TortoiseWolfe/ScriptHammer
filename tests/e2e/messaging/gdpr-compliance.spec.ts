@@ -24,12 +24,13 @@ test.describe('GDPR Data Export', () => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
     // Navigate to account settings
     await page.goto('/account');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
   });
 
@@ -93,7 +94,7 @@ test.describe('GDPR Data Export', () => {
 
       // Verify profile data
       expect(data.profile).toHaveProperty('email');
-      expect(data.profile.email).toBe('test@example.com');
+      expect(data.profile.email).toBe(TEST_USER.email);
 
       // Verify statistics
       expect(data.statistics).toHaveProperty('total_conversations');
@@ -169,12 +170,13 @@ test.describe('GDPR Account Deletion', () => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
     // Navigate to account settings
     await page.goto('/account');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
   });
 
@@ -360,24 +362,29 @@ test.describe('GDPR Accessibility', () => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password').fill(TEST_USER.password);
+    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
     await page.goto('/account');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
   });
 
   test('should have ARIA live regions for status updates (T193)', async ({
     page,
   }) => {
-    // Data export has live region
+    // Data export has live region - check initial state
+    const exportLiveRegion = page.locator('[role="status"]').first();
+    await expect(exportLiveRegion).toHaveText(/ready to export/i);
+
+    // Click export button
     const exportButton = page
       .locator('button:has-text("Download My Data")')
       .first();
     await exportButton.click();
 
-    const exportLiveRegion = page.locator('[role="status"]').first();
-    await expect(exportLiveRegion).toHaveText(/exporting your data/i);
+    // Status should update to "Exporting your data..."
+    await expect(exportLiveRegion).toHaveText(/exporting/i, { timeout: 5000 });
   });
 
   test('should be keyboard navigable (T193)', async ({ page }) => {
