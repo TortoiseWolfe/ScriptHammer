@@ -15,6 +15,8 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   waitForAuthenticatedState,
+  getAdminClient as getTestAdminClient,
+  getUserByEmail,
 } from '../utils/test-user-factory';
 
 /**
@@ -65,9 +67,104 @@ const getAdminClient = () => {
 };
 
 test.describe('Offline Message Queue', () => {
+  // Track if setup succeeded - tests will skip if not
+  let setupSucceeded = false;
+  let setupError = '';
+
+  // Establish connection between test users BEFORE all tests
+  test.beforeAll(async () => {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    if (
+      USER_A.email === 'test@example.com' ||
+      USER_B.email === 'test-user-b@example.com'
+    ) {
+      setupError = 'Test user emails not configured - using fallback values';
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    const adminClient = getTestAdminClient();
+    if (!adminClient) {
+      setupError = 'Admin client unavailable';
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    // Get user IDs
+    const userA = await getUserByEmail(USER_A.email);
+    const userB = await getUserByEmail(USER_B.email);
+
+    if (!userA || !userB) {
+      setupError = `Test users not found: ${!userA ? USER_A.email : ''} ${!userB ? USER_B.email : ''}`;
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+
+    // Check if already connected
+    const { data: existing } = await adminClient
+      .from('user_connections')
+      .select('id, status')
+      .or(
+        `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+      )
+      .maybeSingle();
+
+    if (!existing) {
+      // Create connection
+      await adminClient.from('user_connections').insert({
+        requester_id: userA.id,
+        addressee_id: userB.id,
+        status: 'accepted',
+      });
+    } else if (existing.status !== 'accepted') {
+      // Update to accepted
+      await adminClient
+        .from('user_connections')
+        .update({ status: 'accepted' })
+        .eq('id', existing.id);
+    }
+
+    // Check if conversation exists
+    const [id1, id2] = [userA.id, userB.id].sort();
+    const conversationId = `${id1}_${id2}`;
+
+    const { data: existingConvo } = await adminClient
+      .from('conversations')
+      .select('id')
+      .eq('id', conversationId)
+      .maybeSingle();
+
+    if (!existingConvo) {
+      await adminClient.from('conversations').insert({
+        id: conversationId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      // Add participants
+      await adminClient.from('conversation_members').insert([
+        { conversation_id: conversationId, user_id: userA.id },
+        { conversation_id: conversationId, user_id: userB.id },
+      ]);
+    }
+
+    setupSucceeded = true;
+    console.log('✅ Offline queue test setup complete');
+  });
+
   test('T146: should queue message when offline and send when online', async ({
     browser,
   }) => {
+    // Skip if setup failed
+    if (!setupSucceeded) {
+      test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+      return;
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -150,6 +247,10 @@ test.describe('Offline Message Queue', () => {
   test('T147: should queue multiple messages and sync all when reconnected', async ({
     browser,
   }) => {
+    if (!setupSucceeded) {
+      test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+      return;
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -229,6 +330,10 @@ test.describe('Offline Message Queue', () => {
   test('T148: should retry with exponential backoff on server failure', async ({
     browser,
   }) => {
+    if (!setupSucceeded) {
+      test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+      return;
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -316,6 +421,10 @@ test.describe('Offline Message Queue', () => {
   test('T149: should handle conflict resolution with server timestamp', async ({
     browser,
   }) => {
+    if (!setupSucceeded) {
+      test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+      return;
+    }
     const adminClient = getAdminClient();
 
     if (!adminClient) {
@@ -461,6 +570,10 @@ test.describe('Offline Message Queue', () => {
   });
 
   test('should show failed status after max retries', async ({ browser }) => {
+    if (!setupSucceeded) {
+      test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+      return;
+    }
     const context = await browser.newContext();
     const page = await context.newPage();
 
