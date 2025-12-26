@@ -144,8 +144,8 @@ export function GlobalNav() {
   ];
 
   return (
-    <nav className="border-base-300 bg-base-100/95 sticky top-0 z-50 border-b shadow-sm backdrop-blur-md">
-      <div className="container mx-auto px-4">
+    <header className="border-base-300 bg-base-100/95 sticky top-0 z-50 border-b shadow-sm backdrop-blur-md">
+      <nav className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
@@ -476,7 +476,7 @@ export function GlobalNav() {
             </div>
           </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
