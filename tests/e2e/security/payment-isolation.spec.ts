@@ -2,7 +2,7 @@
 // Feature 017 - Task T016
 // Purpose: Test end-to-end payment data isolation between users
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   waitForAuthenticatedState,
@@ -18,6 +18,30 @@ const USER_B = {
   email: process.env.TEST_USER_SECONDARY_EMAIL || 'test2@example.com',
   password: process.env.TEST_USER_SECONDARY_PASSWORD || 'TestPassword123!',
 };
+
+/**
+ * Handle GDPR consent on payment-demo page.
+ * Clears localStorage to ensure fresh consent state, then clicks Accept button.
+ */
+async function handlePaymentConsent(page: Page) {
+  // Clear payment consent from localStorage to ensure fresh state
+  await page.evaluate(() => {
+    localStorage.removeItem('payment_consent');
+    localStorage.removeItem('paymentConsent');
+  });
+
+  // Check if consent step is visible
+  const acceptButton = page.getByRole('button', { name: /Accept & Continue/i });
+  const isConsentVisible = await acceptButton.isVisible().catch(() => false);
+
+  if (isConsentVisible) {
+    await acceptButton.click();
+    // Wait for Step 2 to become visible (payment form)
+    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
+      timeout: 5000,
+    });
+  }
+}
 
 test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   test('User A creates payment, User B cannot see it', async ({ browser }) => {
@@ -42,6 +66,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Step 2: User A creates a payment
     await pageA.goto('/payment-demo');
     await dismissCookieBanner(pageA);
+    await handlePaymentConsent(pageA);
 
     // Fill out payment form using role-based selectors
     const amountInputA = pageA.getByLabel(/Amount/i);
@@ -76,6 +101,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Step 3: User A can see their payment in history
     await pageA.goto('/payment-demo');
     await dismissCookieBanner(pageA);
+    await handlePaymentConsent(pageA);
     await expect(pageA.getByText(/payment.*history/i)).toBeVisible({
       timeout: 3000,
     });
@@ -96,6 +122,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Step 5: User B goes to payment page
     await pageB.goto('/payment-demo');
     await dismissCookieBanner(pageB);
+    await handlePaymentConsent(pageB);
 
     // User B should see their own (empty) payment history
     // Should NOT see User A's payments
@@ -151,6 +178,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Both users create payments
     await pageA.goto('/payment-demo');
     await dismissCookieBanner(pageA);
+    await handlePaymentConsent(pageA);
     const amountA = pageA.getByLabel(/Amount/i);
     if (await amountA.isVisible()) {
       await amountA.fill('25.00');
@@ -168,6 +196,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     await pageB.goto('/payment-demo');
     await dismissCookieBanner(pageB);
+    await handlePaymentConsent(pageB);
     const amountB = pageB.getByLabel(/Amount/i);
     if (await amountB.isVisible()) {
       await amountB.fill('50.00');
@@ -185,9 +214,11 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     // Check payment history for both users
     await pageA.goto('/payment-demo');
+    await handlePaymentConsent(pageA);
     const paymentsA = await pageA.locator('[data-payment-item]').all();
 
     await pageB.goto('/payment-demo');
+    await handlePaymentConsent(pageB);
     const paymentsB = await pageB.locator('[data-payment-item]').all();
 
     // Each user's payment list should be independent
@@ -284,6 +315,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
 
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
+    await handlePaymentConsent(page);
     const amountInput = page.getByLabel(/Amount/i);
     if (await amountInput.isVisible()) {
       await amountInput.fill('15.00');
