@@ -314,36 +314,36 @@ Environment-dependent tests.
 
 **Unblock by**: Delete or update example tests
 
-### Active Failures (117 - CI Run 2025-12-26)
+### Active Failures (Updated 2025-12-26)
 
-| Category              | Failures | Root Cause                                                  |
-| --------------------- | -------- | ----------------------------------------------------------- |
-| `tests-accessibility` | 15       | Axe-core violations - actual a11y issues or false positives |
-| `security-oauth`      | 15       | OAuth flow assertions failing                               |
-| `tests-form`          | 12       | Form submission timing/validation                           |
-| `avatar-upload`       | 12       | File upload crop interface, replace, remove flows           |
-| `security-payment`    | 9        | Payment security test assertions                            |
-| `messaging-message`   | 9        | Edit/delete buttons now visible, other assertions failing   |
-| `tests-cross`         | 7        | Cross-page navigation timing                                |
-| `tests-pwa`           | 6        | Service worker registration in CI                           |
-| `tests-broken`        | 6        | Link checking timeouts                                      |
-| `payment-04`          | 6        | GDPR consent flow                                           |
-| `tests-theme`         | 3        | Theme switching assertions                                  |
-| `payment-01`          | 3        | Stripe payment flow                                         |
-| `mobile-dropdown`     | 3        | Mobile menu interactions                                    |
-| `messaging-friend`    | 3        | Friend request navigation                                   |
-| `messaging-complete`  | 3        | Complete workflow - retry button                            |
-| `messaging-encrypted` | 2        | Zero-knowledge/key security tests                           |
-| `messaging-gdpr`      | 1        | Deletion failure handling                                   |
-| `auth-session`        | 1        | Session clear on sign-out                                   |
-| `auth-protected`      | 1        | Payment access policies                                     |
+| Category              | Failures | Status                                                   |
+| --------------------- | -------- | -------------------------------------------------------- |
+| `tests-accessibility` | 15       | ✅ SPEC-044: Fixed contrast ratio in Footer (40%→60%)    |
+| `security-oauth`      | 15       | ✅ SPEC-047: Rewrote as proper security tests (all pass) |
+| `tests-form`          | 12       | Form submission timing/validation                        |
+| `avatar-upload`       | 12       | File upload crop interface, replace, remove flows        |
+| `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)      |
+| `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)       |
+| `tests-cross`         | 7        | Cross-page navigation timing                             |
+| `tests-pwa`           | 6        | Service worker registration in CI                        |
+| `tests-broken`        | 6        | Link checking timeouts                                   |
+| `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                     |
+| `tests-theme`         | 3        | Theme switching assertions                               |
+| `payment-01`          | 3        | Stripe payment flow                                      |
+| `mobile-dropdown`     | 3        | Mobile menu interactions                                 |
+| `messaging-friend`    | 3        | Friend request navigation                                |
+| `messaging-complete`  | 3        | Complete workflow - retry button                         |
+| `messaging-encrypted` | 2        | Zero-knowledge/key security tests                        |
+| `messaging-gdpr`      | 1        | Deletion failure handling                                |
+| `auth-session`        | 1        | Session clear on sign-out                                |
+| `auth-protected`      | 1        | Payment access policies                                  |
 
-**Notes**:
+**Recent Fixes (2025-12-26)**:
 
-- Edit/Delete buttons fix confirmed working (buttons now visible in snapshots)
-- Many failures are timing/environment related
-- Accessibility failures need axe violation analysis
-- OAuth/payment tests may need API keys configured
+- ✅ SPEC-044: Fixed Footer text contrast from 40% to 60% opacity
+- ✅ SPEC-045: Message editing selectors verified working (data-testid pattern)
+- ✅ SPEC-046: Added handlePaymentConsent() for GDPR flow in payment tests
+- ✅ SPEC-047: Rewrote OAuth CSRF tests to capture request URLs and verify state params
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
