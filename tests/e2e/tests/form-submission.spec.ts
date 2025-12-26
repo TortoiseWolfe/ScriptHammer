@@ -3,8 +3,8 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to a page with forms
-    await page.goto('/components');
+    // Navigate to the contact page which has a form
+    await page.goto('/contact');
     await dismissCookieBanner(page);
   });
 
@@ -123,7 +123,7 @@ test.describe('Form Submission', () => {
         await submitButton.click();
 
         // Check that we're still on the same page (not submitted)
-        await expect(page).toHaveURL(/.*components/);
+        await expect(page).toHaveURL(/.*contact/);
 
         // Check for validation error
         const ariaInvalid = await emailInput.getAttribute('aria-invalid');

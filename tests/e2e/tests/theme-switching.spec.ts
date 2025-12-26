@@ -80,10 +80,16 @@ test.describe('Theme Switching', () => {
     await page.click('text=Browse Themes');
     await expect(page).toHaveURL(/.*themes/);
 
-    // Check that theme cards are visible
+    // Check that theme buttons are visible
     await dismissCookieBanner(page);
-    const themeCards = page.locator('.card').first();
-    await expect(themeCards).toBeVisible();
+    const themeHeading = page
+      .locator('h2')
+      .filter({ hasText: /Theme Selector/i });
+    await expect(themeHeading).toBeVisible();
+
+    // Check that theme buttons exist
+    const darkButton = page.getByRole('button', { name: 'dark' });
+    await expect(darkButton).toBeVisible();
   });
 
   test('switch to dark theme and verify persistence', async ({ page }) => {
@@ -150,39 +156,45 @@ test.describe('Theme Switching', () => {
     }
   });
 
-  test('search for themes works', async ({ page }) => {
+  test('all theme buttons are present', async ({ page }) => {
     await page.goto('/themes');
     await dismissCookieBanner(page);
 
-    // Search for "cyber"
-    const searchInput = page.locator('input[placeholder*="Search"]');
-    await searchInput.fill('cyber');
+    // Check that all major themes have buttons
+    const expectedThemes = [
+      'light',
+      'dark',
+      'cupcake',
+      'cyberpunk',
+      'dracula',
+      'synthwave',
+    ];
 
-    // Check that cyberpunk theme button is visible
-    const cyberpunkButton = page.getByRole('button', { name: 'cyberpunk' });
-    await expect(cyberpunkButton).toBeVisible();
-
-    // Check that unrelated themes are filtered out
-    const lightButton = page.getByRole('button', {
-      name: 'light',
-      exact: true,
-    });
-    await expect(lightButton).not.toBeVisible();
+    for (const theme of expectedThemes) {
+      const themeButton = page.getByRole('button', {
+        name: theme,
+        exact: true,
+      });
+      await expect(themeButton).toBeVisible();
+    }
   });
 
   test('theme preview shows correct colors', async ({ page }) => {
     await page.goto('/themes');
     await dismissCookieBanner(page);
 
-    // Check that each theme card shows preview colors
-    const firstThemeCard = page.locator('.card').first();
+    // Check that the Preview section exists
+    const previewSection = page.locator('text=Preview');
+    await expect(previewSection).toBeVisible();
 
-    // Check for color swatches in the theme card
-    const colorSwatches = firstThemeCard.locator(
-      '[class*="bg-primary"], [class*="bg-secondary"], [class*="bg-accent"]'
-    );
-    const count = await colorSwatches.count();
-    expect(count).toBeGreaterThan(0);
+    // Check for color labels in the preview section
+    const primaryLabel = page.locator('text=Primary').first();
+    const secondaryLabel = page.locator('text=Secondary').first();
+    const accentLabel = page.locator('text=Accent').first();
+
+    await expect(primaryLabel).toBeVisible();
+    await expect(secondaryLabel).toBeVisible();
+    await expect(accentLabel).toBeVisible();
   });
 
   test('localStorage stores theme preference', async ({ page }) => {

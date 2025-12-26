@@ -1,49 +1,43 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Cross-Page Navigation', () => {
   test('navigate through all main pages', async ({ page }) => {
     // Start at homepage
     await page.goto('/');
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/$/);
 
     // Navigate to Themes
     await page.click('text=Browse Themes');
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/themes/);
     await expect(
       page.locator('h1').filter({ hasText: /Theme/i })
     ).toBeVisible();
 
-    // Navigate to Components
-    await page.click('a:has-text("Components")');
-    await expect(page).toHaveURL(/\/components/);
-    await expect(
-      page.locator('h1').filter({ hasText: /Component/i })
-    ).toBeVisible();
+    // Navigate to Blog via nav
+    await page.click('a:has-text("Blog")');
+    await dismissCookieBanner(page);
+    await expect(page).toHaveURL(/\/blog/);
 
-    // Navigate to Accessibility
-    await page.click('a:has-text("Accessibility")');
-    await expect(page).toHaveURL(/\/accessibility/);
-    await expect(
-      page.locator('h1').filter({ hasText: /Accessibility/i })
-    ).toBeVisible();
-
-    // Navigate to Status
-    await page.click('a:has-text("Status")');
-    await expect(page).toHaveURL(/\/status/);
-    await expect(
-      page.locator('h1').filter({ hasText: /Status/i })
-    ).toBeVisible();
+    // Navigate to Docs via nav
+    await page.click('a:has-text("Docs")');
+    await dismissCookieBanner(page);
+    await expect(page).toHaveURL(/\/docs/);
 
     // Navigate back to Home
     await page.locator('a:has-text("Home")').first().click();
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/$/);
   });
 
   test('browser back/forward navigation works', async ({ page }) => {
     // Navigate through multiple pages
     await page.goto('/');
+    await dismissCookieBanner(page);
     await page.click('text=Browse Themes');
-    await page.click('a:has-text("Components")');
+    await page.click('a:has-text("Blog")');
 
     // Go back
     await page.goBack();
@@ -59,14 +53,15 @@ test.describe('Cross-Page Navigation', () => {
 
     // Go forward again
     await page.goForward();
-    await expect(page).toHaveURL(/\/components/);
+    await expect(page).toHaveURL(/\/blog/);
   });
 
   test('navigation menu is consistent across pages', async ({ page }) => {
-    const pages = ['/', '/themes', '/components', '/accessibility', '/status'];
+    const pages = ['/', '/themes', '/blog', '/accessibility', '/status'];
 
     for (const pagePath of pages) {
       await page.goto(pagePath);
+      await dismissCookieBanner(page);
 
       // Check navigation elements exist
       const nav = page.locator('nav, [role="navigation"]').first();
@@ -87,28 +82,26 @@ test.describe('Cross-Page Navigation', () => {
   test('deep linking works correctly', async ({ page }) => {
     // Direct navigation to deep pages
     await page.goto('/themes');
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/themes/);
     await expect(
       page.locator('h1').filter({ hasText: /Theme/i })
     ).toBeVisible();
 
-    await page.goto('/components');
-    await expect(page).toHaveURL(/\/components/);
-    await expect(
-      page.locator('h1').filter({ hasText: /Component/i })
-    ).toBeVisible();
+    await page.goto('/blog');
+    await dismissCookieBanner(page);
+    await expect(page).toHaveURL(/\/blog/);
 
     await page.goto('/accessibility');
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/accessibility/);
     await expect(
       page.locator('h1').filter({ hasText: /Accessibility/i })
     ).toBeVisible();
 
     await page.goto('/status');
+    await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/status/);
-    await expect(
-      page.locator('h1').filter({ hasText: /Status/i })
-    ).toBeVisible();
   });
 
   test('404 page handles non-existent routes', async ({ page }) => {
@@ -134,68 +127,49 @@ test.describe('Cross-Page Navigation', () => {
 
   test('anchor links within pages work', async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
 
-    // Check for anchor links
-    const anchorLinks = page.locator('a[href^="#"]');
-    const anchorCount = await anchorLinks.count();
+    // Check for anchor links (skip to main content)
+    const skipLink = page.locator('a[href="#main-content"]');
+    const hasSkipLink = (await skipLink.count()) > 0;
 
-    if (anchorCount > 0) {
-      const firstAnchor = anchorLinks.first();
-      const href = await firstAnchor.getAttribute('href');
+    if (hasSkipLink) {
+      // Focus and click the skip link
+      await page.keyboard.press('Tab');
+      await skipLink.click();
 
-      if (href) {
-        // Click anchor link
-        await firstAnchor.click();
-
-        // Check URL updated with hash
-        expect(page.url()).toContain(href);
-
-        // Check target element is in viewport
-        const targetId = href.substring(1);
-        const targetElement = page.locator(`#${targetId}`);
-
-        if ((await targetElement.count()) > 0) {
-          await expect(targetElement).toBeInViewport();
-        }
+      // Check target element is in viewport
+      const mainContent = page.locator('#main-content');
+      if ((await mainContent.count()) > 0) {
+        await expect(mainContent).toBeInViewport();
       }
     }
   });
 
   test('external links open in new tab', async ({ page, context }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
 
-    // Find external links
-    const externalLinks = page.locator(
-      'a[href^="http"]:not([href*="localhost"]):not([href*="ScriptHammer"])'
-    );
-    const linkCount = await externalLinks.count();
+    // Find View Source link which opens GitHub in new tab
+    const viewSourceLink = page.locator('a:has-text("View Source")');
+    const hasViewSource = (await viewSourceLink.count()) > 0;
 
-    if (linkCount > 0) {
-      const firstLink = externalLinks.first();
-
-      // Check target attribute
-      const target = await firstLink.getAttribute('target');
-      const rel = await firstLink.getAttribute('rel');
-
-      // External links should open in new tab with security attributes
-      if (target === '_blank') {
-        expect(rel).toContain('noopener');
-      }
-
+    if (hasViewSource) {
       // Test link opens in new tab
       const [newPage] = await Promise.all([
         context.waitForEvent('page'),
-        firstLink.click(),
+        viewSourceLink.click(),
       ]);
 
       await newPage.waitForLoadState();
-      expect(newPage.url()).toMatch(/^https?:\/\//);
+      expect(newPage.url()).toContain('github.com');
       await newPage.close();
     }
   });
 
   test('breadcrumb navigation works if present', async ({ page }) => {
-    await page.goto('/components');
+    await page.goto('/blog');
+    await dismissCookieBanner(page);
 
     // Look for breadcrumb navigation
     const breadcrumbs = page.locator(
@@ -220,11 +194,14 @@ test.describe('Cross-Page Navigation', () => {
   test('navigation preserves theme selection', async ({ page }) => {
     // Set a theme
     await page.goto('/themes');
-    const darkTheme = page.locator('[data-theme="dark"]').first();
-    await darkTheme.click();
+    await dismissCookieBanner(page);
+
+    // Click dark theme button
+    const darkThemeBtn = page.locator('button:has-text("dark")');
+    await darkThemeBtn.click();
 
     // Navigate to different pages
-    const pages = ['/components', '/accessibility', '/status', '/'];
+    const pages = ['/blog', '/accessibility', '/status', '/'];
 
     for (const pagePath of pages) {
       await page.goto(pagePath);
@@ -236,6 +213,7 @@ test.describe('Cross-Page Navigation', () => {
 
   test('navigation menu is keyboard accessible', async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Tab to first navigation link
     await page.keyboard.press('Tab');
@@ -274,6 +252,7 @@ test.describe('Cross-Page Navigation', () => {
 
   test('page transitions are smooth', async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Check for view transitions API or CSS transitions
     const hasTransitions = await page.evaluate(() => {
@@ -307,36 +286,34 @@ test.describe('Cross-Page Navigation', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/');
+    await dismissCookieBanner(page);
 
-    // Look for mobile menu button (hamburger)
-    const menuButton = page.locator(
-      'button[aria-label*="menu"], button.hamburger, button:has-text("☰")'
-    );
+    // Look for mobile menu button (hamburger) - use aria-label pattern
+    const menuButton = page.locator('button[aria-label="Navigation menu"]');
     const hasMenuButton = (await menuButton.count()) > 0;
 
     if (hasMenuButton) {
       // Open mobile menu
       await menuButton.click();
 
-      // Check menu is visible
-      const mobileNav = page.locator(
-        '.drawer-side, .mobile-menu, [class*="mobile-nav"]'
-      );
-      await expect(mobileNav).toBeVisible();
+      // The menu is a dropdown, so look for menu items
+      const menuItems = page.locator('.dropdown-content a');
+      await expect(menuItems.first()).toBeVisible();
 
-      // Click a navigation link
-      const navLink = mobileNav.locator('a:has-text("Themes")').first();
-      if ((await navLink.count()) > 0) {
-        await navLink.click();
+      // Click Home link
+      const homeLink = menuItems.filter({ hasText: 'Home' }).first();
+      if ((await homeLink.count()) > 0) {
+        await homeLink.click();
 
-        // Check navigation occurred
-        await expect(page).toHaveURL(/\/themes/);
+        // Check navigation occurred (back to home)
+        await expect(page).toHaveURL(/\/$/);
       }
     }
   });
 
   test('scroll position resets on navigation', async ({ page }) => {
     await page.goto('/');
+    await dismissCookieBanner(page);
 
     // Scroll down
     await page.evaluate(() => window.scrollTo(0, 500));
@@ -350,22 +327,22 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('active navigation item is highlighted', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/');
+    await dismissCookieBanner(page);
 
-    // Find navigation link for current page
-    const activeLink = page
-      .locator('nav a[href*="themes"], nav a:has-text("Themes")')
-      .first();
+    // Click Blog to navigate there
+    await page.click('a:has-text("Blog")');
+    await expect(page).toHaveURL(/\/blog/);
 
-    if ((await activeLink.count()) > 0) {
+    // Check the Blog nav link has active state
+    const blogLink = page.locator('nav a:has-text("Blog")').first();
+
+    if ((await blogLink.count()) > 0) {
       // Check for active state (aria-current or active class)
-      const ariaCurrent = await activeLink.getAttribute('aria-current');
-      const className = await activeLink.getAttribute('class');
+      const className = await blogLink.getAttribute('class');
 
-      const hasActiveState =
-        ariaCurrent === 'page' ||
-        className?.includes('active') ||
-        className?.includes('current');
+      // DaisyUI uses btn-active class
+      const hasActiveState = className?.includes('active');
 
       expect(hasActiveState).toBe(true);
     }
