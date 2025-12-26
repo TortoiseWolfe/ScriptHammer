@@ -239,14 +239,13 @@ test.describe('Broken Links Detection', () => {
     // Also check specific important pages that might not be linked
     const importantPages = [
       '/blog',
-      '/components',
       '/themes',
       '/status',
       '/accessibility',
       '/contact',
-      '/privacy',
-      '/cookies',
-      '/privacy-controls',
+      '/game',
+      '/map',
+      '/docs',
     ];
 
     for (const pagePath of importantPages) {
@@ -415,8 +414,8 @@ test.describe('Broken Links Detection', () => {
   test('check specific known problematic links', async ({ page }) => {
     const knownProblematicLinks = [
       { path: '/docs', description: 'Documentation page' },
-      { path: '/privacy', description: 'Privacy policy' },
-      { path: '/cookies', description: 'Cookie policy' },
+      { path: '/blog', description: 'Blog page' },
+      { path: '/accessibility', description: 'Accessibility settings' },
     ];
 
     const results: Array<{ path: string; status: string; code?: number }> = [];
