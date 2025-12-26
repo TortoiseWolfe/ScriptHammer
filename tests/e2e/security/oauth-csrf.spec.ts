@@ -3,6 +3,7 @@
 // Purpose: Test OAuth CSRF protection prevents session hijacking
 
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
   test('should reject OAuth callback with modified state parameter', async ({
@@ -11,9 +12,12 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
   }) => {
     // Navigate to sign-in page
     await page.goto('/sign-in');
+    await dismissCookieBanner(page);
 
     // Click "Sign in with GitHub" button
-    const githubButton = page.locator('button:has-text("Sign in with GitHub")');
+    const githubButton = page.getByRole('button', {
+      name: /Sign in with GitHub/i,
+    });
     await expect(githubButton).toBeVisible();
 
     // Intercept the OAuth redirect to capture the state parameter
@@ -53,9 +57,9 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
       timeout: 3000,
     });
 
-    // Should NOT be signed in
-    const profileLink = page.locator('a[href="/profile"]');
-    await expect(profileLink).not.toBeVisible();
+    // Should NOT be signed in - look for sign in button or check no profile/account link
+    const signOutButton = page.getByRole('button', { name: /Sign Out/i });
+    await expect(signOutButton).not.toBeVisible();
   });
 
   test('should prevent OAuth callback without state parameter', async ({
@@ -63,6 +67,7 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
   }) => {
     // Navigate directly to OAuth callback without state
     await page.goto('/auth/callback?code=test-code');
+    await dismissCookieBanner(page);
 
     // Should see error about missing state
     await expect(
@@ -84,6 +89,7 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
 
     // Step 1: Legitimate user initiates OAuth flow
     await page.goto('/sign-in');
+    await dismissCookieBanner(page);
 
     let capturedState: string | null = null;
 
@@ -94,7 +100,9 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
       }
     });
 
-    const githubButton = page.locator('button:has-text("Sign in with GitHub")');
+    const githubButton = page.getByRole('button', {
+      name: /Sign in with GitHub/i,
+    });
     await githubButton.click();
 
     // Wait briefly for state to be generated
@@ -121,7 +129,10 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
   test('should timeout expired state tokens', async ({ page }) => {
     // Generate a state token
     await page.goto('/sign-in');
-    const githubButton = page.locator('button:has-text("Sign in with GitHub")');
+    await dismissCookieBanner(page);
+    const githubButton = page.getByRole('button', {
+      name: /Sign in with GitHub/i,
+    });
 
     let capturedState: string | null = null;
 
@@ -156,6 +167,7 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
 
     // Attacker starts OAuth flow
     await attackerPage.goto('/sign-in');
+    await dismissCookieBanner(attackerPage);
 
     let attackerState: string | null = null;
 
@@ -166,9 +178,9 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
       }
     });
 
-    const attackerGithubBtn = attackerPage.locator(
-      'button:has-text("Sign in with GitHub")'
-    );
+    const attackerGithubBtn = attackerPage.getByRole('button', {
+      name: /Sign in with GitHub/i,
+    });
     await attackerGithubBtn.click();
     await attackerPage.waitForTimeout(1000);
 

@@ -64,17 +64,17 @@ test.describe('GDPR Data Export', () => {
     page,
   }) => {
     // Find Privacy & Data section
-    const privacySection = page.locator('text=Privacy & Data').first();
+    const privacySection = page.getByText('Privacy & Data').first();
     await expect(privacySection).toBeVisible();
 
     // Find Data Export subsection
-    const exportSection = page.locator('text=Data Export').first();
+    const exportSection = page.getByText('Data Export').first();
     await expect(exportSection).toBeVisible();
 
     // Find Download My Data button
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
     await expect(exportButton).toBeVisible();
     await expect(exportButton).toBeEnabled();
   });
@@ -87,13 +87,13 @@ test.describe('GDPR Data Export', () => {
     const downloadPromise = page.waitForEvent('download');
 
     // Click export button
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
     await exportButton.click();
 
     // Wait for loading state
-    await expect(page.locator('text=Exporting...')).toBeVisible();
+    await expect(page.getByText('Exporting...')).toBeVisible();
 
     // Wait for download
     const download = await downloadPromise;
@@ -136,9 +136,9 @@ test.describe('GDPR Data Export', () => {
 
     const downloadPromise = page.waitForEvent('download');
 
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
     await exportButton.click();
 
     const download = await downloadPromise;
@@ -179,13 +179,13 @@ test.describe('GDPR Data Export', () => {
       route.abort();
     });
 
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
     await exportButton.click();
 
     // Should show error alert
-    await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 5000 });
   });
 });
 
@@ -215,17 +215,15 @@ test.describe('GDPR Account Deletion', () => {
     page,
   }) => {
     // Find Privacy & Data section
-    const privacySection = page.locator('text=Privacy & Data').first();
+    const privacySection = page.getByText('Privacy & Data').first();
     await expect(privacySection).toBeVisible();
 
     // Find Account Deletion subsection
-    const deletionSection = page.locator('text=Account Deletion').first();
+    const deletionSection = page.getByText('Account Deletion').first();
     await expect(deletionSection).toBeVisible();
 
     // Find Delete Account button
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await expect(deleteButton).toBeVisible();
     await expect(deleteButton).toBeEnabled();
   });
@@ -233,9 +231,7 @@ test.describe('GDPR Account Deletion', () => {
   test('should open confirmation modal on delete button click (T192)', async ({
     page,
   }) => {
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     // Modal should be visible
@@ -243,18 +239,14 @@ test.describe('GDPR Account Deletion', () => {
     await expect(modal).toBeVisible();
 
     // Modal should have warning content
-    await expect(page.locator('text=Delete Account Permanently')).toBeVisible();
-    await expect(
-      page.locator('text=This action cannot be undone')
-    ).toBeVisible();
+    await expect(page.getByText('Delete Account Permanently')).toBeVisible();
+    await expect(page.getByText('This action cannot be undone')).toBeVisible();
   });
 
   test('should require typing "DELETE" to enable deletion (T192)', async ({
     page,
   }) => {
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
@@ -284,15 +276,13 @@ test.describe('GDPR Account Deletion', () => {
   });
 
   test('should close modal on cancel button click (T192)', async ({ page }) => {
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
     await expect(modal).toBeVisible();
 
-    const cancelButton = modal.locator('button:has-text("Cancel")');
+    const cancelButton = modal.getByRole('button', { name: /Cancel/i });
     await cancelButton.click();
 
     // Modal should close
@@ -305,9 +295,7 @@ test.describe('GDPR Account Deletion', () => {
     // NOTE: This test should use a dedicated test account that can be deleted
     // Skipping actual deletion to preserve test account
 
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
@@ -334,7 +322,7 @@ test.describe('GDPR Account Deletion', () => {
     await confirmButton.click();
 
     // Should show loading state
-    await expect(page.locator('text=Deleting...')).toBeVisible();
+    await expect(page.getByText('Deleting...')).toBeVisible();
 
     // Should redirect to sign-in
     // await page.waitForURL('/sign-in?message=account_deleted', { timeout: 10000 });
@@ -343,9 +331,7 @@ test.describe('GDPR Account Deletion', () => {
   test('should show error message on deletion failure (T192)', async ({
     page,
   }) => {
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
@@ -372,16 +358,14 @@ test.describe('GDPR Account Deletion', () => {
     await confirmButton.click();
 
     // Should show error alert
-    await expect(modal.locator('[role="alert"]')).toBeVisible({
+    await expect(modal.getByRole('alert')).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator('text=Deletion failed')).toBeVisible();
+    await expect(page.getByText('Deletion failed')).toBeVisible();
   });
 
   test('should have accessible ARIA attributes (T192)', async ({ page }) => {
-    const deleteButton = page
-      .locator('button:has-text("Delete Account")')
-      .first();
+    const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
@@ -434,13 +418,13 @@ test.describe('GDPR Accessibility', () => {
     page,
   }) => {
     // Data export has live region - check initial state
-    const exportLiveRegion = page.locator('[role="status"]').first();
+    const exportLiveRegion = page.getByRole('status').first();
     await expect(exportLiveRegion).toHaveText(/ready to export/i);
 
     // Click export button
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
     await exportButton.click();
 
     // Status should update to "Exporting your data..."
@@ -452,9 +436,9 @@ test.describe('GDPR Accessibility', () => {
     await page.keyboard.press('Tab');
 
     // Should be able to reach export button
-    const exportButton = page
-      .locator('button:has-text("Download My Data")')
-      .first();
+    const exportButton = page.getByRole('button', {
+      name: /Download My Data/i,
+    });
 
     // Focus export button
     await exportButton.focus();
@@ -464,6 +448,6 @@ test.describe('GDPR Accessibility', () => {
     await page.keyboard.press('Enter');
 
     // Should show loading state
-    await expect(page.locator('text=Exporting...')).toBeVisible();
+    await expect(page.getByText('Exporting...')).toBeVisible();
   });
 });
