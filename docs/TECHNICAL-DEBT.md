@@ -258,6 +258,68 @@ The offline queue integration tests previously had issues with React Hook Form t
    - Artifacts and reports uploaded for review
 3. **Visual Regression**: PRP-012 deferred but needed for UI stability
 
+## E2E Test Debt (2025-12-26)
+
+**Status**: 163 tests skipped (51% of 322 total tests)
+
+### Category 1: Payment Features (89 skips)
+
+Tests for features that don't exist yet.
+
+| File                                      | Skips | Reason                           |
+| ----------------------------------------- | ----- | -------------------------------- |
+| `payment/08-security-rls.spec.ts`         | 25    | Payment tables/RLS not confirmed |
+| `payment/06-realtime-dashboard.spec.ts`   | 20    | Dashboard not implemented        |
+| `payment/05-offline-queue.spec.ts`        | 18    | Queue UI not implemented         |
+| `payment/07-performance.spec.ts`          | 14    | Dashboard/history missing        |
+| `payment/03-failed-payment-retry.spec.ts` | 14    | Retry UI not implemented         |
+| `payment/02-paypal-subscription.spec.ts`  | 12    | Subscription mgmt missing        |
+| `payment/01-stripe-onetime.spec.ts`       | 8     | Stripe keys not configured       |
+
+**Unblock by**: Implementing payment features incrementally
+
+### Category 2: Messaging Tests (35 skips)
+
+Conditional skips - run when setup succeeds.
+
+| File                                       | Skips | Condition         |
+| ------------------------------------------ | ----- | ----------------- |
+| `messaging/message-editing.spec.ts`        | 13    | `!setupSucceeded` |
+| `messaging/performance.spec.ts`            | 10    | `!setupSucceeded` |
+| `messaging/offline-queue.spec.ts`          | 6     | `!setupSucceeded` |
+| `messaging/friend-requests.spec.ts`        | 2     | `testInfo.skip`   |
+| `messaging/encrypted-messaging.spec.ts`    | 1     | Service key       |
+| `messaging/complete-user-workflow.spec.ts` | 1     | Service key       |
+
+**Unblock by**: Ensuring SUPABASE_SERVICE_ROLE_KEY in GitHub Secrets
+
+### Category 3: Auth Tests (12 skips)
+
+Environment-dependent tests.
+
+| File                             | Skips | Reason               |
+| -------------------------------- | ----- | -------------------- |
+| `auth/sign-up.spec.ts`           | 5     | Service key required |
+| `auth/protected-routes.spec.ts`  | 3     | Service key required |
+| `auth/rate-limiting.spec.ts`     | 2     | Email domain config  |
+| `auth/user-registration.spec.ts` | 1     | Full flow test       |
+
+**Unblock by**: Configure GitHub Secrets or make tests resilient
+
+### Category 4: Legacy Tests (4 skips)
+
+| File                                 | Skips | Reason            |
+| ------------------------------------ | ----- | ----------------- |
+| `examples/homepage-with-pom.spec.ts` | 4     | Game demo removed |
+
+**Unblock by**: Delete or update example tests
+
+### Active Failures (~10)
+
+| Test                      | Issue                             | Status                     |
+| ------------------------- | --------------------------------- | -------------------------- |
+| `message-editing.spec.ts` | Edit/Delete buttons not appearing | Fix committed, awaiting CI |
+
 ## Documentation Updates Needed
 
 1. Update deployment guides for security headers configuration
