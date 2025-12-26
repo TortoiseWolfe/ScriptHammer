@@ -6,11 +6,32 @@
  * Tests data export and account deletion flows
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   waitForAuthenticatedState,
 } from '../utils/test-user-factory';
+
+/**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
 
 // Test user - use PRIMARY from standardized test fixtures (Feature 026)
 const TEST_USER = {
@@ -30,7 +51,12 @@ test.describe('GDPR Data Export', () => {
 
     // Navigate to account settings
     await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    // Wait for account settings heading to be visible
+    await page.waitForSelector('h1:has-text("Account Settings")', {
+      state: 'visible',
+      timeout: 10000,
+    });
+    await waitForUIStability(page);
     await dismissCookieBanner(page);
   });
 
@@ -176,7 +202,12 @@ test.describe('GDPR Account Deletion', () => {
 
     // Navigate to account settings
     await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    // Wait for account settings heading to be visible
+    await page.waitForSelector('h1:has-text("Account Settings")', {
+      state: 'visible',
+      timeout: 10000,
+    });
+    await waitForUIStability(page);
     await dismissCookieBanner(page);
   });
 
@@ -366,7 +397,12 @@ test.describe('GDPR Accessibility', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
     await page.goto('/account');
-    await page.waitForLoadState('networkidle');
+    // Wait for account settings heading to be visible
+    await page.waitForSelector('h1:has-text("Account Settings")', {
+      state: 'visible',
+      timeout: 10000,
+    });
+    await waitForUIStability(page);
     await dismissCookieBanner(page);
   });
 

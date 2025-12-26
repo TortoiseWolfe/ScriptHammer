@@ -6,6 +6,27 @@ import {
 } from '../utils/test-user-factory';
 
 /**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
+/**
  * Messaging Scroll E2E Tests
  * Feature: 005-fix-messaging-scroll
  *
@@ -211,7 +232,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
     });
 
     // Wait for scroll to complete
-    await page.waitForTimeout(300);
+    await waitForUIStability(page);
 
     // Get input position after scroll
     const afterScrollInputBox = await messageInput.boundingBox();
@@ -262,7 +283,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 600);
     });
 
-    await page.waitForTimeout(300);
+    await waitForUIStability(page);
 
     // Check if jump button appears
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
@@ -317,15 +338,15 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.scrollTop = 0;
     });
 
-    await page.waitForTimeout(300);
+    await waitForUIStability(page);
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
     if (await jumpButton.isVisible()) {
       await jumpButton.click();
 
-      // Wait for smooth scroll animation
-      await page.waitForTimeout(500);
+      // Wait for smooth scroll animation to complete
+      await waitForUIStability(page);
 
       // Check we're at the bottom
       const scrollInfo = await messageThread.evaluate((el) => ({

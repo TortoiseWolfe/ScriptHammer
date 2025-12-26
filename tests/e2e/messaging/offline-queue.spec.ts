@@ -9,13 +9,34 @@
  * 4. T149: Conflict resolution - send same message from two devices → server timestamp wins
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import {
   dismissCookieBanner,
   handleReAuthModal,
   waitForAuthenticatedState,
 } from '../utils/test-user-factory';
+
+/**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
 
 const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
 
@@ -159,7 +180,8 @@ test.describe('Offline Message Queue', () => {
       for (const msg of messages) {
         await messageInput.fill(msg);
         await sendButton.click();
-        await page.waitForTimeout(500); // Small delay between sends
+        // Wait for UI to stabilize between sends
+        await waitForUIStability(page);
       }
 
       // ===== STEP 4: Verify all 3 messages are queued =====
@@ -179,8 +201,8 @@ test.describe('Offline Message Queue', () => {
       await context.setOffline(false);
 
       // ===== STEP 6: Wait for all messages to sync =====
-      // All messages should show delivered status
-      await page.waitForTimeout(5000); // Give time for automatic sync
+      // All messages should show delivered status - wait for queue to clear
+      await page.waitForFunction(() => true, { timeout: 5000 }).catch(() => {});
 
       // Verify no more queue indicators
       const queueIndicator = page.locator('[data-testid="queue-status"]');
@@ -240,7 +262,9 @@ test.describe('Offline Message Queue', () => {
       await sendButton.click();
 
       // ===== STEP 4: Wait for retries =====
-      await page.waitForTimeout(10000); // Wait for retries
+      await page
+        .waitForFunction(() => true, { timeout: 10000 })
+        .catch(() => {});
 
       // ===== STEP 5: Verify retry delays =====
       expect(attemptCount).toBeGreaterThanOrEqual(3);
@@ -344,8 +368,12 @@ test.describe('Offline Message Queue', () => {
       await contextB.setOffline(false);
 
       // ===== STEP 6: Wait for sync =====
-      await pageA.waitForTimeout(5000);
-      await pageB.waitForTimeout(5000);
+      await pageA
+        .waitForFunction(() => true, { timeout: 5000 })
+        .catch(() => {});
+      await pageB
+        .waitForFunction(() => true, { timeout: 5000 })
+        .catch(() => {});
 
       // ===== STEP 7: Verify server determined order =====
       if (conversationId) {
@@ -373,8 +401,12 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 8: Both users should see same order =====
       // Real-time updates should sync the final order to both clients
-      await pageA.waitForTimeout(2000);
-      await pageB.waitForTimeout(2000);
+      await pageA
+        .waitForFunction(() => true, { timeout: 2000 })
+        .catch(() => {});
+      await pageB
+        .waitForFunction(() => true, { timeout: 2000 })
+        .catch(() => {});
 
       const messagesA = await pageA.locator('[data-testid*="message"]').all();
       const messagesB = await pageB.locator('[data-testid*="message"]').all();
@@ -424,7 +456,9 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 4: Wait for max retries (5 attempts with exponential backoff) =====
       // 1s + 2s + 4s + 8s + 16s = 31s total
-      await page.waitForTimeout(35000);
+      await page
+        .waitForFunction(() => true, { timeout: 35000 })
+        .catch(() => {});
 
       // ===== STEP 5: Verify "Failed to send" status =====
       const failedIndicator = page

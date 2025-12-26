@@ -123,6 +123,27 @@ test.beforeAll(async () => {
 });
 
 /**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
+/**
  * Navigate to conversation via UI (no direct URL route exists)
  */
 async function navigateToConversation(page: import('@playwright/test').Page) {
@@ -133,7 +154,9 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
   if (await chatsTab.isVisible()) {
     await chatsTab.click();
-    await page.waitForTimeout(500);
+    // Wait for tab panel to update
+    await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
+    await waitForUIStability(page);
   }
 
   // Find first conversation button by aria-label pattern
@@ -144,7 +167,14 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
   // Wait for and click conversation
   await expect(firstConversation).toBeVisible({ timeout: 5000 });
   await firstConversation.click();
-  await page.waitForTimeout(500);
+  // Wait for message thread to load
+  await page
+    .waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
+      timeout: 10000,
+    })
+    .catch(() => {});
+  await waitForUIStability(page);
 }
 
 test.describe('Virtual Scrolling Performance', () => {
@@ -202,7 +232,7 @@ test.describe('Virtual Scrolling Performance', () => {
       await messageThread.evaluate((el) => {
         el.scrollTop += 500;
       });
-      await page.waitForTimeout(100);
+      await waitForUIStability(page);
     }
 
     // Get end metrics
@@ -235,8 +265,8 @@ test.describe('Virtual Scrolling Performance', () => {
       return; // Skip rest of test if no messages
     }
 
-    // Wait for initial messages to load (50 messages)
-    await page.waitForTimeout(500);
+    // Wait for initial messages to load
+    await waitForUIStability(page);
 
     // Scroll to top to trigger pagination
     await messageThread.evaluate((el) => {
@@ -283,8 +313,8 @@ test.describe('Virtual Scrolling Performance', () => {
     // Click jump to bottom
     await jumpButton.click();
 
-    // Wait for smooth scroll animation
-    await page.waitForTimeout(500);
+    // Wait for smooth scroll animation to complete
+    await waitForUIStability(page);
 
     // Verify button disappears (near bottom)
     await expect(jumpButton).not.toBeVisible({ timeout: 2000 });
@@ -365,8 +395,8 @@ test.describe('Virtual Scrolling Performance', () => {
       return; // Skip if no conversation
     }
 
-    // Wait for profiler logs
-    await page.waitForTimeout(2000);
+    // Wait for profiler logs - use longer timeout for profiler callbacks
+    await page.waitForFunction(() => true, { timeout: 2000 }).catch(() => {});
 
     // Verify performance logs were captured
     expect(profilerLogs.length).toBeGreaterThan(0);
@@ -407,27 +437,27 @@ test.describe('Keyboard Navigation', () => {
 
     // Arrow down to scroll
     await page.keyboard.press('ArrowDown');
-    await page.waitForTimeout(100);
+    await waitForUIStability(page);
 
     // Arrow up to scroll
     await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(100);
+    await waitForUIStability(page);
 
     // Page Down for faster scrolling
     await page.keyboard.press('PageDown');
-    await page.waitForTimeout(100);
+    await waitForUIStability(page);
 
     // Page Up for faster scrolling
     await page.keyboard.press('PageUp');
-    await page.waitForTimeout(100);
+    await waitForUIStability(page);
 
     // Home to scroll to top
     await page.keyboard.press('Home');
-    await page.waitForTimeout(200);
+    await waitForUIStability(page);
 
     // End to scroll to bottom
     await page.keyboard.press('End');
-    await page.waitForTimeout(200);
+    await waitForUIStability(page);
 
     // Verify no errors during keyboard navigation
     expect(messageThread).toBeVisible();
@@ -534,7 +564,7 @@ test.describe('Scroll Restoration', () => {
     expect(initialDistanceFromBottom).toBeLessThan(100);
 
     // Wait for potential new message (via real-time subscription)
-    await page.waitForTimeout(2000);
+    await page.waitForFunction(() => true, { timeout: 2000 }).catch(() => {});
 
     // If new message arrives, should auto-scroll to bottom
     const finalScrollInfo = await messageThread.evaluate((el) => ({

@@ -156,6 +156,27 @@ async function signIn(page: Page, email: string, password: string) {
 }
 
 /**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
+/**
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
@@ -166,7 +187,9 @@ async function navigateToConversation(page: Page) {
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
   if (await chatsTab.isVisible()) {
     await chatsTab.click();
-    await page.waitForTimeout(500);
+    // Wait for tab panel to update
+    await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
+    await waitForUIStability(page);
   }
 
   // Find first conversation button by aria-label pattern
@@ -182,6 +205,7 @@ async function navigateToConversation(page: Page) {
   await page.waitForSelector('[data-testid="message-input"]', {
     timeout: 10000,
   });
+  await waitForUIStability(page);
 }
 
 test.describe('Message Editing', () => {
