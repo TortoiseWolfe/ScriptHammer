@@ -15,6 +15,31 @@ import {
 import { CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  // Wait for layout to stabilize using requestAnimationFrame
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) {
+            resolve(true);
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Touch Target Standards', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minWidth;
   const TOLERANCE = 1; // Allow 1px tolerance for sub-pixel rendering
@@ -26,6 +51,7 @@ test.describe('Touch Target Standards', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Check primary navigation buttons only (not all interactive elements)
     // Inline text links, badges, and icons inside buttons are exempt
@@ -69,6 +95,7 @@ test.describe('Touch Target Standards', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Specifically test navigation buttons
     const navButtons = await page.locator('nav button').all();
@@ -97,6 +124,7 @@ test.describe('Touch Target Standards', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
       await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
 
       // Check a sample of common interactive elements
       const buttons = await page.locator('button').all();
@@ -121,6 +149,7 @@ test.describe('Touch Target Standards', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Test primary CTA links (buttons), not inline text links
     // Inline text links are exempt from 44px height requirement
@@ -158,6 +187,8 @@ test.describe('Touch Target Standards', () => {
   test('Form inputs meet touch target height standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Test form inputs if present
     const inputs = await page
@@ -184,6 +215,7 @@ test.describe('Touch Target Standards', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Check main navigation for adequate spacing between interactive elements
     // Note: Elements with gap-0.5 (2px) are intentional for compact layouts

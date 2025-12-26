@@ -11,6 +11,39 @@ import { test, expect } from '@playwright/test';
 import { TEST_PAGES, CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport change
+ * Uses DOM observation instead of arbitrary timeouts
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  // Wait for no layout shifts for 100ms
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let lastWidth = document.documentElement.scrollWidth;
+        let stableCount = 0;
+        const check = () => {
+          const currentWidth = document.documentElement.scrollWidth;
+          if (currentWidth === lastWidth) {
+            stableCount++;
+            if (stableCount >= 3) {
+              resolve(true);
+              return;
+            }
+          } else {
+            stableCount = 0;
+            lastWidth = currentWidth;
+          }
+          setTimeout(check, 50);
+        };
+        check();
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Horizontal Scroll Detection', () => {
   // Test all critical pages at all critical mobile widths
   for (const url of TEST_PAGES) {
@@ -23,8 +56,8 @@ test.describe('Horizontal Scroll Detection', () => {
         await page.goto(url);
         await dismissCookieBanner(page);
 
-        // Wait for page to fully render
-        await page.waitForLoadState('networkidle');
+        // Wait for layout to stabilize
+        await waitForLayoutStability(page);
 
         // Check document scroll width vs client width
         const scrollWidth = await page.evaluate(
@@ -62,6 +95,7 @@ test.describe('Horizontal Scroll Detection', () => {
     await page.setViewportSize({ width, height: 800 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Get all elements
     const allElements = await page.locator('*').all();
@@ -94,6 +128,8 @@ test.describe('Horizontal Scroll Detection', () => {
   test('Images do not cause horizontal overflow', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const images = await page.locator('img').all();
 
@@ -114,6 +150,8 @@ test.describe('Horizontal Scroll Detection', () => {
   test('Tables are responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Check if any tables exist
     const tables = await page.locator('table').all();
@@ -149,6 +187,8 @@ test.describe('Horizontal Scroll Detection', () => {
   test('Pre/code blocks are responsive', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const codeBlocks = await page.locator('pre, code').all();
 

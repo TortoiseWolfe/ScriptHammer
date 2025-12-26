@@ -11,6 +11,27 @@ import { test, expect } from '@playwright/test';
 import { TEST_VIEWPORTS } from '@/config/test-viewports';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Navigation', () => {
   // Test at multiple mobile viewports
   const mobileViewports = TEST_VIEWPORTS.filter((v) => v.category === 'mobile');
@@ -28,6 +49,7 @@ test.describe('Mobile Navigation', () => {
       // Navigate to homepage
       await page.goto('/');
       await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
 
       // Wait for navigation to be visible
       const nav = page.locator('nav').first();
@@ -70,6 +92,7 @@ test.describe('Mobile Navigation', () => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
@@ -115,6 +138,7 @@ test.describe('Mobile Navigation', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Look for mobile menu button (hamburger icon) - it's a label in DaisyUI dropdown
     const menuButton = page
@@ -128,11 +152,8 @@ test.describe('Mobile Navigation', () => {
       // Menu content should become visible (DaisyUI uses dropdown-content class)
       const menuContent = page.locator('nav .dropdown-content').first();
 
-      // Allow time for animation
-      await page.waitForTimeout(300);
-
-      // Menu should be visible after click
-      await expect(menuContent).toBeVisible();
+      // Wait for menu content to be visible (replaces waitForTimeout)
+      await expect(menuContent).toBeVisible({ timeout: 2000 });
 
       // Verify menu contains navigation items
       const menuLinks = menuContent.locator('a');
@@ -151,13 +172,14 @@ test.describe('Mobile Navigation', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const nav = page.locator('nav').first();
     await expect(nav).toBeVisible();
 
     // Rotate to landscape (width > height but still mobile)
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(100);
+    await waitForLayoutStability(page);
 
     // Navigation should still be visible and fit
     await expect(nav).toBeVisible();

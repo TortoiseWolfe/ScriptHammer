@@ -7,6 +7,27 @@ import { test, expect } from '@playwright/test';
 import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Form Inputs', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minHeight;
   const TOLERANCE = 1;
@@ -15,6 +36,7 @@ test.describe('Mobile Form Inputs', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const inputs = await page
       .locator('input[type="text"], input[type="email"], textarea, select')
@@ -38,6 +60,7 @@ test.describe('Mobile Form Inputs', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const formGroups = await page
       .locator('[class*="form-control"], [class*="input-group"]')

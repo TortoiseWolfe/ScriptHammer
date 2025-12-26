@@ -10,6 +10,27 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Typography', () => {
   test('Body text is readable without zoom (≥14px minimum)', async ({
     page,
@@ -17,6 +38,7 @@ test.describe('Mobile Typography', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Test article body paragraphs
     const bodyText = page.locator('article p, .prose p, main p').first();
@@ -39,6 +61,7 @@ test.describe('Mobile Typography', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const bodyText = page.locator('article p, .prose p, main p').first();
 
@@ -62,6 +85,7 @@ test.describe('Mobile Typography', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Test heading hierarchy
     const h1 = page.locator('h1').first();
@@ -108,6 +132,7 @@ test.describe('Mobile Typography', () => {
     // Test at minimum width
     await page.setViewportSize({ width: 320, height: 568 });
     await page.goto('/');
+    await waitForLayoutStability(page);
 
     const h1 = page.locator('h1').first();
 
@@ -118,7 +143,7 @@ test.describe('Mobile Typography', () => {
 
       // Resize to larger mobile viewport
       await page.setViewportSize({ width: 428, height: 926 });
-      await page.waitForTimeout(100);
+      await waitForLayoutStability(page);
 
       const maxSize = await h1.evaluate((el) =>
         parseFloat(window.getComputedStyle(el).fontSize)
@@ -135,6 +160,7 @@ test.describe('Mobile Typography', () => {
   test('Small text is avoided or has min-font-size', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
+    await waitForLayoutStability(page);
 
     // Get all text elements
     const textElements = await page
@@ -170,6 +196,7 @@ test.describe('Mobile Typography', () => {
     // Landscape mobile (844x390)
     await page.setViewportSize({ width: 844, height: 390 });
     await page.goto('/blog');
+    await waitForLayoutStability(page);
 
     const bodyText = page.locator('p').first();
 
@@ -189,6 +216,8 @@ test.describe('Mobile Typography', () => {
   test('Text does not overflow containers on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog/countdown-timer-tutorial');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Check that text containers don't overflow
     const textContainers = await page

@@ -6,11 +6,37 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  // Wait for layout to stabilize
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) {
+            resolve(true);
+          } else {
+            requestAnimationFrame(check);
+          }
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Card Layout', () => {
   test('Cards stack vertically on mobile (320px-767px)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const cards = await page.locator('[class*="card"]').all();
     if (cards.length >= 2) {
@@ -33,6 +59,7 @@ test.describe('Mobile Card Layout', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const container = page.locator('[class*="grid"]').first();
 
@@ -52,6 +79,7 @@ test.describe('Mobile Card Layout', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
       await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
 
       const cards = await page.locator('[class*="card"]').all();
 

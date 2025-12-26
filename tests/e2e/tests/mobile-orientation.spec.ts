@@ -10,6 +10,27 @@
 import { test, expect, devices } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Orientation Detection', () => {
   test('iPhone 12 portrait uses mobile styles', async ({ browser }) => {
     const context = await browser.newContext({ ...devices['iPhone 12'] });
@@ -17,6 +38,7 @@ test.describe('Mobile Orientation Detection', () => {
 
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Check viewport dimensions - width should match iPhone 12
     // Height may vary due to browser chrome
@@ -56,6 +78,7 @@ test.describe('Mobile Orientation Detection', () => {
 
     await page.goto('/');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     // Even though width is 844px (which might trigger tablet breakpoint),
     // orientation detection should keep us in mobile mode
@@ -113,6 +136,7 @@ test.describe('Mobile Orientation Detection', () => {
     const page = await context.newPage();
 
     await page.goto('/');
+    await waitForLayoutStability(page);
 
     // Get initial layout info
     const portraitWidth = await page.evaluate(() => window.innerWidth);
@@ -120,7 +144,7 @@ test.describe('Mobile Orientation Detection', () => {
 
     // Simulate orientation change to landscape
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(100); // Allow layout to adjust
+    await waitForLayoutStability(page);
 
     const landscapeWidth = await page.evaluate(() => window.innerWidth);
     expect(landscapeWidth).toBe(844);
@@ -142,6 +166,7 @@ test.describe('Mobile Orientation Detection', () => {
   test('matchMedia detects orientation correctly', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 }); // Portrait
     await page.goto('/');
+    await waitForLayoutStability(page);
 
     const portraitMatch = await page.evaluate(
       () => window.matchMedia('(orientation: portrait)').matches
@@ -150,7 +175,7 @@ test.describe('Mobile Orientation Detection', () => {
 
     // Rotate to landscape
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(50);
+    await waitForLayoutStability(page);
 
     const landscapeMatch = await page.evaluate(
       () => window.matchMedia('(orientation: landscape)').matches
@@ -161,13 +186,14 @@ test.describe('Mobile Orientation Detection', () => {
   test('Content adapts to orientation without breaking', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
+    await waitForLayoutStability(page);
 
     // Get blog cards in portrait
     const cardsPortrait = await page.locator('[class*="card"]').count();
 
     // Rotate to landscape
     await page.setViewportSize({ width: 844, height: 390 });
-    await page.waitForTimeout(100);
+    await waitForLayoutStability(page);
 
     // Cards should still be visible
     const cardsLandscape = await page.locator('[class*="card"]').count();

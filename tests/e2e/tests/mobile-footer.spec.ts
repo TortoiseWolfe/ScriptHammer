@@ -7,6 +7,15 @@ import { test, expect } from '@playwright/test';
 import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for footer to be visible in viewport after scrolling
+ */
+async function scrollToFooterAndWait(page: import('@playwright/test').Page) {
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  // Wait for footer element to be in viewport
+  await page.locator('footer').waitFor({ state: 'visible', timeout: 5000 });
+}
+
 test.describe('Mobile Footer', () => {
   const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minHeight;
   const TOLERANCE = 1;
@@ -16,8 +25,7 @@ test.describe('Mobile Footer', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(300);
+    await scrollToFooterAndWait(page);
 
     const footerLinks = await page.locator('footer a').all();
 
@@ -38,8 +46,7 @@ test.describe('Mobile Footer', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await page.waitForTimeout(300);
+    await scrollToFooterAndWait(page);
 
     // Footer links are inline text, so check they're visible and clickable
     // Not enforcing 44px height on inline text links
@@ -73,8 +80,7 @@ test.describe('Mobile Footer', () => {
       await page.goto('/');
       await dismissCookieBanner(page);
 
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(200);
+      await scrollToFooterAndWait(page);
 
       const footer = page.locator('footer');
       const box = await footer.boundingBox();

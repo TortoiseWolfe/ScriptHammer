@@ -6,6 +6,27 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
 test.describe('Mobile Responsive Images', () => {
   const widths = [320, 390, 428];
 
@@ -14,6 +35,7 @@ test.describe('Mobile Responsive Images', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/blog/countdown-timer-tutorial');
       await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
 
       const images = await page.locator('img').all();
 
@@ -36,6 +58,7 @@ test.describe('Mobile Responsive Images', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog');
     await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
 
     const images = await page.locator('img').all();
 
