@@ -2,173 +2,250 @@
 // Feature 017 - Task T014
 // Purpose: Test OAuth CSRF protection prevents session hijacking
 //
-// NOTE: Supabase handles OAuth via client-side PKCE flow, not server-side callbacks.
-// The CSRF protection is built into Supabase's signInWithOAuth method.
-// These tests verify OAuth buttons work; actual CSRF protection is in Supabase SDK.
+// Supabase uses PKCE (Proof Key for Code Exchange) for OAuth CSRF protection.
+// These tests verify the OAuth flow includes proper security parameters.
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
-// Check if OAuth is configured (need GitHub/Google provider enabled in Supabase)
-const isOAuthConfigured = () => {
-  // In CI, OAuth providers may not be configured in test Supabase instance
-  return process.env.CI !== 'true';
-};
+/**
+ * Clicks OAuth button and captures the OAuth authorize request URL.
+ * This captures the initial request with all OAuth parameters before any redirects.
+ */
+async function clickOAuthAndCaptureRequest(
+  page: Page,
+  buttonSelector: RegExp
+): Promise<{ oauthUrl: string; finalUrl: string }> {
+  let capturedOAuthUrl = '';
+
+  // Listen for requests to OAuth providers
+  page.on('request', (request) => {
+    const url = request.url();
+    // Capture the OAuth authorization URL (has the state parameter)
+    if (
+      url.includes('github.com/login/oauth/authorize') ||
+      url.includes('accounts.google.com/o/oauth2')
+    ) {
+      capturedOAuthUrl = url;
+    }
+  });
+
+  // Click the OAuth button
+  const button = page.getByRole('button', { name: buttonSelector });
+  await button.click();
+
+  // Wait for navigation to OAuth provider
+  await page.waitForURL(
+    (url) => {
+      const hostname = url.hostname;
+      return (
+        hostname.includes('github.com') ||
+        hostname.includes('google.com') ||
+        hostname.includes('supabase.co')
+      );
+    },
+    { timeout: 15000 }
+  );
+
+  return {
+    oauthUrl: capturedOAuthUrl,
+    finalUrl: page.url(),
+  };
+}
 
 test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
-  test('OAuth buttons should be visible on sign-in page', async ({ page }) => {
-    // Basic test that OAuth buttons render correctly
+  test('OAuth buttons should be visible and enabled on sign-in page', async ({
+    page,
+  }) => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
-    // Verify GitHub OAuth button is visible
+    // Verify GitHub OAuth button
     const githubButton = page.getByRole('button', {
       name: /Continue with GitHub/i,
     });
     await expect(githubButton).toBeVisible();
+    await expect(githubButton).toBeEnabled();
 
-    // Verify Google OAuth button is visible
+    // Verify Google OAuth button
     const googleButton = page.getByRole('button', {
       name: /Continue with Google/i,
     });
     await expect(googleButton).toBeVisible();
+    await expect(googleButton).toBeEnabled();
   });
 
-  test('should reject OAuth callback with modified state parameter', async ({
+  test('OAuth redirect should include state parameter for CSRF protection', async ({
     page,
   }) => {
-    // Skip in CI - OAuth providers may not be configured
-    test.skip(!isOAuthConfigured(), 'OAuth not configured in CI');
-
-    // Navigate to sign-in page
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
-    // Verify OAuth button exists (Supabase handles CSRF via PKCE internally)
-    const githubButton = page.getByRole('button', {
-      name: /Continue with GitHub/i,
-    });
-    await expect(githubButton).toBeVisible();
+    // Capture OAuth request URL
+    const { oauthUrl, finalUrl } = await clickOAuthAndCaptureRequest(
+      page,
+      /Continue with GitHub/i
+    );
 
-    // Supabase's signInWithOAuth uses PKCE flow for CSRF protection
-    // The state parameter is generated and validated by Supabase SDK
-    // We can verify the button triggers the OAuth flow
+    // Verify we captured the OAuth URL and reached GitHub
+    expect(oauthUrl).toBeTruthy();
+    expect(finalUrl).toMatch(/github\.com/);
 
-    // Note: Cannot test modified state parameter because:
-    // 1. Supabase handles OAuth client-side via PKCE
-    // 2. No server-side /auth/callback route exists
-    // 3. CSRF protection is in Supabase SDK, not our code
+    // Parse URL and check for state parameter
+    const url = new URL(oauthUrl);
+    const stateParam = url.searchParams.get('state');
+
+    // State parameter must exist for CSRF protection
+    expect(stateParam).toBeTruthy();
+    expect(stateParam!.length).toBeGreaterThan(10);
   });
 
-  test('should prevent OAuth callback without state parameter', async ({
+  test('OAuth state parameter should be unique per request', async ({
+    browser,
+  }) => {
+    // Create two separate browser contexts
+    const context1 = await browser.newContext();
+    const context2 = await browser.newContext();
+
+    const page1 = await context1.newPage();
+    const page2 = await context2.newPage();
+
+    // Navigate both to sign-in
+    await page1.goto('/sign-in');
+    await dismissCookieBanner(page1);
+
+    await page2.goto('/sign-in');
+    await dismissCookieBanner(page2);
+
+    // Get OAuth URLs from both contexts sequentially
+    const result1 = await clickOAuthAndCaptureRequest(
+      page1,
+      /Continue with GitHub/i
+    );
+    const result2 = await clickOAuthAndCaptureRequest(
+      page2,
+      /Continue with GitHub/i
+    );
+
+    // Parse state parameters from OAuth URLs
+    const state1 = new URL(result1.oauthUrl).searchParams.get('state');
+    const state2 = new URL(result2.oauthUrl).searchParams.get('state');
+
+    // State tokens should exist
+    expect(state1).toBeTruthy();
+    expect(state2).toBeTruthy();
+
+    // State tokens should be different (unique per session)
+    expect(state1).not.toEqual(state2);
+
+    await context1.close();
+    await context2.close();
+  });
+
+  test('OAuth redirect should go to correct provider', async ({ page }) => {
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+
+    // Test GitHub OAuth redirect
+    const { oauthUrl: githubOAuthUrl, finalUrl: githubFinalUrl } =
+      await clickOAuthAndCaptureRequest(page, /Continue with GitHub/i);
+    expect(githubOAuthUrl).toMatch(/github\.com/);
+    expect(githubFinalUrl).toMatch(/github\.com/);
+
+    // Navigate back for Google test
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+
+    // Test Google OAuth redirect
+    const { finalUrl: googleFinalUrl } = await clickOAuthAndCaptureRequest(
+      page,
+      /Continue with Google/i
+    );
+    // Google OAuth may go through accounts.google.com or supabase.co
+    expect(googleFinalUrl).toMatch(/google\.com|supabase\.co/);
+  });
+
+  test('OAuth flow should include required OAuth parameters', async ({
     page,
   }) => {
-    // Skip in CI - no /auth/callback route exists (Supabase handles client-side)
-    test.skip(!isOAuthConfigured(), 'OAuth handled client-side by Supabase');
-
-    // Note: This test cannot run because:
-    // 1. There is no /auth/callback server route
-    // 2. Supabase handles OAuth via client-side PKCE flow
-    // 3. State validation happens in Supabase SDK, not our code
-
-    // Verify sign-in page loads correctly instead
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
-    // OAuth buttons should be visible
-    await expect(
-      page.getByRole('button', { name: /Continue with GitHub/i })
-    ).toBeVisible();
+    // Get the OAuth URL
+    const { oauthUrl } = await clickOAuthAndCaptureRequest(
+      page,
+      /Continue with GitHub/i
+    );
+    const url = new URL(oauthUrl);
+
+    // Verify required OAuth parameters
+    expect(url.searchParams.get('client_id')).toBeTruthy();
+    expect(url.searchParams.get('response_type')).toBeTruthy();
+    expect(url.searchParams.get('state')).toBeTruthy();
+    expect(url.searchParams.get('redirect_uri')).toBeTruthy();
+    expect(url.searchParams.get('scope')).toBeTruthy();
   });
 
-  test('should reject reused state token (replay attack)', async ({ page }) => {
-    // Skip in CI - Supabase handles replay attack prevention via PKCE
-    test.skip(
-      !isOAuthConfigured(),
-      'PKCE replay protection handled by Supabase'
-    );
-
-    // Note: Supabase's PKCE flow prevents replay attacks by:
-    // 1. Using code_verifier/code_challenge pairs (one-time use)
-    // 2. State tokens are validated against session storage
-    // 3. Authorization codes expire quickly
-
-    // Verify OAuth flow can be initiated
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-
-    const githubButton = page.getByRole('button', {
-      name: /Continue with GitHub/i,
-    });
-    await expect(githubButton).toBeVisible();
-    await expect(githubButton).toBeEnabled();
-  });
-
-  test('should timeout expired state tokens', async ({ page }) => {
-    // Skip in CI - clicking OAuth button redirects to GitHub which may block in CI
-    test.skip(
-      process.env.CI === 'true',
-      'OAuth redirect blocked in CI environment'
-    );
-
-    // Note: Supabase's PKCE flow handles state token expiration automatically.
-    // The code_verifier/code_challenge have built-in expiration.
-    // This test just verifies OAuth can be initiated.
-
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-
-    const githubButton = page.getByRole('button', {
-      name: /Continue with GitHub/i,
-    });
-    await expect(githubButton).toBeVisible();
-    await expect(githubButton).toBeEnabled();
-
-    // In local testing, clicking would redirect to GitHub with state parameter
-    // State expiration is handled by Supabase SDK, not our code
-  });
-
-  test('should validate state session ownership', async ({ browser }) => {
-    // Skip - Supabase handles CSRF protection via PKCE, not server-side callbacks
-    // There is no /auth/callback server route; OAuth is handled client-side
-    test.skip(
-      true,
-      'CSRF protection handled by Supabase PKCE flow (no server callback route)'
-    );
-
-    // Note: Supabase's OAuth flow uses PKCE which prevents CSRF attacks by:
-    // 1. Generating code_verifier on client before OAuth redirect
-    // 2. Storing code_verifier in session storage (browser-specific)
-    // 3. Using code_challenge (hash of verifier) in OAuth request
-    // 4. Exchanging code_verifier for tokens on callback
-    //
-    // An attacker cannot complete OAuth with victim's session because:
-    // - code_verifier is in victim's session storage
-    // - Attacker doesn't have access to victim's session storage
-    // - Token exchange requires the original code_verifier
-    //
-    // This test would require mocking Supabase's OAuth internals to verify.
-
-    // Verify OAuth buttons exist in both contexts
+  test('different browser sessions should have isolated OAuth state', async ({
+    browser,
+  }) => {
+    // Simulate attacker and victim in separate browser contexts
     const attackerContext = await browser.newContext();
-    const attackerPage = await attackerContext.newPage();
-
     const victimContext = await browser.newContext();
+
+    const attackerPage = await attackerContext.newPage();
     const victimPage = await victimContext.newPage();
 
+    // Attacker initiates OAuth
     await attackerPage.goto('/sign-in');
     await dismissCookieBanner(attackerPage);
-    await expect(
-      attackerPage.getByRole('button', { name: /Continue with GitHub/i })
-    ).toBeVisible();
+    const { oauthUrl: attackerOAuthUrl } = await clickOAuthAndCaptureRequest(
+      attackerPage,
+      /Continue with GitHub/i
+    );
+    const attackerState = new URL(attackerOAuthUrl).searchParams.get('state');
 
+    // Victim initiates their own OAuth
     await victimPage.goto('/sign-in');
     await dismissCookieBanner(victimPage);
-    await expect(
-      victimPage.getByRole('button', { name: /Continue with GitHub/i })
-    ).toBeVisible();
+    const { oauthUrl: victimOAuthUrl } = await clickOAuthAndCaptureRequest(
+      victimPage,
+      /Continue with GitHub/i
+    );
+    const victimState = new URL(victimOAuthUrl).searchParams.get('state');
+
+    // States must be different - attacker cannot predict victim's state
+    expect(attackerState).toBeTruthy();
+    expect(victimState).toBeTruthy();
+    expect(attackerState).not.toEqual(victimState);
 
     await attackerContext.close();
     await victimContext.close();
+  });
+
+  test('OAuth redirect_uri should point to Supabase callback', async ({
+    page,
+  }) => {
+    await page.goto('/sign-in');
+    await dismissCookieBanner(page);
+
+    const { oauthUrl } = await clickOAuthAndCaptureRequest(
+      page,
+      /Continue with GitHub/i
+    );
+    const url = new URL(oauthUrl);
+
+    // Should have redirect_uri pointing back to Supabase
+    const redirectUri = url.searchParams.get('redirect_uri');
+    expect(redirectUri).toBeTruthy();
+    expect(redirectUri).toMatch(/supabase\.co/);
+
+    // Should use authorization code flow
+    const responseType = url.searchParams.get('response_type');
+    expect(responseType).toEqual('code');
+
+    // Should have client_id
+    const clientId = url.searchParams.get('client_id');
+    expect(clientId).toBeTruthy();
   });
 });
