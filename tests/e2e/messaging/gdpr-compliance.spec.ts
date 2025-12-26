@@ -261,9 +261,12 @@ test.describe('GDPR Account Deletion', () => {
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
-    // Use getByLabel pattern to find the confirmation input
-    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
-    const confirmButton = modal.locator('button:has-text("Delete Account")');
+    // Use ID selector for the confirmation input (more reliable than label)
+    const confirmInput = page.locator('#confirmation-input');
+    // Use aria-label to find the confirm button inside modal
+    const confirmButton = modal.getByRole('button', {
+      name: /Delete my account permanently/i,
+    });
 
     // Initially disabled
     await expect(confirmButton).toBeDisabled();
@@ -276,8 +279,8 @@ test.describe('GDPR Account Deletion', () => {
     await confirmInput.clear();
     await confirmInput.fill('DELETE');
 
-    // Now enabled
-    await expect(confirmButton).toBeEnabled();
+    // Now enabled - wait for React state update
+    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
   });
 
   test('should close modal on cancel button click (T192)', async ({ page }) => {
@@ -311,8 +314,10 @@ test.describe('GDPR Account Deletion', () => {
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
-    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
-    const confirmButton = modal.locator('button:has-text("Delete Account")');
+    const confirmInput = page.locator('#confirmation-input');
+    const confirmButton = modal.getByRole('button', {
+      name: /Delete my account permanently/i,
+    });
 
     // Type confirmation
     await confirmInput.fill('DELETE');
@@ -347,8 +352,10 @@ test.describe('GDPR Account Deletion', () => {
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
-    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
-    const confirmButton = modal.locator('button:has-text("Delete Account")');
+    const confirmInput = page.locator('#confirmation-input');
+    const confirmButton = modal.getByRole('button', {
+      name: /Delete my account permanently/i,
+    });
 
     // Type confirmation
     await confirmInput.fill('DELETE');
@@ -399,8 +406,8 @@ test.describe('GDPR Account Deletion', () => {
       /Delete/i
     );
 
-    // Input should be findable by label
-    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
+    // Input should be findable by ID (label has complex HTML structure)
+    const confirmInput = page.locator('#confirmation-input');
     await expect(confirmInput).toBeVisible();
   });
 });

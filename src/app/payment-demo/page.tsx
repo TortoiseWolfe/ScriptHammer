@@ -42,7 +42,7 @@ function PaymentDemoContent() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
+    <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Email verification notice */}
       {user && !user.email_confirmed_at && (
         <div className="mb-8">
@@ -331,7 +331,7 @@ function PaymentDemoContent() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

@@ -117,6 +117,38 @@ async function globalSetup(): Promise<void> {
     }
   }
 
+  // 4. Verify PRIMARY user password is correct
+  if (errors.length === 0) {
+    console.log('\n🔑 Verifying PRIMARY user credentials...');
+
+    const anonClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { error: signInError } = await anonClient.auth.signInWithPassword({
+      email: process.env.TEST_USER_PRIMARY_EMAIL!,
+      password: process.env.TEST_USER_PRIMARY_PASSWORD!,
+    });
+
+    if (signInError) {
+      errors.push({
+        category: 'Test User Password',
+        message: `PRIMARY user sign-in failed: ${signInError.message}`,
+        fix: signInError.message.includes('Invalid login')
+          ? `TEST_USER_PRIMARY_PASSWORD in GitHub secrets does not match the password for ${process.env.TEST_USER_PRIMARY_EMAIL} in Supabase. Update the secret or reset the user's password.`
+          : signInError.message.includes('rate')
+            ? 'Rate limited - too many sign-in attempts. Wait 15 minutes or increase rate limits in Supabase.'
+            : `Check Supabase logs for details: ${signInError.message}`,
+      });
+    } else {
+      console.log('✓ PRIMARY user credentials verified');
+      // Sign out to clean up
+      await anonClient.auth.signOut();
+    }
+  }
+
   // Final check
   if (errors.length > 0) {
     printErrors(errors);
