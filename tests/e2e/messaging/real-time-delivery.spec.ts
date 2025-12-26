@@ -178,10 +178,8 @@ test.describe('Real-time Message Delivery (T098)', () => {
     const deliveryTime = endTime - startTime;
     expect(deliveryTime).toBeLessThan(5000); // Lenient for CI
 
-    // Verify message appears in User 2's window
-    await expect(page2.getByText(testMessage)).toBeVisible();
-
-    // Verify message also appears in User 1's window (sender)
+    // Verify message still visible on User 2's window (already checked by helper)
+    // And verify it also appears in User 1's window (sender)
     await expect(page1.getByText(testMessage)).toBeVisible();
   });
 
