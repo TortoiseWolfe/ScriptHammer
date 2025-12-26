@@ -45,20 +45,20 @@ const VIEWPORTS = {
 
 /**
  * Click the first available conversation button to open a chat
+ * Throws if no conversation exists (tests should have setup)
  */
-async function clickFirstConversation(page: Page): Promise<boolean> {
+async function clickFirstConversation(page: Page): Promise<void> {
   const conversationButton = page
     .getByRole('button', { name: /Conversation with/ })
     .first();
-  if (await conversationButton.isVisible({ timeout: 3000 })) {
-    await conversationButton.click();
-    await page.waitForSelector('[data-testid="chat-window"]', {
-      timeout: 5000,
-    });
-    await waitForUIStability(page);
-    return true;
-  }
-  return false;
+
+  // Wait for the button to be visible (give it plenty of time)
+  await conversationButton.waitFor({ state: 'visible', timeout: 10000 });
+  await conversationButton.click();
+
+  // Wait for chat window to load after clicking
+  await page.waitForSelector('[data-testid="chat-window"]', { timeout: 10000 });
+  await waitForUIStability(page);
 }
 
 // Helper to check if element is in viewport
@@ -106,15 +106,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
     await page.goto('/messages');
     await handleReAuthModal(page);
 
-    // Wait for page to load
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
-
-    // Click on a conversation to open chat
+    // Click on a conversation to open chat (handles waiting internally)
     await clickFirstConversation(page);
 
     // Check message input is visible
@@ -138,13 +130,6 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
     await page.goto('/messages');
     await handleReAuthModal(page);
 
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
-
     await clickFirstConversation(page);
 
     const messageInput = page.locator(
@@ -165,13 +150,6 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
     await handleReAuthModal(page);
-
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
 
     await clickFirstConversation(page);
 
@@ -208,13 +186,6 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
     await handleReAuthModal(page);
-
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
 
     await clickFirstConversation(page);
 
@@ -265,13 +236,6 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     await page.goto('/messages');
     await handleReAuthModal(page);
 
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
-
     await clickFirstConversation(page);
 
     const messageThread = page.locator('[data-testid="message-thread"]');
@@ -315,13 +279,6 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
     await handleReAuthModal(page);
-
-    await page.waitForSelector(
-      '[data-testid="chat-window"], [data-testid="message-thread"]',
-      {
-        timeout: 10000,
-      }
-    );
 
     await clickFirstConversation(page);
 

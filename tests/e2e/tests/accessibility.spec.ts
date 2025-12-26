@@ -27,10 +27,10 @@ test.describe('Accessibility', () => {
     await checkA11y(page);
   });
 
-  test('components page passes automated accessibility checks', async ({
+  test('sign-in page passes automated accessibility checks', async ({
     page,
   }) => {
-    await page.goto('/components');
+    await page.goto('/sign-in');
     await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page);
@@ -77,7 +77,7 @@ test.describe('Accessibility', () => {
   });
 
   test('all form inputs have labels', async ({ page }) => {
-    await page.goto('/components');
+    await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
     const inputs = page
@@ -327,7 +327,7 @@ test.describe('Accessibility', () => {
   });
 
   test('error messages are associated with form fields', async ({ page }) => {
-    await page.goto('/components');
+    await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
     // Look for error messages
