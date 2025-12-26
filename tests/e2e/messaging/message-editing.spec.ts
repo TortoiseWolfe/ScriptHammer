@@ -220,37 +220,49 @@ async function sendMessage(page: Page, message: string) {
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
 
-  // Wait for message to appear and be visible
-  await expect(page.getByText(message)).toBeVisible({ timeout: 10000 });
+  // Wait for message to appear in the DOM
+  const messageElement = page.getByText(message);
+  await expect(messageElement).toBeVisible({ timeout: 10000 });
+
+  // Scroll the message into view (new messages appear at bottom)
+  await messageElement.scrollIntoViewIfNeeded();
 
   // Wait for UI to stabilize after sending
   await waitForUIStability(page);
+
+  // Small additional wait for React to fully render Edit/Delete buttons
+  // (buttons depend on isOwn and timestamp checks)
+  await page.waitForTimeout(300);
+}
+
+/**
+ * Find the message bubble containing specific text.
+ * Uses data-testid for reliable selection regardless of DOM nesting.
+ */
+function getMessageBubble(page: Page, messageText: string) {
+  return page.locator('[data-testid="message-bubble"]').filter({
+    hasText: messageText,
+  });
 }
 
 /**
  * Find the Edit button for a specific message by its text content.
- * DOM structure: The paragraph and buttons are siblings within a container.
- * We go up from paragraph to find the enclosing container, then find the button.
+ * Uses the message bubble's data-testid for reliable selection.
  */
 function getEditButtonForMessage(page: Page, messageText: string) {
-  // Go up to find the enclosing message container (chat bubble)
-  // The .. goes to parent, and we need to go up enough levels to find the button
-  return page
-    .getByText(messageText)
-    .locator('..')
-    .locator('..')
-    .getByRole('button', { name: 'Edit message' });
+  return getMessageBubble(page, messageText).getByRole('button', {
+    name: 'Edit message',
+  });
 }
 
 /**
  * Find the Delete button for a specific message by its text content.
+ * Uses the message bubble's data-testid for reliable selection.
  */
 function getDeleteButtonForMessage(page: Page, messageText: string) {
-  return page
-    .getByText(messageText)
-    .locator('..')
-    .locator('..')
-    .getByRole('button', { name: 'Delete message' });
+  return getMessageBubble(page, messageText).getByRole('button', {
+    name: 'Delete message',
+  });
 }
 
 test.describe('Message Editing', () => {
@@ -273,11 +285,18 @@ test.describe('Message Editing', () => {
     const originalMessage = `Original msg ${timestamp}`;
     await sendMessage(page, originalMessage);
 
+    // Verify our message bubble exists with data-testid
+    const messageBubble = getMessageBubble(page, originalMessage);
+    await expect(messageBubble).toBeVisible({ timeout: 5000 });
+
     // Find the Edit button for our specific message
     const editButton = getEditButtonForMessage(page, originalMessage);
 
-    // Edit button should be visible for own messages
-    await expect(editButton).toBeVisible();
+    // Edit button should be visible for own messages (within 15-minute window)
+    // If this fails, it means either:
+    // 1. message.isOwn is false (wrong sender_id)
+    // 2. isWithinEditWindow returned false (message > 15 min old)
+    await expect(editButton).toBeVisible({ timeout: 5000 });
 
     // Click Edit button
     await editButton.click();
@@ -407,11 +426,15 @@ test.describe('Message Deletion', () => {
     const messageToDelete = `Delete me ${timestamp}`;
     await sendMessage(page, messageToDelete);
 
+    // Verify our message bubble exists
+    const messageBubble = getMessageBubble(page, messageToDelete);
+    await expect(messageBubble).toBeVisible({ timeout: 5000 });
+
     // Find the Delete button for our specific message
     const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
 
-    // Delete button should be visible
-    await expect(deleteButton).toBeVisible();
+    // Delete button should be visible for own messages (within 15-minute window)
+    await expect(deleteButton).toBeVisible({ timeout: 5000 });
 
     // Click Delete
     await deleteButton.click();
