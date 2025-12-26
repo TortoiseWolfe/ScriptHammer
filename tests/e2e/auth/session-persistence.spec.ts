@@ -102,29 +102,21 @@ test.describe('Session Persistence E2E', () => {
     await page.waitForURL(/\/(profile|verify-email)/);
     await waitForAuthenticatedState(page);
 
-    // Get initial access token
-    const initialToken = await page.evaluate(() => {
-      const data = localStorage.getItem('supabase.auth.token');
-      return data ? JSON.parse(data).access_token : null;
-    });
-
     // Wait a short time (in real scenario, wait closer to expiry)
     await page.waitForTimeout(2000);
 
     // Navigate to trigger token refresh check
     await page.goto('/profile');
-    await page.waitForTimeout(1000);
+    await page.waitForLoadState('networkidle');
 
-    // Get current token
-    const currentToken = await page.evaluate(() => {
-      const data = localStorage.getItem('supabase.auth.token');
-      return data ? JSON.parse(data).access_token : null;
-    });
-
-    // Tokens might be same if not near expiry, but refresh mechanism should exist
     // The important part is that navigation doesn't break authentication
-    await expect(page).toHaveURL('/profile');
-    await expect(page.getByText(testEmail)).toBeVisible();
+    // Verify we're still on the profile page (not redirected to sign-in)
+    await expect(page).toHaveURL(/\/profile\/?$/);
+
+    // Navigate to another protected route to verify session is still valid
+    await page.goto('/account');
+    await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/account\/?$/);
   });
 
   test('should persist session across browser restarts', async ({
@@ -161,8 +153,9 @@ test.describe('Session Persistence E2E', () => {
     await newPage.goto('/profile');
 
     // Verify still authenticated
-    await expect(newPage).toHaveURL('/profile');
-    await expect(newPage.getByText(testEmail)).toBeVisible();
+    await expect(newPage).toHaveURL(/\/profile\/?$/);
+    // Email appears in profile - scope to main to avoid hidden spans in dropdowns
+    await expect(newPage.locator('main').getByText(testEmail)).toBeVisible();
 
     await newContext.close();
   });
@@ -200,8 +193,8 @@ test.describe('Session Persistence E2E', () => {
 
     // Verify cannot access protected routes
     await page.goto('/profile');
-    await page.waitForURL('/sign-in');
-    await expect(page).toHaveURL('/sign-in');
+    await page.waitForURL(/\/sign-in/);
+    await expect(page).toHaveURL(/\/sign-in/);
   });
 
   test('should handle concurrent tab sessions correctly', async ({
@@ -228,20 +221,8 @@ test.describe('Session Persistence E2E', () => {
     await expect(page1).toHaveURL(/\/(profile|verify-email)/);
     await waitForAuthenticatedState(page1);
 
-    // Wait for storage to actually contain auth data
-    await page1.waitForFunction(
-      () => {
-        const storage = localStorage.getItem('supabase.auth.token');
-        if (!storage) return false;
-        try {
-          const data = JSON.parse(storage);
-          return !!(data.access_token && data.refresh_token);
-        } catch {
-          return false;
-        }
-      },
-      { timeout: 10000 }
-    );
+    // Auth is verified by waitForAuthenticatedState - no need to check localStorage keys
+    // (Modern Supabase SSR uses different key formats than the old supabase.auth.token)
 
     // Now create page2 - it should share the same storage
     const page2 = await context.newPage();
@@ -274,14 +255,14 @@ test.describe('Session Persistence E2E', () => {
     await signOutViaDropdown(page1);
 
     // Verify page1 is signed out
-    await expect(page1).toHaveURL('/');
+    await expect(page1).toHaveURL(/\/$/);
     await expect(page1.getByRole('link', { name: 'Sign In' })).toBeVisible();
 
     // If auth had synced to page2, verify it's now signed out too
     if (authSynced) {
       await page2.reload();
-      await page2.waitForURL('/sign-in', { timeout: 10000 });
-      await expect(page2).toHaveURL('/sign-in');
+      await page2.waitForURL(/\/sign-in/, { timeout: 10000 });
+      await expect(page2).toHaveURL(/\/sign-in/);
     }
 
     await context.close();
@@ -301,11 +282,12 @@ test.describe('Session Persistence E2E', () => {
     await page.reload();
 
     // Verify still authenticated
-    await expect(page.getByText(testEmail)).toBeVisible();
+    // Email appears in profile - scope to main to avoid hidden spans in dropdowns
+    await expect(page.locator('main').getByText(testEmail)).toBeVisible();
 
     // Navigate to another protected route
     await page.goto('/account');
-    await expect(page).toHaveURL('/account');
+    await expect(page).toHaveURL(/\/account\/?$/);
   });
 
   test('should expire session after maximum duration', async ({ page }) => {

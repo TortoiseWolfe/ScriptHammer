@@ -48,9 +48,9 @@ test.describe('Protected Routes E2E', () => {
     for (const route of protectedRoutes) {
       await page.goto(route);
 
-      // Verify redirected to sign-in
-      await page.waitForURL('/sign-in');
-      await expect(page).toHaveURL('/sign-in');
+      // Verify redirected to sign-in (may include returnUrl query param)
+      await page.waitForURL(/\/sign-in/);
+      await expect(page).toHaveURL(/\/sign-in/);
     }
   });
 
@@ -76,7 +76,8 @@ test.describe('Protected Routes E2E', () => {
 
     for (const route of protectedRoutes) {
       await page.goto(route.path);
-      await expect(page).toHaveURL(route.path);
+      // Next.js adds trailing slashes - match with or without
+      await expect(page).toHaveURL(new RegExp(`${route.path}/?$`));
       await expect(
         page.getByRole('heading', { name: route.heading })
       ).toBeVisible();
@@ -108,7 +109,12 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 2: Access payment demo and verify user's own data
     await page.goto('/payment-demo');
-    await expect(page.getByText(testUser.email)).toBeVisible();
+    // Email appears as "Logged in as: email - User ID: ..." - look for it containing email
+    // Use {exact:false} to match substring and escape regex special chars in email
+    const escapedEmail1 = testUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
+    ).toBeVisible();
 
     // Step 3: Sign out via dropdown menu
     await signOutViaDropdown(page);
@@ -125,8 +131,17 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 5: Verify user 2 sees their own email, not user 1's
     await page.goto('/payment-demo');
-    await expect(page.getByText(testUser2.email)).toBeVisible();
-    await expect(page.getByText(testUser.email)).not.toBeVisible();
+    const escapedEmail2 = testUser2.email.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&'
+    );
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail2}`))
+    ).toBeVisible();
+    // User 1's email should not appear in "Logged in as" text
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
+    ).not.toBeVisible();
 
     // RLS policy prevents user 2 from seeing user 1's payment data
 
@@ -182,18 +197,18 @@ test.describe('Protected Routes E2E', () => {
     // Wait for auth state to fully hydrate
     await waitForAuthenticatedState(page);
 
-    // Navigate between protected routes
+    // Navigate between protected routes (Next.js adds trailing slashes)
     await page.goto('/profile');
-    await expect(page).toHaveURL('/profile');
+    await expect(page).toHaveURL(/\/profile\/?$/);
 
     await page.goto('/account');
-    await expect(page).toHaveURL('/account');
+    await expect(page).toHaveURL(/\/account\/?$/);
 
     await page.goto('/payment-demo');
-    await expect(page).toHaveURL('/payment-demo');
+    await expect(page).toHaveURL(/\/payment-demo\/?$/);
 
     // Verify still authenticated (no redirect to sign-in)
-    await expect(page).toHaveURL('/payment-demo');
+    await expect(page).toHaveURL(/\/payment-demo\/?$/);
 
     // Clean up via dropdown menu
     await signOutViaDropdown(page);
@@ -217,9 +232,9 @@ test.describe('Protected Routes E2E', () => {
     // Try to access protected route
     await page.goto('/profile');
 
-    // Verify redirected to sign-in
-    await page.waitForURL('/sign-in');
-    await expect(page).toHaveURL('/sign-in');
+    // Verify redirected to sign-in (may include returnUrl query param)
+    await page.waitForURL(/\/sign-in/);
+    await expect(page).toHaveURL(/\/sign-in/);
   });
 
   test('should redirect to intended URL after authentication', async ({
@@ -227,7 +242,7 @@ test.describe('Protected Routes E2E', () => {
   }) => {
     // Attempt to access protected route while unauthenticated
     await page.goto('/account');
-    await page.waitForURL('/sign-in');
+    await page.waitForURL(/\/sign-in/);
     await dismissCookieBanner(page);
 
     // Sign in (note: uses existing user from earlier test or test fixtures)
@@ -302,8 +317,8 @@ test.describe('Protected Routes E2E', () => {
         }
 
         // Verify redirected to sign-in
-        await page.waitForURL('/sign-in', { timeout: 10000 });
-        await expect(page).toHaveURL('/sign-in');
+        await page.waitForURL(/\/sign-in/, { timeout: 10000 });
+        await expect(page).toHaveURL(/\/sign-in/);
       } else {
         // Delete button not visible - test the UI exists at least
         console.log('Delete account button not visible - may need to scroll');

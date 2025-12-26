@@ -67,13 +67,20 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('navigation links in secondary nav work', async ({ page }) => {
-    // Test Status link
-    await page.click('a[href="/status/"]');
+    // Test Status link - use role-based selector
+    const statusLink = page.getByRole('link', { name: /status/i }).first();
+    await statusLink.click();
     await expect(page).toHaveURL(/.*status/);
     await page.goBack();
+    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
 
-    // Test Accessibility feature card link
-    await page.click('a[href="/accessibility/"]');
+    // Test Accessibility page link - find the "Accessible" card which links to /accessibility
+    const accessibilityLink = page
+      .getByRole('link', { name: /accessible/i })
+      .first();
+    await accessibilityLink.scrollIntoViewIfNeeded();
+    await accessibilityLink.click();
     await expect(page).toHaveURL(/.*accessibility/);
     await page.goBack();
   });
@@ -92,14 +99,17 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('skip to main content link works', async ({ page }) => {
-    // Focus the skip link (it's visually hidden by default)
+    // The skip link uses sr-only class and is only visible on focus
+    const skipLink = page.getByRole('link', { name: /skip to main content/i });
+
+    // Focus the skip link using Tab
     await page.keyboard.press('Tab');
 
-    // Check skip link is focused (may be first or second Tab depending on banner)
-    const skipLink = page.locator('a[href="#main-content"]');
+    // Wait a moment for focus styles to apply
+    await page.waitForTimeout(100);
 
-    // Click the skip link
-    await skipLink.click();
+    // Click with force since it's a sr-only element (visible on focus but Playwright may not detect it)
+    await skipLink.click({ force: true });
 
     // Verify we scrolled to the main content section
     const mainContent = page.locator('#main-content');
