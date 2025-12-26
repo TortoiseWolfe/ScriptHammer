@@ -1,5 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Locator } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+
+/**
+ * Check if an input field is a honeypot (bot trap) that should not be filled.
+ * Honeypot fields have labels like "Don't fill this out if you're human"
+ */
+async function isHoneypotField(input: Locator): Promise<boolean> {
+  try {
+    const labelText = await input.evaluate((el) => {
+      const id = el.id;
+      if (!id) return '';
+      const label = document.querySelector(`label[for="${id}"]`);
+      return label?.textContent?.toLowerCase() || '';
+    });
+    return labelText.includes('human') || labelText.includes("don't fill");
+  } catch {
+    return false;
+  }
+}
 
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
@@ -88,6 +106,12 @@ test.describe('Form Submission', () => {
 
       for (let i = 0; i < inputCount; i++) {
         const input = textInputs.nth(i);
+
+        // Skip honeypot fields (bot traps)
+        if (await isHoneypotField(input)) {
+          continue;
+        }
+
         const inputType = await input.getAttribute('type');
 
         if (inputType === 'email') {
@@ -181,11 +205,20 @@ test.describe('Form Submission', () => {
   });
 
   test('form data persists on page reload', async ({ page }) => {
-    // Look for text input
-    const textInput = page.locator('input[type="text"]').first();
-    const hasTextInput = (await textInput.count()) > 0;
+    // Look for text input (skip honeypot fields)
+    const allTextInputs = page.locator('input[type="text"]');
+    const inputCount = await allTextInputs.count();
+    let textInput = null;
 
-    if (hasTextInput) {
+    for (let i = 0; i < inputCount; i++) {
+      const input = allTextInputs.nth(i);
+      if (!(await isHoneypotField(input))) {
+        textInput = input;
+        break;
+      }
+    }
+
+    if (textInput) {
       const testValue = 'Persistence Test Value';
       await textInput.fill(testValue);
 
@@ -221,21 +254,28 @@ test.describe('Form Submission', () => {
     const hasResetButton = (await resetButton.count()) > 0;
 
     if (hasResetButton) {
-      // Fill form fields
+      // Fill form fields (skip honeypot)
       const inputs = page.locator(
         'input[type="text"], input[type="email"], textarea'
       );
       const inputCount = await inputs.count();
+      const filledIndices: number[] = [];
 
       for (let i = 0; i < inputCount; i++) {
-        await inputs.nth(i).fill('Test Value');
+        const input = inputs.nth(i);
+        // Skip honeypot fields (bot traps)
+        if (await isHoneypotField(input)) {
+          continue;
+        }
+        await input.fill('Test Value');
+        filledIndices.push(i);
       }
 
       // Click reset
       await resetButton.click();
 
-      // Check fields are cleared
-      for (let i = 0; i < inputCount; i++) {
+      // Check filled fields are cleared
+      for (const i of filledIndices) {
         const value = await inputs.nth(i).inputValue();
         expect(value).toBe('');
       }
