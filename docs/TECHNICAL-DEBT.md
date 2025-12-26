@@ -345,6 +345,8 @@ Environment-dependent tests.
 - Accessibility failures need axe violation analysis
 - OAuth/payment tests may need API keys configured
 
+See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
+
 ## Documentation Updates Needed
 
 1. Update deployment guides for security headers configuration

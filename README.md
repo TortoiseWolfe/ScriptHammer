@@ -275,6 +275,112 @@ The project automatically detects your repository name and owner from git remote
 - **Security**: [docs/project/SECURITY.md](./docs/project/SECURITY.md)
 - **Changelog**: [docs/project/CHANGELOG.md](./docs/project/CHANGELOG.md)
 
+## 📋 Technical Debt Backlog (SpecKit Ready)
+
+Run these specs in order (001 → 022). Copy a command to start the full SpecKit workflow.
+
+### Priority 1: Blockers
+
+```
+/speckit.workflow SPEC-001: GitHub Secrets Configuration - Configure SUPABASE_SERVICE_ROLE_KEY, TEST_USER_SECONDARY_EMAIL, TEST_USER_SECONDARY_PASSWORD, and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in GitHub repository secrets. This unblocks 47+ E2E tests including all messaging and auth tests. Infrastructure task, 15 min.
+```
+
+```
+/speckit.workflow SPEC-002: Legacy Test Cleanup - Delete obsolete tests/e2e/examples/homepage-with-pom.spec.ts (4 skipped tests) referencing removed game demo. Quick cleanup, 30 min.
+```
+
+### Priority 2: E2E Stabilization
+
+```
+/speckit.workflow SPEC-003: Accessibility Test Fixes - Fix 15 axe-core E2E test failures. Run axe analysis to identify actual WCAG violations vs false positives. Fix legitimate issues in components. Tests: tests/e2e/accessibility/*.spec.ts. Effort: 1 day.
+```
+
+```
+/speckit.workflow SPEC-004: OAuth Security Test Fixes - Fix 15 OAuth flow E2E test failures in tests/e2e/security/oauth-csrf.spec.ts. Issues: CSRF protection assertions, OAuth button selectors, redirect wait conditions. Effort: 4-6 hours.
+```
+
+```
+/speckit.workflow SPEC-005: Form Submission Test Fixes - Fix 12 form E2E test failures. Add explicit wait conditions, update form submission assertions, handle race conditions. Files: tests/e2e/forms/*.spec.ts. Effort: 4-6 hours.
+```
+
+```
+/speckit.workflow SPEC-006: Avatar Upload Test Fixes - Fix 12 avatar upload E2E test failures. Issues: crop interface interactions, replace/remove flows, file upload handling in CI. Files: tests/e2e/avatar/*.spec.ts. Effort: 4-6 hours.
+```
+
+### Priority 3: Group Messaging Feature
+
+```
+/speckit.workflow SPEC-007: Group Service Implementation - Complete 8 unimplemented methods in src/services/messaging/group-service.ts: addMembers (T043), getMembers (T074), removeMember (T060), leaveGroup (T061), transferOwnership (T062), upgradeToGroup (T054), renameGroup (T093), deleteGroup (T092). These methods throw "Not implemented" errors. Effort: 2-3 days.
+```
+
+### Priority 4: Unit Test Coverage
+
+```
+/speckit.workflow SPEC-008: SEO Library Tests - Add unit tests for 4 untested SEO modules: src/lib/seo/readability.ts, keywords.ts, content.ts, technical.ts. Create src/lib/seo/__tests__/ directory. Effort: 4-6 hours.
+```
+
+```
+/speckit.workflow SPEC-009: Blog Library Tests - Add unit tests for 3 untested blog modules: src/lib/blog/seo-analyzer.ts, toc-generator.ts, markdown-processor.ts. Create src/lib/blog/__tests__/ directory. Effort: 3-4 hours.
+```
+
+```
+/speckit.workflow SPEC-010: Messaging Service Tests - Add unit tests for core messaging services: message-service.ts (1182 lines), key-service.ts, group-key-service.ts, and src/services/auth/audit-logger.ts. Effort: 1 day.
+```
+
+```
+/speckit.workflow SPEC-011: Auth Component Test Expansion - Expand 6 auth component tests that have TODO comments: AuthGuard, SignUpForm, ResetPasswordForm, SignInForm, ProtectedRoute, ForgotPasswordForm. Effort: 4-6 hours.
+```
+
+### Priority 5: Payment Features
+
+```
+/speckit.workflow SPEC-012: Payment Dashboard - Implement real-time payment dashboard with payment history table, recent transactions widget, and Supabase real-time updates. Unblocks 20 E2E tests. Effort: 2-3 days.
+```
+
+```
+/speckit.workflow SPEC-013: Payment Offline Queue UI - Implement offline queue UI for payments with queue status indicator, pending payment list, and retry mechanism UI. Unblocks 18 E2E tests. Effort: 1 day.
+```
+
+```
+/speckit.workflow SPEC-014: Payment Retry UI - Implement failed payment retry functionality with error display, retry button, payment method update flow, and retry confirmation. Unblocks 14 E2E tests. Effort: 1 day.
+```
+
+```
+/speckit.workflow SPEC-015: PayPal Subscription Management - Implement subscription management with active subscriptions list, cancel/pause functionality, and billing cycle display. Unblocks 12 E2E tests. Effort: 2 days.
+```
+
+```
+/speckit.workflow SPEC-016: Payment Security RLS - Implement payment table RLS policies in Supabase: payments table with user isolation, subscriptions table RLS, admin access policies. Unblocks 25 E2E tests. Effort: 1-2 days.
+```
+
+### Priority 6: Code Quality
+
+```
+/speckit.workflow SPEC-017: Large Component Refactoring - Refactor 4 oversized components: CaptainShipCrew.tsx (560 lines, no memoization), GlobalNav.tsx (482 lines), AccountSettings.tsx (476 lines), MessageBubble.tsx (411 lines). Add React.memo/useMemo where appropriate. Effort: 2-3 days.
+```
+
+```
+/speckit.workflow SPEC-018: Error Handler Integrations - Implement TODO integrations in src/utils/error-handler.ts: Add Sentry/LogRocket/DataDog logging (line 233), add toast notification system (line 252), remove console-only logging. Effort: 4-6 hours.
+```
+
+```
+/speckit.workflow SPEC-019: ESLint Disable Cleanup - Review and document 11 eslint-disable comments across codebase. Add JSDoc explaining necessity, fix underlying issues where possible, remove unnecessary disables. Effort: 2-3 hours.
+```
+
+```
+/speckit.workflow SPEC-020: Hardcoded UUID Fix - Fix hardcoded UUID '00000000-0000-0000-0000-000000000000' in src/lib/payments/offline-queue.ts:166. Replace with auth context user ID. Effort: 30 min.
+```
+
+### Priority 7: Minor Improvements
+
+```
+/speckit.workflow SPEC-021: Disqus Theme Enhancement - Improve Disqus theme integration in src/components/molecular/DisqusComments.tsx. Map DaisyUI themes to Disqus color schemes, investigate CSS custom properties. Low priority UX improvement. Effort: 4-6 hours.
+```
+
+```
+/speckit.workflow SPEC-022: Game Component A11y Tests - Expand 5 game component accessibility tests: CaptainShipCrewWithNPC, CaptainShipCrew, Dice, DraggableDice, DiceTray. Add keyboard navigation, ARIA verification, focus management tests. Effort: 4-6 hours.
+```
+
 ## 🎯 Project Status
 
 **Version 0.3.5** - Sprint 3.5 Complete ✅ | 12 of 14 PRPs completed
