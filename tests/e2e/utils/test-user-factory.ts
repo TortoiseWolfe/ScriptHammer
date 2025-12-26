@@ -382,7 +382,23 @@ export async function dismissCookieBanner(
       .first();
     if (await acceptButton.isVisible({ timeout }).catch(() => false)) {
       await acceptButton.click({ force: true });
-      await page.waitForTimeout(500);
+
+      // CRITICAL: Wait for consent to persist to localStorage
+      // React's useEffect saves consent asynchronously after state update.
+      // Without this wait, navigating away before save completes loses consent.
+      await page.waitForFunction(
+        () => {
+          try {
+            const consent = localStorage.getItem('cookie-consent');
+            if (!consent) return false;
+            const parsed = JSON.parse(consent);
+            return parsed.functional === true;
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 3000 }
+      );
     }
   } catch {
     // Banner not present or already dismissed - continue silently

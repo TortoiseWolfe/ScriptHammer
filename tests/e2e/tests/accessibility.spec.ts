@@ -338,13 +338,21 @@ test.describe('Accessibility', () => {
     await page.waitForSelector('form', { state: 'visible', timeout: 5000 });
     await page.waitForLoadState('domcontentloaded');
 
-    // Look for error messages
+    // Look for error messages that have visible content
+    // Empty alert containers (used for dynamic errors) should be skipped
     const errorMessages = page.locator('.text-error, [role="alert"]');
     const errorCount = await errorMessages.count();
 
+    let errorMessagesWithContent = 0;
     for (let i = 0; i < errorCount; i++) {
       const error = errorMessages.nth(i);
+      const errorText = (await error.textContent())?.trim();
       const errorId = await error.getAttribute('id');
+
+      // Skip empty error containers (dynamic error regions)
+      if (!errorText) continue;
+
+      errorMessagesWithContent++;
 
       if (errorId) {
         // Find input with aria-describedby pointing to this error
@@ -356,5 +364,9 @@ test.describe('Accessibility', () => {
         expect(hasAssociation).toBe(true);
       }
     }
+
+    // This test passes if there are no visible error messages (valid state)
+    // OR if all visible error messages have proper associations
+    // The test is not asserting that errors MUST exist
   });
 });
