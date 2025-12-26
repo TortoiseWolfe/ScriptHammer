@@ -86,7 +86,7 @@ test.describe('User Registration E2E', () => {
 
     // Step 9: Verify payment demo access (another protected route)
     await page.goto('/payment-demo');
-    await expect(page).toHaveURL('/payment-demo');
+    await expect(page).toHaveURL(/\/payment-demo\/?$/);
     await expect(
       page.getByRole('heading', { name: 'Payment Integration Demo' })
     ).toBeVisible();
