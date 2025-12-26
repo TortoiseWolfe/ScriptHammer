@@ -214,13 +214,43 @@ async function navigateToConversation(page: Page) {
  */
 async function sendMessage(page: Page, message: string) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 5000 });
   await messageInput.fill(message);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
 
-  // Wait for message to appear
-  await page.waitForSelector(`text=${message}`, { timeout: 5000 });
+  // Wait for message to appear and be visible
+  await expect(page.getByText(message)).toBeVisible({ timeout: 10000 });
+
+  // Wait for UI to stabilize after sending
+  await waitForUIStability(page);
+}
+
+/**
+ * Find the Edit button for a specific message by its text content.
+ * DOM structure: The paragraph and buttons are siblings within a container.
+ * We go up from paragraph to find the enclosing container, then find the button.
+ */
+function getEditButtonForMessage(page: Page, messageText: string) {
+  // Go up to find the enclosing message container (chat bubble)
+  // The .. goes to parent, and we need to go up enough levels to find the button
+  return page
+    .getByText(messageText)
+    .locator('..')
+    .locator('..')
+    .getByRole('button', { name: 'Edit message' });
+}
+
+/**
+ * Find the Delete button for a specific message by its text content.
+ */
+function getDeleteButtonForMessage(page: Page, messageText: string) {
+  return page
+    .getByText(messageText)
+    .locator('..')
+    .locator('..')
+    .getByRole('button', { name: 'Delete message' });
 }
 
 test.describe('Message Editing', () => {
@@ -238,14 +268,13 @@ test.describe('Message Editing', () => {
     // Navigate to conversation
     await navigateToConversation(page);
 
-    // Send a message
-    const originalMessage = 'Original message content';
+    // Send a unique message (timestamp ensures no conflicts with previous test runs)
+    const timestamp = Date.now();
+    const originalMessage = `Original msg ${timestamp}`;
     await sendMessage(page, originalMessage);
 
-    // Find the Edit button for our message (last message sent by us)
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
+    // Find the Edit button for our specific message
+    const editButton = getEditButtonForMessage(page, originalMessage);
 
     // Edit button should be visible for own messages
     await expect(editButton).toBeVisible();
@@ -259,8 +288,8 @@ test.describe('Message Editing', () => {
     });
     await expect(editTextarea).toBeVisible();
 
-    // Change the content
-    const editedMessage = 'Edited message content';
+    // Change the content with unique timestamp
+    const editedMessage = `Edited msg ${timestamp}`;
     await editTextarea.clear();
     await editTextarea.fill(editedMessage);
 
@@ -271,10 +300,10 @@ test.describe('Message Editing', () => {
     await expect(editTextarea).not.toBeVisible({ timeout: 5000 });
 
     // Verify edited content is displayed
-    await expect(page.locator(`text=${editedMessage}`)).toBeVisible();
+    await expect(page.getByText(editedMessage)).toBeVisible();
 
-    // Verify original content is no longer visible
-    await expect(page.locator(`text=${originalMessage}`)).not.toBeVisible();
+    // Verify original content is no longer visible (unique timestamp ensures only one match)
+    await expect(page.getByText(originalMessage)).not.toBeVisible();
   });
 
   test('should cancel edit without saving', async ({ page }) => {
@@ -283,14 +312,13 @@ test.describe('Message Editing', () => {
 
     await navigateToConversation(page);
 
-    // Send a message
-    const originalMessage = 'Message to cancel edit';
+    // Send a unique message
+    const timestamp = Date.now();
+    const originalMessage = `Cancel edit ${timestamp}`;
     await sendMessage(page, originalMessage);
 
-    // Click Edit
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
+    // Click Edit button for our specific message
+    const editButton = getEditButtonForMessage(page, originalMessage);
     await editButton.click();
 
     // Change content
@@ -308,7 +336,7 @@ test.describe('Message Editing', () => {
     await expect(editTextarea).not.toBeVisible();
 
     // Original content should still be visible
-    await expect(page.locator(`text=${originalMessage}`)).toBeVisible();
+    await expect(page.getByText(originalMessage)).toBeVisible();
   });
 
   test('should disable Save button when content unchanged', async ({
@@ -319,14 +347,13 @@ test.describe('Message Editing', () => {
 
     await navigateToConversation(page);
 
-    // Send a message
-    const originalMessage = 'Test unchanged content';
+    // Send a unique message
+    const timestamp = Date.now();
+    const originalMessage = `Unchanged ${timestamp}`;
     await sendMessage(page, originalMessage);
 
-    // Click Edit
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
+    // Click Edit button for our specific message
+    const editButton = getEditButtonForMessage(page, originalMessage);
     await editButton.click();
 
     // Save button should be disabled (content hasn't changed)
@@ -340,14 +367,13 @@ test.describe('Message Editing', () => {
 
     await navigateToConversation(page);
 
-    // Send a message
-    const originalMessage = 'Test empty edit';
+    // Send a unique message
+    const timestamp = Date.now();
+    const originalMessage = `Empty edit ${timestamp}`;
     await sendMessage(page, originalMessage);
 
-    // Click Edit
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
+    // Click Edit button for our specific message
+    const editButton = getEditButtonForMessage(page, originalMessage);
     await editButton.click();
 
     // Clear content
@@ -376,14 +402,13 @@ test.describe('Message Deletion', () => {
 
     await navigateToConversation(page);
 
-    // Send a message using the helper
-    const messageToDelete = 'Message to be deleted';
+    // Send a unique message (timestamp ensures no conflicts with previous test runs)
+    const timestamp = Date.now();
+    const messageToDelete = `Delete me ${timestamp}`;
     await sendMessage(page, messageToDelete);
 
-    // Find the Delete button for our message (last message sent by us)
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    // Find the Delete button for our specific message
+    const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
 
     // Delete button should be visible
     await expect(deleteButton).toBeVisible();
@@ -392,18 +417,26 @@ test.describe('Message Deletion', () => {
     await deleteButton.click();
 
     // Confirmation modal should appear
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog', { name: /Delete Message/i });
     await expect(modal).toBeVisible();
 
-    // Confirm deletion
-    const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
+    // Confirm deletion - use the actual aria-label "Confirm deletion"
+    const confirmButton = modal.getByRole('button', {
+      name: /Confirm deletion/i,
+    });
+    await expect(confirmButton).toBeVisible();
     await confirmButton.click();
 
-    // Wait for deletion to complete
-    await expect(modal).not.toBeVisible({ timeout: 5000 });
+    // Wait for modal to close first
+    await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-    // Original content should not be visible (replaced with deleted placeholder)
-    await expect(page.locator(`text=${messageToDelete}`)).not.toBeVisible();
+    // Wait a bit for the message deletion to propagate
+    await page.waitForTimeout(1000);
+
+    // Original content should not be visible (unique timestamp ensures only one match)
+    await expect(page.getByText(messageToDelete)).not.toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test('should cancel deletion from confirmation modal', async ({ page }) => {
@@ -412,29 +445,30 @@ test.describe('Message Deletion', () => {
 
     await navigateToConversation(page);
 
-    // Send a message using the helper
-    const messageToKeep = 'Message to keep';
+    // Send a unique message
+    const timestamp = Date.now();
+    const messageToKeep = `Keep me ${timestamp}`;
     await sendMessage(page, messageToKeep);
 
-    // Click Delete
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    // Click Delete button for our specific message
+    const deleteButton = getDeleteButtonForMessage(page, messageToKeep);
     await deleteButton.click();
 
     // Modal appears
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog', { name: /Delete Message/i });
     await expect(modal).toBeVisible();
 
     // Click Cancel
-    const cancelButton = page.getByRole('button', { name: /Cancel/i });
+    const cancelButton = modal.getByRole('button', {
+      name: /Cancel deletion/i,
+    });
     await cancelButton.click();
 
     // Modal should close
     await expect(modal).not.toBeVisible();
 
     // Message should still be intact
-    await expect(page.locator(`text=${messageToKeep}`)).toBeVisible();
+    await expect(page.getByText(messageToKeep)).toBeVisible();
   });
 
   test('should not show Edit/Delete buttons on deleted message', async ({
@@ -445,27 +479,36 @@ test.describe('Message Deletion', () => {
 
     await navigateToConversation(page);
 
-    // Send and delete a message
-    const messageToDelete = 'Will be deleted';
+    // Send and delete a unique message (timestamp ensures no conflicts)
+    const timestamp = Date.now();
+    const messageToDelete = `To delete ${timestamp}`;
     await sendMessage(page, messageToDelete);
 
-    // Click Delete
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    // Click Delete button for our specific message
+    const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
     await deleteButton.click();
 
-    // Confirm deletion
-    const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
+    // Confirmation modal should appear
+    const modal = page.getByRole('dialog', { name: /Delete Message/i });
+    await expect(modal).toBeVisible();
+
+    // Confirm deletion - use the actual aria-label "Confirm deletion"
+    const confirmButton = modal.getByRole('button', {
+      name: /Confirm deletion/i,
+    });
+    await expect(confirmButton).toBeVisible();
     await confirmButton.click();
 
-    // Wait for modal to close
-    await expect(page.locator('[role="dialog"]')).not.toBeVisible({
+    // Wait for modal to close first
+    await expect(modal).not.toBeVisible({ timeout: 10000 });
+
+    // Wait a bit for the message deletion to propagate
+    await page.waitForTimeout(1000);
+
+    // Verify the original message is no longer visible (unique timestamp ensures only one match)
+    await expect(page.getByText(messageToDelete)).not.toBeVisible({
       timeout: 5000,
     });
-
-    // Verify the original message is no longer visible
-    await expect(page.locator(`text=${messageToDelete}`)).not.toBeVisible();
 
     // Edit and Delete buttons should not be visible for deleted messages
     // The message is replaced, so no buttons should appear
@@ -551,17 +594,14 @@ test.describe('Time Window Restrictions', () => {
 
     await navigateToConversation(page);
 
-    // Send a new message (within window)
-    const recentMessage = 'Recent message within 15min';
+    // Send a unique message (within window)
+    const timestamp = Date.now();
+    const recentMessage = `Recent msg ${timestamp}`;
     await sendMessage(page, recentMessage);
 
     // Recent own message should have Edit and Delete buttons
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    const editButton = getEditButtonForMessage(page, recentMessage);
+    const deleteButton = getDeleteButtonForMessage(page, recentMessage);
 
     await expect(editButton).toBeVisible();
     await expect(deleteButton).toBeVisible();
@@ -608,14 +648,13 @@ test.describe('Accessibility', () => {
 
     await navigateToConversation(page);
 
-    // Send a message using helper
-    const message = 'Test accessibility';
+    // Send a unique message
+    const timestamp = Date.now();
+    const message = `A11y test ${timestamp}`;
     await sendMessage(page, message);
 
-    // Enter edit mode using role-based selector
-    const editButton = page
-      .getByRole('button', { name: 'Edit message' })
-      .last();
+    // Enter edit mode using the helper to find our specific message's button
+    const editButton = getEditButtonForMessage(page, message);
     await editButton.click();
 
     // Check ARIA labels - use role-based selectors
@@ -639,25 +678,29 @@ test.describe('Accessibility', () => {
 
     await navigateToConversation(page);
 
-    // Send a message using helper
-    const message = 'Test delete modal accessibility';
+    // Send a unique message
+    const timestamp = Date.now();
+    const message = `Modal a11y ${timestamp}`;
     await sendMessage(page, message);
 
-    // Open delete modal using role-based selector
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    // Open delete modal using helper to find our specific message's button
+    const deleteButton = getDeleteButtonForMessage(page, message);
     await deleteButton.click();
 
     // Check modal ARIA attributes
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog', { name: /Delete Message/i });
     await expect(modal).toBeVisible();
 
-    // Check button labels using role-based selectors
-    const cancelButton = page.getByRole('button', { name: /Cancel/i });
+    // Check button labels within the modal
+    // Button accessible names are "Cancel deletion" and "Confirm deletion"
+    const cancelButton = modal.getByRole('button', {
+      name: /Cancel deletion/i,
+    });
     await expect(cancelButton).toBeVisible();
 
-    const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
+    const confirmButton = modal.getByRole('button', {
+      name: /Confirm deletion/i,
+    });
     await expect(confirmButton).toBeVisible();
   });
 
@@ -669,24 +712,28 @@ test.describe('Accessibility', () => {
 
     await navigateToConversation(page);
 
-    // Send a message using helper
-    const message = 'Test keyboard navigation';
+    // Send a unique message
+    const timestamp = Date.now();
+    const message = `Keyboard nav ${timestamp}`;
     await sendMessage(page, message);
 
-    // Open delete modal using role-based selector
-    const deleteButton = page
-      .getByRole('button', { name: 'Delete message' })
-      .last();
+    // Open delete modal using helper to find our specific message's button
+    const deleteButton = getDeleteButtonForMessage(page, message);
     await deleteButton.click();
 
     // Wait for modal to be fully visible and interactive
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog', { name: /Delete Message/i });
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
     // Check that focusable elements exist in the modal
-    const cancelButton = page.getByRole('button', { name: /Cancel/i });
-    const confirmButton = page.getByRole('button', { name: /Delete/i }).last();
+    // Button accessible names are "Cancel deletion" and "Confirm deletion"
+    const cancelButton = modal.getByRole('button', {
+      name: /Cancel deletion/i,
+    });
+    const confirmButton = modal.getByRole('button', {
+      name: /Confirm deletion/i,
+    });
 
     await expect(cancelButton).toBeVisible();
     await expect(confirmButton).toBeVisible();
