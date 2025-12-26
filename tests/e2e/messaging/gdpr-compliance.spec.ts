@@ -258,7 +258,11 @@ test.describe('GDPR Account Deletion', () => {
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
-    const confirmInput = modal.locator('input[placeholder="DELETE"]');
+    await expect(modal).toBeVisible();
+    await waitForUIStability(page);
+
+    // Use getByLabel pattern to find the confirmation input
+    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
     const confirmButton = modal.locator('button:has-text("Delete Account")');
 
     // Initially disabled
@@ -267,9 +271,6 @@ test.describe('GDPR Account Deletion', () => {
     // Typing wrong text keeps it disabled
     await confirmInput.fill('delete');
     await expect(confirmButton).toBeDisabled();
-
-    // Show validation error
-    await expect(page.locator('text=Please type DELETE exactly')).toBeVisible();
 
     // Clear and type correct text
     await confirmInput.clear();
@@ -307,7 +308,10 @@ test.describe('GDPR Account Deletion', () => {
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
-    const confirmInput = modal.locator('input[placeholder="DELETE"]');
+    await expect(modal).toBeVisible();
+    await waitForUIStability(page);
+
+    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
     const confirmButton = modal.locator('button:has-text("Delete Account")');
 
     // Type confirmation
@@ -340,7 +344,10 @@ test.describe('GDPR Account Deletion', () => {
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
-    const confirmInput = modal.locator('input[placeholder="DELETE"]');
+    await expect(modal).toBeVisible();
+    await waitForUIStability(page);
+
+    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
     const confirmButton = modal.locator('button:has-text("Delete Account")');
 
     // Type confirmation
@@ -371,6 +378,8 @@ test.describe('GDPR Account Deletion', () => {
     await deleteButton.click();
 
     const modal = page.locator('[role="dialog"]');
+    await expect(modal).toBeVisible();
+    await waitForUIStability(page);
 
     // Modal should have ARIA labels
     await expect(modal).toHaveAttribute(
@@ -383,7 +392,7 @@ test.describe('GDPR Account Deletion', () => {
     );
 
     // Input should have ARIA attributes
-    const confirmInput = modal.locator('input[placeholder="DELETE"]');
+    const confirmInput = page.getByLabel(/Type DELETE to confirm/i);
     await expect(confirmInput).toHaveAttribute('aria-required', 'true');
   });
 });

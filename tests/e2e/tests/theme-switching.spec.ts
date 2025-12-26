@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 const themes = [
   // Light themes
@@ -41,8 +42,10 @@ test.describe('Theme Switching', () => {
   test.beforeEach(async ({ page }) => {
     // Clear localStorage to ensure clean state
     await page.goto('/');
+    await dismissCookieBanner(page);
     await page.evaluate(() => localStorage.clear());
     await page.reload();
+    await dismissCookieBanner(page);
   });
 
   test('theme switcher is accessible from homepage', async ({ page }) => {
@@ -72,7 +75,7 @@ test.describe('Theme Switching', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     // Navigate to another page and verify theme persists
-    await page.goto('/components');
+    await page.goto('/themes');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
 
@@ -106,7 +109,7 @@ test.describe('Theme Switching', () => {
     );
 
     // Check theme on different pages
-    const pages = ['/', '/components', '/accessibility', '/status'];
+    const pages = ['/', '/themes', '/accessibility', '/status'];
 
     for (const pagePath of pages) {
       await page.goto(pagePath);

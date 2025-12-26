@@ -80,6 +80,10 @@ test.describe('Accessibility', () => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
 
+    // Wait for form to be fully loaded
+    await page.waitForSelector('form', { state: 'visible', timeout: 5000 });
+    await page.waitForLoadState('domcontentloaded');
+
     const inputs = page
       .locator('input, select, textarea')
       .filter({ hasNot: page.locator('[type="hidden"]') });
@@ -329,6 +333,10 @@ test.describe('Accessibility', () => {
   test('error messages are associated with form fields', async ({ page }) => {
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
+
+    // Wait for form to be fully loaded
+    await page.waitForSelector('form', { state: 'visible', timeout: 5000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for error messages
     const errorMessages = page.locator('.text-error, [role="alert"]');

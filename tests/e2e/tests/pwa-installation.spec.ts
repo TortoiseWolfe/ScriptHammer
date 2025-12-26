@@ -47,9 +47,9 @@ test.describe('PWA Installation', () => {
   });
 
   test('manifest file is linked correctly', async ({ page }) => {
-    // Check for manifest link in head
+    // Check for manifest link in head (link elements are not "visible" - check existence)
     const manifestLink = page.locator('link[rel="manifest"]');
-    await expect(manifestLink).toBeVisible();
+    await expect(manifestLink).toHaveCount(1);
 
     // Get the actual href (could be /ScriptHammer/manifest.json or /manifest.json)
     const href = await manifestLink.getAttribute('href');
