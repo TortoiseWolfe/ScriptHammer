@@ -5,6 +5,10 @@ import {
   waitForAuthenticatedState,
 } from '../utils/test-user-factory';
 
+// Test user credentials
+const TEST_USER_PASSWORD =
+  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+
 /**
  * Wait for UI to stabilize after navigation or interaction
  */
@@ -104,7 +108,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.mobile);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     // Click on a conversation to open chat (handles waiting internally)
     await clickFirstConversation(page);
@@ -128,7 +132,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.tablet);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     await clickFirstConversation(page);
 
@@ -149,7 +153,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     await clickFirstConversation(page);
 
@@ -185,7 +189,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     await clickFirstConversation(page);
 
@@ -234,7 +238,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     await clickFirstConversation(page);
 
@@ -278,7 +282,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test('T009: Jump button click scrolls to bottom', async ({ page }) => {
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('/messages');
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
 
     await clickFirstConversation(page);
 

@@ -182,7 +182,7 @@ async function waitForUIStability(page: Page) {
 async function navigateToConversation(page: Page) {
   await page.goto('/messages');
   await dismissCookieBanner(page);
-  await handleReAuthModal(page);
+  await handleReAuthModal(page, TEST_USER_1.password);
 
   // Click on Chats tab to see conversations
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
@@ -529,7 +529,7 @@ test.describe('Time Window Restrictions', () => {
     // Reload page to apply mock
     await page.reload();
     await dismissCookieBanner(page);
-    await handleReAuthModal(page);
+    await handleReAuthModal(page, TEST_USER_1.password);
     await navigateToConversation(page);
 
     // Check that existing messages (if any) from older than 15 minutes don't have Edit/Delete

@@ -149,7 +149,7 @@ async function waitForUIStability(page: import('@playwright/test').Page) {
 async function navigateToConversation(page: import('@playwright/test').Page) {
   await page.goto('/messages');
   await dismissCookieBanner(page);
-  await handleReAuthModal(page);
+  await handleReAuthModal(page, TEST_USER_PASSWORD);
 
   // Click on Chats tab and find first conversation
   const chatsTab = page.getByRole('tab', { name: /Chats/i });

@@ -83,7 +83,7 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 2: Navigate to conversation =====
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
-      await handleReAuthModal(page);
+      await handleReAuthModal(page, USER_A.password);
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
@@ -164,7 +164,7 @@ test.describe('Offline Message Queue', () => {
 
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
-      await handleReAuthModal(page);
+      await handleReAuthModal(page, USER_A.password);
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
@@ -243,7 +243,7 @@ test.describe('Offline Message Queue', () => {
 
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
-      await handleReAuthModal(page);
+      await handleReAuthModal(page, USER_A.password);
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
@@ -351,7 +351,7 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 2: Both navigate to same conversation =====
       await pageA.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(pageA);
-      await handleReAuthModal(pageA);
+      await handleReAuthModal(pageA, USER_A.password);
 
       // Click on Chats tab for user A
       const chatsTabA = pageA.getByRole('tab', { name: /Chats/i });
@@ -376,7 +376,7 @@ test.describe('Offline Message Queue', () => {
 
       await pageB.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(pageB);
-      await handleReAuthModal(pageB);
+      await handleReAuthModal(pageB, USER_B.password);
 
       // Click on Chats tab for user B
       const chatsTabB = pageB.getByRole('tab', { name: /Chats/i });
@@ -475,7 +475,7 @@ test.describe('Offline Message Queue', () => {
 
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
-      await handleReAuthModal(page);
+      await handleReAuthModal(page, USER_A.password);
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });

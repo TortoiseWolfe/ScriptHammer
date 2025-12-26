@@ -44,7 +44,7 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   // Both users navigate to messages page
   await page1.goto('/messages');
   await dismissCookieBanner(page1);
-  await handleReAuthModal(page1);
+  await handleReAuthModal(page1, TEST_USER_1.password);
 
   // User 1: Click on Chats tab
   const chatsTab1 = page1.getByRole('tab', { name: /Chats/i });
@@ -79,7 +79,7 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   // User 2: Navigate to messages and click same conversation
   await page2.goto('/messages');
   await dismissCookieBanner(page2);
-  await handleReAuthModal(page2);
+  await handleReAuthModal(page2, TEST_USER_2.password);
 
   const chatsTab2 = page2.getByRole('tab', { name: /Chats/i });
   if (await chatsTab2.isVisible()) {
