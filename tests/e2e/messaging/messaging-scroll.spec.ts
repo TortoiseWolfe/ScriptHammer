@@ -43,6 +43,24 @@ const VIEWPORTS = {
   desktop: { width: 1280, height: 800 },
 };
 
+/**
+ * Click the first available conversation button to open a chat
+ */
+async function clickFirstConversation(page: Page): Promise<boolean> {
+  const conversationButton = page
+    .getByRole('button', { name: /Conversation with/ })
+    .first();
+  if (await conversationButton.isVisible({ timeout: 3000 })) {
+    await conversationButton.click();
+    await page.waitForSelector('[data-testid="chat-window"]', {
+      timeout: 5000,
+    });
+    await waitForUIStability(page);
+    return true;
+  }
+  return false;
+}
+
 // Helper to check if element is in viewport
 async function isElementInViewport(
   page: Page,
@@ -96,12 +114,8 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
       }
     );
 
-    // Find a conversation or create test scenario
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    // Click on a conversation to open chat
+    await clickFirstConversation(page);
 
     // Check message input is visible
     const messageInput = page.locator(
@@ -131,11 +145,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
       }
     );
 
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    await clickFirstConversation(page);
 
     const messageInput = page.locator(
       'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
@@ -163,11 +173,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
       }
     );
 
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    await clickFirstConversation(page);
 
     const messageInput = page.locator(
       'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
@@ -210,11 +216,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
       }
     );
 
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    await clickFirstConversation(page);
 
     // Get message thread element
     const messageThread = page.locator('[data-testid="message-thread"]');
@@ -270,11 +272,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       }
     );
 
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    await clickFirstConversation(page);
 
     const messageThread = page.locator('[data-testid="message-thread"]');
 
@@ -325,11 +323,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       }
     );
 
-    const conversationLink = page.locator('a[href*="conversation="]').first();
-    if (await conversationLink.isVisible()) {
-      await conversationLink.click();
-      await page.waitForSelector('[data-testid="chat-window"]');
-    }
+    await clickFirstConversation(page);
 
     const messageThread = page.locator('[data-testid="message-thread"]');
 
