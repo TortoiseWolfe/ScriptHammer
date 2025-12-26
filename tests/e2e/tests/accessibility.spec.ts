@@ -49,9 +49,9 @@ test.describe('Accessibility', () => {
     // Tab to reveal skip link
     await page.keyboard.press('Tab');
 
-    // Check skip link is focused
+    // Check skip link is focused (homepage uses #main-content, game page uses #game-demo)
     const skipLink = page
-      .locator('a[href="#main"], a[href="#game-demo"]')
+      .locator('a[href="#main-content"], a[href="#game-demo"]')
       .first();
     await expect(skipLink).toBeFocused();
 
@@ -59,7 +59,7 @@ test.describe('Accessibility', () => {
     await page.keyboard.press('Enter');
 
     // Check main content is in viewport
-    const mainContent = page.locator('#main, #game-demo').first();
+    const mainContent = page.locator('#main-content, #game-demo').first();
     await expect(mainContent).toBeInViewport();
   });
 
