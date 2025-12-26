@@ -287,17 +287,11 @@ Run these specs in order (041 → 064). Copy a command to start the full SpecKit
 
 ### Priority 2: E2E Stabilization (116 failures - analyzed 2025-12-26)
 
-```
-/speckit.workflow SPEC-043: Form Honeypot Fix - Fix 12 form E2E failures. ROOT CAUSE: Tests fill honeypot field ("Don't fill this out if you're human") triggering "Bot detected" error. FIX: Update tests/e2e/forms/form-submission.spec.ts to skip honeypot field. Effort: 30 min.
-```
+**SPEC-043: ✅ COMPLETE** - Form honeypot fix merged (2025-12-26). Added `isHoneypotField()` helper to skip bot trap fields.
 
-```
-/speckit.workflow SPEC-044: Accessibility Contrast Fix - Fix 15 a11y failures. ROOT CAUSE: Footer uses text-base-content/40 (40% opacity) failing WCAG AA contrast (3.57 vs 4.5:1 required). FIX: Change to text-base-content/60 in Footer component. Effort: 1 hour.
-```
+**SPEC-044: ✅ COMPLETE** - Accessibility contrast fix merged (2025-12-26). Changed `text-base-content/40` to `/60` in Footer.
 
-```
-/speckit.workflow SPEC-045: Message Editing Selectors - Fix 9 message-editing failures. ROOT CAUSE: Edit/Delete buttons ARE visible but tests use wrong selectors. FIX: Update tests/e2e/messaging/message-editing.spec.ts to use getByRole('button', { name: 'Edit message' }). Effort: 2 hours.
-```
+**SPEC-045: ✅ COMPLETE** - Already fixed in commit 2a8aa08 (2025-12-26). All 43 message-editing tests pass.
 
 ```
 /speckit.workflow SPEC-046: Payment Security Flow - Fix 9 payment isolation failures. ROOT CAUSE: Tests stuck on GDPR consent step, not clicking Accept correctly. FIX: Update tests/e2e/security/payment-isolation.spec.ts to click Accept and wait for Step 2. Effort: 2 hours.
