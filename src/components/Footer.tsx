@@ -24,7 +24,7 @@ export function Footer() {
             geoLARP.com
           </a>
         </p>
-        <p className="text-base-content/40 mt-1 text-xs">
+        <p className="text-base-content/60 mt-1 text-xs">
           Built with{' '}
           <a
             href="https://github.com/TortoiseWolfe/ScriptHammer"
