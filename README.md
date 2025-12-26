@@ -293,9 +293,7 @@ Run these specs in order (041 → 064). Copy a command to start the full SpecKit
 
 **SPEC-045: ✅ COMPLETE** - Already fixed in commit 2a8aa08 (2025-12-26). All 43 message-editing tests pass.
 
-```
-/speckit.workflow SPEC-046: Payment Security Flow - Fix 9 payment isolation failures. ROOT CAUSE: Tests stuck on GDPR consent step, not clicking Accept correctly. FIX: Update tests/e2e/security/payment-isolation.spec.ts to click Accept and wait for Step 2. Effort: 2 hours.
-```
+**SPEC-046: ✅ COMPLETE** - Payment isolation fix merged (2025-12-26). Added `handlePaymentConsent()` helper. All 24 tests pass.
 
 ```
 /speckit.workflow SPEC-047: OAuth Test Skip - Fix 15 OAuth CSRF failures. ROOT CAUSE: OAuth redirects don't work in static export - tests can't follow external OAuth flow. FIX: Add skip condition for CI in tests/e2e/security/oauth-csrf.spec.ts. Effort: 1 hour.
