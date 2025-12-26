@@ -235,12 +235,14 @@ test.describe('GDPR Account Deletion', () => {
     await deleteButton.click();
 
     // Modal should be visible
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
 
-    // Modal should have warning content
-    await expect(page.getByText('Delete Account Permanently')).toBeVisible();
-    await expect(page.getByText('This action cannot be undone')).toBeVisible();
+    // Modal should have warning content - look within the modal specifically
+    await expect(
+      modal.getByRole('heading', { name: /Delete Account Permanently/i })
+    ).toBeVisible();
+    await expect(modal.getByText(/cannot be undone/i)).toBeVisible();
   });
 
   test('should require typing "DELETE" to enable deletion (T192)', async ({
@@ -249,7 +251,7 @@ test.describe('GDPR Account Deletion', () => {
     const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
@@ -279,7 +281,7 @@ test.describe('GDPR Account Deletion', () => {
     const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
 
     const cancelButton = modal.getByRole('button', { name: /Cancel/i });
@@ -298,7 +300,7 @@ test.describe('GDPR Account Deletion', () => {
     const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
@@ -310,8 +312,8 @@ test.describe('GDPR Account Deletion', () => {
     // Type confirmation
     await confirmInput.fill('DELETE');
 
-    // Mock deletion to prevent actual account deletion
-    await page.route('**/user_profiles', (route) => {
+    // Mock deletion to prevent actual account deletion - pattern must match Supabase REST API URLs
+    await page.route('**/rest/v1/user_profiles**', (route) => {
       route.fulfill({
         status: 200,
         body: JSON.stringify({ data: null, error: null }),
@@ -334,7 +336,7 @@ test.describe('GDPR Account Deletion', () => {
     const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
@@ -346,8 +348,8 @@ test.describe('GDPR Account Deletion', () => {
     // Type confirmation
     await confirmInput.fill('DELETE');
 
-    // Mock deletion failure
-    await page.route('**/user_profiles', (route) => {
+    // Mock deletion failure - pattern must match Supabase REST API URLs with query params
+    await page.route('**/rest/v1/user_profiles**', (route) => {
       route.fulfill({
         status: 500,
         body: JSON.stringify({ error: { message: 'Deletion failed' } }),
@@ -357,18 +359,21 @@ test.describe('GDPR Account Deletion', () => {
     // Click delete button
     await confirmButton.click();
 
-    // Should show error alert
+    // Should show error alert with failure message
     await expect(modal.getByRole('alert')).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.getByText('Deletion failed')).toBeVisible();
+    // The actual error message is "Failed to delete account: ..." (visible element, not sr-only)
+    await expect(
+      page.getByText(/Failed to delete account/i).first()
+    ).toBeVisible();
   });
 
   test('should have accessible ARIA attributes (T192)', async ({ page }) => {
     const deleteButton = page.getByRole('button', { name: /Delete Account/i });
     await deleteButton.click();
 
-    const modal = page.locator('[role="dialog"]');
+    const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await waitForUIStability(page);
 
