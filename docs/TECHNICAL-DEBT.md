@@ -314,11 +314,36 @@ Environment-dependent tests.
 
 **Unblock by**: Delete or update example tests
 
-### Active Failures (~10)
+### Active Failures (117 - CI Run 2025-12-26)
 
-| Test                      | Issue                             | Status                     |
-| ------------------------- | --------------------------------- | -------------------------- |
-| `message-editing.spec.ts` | Edit/Delete buttons not appearing | Fix committed, awaiting CI |
+| Category              | Failures | Root Cause                                                  |
+| --------------------- | -------- | ----------------------------------------------------------- |
+| `tests-accessibility` | 15       | Axe-core violations - actual a11y issues or false positives |
+| `security-oauth`      | 15       | OAuth flow assertions failing                               |
+| `tests-form`          | 12       | Form submission timing/validation                           |
+| `avatar-upload`       | 12       | File upload crop interface, replace, remove flows           |
+| `security-payment`    | 9        | Payment security test assertions                            |
+| `messaging-message`   | 9        | Edit/delete buttons now visible, other assertions failing   |
+| `tests-cross`         | 7        | Cross-page navigation timing                                |
+| `tests-pwa`           | 6        | Service worker registration in CI                           |
+| `tests-broken`        | 6        | Link checking timeouts                                      |
+| `payment-04`          | 6        | GDPR consent flow                                           |
+| `tests-theme`         | 3        | Theme switching assertions                                  |
+| `payment-01`          | 3        | Stripe payment flow                                         |
+| `mobile-dropdown`     | 3        | Mobile menu interactions                                    |
+| `messaging-friend`    | 3        | Friend request navigation                                   |
+| `messaging-complete`  | 3        | Complete workflow - retry button                            |
+| `messaging-encrypted` | 2        | Zero-knowledge/key security tests                           |
+| `messaging-gdpr`      | 1        | Deletion failure handling                                   |
+| `auth-session`        | 1        | Session clear on sign-out                                   |
+| `auth-protected`      | 1        | Payment access policies                                     |
+
+**Notes**:
+
+- Edit/Delete buttons fix confirmed working (buttons now visible in snapshots)
+- Many failures are timing/environment related
+- Accessibility failures need axe violation analysis
+- OAuth/payment tests may need API keys configured
 
 ## Documentation Updates Needed
 
