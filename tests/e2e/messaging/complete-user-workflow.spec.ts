@@ -59,6 +59,49 @@ const getUserIds = async (
   return { userAId, userBId };
 };
 
+/**
+ * Get display_name for a user by email.
+ * UserSearch searches by display_name, not username.
+ * If display_name is null, sets it to email prefix so searches work.
+ */
+const getDisplayNameByEmail = async (email: string): Promise<string> => {
+  const client = getAdminClient();
+  const fallbackName = email.split('@')[0];
+
+  if (!client) {
+    console.warn('getDisplayNameByEmail: No admin client, using email prefix');
+    return fallbackName;
+  }
+
+  const { data: users } = await client.auth.admin.listUsers();
+  const user = users?.users?.find((u) => u.email === email);
+  if (!user) {
+    console.warn(`getDisplayNameByEmail: User not found for ${email}`);
+    return fallbackName;
+  }
+
+  const { data: profile } = await client
+    .from('user_profiles')
+    .select('display_name')
+    .eq('id', user.id)
+    .single();
+
+  if (profile?.display_name) {
+    return profile.display_name;
+  }
+
+  // display_name is null - SET IT so searches work
+  console.log(
+    `getDisplayNameByEmail: Setting display_name for ${email} to "${fallbackName}"`
+  );
+  await client
+    .from('user_profiles')
+    .update({ display_name: fallbackName })
+    .eq('id', user.id);
+
+  return fallbackName;
+};
+
 const cleanupTestData = async (client: SupabaseClient): Promise<void> => {
   const { userAId, userBId } = await getUserIds(client);
 
@@ -185,8 +228,10 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 2: Connections page loaded');
 
       // STEP 3: Search for User B
+      // UserSearch searches by display_name, not username
+      const userBDisplayName = await getDisplayNameByEmail(USER_B.email);
       console.log(
-        'Step 3: Searching for User B with username: ' + USER_B.username
+        'Step 3: Searching for User B with display_name: ' + userBDisplayName
       );
       // Use Find People tab for search
       const findPeopleTab = pageA.getByRole('tab', { name: /Find People/i });
@@ -194,19 +239,20 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         await findPeopleTab.click();
         await pageA.waitForTimeout(500);
       }
+      // UserSearch uses placeholder "Enter name"
       const searchInput = pageA
-        .getByRole('searchbox')
-        .or(pageA.getByPlaceholder(/Search/i))
+        .getByPlaceholder(/Enter name/i)
+        .or(pageA.getByRole('searchbox'))
         .first();
       await expect(searchInput).toBeVisible({ timeout: 5000 });
-      await searchInput.fill(USER_B.username);
+      await searchInput.fill(userBDisplayName);
       await searchInput.press('Enter');
       console.log('Step 3: Submitted search');
 
       // Wait for results - use role-based or text selectors
       await pageA.waitForTimeout(2000);
       const hasResults = await pageA
-        .getByText(USER_B.username)
+        .getByText(userBDisplayName)
         .isVisible()
         .catch(() => false);
       if (!hasResults) {
@@ -442,11 +488,15 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     await page.waitForLoadState('networkidle');
     await handleReAuthModal(page, USER_A.password);
 
-    // If error is shown, verify retry button exists
-    const errorAlert = page.getByRole('alert');
+    // If error alert with actual error text is shown, verify retry button exists
+    // Note: Empty alert elements may exist on page, only check if it has error content
+    const errorAlert = page
+      .getByRole('alert')
+      .filter({ hasText: /error|failed|couldn't/i });
     if (await errorAlert.isVisible().catch(() => false)) {
       await expect(page.getByRole('button', { name: /Retry/i })).toBeVisible();
     }
+    // Test passes if no error state is triggered (normal flow)
   });
 });
 
