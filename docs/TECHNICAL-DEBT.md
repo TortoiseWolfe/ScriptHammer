@@ -320,7 +320,7 @@ Environment-dependent tests.
 | --------------------- | -------- | -------------------------------------------------------- |
 | `tests-accessibility` | 15       | ✅ SPEC-044: Fixed contrast ratio in Footer (40%→60%)    |
 | `security-oauth`      | 15       | ✅ SPEC-047: Rewrote as proper security tests (all pass) |
-| `tests-form`          | 12       | Form submission timing/validation                        |
+| `tests-form`          | 12       | ✅ SPEC-048: Fixed label selectors and timing (all pass) |
 | `avatar-upload`       | 12       | File upload crop interface, replace, remove flows        |
 | `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)      |
 | `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)       |
@@ -344,6 +344,7 @@ Environment-dependent tests.
 - ✅ SPEC-045: Message editing selectors verified working (data-testid pattern)
 - ✅ SPEC-046: Added handlePaymentConsent() for GDPR flow in payment tests
 - ✅ SPEC-047: Rewrote OAuth CSRF tests to capture request URLs and verify state params
+- ✅ SPEC-048: Fixed form test label selectors (Name→Full Name, Email→Email Address) and replaced static waits
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
