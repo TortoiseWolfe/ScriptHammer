@@ -26,6 +26,9 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
       process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
     await page.goto('/sign-in');
+    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
+
     const result = await performSignIn(page, testEmail, testPassword);
     if (!result.success) {
       throw new Error(`Sign-in failed: ${result.error}`);
@@ -33,6 +36,7 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
 
     // Navigate to Account Settings
     await page.goto('/account');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
   });
 
