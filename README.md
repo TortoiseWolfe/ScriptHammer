@@ -277,6 +277,8 @@ The project automatically detects your repository name and owner from git remote
 
 ## 📋 Technical Debt Backlog (SpecKit Ready)
 
+For detailed tracking of E2E test fixes, helper patterns, and resolved issues, see [`docs/TECHNICAL-DEBT.md`](./docs/TECHNICAL-DEBT.md).
+
 Run these specs in order (041 → 064). Copy a command to start the full SpecKit workflow.
 
 ### Priority 1: Blockers
@@ -285,7 +287,7 @@ Run these specs in order (041 → 064). Copy a command to start the full SpecKit
 
 **SPEC-042: ❌ INVALID** - File is NOT obsolete. Analysis: `tests/e2e/examples/homepage-with-pom.spec.ts` has 5 working tests + 4 skipped (with documented reasons). It's in `examples/` as a POM pattern teaching example. The 4 skips document former homepage features - this is valuable history, not technical debt.
 
-### Priority 2: E2E Stabilization (116 failures - analyzed 2025-12-26)
+### Priority 2: E2E Stabilization (mostly resolved - see TECHNICAL-DEBT.md)
 
 **SPEC-043: ✅ COMPLETE** - Form honeypot fix merged (2025-12-26). Added `isHoneypotField()` helper to skip bot trap fields.
 
@@ -295,13 +297,9 @@ Run these specs in order (041 → 064). Copy a command to start the full SpecKit
 
 **SPEC-046: ✅ COMPLETE** - Payment isolation fix merged (2025-12-26). Added `handlePaymentConsent()` helper. All 24 tests pass.
 
-```
-/speckit.workflow SPEC-047: OAuth Test Skip - Fix 15 OAuth CSRF failures. ROOT CAUSE: OAuth redirects don't work in static export - tests can't follow external OAuth flow. FIX: Add skip condition for CI in tests/e2e/security/oauth-csrf.spec.ts. Effort: 1 hour.
-```
+**SPEC-047: ✅ COMPLETE** - OAuth CSRF tests rewritten as proper security tests (2025-12-26).
 
-```
-/speckit.workflow SPEC-048: Theme/PWA Test Fixes - Fix 12 failures (6 theme, 6 PWA). Theme tests check exact CSS values that vary. PWA tests need service worker which doesn't work in headless CI. FIX: Update assertions or add CI skip conditions. Effort: 2 hours.
-```
+**SPEC-048: ✅ COMPLETE** - Theme/PWA tests fixed with flexible assertions (2025-12-26).
 
 ### Priority 3: Group Messaging Feature
 
