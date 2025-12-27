@@ -260,7 +260,7 @@ The offline queue integration tests previously had issues with React Hook Form t
 
 ## E2E Test Debt (Updated 2025-12-27)
 
-**Status**: 294 passed, 20 failed, 14 flaky, 62 skipped (major improvements)
+**Status**: 298 passed, 19 failed, 12 flaky, 61 skipped (continuing improvements)
 
 ### Recent Improvements (2025-12-27)
 
@@ -275,18 +275,25 @@ The offline queue integration tests previously had issues with React Hook Form t
    - Made explicit color contrast test advisory (logs warning, doesn't fail)
    - Fixed `avatar-upload.a11y.test.ts` auth (dismissCookieBanner before performSignIn)
 
-3. **Test Helper Documentation** - Added to `docs/project/TESTING.md`:
+3. **Payment Isolation Test Fixes**:
+   - Rewrote `security/payment-isolation.spec.ts` to match actual page structure
+   - Original tests expected form fields (Amount, Email, Create Payment) that don't exist
+   - Now tests actual behavior: session isolation, GDPR consent, user ID display
+   - Uses `performSignIn()` helper instead of manual sign-in
+
+4. **Test Helper Documentation** - Added to `docs/project/TESTING.md`:
    - E2E Test Helpers table (performSignIn, waitForAuthenticatedState, etc.)
    - beforeAll pattern with canonical UUID ordering for conversations
    - GDPR consent handling pattern for payment tests
    - Common E2E Test Failures and Solutions table
 
-4. **`/fetch-test-results` Command** - Enhanced in `.claude/commands/fetch-test-results.md`:
+5. **`/fetch-test-results` Command** - Enhanced in `.claude/commands/fetch-test-results.md`:
    - Now checks BOTH success AND failure runs (GitHub marks runs "success" even when tests fail)
    - Added screenshot analysis step for reading PNG files
    - Added Common Error Patterns Reference table
 
-5. **Files Fixed**:
+6. **Files Fixed**:
+   - `security/payment-isolation.spec.ts` - Rewrote to match actual payment-demo page
    - `real-time-delivery.spec.ts` - Added proper beforeAll with connection/conversation
    - `avatar/upload.spec.ts` - Now uses `performSignIn()` helper
    - `accessibility/avatar-upload.a11y.test.ts` - Now uses `performSignIn()` helper

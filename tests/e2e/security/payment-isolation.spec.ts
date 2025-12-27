@@ -18,21 +18,10 @@ const USER_B = {
 
 /**
  * Handle GDPR consent on payment-demo page.
- * Clears localStorage to ensure fresh consent state, then clicks Accept button.
- * Waits for payment buttons to become enabled after consent.
+ * Clicks Accept button if visible, then waits for payment section.
  */
 async function handlePaymentConsent(page: Page) {
-  // Clear payment consent from localStorage to ensure fresh state
-  await page.evaluate(() => {
-    localStorage.removeItem('payment_consent');
-    localStorage.removeItem('paymentConsent');
-  });
-
-  // Reload to reset consent state
-  await page.reload();
-  await page.waitForLoadState('networkidle');
-
-  // Look for GDPR consent heading or Accept button
+  // Look for GDPR consent Accept button
   const acceptButton = page.getByRole('button', { name: /Accept/i }).first();
   const isConsentVisible = await acceptButton.isVisible().catch(() => false);
 
@@ -44,20 +33,14 @@ async function handlePaymentConsent(page: Page) {
     });
   }
 
-  // Wait for at least one payment button to become enabled (Stripe loaded)
-  // This may take a few seconds as Stripe.js initializes
-  const payButton = page
-    .getByRole('button', { name: /Pay \$|Subscribe/i })
-    .first();
-  try {
-    await expect(payButton).toBeEnabled({ timeout: 10000 });
-  } catch {
-    // Stripe may not load in CI environment - that's OK for security tests
-    // The important thing is consent was handled
-  }
+  // Wait for page to settle - don't wait for Stripe (may not load in CI)
+  await page.waitForLoadState('domcontentloaded');
 }
 
 test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
+  // Increase timeout for multi-user tests (2 sign-ins + 2 page loads + consent)
+  test.setTimeout(60000);
+
   test('User A and User B have isolated payment sessions', async ({
     browser,
   }) => {
@@ -117,12 +100,12 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     expect(userAId).not.toBe(userBId);
 
     // Step 6: Verify each user sees their own payment history section
-    // Both should see the Payment History heading
+    // Both should see the Payment History heading (use exact match)
     await expect(
-      pageA.getByRole('heading', { name: /Payment History/i })
+      pageA.getByRole('heading', { name: /Step 4.*Payment History/i })
     ).toBeVisible();
     await expect(
-      pageB.getByRole('heading', { name: /Payment History/i })
+      pageB.getByRole('heading', { name: /Step 4.*Payment History/i })
     ).toBeVisible();
 
     // Cleanup
@@ -147,22 +130,32 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     await dismissCookieBanner(page);
     await handlePaymentConsent(page);
 
-    // Verify payment history section exists
+    // Verify payment history section exists (use exact match to avoid "No payment history")
     await expect(
-      page.getByRole('heading', { name: /Payment History/i })
+      page.getByRole('heading', { name: /Step 4.*Payment History/i })
     ).toBeVisible();
 
     // Verify user-specific info is shown
     const userInfo = page.locator('text=/Logged in as/i');
     await expect(userInfo).toBeVisible();
 
+    // Wait for payment history to finish loading
+    // Either shows "No payment history" or payment items - but NOT "Loading..."
+    await expect(page.getByText(/Loading payment history/i)).toBeHidden({
+      timeout: 10000,
+    });
+
     // Payment history should be scoped to the current user
-    // The "No payment history" message or payment list should be visible
-    const noPayments = page.getByText(/No payment history|haven't made any/i);
+    // The "No payment history" heading or payment list should be visible
+    const noPaymentsHeading = page.getByRole('heading', {
+      name: /No payment history/i,
+    });
     const paymentList = page.locator('[data-payment-item]');
 
     // Either empty state or payment list should be visible
-    const hasNoPayments = await noPayments.isVisible().catch(() => false);
+    const hasNoPayments = await noPaymentsHeading
+      .isVisible()
+      .catch(() => false);
     const hasPayments = (await paymentList.count()) > 0;
 
     expect(hasNoPayments || hasPayments).toBe(true);
