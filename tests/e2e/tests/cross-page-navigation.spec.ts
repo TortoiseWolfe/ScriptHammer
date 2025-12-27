@@ -33,25 +33,31 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('browser back/forward navigation works', async ({ page }) => {
-    // Navigate through multiple pages
+    // Navigate through multiple pages - wait for each navigation to complete
     await page.goto('/');
     await dismissCookieBanner(page);
-    await page.click('text=Browse Themes');
-    await page.click('a:has-text("Blog")');
 
-    // Go back
+    // Navigate to themes and wait for URL
+    await page.click('text=Browse Themes');
+    await expect(page).toHaveURL(/\/themes/);
+
+    // Navigate to blog and wait for URL
+    await page.click('a:has-text("Blog")');
+    await expect(page).toHaveURL(/\/blog/);
+
+    // Go back to themes
     await page.goBack();
     await expect(page).toHaveURL(/\/themes/);
 
-    // Go back again
+    // Go back to home
     await page.goBack();
     await expect(page).toHaveURL(/\/$/);
 
-    // Go forward
+    // Go forward to themes
     await page.goForward();
     await expect(page).toHaveURL(/\/themes/);
 
-    // Go forward again
+    // Go forward to blog
     await page.goForward();
     await expect(page).toHaveURL(/\/blog/);
   });
@@ -134,9 +140,9 @@ test.describe('Cross-Page Navigation', () => {
     const hasSkipLink = (await skipLink.count()) > 0;
 
     if (hasSkipLink) {
-      // Focus and click the skip link
-      await page.keyboard.press('Tab');
-      await skipLink.click();
+      // Focus the skip link and activate via keyboard (avoids header interception)
+      await skipLink.focus();
+      await page.keyboard.press('Enter');
 
       // Check target element is in viewport
       const mainContent = page.locator('#main-content');
@@ -196,8 +202,8 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/themes');
     await dismissCookieBanner(page);
 
-    // Click dark theme button
-    const darkThemeBtn = page.locator('button:has-text("dark")');
+    // Click dark theme button (use data-theme attribute to avoid matching dropdown)
+    const darkThemeBtn = page.locator('button[data-theme="dark"]');
     await darkThemeBtn.click();
 
     // Navigate to different pages
@@ -215,38 +221,24 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    // Tab to first navigation link
-    await page.keyboard.press('Tab');
+    // Find and focus the first nav link directly
+    const navLink = page.locator('nav a').first();
+    await navLink.focus();
 
-    let navLinkFocused = false;
-    let tabCount = 0;
-    const maxTabs = 20;
+    // Verify the link is focused
+    await expect(navLink).toBeFocused();
 
-    // Tab until we find a navigation link
-    while (!navLinkFocused && tabCount < maxTabs) {
-      const focusedElement = await page.evaluate(() => {
-        const el = document.activeElement;
-        return {
-          tag: el?.tagName,
-          isNav: el?.closest('nav') !== null,
-          text: el?.textContent,
-        };
-      });
+    // Get the href to know where we're going
+    const href = await navLink.getAttribute('href');
 
-      if (focusedElement.tag === 'A' && focusedElement.isNav) {
-        navLinkFocused = true;
+    // Press Enter to navigate
+    await page.keyboard.press('Enter');
 
-        // Press Enter to navigate
-        await page.keyboard.press('Enter');
-
-        // Check navigation occurred
-        await page.waitForLoadState('networkidle');
-        const url = page.url();
-        expect(url).toBeTruthy();
-      }
-
-      await page.keyboard.press('Tab');
-      tabCount++;
+    // Verify navigation occurred (URL should change or stay on home if it was home link)
+    if (href && href !== '/' && href !== '#') {
+      await expect(page).toHaveURL(
+        new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      );
     }
   });
 
