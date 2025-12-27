@@ -331,7 +331,7 @@ Environment-dependent tests.
 | `tests-theme`         | 3        | ✅ SPEC-050: Fixed preview selector strict mode (all pass) |
 | `payment-01`          | 3        | ✅ SPEC-054: Fixed strict mode with .first() for tabs      |
 | `mobile-dropdown`     | 3        | ✅ SPEC-051: Fixed viewport for md:hidden elements         |
-| `messaging-friend`    | 3        | Friend request navigation                                  |
+| `messaging-friend`    | 3        | ✅ SPEC-055: Fixed data-testid and tab class selectors     |
 | `messaging-complete`  | 3        | Complete workflow - retry button                           |
 | `messaging-encrypted` | 2        | Zero-knowledge/key security tests                          |
 | `messaging-gdpr`      | 1        | Deletion failure handling                                  |
@@ -354,6 +354,7 @@ Environment-dependent tests.
 - ✅ SPEC-052: Verified auth-session tests pass (8/8) - failures were from server crash, not test bugs
 - ✅ SPEC-053: Verified auth-protected tests pass (8/8) - failures were from server crash, not test bugs
 - ✅ SPEC-054: Fixed payment-01 test - added .first() for Stripe/PayPal tab selectors (multiple payment sections)
+- ✅ SPEC-055: Fixed messaging-friend tests - changed accepted-connection to connection-request, tab-active class check
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
