@@ -437,27 +437,145 @@ tests/e2e/
 
 ```typescript
 import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  performSignIn,
+  waitForAuthenticatedState,
+  handleReAuthModal,
+} from './utils/test-user-factory';
 
 test.describe('Feature Name', () => {
-  test('should do something', async ({ browser }) => {
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    try {
-      // Sign in
-      await page.goto('/sign-in');
-      await page.fill('#email', process.env.TEST_USER_PRIMARY_EMAIL!);
-      await page.fill('#password', process.env.TEST_USER_PRIMARY_PASSWORD!);
-      await page.click('button[type="submit"]');
-
-      // Test actions...
-      await expect(page.locator('...')).toBeVisible();
-    } finally {
-      await context.close();
+  test('should do something', async ({ page }) => {
+    // Sign in using helper (handles errors, waits for auth hydration)
+    await page.goto('/sign-in');
+    const result = await performSignIn(
+      page,
+      process.env.TEST_USER_PRIMARY_EMAIL!,
+      process.env.TEST_USER_PRIMARY_PASSWORD!
+    );
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
     }
+
+    // Test actions...
+    await expect(page.locator('...')).toBeVisible();
   });
 });
 ```
+
+### E2E Test Helpers (test-user-factory.ts)
+
+The `tests/e2e/utils/test-user-factory.ts` file provides essential helpers:
+
+| Helper                                 | Purpose                                                     |
+| -------------------------------------- | ----------------------------------------------------------- |
+| `performSignIn(page, email, password)` | Sign in with error detection, returns `{ success, error? }` |
+| `waitForAuthenticatedState(page)`      | Wait for AuthContext to hydrate (Sign Out button visible)   |
+| `dismissCookieBanner(page)`            | Dismiss GDPR cookie consent banner if present               |
+| `handleReAuthModal(page, password)`    | Handle ReAuthModal for messaging password unlock            |
+| `getAdminClient()`                     | Get Supabase admin client for test data setup               |
+| `getUserByEmail(email)`                | Look up user by email via admin client                      |
+| `getDisplayNameByEmail(email)`         | Get/set display_name for user search tests                  |
+
+**Example: Messaging tests with beforeAll setup**
+
+```typescript
+import { test, expect } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  waitForAuthenticatedState,
+  getAdminClient,
+  getUserByEmail,
+} from '../utils/test-user-factory';
+
+let setupSucceeded = false;
+let setupError = '';
+
+// Create connection AND conversation before all tests
+test.beforeAll(async () => {
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    setupError = 'Admin client unavailable';
+    return;
+  }
+
+  const userA = await getUserByEmail(TEST_USER_1.email);
+  const userB = await getUserByEmail(TEST_USER_2.email);
+
+  // Create connection
+  await adminClient.from('user_connections').upsert({
+    requester_id: userA.id,
+    addressee_id: userB.id,
+    status: 'accepted',
+  });
+
+  // Create conversation with CANONICAL UUID ordering
+  const [p1, p2] =
+    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+
+  await adminClient.from('conversations').upsert({
+    participant_1_id: p1,
+    participant_2_id: p2,
+  });
+
+  setupSucceeded = true;
+});
+
+test.beforeEach(async ({ page }, testInfo) => {
+  if (!setupSucceeded) {
+    testInfo.skip(true, `Setup failed: ${setupError}`);
+  }
+});
+```
+
+**Key Pattern: Canonical UUID Ordering**
+
+The `conversations` table requires `participant_1_id < participant_2_id` (lexicographically). Always sort IDs before inserting:
+
+```typescript
+const [p1, p2] =
+  userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+```
+
+### GDPR Consent in Payment Tests
+
+Payment tests require GDPR consent before Stripe loads:
+
+```typescript
+async function handlePaymentConsent(page: Page) {
+  // Clear localStorage to ensure fresh consent state
+  await page.evaluate(() => {
+    localStorage.removeItem('payment_consent');
+  });
+
+  const acceptButton = page.getByRole('button', { name: /Accept & Continue/i });
+  if (await acceptButton.isVisible().catch(() => false)) {
+    await acceptButton.click();
+    // Wait for Step 2 (payment form) to appear
+    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
+      timeout: 5000,
+    });
+  }
+}
+
+// Usage in test
+await page.goto('/payment-demo');
+await dismissCookieBanner(page);
+await handlePaymentConsent(page);
+// Now payment form is ready
+```
+
+### Common E2E Test Failures and Solutions
+
+| Symptom                                   | Root Cause                     | Solution                                                  |
+| ----------------------------------------- | ------------------------------ | --------------------------------------------------------- |
+| "Sign In" visible in navbar after sign-in | Auth not hydrated              | Use `performSignIn()` + `waitForAuthenticatedState()`     |
+| "Conversation not found"                  | Missing `conversations` record | Add `beforeAll` with connection AND conversation creation |
+| "No users found" in search                | `display_name` is NULL         | Use `getDisplayNameByEmail()` which sets it               |
+| Payment buttons disabled                  | GDPR consent not given         | Call `handlePaymentConsent()` before payment tests        |
+| ReAuthModal blocks messaging              | Encryption keys need unlock    | Call `handleReAuthModal(page, password)`                  |
+| Cookie banner overlays form               | Banner not dismissed           | Call `dismissCookieBanner(page)` after navigation         |
 
 ### Supabase Rate Limiting in E2E Tests
 
@@ -644,4 +762,4 @@ docker compose exec scripthammer pnpm exec playwright test --debug
 
 ---
 
-_Last Updated: Feature 010 - Group Chats E2E Testing_
+_Last Updated: E2E Test Helpers and Common Failure Patterns (Dec 2025)_
