@@ -113,12 +113,12 @@ export default function SchedulePage() {
                 <p>Powered by scheduling integration</p>
                 <p>
                   <a
-                    href="/storybook/?path=/story/atomic-calendarembed--default"
+                    href="https://github.com/TortoiseWolfe/ScriptHammer/tree/main/src/components/atomic/CalendarEmbed"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline hover:opacity-80"
                   >
-                    View component in Storybook →
+                    View component source →
                   </a>
                 </p>
               </footer>

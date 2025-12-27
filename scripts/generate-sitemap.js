@@ -11,8 +11,6 @@ const SITE_URL = 'https://tortoisewolfe.github.io/ScriptHammer';
 const staticPages = [
   '', // Homepage
   '/blog',
-  '/blog/schedule',
-  '/blog/editor',
   '/blog/seo',
   '/blog/tags',
   '/privacy',

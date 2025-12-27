@@ -354,7 +354,7 @@ export default function StatusPage() {
     {
       name: 'Calendar Booking',
       status: 'operational',
-      url: '/calendar',
+      url: '/schedule',
     },
     {
       name: 'Maps Service',
