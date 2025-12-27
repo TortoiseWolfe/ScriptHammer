@@ -283,7 +283,7 @@ Run these specs in order (041 → 064). Copy a command to start the full SpecKit
 
 ### Priority 1: Blockers
 
-**SPEC-041: ✅ COMPLETE** - GitHub secrets verified configured (2025-12-26). All required secrets are set. The 116 test failures are real bugs, not missing secrets.
+**SPEC-041: ✅ COMPLETE** - GitHub secrets verified configured (2025-12-26). E2E status: **294 passed, 20 failed, 14 flaky, 62 skipped** (as of 2025-12-27).
 
 **SPEC-042: ❌ INVALID** - File is NOT obsolete. Analysis: `tests/e2e/examples/homepage-with-pom.spec.ts` has 5 working tests + 4 skipped (with documented reasons). It's in `examples/` as a POM pattern teaching example. The 4 skips document former homepage features - this is valuable history, not technical debt.
 

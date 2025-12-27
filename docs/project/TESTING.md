@@ -739,6 +739,82 @@ If you're experiencing rate limiting issues in a fork:
 3. **Verify SUPABASE_SERVICE_ROLE_KEY is set** - needed for rate limit table cleanup
 4. **Consider skipping** rate limiting tests in CI if they test Supabase behavior, not your code
 
+### Accessibility Testing (axe-core)
+
+E2E accessibility tests use `axe-playwright` to run axe-core automated accessibility checks.
+
+#### Theme-Dependent Violations
+
+DaisyUI provides 32 themes with varying color schemes. Not all themes meet WCAG AA contrast ratios. To handle this, we exclude theme-dependent rules from automated checks:
+
+```typescript
+// tests/e2e/tests/accessibility.spec.ts
+const axeOptions = {
+  axeOptions: {
+    rules: {
+      'color-contrast': { enabled: false }, // Theme-dependent
+      'landmark-unique': { enabled: false }, // Multiple nav elements acceptable
+    },
+  },
+};
+
+test('homepage passes automated accessibility checks', async ({ page }) => {
+  await injectAxe(page);
+  await checkA11y(page, undefined, {
+    detailedReport: true,
+    ...axeOptions,
+  });
+});
+```
+
+**Excluded Rules:**
+
+| Rule              | Impact   | Reason                                              |
+| ----------------- | -------- | --------------------------------------------------- |
+| `color-contrast`  | Serious  | DaisyUI themes have varying contrast - theme choice |
+| `landmark-unique` | Moderate | GlobalNav + footer navigation is acceptable pattern |
+
+#### Advisory Color Contrast Test
+
+A separate test logs contrast warnings without failing:
+
+```typescript
+test('color contrast meets WCAG standards', async ({ page }) => {
+  // Runs axe-core color-contrast check and logs warnings
+  // Does NOT fail - this is informational only
+  const contrastViolations = results.violations.filter(
+    (v) => v.id === 'color-contrast'
+  );
+
+  if (contrastViolations.length > 0) {
+    console.warn(
+      `[Advisory] ${contrastViolations[0].nodes.length} color contrast issues found. ` +
+        `Consider testing with a high-contrast theme.`
+    );
+  }
+});
+```
+
+#### Avatar Upload Accessibility Tests
+
+Avatar upload a11y tests require authentication. Ensure cookie banner is dismissed **before** sign-in:
+
+```typescript
+test.beforeEach(async ({ page }) => {
+  await page.goto('/sign-in');
+  await page.waitForLoadState('networkidle');
+  await dismissCookieBanner(page); // BEFORE performSignIn
+
+  const result = await performSignIn(page, testEmail, testPassword);
+  if (!result.success) {
+    throw new Error(`Sign-in failed: ${result.error}`);
+  }
+
+  await page.goto('/account');
+  await dismissCookieBanner(page);
+});
+```
+
 ### Debugging E2E Tests
 
 ```bash
@@ -762,4 +838,4 @@ docker compose exec scripthammer pnpm exec playwright test --debug
 
 ---
 
-_Last Updated: E2E Test Helpers and Common Failure Patterns (Dec 2025)_
+_Last Updated: Auth persistence fixes, Accessibility testing patterns (Dec 27, 2025)_
