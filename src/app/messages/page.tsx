@@ -323,6 +323,55 @@ function MessagesContent() {
     }
   };
 
+  /**
+   * Handle editing a message
+   * Tasks: T115
+   */
+  const handleEditMessage = useCallback(
+    async (messageId: string, newContent: string): Promise<void> => {
+      try {
+        setError(null);
+        await messageService.editMessage({
+          message_id: messageId,
+          new_content: newContent,
+        });
+        // Reload messages to show updated content
+        await loadMessages();
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to edit message';
+        logger.error('Edit message failed', { messageId, error: err });
+        setError(message);
+        throw err; // Re-throw so MessageBubble knows the operation failed
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMessages is stable
+    [conversationId]
+  );
+
+  /**
+   * Handle deleting a message
+   * Tasks: T116
+   */
+  const handleDeleteMessage = useCallback(
+    async (messageId: string): Promise<void> => {
+      try {
+        setError(null);
+        await messageService.deleteMessage(messageId);
+        // Reload messages to show deleted placeholder
+        await loadMessages();
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to delete message';
+        logger.error('Delete message failed', { messageId, error: err });
+        setError(message);
+        throw err; // Re-throw so MessageBubble knows the operation failed
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMessages is stable
+    [conversationId]
+  );
+
   const handleReAuthSuccess = useCallback(() => {
     setNeedsReAuth(false);
   }, []);
@@ -455,6 +504,8 @@ function MessagesContent() {
                       conversationId={conversationId}
                       messages={messages}
                       onSendMessage={handleSendMessage}
+                      onEditMessage={handleEditMessage}
+                      onDeleteMessage={handleDeleteMessage}
                       onLoadMore={handleLoadMore}
                       hasMore={hasMore}
                       loading={loading}

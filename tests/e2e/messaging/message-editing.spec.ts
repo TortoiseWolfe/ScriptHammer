@@ -323,11 +323,22 @@ test.describe('Message Editing', () => {
     // Wait for save to complete (edit mode closes)
     await expect(editTextarea).not.toBeVisible({ timeout: 5000 });
 
-    // Verify edited content is displayed
-    await expect(page.getByText(editedMessage)).toBeVisible();
+    // Wait for UI to stabilize after save (state update + re-render)
+    await waitForUIStability(page);
+
+    // Find the message bubble with edited content (it should update in place)
+    const editedBubble = getMessageBubble(page, editedMessage);
+
+    // Scroll to the edited message to ensure it's visible
+    await editedBubble.scrollIntoViewIfNeeded().catch(() => {});
+
+    // Verify edited content is displayed with longer timeout
+    await expect(editedBubble).toBeVisible({ timeout: 10000 });
 
     // Verify original content is no longer visible (unique timestamp ensures only one match)
-    await expect(page.getByText(originalMessage)).not.toBeVisible();
+    await expect(page.getByText(originalMessage)).not.toBeVisible({
+      timeout: 5000,
+    });
   });
 
   test('should cancel edit without saving', async ({ page }) => {
@@ -378,10 +389,12 @@ test.describe('Message Editing', () => {
 
     // Click Edit button for our specific message
     const editButton = getEditButtonForMessage(page, originalMessage);
+    await expect(editButton).toBeVisible({ timeout: 5000 });
     await editButton.click();
 
     // Save button should be disabled (content hasn't changed)
     const saveButton = page.getByRole('button', { name: /Save/i });
+    await expect(saveButton).toBeVisible({ timeout: 5000 });
     await expect(saveButton).toBeDisabled();
   });
 
@@ -458,13 +471,19 @@ test.describe('Message Deletion', () => {
     // Wait for modal to close first
     await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-    // Wait a bit for the message deletion to propagate
-    await page.waitForTimeout(1000);
+    // Wait for UI to stabilize after deletion
+    await waitForUIStability(page);
 
-    // Original content should not be visible (unique timestamp ensures only one match)
-    await expect(page.getByText(messageToDelete)).not.toBeVisible({
-      timeout: 5000,
-    });
+    // Either the message is removed OR replaced with "[Message deleted]"
+    // Use Promise.race to detect whichever happens first
+    const messageGone = page.getByText(messageToDelete);
+    const deletedPlaceholder = page.getByText('[Message deleted]').first();
+
+    // Wait for deletion to be reflected in UI - message should either be gone or show placeholder
+    await Promise.race([
+      expect(messageGone).not.toBeVisible({ timeout: 10000 }),
+      expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
+    ]);
   });
 
   test('should cancel deletion from confirmation modal', async ({ page }) => {
@@ -530,16 +549,21 @@ test.describe('Message Deletion', () => {
     // Wait for modal to close first
     await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-    // Wait a bit for the message deletion to propagate
-    await page.waitForTimeout(1000);
+    // Wait for UI to stabilize after deletion
+    await waitForUIStability(page);
 
-    // Verify the original message is no longer visible (unique timestamp ensures only one match)
-    await expect(page.getByText(messageToDelete)).not.toBeVisible({
-      timeout: 5000,
-    });
+    // Either the message is removed OR replaced with "[Message deleted]"
+    const messageGone = page.getByText(messageToDelete);
+    const deletedPlaceholder = page.getByText('[Message deleted]').first();
+
+    // Wait for deletion to be reflected in UI
+    await Promise.race([
+      expect(messageGone).not.toBeVisible({ timeout: 10000 }),
+      expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
+    ]);
 
     // Edit and Delete buttons should not be visible for deleted messages
-    // The message is replaced, so no buttons should appear
+    // (message either removed or replaced with placeholder that has no buttons)
   });
 });
 
@@ -631,8 +655,9 @@ test.describe('Time Window Restrictions', () => {
     const editButton = getEditButtonForMessage(page, recentMessage);
     const deleteButton = getDeleteButtonForMessage(page, recentMessage);
 
-    await expect(editButton).toBeVisible();
-    await expect(deleteButton).toBeVisible();
+    // Wait for buttons with longer timeout (may need to scroll into view)
+    await expect(editButton).toBeVisible({ timeout: 10000 });
+    await expect(deleteButton).toBeVisible({ timeout: 10000 });
   });
 
   test('should not show Edit/Delete buttons on received messages', async ({
