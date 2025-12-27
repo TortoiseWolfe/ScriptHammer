@@ -1,6 +1,42 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+// All 32 DaisyUI themes for random selection
+const THEMES = [
+  'light',
+  'dark',
+  'cupcake',
+  'bumblebee',
+  'emerald',
+  'corporate',
+  'synthwave',
+  'retro',
+  'cyberpunk',
+  'valentine',
+  'halloween',
+  'garden',
+  'forest',
+  'aqua',
+  'lofi',
+  'pastel',
+  'fantasy',
+  'wireframe',
+  'black',
+  'luxury',
+  'dracula',
+  'cmyk',
+  'autumn',
+  'business',
+  'acid',
+  'lemonade',
+  'night',
+  'coffee',
+  'winter',
+  'dim',
+  'nord',
+  'sunset',
+];
+
 test.describe('Cross-Page Navigation', () => {
   test('navigate through all main pages', async ({ page }) => {
     // Start at homepage
@@ -202,18 +238,24 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/themes');
     await dismissCookieBanner(page);
 
-    // Click dark theme button (use data-theme attribute to avoid matching dropdown)
-    const darkThemeBtn = page.locator('button[data-theme="dark"]');
-    await darkThemeBtn.click();
+    // Pick a random theme from all 32 DaisyUI themes
+    const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
 
-    // Navigate to different pages
+    // Click the theme button
+    const themeBtn = page.locator(`button[data-theme="${randomTheme}"]`);
+    await themeBtn.click();
+
+    // Navigate to different pages and verify theme persists
     const pages = ['/blog', '/accessibility', '/status', '/'];
 
     for (const pagePath of pages) {
       await page.goto(pagePath);
 
       // Theme should persist
-      await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-theme',
+        randomTheme
+      );
     }
   });
 
