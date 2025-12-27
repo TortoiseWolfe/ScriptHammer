@@ -336,7 +336,7 @@ Environment-dependent tests.
 | `messaging-encrypted` | 2        | Zero-knowledge/key security tests                          |
 | `messaging-gdpr`      | 1        | Deletion failure handling                                  |
 | `auth-session`        | 1        | ✅ SPEC-052: No code changes needed (server crash issue)   |
-| `auth-protected`      | 1        | Payment access policies                                    |
+| `auth-protected`      | 1        | ✅ SPEC-053: No code changes needed (server crash issue)   |
 
 **Recent Fixes (2025-12-26)**:
 
@@ -352,6 +352,7 @@ Environment-dependent tests.
 - ✅ SPEC-050: Fixed theme preview test - getByText('Preview', { exact: true }) to avoid strict mode violation
 - ✅ SPEC-051: Fixed mobile dropdown test - set viewport to 390x844 for md:hidden elements to be visible
 - ✅ SPEC-052: Verified auth-session tests pass (8/8) - failures were from server crash, not test bugs
+- ✅ SPEC-053: Verified auth-protected tests pass (8/8) - failures were from server crash, not test bugs
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
