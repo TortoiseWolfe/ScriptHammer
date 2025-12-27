@@ -324,7 +324,7 @@ Environment-dependent tests.
 | `avatar-upload`       | 12       | ✅ SPEC-049: Fixed by verifying URL changes (all 9 pass) |
 | `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)      |
 | `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)       |
-| `tests-cross`         | 7        | Cross-page navigation timing                             |
+| `tests-cross`         | 7        | ✅ SPEC-041: Fixed navigation waits and selectors        |
 | `tests-pwa`           | 6        | Service worker registration in CI                        |
 | `tests-broken`        | 6        | Link checking timeouts                                   |
 | `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                     |
@@ -346,6 +346,7 @@ Environment-dependent tests.
 - ✅ SPEC-047: Rewrote OAuth CSRF tests to capture request URLs and verify state params
 - ✅ SPEC-048: Fixed form test label selectors (Name→Full Name, Email→Email Address) and replaced static waits
 - ✅ SPEC-049: Fixed avatar upload tests by verifying URL changes instead of success message (React state timing issue)
+- ✅ SPEC-041: Fixed cross-page navigation tests - waitForURL after clicks, keyboard focus for skip link, specific theme selector
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
