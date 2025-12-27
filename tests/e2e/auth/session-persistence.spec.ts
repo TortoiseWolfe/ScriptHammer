@@ -34,14 +34,12 @@ test.describe('Session Persistence E2E', () => {
     page,
   }) => {
     // Sign in with Remember Me (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByLabel('Remember Me').check();
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Verify session created and auth state fully hydrated
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword, {
+      rememberMe: true,
+    });
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Check session storage/cookies
     const cookies = await page.context().cookies();
@@ -73,14 +71,12 @@ test.describe('Session Persistence E2E', () => {
 
   test('should use short session without Remember Me', async ({ page }) => {
     // Sign in WITHOUT Remember Me (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    // Do NOT check Remember Me
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Verify session created and auth state fully hydrated
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword, {
+      rememberMe: false,
+    });
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Check session is in sessionStorage (not localStorage for short-lived)
     const sessionStorage = await page.evaluate(() =>
@@ -96,11 +92,10 @@ test.describe('Session Persistence E2E', () => {
     page,
   }) => {
     // Sign in (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Wait a short time (in real scenario, wait closer to expiry)
     await page.waitForTimeout(2000);
@@ -133,12 +128,13 @@ test.describe('Session Persistence E2E', () => {
     // Sign in with Remember Me
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByLabel('Remember Me').check();
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword, {
+      rememberMe: true,
+    });
+    if (!result.success) {
+      await context.close();
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Save storage state
     const storageState = await context.storageState();
@@ -162,12 +158,10 @@ test.describe('Session Persistence E2E', () => {
 
   test('should clear session on sign out', async ({ page }) => {
     // Sign in (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate (Sign Out button visible)
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Verify localStorage has session data
     const beforeSignOut = await page.evaluate(() =>
@@ -272,11 +266,10 @@ test.describe('Session Persistence E2E', () => {
     page,
   }) => {
     // Sign in (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Reload page
     await page.reload();
@@ -299,11 +292,10 @@ test.describe('Session Persistence E2E', () => {
     // 4. Verify redirected to sign-in
 
     // For demonstration, test the refresh mechanism (already on sign-in page from beforeEach)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(profile|verify-email)/);
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Clear refresh token to simulate expired session
     await page.evaluate(() => {

@@ -100,12 +100,14 @@ test.describe('Protected Routes E2E', () => {
     // Step 1: Sign in as first user
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testUser.email);
-    await page.getByLabel('Password', { exact: true }).fill(testUser.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    const result1 = await performSignIn(
+      page,
+      testUser.email,
+      testUser.password
+    );
+    if (!result1.success) {
+      throw new Error(`Sign-in failed for user 1: ${result1.error}`);
+    }
 
     // Step 2: Access payment demo and verify user's own data
     await page.goto('/payment-demo');
@@ -122,12 +124,14 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 4: Sign in as second user
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testUser2.email);
-    await page.getByLabel('Password', { exact: true }).fill(testUser2.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    const result2 = await performSignIn(
+      page,
+      testUser2.email,
+      testUser2.password
+    );
+    if (!result2.success) {
+      throw new Error(`Sign-in failed for user 2: ${result2.error}`);
+    }
 
     // Step 5: Verify user 2 sees their own email, not user 1's
     await page.goto('/payment-demo');
@@ -156,12 +160,10 @@ test.describe('Protected Routes E2E', () => {
     // Using pre-existing test user (which may or may not be verified)
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Navigate to payment demo
     await page.goto('/payment-demo');
@@ -190,12 +192,10 @@ test.describe('Protected Routes E2E', () => {
     // Sign in with pre-existing test user
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Navigate between protected routes (Next.js adds trailing slashes)
     await page.goto('/profile');
@@ -218,10 +218,10 @@ test.describe('Protected Routes E2E', () => {
     // Sign in with pre-existing test user
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Clear session storage to simulate expired session
     await page.evaluate(() => {
@@ -245,14 +245,15 @@ test.describe('Protected Routes E2E', () => {
     await page.waitForURL(/\/sign-in/);
     await dismissCookieBanner(page);
 
-    // Sign in (note: uses existing user from earlier test or test fixtures)
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
+    // Sign in with performSignIn helper
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Note: If redirect-after-auth is implemented, should redirect to /account
     // Otherwise, redirects to default (profile)
-    await page.waitForURL(/\/(account|profile)/);
+    await expect(page).toHaveURL(/\/(account|profile)/);
   });
 
   test('should verify cascade delete removes related records', async ({
@@ -293,10 +294,10 @@ test.describe('Protected Routes E2E', () => {
       // Sign in as the newly created user
       await page.goto('/sign-in');
       await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(deleteEmail);
-      await page.getByLabel('Password', { exact: true }).fill(testPassword);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-      await page.waitForURL(/\/(verify-email|profile)/, { timeout: 15000 });
+      const result = await performSignIn(page, deleteEmail, testPassword);
+      if (!result.success) {
+        throw new Error(`Sign-in failed for delete test user: ${result.error}`);
+      }
 
       // Navigate to account settings
       await page.goto('/account');
