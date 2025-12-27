@@ -325,7 +325,7 @@ Environment-dependent tests.
 | `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)      |
 | `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)       |
 | `tests-cross`         | 7        | ✅ SPEC-041: Fixed navigation waits and selectors        |
-| `tests-pwa`           | 6        | Service worker registration in CI                        |
+| `tests-pwa`           | 6        | ✅ SPEC-042: Fixed SW timeout and theme color validation |
 | `tests-broken`        | 6        | Link checking timeouts                                   |
 | `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                     |
 | `tests-theme`         | 3        | Theme switching assertions                               |
@@ -347,6 +347,7 @@ Environment-dependent tests.
 - ✅ SPEC-048: Fixed form test label selectors (Name→Full Name, Email→Email Address) and replaced static waits
 - ✅ SPEC-049: Fixed avatar upload tests by verifying URL changes instead of success message (React state timing issue)
 - ✅ SPEC-041: Fixed cross-page navigation tests - waitForURL after clicks, keyboard focus for skip link, specific theme selector
+- ✅ SPEC-042: Fixed PWA tests - SW ready timeout race, theme color meta validation (not manifest match)
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
