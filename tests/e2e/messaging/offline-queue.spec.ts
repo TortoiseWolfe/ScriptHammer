@@ -18,6 +18,9 @@ import {
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
+import { createLogger } from '../../../src/lib/logger';
+
+const logger = createLogger('e2e-messaging-offline');
 
 /**
  * Wait for UI to stabilize after navigation or interaction
@@ -75,7 +78,7 @@ test.describe('Offline Message Queue', () => {
   test.beforeAll(async () => {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-      console.error(`❌ ${setupError}`);
+      logger.error(setupError);
       return;
     }
 
@@ -84,14 +87,14 @@ test.describe('Offline Message Queue', () => {
       USER_B.email === 'test-user-b@example.com'
     ) {
       setupError = 'Test user emails not configured - using fallback values';
-      console.error(`❌ ${setupError}`);
+      logger.error(setupError);
       return;
     }
 
     const adminClient = getTestAdminClient();
     if (!adminClient) {
       setupError = 'Admin client unavailable';
-      console.error(`❌ ${setupError}`);
+      logger.error(setupError);
       return;
     }
 
@@ -101,7 +104,7 @@ test.describe('Offline Message Queue', () => {
 
     if (!userA || !userB) {
       setupError = `Test users not found: ${!userA ? USER_A.email : ''} ${!userB ? USER_B.email : ''}`;
-      console.error(`❌ ${setupError}`);
+      logger.error(setupError);
       return;
     }
 
@@ -154,7 +157,7 @@ test.describe('Offline Message Queue', () => {
     }
 
     setupSucceeded = true;
-    console.log('✅ Offline queue test setup complete');
+    logger.info('Offline queue test setup complete');
   });
 
   test('T146: should queue message when offline and send when online', async ({

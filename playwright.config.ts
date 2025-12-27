@@ -111,6 +111,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore: [
+        '**/examples/**', // POM tutorial, not production tests
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
@@ -121,6 +122,7 @@ export default defineConfig({
     {
       name: 'firefox',
       testIgnore: [
+        '**/examples/**', // POM tutorial, not production tests
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
@@ -131,6 +133,7 @@ export default defineConfig({
     {
       name: 'webkit',
       testIgnore: [
+        '**/examples/**', // POM tutorial, not production tests
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
@@ -143,6 +146,7 @@ export default defineConfig({
       (viewport) => ({
         name: `Mobile - ${viewport.name}`,
         testIgnore: [
+          '**/examples/**', // POM tutorial, not production tests
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
@@ -156,6 +160,7 @@ export default defineConfig({
       (viewport) => ({
         name: `Tablet - ${viewport.name}`,
         testIgnore: [
+          '**/examples/**', // POM tutorial, not production tests
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',

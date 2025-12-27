@@ -17,6 +17,9 @@ import {
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
+import { createLogger } from '../../../src/lib/logger';
+
+const logger = createLogger('e2e-messaging-performance');
 
 // Test configuration
 const TEST_USER_EMAIL =
@@ -36,7 +39,7 @@ let setupError = '';
 test.beforeAll(async () => {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -45,14 +48,14 @@ test.beforeAll(async () => {
     TEST_USER_B_EMAIL === 'test-user-b@example.com'
   ) {
     setupError = 'Test user emails not configured';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
   const adminClient = getAdminClient();
   if (!adminClient) {
     setupError = 'Admin client unavailable';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -61,7 +64,7 @@ test.beforeAll(async () => {
 
   if (!userA || !userB) {
     setupError = `Test users not found`;
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -80,13 +83,13 @@ test.beforeAll(async () => {
       addressee_id: userB.id,
       status: 'accepted',
     });
-    console.log('✓ Connection created');
+    logger.info('Connection created');
   } else if (existing.status !== 'accepted') {
     await adminClient
       .from('user_connections')
       .update({ status: 'accepted' })
       .eq('id', existing.id);
-    console.log('✓ Connection updated');
+    logger.info('Connection updated');
   }
 
   // Create/get conversation
@@ -102,7 +105,7 @@ test.beforeAll(async () => {
 
   if (existingConv) {
     conversationId = existingConv.id;
-    console.log('✓ Using existing conversation:', conversationId);
+    logger.info('Using existing conversation', { conversationId });
   } else {
     const { data: newConv, error } = await adminClient
       .from('conversations')
@@ -112,11 +115,11 @@ test.beforeAll(async () => {
 
     if (error) {
       setupError = `Failed to create conversation: ${error.message}`;
-      console.error(`❌ ${setupError}`);
+      logger.error(setupError);
       return;
     }
     conversationId = newConv.id;
-    console.log('✓ Conversation created:', conversationId);
+    logger.info('Conversation created', { conversationId });
   }
 
   setupSucceeded = true;

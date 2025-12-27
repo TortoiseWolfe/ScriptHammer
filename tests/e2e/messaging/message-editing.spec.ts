@@ -16,6 +16,9 @@ import {
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
+import { createLogger } from '../../../src/lib/logger';
+
+const logger = createLogger('e2e-messaging-editing');
 
 // Test user credentials (from .env or defaults)
 const TEST_USER_1 = {
@@ -37,7 +40,7 @@ test.beforeAll(async () => {
   // Validate required environment variables
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -47,14 +50,14 @@ test.beforeAll(async () => {
   ) {
     setupError =
       'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
   const adminClient = getAdminClient();
   if (!adminClient) {
     setupError = 'Admin client unavailable';
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -64,7 +67,7 @@ test.beforeAll(async () => {
 
   if (!userA || !userB) {
     setupError = `Test users not found: ${!userA ? TEST_USER_1.email : ''} ${!userB ? TEST_USER_2.email : ''}`;
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
@@ -87,10 +90,10 @@ test.beforeAll(async () => {
       });
       if (error) {
         setupError = `Failed to create connection: ${error.message}`;
-        console.error(`❌ ${setupError}`);
+        logger.error(setupError);
         return;
       }
-      console.log('✓ Connection created between test users');
+      logger.info('Connection created between test users');
     } else {
       const { error } = await adminClient
         .from('user_connections')
@@ -98,13 +101,13 @@ test.beforeAll(async () => {
         .eq('id', existing.id);
       if (error) {
         setupError = `Failed to update connection: ${error.message}`;
-        console.error(`❌ ${setupError}`);
+        logger.error(setupError);
         return;
       }
-      console.log('✓ Connection updated to accepted');
+      logger.info('Connection updated to accepted');
     }
   } else {
-    console.log('✓ Users already connected');
+    logger.info('Users already connected');
   }
 
   // Create conversation if it doesn't exist
@@ -119,7 +122,9 @@ test.beforeAll(async () => {
     .maybeSingle();
 
   if (existingConv) {
-    console.log('✓ Conversation already exists:', existingConv.id);
+    logger.info('Conversation already exists', {
+      conversationId: existingConv.id,
+    });
     setupSucceeded = true;
     return;
   }
@@ -135,11 +140,11 @@ test.beforeAll(async () => {
 
   if (convError) {
     setupError = `Failed to create conversation: ${convError.message}`;
-    console.error(`❌ ${setupError}`);
+    logger.error(setupError);
     return;
   }
 
-  console.log('✓ Conversation created:', newConv.id);
+  logger.info('Conversation created', { conversationId: newConv.id });
   setupSucceeded = true;
 });
 
