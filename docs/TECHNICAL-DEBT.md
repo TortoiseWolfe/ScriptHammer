@@ -330,7 +330,7 @@ Environment-dependent tests.
 | `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                       |
 | `tests-theme`         | 3        | ✅ SPEC-050: Fixed preview selector strict mode (all pass) |
 | `payment-01`          | 3        | Stripe payment flow                                        |
-| `mobile-dropdown`     | 3        | Mobile menu interactions                                   |
+| `mobile-dropdown`     | 3        | ✅ SPEC-051: Fixed viewport for md:hidden elements         |
 | `messaging-friend`    | 3        | Friend request navigation                                  |
 | `messaging-complete`  | 3        | Complete workflow - retry button                           |
 | `messaging-encrypted` | 2        | Zero-knowledge/key security tests                          |
@@ -350,6 +350,7 @@ Environment-dependent tests.
 - ✅ SPEC-042: Fixed PWA tests - SW ready timeout race, theme color meta validation (not manifest match)
 - ✅ SPEC-043: Fixed broken link tests - resolved actual broken links (/docs/pwa, /calendar, etc) and test logic for anchor links
 - ✅ SPEC-050: Fixed theme preview test - getByText('Preview', { exact: true }) to avoid strict mode violation
+- ✅ SPEC-051: Fixed mobile dropdown test - set viewport to 390x844 for md:hidden elements to be visible
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
