@@ -70,3 +70,7 @@ tasks
 storybook-static/
 .component-backup-*
 docs/visual-testing/
+
+# Test screenshots
+screenshots/
+mobile-check.png

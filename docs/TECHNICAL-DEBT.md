@@ -359,6 +359,45 @@ Environment-dependent tests.
 - ✅ SPEC-057: Fixed messaging-encrypted tests - ReadReceipt uses aria-label not text, add .first() for duplicates, skip if no conversations
 - ✅ SPEC-058: Fixed messaging-gdpr tests - use specific js.stripe.com/v3 selector (not generic "stripe"), add .first() for payment tabs
 
+### Tests "Did Not Run" (3 tests as of 2025-12-27)
+
+**Status**: 3 tests show "did not run" (○) in Playwright output.
+
+**What this means**: Tests where `beforeAll` hook partially failed - some tests in the describe block ran, but remaining tests were abandoned without executing.
+
+**Suspected files** (complex multi-user `beforeAll` setup):
+
+- `tests/e2e/security/payment-isolation.spec.ts` - multi-user payment scenarios
+- `tests/e2e/messaging/complete-user-workflow.spec.ts` - complex workflow setup
+- `tests/e2e/messaging/real-time-delivery.spec.ts` - two-browser setup
+
+**Impact**: Low - 0 failures, all critical paths pass.
+
+**TODO**: Run with `--reporter=html` to identify exact tests.
+
+### Offline Queue UI Not Implemented (5 skipped as of 2025-12-27)
+
+**File**: `tests/e2e/messaging/offline-queue.spec.ts`
+
+**Status**: 5 tests skipped with `test.skip()`.
+
+**Root Cause**: The `offlineQueueService` (IndexedDB-based) exists and works, but the UI doesn't render queued messages. `ChatWindow`/`MessageThread` only display messages from Supabase, not IndexedDB.
+
+**Skipped tests**:
+
+- T146: Queue message when offline and send when online
+- T147: Queue multiple messages and sync when reconnected
+- T148: Retry with exponential backoff on server failure
+- T149: Conflict resolution with server timestamp
+- T150: Failed status after max retries
+
+**To enable**:
+
+1. Create `QueuedMessageBubble` component for pending messages
+2. Integrate `offlineQueueService.getQueue()` into `MessageThread`
+3. Add `window.addEventListener('online', ...)` sync trigger
+4. Add failed message UI with retry button
+
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
 ## Documentation Updates Needed
