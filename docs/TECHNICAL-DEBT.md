@@ -316,27 +316,27 @@ Environment-dependent tests.
 
 ### Active Failures (Updated 2025-12-26)
 
-| Category              | Failures | Status                                                    |
-| --------------------- | -------- | --------------------------------------------------------- |
-| `tests-accessibility` | 15       | ✅ SPEC-044: Fixed contrast ratio in Footer (40%→60%)     |
-| `security-oauth`      | 15       | ✅ SPEC-047: Rewrote as proper security tests (all pass)  |
-| `tests-form`          | 12       | ✅ SPEC-048: Fixed label selectors and timing (all pass)  |
-| `avatar-upload`       | 12       | ✅ SPEC-049: Fixed by verifying URL changes (all 9 pass)  |
-| `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)       |
-| `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)        |
-| `tests-cross`         | 7        | ✅ SPEC-041: Fixed navigation waits and selectors         |
-| `tests-pwa`           | 6        | ✅ SPEC-042: Fixed SW timeout and theme color validation  |
-| `tests-broken`        | 6        | ✅ SPEC-043: Fixed broken links and test logic (all pass) |
-| `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                      |
-| `tests-theme`         | 3        | Theme switching assertions                                |
-| `payment-01`          | 3        | Stripe payment flow                                       |
-| `mobile-dropdown`     | 3        | Mobile menu interactions                                  |
-| `messaging-friend`    | 3        | Friend request navigation                                 |
-| `messaging-complete`  | 3        | Complete workflow - retry button                          |
-| `messaging-encrypted` | 2        | Zero-knowledge/key security tests                         |
-| `messaging-gdpr`      | 1        | Deletion failure handling                                 |
-| `auth-session`        | 1        | Session clear on sign-out                                 |
-| `auth-protected`      | 1        | Payment access policies                                   |
+| Category              | Failures | Status                                                     |
+| --------------------- | -------- | ---------------------------------------------------------- |
+| `tests-accessibility` | 15       | ✅ SPEC-044: Fixed contrast ratio in Footer (40%→60%)      |
+| `security-oauth`      | 15       | ✅ SPEC-047: Rewrote as proper security tests (all pass)   |
+| `tests-form`          | 12       | ✅ SPEC-048: Fixed label selectors and timing (all pass)   |
+| `avatar-upload`       | 12       | ✅ SPEC-049: Fixed by verifying URL changes (all 9 pass)   |
+| `security-payment`    | 9        | ✅ SPEC-046: Added GDPR consent handling (all pass)        |
+| `messaging-message`   | 9        | ✅ SPEC-045: Verified selectors correct (all pass)         |
+| `tests-cross`         | 7        | ✅ SPEC-041: Fixed navigation waits and selectors          |
+| `tests-pwa`           | 6        | ✅ SPEC-042: Fixed SW timeout and theme color validation   |
+| `tests-broken`        | 6        | ✅ SPEC-043: Fixed broken links and test logic (all pass)  |
+| `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                       |
+| `tests-theme`         | 3        | ✅ SPEC-050: Fixed preview selector strict mode (all pass) |
+| `payment-01`          | 3        | Stripe payment flow                                        |
+| `mobile-dropdown`     | 3        | Mobile menu interactions                                   |
+| `messaging-friend`    | 3        | Friend request navigation                                  |
+| `messaging-complete`  | 3        | Complete workflow - retry button                           |
+| `messaging-encrypted` | 2        | Zero-knowledge/key security tests                          |
+| `messaging-gdpr`      | 1        | Deletion failure handling                                  |
+| `auth-session`        | 1        | Session clear on sign-out                                  |
+| `auth-protected`      | 1        | Payment access policies                                    |
 
 **Recent Fixes (2025-12-26)**:
 
@@ -349,6 +349,7 @@ Environment-dependent tests.
 - ✅ SPEC-041: Fixed cross-page navigation tests - waitForURL after clicks, keyboard focus for skip link, specific theme selector
 - ✅ SPEC-042: Fixed PWA tests - SW ready timeout race, theme color meta validation (not manifest match)
 - ✅ SPEC-043: Fixed broken link tests - resolved actual broken links (/docs/pwa, /calendar, etc) and test logic for anchor links
+- ✅ SPEC-050: Fixed theme preview test - getByText('Preview', { exact: true }) to avoid strict mode violation
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
