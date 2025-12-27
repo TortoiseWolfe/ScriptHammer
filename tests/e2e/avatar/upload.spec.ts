@@ -16,10 +16,7 @@
 
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import {
-  dismissCookieBanner,
-  waitForAuthenticatedState,
-} from '../utils/test-user-factory';
+import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
 
 test.describe('Avatar Upload Flow', () => {
   test.beforeEach(async ({ page }) => {
@@ -29,13 +26,10 @@ test.describe('Avatar Upload Flow', () => {
       process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
     await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for auth state to fully hydrate
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Navigate to Account Settings
     await page.goto('/account');

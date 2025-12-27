@@ -11,7 +11,13 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   waitForAuthenticatedState,
+  getAdminClient,
+  getUserByEmail,
 } from '../utils/test-user-factory';
+
+// Track setup status
+let setupSucceeded = false;
+let setupError = '';
 
 // Test user credentials (from .env or defaults)
 const TEST_USER_1 = {
@@ -131,13 +137,111 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   return true;
 }
 
+// Create connection and conversation before all tests
+test.beforeAll(async () => {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  if (
+    TEST_USER_1.email === 'test@example.com' ||
+    TEST_USER_2.email === 'test-user-b@example.com'
+  ) {
+    setupError = 'Test user emails not configured';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    setupError = 'Admin client unavailable';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  const userA = await getUserByEmail(TEST_USER_1.email);
+  const userB = await getUserByEmail(TEST_USER_2.email);
+
+  if (!userA || !userB) {
+    setupError = 'Test users not found';
+    console.error(`❌ ${setupError}`);
+    return;
+  }
+
+  // Create connection if needed
+  const { data: existing } = await adminClient
+    .from('user_connections')
+    .select('id, status')
+    .or(
+      `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+    )
+    .maybeSingle();
+
+  if (!existing) {
+    const { error } = await adminClient.from('user_connections').insert({
+      requester_id: userA.id,
+      addressee_id: userB.id,
+      status: 'accepted',
+    });
+    if (error) {
+      setupError = `Failed to create connection: ${error.message}`;
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+    console.log('✓ Connection created');
+  } else if (existing.status !== 'accepted') {
+    await adminClient
+      .from('user_connections')
+      .update({ status: 'accepted' })
+      .eq('id', existing.id);
+    console.log('✓ Connection updated');
+  }
+
+  // Create conversation with canonical ordering
+  const [p1, p2] =
+    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+
+  const { data: existingConv } = await adminClient
+    .from('conversations')
+    .select('id')
+    .eq('participant_1_id', p1)
+    .eq('participant_2_id', p2)
+    .maybeSingle();
+
+  if (!existingConv) {
+    const { error: convError } = await adminClient
+      .from('conversations')
+      .insert({
+        participant_1_id: p1,
+        participant_2_id: p2,
+      });
+    if (convError) {
+      setupError = `Failed to create conversation: ${convError.message}`;
+      console.error(`❌ ${setupError}`);
+      return;
+    }
+    console.log('✓ Conversation created');
+  } else {
+    console.log('✓ Conversation already exists');
+  }
+
+  setupSucceeded = true;
+});
+
 test.describe('Real-time Message Delivery (T098)', () => {
   let context1: BrowserContext;
   let context2: BrowserContext;
   let page1: Page;
   let page2: Page;
 
-  test.beforeEach(async ({ browser }) => {
+  // Skip all tests if setup failed
+  test.beforeEach(async ({ browser }, testInfo) => {
+    if (!setupSucceeded) {
+      testInfo.skip(true, `Test setup failed: ${setupError}`);
+      return;
+    }
     // Create two separate browser contexts (simulates two users)
     context1 = await browser.newContext();
     context2 = await browser.newContext();
