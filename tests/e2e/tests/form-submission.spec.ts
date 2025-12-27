@@ -255,34 +255,6 @@ test.describe('Form Submission', () => {
     }
   });
 
-  test('form clears on reset button', async ({ page }) => {
-    // Look for reset button within the contact form specifically
-    // The contact form does NOT have a reset button, so we test that form clears on success instead
-    const form = page.locator('form[aria-label="Contact form"]');
-    await expect(form).toBeVisible();
-
-    // Check if there's a reset button in the form
-    const resetButton = form.locator('button[type="reset"]');
-    const hasResetButton = (await resetButton.count()) > 0;
-
-    if (hasResetButton) {
-      // Fill form fields
-      await page.locator('#name').fill('Test Value');
-      await page.locator('#email').fill('test@test.com');
-
-      // Click reset
-      await resetButton.click();
-
-      // Check fields are cleared
-      await expect(page.locator('#name')).toHaveValue('');
-      await expect(page.locator('#email')).toHaveValue('');
-    } else {
-      // Contact form has no reset button - this is expected behavior
-      // The form clears automatically on successful submission
-      test.skip();
-    }
-  });
-
   test('disabled fields cannot be edited', async ({ page }) => {
     // Look for disabled input
     const disabledInput = page
