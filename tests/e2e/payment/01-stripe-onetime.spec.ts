@@ -109,9 +109,13 @@ test.describe('Stripe One-Time Payment Flow', () => {
       timeout: 5000,
     });
 
-    // Provider tabs should be visible
-    await expect(page.getByRole('tab', { name: /stripe/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /paypal/i })).toBeVisible();
+    // Provider tabs should be visible (use .first() as there are multiple payment sections)
+    await expect(
+      page.getByRole('tab', { name: /stripe/i }).first()
+    ).toBeVisible();
+    await expect(
+      page.getByRole('tab', { name: /paypal/i }).first()
+    ).toBeVisible();
 
     // Payment buttons should be visible (but may be disabled without API keys)
     await expect(

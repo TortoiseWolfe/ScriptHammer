@@ -329,7 +329,7 @@ Environment-dependent tests.
 | `tests-broken`        | 6        | ✅ SPEC-043: Fixed broken links and test logic (all pass)  |
 | `payment-04`          | 6        | ✅ SPEC-046: Fixed GDPR consent flow                       |
 | `tests-theme`         | 3        | ✅ SPEC-050: Fixed preview selector strict mode (all pass) |
-| `payment-01`          | 3        | Stripe payment flow                                        |
+| `payment-01`          | 3        | ✅ SPEC-054: Fixed strict mode with .first() for tabs      |
 | `mobile-dropdown`     | 3        | ✅ SPEC-051: Fixed viewport for md:hidden elements         |
 | `messaging-friend`    | 3        | Friend request navigation                                  |
 | `messaging-complete`  | 3        | Complete workflow - retry button                           |
@@ -353,6 +353,7 @@ Environment-dependent tests.
 - ✅ SPEC-051: Fixed mobile dropdown test - set viewport to 390x844 for md:hidden elements to be visible
 - ✅ SPEC-052: Verified auth-session tests pass (8/8) - failures were from server crash, not test bugs
 - ✅ SPEC-053: Verified auth-protected tests pass (8/8) - failures were from server crash, not test bugs
+- ✅ SPEC-054: Fixed payment-01 test - added .first() for Stripe/PayPal tab selectors (multiple payment sections)
 
 See [README.md](../README.md#-technical-debt-backlog-speckit-ready) for the prioritized SpecKit workflow commands.
 
