@@ -3,6 +3,9 @@ import { dismissCookieBanner } from './utils/test-user-factory';
 
 test.describe('Mobile Dropdown Menu Screenshots', () => {
   test('should capture dropdown menu on mobile', async ({ page }) => {
+    // Set mobile viewport (iPhone 12 size) - required for md:hidden elements to be visible
+    await page.setViewportSize({ width: 390, height: 844 });
+
     // Navigate to the home page
     await page.goto('/');
     await dismissCookieBanner(page);
