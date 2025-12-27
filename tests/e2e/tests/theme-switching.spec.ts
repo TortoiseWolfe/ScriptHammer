@@ -183,8 +183,8 @@ test.describe('Theme Switching', () => {
     await page.goto('/themes');
     await dismissCookieBanner(page);
 
-    // Check that the Preview section exists
-    const previewSection = page.locator('text=Preview');
+    // Check that the Preview section exists (use exact match to avoid matching "Theme Preview")
+    const previewSection = page.getByText('Preview', { exact: true });
     await expect(previewSection).toBeVisible();
 
     // Check for color labels in the preview section
