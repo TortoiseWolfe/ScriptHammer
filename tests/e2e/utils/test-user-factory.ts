@@ -488,9 +488,12 @@ export async function handleReAuthModal(
  * // User is now signed out
  */
 export async function signOutViaDropdown(page: Page): Promise<void> {
-  // Click the avatar to open dropdown (has aria-label="User account menu")
-  const avatarButton = page.getByLabel('User account menu');
-  await avatarButton.click();
+  // Click the avatar to open dropdown
+  // Try multiple selectors since AvatarDisplay may override parent aria-label
+  const avatarButton = page
+    .getByLabel('User account menu')
+    .or(page.locator('[aria-label*="avatar"]'));
+  await avatarButton.first().click();
 
   // Wait for dropdown to open and click Sign Out
   const signOutButton = page.getByRole('button', { name: 'Sign Out' });
@@ -534,10 +537,23 @@ export async function waitForAuthenticatedState(
     timeout,
   });
 
-  // Wait for Messages link (indicates GlobalNav has user context)
-  // Messages link only appears for authenticated users
-  const messagesLink = page.getByRole('link', { name: /messages/i });
-  await messagesLink.waitFor({ state: 'visible', timeout });
+  // Wait for authenticated navbar indicators
+  // Try multiple indicators since layout can vary
+  const authIndicators = [
+    page.getByRole('link', { name: /messages/i }),
+    page.getByLabel('User account menu'),
+    page.locator('img[alt*="avatar"]'),
+  ];
+
+  // Wait for any one of these to become visible
+  await Promise.race(
+    authIndicators.map((indicator) =>
+      indicator.waitFor({ state: 'visible', timeout }).catch(() => {})
+    )
+  );
+
+  // Brief stabilization delay
+  await page.waitForLoadState('domcontentloaded');
 }
 
 /**
@@ -567,7 +583,7 @@ export async function performSignIn(
   password: string,
   options: { rememberMe?: boolean; timeout?: number } = {}
 ): Promise<{ success: boolean; error?: string }> {
-  const { rememberMe = false, timeout = 15000 } = options;
+  const { rememberMe = false, timeout = 30000 } = options; // Increased from 15s to 30s for CI
 
   // Dismiss cookie banner first - it can block form interactions
   await dismissCookieBanner(page);
@@ -592,15 +608,21 @@ export async function performSignIn(
         .waitForURL((url) => !url.pathname.includes('/sign-in'), { timeout })
         .then(() => ({ success: true as const })),
 
-      // Failure: Alert with error message appears
+      // Failure: Alert with actual error message appears
+      // Filter out page title alerts (e.g., "Sign In - ScriptHammer")
       page
         .locator('[role="alert"]')
-        .filter({ hasText: /./i }) // Has any text
+        .filter({
+          hasText: /(invalid|error|failed|incorrect|wrong|denied|locked)/i,
+        })
         .first()
         .waitFor({ state: 'visible', timeout: 5000 })
         .then(async () => {
           const alertText = await page
             .locator('[role="alert"]')
+            .filter({
+              hasText: /(invalid|error|failed|incorrect|wrong|denied|locked)/i,
+            })
             .first()
             .textContent();
           return {

@@ -971,10 +971,10 @@ export default function ColorblindToggle() {
 
   return (
     <div className="dropdown dropdown-end">
-      <label tabIndex={0} className="btn btn-ghost gap-2">
+      <button tabIndex={0} className="btn btn-ghost gap-2" aria-label="Color Vision Settings">
         {mode === ColorblindType.NONE ? <Eye /> : <EyeOff />}
         <span className="hidden sm:inline">Color Vision</span>
-      </label>
+      </button>
 
       <div tabIndex={0} className="dropdown-content card card-compact w-80 p-4 shadow bg-base-100">
         <div className="card-body">
@@ -2306,12 +2306,12 @@ export default function FontSwitcher() {
 
   return (
     <div className="dropdown dropdown-end">
-      <label tabIndex={0} className="btn btn-ghost gap-2">
+      <button tabIndex={0} className="btn btn-ghost gap-2" aria-label="Font Selection">
         <svg className="w-5 h-5" fill="none" stroke="currentColor">
           {/* Font icon */}
         </svg>
         <span className="hidden sm:inline">{currentFontConfig?.name}</span>
-      </label>
+      </button>
 
       <ul tabIndex={0} className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-72 max-h-96 overflow-y-auto">
         {fonts.map((font) => (

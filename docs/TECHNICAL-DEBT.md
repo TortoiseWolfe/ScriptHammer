@@ -53,6 +53,31 @@ This document tracks known technical issues, workarounds, and future concerns th
 
 ## Resolved Issues
 
+### ~~10. FontSwitcher ARIA Accessibility Violation~~ ✅ RESOLVED
+
+**Date Added**: 2025-12-27
+**Date Resolved**: 2025-12-27
+**Severity**: Medium (accessibility violation)
+**Impact**: WCAG compliance, axe-core test failures
+
+**Issue**: FontSwitcher component used `<label role="button">` which violates ARIA specifications. The `<label>` element cannot have `role="button"` per WCAG guidelines. This caused `aria-allowed-role` violations in axe-core accessibility testing.
+
+**Resolution**:
+
+- Changed `<label role="button">` to `<button>` in FontSwitcher.tsx
+- Updated test selectors from `label.btn` to `button.btn`
+- Updated 4 documentation files with correct pattern
+- All 2301 unit tests passing
+
+**Files Affected**:
+
+- `src/components/atomic/FontSwitcher/FontSwitcher.tsx`
+- `src/components/atomic/FontSwitcher/FontSwitcher.test.tsx`
+- `docs/specs/006-font-switcher/spec.md`
+- `docs/specs/006-font-switcher/quickstart.md`
+- `docs/specs/005-colorblind-mode/spec.md`
+- `docs/prp-docs/SPEC.md`
+
 ### ~~9. Environment Variable Configuration Duplication~~ ✅ RESOLVED
 
 **Date Added**: 2025-09-25

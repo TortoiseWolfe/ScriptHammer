@@ -23,6 +23,9 @@ const testPassword =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
 test.describe('Session Persistence E2E', () => {
+  // Run tests serially to avoid Supabase rate limiting
+  test.describe.configure({ mode: 'serial' });
+
   // Each test starts fresh on sign-in page
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in');
@@ -163,11 +166,11 @@ test.describe('Session Persistence E2E', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    // Verify localStorage has session data
+    // Verify localStorage has session data (modern Supabase uses sb-*-auth-token keys)
     const beforeSignOut = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
     );
-    expect(beforeSignOut).toContain('supabase');
+    expect(beforeSignOut).toMatch(/sb-.*-auth-token/);
 
     // Sign out via dropdown menu
     await signOutViaDropdown(page);
@@ -177,10 +180,22 @@ test.describe('Session Persistence E2E', () => {
       JSON.stringify(window.localStorage)
     );
 
-    // Session data should be removed or cleared
+    // Session data should be removed or cleared (check for sb-*-auth-token keys)
     const hasActiveSession = await page.evaluate(() => {
-      const authData = localStorage.getItem('supabase.auth.token');
-      return authData && JSON.parse(authData).access_token;
+      for (const key of Object.keys(localStorage)) {
+        if (key.match(/sb-.*-auth-token/)) {
+          const authData = localStorage.getItem(key);
+          if (authData) {
+            try {
+              const parsed = JSON.parse(authData);
+              return parsed.access_token != null;
+            } catch {
+              return false;
+            }
+          }
+        }
+      }
+      return false;
     });
 
     expect(hasActiveSession).toBeFalsy();

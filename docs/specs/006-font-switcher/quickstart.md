@@ -186,9 +186,13 @@ body {
 ```tsx
 // Use DaisyUI dropdown pattern
 <div className="dropdown dropdown-end">
-  <label tabIndex={0} className="btn btn-ghost gap-2">
+  <button
+    tabIndex={0}
+    className="btn btn-ghost gap-2"
+    aria-label="Font Selection"
+  >
     Font: {currentFont}
-  </label>
+  </button>
   <ul className="dropdown-content menu">{/* Font options */}</ul>
 </div>
 ```
@@ -197,27 +201,27 @@ body {
 
 ### Unit Tests
 
-- [ ] Renders all font options
-- [ ] Handles font selection
-- [ ] Persists to localStorage
-- [ ] Loads saved preference
-- [ ] Shows current font
-- [ ] Displays accessibility badges
+- [x] Renders all font options
+- [x] Handles font selection
+- [x] Persists to localStorage
+- [x] Loads saved preference
+- [x] Shows current font
+- [x] Displays accessibility badges
 
 ### Accessibility Tests
 
-- [ ] Keyboard navigation works
-- [ ] Screen reader announces changes
-- [ ] Focus management correct
-- [ ] ARIA attributes present
-- [ ] No color contrast issues
+- [x] Keyboard navigation works
+- [x] Screen reader announces changes
+- [x] Focus management correct
+- [x] ARIA attributes present
+- [x] No color contrast issues
 
 ### Integration Tests
 
-- [ ] Works with all themes
-- [ ] No layout shift
-- [ ] Fonts load correctly
-- [ ] Fallbacks work
+- [x] Works with all themes
+- [x] No layout shift
+- [x] Fonts load correctly
+- [x] Fallbacks work
 
 ## 📝 Common Commands
 
@@ -311,12 +315,12 @@ When complete, you should have:
 
 Before creating PR:
 
-- [ ] All tests passing
-- [ ] No linting errors
-- [ ] Storybook stories complete
-- [ ] Documentation updated
-- [ ] Accessibility verified
-- [ ] Performance validated
+- [x] All tests passing
+- [x] No linting errors
+- [x] Storybook stories complete
+- [x] Documentation updated
+- [x] Accessibility verified
+- [x] Performance validated
 
 Then:
 

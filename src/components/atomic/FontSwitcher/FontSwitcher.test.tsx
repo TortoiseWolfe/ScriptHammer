@@ -26,20 +26,20 @@ describe('FontSwitcher', () => {
   describe('Rendering', () => {
     it('should render dropdown button', () => {
       render(<FontSwitcher />);
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       expect(label).toBeInTheDocument();
       expect(label).toHaveTextContent('System Default');
     });
 
     it('should show current font name', () => {
       render(<FontSwitcher />);
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       expect(label).toHaveTextContent('System Default');
     });
 
     it('should have correct ARIA attributes', () => {
       render(<FontSwitcher />);
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       expect(label).toHaveAttribute('tabIndex', '0');
     });
 
@@ -61,7 +61,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Wait for dropdown to be visible
@@ -75,7 +75,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Check for all font options (use getAllByText for System Default as it appears in button too)
@@ -93,7 +93,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       expect(
@@ -107,7 +107,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       expect(screen.getByText('dyslexia-friendly')).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       const georgiaOption = screen.getByRole('option', { name: /georgia/i });
@@ -145,7 +145,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       const interOption = screen.getByRole('option', { name: /inter/i });
@@ -158,7 +158,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Wait for dropdown to open
@@ -188,7 +188,7 @@ describe('FontSwitcher', () => {
 
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       expect(label).toHaveTextContent('Inter');
     });
 
@@ -209,7 +209,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // The mock returns 'system' as the current font
@@ -227,7 +227,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       await waitFor(() => {
@@ -239,7 +239,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Wait for dropdown to open
@@ -269,7 +269,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       await waitFor(() => {
@@ -286,7 +286,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Verify dropdown content is present
@@ -314,7 +314,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       // Inter should show loading state
@@ -340,7 +340,7 @@ describe('FontSwitcher', () => {
       const user = userEvent.setup();
       render(<FontSwitcher />);
 
-      const label = document.querySelector('label.btn');
+      const label = document.querySelector('button.btn');
       await user.click(label!);
 
       expect(screen.getByText('Recent')).toBeInTheDocument();

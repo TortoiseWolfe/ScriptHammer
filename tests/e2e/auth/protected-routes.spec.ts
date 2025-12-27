@@ -38,6 +38,9 @@ test.beforeAll(() => {
 });
 
 test.describe('Protected Routes E2E', () => {
+  // Run tests serially to avoid Supabase rate limiting
+  test.describe.configure({ mode: 'serial' });
+
   const testEmail = testUser.email;
   const testPassword = testUser.password;
 
