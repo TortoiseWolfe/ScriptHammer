@@ -88,9 +88,9 @@ export default function DocsPage() {
           external: true,
         },
         {
-          href: '/blog/spec-kit-workflow',
+          href: 'https://github.com/TortoiseWolfe/ScriptHammer/blob/main/docs/prp-docs/SPECKIT-PRP-GUIDE.md',
           label: 'Spec Kit Workflow',
-          external: false,
+          external: true,
         },
         {
           href: 'https://github.com/TortoiseWolfe/ScriptHammer/tree/main/docs/spec-kit',

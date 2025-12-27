@@ -314,7 +314,7 @@ export default function Home() {
             </Link>
 
             <Link
-              href="/docs/pwa"
+              href="/docs"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="card-body items-center p-4 text-center">
