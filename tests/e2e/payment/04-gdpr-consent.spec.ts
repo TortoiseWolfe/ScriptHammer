@@ -55,12 +55,15 @@ test.describe('GDPR Payment Consent Flow', () => {
   });
 
   test('should not load payment scripts before consent', async ({ page }) => {
-    // Check that Stripe/PayPal scripts are not loaded
-    const stripeScript = page.locator('script[src*="stripe"]');
-    const paypalScript = page.locator('script[src*="paypal"]');
+    // Check that the main Stripe.js SDK and PayPal SDK are not loaded before consent
+    // Note: @stripe/stripe-js package may include lightweight loader scripts in the bundle,
+    // but the main js.stripe.com/v3 SDK should NOT load until loadStripe() is called
+    const stripeMainSDK = page.locator('script[src*="js.stripe.com/v3"]');
+    const paypalSDK = page.locator('script[src*="paypal.com/sdk"]');
 
-    await expect(stripeScript).toHaveCount(0);
-    await expect(paypalScript).toHaveCount(0);
+    // Main SDKs should not be loaded before consent
+    await expect(stripeMainSDK).toHaveCount(0);
+    await expect(paypalSDK).toHaveCount(0);
   });
 
   test('should show payment options after consent granted', async ({
@@ -77,8 +80,10 @@ test.describe('GDPR Payment Consent Flow', () => {
     // Step 2 should now be visible
     await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
 
-    // Payment provider tabs should be visible
-    await expect(page.getByRole('tab', { name: /stripe/i })).toBeVisible();
+    // Payment provider tabs should be visible (use .first() - 3 PaymentButton components each have tabs)
+    await expect(
+      page.getByRole('tab', { name: /stripe/i }).first()
+    ).toBeVisible();
   });
 
   test('should remember consent across page reloads', async ({ page }) => {
