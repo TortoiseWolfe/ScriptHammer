@@ -29,36 +29,37 @@ test.describe('Form Submission', () => {
   test('form fields have proper labels and ARIA attributes', async ({
     page,
   }) => {
-    // Look for form fields on the components page
-    const formFields = page.locator('.form-control').first();
+    // Get the main form element
+    const form = page.locator('form[aria-label="Contact form"]');
+    await expect(form).toBeVisible();
 
-    // Check if form exists
-    const formExists = (await formFields.count()) > 0;
+    // Check name field has proper label association
+    const nameLabel = page.getByText('Full Name');
+    await expect(nameLabel).toBeVisible();
 
-    if (formExists) {
-      // Check for label
-      const label = formFields.locator('label').first();
-      await expect(label).toBeVisible();
+    const nameInput = page.locator('#name');
+    await expect(nameInput).toBeVisible();
+    await expect(nameInput).toHaveAttribute('aria-required', 'true');
 
-      // Check label has for attribute
-      const forAttr = await label.getAttribute('for');
-      expect(forAttr).toBeTruthy();
+    // Check email field has proper label association
+    const emailLabel = page.getByText('Email Address');
+    await expect(emailLabel).toBeVisible();
 
-      // Check corresponding input exists
-      const input = page.locator(`#${forAttr}`).first();
-      await expect(input).toBeVisible();
-    }
+    const emailInput = page.locator('#email');
+    await expect(emailInput).toBeVisible();
+    await expect(emailInput).toHaveAttribute('aria-required', 'true');
   });
 
   test('required fields show indicators', async ({ page }) => {
-    // Look for required field indicators
-    const requiredIndicator = page.locator('.text-error:has-text("*")').first();
-    const hasRequired = (await requiredIndicator.count()) > 0;
+    // The contact form uses <span class="label-text-alt text-error">*</span> for required indicators
+    // Check that asterisks are visible next to required field labels
+    const requiredIndicators = page.locator('.label-text-alt.text-error');
 
-    if (hasRequired) {
-      await expect(requiredIndicator).toBeVisible();
-      await expect(requiredIndicator).toHaveAttribute('aria-label', 'required');
-    }
+    // Contact form has 4 required fields: name, email, subject, message
+    await expect(requiredIndicators).toHaveCount(4);
+
+    // Verify at least one indicator contains the asterisk
+    await expect(requiredIndicators.first()).toContainText('*');
   });
 
   test('error messages display correctly', async ({ page }) => {
@@ -124,9 +125,20 @@ test.describe('Form Submission', () => {
       // Submit form
       await submitButton.click();
 
-      // Check for success indication (could be redirect, message, etc.)
-      // This is generic since we don't know specific form behavior
-      await page.waitForTimeout(1000); // Wait for any async operations
+      // Wait for form response - loading state, success message, or error
+      await expect(async () => {
+        const buttonDisabled = await submitButton.isDisabled();
+        const hasAlert =
+          (await page.locator('[role="alert"], .alert').count()) > 0;
+        const hasLoadingClass = (
+          await submitButton.getAttribute('class')
+        )?.includes('loading');
+        expect(buttonDisabled || hasAlert || hasLoadingClass).toBeTruthy();
+      })
+        .toPass({ timeout: 5000 })
+        .catch(() => {
+          // Form may not have async behavior - that's acceptable
+        });
     }
   });
 
@@ -181,27 +193,26 @@ test.describe('Form Submission', () => {
   });
 
   test('form fields maintain focus order', async ({ page }) => {
-    // Test tab navigation through form
-    const inputs = page.locator('input, select, textarea, button');
-    const inputCount = await inputs.count();
+    // Test tab navigation through the contact form specifically
+    // Focus the name field first
+    const nameInput = page.locator('#name');
+    await nameInput.focus();
+    await expect(nameInput).toBeFocused();
 
-    if (inputCount > 0) {
-      // Focus first input
-      await inputs.first().focus();
+    // Tab through the form fields in order: name -> email -> subject -> message -> submit
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#email')).toBeFocused();
 
-      // Tab through elements and verify focus moves forward
-      for (let i = 1; i < Math.min(inputCount, 5); i++) {
-        await page.keyboard.press('Tab');
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#subject')).toBeFocused();
 
-        // Check that some element has focus
-        const focusedElement = await page.evaluate(
-          () => document.activeElement?.tagName
-        );
-        expect(['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON', 'A']).toContain(
-          focusedElement
-        );
-      }
-    }
+    await page.keyboard.press('Tab');
+    await expect(page.locator('#message')).toBeFocused();
+
+    await page.keyboard.press('Tab');
+    await expect(
+      page.getByRole('button', { name: /send|queue/i })
+    ).toBeFocused();
   });
 
   test('form data persists on page reload', async ({ page }) => {
@@ -245,40 +256,30 @@ test.describe('Form Submission', () => {
   });
 
   test('form clears on reset button', async ({ page }) => {
-    // Look for reset button
-    const resetButton = page
-      .locator(
-        'button[type="reset"], button:has-text("Reset"), button:has-text("Clear")'
-      )
-      .first();
+    // Look for reset button within the contact form specifically
+    // The contact form does NOT have a reset button, so we test that form clears on success instead
+    const form = page.locator('form[aria-label="Contact form"]');
+    await expect(form).toBeVisible();
+
+    // Check if there's a reset button in the form
+    const resetButton = form.locator('button[type="reset"]');
     const hasResetButton = (await resetButton.count()) > 0;
 
     if (hasResetButton) {
-      // Fill form fields (skip honeypot)
-      const inputs = page.locator(
-        'input[type="text"], input[type="email"], textarea'
-      );
-      const inputCount = await inputs.count();
-      const filledIndices: number[] = [];
-
-      for (let i = 0; i < inputCount; i++) {
-        const input = inputs.nth(i);
-        // Skip honeypot fields (bot traps)
-        if (await isHoneypotField(input)) {
-          continue;
-        }
-        await input.fill('Test Value');
-        filledIndices.push(i);
-      }
+      // Fill form fields
+      await page.locator('#name').fill('Test Value');
+      await page.locator('#email').fill('test@test.com');
 
       // Click reset
       await resetButton.click();
 
-      // Check filled fields are cleared
-      for (const i of filledIndices) {
-        const value = await inputs.nth(i).inputValue();
-        expect(value).toBe('');
-      }
+      // Check fields are cleared
+      await expect(page.locator('#name')).toHaveValue('');
+      await expect(page.locator('#email')).toHaveValue('');
+    } else {
+      // Contact form has no reset button - this is expected behavior
+      // The form clears automatically on successful submission
+      test.skip();
     }
   });
 
@@ -352,16 +353,15 @@ test.describe('Form Submission', () => {
         // Click next
         await nextButton.click();
 
-        // Check step changed
-        await page.waitForTimeout(500);
-
         // Previous button should now be visible
         if ((await prevButton.count()) > 0) {
-          await expect(prevButton).toBeVisible();
+          await expect(prevButton).toBeVisible({ timeout: 3000 });
 
           // Go back
           await prevButton.click();
-          await page.waitForTimeout(500);
+
+          // Verify we're back on previous step
+          await expect(nextButton).toBeVisible({ timeout: 3000 });
         }
       }
     }

@@ -20,13 +20,13 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on name field to establish focus in the form
-    const nameField = page.getByLabel('Name');
+    const nameField = page.getByLabel('Full Name');
     await nameField.click();
     await expect(nameField).toBeFocused();
 
     // Tab to email field
     await page.keyboard.press('Tab');
-    const emailField = page.getByLabel('Email');
+    const emailField = page.getByLabel('Email Address');
     await expect(emailField).toBeFocused();
 
     // Tab to subject field
@@ -49,7 +49,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on name field to establish focus in the form
-    const nameField = page.getByLabel('Name');
+    const nameField = page.getByLabel('Full Name');
     await nameField.click();
     await page.keyboard.type('John Doe');
 
@@ -68,18 +68,15 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     await expect(submitButton).toBeFocused();
     await page.keyboard.press('Enter');
 
-    // Form should show loading state or result
-    // Wait for either: success message, error message, or button loading state
-    await page.waitForTimeout(1000);
-
-    // Check that form responded to submission (button changes or alert appears)
-    const hasResponse =
-      (await submitButton.getAttribute('class'))?.includes('loading') ||
-      (await page.locator('[role="alert"], .alert').count()) > 0 ||
-      // Form cleared after success
-      (await nameField.inputValue()) === '';
-
-    expect(hasResponse).toBeTruthy();
+    // Wait for form to respond - either loading state, alert, or form cleared
+    await expect(async () => {
+      const buttonClass = await submitButton.getAttribute('class');
+      const hasLoadingClass = buttonClass?.includes('loading') ?? false;
+      const alertCount = await page.locator('[role="alert"], .alert').count();
+      const nameValue = await nameField.inputValue();
+      const hasResponse = hasLoadingClass || alertCount > 0 || nameValue === '';
+      expect(hasResponse).toBeTruthy();
+    }).toPass({ timeout: 5000 });
   });
 
   test('should maintain focus after validation errors', async ({ page }) => {
@@ -87,17 +84,15 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     const submitButton = page.getByRole('button', { name: /send|submit/i });
     await submitButton.click();
 
-    // Wait for validation
-    await page.waitForTimeout(500);
-
-    // Focus should be on first error field (name field)
-    const activeElement = await page.evaluate(() => {
-      const el = document.activeElement;
-      return el?.tagName?.toLowerCase();
-    });
-
-    // Active element should be a form element (focused on first error)
-    expect(['input', 'textarea', 'button']).toContain(activeElement);
+    // Wait for validation to complete and focus to move
+    await expect(async () => {
+      const activeElement = await page.evaluate(() => {
+        const el = document.activeElement;
+        return el?.tagName?.toLowerCase();
+      });
+      // Active element should be a form element (focused on first error)
+      expect(['input', 'textarea', 'button']).toContain(activeElement);
+    }).toPass({ timeout: 3000 });
   });
 
   test('should support Shift+Tab for backwards navigation', async ({
@@ -115,7 +110,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
 
     // Shift+Tab backwards to email
     await page.keyboard.press('Shift+Tab');
-    const emailField = page.getByLabel('Email');
+    const emailField = page.getByLabel('Email Address');
     await expect(emailField).toBeFocused();
   });
 });
