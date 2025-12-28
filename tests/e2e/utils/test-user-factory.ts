@@ -554,14 +554,24 @@ export async function waitForAuthenticatedState(
       )
     );
   } catch {
-    // All indicators timed out - check if we're still on a valid page
-    const url = page.url();
-    if (url.includes('/sign-in')) {
-      throw new Error('Auth failed: still on sign-in page after timeout');
+    // All indicators timed out - verify we're actually authenticated
+    // Check for Sign In/Sign Up links which indicate unauthenticated state
+    const signInLink = page.getByRole('link', { name: 'Sign In' });
+    const isUnauthenticated = await signInLink
+      .isVisible({ timeout: 1000 })
+      .catch(() => false);
+
+    if (isUnauthenticated) {
+      const url = page.url();
+      throw new Error(
+        `Auth failed: Sign In link visible on ${url}. User not authenticated.`
+      );
     }
-    // On a different page but no indicators - might be verify-email or similar
-    // Allow test to continue but log warning
-    console.warn('No auth indicators visible, but not on sign-in page');
+
+    // No auth indicators visible but also no sign-in link - might be intermediate state
+    console.warn(
+      'No auth indicators visible, but Sign In link also not visible'
+    );
   }
 
   // Brief stabilization delay
