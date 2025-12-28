@@ -19,8 +19,8 @@ import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   handleReAuthModal,
-  waitForAuthenticatedState,
   dismissCookieBanner,
+  performSignIn,
 } from '../utils/test-user-factory';
 
 // Test users - use PRIMARY and TERTIARY from standardized test fixtures
@@ -166,12 +166,10 @@ test.describe('Friend Request Flow', () => {
     try {
       // ===== STEP 1: User A signs in =====
       await pageA.goto('/sign-in');
-      await pageA.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       // ===== STEP 2: User A navigates to connections tab =====
       await pageA.goto('/messages?tab=connections');
@@ -210,12 +208,10 @@ test.describe('Friend Request Flow', () => {
 
       // ===== STEP 5: User B signs in =====
       await pageB.goto('/sign-in');
-      await pageB.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageB);
-      await pageB.getByLabel('Email').fill(USER_B.email);
-      await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
-      await pageB.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageB);
+      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
+      if (!resultB.success) {
+        throw new Error(`User B sign-in failed: ${resultB.error}`);
+      }
 
       // ===== STEP 6: User B navigates to connections page =====
       await pageB.goto('/messages?tab=connections');
@@ -285,12 +281,10 @@ test.describe('Friend Request Flow', () => {
     try {
       // User B sends request to User A (searching by username of A)
       await pageB.goto('/sign-in');
-      await pageB.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageB);
-      await pageB.getByLabel('Email').fill(USER_B.email);
-      await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
-      await pageB.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageB);
+      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
+      if (!resultB.success) {
+        throw new Error(`User B sign-in failed: ${resultB.error}`);
+      }
 
       await pageB.goto('/messages?tab=connections');
       await handleReAuthModal(pageB, USER_B.password);
@@ -317,12 +311,10 @@ test.describe('Friend Request Flow', () => {
 
       // User A signs in and declines
       await pageA.goto('/sign-in');
-      await pageA.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       await pageA.goto('/messages?tab=connections');
       await handleReAuthModal(pageA, USER_A.password);
@@ -354,14 +346,12 @@ test.describe('Friend Request Flow', () => {
   test('User A can cancel a sent pending request', async ({ page }) => {
     test.setTimeout(60000);
 
-    // Sign in as User A
+    // Sign in as User A using robust helper
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Send friend request to User B
     await page.goto('/messages?tab=connections');
@@ -410,12 +400,10 @@ test.describe('Friend Request Flow', () => {
     test.setTimeout(60000);
 
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
@@ -462,12 +450,10 @@ test.describe('Friend Request Flow', () => {
 test.describe('Accessibility', () => {
   test('connections page meets WCAG standards', async ({ page }) => {
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);
@@ -494,12 +480,10 @@ test.describe('Accessibility', () => {
 
   test('tab navigation works correctly', async ({ page }) => {
     await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     await page.goto('/messages?tab=connections');
     await handleReAuthModal(page, USER_A.password);

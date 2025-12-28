@@ -15,8 +15,8 @@ import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   handleReAuthModal,
-  waitForAuthenticatedState,
   dismissCookieBanner,
+  performSignIn,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -193,20 +193,17 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // ===== STEP 1: User A signs in =====
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await pageA.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       // ===== STEP 2: User B signs in (in separate context) =====
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(pageB);
-      await pageB.getByLabel('Email').fill(USER_B.email);
-      await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
-      await pageB.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageB);
+      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
+      if (!resultB.success) {
+        throw new Error(`User B sign-in failed: ${resultB.error}`);
+      }
 
       // ===== STEP 3: User A navigates to messages =====
       await pageA.goto(`${BASE_URL}/messages`);
@@ -300,11 +297,10 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // Sign in as User A
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       // Navigate to messages
       await pageA.goto(`${BASE_URL}/messages`);
@@ -380,11 +376,10 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // User A signs in and navigates to messages
       await pageA.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       await pageA.goto(`${BASE_URL}/messages`);
       await handleReAuthModal(pageA, USER_A.password);
@@ -429,11 +424,10 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== USER B READS THE MESSAGE =====
       await pageB.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(pageB);
-      await pageB.getByLabel('Email').fill(USER_B.email);
-      await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
-      await pageB.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageB);
+      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
+      if (!resultB.success) {
+        throw new Error(`User B sign-in failed: ${resultB.error}`);
+      }
 
       await pageB.goto(`${BASE_URL}/messages`);
       await handleReAuthModal(pageB, USER_B.password);
@@ -475,11 +469,10 @@ test.describe('Encrypted Messaging Flow', () => {
 
   test('should load message history with pagination', async ({ page }) => {
     await page.goto(`${BASE_URL}/sign-in`);
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     await page.goto(`${BASE_URL}/messages`);
     await handleReAuthModal(page, USER_A.password);
@@ -567,11 +560,10 @@ test.describe('Encryption Key Security', () => {
 
     // Sign in and send a message
     await page.goto(`${BASE_URL}/sign-in`);
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(page, USER_A.email, USER_A.password);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     await page.goto(`${BASE_URL}/messages`);
     await handleReAuthModal(page, USER_A.password);

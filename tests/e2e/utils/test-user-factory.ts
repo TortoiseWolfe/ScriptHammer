@@ -545,32 +545,43 @@ export async function waitForAuthenticatedState(
     page.locator('img[alt*="avatar"]'),
   ];
 
-  // Wait for ANY one of these to become visible using Promise.any
-  // This properly throws AggregateError only if ALL fail
-  try {
-    await Promise.any(
-      authIndicators.map((indicator) =>
-        indicator.waitFor({ state: 'visible', timeout })
-      )
-    );
-  } catch {
-    // All indicators timed out - verify we're actually authenticated
-    // Check for Sign In/Sign Up links which indicate unauthenticated state
-    const signInLink = page.getByRole('link', { name: 'Sign In' });
-    const isUnauthenticated = await signInLink
-      .isVisible({ timeout: 1000 })
-      .catch(() => false);
+  // Wait for EITHER authenticated state OR unauthenticated state
+  // Don't return until we know definitively which state we're in
+  const signInLink = page.getByRole('link', { name: 'Sign In' });
 
-    if (isUnauthenticated) {
-      const url = page.url();
+  // Race between:
+  // 1. Any auth indicator becoming visible (success)
+  // 2. Sign In link becoming visible (failure)
+  try {
+    await Promise.race([
+      // Success path: Any auth indicator becomes visible
+      Promise.any(
+        authIndicators.map((indicator) =>
+          indicator.waitFor({ state: 'visible', timeout })
+        )
+      ),
+      // Failure path: Sign In link becomes visible (means we're NOT authenticated)
+      signInLink.waitFor({ state: 'visible', timeout }).then(() => {
+        throw new Error(
+          `Auth failed: Sign In link visible on ${page.url()}. User not authenticated.`
+        );
+      }),
+    ]);
+  } catch (err) {
+    // If we got our explicit auth failure error, rethrow it
+    if (err instanceof Error && err.message.includes('Auth failed')) {
+      throw err;
+    }
+    // If all promises rejected (AggregateError), check current state
+    const isSignInVisible = await signInLink.isVisible().catch(() => false);
+    if (isSignInVisible) {
       throw new Error(
-        `Auth failed: Sign In link visible on ${url}. User not authenticated.`
+        `Auth failed: Sign In link visible on ${page.url()}. User not authenticated.`
       );
     }
-
-    // No auth indicators visible but also no sign-in link - might be intermediate state
-    console.warn(
-      'No auth indicators visible, but Sign In link also not visible'
+    // Neither auth indicators nor sign-in visible after timeout - still throw
+    throw new Error(
+      `Auth state unclear after ${timeout}ms on ${page.url()}. No auth indicators or sign-in link found.`
     );
   }
 

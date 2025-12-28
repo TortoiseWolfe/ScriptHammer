@@ -7,10 +7,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import {
-  dismissCookieBanner,
-  waitForAuthenticatedState,
-} from '../utils/test-user-factory';
+import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
 
 /**
  * Wait for UI to stabilize after navigation or interaction
@@ -41,13 +38,16 @@ const TEST_USER = {
 
 test.describe('GDPR Data Export', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as test user
+    // Sign in as test user using robust helper
     await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(
+      page,
+      TEST_USER.email,
+      TEST_USER.password
+    );
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Navigate to account settings
     await page.goto('/account');
@@ -191,14 +191,17 @@ test.describe('GDPR Data Export', () => {
 
 test.describe('GDPR Account Deletion', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as test user
+    // Sign in as test user using robust helper
     // NOTE: Account deletion tests use mocked responses to prevent actual deletion
     await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(
+      page,
+      TEST_USER.email,
+      TEST_USER.password
+    );
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
 
     // Navigate to account settings
     await page.goto('/account');
@@ -403,12 +406,16 @@ test.describe('GDPR Account Deletion', () => {
 
 test.describe('GDPR Accessibility', () => {
   test.beforeEach(async ({ page }) => {
+    // Sign in as test user using robust helper
     await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    const result = await performSignIn(
+      page,
+      TEST_USER.email,
+      TEST_USER.password
+    );
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
     await page.goto('/account');
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
