@@ -545,12 +545,24 @@ export async function waitForAuthenticatedState(
     page.locator('img[alt*="avatar"]'),
   ];
 
-  // Wait for any one of these to become visible
-  await Promise.race(
-    authIndicators.map((indicator) =>
-      indicator.waitFor({ state: 'visible', timeout }).catch(() => {})
-    )
-  );
+  // Wait for ANY one of these to become visible using Promise.any
+  // This properly throws AggregateError only if ALL fail
+  try {
+    await Promise.any(
+      authIndicators.map((indicator) =>
+        indicator.waitFor({ state: 'visible', timeout })
+      )
+    );
+  } catch {
+    // All indicators timed out - check if we're still on a valid page
+    const url = page.url();
+    if (url.includes('/sign-in')) {
+      throw new Error('Auth failed: still on sign-in page after timeout');
+    }
+    // On a different page but no indicators - might be verify-email or similar
+    // Allow test to continue but log warning
+    console.warn('No auth indicators visible, but not on sign-in page');
+  }
 
   // Brief stabilization delay
   await page.waitForLoadState('domcontentloaded');
