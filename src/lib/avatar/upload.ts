@@ -27,15 +27,18 @@ export async function uploadAvatar(
   const supabase = createClient();
 
   try {
-    // Step 1: Get current user
+    // Step 1: Ensure we have an active session (not just cached user)
+    // getSession() validates the session is active, while getUser() can return cached data
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
-      return { url: '', error: 'User not authenticated' };
+    if (sessionError || !session) {
+      return { url: '', error: 'Auth session missing - please sign in again' };
     }
+
+    const user = session.user;
 
     // Store old avatar URL for cleanup
     const oldAvatarUrl = user.user_metadata?.avatar_url as string | undefined;
@@ -120,15 +123,17 @@ export async function removeAvatar(): Promise<RemoveAvatarResult> {
   const supabase = createClient();
 
   try {
+    // Ensure we have an active session (not just cached user)
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
-      return { error: 'User not authenticated' };
+    if (sessionError || !session) {
+      return { error: 'Auth session missing - please sign in again' };
     }
 
+    const user = session.user;
     const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
 
     if (!avatarUrl) {

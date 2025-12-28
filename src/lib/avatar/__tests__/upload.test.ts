@@ -12,7 +12,7 @@ import {
 } from '../upload';
 
 // Create persistent mock objects using vi.hoisted()
-const mockGetUser = vi.fn();
+const mockGetSession = vi.fn();
 const mockUpdateUser = vi.fn();
 const mockUpload = vi.fn();
 const mockRemove = vi.fn();
@@ -35,7 +35,7 @@ const mockDbFrom = vi.fn(() => ({
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {
-      getUser: mockGetUser,
+      getSession: mockGetSession,
       updateUser: mockUpdateUser,
     },
     storage: {
@@ -78,9 +78,9 @@ describe('uploadAvatar', () => {
     vi.clearAllMocks();
   });
 
-  it('should return error if user not authenticated', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
+  it('should return error if session missing', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
@@ -92,13 +92,13 @@ describe('uploadAvatar', () => {
     const result = await uploadAvatar(blob);
 
     expect(result.url).toBe('');
-    expect(result.error).toContain('not authenticated');
+    expect(result.error).toContain('session missing');
   });
 
   it('should handle upload errors', async () => {
-    mockGetUser.mockResolvedValue({
+    mockGetSession.mockResolvedValue({
       data: {
-        user: { id: 'user-123', user_metadata: {} },
+        session: { user: { id: 'user-123', user_metadata: {} } },
       },
       error: null,
     });
@@ -116,9 +116,9 @@ describe('uploadAvatar', () => {
   });
 
   it('should rollback upload if profile update fails', async () => {
-    mockGetUser.mockResolvedValue({
+    mockGetSession.mockResolvedValue({
       data: {
-        user: { id: 'user-123', user_metadata: {} },
+        session: { user: { id: 'user-123', user_metadata: {} } },
       },
       error: null,
     });
@@ -157,9 +157,9 @@ describe('removeAvatar', () => {
     vi.clearAllMocks();
   });
 
-  it('should return error if user not authenticated', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
+  it('should return error if session missing', async () => {
+    mockGetSession.mockResolvedValue({
+      data: { session: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
@@ -169,13 +169,13 @@ describe('removeAvatar', () => {
 
     const result = await removeAvatar();
 
-    expect(result.error).toContain('not authenticated');
+    expect(result.error).toContain('session missing');
   });
 
   it('should return success if no avatar exists', async () => {
-    mockGetUser.mockResolvedValue({
+    mockGetSession.mockResolvedValue({
       data: {
-        user: { id: 'user-123', user_metadata: {} },
+        session: { user: { id: 'user-123', user_metadata: {} } },
       },
       error: null,
     });
@@ -186,11 +186,13 @@ describe('removeAvatar', () => {
   });
 
   it('should handle profile update errors', async () => {
-    mockGetUser.mockResolvedValue({
+    mockGetSession.mockResolvedValue({
       data: {
-        user: {
-          id: 'user-123',
-          user_metadata: { avatar_url: 'https://example.com/avatar.webp' },
+        session: {
+          user: {
+            id: 'user-123',
+            user_metadata: { avatar_url: 'https://example.com/avatar.webp' },
+          },
         },
       },
       error: null,
@@ -217,9 +219,9 @@ describe('uploadWithRetry', () => {
   });
 
   it('should retry failed uploads', async () => {
-    mockGetUser.mockResolvedValue({
+    mockGetSession.mockResolvedValue({
       data: {
-        user: { id: 'user-123', user_metadata: {} },
+        session: { user: { id: 'user-123', user_metadata: {} } },
       },
       error: null,
     });
@@ -256,8 +258,8 @@ describe('uploadWithRetry', () => {
   }, 10000); // Increase timeout for retries
 
   it('should not retry authentication errors', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
+    mockGetSession.mockResolvedValue({
+      data: { session: null },
       error: {
         message: 'Not authenticated',
         name: 'AuthError',
@@ -269,7 +271,7 @@ describe('uploadWithRetry', () => {
     const result = await uploadWithRetry(blob, 3);
 
     expect(result.url).toBe('');
-    expect(result.error).toContain('authenticated');
+    expect(result.error).toContain('session missing');
     // Should fail immediately without retries
   });
 });
