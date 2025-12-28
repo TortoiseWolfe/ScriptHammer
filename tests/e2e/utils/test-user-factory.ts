@@ -638,7 +638,7 @@ export async function performSignIn(
           hasText: /(invalid|error|failed|incorrect|wrong|denied|locked)/i,
         })
         .first()
-        .waitFor({ state: 'visible', timeout: 5000 })
+        .waitFor({ state: 'visible', timeout })
         .then(async () => {
           const alertText = await page
             .locator('[role="alert"]')
