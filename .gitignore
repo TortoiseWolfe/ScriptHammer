@@ -1,0 +1,21 @@
+# SpecKit installation and generated files
+# These directories are auto-generated and should not be committed
+
+# .speckit/ - SpecKit CLI installation
+# Regenerated automatically on first run or update
+.speckit/
+
+# .specify/ - SpecKit project templates and configuration
+# Regenerated during initialization
+.specify/
+
+# Claude Code may store sensitive data in .claude/
+# Uncomment the line below if you want to exclude it
+# .claude/
+
+# Wireframe viewer test artifacts
+docs/design/wireframes/node_modules/
+docs/design/wireframes/package-lock.json
+docs/design/wireframes/playwright-report/
+docs/design/wireframes/screenshots/
+.env

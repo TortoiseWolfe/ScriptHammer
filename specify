@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# SpecKit wrapper script
+# Auto-installs SpecKit and initializes project on first run
+# Run './specify update' to update to latest SpecKit version
+
+# Handle update command
+if [ "$1" = "update" ]; then
+    echo "Updating SpecKit..."
+    echo "Removing old installation..."
+    docker run --rm -v .:/workspace python:3.12-slim rm -rf /workspace/.speckit /workspace/.specify
+    echo "Reinstalling SpecKit..."
+    docker compose run --rm speckit bash -c "apt-get update -qq && apt-get install -y -qq git > /dev/null 2>&1 && pip install -q uv && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
+    echo "Reinitializing project..."
+    docker compose run --rm speckit specify init --here --ai claude --force --ignore-agent-tools
+    echo "Update complete!"
+    exit 0
+fi
+
+# Check if .speckit is installed
+if [ ! -d ".speckit" ]; then
+    echo "Installing SpecKit..."
+    docker compose run --rm speckit bash -c "apt-get update -qq && apt-get install -y -qq git > /dev/null 2>&1 && pip install -q uv && uv tool install specify-cli --from git+https://github.com/github/spec-kit.git"
+fi
+
+# Check if project is initialized
+if [ ! -d ".specify" ]; then
+    echo "Initializing SpecKit project..."
+    docker compose run --rm speckit specify init --here --ai claude --force --ignore-agent-tools
+fi
+
+# Run specify command
+docker compose run --rm speckit specify "$@"
