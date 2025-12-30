@@ -1,18 +1,18 @@
-# 🎬 FirstFrame
+# 🔨 ScriptHammer
 
-> Project planning template with SpecKit specifications and interactive wireframe viewer.
+> Project planning template with SpecKit specifications and interactive wireframe viewer. Forked from [FirstFrame](https://github.com/TortoiseWolfe/First-Frame).
 
 **See your project clearly from the first frame.** Plan features with specs and wireframes before writing code.
 
-![FirstFrame Preview](docs/design/wireframes/preview.svg)
+![ScriptHammer Preview](docs/design/wireframes/preview.svg)
 
 ## [👀 View Example Wireframes](https://tortoisewolfe.github.io/First-Frame/design/wireframes/)
 
 Interactive wireframe viewer demonstrating the template structure.
 
-## 🤔 What is FirstFrame?
+## 🤔 What is ScriptHammer?
 
-FirstFrame is a planning-first development template. It helps you:
+ScriptHammer is a planning-first development template. It helps you:
 
 1. 📜 **Define** your project vision (constitution)
 2. 📋 **Specify** features with user stories and acceptance criteria
@@ -40,8 +40,8 @@ That's infinitely more useful than describing your UI in prose.
 
 ```bash
 # 1. Fork and clone this repo
-git clone https://github.com/YOUR-USERNAME/First-Frame.git
-cd First-Frame
+git clone https://github.com/YOUR-USERNAME/ScriptHammer.git
+cd ScriptHammer
 
 # 2. Start Claude Code
 claude
@@ -80,7 +80,7 @@ After initialization, SpecKit scripts and templates are local in `.specify/` and
 ## 🏗️ Structure
 
 ```
-FirstFrame/
+ScriptHammer/
 ├── docs/
 │   ├── constitution-template.md   # Project vision template
 │   ├── research/                  # Market & user research
@@ -95,10 +95,10 @@ FirstFrame/
 
 When you're ready to build, you have options:
 
-**Option A: Fork ScriptHammer**
-[ScriptHammer.com](https://scripthammer.com) provides a ready-to-use foundation (Next.js 15, React 19, Supabase, Tailwind). Your FirstFrame specs and wireframes become rich context for implementation.
+**Option A: Use ScriptHammer.com**
+[ScriptHammer.com](https://scripthammer.com) provides a ready-to-use foundation (Next.js 15, React 19, Supabase, Tailwind). Your specs and wireframes become rich context for implementation.
 
-**Option B: Stay in FirstFrame**
+**Option B: Stay in this repo**
 Continue using this repo with SpecKit's full workflow (`/speckit.plan`, `/speckit.tasks`, `/speckit.implement`). Your specs and wireframes guide development right here.
 
 ## 🛠️ Commands
@@ -136,20 +136,16 @@ Continue using this repo with SpecKit's full workflow (`/speckit.plan`, `/specki
 | **↑/↓** or **+/-** | Zoom in/out |
 | **0** | Reset zoom to 85% |
 
-## 🎬 Why "FirstFrame"?
+## 🔨 Why "ScriptHammer"?
 
-Every great film starts with a single frame. Before the action, before the drama - there's that first image that sets everything in motion. Building software should work the same way.
+Every great project needs the right tools. ScriptHammer forges your ideas into structured plans that AI can understand and implement.
 
-The name is intentional wordplay:
+🔨 **"Script"** - The specifications and code that define your project. Your scripts tell the story of what you're building.
 
-🎯 **"First Frame"** - Like the opening shot of a movie, establish your vision before the story unfolds. Start at the beginning. See the whole picture before you build it.
+⚒️ **"Hammer"** - The tool that shapes raw ideas into solid architecture. Forge your vision into reality.
 
-👓 **"Specs"** - These are your specifications, the detailed requirements that define what you're building. But specs are also glasses - the lenses through which you see your project with crystal clarity.
-
-🖼️ **"Frames"** - The wireframes that hold your vision in place. Just like glasses have frames that support the lenses, your UI wireframes provide the structure that supports your specifications.
-
-✨ **Specs + Frames = clear vision, properly supported.**
+✨ **Script + Hammer = ideas forged into working software.**
 
 ---
 
-*Planning template for AI-assisted development*
+*Planning template for AI-assisted development. Forked from [FirstFrame](https://github.com/TortoiseWolfe/First-Frame).*

@@ -9,9 +9,12 @@
 # Regenerated during initialization
 .specify/
 
-# Claude Code may store sensitive data in .claude/
-# Uncomment the line below if you want to exclude it
-# .claude/
+# Claude Code local settings (may contain credentials)
+# Keep .claude/commands/ tracked - those are the SpecKit workflow commands
+.claude/settings.local.json
+.claude/settings.json
+.claude/credentials*
+.claude/*.key
 
 # Wireframe viewer test artifacts
 docs/design/wireframes/node_modules/

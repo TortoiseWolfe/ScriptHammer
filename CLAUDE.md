@@ -94,4 +94,4 @@ When ready to build:
 
 **Option A**: Fork [ScriptHammer.com](https://scripthammer.com) - Next.js 15, React 19, Supabase, Tailwind
 
-**Option B**: Stay in FirstFrame - use `/speckit.plan`, `/speckit.tasks`, `/speckit.implement`
+**Option B**: Stay in ScriptHammer - use `/speckit.plan`, `/speckit.tasks`, `/speckit.implement`
