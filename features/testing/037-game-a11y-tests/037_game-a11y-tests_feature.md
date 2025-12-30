@@ -9,6 +9,22 @@
 
 Add accessibility tests for game components including keyboard navigation, ARIA verification, and focus management. Ensures game features are usable by all users including those with disabilities.
 
+### Target Game Components
+
+The following game components require accessibility testing:
+
+| Component | Location | Key A11y Concerns |
+|-----------|----------|-------------------|
+| **DiceRoller** | `src/components/games/DiceRoller/` | Keyboard roll, result announcement |
+| **CardDeck** | `src/components/games/CardDeck/` | Card selection, draw/discard focus |
+| **CharacterSheet** | `src/components/games/CharacterSheet/` | Form inputs, stat modifiers |
+| **InitiativeTracker** | `src/components/games/InitiativeTracker/` | Turn order, active player focus |
+| **MapGrid** | `src/components/games/MapGrid/` | Grid navigation, token placement |
+| **ChatPanel** | `src/components/games/ChatPanel/` | Message list, input focus, live region |
+| **RollLog** | `src/components/games/RollLog/` | Roll history, live announcements |
+
+**Note**: If additional game components exist at implementation time, add them to this list.
+
 ## User Scenarios
 
 ### US-1: Keyboard Navigation Tests (P1)

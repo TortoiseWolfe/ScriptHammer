@@ -4,10 +4,13 @@
 **Category**: integrations
 **Source**: ScriptHammer_v_001/docs/specs/010-emailjs-integration
 **Status**: Ready for SpecKit
+**Related**: 022-web3forms-integration (Primary provider)
 
 ## Description
 
-A backup email service integration using EmailJS that provides redundancy for Web3Forms. Implements a failover pattern where if the primary provider (Web3Forms) fails, EmailJS automatically takes over, ensuring zero message loss. No server-side email configuration needed.
+A backup email service integration using EmailJS that provides redundancy for Web3Forms.
+
+**Provider Relationship**: Feature 022 (Web3Forms) is the primary email provider. This feature (023) provides EmailJS as a backup. Both implement the same `EmailProvider` interface for seamless failover. Implements a failover pattern where if the primary provider (Web3Forms) fails, EmailJS automatically takes over, ensuring zero message loss. No server-side email configuration needed.
 
 ## User Scenarios
 

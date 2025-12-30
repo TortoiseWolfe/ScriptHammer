@@ -84,8 +84,41 @@ tests/unit/lib/blog/
 
 ## Success Criteria
 
-- SC-001: 100% code coverage for all 3 blog modules
-- SC-002: All edge cases tested
+- SC-001: 90%+ code coverage for all 3 blog modules (100% unrealistic for edge cases)
+- SC-002: All documented edge cases tested
 - SC-003: Tests run in < 5 seconds total
 - SC-004: No flaky tests
-- SC-005: Snapshot tests for HTML output
+- SC-005: Structural assertions for HTML output (prefer over snapshots)
+
+### Snapshot Test Strategy
+
+**Prefer structural assertions over snapshots** to reduce test brittleness:
+
+```typescript
+// ❌ Brittle: Full HTML snapshot
+expect(output).toMatchSnapshot();
+
+// ✅ Better: Structural assertions
+expect(output).toContain('<h1>');
+expect(output).toMatch(/<pre class="language-\w+">/);
+expect(wrapper.querySelectorAll('h2')).toHaveLength(3);
+
+// ✅ For complex HTML: Targeted snapshot of semantic structure
+expect(getHeadingStructure(output)).toMatchInlineSnapshot(`
+  [
+    { level: 1, text: "Title" },
+    { level: 2, text: "Section 1" },
+    { level: 2, text: "Section 2" },
+  ]
+`);
+```
+
+**When to use snapshots**:
+- TOC structure (unlikely to change formatting)
+- Code block language detection results
+- Frontmatter parsing output
+
+**When to use structural assertions**:
+- HTML output (whitespace/formatting changes frequently)
+- Error messages (wording may evolve)
+- Complex nested structures

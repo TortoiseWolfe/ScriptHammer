@@ -94,17 +94,22 @@ Users follow guided flow to recover from payment failures.
 - NFR-005: Rate limit retry attempts
 - NFR-006: Log all retry attempts for audit
 
-### Components
+### Components (5-File Pattern)
+
+All components MUST follow the 5-file pattern per constitution:
 
 ```
 src/components/payments/
 ├── PaymentRetry/
-│   ├── PaymentRetry.tsx
-│   ├── PaymentRetry.test.tsx
-│   ├── PaymentError.tsx
-│   ├── RetryButton.tsx
-│   ├── PaymentMethodUpdate.tsx
-│   └── RecoveryWizard.tsx
+│   ├── index.tsx                          # Re-exports
+│   ├── PaymentRetry.tsx                   # Main component
+│   ├── PaymentRetry.test.tsx              # Unit tests (Vitest)
+│   ├── PaymentRetry.stories.tsx           # Storybook stories
+│   ├── PaymentRetry.accessibility.test.tsx  # Pa11y a11y tests
+│   ├── PaymentError.tsx                   # Sub-component
+│   ├── RetryButton.tsx                    # Sub-component
+│   ├── PaymentMethodUpdate.tsx            # Sub-component
+│   └── RecoveryWizard.tsx                 # Sub-component
 ```
 
 ### Error Types

@@ -134,6 +134,49 @@ const PostFrontmatter = z.object({
 });
 ```
 
+## MDX Component Integration
+
+Blog posts can embed React components using MDX. Components must be pre-registered in the MDX provider:
+
+```typescript
+// src/lib/mdx/components.ts
+import { Alert } from '@/components/Alert';
+import { CodeBlock } from '@/components/CodeBlock';
+import { Callout } from '@/components/Callout';
+import { YouTubeEmbed } from '@/components/YouTubeEmbed';
+
+export const mdxComponents = {
+  Alert,
+  CodeBlock,
+  Callout,
+  YouTubeEmbed,
+  // Custom element overrides
+  pre: CodeBlock,
+  blockquote: Callout,
+};
+```
+
+**Usage in MDX**:
+```mdx
+---
+title: Example Post
+showToc: true
+---
+
+<Alert type="info">
+  This is an important note using a React component inside MDX.
+</Alert>
+
+Regular markdown content continues here...
+```
+
+**MDX Processing Pipeline**:
+1. Frontmatter extracted and validated against Zod schema
+2. MDX content compiled with `@mdx-js/mdx`
+3. React components resolved from `mdxComponents` map
+4. Code blocks processed by Shiki for syntax highlighting
+5. TOC generated if `showToc: true` in frontmatter
+
 ## Migration Strategy
 
 1. **Inventory**: Scan all existing markdown files in blog directory

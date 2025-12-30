@@ -96,17 +96,22 @@ Users can manage their offline payment queue.
 - NFR-006: Clear visual distinction for queued vs processed
 - NFR-007: Confirmation dialogs for destructive actions
 
-### Components
+### Components (5-File Pattern)
+
+All components MUST follow the 5-file pattern per constitution:
 
 ```
 src/components/payments/
 ├── OfflineQueue/
-│   ├── OfflineQueue.tsx
-│   ├── OfflineQueue.test.tsx
-│   ├── QueueStatusBadge.tsx
-│   ├── PendingPaymentList.tsx
-│   ├── PendingPaymentItem.tsx
-│   └── QueueActions.tsx
+│   ├── index.tsx                          # Re-exports
+│   ├── OfflineQueue.tsx                   # Main component
+│   ├── OfflineQueue.test.tsx              # Unit tests (Vitest)
+│   ├── OfflineQueue.stories.tsx           # Storybook stories
+│   ├── OfflineQueue.accessibility.test.tsx  # Pa11y a11y tests
+│   ├── QueueStatusBadge.tsx               # Sub-component
+│   ├── PendingPaymentList.tsx             # Sub-component
+│   ├── PendingPaymentItem.tsx             # Sub-component
+│   └── QueueActions.tsx                   # Sub-component
 ```
 
 ### Storage Schema

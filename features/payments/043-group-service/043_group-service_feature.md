@@ -1,13 +1,16 @@
 # Feature: Group Service Implementation
 
 **Feature ID**: 043
-**Category**: payments
+**Category**: core-features
 **Source**: ScriptHammer_v_001 README (SPEC-049)
 **Status**: Ready for SpecKit
+**Depends on**: 009-user-messaging-system
 
 ## Description
 
 Complete 8 unimplemented methods in `src/services/messaging/group-service.ts`: addMembers (T043), getMembers (T074), removeMember (T060), leaveGroup (T061), transferOwnership (T062), upgradeToGroup (T054), renameGroup (T093), deleteGroup (T092).
+
+**Note**: This feature was incorrectly categorized under "payments" - it belongs in "core-features" as it extends the messaging system. The folder should be moved to `features/core-features/043-group-service/`.
 
 ## User Scenarios
 

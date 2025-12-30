@@ -4,6 +4,7 @@
 **Category**: auth-oauth
 **Source**: ScriptHammer_v_001/specs/006-feature-006-critical
 **Status**: Ready for SpecKit
+**Depends on**: 013-oauth-messaging-password
 
 ## Description
 
@@ -13,6 +14,14 @@ Fix 5 critical messaging UX issues:
 3. Password manager integration broken
 4. Decryption failures show unhelpful error
 5. Participant name shows "Unknown"
+
+**Relationship with Feature 013**: Feature 013 implements the core ReAuthModal detection logic (OAuth vs email/password, has keys vs no keys). This feature (016) extends that foundation with:
+- Full-page setup flow (`/messages/setup`) for first-time users (vs modal for unlock)
+- Password manager `autocomplete` attributes
+- "Save this password" warning at three points
+- Additional UX fixes unrelated to OAuth (viewport, decryption errors, participant names)
+
+Implement 013 first to establish the detection logic, then implement 016 for the full UX layer.
 
 ## User Scenarios
 

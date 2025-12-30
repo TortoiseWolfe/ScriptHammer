@@ -162,6 +162,47 @@ A developer deploys to GitHub Pages before configuring Supabase. The app should 
 - **Rebrand Script**: Shell script that transforms template to new project identity
 - **Supabase Mock**: Vitest mock providing full Supabase client interface for testing
 
+### 5-File Component Pattern Example
+
+All new components created by this template MUST follow the 5-file pattern:
+
+```
+src/components/Example/
+├── index.tsx                    # Re-exports
+├── Example.tsx                  # Component implementation
+├── Example.test.tsx             # Unit tests (Vitest)
+├── Example.stories.tsx          # Storybook stories
+└── Example.accessibility.test.tsx  # Accessibility tests (Pa11y)
+```
+
+**Storybook Story Example**:
+```typescript
+// Example.stories.tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { Example } from './Example';
+
+const meta: Meta<typeof Example> = {
+  title: 'Components/Example',
+  component: Example,
+  parameters: {
+    layout: 'centered',
+    docs: { description: { component: 'An example component demonstrating the 5-file pattern.' } },
+  },
+  tags: ['autodocs'],
+  argTypes: {
+    variant: { control: 'select', options: ['primary', 'secondary'] },
+    disabled: { control: 'boolean' },
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = { args: { children: 'Example' } };
+export const Primary: Story = { args: { children: 'Primary', variant: 'primary' } };
+export const Disabled: Story = { args: { children: 'Disabled', disabled: true } };
+```
+
 ## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes

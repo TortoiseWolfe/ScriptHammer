@@ -71,6 +71,29 @@ Sharing functionality is accessible to all users including those using assistive
 - NFR-003: WCAG 2.1 AA compliance for all social components
 - NFR-004: No external tracking scripts without consent
 
+### API Key Handling
+
+**Static Export Compliance**: Social sharing uses native share URLs that don't require API keys:
+
+```typescript
+// No API keys needed - direct URL construction
+const shareUrls = {
+  twitter: (url: string, text: string) =>
+    `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
+  linkedin: (url: string) =>
+    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+  facebook: (url: string) =>
+    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+  reddit: (url: string, title: string) =>
+    `https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(title)}`,
+};
+```
+
+**If ShareThis/AddThis integration is desired** (optional):
+- Store `NEXT_PUBLIC_SHARETHIS_PROPERTY_ID` in environment (public key is safe for client)
+- ShareThis loads only after user consents (Feature 019 consent framework)
+- No server-side API calls required - all client-side
+
 ### Atomic Components
 - **SocialShareButton**: Individual platform button with icon
 - **SocialShareGroup**: Container for multiple share buttons

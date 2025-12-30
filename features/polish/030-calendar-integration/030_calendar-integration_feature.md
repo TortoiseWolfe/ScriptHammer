@@ -97,6 +97,45 @@ pnpm add react-calendly
 pnpm add @calcom/embed-react
 ```
 
+### OAuth Flow (Cal.com Only)
+
+Cal.com supports OAuth for deeper integration (reading/writing bookings). This is optional and only needed if you want to:
+- Display user's bookings in your app
+- Programmatically create/cancel bookings
+- Sync with external calendars
+
+**OAuth Configuration** (Cal.com):
+```env
+# Only needed for OAuth integration (optional)
+CALCOM_CLIENT_ID=your_client_id
+CALCOM_CLIENT_SECRET=your_client_secret  # Server-side only
+```
+
+**OAuth Flow** (if using):
+```typescript
+// 1. Redirect to Cal.com authorization
+const authUrl = `https://app.cal.com/auth/oauth?client_id=${CALCOM_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code`;
+
+// 2. Handle callback via Edge Function (secrets server-side only)
+// supabase/functions/calcom-oauth/index.ts
+serve(async (req) => {
+  const code = new URL(req.url).searchParams.get('code');
+  const tokenRes = await fetch('https://api.cal.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: Deno.env.get('CALCOM_CLIENT_ID'),
+      client_secret: Deno.env.get('CALCOM_CLIENT_SECRET'),
+      code,
+      grant_type: 'authorization_code',
+    }),
+  });
+  // Store tokens securely, redirect user
+});
+```
+
+**Note**: Basic embed (US-1) does NOT require OAuth - only public embed URL needed. OAuth is only for advanced booking management features.
+
 ### Out of Scope
 - Custom calendar backend
 - Direct calendar API integration

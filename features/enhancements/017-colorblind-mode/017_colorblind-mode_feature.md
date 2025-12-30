@@ -50,6 +50,60 @@ Developers and designers can simulate various colorblind types to test their wor
 | Achromatopsia | Complete colorblind | 0.003% |
 | Achromatomaly | Partial colorblind | Rare |
 
+### Colorblind-Optimized Palettes
+
+When colorblind mode is active, the following 4 optimized palettes replace standard DaisyUI colors:
+
+```css
+/* Protanopia/Deuteranopia Safe (red-green blind) */
+:root[data-colorblind="protan"],
+:root[data-colorblind="deutan"] {
+  --primary: #0077BB;     /* Blue - replaces violet/purple */
+  --secondary: #EE7733;   /* Orange - high contrast with blue */
+  --accent: #009988;      /* Teal - distinguishable from both */
+  --success: #009988;     /* Teal - replaces green */
+  --warning: #EE7733;     /* Orange - replaces yellow */
+  --error: #CC3311;       /* Red-orange - still visible */
+  --info: #0077BB;        /* Blue */
+}
+
+/* Tritanopia Safe (blue-yellow blind) */
+:root[data-colorblind="tritan"] {
+  --primary: #EE3377;     /* Magenta - replaces blue */
+  --secondary: #009988;   /* Teal */
+  --accent: #EE7733;      /* Orange */
+  --success: #009988;     /* Teal */
+  --warning: #EE7733;     /* Orange - replaces yellow */
+  --error: #CC3311;       /* Red */
+  --info: #EE3377;        /* Magenta - replaces blue */
+}
+
+/* Achromatopsia Safe (complete colorblindness) */
+:root[data-colorblind="achroma"] {
+  --primary: #000000;     /* Black */
+  --secondary: #666666;   /* Dark gray */
+  --accent: #333333;      /* Charcoal */
+  --success: #000000;     /* Black with checkmark pattern */
+  --warning: #666666;     /* Gray with warning pattern */
+  --error: #000000;       /* Black with X pattern */
+  --info: #333333;        /* Charcoal */
+  /* Uses patterns (stripes, dots, hatching) for distinction */
+}
+
+/* High Contrast Mode */
+:root[data-colorblind="high-contrast"] {
+  --primary: #FFFFFF;
+  --secondary: #FFFF00;
+  --accent: #00FFFF;
+  --success: #00FF00;
+  --warning: #FFFF00;
+  --error: #FF0000;
+  --info: #00FFFF;
+  --base-100: #000000;
+  --base-content: #FFFFFF;
+}
+```
+
 ## Requirements
 
 ### Functional

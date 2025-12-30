@@ -2,6 +2,59 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## Current Progress (2025-12-30)
+
+### Completed
+- [x] Analyzed all 45 feature specifications
+- [x] Fixed 23 issues (P0, P1, P2, P3) directly in feature files
+- [x] Created `features/IMPLEMENTATION_ORDER.md` - **REQUIRED READING**
+- [x] Created `features/analysis/ANALYSIS_REPORT.md`
+- [x] Created `features/analysis/ACTION_ITEMS.md` (all fixed)
+
+### Next Session: Phase 1 - Specify & Wireframe
+
+**START HERE**: Feature **004-RLS Implementation**
+
+Run these 3 commands on EACH feature (in implementation order from `IMPLEMENTATION_ORDER.md`):
+
+```bash
+/speckit.specify    # Generate spec.md from *_feature.md
+/speckit.clarify    # Refine requirements interactively
+/wireframe          # Generate dark theme SVG wireframes (1400x800)
+```
+
+**STOP after wireframes for ALL 45 features. Review before continuing.**
+
+### Later: Phase 2 - Plan & Implement
+
+After wireframe review, run on each feature:
+
+```bash
+/speckit.plan       # Generate plan.md
+/speckit.checklist  # Generate checklist.md
+/speckit.tasks      # Generate tasks.md
+/speckit.analyze    # Cross-artifact consistency check
+/speckit.implement  # Execute implementation
+```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `features/IMPLEMENTATION_ORDER.md` | **45-feature sequence with dependencies** |
+| `features/analysis/ANALYSIS_REPORT.md` | Category breakdowns, scores |
+| `features/analysis/ACTION_ITEMS.md` | All 23 issues (fixed) |
+
+### First Feature to Process
+
+**004-RLS Implementation**
+- Location: `features/foundation/004-rls-implementation/004_rls-implementation_feature.md`
+- Why first: All data access depends on RLS policies
+
+---
+
 ## Repository Purpose
 
 This is a **planning template** for projects using the SpecKit workflow. It contains:

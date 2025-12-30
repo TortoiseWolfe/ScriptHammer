@@ -48,6 +48,22 @@ Users can preview how each font looks before selecting it.
 | Georgia | Serif | Long-form reading | Standard |
 | JetBrains Mono | Monospace | Code display | Standard |
 
+### Default Accessible Font
+
+**Default font**: `Inter` - Selected as the default because:
+- Optimized for screen readability across all sizes
+- Variable font with weight range 100-900
+- Large x-height improves legibility at small sizes
+- Available as system font on modern OSes (Windows 11, macOS Sonoma)
+- Open source (SIL Open Font License)
+
+**Fallback stack**:
+```css
+font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+```
+
+**Accessibility default**: Users with `prefers-reduced-motion: reduce` or using screen readers default to `System Default` to respect OS accessibility settings.
+
 ## Requirements
 
 ### Functional

@@ -65,6 +65,29 @@ type PermissionState = 'prompt' | 'granted' | 'denied';
 // 'denied' → Show "Location blocked" disabled button
 ```
 
+### Default Fallback Location
+
+When no user location is available, the map centers on the following default coordinates:
+
+```typescript
+const DEFAULT_LOCATION = {
+  lat: 40.7128,    // New York City latitude
+  lng: -74.0060,   // New York City longitude
+  zoom: 10,        // City-level zoom
+  name: 'New York City'
+};
+
+// For non-US deployments, configure via environment:
+// NEXT_PUBLIC_MAP_DEFAULT_LAT=51.5074
+// NEXT_PUBLIC_MAP_DEFAULT_LNG=-0.1278
+// NEXT_PUBLIC_MAP_DEFAULT_ZOOM=10
+```
+
+**Fallback priority**:
+1. User's granted geolocation
+2. Environment variable coordinates (`NEXT_PUBLIC_MAP_DEFAULT_*`)
+3. Hardcoded default (NYC: 40.7128, -74.0060)
+
 ## Requirements
 
 ### Functional

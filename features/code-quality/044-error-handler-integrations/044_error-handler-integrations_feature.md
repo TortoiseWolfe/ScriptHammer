@@ -4,10 +4,13 @@
 **Category**: code-quality
 **Source**: ScriptHammer_v_001 README (SPEC-060)
 **Status**: Ready for SpecKit
+**Depends on**: 019-analytics-consent
 
 ## Description
 
 Sentry/LogRocket/DataDog logging integration with toast notification system. Provides comprehensive error tracking, session replay, and user-friendly error notifications.
+
+**Third-Party Consent Requirement**: Sentry, LogRocket, and DataDog are third-party services that track user behavior and collect error data. Per the constitution's Privacy & Compliance First principle, Feature 019 (Analytics Consent Framework) MUST be implemented first. Monitoring SDKs can only initialize AFTER user grants consent for "analytics" or "functional" category.
 
 ## User Scenarios
 
@@ -94,10 +97,12 @@ React error boundaries catch and handle component errors gracefully.
 
 ### Non-Functional
 
-**Privacy**
+**Privacy & Consent**
 - NFR-001: PII scrubbing enabled by default
 - NFR-002: Session recording opt-out available
 - NFR-003: Comply with GDPR for error data
+- NFR-009: Monitoring SDKs MUST NOT initialize until user consents via Feature 019
+- NFR-010: Error boundary still works without consent (local-only, no remote logging)
 
 **Performance**
 - NFR-004: Error capture < 50ms overhead

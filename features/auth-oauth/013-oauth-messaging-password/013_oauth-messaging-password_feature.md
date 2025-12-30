@@ -4,10 +4,13 @@
 **Category**: auth-oauth
 **Source**: ScriptHammer_v_001/specs/001-oauth-messaging-password
 **Status**: Ready for SpecKit
+**Extended by**: 016-messaging-critical-fixes
 
 ## Description
 
 Update ReAuthModal to detect OAuth users without encryption keys and show "Create messaging password" mode with confirm field, instead of confusing "Enter password" prompt.
+
+**Relationship with Feature 016**: This feature (013) defines the core ReAuthModal detection and mode-switching logic. Feature 016 extends this with broader UX improvements including full-page setup flow, password manager integration, and the "Save this password" warning pattern. Implement 013 first, then 016.
 
 ## User Scenarios
 

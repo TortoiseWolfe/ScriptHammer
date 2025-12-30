@@ -4,10 +4,13 @@
 **Category**: code-quality
 **Source**: ScriptHammer_v_001 README (SPEC-063)
 **Status**: Ready for SpecKit
+**Depends on**: 019-analytics-consent
 
 ## Description
 
 Map DaisyUI themes to Disqus color schemes. Ensures Disqus comment sections visually integrate with the application's theme system across all 32 DaisyUI themes.
+
+**Third-Party Consent Requirement**: Disqus is a third-party service that tracks users. Per the constitution's Privacy & Compliance First principle, Feature 019 (Analytics Consent Framework) MUST be implemented first. Disqus embed scripts can only load AFTER user grants consent for "comments" or "third-party" category.
 
 ## User Scenarios
 
@@ -96,6 +99,11 @@ Graceful handling when exact theme match unavailable.
 **Compatibility**
 - NFR-007: Works with Disqus universal embed
 - NFR-008: Respects Disqus privacy settings
+
+**Consent Compliance**
+- NFR-009: Disqus embed MUST NOT load until user consents via Feature 019 consent framework
+- NFR-010: Show placeholder with "Enable Comments" button when consent not granted
+- NFR-011: Persist consent preference in localStorage and sync with consent manager
 
 ### Theme Mapping Table
 

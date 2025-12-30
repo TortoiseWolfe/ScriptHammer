@@ -91,18 +91,25 @@ Users access basic analytics about their payment patterns.
 - NFR-005: Keyboard navigation for all actions
 - NFR-006: ARIA live regions for updates
 
-### Components
+### Components (5-File Pattern)
+
+All components MUST follow the 5-file pattern per constitution:
 
 ```
 src/components/payments/
 ├── PaymentDashboard/
-│   ├── PaymentDashboard.tsx
-│   ├── PaymentDashboard.test.tsx
-│   ├── PaymentHistory.tsx
-│   ├── RecentTransactions.tsx
-│   ├── SubscriptionOverview.tsx
-│   └── PaymentFilters.tsx
+│   ├── index.tsx                          # Re-exports
+│   ├── PaymentDashboard.tsx               # Main component
+│   ├── PaymentDashboard.test.tsx          # Unit tests (Vitest)
+│   ├── PaymentDashboard.stories.tsx       # Storybook stories
+│   ├── PaymentDashboard.accessibility.test.tsx  # Pa11y a11y tests
+│   ├── PaymentHistory.tsx                 # Sub-component
+│   ├── RecentTransactions.tsx             # Sub-component
+│   ├── SubscriptionOverview.tsx           # Sub-component
+│   └── PaymentFilters.tsx                 # Sub-component
 ```
+
+**Note**: Sub-components (PaymentHistory, etc.) that are only used internally don't need their own 5-file structure. Only export the main PaymentDashboard component.
 
 ### Database
 

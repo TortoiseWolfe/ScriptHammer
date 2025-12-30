@@ -87,8 +87,12 @@ Users see their billing cycle information clearly.
 
 **Integration**
 - NFR-001: Sync with PayPal within 5 minutes
-- NFR-002: Handle PayPal API rate limits
-- NFR-003: Cache subscription data appropriately
+- NFR-002: Handle PayPal API rate limits (429 responses trigger exponential backoff)
+- NFR-003: Cache subscription data with 5-minute TTL in `paypal_subscriptions_cache` table
+
+**Static Export Compliance**
+- NFR-007: All PayPal API calls MUST go through `supabase/functions/paypal-subscriptions` Edge Function
+- NFR-008: PAYPAL_CLIENT_ID and PAYPAL_SECRET stored in Supabase Vault, never exposed to browser
 
 **User Experience**
 - NFR-004: Actions complete within 10 seconds
@@ -124,12 +128,110 @@ interface PayPalSubscription {
     frequency: 'MONTH' | 'YEAR';
   };
 }
+```
 
-// PayPal API endpoints
-// GET /v1/billing/subscriptions/{subscription_id}
-// POST /v1/billing/subscriptions/{subscription_id}/cancel
-// POST /v1/billing/subscriptions/{subscription_id}/suspend
-// POST /v1/billing/subscriptions/{subscription_id}/activate
+### Edge Function: PayPal Subscriptions Proxy
+
+**Static Export Compliance**: PayPal API requires `PAYPAL_CLIENT_ID` and `PAYPAL_SECRET` - secrets cannot be exposed to browser. All PayPal API calls MUST go through Supabase Edge Functions.
+
+```typescript
+// supabase/functions/paypal-subscriptions/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const PAYPAL_API = Deno.env.get('PAYPAL_MODE') === 'live'
+  ? 'https://api-m.paypal.com'
+  : 'https://api-m.sandbox.paypal.com';
+
+async function getAccessToken() {
+  const auth = btoa(`${Deno.env.get('PAYPAL_CLIENT_ID')}:${Deno.env.get('PAYPAL_SECRET')}`);
+  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials'
+  });
+  return (await res.json()).access_token;
+}
+
+serve(async (req) => {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+
+  // Verify user authentication
+  const authHeader = req.headers.get('Authorization');
+  const { data: { user }, error } = await supabase.auth.getUser(authHeader?.replace('Bearer ', ''));
+  if (error || !user) return new Response('Unauthorized', { status: 401 });
+
+  const url = new URL(req.url);
+  const subscriptionId = url.searchParams.get('id');
+  const action = url.searchParams.get('action'); // get, cancel, suspend, activate
+  const token = await getAccessToken();
+
+  if (action === 'get' || action === 'list') {
+    const res = await fetch(`${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    return new Response(await res.text(), { status: res.status });
+  }
+
+  if (['cancel', 'suspend', 'activate'].includes(action!)) {
+    const res = await fetch(`${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}/${action}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: 'User requested via dashboard' })
+    });
+    return new Response(await res.text(), { status: res.status });
+  }
+
+  return new Response('Invalid action', { status: 400 });
+});
+```
+
+### Client Usage
+
+```typescript
+// Client-side: Call Edge Function instead of PayPal directly
+const { data, error } = await supabase.functions.invoke('paypal-subscriptions', {
+  body: { id: subscriptionId, action: 'get' }
+});
+
+// Cancel subscription
+await supabase.functions.invoke('paypal-subscriptions', {
+  body: { id: subscriptionId, action: 'cancel' }
+});
+```
+
+### Database: Subscription Cache
+
+```sql
+-- supabase/migrations/041_paypal_subscriptions.sql
+CREATE TABLE IF NOT EXISTS paypal_subscriptions_cache (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  subscription_id TEXT NOT NULL UNIQUE,
+  plan_id TEXT NOT NULL,
+  plan_name TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CANCELLED')),
+  billing_amount DECIMAL(10,2) NOT NULL,
+  billing_currency TEXT NOT NULL DEFAULT 'USD',
+  billing_frequency TEXT NOT NULL CHECK (billing_frequency IN ('MONTH', 'YEAR')),
+  next_billing_date TIMESTAMPTZ,
+  cached_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT cache_ttl CHECK (cached_at > NOW() - INTERVAL '5 minutes')
+);
+
+-- RLS: Users can only see their own subscriptions
+ALTER TABLE paypal_subscriptions_cache ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users view own subscriptions" ON paypal_subscriptions_cache
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Index for user lookup
+CREATE INDEX idx_paypal_subs_user ON paypal_subscriptions_cache(user_id);
+
+-- Auto-cleanup expired cache (run via pg_cron or Edge Function)
+-- DELETE FROM paypal_subscriptions_cache WHERE cached_at < NOW() - INTERVAL '5 minutes';
 ```
 
 ### Out of Scope
