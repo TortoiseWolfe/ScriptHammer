@@ -41,7 +41,36 @@ Based on the spec, determine which wireframes are needed:
 - Forms (create/edit)
 - Special states (empty, loading, error)
 
-Present the plan to the user for approval before generating.
+#### Determine Wireframe Strategy
+
+Based on the spec complexity, choose the appropriate approach:
+
+**Multi-Page** (create multiple SVG files):
+- User flows with 3+ steps (auth, checkout, onboarding)
+- State variations needing dedicated visualization (loading, error, empty, success)
+- Different user roles with distinct views
+
+**Naming conventions**:
+| Scenario | Pattern | Example |
+|----------|---------|---------|
+| Sequential flow | `NN-step-name.svg` | `01-login.svg`, `02-register.svg` |
+| State variations | `screen-state.svg` | `dashboard-empty.svg`, `dashboard-error.svg` |
+| Role variations | `screen-role.svg` | `settings-admin.svg`, `settings-member.svg` |
+
+**Expanded Canvas** (larger than 1400x800):
+- Extensive annotations explaining complex interactions
+- Flow arrows connecting multiple components
+- Dense dashboards with many interconnected elements
+
+**Canvas options**:
+| Canvas | viewBox | Use case |
+|--------|---------|----------|
+| Standard | `0 0 1400 800` | Default for most screens |
+| Wide | `0 0 1600 800` | Extra annotation margins (100px each side) |
+| Tall | `0 0 1400 1000` | Complex vertical layouts |
+| Extended | `0 0 1600 1000` | Full annotation mode |
+
+Present your strategy recommendation to the user before generating.
 
 ### 4. Generate SVG Wireframes
 
@@ -156,6 +185,192 @@ Create SVG wireframes following the dark theme patterns from the component libra
 - Show realistic placeholder data (not "Lorem ipsum")
 - Use the sizing standards above for consistent component dimensions
 
+#### Multi-Page Flow Guidelines
+
+When creating multi-page wireframes:
+1. **Maintain consistency** - Same header/nav structure, colors, typography across all files
+2. **Add flow indicators** - Progress bars, step numbers, "Back"/"Next" button states
+3. **Include transition notes** - Annotate what action triggers navigation to next screen
+
+#### Wide Canvas Template (1600x800)
+
+For extra annotation space, use this adjusted layout:
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 800" width="1600" height="800">
+```
+
+**Adjusted positions for 1600 wide**:
+| Section | Standard (1400) | Wide (1600) |
+|---------|-----------------|-------------|
+| Desktop area | x=40 | x=140 |
+| Mobile area | x=980 | x=1080 |
+| Left annotation strip | N/A | x=20, width=100 |
+| Right annotation strip | N/A | x=1480, width=100 |
+
+**Margin-to-View Mapping:**
+| Margin | Annotates | Target coordinates |
+|--------|-----------|-------------------|
+| Left (x=20) | **Desktop** elements | x2 in range 140-940 |
+| Right (x=1480) | **Mobile** elements | x2 in range 1080-1440 |
+
+Leader lines should connect annotations to their **adjacent** view, not reach across the screen.
+
+#### Annotation Callout Template
+
+```xml
+<!-- Annotation box (place in margin area) -->
+<g class="annotation-box">
+  <rect x="20" y="130" width="100" height="45" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="70" y="148" text-anchor="middle" class="annotation">onClick</text>
+  <text x="70" y="165" text-anchor="middle" class="text-muted">→ /api/submit</text>
+</g>
+<!-- NOTE: Add leader line to the leader-lines group at end of SVG -->
+```
+
+#### Annotation Vertical Ordering (Prevent Crossing Lines)
+
+**Critical**: Order annotations in the margin to match the vertical position of their targets in the view. This prevents leader lines from crossing each other.
+
+**Process**:
+1. **List target elements** with their y-coordinates in the view
+2. **Sort by y-coordinate** (top to bottom)
+3. **Place annotations** in the margin in the same top-to-bottom order
+
+**Example** - Annotating a mobile view with 3 elements:
+
+| Target Element | Target Y | Annotation Y (margin) |
+|----------------|----------|----------------------|
+| Header | y=70 | y=100 (top) |
+| Form fields | y=200 | y=200 (middle) |
+| Submit button | y=400 | y=320 (bottom) |
+
+**Wrong** (causes crossing):
+```
+Margin          Mobile View
+┌─────┐         ┌─────────┐
+│ A3  │───┐  ┌──│ Target1 │  ← A3 points UP (crosses A1, A2)
+├─────┤   │  │  ├─────────┤
+│ A1  │───┼──┘  │ Target2 │  ← A1 crosses A3
+├─────┤   │     ├─────────┤
+│ A2  │───┴─────│ Target3 │
+└─────┘         └─────────┘
+```
+
+**Correct** (no crossing):
+```
+Margin          Mobile View
+┌─────┐         ┌─────────┐
+│ A1  │─────────│ Target1 │  ← Horizontal or slight angle
+├─────┤         ├─────────┤
+│ A2  │─────────│ Target2 │  ← Parallel lines
+├─────┤         ├─────────┤
+│ A3  │─────────│ Target3 │  ← No crossing
+└─────┘         └─────────┘
+```
+
+**Spacing guideline**: Space annotation boxes ~80-120px apart vertically in the margin.
+
+**Leader Line Coordinate Calculation**:
+
+Leader lines MUST precisely connect annotations to their target elements. Calculate exact coordinates:
+
+1. **Find the target element's position** - Note its x, y, width, height from the SVG
+2. **Calculate the connection point** on the target:
+   - Left edge: `x1 = target.x`
+   - Right edge: `x1 = target.x + target.width`
+   - Top edge: `y1 = target.y`
+   - Center: `x1 = target.x + target.width/2`, `y1 = target.y + target.height/2`
+3. **Set line endpoint (x2, y2)** at the annotation box edge facing the target
+
+Example - Annotating a button at x=300, y=200, width=100, height=36:
+```xml
+<!-- Target: Button at (300, 200) size 100x36 -->
+<!-- Annotation box at left margin -->
+<g class="annotation-box">
+  <rect x="20" y="200" width="100" height="36" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="70" y="222" text-anchor="middle" class="annotation">SUBMIT BTN</text>
+</g>
+<!-- Add to leader-lines group: x1=120 (box right edge), y1=218, x2=300 (button left edge), y2=218 -->
+```
+
+For diagonal lines, ensure the endpoint lands ON the target element, not near it.
+
+#### SVG Draw Order
+
+**Important**: In SVG, elements render in document order - later elements appear on top.
+
+When using annotations with leader lines:
+1. Place annotation boxes (rectangles + text) in the margin areas
+2. Place all `<line>` elements in a dedicated group at the END of the SVG
+
+This ensures leader lines are always visible, even when crossing over form elements or other content.
+
+#### Leader Lines Group Template
+
+Place all leader lines in a dedicated group at the END of the SVG, just before `</svg>`:
+
+```xml
+<!-- Leader lines (drawn last to appear on top of all content) -->
+<g id="leader-lines">
+  <!-- Left margin annotation lines -->
+  <line x1="120" y1="150" x2="180" y2="200" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+  <line x1="120" y1="250" x2="200" y2="280" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+
+  <!-- Right margin annotation lines -->
+  <line x1="1480" y1="150" x2="1380" y2="200" stroke="#22c55e" stroke-width="1" stroke-dasharray="4,2"/>
+</g>
+</svg>
+```
+
+**Key points:**
+- Use absolute coordinates (not relative to transform groups)
+- Group related lines with comments (left margin, right margin)
+- This group must be the LAST element before `</svg>`
+
+#### State Variation Indicators
+
+| State | Visual treatment |
+|-------|------------------|
+| Loading | Skeleton placeholders, animated spinner, disabled buttons |
+| Empty | Illustration placeholder, "No items" message, CTA |
+| Error | Red accent border, error icon, retry button |
+| Success | Green accent, checkmark icon, confirmation message |
+
+**Animated Loading Spinner Template**:
+
+Use SVG `<animateTransform>` for smooth rotation animation:
+
+```xml
+<!-- Animated loading spinner - place at desired position -->
+<g transform="translate(CENTER_X, CENTER_Y)">
+  <!-- Track circle (background) -->
+  <circle cx="0" cy="0" r="12" fill="none" stroke="#334155" stroke-width="2"/>
+  <!-- Spinning arc -->
+  <path d="M 0 -12 A 12 12 0 0 1 12 0" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-linecap="round">
+    <animateTransform
+      attributeName="transform"
+      type="rotate"
+      from="0"
+      to="360"
+      dur="1s"
+      repeatCount="indefinite"/>
+  </path>
+</g>
+```
+
+**Spinner sizes** (adjust r and path d values):
+| Size | Radius | Path d |
+|------|--------|--------|
+| Small | r=8 | `M 0 -8 A 8 8 0 0 1 8 0` |
+| Medium | r=12 | `M 0 -12 A 12 12 0 0 1 12 0` |
+| Large | r=20 | `M 0 -20 A 20 20 0 0 1 20 0` |
+
+The path draws a quarter arc. For a half-arc spinner, use:
+```xml
+<path d="M 0 -12 A 12 12 0 1 1 0 12" .../>
+```
+
 ### 5. Update the Wireframe Viewer
 
 After creating the SVG files, update `docs/design/wireframes/index.html`:
@@ -176,6 +391,37 @@ const wireframes = [
     <a href="#" data-svg="[feature-folder]/[filename].svg">
       [Wireframe Title]
       <span class="path">[Brief description]</span>
+    </a>
+  </div>
+</div>
+```
+
+#### Multi-Page Navigation
+
+For features with multiple wireframes, group them in navigation:
+
+**wireframes array** (keep related screens together):
+```javascript
+const wireframes = [
+  // ... existing
+  { path: 'auth/01-login.svg', title: 'Login' },
+  { path: 'auth/02-register.svg', title: 'Register' },
+  { path: 'auth/03-forgot-password.svg', title: 'Forgot Password' },
+];
+```
+
+**nav section** (use descriptive path hints):
+```html
+<div class="nav-section">
+  <h2>02 - Authentication</h2>
+  <div class="nav-links">
+    <a href="#" data-svg="auth/01-login.svg">
+      Login
+      <span class="path">Step 1 - Credentials</span>
+    </a>
+    <a href="#" data-svg="auth/02-register.svg">
+      Register
+      <span class="path">Step 2 - Account creation</span>
     </a>
   </div>
 </div>
