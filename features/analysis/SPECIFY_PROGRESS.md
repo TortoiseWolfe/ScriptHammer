@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 46 features (121 SVGs) |
+| wireframes complete | 46 features (123 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -136,8 +136,8 @@ All 45 features have been specified!
 | 042-payment-rls-policies | 2 | ✅ |
 | 043-group-service | 3 | ✅ |
 | 044-error-handler-integrations | 3 | ✅ |
-| 045-disqus-theme | 1 | ✅ |
-| **Total** | **121** | |
+| 045-disqus-theme | 3 | ✅ |
+| **Total** | **123** | |
 
 ### Features with spec.md needing wireframes (0)
 
