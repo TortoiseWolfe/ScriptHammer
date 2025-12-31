@@ -1,0 +1,403 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="successGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#16a34a"/>
+    </linearGradient>
+    <linearGradient id="warningGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b"/>
+      <stop offset="100%" style="stop-color:#d97706"/>
+    </linearGradient>
+    <linearGradient id="errorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ef4444"/>
+      <stop offset="100%" style="stop-color:#dc2626"/>
+    </linearGradient>
+    <linearGradient id="pipelineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="800" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="700" y="45" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">WCAG AAA Testing Pipeline &amp; CI/CD Integration</text>
+
+  <!-- Pipeline Flow Section -->
+  <rect x="40" y="70" width="1320" height="200" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="60" y="100" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">CI/CD PIPELINE FLOW</text>
+
+  <!-- Pipeline Stages -->
+  <!-- Stage 1: Code Commit -->
+  <rect x="60" y="120" width="180" height="130" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="60" y="120" width="180" height="30" rx="6" fill="url(#pipelineGrad)"/>
+  <text x="150" y="141" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">1. CODE COMMIT</text>
+  <text x="150" y="170" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Developer pushes</text>
+  <text x="150" y="185" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">code changes</text>
+  <circle cx="150" cy="220" r="15" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="150" y="225" font-family="system-ui, sans-serif" font-size="16" fill="#8b5cf6" text-anchor="middle">↑</text>
+
+  <!-- Arrow 1 -->
+  <path d="M 250 185 L 280 185" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <polygon points="280,180 290,185 280,190" fill="#8b5cf6"/>
+
+  <!-- Stage 2: Build -->
+  <rect x="300" y="120" width="180" height="130" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="300" y="120" width="180" height="30" rx="6" fill="url(#pipelineGrad)"/>
+  <text x="390" y="141" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">2. BUILD</text>
+  <text x="390" y="170" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">npm run build</text>
+  <text x="390" y="185" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Static export</text>
+  <rect x="340" y="205" width="100" height="25" rx="4" fill="#1e293b" stroke="#22c55e"/>
+  <text x="390" y="222" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="middle">Build Success</text>
+
+  <!-- Arrow 2 -->
+  <path d="M 490 185 L 520 185" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <polygon points="520,180 530,185 520,190" fill="#8b5cf6"/>
+
+  <!-- Stage 3: A11y Tests -->
+  <rect x="540" y="120" width="220" height="130" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+  <rect x="540" y="120" width="220" height="30" rx="6" fill="url(#pipelineGrad)"/>
+  <text x="650" y="141" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">3. ACCESSIBILITY TESTS</text>
+  <text x="650" y="165" font-family="system-ui, sans-serif" font-size="11" fill="#cbd5e1" text-anchor="middle">Pa11y + axe-core scan</text>
+  <text x="650" y="180" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">WCAG 2.1 AAA criteria</text>
+  <text x="650" y="195" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">All pages headless</text>
+  <rect x="570" y="210" width="70" height="25" rx="4" fill="#1e293b" stroke="#22c55e"/>
+  <text x="605" y="227" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="middle">0 Critical</text>
+  <rect x="650" y="210" width="80" height="25" rx="4" fill="#1e293b" stroke="#f59e0b"/>
+  <text x="690" y="227" font-family="system-ui, sans-serif" font-size="10" fill="#f59e0b" text-anchor="middle">2 Warnings</text>
+
+  <!-- Arrow 3 -->
+  <path d="M 770 185 L 800 185" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <polygon points="800,180 810,185 800,190" fill="#8b5cf6"/>
+
+  <!-- Stage 4: Contrast Tests -->
+  <rect x="820" y="120" width="180" height="130" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="820" y="120" width="180" height="30" rx="6" fill="url(#pipelineGrad)"/>
+  <text x="910" y="141" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">4. CONTRAST CHECK</text>
+  <text x="910" y="170" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">7:1 ratio normal text</text>
+  <text x="910" y="185" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">4.5:1 large text</text>
+  <text x="910" y="200" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">All 32 themes tested</text>
+  <rect x="860" y="210" width="100" height="25" rx="4" fill="#1e293b" stroke="#22c55e"/>
+  <text x="910" y="227" font-family="system-ui, sans-serif" font-size="10" fill="#22c55e" text-anchor="middle">AAA Pass</text>
+
+  <!-- Arrow 4 -->
+  <path d="M 1010 185 L 1040 185" stroke="#8b5cf6" stroke-width="2" fill="none"/>
+  <polygon points="1040,180 1050,185 1040,190" fill="#8b5cf6"/>
+
+  <!-- Stage 5: Deploy -->
+  <rect x="1060" y="120" width="180" height="130" rx="6" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+  <rect x="1060" y="120" width="180" height="30" rx="6" fill="url(#successGrad)"/>
+  <text x="1150" y="141" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">5. DEPLOY</text>
+  <text x="1150" y="170" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">GitHub Pages</text>
+  <text x="1150" y="185" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Static hosting</text>
+  <circle cx="1150" cy="220" r="15" fill="#22c55e" stroke="#16a34a" stroke-width="2"/>
+  <text x="1150" y="225" font-family="system-ui, sans-serif" font-size="14" fill="#fff" text-anchor="middle">✓</text>
+
+  <!-- Failure Path -->
+  <rect x="1260" y="70" width="90" height="200" rx="6" fill="#1e293b" stroke="#ef4444" stroke-dasharray="4,4"/>
+  <text x="1305" y="95" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#ef4444" text-anchor="middle">FAILURE</text>
+  <text x="1305" y="115" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8" text-anchor="middle">GATE</text>
+  <path d="M 650 250 L 650 285 L 1260 285 L 1260 170 L 1260 150" stroke="#ef4444" stroke-width="2" stroke-dasharray="4,4" fill="none"/>
+  <text x="1305" y="160" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444" text-anchor="middle">Block</text>
+  <text x="1305" y="175" font-family="system-ui, sans-serif" font-size="10" fill="#ef4444" text-anchor="middle">Deploy</text>
+  <text x="1305" y="200" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">Return to</text>
+  <text x="1305" y="215" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">developer</text>
+  <text x="1305" y="230" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8" text-anchor="middle">with report</text>
+
+  <!-- WCAG AAA Requirements Grid -->
+  <rect x="40" y="290" width="650" height="260" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="60" y="320" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">WCAG 2.1 AAA REQUIREMENTS CHECKLIST</text>
+
+  <!-- Requirements columns -->
+  <g transform="translate(60, 340)">
+    <!-- Column 1: Perceivable -->
+    <rect x="0" y="0" width="145" height="195" rx="4" fill="#334155"/>
+    <rect x="0" y="0" width="145" height="25" rx="4" fill="#8b5cf6"/>
+    <text x="72" y="17" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">PERCEIVABLE</text>
+
+    <g transform="translate(10, 35)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">7:1 contrast ratio</text>
+    </g>
+    <g transform="translate(10, 55)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Alt text all images</text>
+    </g>
+    <g transform="translate(10, 75)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">No background audio</text>
+    </g>
+    <g transform="translate(10, 95)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Text spacing OK</text>
+    </g>
+    <g transform="translate(10, 115)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Resize to 200%</text>
+    </g>
+    <g transform="translate(10, 135)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Images of text</text>
+    </g>
+    <g transform="translate(10, 155)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Reflow content</text>
+    </g>
+  </g>
+
+  <g transform="translate(215, 340)">
+    <!-- Column 2: Operable -->
+    <rect x="0" y="0" width="145" height="195" rx="4" fill="#334155"/>
+    <rect x="0" y="0" width="145" height="25" rx="4" fill="#d946ef"/>
+    <text x="72" y="17" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">OPERABLE</text>
+
+    <g transform="translate(10, 35)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Keyboard only</text>
+    </g>
+    <g transform="translate(10, 55)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">No keyboard trap</text>
+    </g>
+    <g transform="translate(10, 75)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">No time limits</text>
+    </g>
+    <g transform="translate(10, 95)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Skip links</text>
+    </g>
+    <g transform="translate(10, 115)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">44×44px targets</text>
+    </g>
+    <g transform="translate(10, 135)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Focus visible (2px)</text>
+    </g>
+    <g transform="translate(10, 155)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">No motion triggers</text>
+    </g>
+  </g>
+
+  <g transform="translate(370, 340)">
+    <!-- Column 3: Understandable -->
+    <rect x="0" y="0" width="145" height="195" rx="4" fill="#334155"/>
+    <rect x="0" y="0" width="145" height="25" rx="4" fill="#22c55e"/>
+    <text x="72" y="17" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">UNDERSTANDABLE</text>
+
+    <g transform="translate(10, 35)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Reading level ≤9</text>
+    </g>
+    <g transform="translate(10, 55)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Abbreviations</text>
+    </g>
+    <g transform="translate(10, 75)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Consistent nav</text>
+    </g>
+    <g transform="translate(10, 95)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Error prevention</text>
+    </g>
+    <g transform="translate(10, 115)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Help available</text>
+    </g>
+    <g transform="translate(10, 135)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Language declared</text>
+    </g>
+    <g transform="translate(10, 155)">
+      <circle cx="6" cy="6" r="5" fill="#f59e0b"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#f59e0b">Change on focus ⚠</text>
+    </g>
+  </g>
+
+  <g transform="translate(525, 340)">
+    <!-- Column 4: Robust -->
+    <rect x="0" y="0" width="145" height="195" rx="4" fill="#334155"/>
+    <rect x="0" y="0" width="145" height="25" rx="4" fill="#06b6d4"/>
+    <text x="72" y="17" font-family="system-ui, sans-serif" font-size="11" font-weight="600" fill="#fff" text-anchor="middle">ROBUST</text>
+
+    <g transform="translate(10, 35)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Valid HTML</text>
+    </g>
+    <g transform="translate(10, 55)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">ARIA landmarks</text>
+    </g>
+    <g transform="translate(10, 75)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Form labels</text>
+    </g>
+    <g transform="translate(10, 95)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Live regions</text>
+    </g>
+    <g transform="translate(10, 115)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Status messages</text>
+    </g>
+    <g transform="translate(10, 135)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Screen reader OK</text>
+    </g>
+    <g transform="translate(10, 155)">
+      <circle cx="6" cy="6" r="5" fill="#22c55e"/>
+      <text x="18" y="10" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Name/role/value</text>
+    </g>
+  </g>
+
+  <!-- Dev Tooling Section -->
+  <rect x="710" y="290" width="650" height="260" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="730" y="320" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">DEVELOPER TOOLING</text>
+
+  <!-- Tool 1: Real-time Console -->
+  <rect x="730" y="340" width="195" height="90" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="730" y="340" width="195" height="25" rx="6" fill="#1e293b"/>
+  <text x="827" y="357" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#8b5cf6" text-anchor="middle">CONSOLE WARNINGS</text>
+  <text x="740" y="380" font-family="system-ui, sans-serif" font-size="9" fill="#f59e0b">⚠ Missing alt: &lt;img src="hero.png"&gt;</text>
+  <text x="740" y="395" font-family="system-ui, sans-serif" font-size="9" fill="#ef4444">✕ Low contrast: #777 on #fff</text>
+  <text x="740" y="410" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">✓ Focus visible on all buttons</text>
+
+  <!-- Tool 2: Storybook Panel -->
+  <rect x="935" y="340" width="195" height="90" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="935" y="340" width="195" height="25" rx="6" fill="#1e293b"/>
+  <text x="1032" y="357" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#d946ef" text-anchor="middle">STORYBOOK A11Y</text>
+  <text x="945" y="378" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Component: Button</text>
+  <rect x="945" y="385" width="80" height="16" rx="3" fill="#22c55e"/>
+  <text x="985" y="396" font-family="system-ui, sans-serif" font-size="9" fill="#fff" text-anchor="middle">0 violations</text>
+  <text x="1035" y="396" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">2 passes</text>
+  <text x="1095" y="396" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">0 incomplete</text>
+  <text x="945" y="420" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">axe-core • WCAG AAA • Best practices</text>
+
+  <!-- Tool 3: Test Helpers -->
+  <rect x="1140" y="340" width="195" height="90" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="1140" y="340" width="195" height="25" rx="6" fill="#1e293b"/>
+  <text x="1237" y="357" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#22c55e" text-anchor="middle">TEST HELPERS</text>
+  <text x="1150" y="378" font-family="monospace" font-size="8" fill="#94a3b8">it('has no a11y issues',</text>
+  <text x="1150" y="390" font-family="monospace" font-size="8" fill="#94a3b8">  async () =&gt; {</text>
+  <text x="1150" y="402" font-family="monospace" font-size="8" fill="#8b5cf6">  await checkA11y(page);</text>
+  <text x="1150" y="414" font-family="monospace" font-size="8" fill="#94a3b8">});</text>
+
+  <!-- Report Output -->
+  <rect x="730" y="445" width="600" height="90" rx="6" fill="#334155" stroke="#475569"/>
+  <rect x="730" y="445" width="600" height="25" rx="6" fill="#0f172a"/>
+  <text x="1030" y="462" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1" text-anchor="middle">AUTOMATED REPORT OUTPUT</text>
+
+  <g transform="translate(750, 480)">
+    <text x="0" y="0" font-family="monospace" font-size="9" fill="#22c55e">✓ 45/45 pages scanned</text>
+    <text x="0" y="15" font-family="monospace" font-size="9" fill="#22c55e">✓ 0 critical violations</text>
+    <text x="0" y="30" font-family="monospace" font-size="9" fill="#f59e0b">⚠ 2 minor warnings (documented)</text>
+  </g>
+  <g transform="translate(950, 480)">
+    <text x="0" y="0" font-family="monospace" font-size="9" fill="#22c55e">✓ Contrast: 7:1 all text</text>
+    <text x="0" y="15" font-family="monospace" font-size="9" fill="#22c55e">✓ Touch targets: ≥44px</text>
+    <text x="0" y="30" font-family="monospace" font-size="9" fill="#22c55e">✓ Focus visible: all elements</text>
+  </g>
+  <g transform="translate(1150, 480)">
+    <text x="0" y="0" font-family="monospace" font-size="9" fill="#cbd5e1">Score: 98/100</text>
+    <text x="0" y="15" font-family="monospace" font-size="9" fill="#64748b">Time: 4.2s</text>
+    <text x="0" y="30" font-family="monospace" font-size="9" fill="#64748b">Saved to /reports/</text>
+  </g>
+
+  <!-- Testing Strategy -->
+  <rect x="40" y="565" width="1320" height="100" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="60" y="595" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">TESTING STRATEGY</text>
+
+  <!-- Strategy items -->
+  <g transform="translate(60, 615)">
+    <rect x="0" y="0" width="200" height="35" rx="4" fill="#334155" stroke="#8b5cf6"/>
+    <circle cx="15" cy="17" r="8" fill="#8b5cf6"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">1</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">Automated Scanning</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Pa11y + axe-core CI</text>
+  </g>
+
+  <g transform="translate(280, 615)">
+    <rect x="0" y="0" width="200" height="35" rx="4" fill="#334155" stroke="#d946ef"/>
+    <circle cx="15" cy="17" r="8" fill="#d946ef"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">2</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">Component Testing</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Vitest + Testing Library</text>
+  </g>
+
+  <g transform="translate(500, 615)">
+    <rect x="0" y="0" width="200" height="35" rx="4" fill="#334155" stroke="#22c55e"/>
+    <circle cx="15" cy="17" r="8" fill="#22c55e"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">3</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">Screen Reader Audit</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">NVDA/VoiceOver manual</text>
+  </g>
+
+  <g transform="translate(720, 615)">
+    <rect x="0" y="0" width="200" height="35" rx="4" fill="#334155" stroke="#f59e0b"/>
+    <circle cx="15" cy="17" r="8" fill="#f59e0b"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">4</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">Keyboard Navigation</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Tab order + focus test</text>
+  </g>
+
+  <g transform="translate(940, 615)">
+    <rect x="0" y="0" width="200" height="35" rx="4" fill="#334155" stroke="#06b6d4"/>
+    <circle cx="15" cy="17" r="8" fill="#06b6d4"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">5</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">User Testing</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Disability user feedback</text>
+  </g>
+
+  <g transform="translate(1160, 615)">
+    <rect x="0" y="0" width="180" height="35" rx="4" fill="#334155" stroke="#ef4444"/>
+    <circle cx="15" cy="17" r="8" fill="#ef4444"/>
+    <text x="15" y="21" font-family="system-ui, sans-serif" font-size="10" fill="#fff" text-anchor="middle">6</text>
+    <text x="35" y="14" font-family="system-ui, sans-serif" font-size="10" font-weight="600" fill="#cbd5e1">Regression Guard</text>
+    <text x="35" y="27" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Snapshot + baseline</text>
+  </g>
+
+  <!-- Success Metrics -->
+  <rect x="40" y="680" width="1320" height="70" rx="8" fill="#0f172a" stroke="#22c55e" stroke-width="1"/>
+  <text x="60" y="710" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#22c55e">SUCCESS METRICS</text>
+
+  <g transform="translate(200, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">100%</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Pages AAA compliant</text>
+  </g>
+  <g transform="translate(380, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">7:1</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Contrast ratio</text>
+  </g>
+  <g transform="translate(520, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">44px</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Min touch target</text>
+  </g>
+  <g transform="translate(680, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">0</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Critical violations</text>
+  </g>
+  <g transform="translate(800, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">&lt;2s</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Dev feedback latency</text>
+  </g>
+  <g transform="translate(950, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">95%+</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Regressions caught</text>
+  </g>
+  <g transform="translate(1120, 700)">
+    <text x="0" y="0" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">90d</text>
+    <text x="0" y="18" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">History retention</text>
+  </g>
+
+  <!-- Watermark -->
+  <text x="1360" y="780" font-family="system-ui, sans-serif" font-size="9" fill="#475569" text-anchor="end">GENERATED BY: Claude Code /wireframe</text>
+  <text x="1360" y="792" font-family="system-ui, sans-serif" font-size="9" fill="#475569" text-anchor="end">SOURCE: features/foundation/001-wcag-aa-compliance/spec.md | DATE: 2025-12-30</text>
+</svg>
