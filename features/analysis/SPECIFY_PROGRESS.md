@@ -6,14 +6,14 @@ Last updated: 2025-12-31
 
 | Status | Count |
 |--------|-------|
-| spec.md complete | 33 |
-| spec.md pending | 12 |
+| spec.md complete | 39 |
+| spec.md pending | 6 |
 | wireframes complete | 10 features (24 SVGs) |
 | **Total Features** | **45** |
 
 ---
 
-## Completed (33 features have spec.md)
+## Completed (39 features have spec.md)
 
 ### Foundation (7/7)
 - [x] 000-rls-implementation
@@ -52,16 +52,16 @@ Last updated: 2025-12-31
 - [x] 025-blog-social-features
 - [x] 026-unified-messaging-sidebar
 
-### Polish (1/4)
+### Polish (4/4)
 - [x] 027-ux-polish
-- [ ] 028-enhanced-geolocation
-- [ ] 029-seo-editorial-assistant
-- [ ] 030-calendar-integration
+- [x] 028-enhanced-geolocation
+- [x] 029-seo-editorial-assistant
+- [x] 030-calendar-integration
 
-### Testing (0/7)
-- [ ] 031-standardize-test-users
-- [ ] 032-signup-e2e-tests
-- [ ] 033-seo-library-tests
+### Testing (3/7)
+- [x] 031-standardize-test-users
+- [x] 032-signup-e2e-tests
+- [x] 033-seo-library-tests
 - [ ] 034-blog-library-tests
 - [ ] 035-messaging-service-tests
 - [ ] 036-auth-component-tests
@@ -81,18 +81,12 @@ Last updated: 2025-12-31
 
 ---
 
-## Pending /specify (12 features)
+## Pending /specify (6 features)
 
 Run `/speckit.specify` then `/speckit.clarify` on these:
 
 | # | Feature | Category |
 |---|---------|----------|
-| 028 | enhanced-geolocation | polish |
-| 029 | seo-editorial-assistant | polish |
-| 030 | calendar-integration | polish |
-| 031 | standardize-test-users | testing |
-| 032 | signup-e2e-tests | testing |
-| 033 | seo-library-tests | testing |
 | 034 | blog-library-tests | testing |
 | 035 | messaging-service-tests | testing |
 | 036 | auth-component-tests | testing |
