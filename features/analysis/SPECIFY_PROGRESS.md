@@ -6,10 +6,10 @@ Last updated: 2025-12-31
 
 | Status | Count |
 |--------|-------|
-| spec.md complete | 45 |
+| spec.md complete | 46 |
 | spec.md pending | 0 |
 | wireframes complete | 46 features (123 SVGs) |
-| **Total Features** | **45** |
+| **Total Features** | **46** |
 
 ---
 
@@ -83,7 +83,7 @@ Last updated: 2025-12-31
 
 ## Pending /specify (0 features)
 
-All 45 features have been specified!
+All 46 features have been specified!
 
 ---
 

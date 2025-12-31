@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Purpose
 
-This folder contains **45 feature specifications** (PRPs) for ScriptHammer, ready for the SpecKit workflow.
+This folder contains **46 feature specifications** (PRPs) for ScriptHammer, ready for the SpecKit workflow.
 
 ## Folder Structure
 
 ```
 features/
-├── foundation/       (001-006) Auth, a11y, security, template
+├── foundation/       (000-006) RLS, Auth, a11y, security, template
 ├── core-features/    (007-012) Messaging, blog, accounts
 ├── auth-oauth/       (013-016) OAuth UX improvements
 ├── enhancements/     (017-021) PWA, analytics, maps

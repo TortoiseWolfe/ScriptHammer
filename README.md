@@ -2,11 +2,11 @@
 
 > Project planning template with SpecKit specifications and interactive wireframe viewer. Forked from [FirstFrame](https://github.com/TortoiseWolfe/First-Frame).
 
-## 🛠️ Implementation Commands (45 features)
+## 🛠️ Implementation Commands (46 features)
 
 **Legend:** 🔵 **Plan** | 🟡 *Checklist* | 🟠 `Tasks` | 🟣 Analyze | ✅ ~~Done~~
 
-**Progress:** 🔵 **45** / 🟡 *0* / 🟠 `0` / 🟣 0 / ✅ ~~0~~
+**Progress:** 🔵 **46** / 🟡 *0* / 🟠 `0` / 🟣 0 / ✅ ~~0~~
 
 ### Foundation
 
@@ -1040,7 +1040,7 @@
 
 ---
 
-## 📋 Wireframe Commands (45 features)
+## 📋 Wireframe Commands (46 features)
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 

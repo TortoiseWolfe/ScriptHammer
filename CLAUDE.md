@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Current Progress (2025-12-30)
 
 ### Completed
-- [x] Analyzed all 45 feature specifications
+- [x] Analyzed all 46 feature specifications
 - [x] Fixed 23 issues (P0, P1, P2, P3) directly in feature files
 - [x] Created `features/IMPLEMENTATION_ORDER.md` - **REQUIRED READING**
 - [x] Created `features/analysis/ANALYSIS_REPORT.md`
@@ -15,7 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Next Session: Phase 1 - Specify & Wireframe
 
-**START HERE**: Feature **004-RLS Implementation**
+**START HERE**: Feature **000-rls-implementation**
 
 Run these 3 commands on EACH feature (in implementation order from `IMPLEMENTATION_ORDER.md`):
 
@@ -25,7 +25,7 @@ Run these 3 commands on EACH feature (in implementation order from `IMPLEMENTATI
 /wireframe          # Generate dark theme SVG wireframes (1400x800)
 ```
 
-**STOP after wireframes for ALL 45 features. Review before continuing.**
+**STOP after wireframes for ALL 46 features. Review before continuing.**
 
 ### Later: Phase 2 - Plan & Implement
 
@@ -43,14 +43,14 @@ After wireframe review, run on each feature:
 
 | File | Purpose |
 |------|---------|
-| `features/IMPLEMENTATION_ORDER.md` | **45-feature sequence with dependencies** |
+| `features/IMPLEMENTATION_ORDER.md` | **46-feature sequence with dependencies** |
 | `features/analysis/ANALYSIS_REPORT.md` | Category breakdowns, scores |
 | `features/analysis/ACTION_ITEMS.md` | All 23 issues (fixed) |
 
 ### First Feature to Process
 
-**004-RLS Implementation**
-- Location: `features/foundation/004-rls-implementation/004_rls-implementation_feature.md`
+**000-rls-implementation**
+- Location: `features/foundation/000-rls-implementation/000_rls-implementation_feature.md`
 - Why first: All data access depends on RLS policies
 
 ---
@@ -76,7 +76,7 @@ Track progress across two files when running SpecKit workflow in other terminals
 | 4. Analyze | `/speckit.analyze` | 🔵 **Bold** | ✅ ~~Strike~~ |
 | 5. Implement | `/speckit.implement` | 🔵 **Bold** | ✅ ~~Strike~~ |
 
-Progress line: `**Progress:** 🔵 **45** / 🟡 *0* / 🟠 \`0\` / 🟣 0 / ✅ ~~0~~`
+Progress line: `**Progress:** 🔵 **46** / 🟡 *0* / 🟠 \`0\` / 🟣 0 / ✅ ~~0~~`
 
 ### On-Demand Progress Check
 
@@ -105,9 +105,9 @@ Both files should stay in sync for implementation phases.
 
 | Metric | Value |
 |--------|-------|
-| spec.md complete | 45/45 |
-| Wireframes complete | 14 features (37 SVGs) |
-| Implementation phase | All 45 at Phase 1 (🔵 ready for /plan) |
+| spec.md complete | 46/46 |
+| Wireframes complete | 46 features (123 SVGs) |
+| Implementation phase | All 46 at Phase 1 (🔵 ready for /plan) |
 
 ---
 
@@ -137,13 +137,13 @@ See `.specify/memory/constitution.md` for full details including:
 
 ## Feature Inventory
 
-This project has **45 feature specifications** organized into 9 categories.
+This project has **46 feature specifications** organized into 9 categories.
 See `.specify/memory/spec-inventory.md` for the complete mapping table.
 
 ### Category Structure
 ```
 features/
-├── foundation/       (001-006) Auth, a11y, security, template
+├── foundation/       (000-006) RLS, Auth, a11y, security, template
 ├── core-features/    (007-012) Messaging, blog, accounts
 ├── auth-oauth/       (013-016) OAuth UX improvements
 ├── enhancements/     (017-021) PWA, analytics, maps

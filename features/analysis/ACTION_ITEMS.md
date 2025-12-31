@@ -190,7 +190,7 @@
 
 ### All Features Ready for SpecKit
 
-All 45 features have been reviewed and all identified issues have been fixed directly in the feature files. The features are now ready for the SpecKit workflow.
+All 46 features have been reviewed and all identified issues have been fixed directly in the feature files. The features are now ready for the SpecKit workflow.
 
 ### Recommended Wave Order
 
@@ -232,7 +232,7 @@ Based on dependency analysis, implement in this order:
 
 ### Blocking Chain 1: Auth -> All
 ```
-004-RLS -> 003-Auth -> Everything authenticated
+000-RLS -> 003-Auth -> Everything authenticated
 ```
 **Status**: Dependencies documented in features
 
