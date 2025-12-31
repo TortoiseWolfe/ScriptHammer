@@ -6,7 +6,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~10 done~~ / **27 need SVG** / *8 need spec*
+**Progress:** ~~13 done~~ / **24 need SVG** / *8 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -17,7 +17,7 @@
 
 ~~`/wireframe features/foundation/003-user-authentication/spec.md`~~
 
-**`/wireframe features/foundation/004-mobile-first-design/spec.md`**
+~~`/wireframe features/foundation/004-mobile-first-design/spec.md`~~
 
 ~~`/wireframe features/foundation/005-security-hardening/spec.md`~~
 
@@ -26,7 +26,7 @@
 ### Core Features
 ~~`/wireframe features/core-features/007-e2e-testing-framework/spec.md`~~
 
-**`/wireframe features/core-features/008-on-the-account/spec.md`**
+~~`/wireframe features/core-features/008-on-the-account/spec.md`~~
 
 ~~`/wireframe features/core-features/009-user-messaging-system/spec.md`~~
 
@@ -37,7 +37,7 @@
 ~~`/wireframe features/core-features/012-welcome-message-architecture/spec.md`~~
 
 ### Auth OAuth
-**`/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md`**
+~~`/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md`~~
 
 **`/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md`**
 

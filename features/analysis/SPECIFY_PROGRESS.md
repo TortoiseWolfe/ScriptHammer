@@ -6,14 +6,14 @@ Last updated: 2025-12-31
 
 | Status | Count |
 |--------|-------|
-| spec.md complete | 39 |
-| spec.md pending | 6 |
-| wireframes complete | 10 features (24 SVGs) |
+| spec.md complete | 43 |
+| spec.md pending | 2 |
+| wireframes complete | 13 features (33 SVGs) |
 | **Total Features** | **45** |
 
 ---
 
-## Completed (39 features have spec.md)
+## Completed (40 features have spec.md)
 
 ### Foundation (7/7)
 - [x] 000-rls-implementation
@@ -58,14 +58,14 @@ Last updated: 2025-12-31
 - [x] 029-seo-editorial-assistant
 - [x] 030-calendar-integration
 
-### Testing (3/7)
+### Testing (7/7) COMPLETE
 - [x] 031-standardize-test-users
 - [x] 032-signup-e2e-tests
 - [x] 033-seo-library-tests
-- [ ] 034-blog-library-tests
-- [ ] 035-messaging-service-tests
-- [ ] 036-auth-component-tests
-- [ ] 037-game-a11y-tests
+- [x] 034-blog-library-tests
+- [x] 035-messaging-service-tests
+- [x] 036-auth-component-tests
+- [x] 037-game-a11y-tests
 
 ### Payments (5/6)
 - [x] 038-payment-dashboard
@@ -81,16 +81,12 @@ Last updated: 2025-12-31
 
 ---
 
-## Pending /specify (6 features)
+## Pending /specify (2 features)
 
 Run `/speckit.specify` then `/speckit.clarify` on these:
 
 | # | Feature | Category |
 |---|---------|----------|
-| 034 | blog-library-tests | testing |
-| 035 | messaging-service-tests | testing |
-| 036 | auth-component-tests | testing |
-| 037 | game-a11y-tests | testing |
 | 041 | paypal-subscriptions | payments |
 | 044 | error-handler-integrations | code-quality |
 | 045 | disqus-theme | code-quality |
@@ -105,22 +101,24 @@ Run `/speckit.specify` then `/speckit.clarify` on these:
 | 001-wcag-aa-compliance | 2 | ✅ |
 | 002-cookie-consent | 2 | ✅ |
 | 003-user-authentication | 3 | ✅ |
+| 004-mobile-first-design | 4 | ✅ |
 | 005-security-hardening | 2 | ✅ |
 | 006-template-fork-experience | 2 | ✅ |
 | 007-e2e-testing-framework | 2 | ✅ |
+| 008-on-the-account | 2 | ✅ |
 | 009-user-messaging-system | 4 | ✅ |
 | 011-group-chats | 4 | ✅ |
 | 012-welcome-message-architecture | 2 | ✅ |
-| **Total** | **24** | |
+| 013-oauth-messaging-password | 3 | ✅ |
+| **Total** | **33** | |
 
-### Features with spec.md needing wireframes (22)
+### Features with spec.md needing wireframes (19)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **013-oauth-messaging-password** | auth-oauth |
-| 14 | 016-messaging-critical-fixes | auth-oauth |
+| Next → | **016-messaging-critical-fixes** | auth-oauth |
 | 15 | 014-admin-welcome-email-gate | auth-oauth |
 | 16 | 015-oauth-display-name | auth-oauth |
 | 17 | 043-group-service | payments |
@@ -138,6 +136,4 @@ Following IMPLEMENTATION_ORDER.md sequence:
 | 29 | 018-font-switcher | enhancements |
 | 30 | 020-pwa-background-sync | enhancements |
 | 31 | 021-geolocation-map | enhancements |
-| 32 | 008-on-the-account | core-features |
-| 33 | 004-mobile-first-design | foundation |
-| 34 | 019-google-analytics | enhancements |
+| 32 | 019-google-analytics | enhancements |
