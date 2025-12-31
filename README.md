@@ -1044,7 +1044,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~25 done~~ / **20 need SVG** / *0 need spec*
+**Progress:** ~~29 done~~ / **16 need SVG** / *0 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -1101,14 +1101,14 @@
 
 ~~`/wireframe features/integrations/024-payment-integration/spec.md`~~
 
-**`/wireframe features/integrations/025-blog-social-features/spec.md`**
+~~`/wireframe features/integrations/025-blog-social-features/spec.md`~~
 
-**`/wireframe features/integrations/026-unified-messaging-sidebar/spec.md`**
+~~`/wireframe features/integrations/026-unified-messaging-sidebar/spec.md`~~
 
 ### Polish
-**`/wireframe features/polish/027-ux-polish/spec.md`**
+~~`/wireframe features/polish/027-ux-polish/spec.md`~~
 
-**`/wireframe features/polish/028-enhanced-geolocation/spec.md`**
+~~`/wireframe features/polish/028-enhanced-geolocation/spec.md`~~
 
 **`/wireframe features/polish/029-seo-editorial-assistant/spec.md`**
 

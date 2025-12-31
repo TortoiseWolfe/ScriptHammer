@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 25 features (66 SVGs) |
+| wireframes complete | 29 features (77 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -116,19 +116,19 @@ All 45 features have been specified!
 | 022-web3forms-integration | 3 | ✅ |
 | 023-emailjs-integration | 2 | ✅ |
 | 024-payment-integration | 4 | ✅ |
-| **Total** | **66** | |
+| 025-blog-social-features | 3 | ✅ |
+| 026-unified-messaging-sidebar | 3 | ✅ |
+| 027-ux-polish | 2 | ✅ |
+| 028-enhanced-geolocation | 3 | ✅ |
+| **Total** | **77** | |
 
-### Features with spec.md needing wireframes (20)
+### Features with spec.md needing wireframes (16)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **025-blog-social-features** | integrations |
-| 26 | 026-unified-messaging-sidebar | integrations |
-| 27 | 027-ux-polish | polish |
-| 28 | 028-enhanced-geolocation | polish |
-| 29 | 029-seo-editorial-assistant | polish |
+| Next → | **029-seo-editorial-assistant** | polish |
 | 30 | 030-calendar-integration | polish |
 | 31 | 031-standardize-test-users | testing |
 | 32 | 032-signup-e2e-tests | testing |
