@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 38 features (101 SVGs) |
+| wireframes complete | 43 features (114 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -128,21 +128,21 @@ All 45 features have been specified!
 | 034-blog-library-tests | 2 | ✅ |
 | 035-messaging-service-tests | 2 | ✅ |
 | 036-auth-component-tests | 2 | ✅ |
+| 037-game-a11y-tests | 2 | ✅ |
 | 038-payment-dashboard | 3 | ✅ |
-| **Total** | **101** | |
+| 039-payment-offline-queue | 2 | ✅ |
+| 040-payment-retry-ui | 3 | ✅ |
+| 041-paypal-subscriptions | 4 | ✅ |
+| 042-payment-rls-policies | 2 | ✅ |
+| **Total** | **114** | |
 
-### Features with spec.md needing wireframes (7)
+### Features with spec.md needing wireframes (3)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **037-game-a11y-tests** | testing |
-| 39 | 039-payment-offline-queue | payments |
-| 40 | 040-payment-retry-ui | payments |
-| 41 | 041-paypal-subscriptions | payments |
-| 42 | 042-payment-rls-policies | payments |
-| 43 | 043-group-service | payments |
+| Next → | **043-group-service** | payments |
 | 44 | 044-error-handler-integrations | code-quality |
 | 45 | 045-disqus-theme | code-quality |
 
