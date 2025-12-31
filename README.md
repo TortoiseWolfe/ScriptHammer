@@ -2,6 +2,1044 @@
 
 > Project planning template with SpecKit specifications and interactive wireframe viewer. Forked from [FirstFrame](https://github.com/TortoiseWolfe/First-Frame).
 
+## 🛠️ Implementation Commands (45 features)
+
+**Legend:** 🔵 **Plan** | 🟡 *Checklist* | 🟠 `Tasks` | 🟣 Analyze | ✅ ~~Done~~
+
+**Progress:** 🔵 **45** / 🟡 *0* / 🟠 `0` / 🟣 0 / ✅ ~~0~~
+
+### Foundation
+
+#### 000-rls-implementation
+🔵 **Plan**
+```
+/speckit.plan features/foundation/000-rls-implementation/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/000-rls-implementation/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/000-rls-implementation/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/000-rls-implementation/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/000-rls-implementation/spec.md
+```
+
+#### 001-wcag-aa-compliance
+🔵 **Plan**
+```
+/speckit.plan features/foundation/001-wcag-aa-compliance/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/001-wcag-aa-compliance/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/001-wcag-aa-compliance/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/001-wcag-aa-compliance/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/001-wcag-aa-compliance/spec.md
+```
+
+#### 002-cookie-consent
+🔵 **Plan**
+```
+/speckit.plan features/foundation/002-cookie-consent/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/002-cookie-consent/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/002-cookie-consent/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/002-cookie-consent/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/002-cookie-consent/spec.md
+```
+
+#### 003-user-authentication
+🔵 **Plan**
+```
+/speckit.plan features/foundation/003-user-authentication/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/003-user-authentication/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/003-user-authentication/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/003-user-authentication/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/003-user-authentication/spec.md
+```
+
+#### 004-mobile-first-design
+🔵 **Plan**
+```
+/speckit.plan features/foundation/004-mobile-first-design/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/004-mobile-first-design/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/004-mobile-first-design/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/004-mobile-first-design/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/004-mobile-first-design/spec.md
+```
+
+#### 005-security-hardening
+🔵 **Plan**
+```
+/speckit.plan features/foundation/005-security-hardening/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/005-security-hardening/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/005-security-hardening/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/005-security-hardening/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/005-security-hardening/spec.md
+```
+
+#### 006-template-fork-experience
+🔵 **Plan**
+```
+/speckit.plan features/foundation/006-template-fork-experience/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/foundation/006-template-fork-experience/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/foundation/006-template-fork-experience/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/foundation/006-template-fork-experience/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/foundation/006-template-fork-experience/spec.md
+```
+
+### Core Features
+
+#### 007-e2e-testing-framework
+🔵 **Plan**
+```
+/speckit.plan features/core-features/007-e2e-testing-framework/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/007-e2e-testing-framework/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/007-e2e-testing-framework/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/007-e2e-testing-framework/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/007-e2e-testing-framework/spec.md
+```
+
+#### 008-on-the-account
+🔵 **Plan**
+```
+/speckit.plan features/core-features/008-on-the-account/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/008-on-the-account/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/008-on-the-account/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/008-on-the-account/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/008-on-the-account/spec.md
+```
+
+#### 009-user-messaging-system
+🔵 **Plan**
+```
+/speckit.plan features/core-features/009-user-messaging-system/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/009-user-messaging-system/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/009-user-messaging-system/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/009-user-messaging-system/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/009-user-messaging-system/spec.md
+```
+
+#### 010-unified-blog-content
+🔵 **Plan**
+```
+/speckit.plan features/core-features/010-unified-blog-content/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/010-unified-blog-content/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/010-unified-blog-content/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/010-unified-blog-content/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/010-unified-blog-content/spec.md
+```
+
+#### 011-group-chats
+🔵 **Plan**
+```
+/speckit.plan features/core-features/011-group-chats/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/011-group-chats/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/011-group-chats/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/011-group-chats/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/011-group-chats/spec.md
+```
+
+#### 012-welcome-message-architecture
+🔵 **Plan**
+```
+/speckit.plan features/core-features/012-welcome-message-architecture/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/core-features/012-welcome-message-architecture/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/core-features/012-welcome-message-architecture/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/core-features/012-welcome-message-architecture/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/core-features/012-welcome-message-architecture/spec.md
+```
+
+### Auth OAuth
+
+#### 013-oauth-messaging-password
+🔵 **Plan**
+```
+/speckit.plan features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+
+#### 014-admin-welcome-email-gate
+🔵 **Plan**
+```
+/speckit.plan features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+
+#### 015-oauth-display-name
+🔵 **Plan**
+```
+/speckit.plan features/auth-oauth/015-oauth-display-name/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/auth-oauth/015-oauth-display-name/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/auth-oauth/015-oauth-display-name/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/auth-oauth/015-oauth-display-name/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/auth-oauth/015-oauth-display-name/spec.md
+```
+
+#### 016-messaging-critical-fixes
+🔵 **Plan**
+```
+/speckit.plan features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+
+### Enhancements
+
+#### 017-colorblind-mode
+🔵 **Plan**
+```
+/speckit.plan features/enhancements/017-colorblind-mode/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/enhancements/017-colorblind-mode/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/enhancements/017-colorblind-mode/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/enhancements/017-colorblind-mode/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/enhancements/017-colorblind-mode/spec.md
+```
+
+#### 018-font-switcher
+🔵 **Plan**
+```
+/speckit.plan features/enhancements/018-font-switcher/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/enhancements/018-font-switcher/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/enhancements/018-font-switcher/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/enhancements/018-font-switcher/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/enhancements/018-font-switcher/spec.md
+```
+
+#### 019-google-analytics
+🔵 **Plan**
+```
+/speckit.plan features/enhancements/019-google-analytics/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/enhancements/019-google-analytics/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/enhancements/019-google-analytics/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/enhancements/019-google-analytics/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/enhancements/019-google-analytics/spec.md
+```
+
+#### 020-pwa-background-sync
+🔵 **Plan**
+```
+/speckit.plan features/enhancements/020-pwa-background-sync/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/enhancements/020-pwa-background-sync/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/enhancements/020-pwa-background-sync/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/enhancements/020-pwa-background-sync/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/enhancements/020-pwa-background-sync/spec.md
+```
+
+#### 021-geolocation-map
+🔵 **Plan**
+```
+/speckit.plan features/enhancements/021-geolocation-map/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/enhancements/021-geolocation-map/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/enhancements/021-geolocation-map/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/enhancements/021-geolocation-map/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/enhancements/021-geolocation-map/spec.md
+```
+
+### Integrations
+
+#### 022-web3forms-integration
+🔵 **Plan**
+```
+/speckit.plan features/integrations/022-web3forms-integration/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/integrations/022-web3forms-integration/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/integrations/022-web3forms-integration/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/integrations/022-web3forms-integration/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/integrations/022-web3forms-integration/spec.md
+```
+
+#### 023-emailjs-integration
+🔵 **Plan**
+```
+/speckit.plan features/integrations/023-emailjs-integration/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/integrations/023-emailjs-integration/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/integrations/023-emailjs-integration/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/integrations/023-emailjs-integration/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/integrations/023-emailjs-integration/spec.md
+```
+
+#### 024-payment-integration
+🔵 **Plan**
+```
+/speckit.plan features/integrations/024-payment-integration/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/integrations/024-payment-integration/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/integrations/024-payment-integration/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/integrations/024-payment-integration/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/integrations/024-payment-integration/spec.md
+```
+
+#### 025-blog-social-features
+🔵 **Plan**
+```
+/speckit.plan features/integrations/025-blog-social-features/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/integrations/025-blog-social-features/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/integrations/025-blog-social-features/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/integrations/025-blog-social-features/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/integrations/025-blog-social-features/spec.md
+```
+
+#### 026-unified-messaging-sidebar
+🔵 **Plan**
+```
+/speckit.plan features/integrations/026-unified-messaging-sidebar/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/integrations/026-unified-messaging-sidebar/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/integrations/026-unified-messaging-sidebar/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/integrations/026-unified-messaging-sidebar/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/integrations/026-unified-messaging-sidebar/spec.md
+```
+
+### Polish
+
+#### 027-ux-polish
+🔵 **Plan**
+```
+/speckit.plan features/polish/027-ux-polish/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/polish/027-ux-polish/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/polish/027-ux-polish/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/polish/027-ux-polish/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/polish/027-ux-polish/spec.md
+```
+
+#### 028-enhanced-geolocation
+🔵 **Plan**
+```
+/speckit.plan features/polish/028-enhanced-geolocation/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/polish/028-enhanced-geolocation/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/polish/028-enhanced-geolocation/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/polish/028-enhanced-geolocation/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/polish/028-enhanced-geolocation/spec.md
+```
+
+#### 029-seo-editorial-assistant
+🔵 **Plan**
+```
+/speckit.plan features/polish/029-seo-editorial-assistant/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/polish/029-seo-editorial-assistant/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/polish/029-seo-editorial-assistant/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/polish/029-seo-editorial-assistant/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/polish/029-seo-editorial-assistant/spec.md
+```
+
+#### 030-calendar-integration
+🔵 **Plan**
+```
+/speckit.plan features/polish/030-calendar-integration/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/polish/030-calendar-integration/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/polish/030-calendar-integration/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/polish/030-calendar-integration/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/polish/030-calendar-integration/spec.md
+```
+
+### Testing
+
+#### 031-standardize-test-users
+🔵 **Plan**
+```
+/speckit.plan features/testing/031-standardize-test-users/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/031-standardize-test-users/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/031-standardize-test-users/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/031-standardize-test-users/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/031-standardize-test-users/spec.md
+```
+
+#### 032-signup-e2e-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/032-signup-e2e-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/032-signup-e2e-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/032-signup-e2e-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/032-signup-e2e-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/032-signup-e2e-tests/spec.md
+```
+
+#### 033-seo-library-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/033-seo-library-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/033-seo-library-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/033-seo-library-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/033-seo-library-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/033-seo-library-tests/spec.md
+```
+
+#### 034-blog-library-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/034-blog-library-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/034-blog-library-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/034-blog-library-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/034-blog-library-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/034-blog-library-tests/spec.md
+```
+
+#### 035-messaging-service-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/035-messaging-service-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/035-messaging-service-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/035-messaging-service-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/035-messaging-service-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/035-messaging-service-tests/spec.md
+```
+
+#### 036-auth-component-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/036-auth-component-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/036-auth-component-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/036-auth-component-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/036-auth-component-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/036-auth-component-tests/spec.md
+```
+
+#### 037-game-a11y-tests
+🔵 **Plan**
+```
+/speckit.plan features/testing/037-game-a11y-tests/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/testing/037-game-a11y-tests/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/testing/037-game-a11y-tests/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/testing/037-game-a11y-tests/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/testing/037-game-a11y-tests/spec.md
+```
+
+### Payments
+
+#### 038-payment-dashboard
+🔵 **Plan**
+```
+/speckit.plan features/payments/038-payment-dashboard/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/038-payment-dashboard/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/038-payment-dashboard/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/038-payment-dashboard/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/038-payment-dashboard/spec.md
+```
+
+#### 039-payment-offline-queue
+🔵 **Plan**
+```
+/speckit.plan features/payments/039-payment-offline-queue/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/039-payment-offline-queue/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/039-payment-offline-queue/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/039-payment-offline-queue/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/039-payment-offline-queue/spec.md
+```
+
+#### 040-payment-retry-ui
+🔵 **Plan**
+```
+/speckit.plan features/payments/040-payment-retry-ui/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/040-payment-retry-ui/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/040-payment-retry-ui/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/040-payment-retry-ui/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/040-payment-retry-ui/spec.md
+```
+
+#### 041-paypal-subscriptions
+🔵 **Plan**
+```
+/speckit.plan features/payments/041-paypal-subscriptions/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/041-paypal-subscriptions/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/041-paypal-subscriptions/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/041-paypal-subscriptions/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/041-paypal-subscriptions/spec.md
+```
+
+#### 042-payment-rls-policies
+🔵 **Plan**
+```
+/speckit.plan features/payments/042-payment-rls-policies/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/042-payment-rls-policies/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/042-payment-rls-policies/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/042-payment-rls-policies/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/042-payment-rls-policies/spec.md
+```
+
+#### 043-group-service
+🔵 **Plan**
+```
+/speckit.plan features/payments/043-group-service/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/payments/043-group-service/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/payments/043-group-service/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/payments/043-group-service/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/payments/043-group-service/spec.md
+```
+
+### Code Quality
+
+#### 044-error-handler-integrations
+🔵 **Plan**
+```
+/speckit.plan features/code-quality/044-error-handler-integrations/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/code-quality/044-error-handler-integrations/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/code-quality/044-error-handler-integrations/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/code-quality/044-error-handler-integrations/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/code-quality/044-error-handler-integrations/spec.md
+```
+
+#### 045-disqus-theme
+🔵 **Plan**
+```
+/speckit.plan features/code-quality/045-disqus-theme/spec.md
+```
+🔵 **Checklist**
+```
+/speckit.checklist features/code-quality/045-disqus-theme/spec.md
+```
+🔵 **Tasks**
+```
+/speckit.tasks features/code-quality/045-disqus-theme/spec.md
+```
+🔵 **Analyze**
+```
+/speckit.analyze features/code-quality/045-disqus-theme/spec.md
+```
+🔵 **Implement**
+```
+/speckit.implement features/code-quality/045-disqus-theme/spec.md
+```
+
+---
+
 ## 📋 Wireframe Commands (45 features)
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
