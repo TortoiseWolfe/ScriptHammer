@@ -6,7 +6,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~13 done~~ / **24 need SVG** / *8 need spec*
+**Progress:** ~~14 done~~ / **30 need SVG** / *1 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -30,7 +30,7 @@
 
 ~~`/wireframe features/core-features/009-user-messaging-system/spec.md`~~
 
-**`/wireframe features/core-features/010-unified-blog-content/spec.md`**
+~~`/wireframe features/core-features/010-unified-blog-content/spec.md`~~
 
 ~~`/wireframe features/core-features/011-group-chats/spec.md`~~
 
@@ -79,17 +79,17 @@
 ### Testing
 **`/wireframe features/testing/031-standardize-test-users/spec.md`**
 
-*`/wireframe features/testing/032-signup-e2e-tests/spec.md`*
+**`/wireframe features/testing/032-signup-e2e-tests/spec.md`**
 
-*`/wireframe features/testing/033-seo-library-tests/spec.md`*
+**`/wireframe features/testing/033-seo-library-tests/spec.md`**
 
-*`/wireframe features/testing/034-blog-library-tests/spec.md`*
+**`/wireframe features/testing/034-blog-library-tests/spec.md`**
 
-*`/wireframe features/testing/035-messaging-service-tests/spec.md`*
+**`/wireframe features/testing/035-messaging-service-tests/spec.md`**
 
-*`/wireframe features/testing/036-auth-component-tests/spec.md`*
+**`/wireframe features/testing/036-auth-component-tests/spec.md`**
 
-*`/wireframe features/testing/037-game-a11y-tests/spec.md`*
+**`/wireframe features/testing/037-game-a11y-tests/spec.md`**
 
 ### Payments
 **`/wireframe features/payments/038-payment-dashboard/spec.md`**
@@ -98,14 +98,14 @@
 
 **`/wireframe features/payments/040-payment-retry-ui/spec.md`**
 
-*`/wireframe features/payments/041-paypal-subscriptions/spec.md`*
+**`/wireframe features/payments/041-paypal-subscriptions/spec.md`**
 
 **`/wireframe features/payments/042-payment-rls-policies/spec.md`**
 
 **`/wireframe features/payments/043-group-service/spec.md`**
 
 ### Code Quality
-*`/wireframe features/code-quality/044-error-handler-integrations/spec.md`*
+**`/wireframe features/code-quality/044-error-handler-integrations/spec.md`**
 
 *`/wireframe features/code-quality/045-disqus-theme/spec.md`*
 

@@ -6,9 +6,9 @@ Last updated: 2025-12-31
 
 | Status | Count |
 |--------|-------|
-| spec.md complete | 43 |
-| spec.md pending | 2 |
-| wireframes complete | 13 features (33 SVGs) |
+| spec.md complete | 44 |
+| spec.md pending | 1 |
+| wireframes complete | 14 features (36 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -67,28 +67,26 @@ Last updated: 2025-12-31
 - [x] 036-auth-component-tests
 - [x] 037-game-a11y-tests
 
-### Payments (5/6)
+### Payments (6/6) COMPLETE
 - [x] 038-payment-dashboard
 - [x] 039-payment-offline-queue
 - [x] 040-payment-retry-ui
-- [ ] 041-paypal-subscriptions
+- [x] 041-paypal-subscriptions
 - [x] 042-payment-rls-policies
 - [x] 043-group-service
 
-### Code Quality (0/2)
-- [ ] 044-error-handler-integrations
+### Code Quality (1/2)
+- [x] 044-error-handler-integrations
 - [ ] 045-disqus-theme
 
 ---
 
-## Pending /specify (2 features)
+## Pending /specify (1 feature)
 
 Run `/speckit.specify` then `/speckit.clarify` on these:
 
 | # | Feature | Category |
 |---|---------|----------|
-| 041 | paypal-subscriptions | payments |
-| 044 | error-handler-integrations | code-quality |
 | 045 | disqus-theme | code-quality |
 
 ---
@@ -105,14 +103,15 @@ Run `/speckit.specify` then `/speckit.clarify` on these:
 | 005-security-hardening | 2 | ✅ |
 | 006-template-fork-experience | 2 | ✅ |
 | 007-e2e-testing-framework | 2 | ✅ |
-| 008-on-the-account | 2 | ✅ |
+| 008-on-the-account | 3 | ✅ |
 | 009-user-messaging-system | 4 | ✅ |
 | 011-group-chats | 4 | ✅ |
 | 012-welcome-message-architecture | 2 | ✅ |
+| 010-unified-blog-content | 2 | ✅ |
 | 013-oauth-messaging-password | 3 | ✅ |
-| **Total** | **33** | |
+| **Total** | **36** | |
 
-### Features with spec.md needing wireframes (19)
+### Features with spec.md needing wireframes (18)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
@@ -128,8 +127,7 @@ Following IMPLEMENTATION_ORDER.md sequence:
 | 21 | 038-payment-dashboard | payments |
 | 22 | 039-payment-offline-queue | payments |
 | 23 | 040-payment-retry-ui | payments |
-| 24 | 010-unified-blog-content | core-features |
-| 25 | 025-blog-social-features | integrations |
+| 24 | 025-blog-social-features | integrations |
 | 26 | 022-web3forms-integration | integrations |
 | 27 | 023-emailjs-integration | integrations |
 | 28 | 017-colorblind-mode | enhancements |
