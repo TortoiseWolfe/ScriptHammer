@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 43 features (114 SVGs) |
+| wireframes complete | 45 features (120 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -134,17 +134,17 @@ All 45 features have been specified!
 | 040-payment-retry-ui | 3 | ✅ |
 | 041-paypal-subscriptions | 4 | ✅ |
 | 042-payment-rls-policies | 2 | ✅ |
-| **Total** | **114** | |
+| 043-group-service | 3 | ✅ |
+| 044-error-handler-integrations | 3 | ✅ |
+| **Total** | **120** | |
 
-### Features with spec.md needing wireframes (3)
+### Features with spec.md needing wireframes (1)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **043-group-service** | payments |
-| 44 | 044-error-handler-integrations | code-quality |
-| 45 | 045-disqus-theme | code-quality |
+| Next → | **045-disqus-theme** | code-quality |
 
 ---
 
