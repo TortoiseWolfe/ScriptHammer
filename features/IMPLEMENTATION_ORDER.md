@@ -22,7 +22,7 @@ These features have NO dependencies and are required by many others.
 
 | Order | Feature | Name | Why First |
 |-------|---------|------|-----------|
-| 1 | **004** | RLS Implementation | All data access depends on RLS |
+| 1 | **000** | RLS Implementation | All data access depends on RLS |
 | 2 | **003** | User Authentication | All auth features depend on this |
 | 3 | **007** | E2E Testing Framework | All tests depend on this |
 | 4 | **006** | Component Template | Pattern for all components |
@@ -60,8 +60,8 @@ Payment integration must come before payment UIs.
 
 | Order | Feature | Name | Depends On |
 |-------|---------|------|------------|
-| 18 | **024** | Payment Integration | 003, 004 |
-| 19 | **042** | Payment RLS Policies | 004 |
+| 18 | **024** | Payment Integration | 000, 003 |
+| 19 | **042** | Payment RLS Policies | 000 |
 | 20 | **038** | Payment Dashboard | 024, 042 |
 | 21 | **039** | Payment Offline Queue | 024 |
 | 22 | **040** | Payment Retry UI | 024 |
@@ -129,7 +129,7 @@ Must come AFTER 019 (consent framework).
 ## Dependency Blockers
 
 ```
-004-RLS ──────────┬──> 003-Auth ──> ALL authenticated features
+000-RLS ──────────┬──> 003-Auth ──> ALL authenticated features
                   │
 019-Consent ──────┼──> 044-Sentry/LogRocket
                   │    045-Disqus
@@ -154,7 +154,7 @@ For parallel sprint implementation:
 
 | Wave | Features | Focus Area |
 |------|----------|------------|
-| **Wave 1** | 004, 003, 007, 006, 002, 001 | Foundation |
+| **Wave 1** | 000, 003, 007, 006, 002, 001 | Foundation |
 | **Wave 2** | 005, 019, 020 | Security & Consent |
 | **Wave 3** | 009, 011, 012, 016, 013, 014, 015 | Messaging |
 | **Wave 4** | 024, 042, 038, 039, 040, 041 | Payments |
@@ -170,7 +170,7 @@ For parallel sprint implementation:
 ```mermaid
 graph TD
     subgraph Foundation
-        004[004-RLS] --> 003[003-Auth]
+        000[000-RLS] --> 003[003-Auth]
         003 --> 005[005-Security]
         002[002-Responsive]
         001[001-WCAG]
@@ -238,7 +238,7 @@ graph TD
 
 ## Quick Start
 
-1. Start with Feature **004-RLS Implementation**
+1. Start with Feature **000-RLS Implementation**
 2. Run `/speckit.specify` on the feature file
 3. Continue through `/speckit.clarify`, `/wireframe`, etc.
 4. Proceed to next feature in order above

@@ -2,6 +2,106 @@
 
 > Project planning template with SpecKit specifications and interactive wireframe viewer. Forked from [FirstFrame](https://github.com/TortoiseWolfe/First-Frame).
 
+## 📋 Wireframe Commands (28 features)
+
+### Foundation
+```
+/wireframe features/foundation/000-rls-implementation/spec.md
+```
+```
+/wireframe features/foundation/001-wcag-aa-compliance/spec.md
+```
+```
+/wireframe features/foundation/002-cookie-consent/spec.md
+```
+```
+/wireframe features/foundation/003-user-authentication/spec.md
+```
+```
+/wireframe features/foundation/005-security-hardening/spec.md
+```
+```
+/wireframe features/foundation/006-template-fork-experience/spec.md
+```
+
+### Core Features
+```
+/wireframe features/core-features/007-e2e-testing-framework/spec.md
+```
+```
+/wireframe features/core-features/009-user-messaging-system/spec.md
+```
+```
+/wireframe features/core-features/011-group-chats/spec.md
+```
+```
+/wireframe features/core-features/012-welcome-message-architecture/spec.md
+```
+
+### Auth OAuth
+```
+/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md
+```
+```
+/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md
+```
+```
+/wireframe features/auth-oauth/015-oauth-display-name/spec.md
+```
+```
+/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md
+```
+
+### Enhancements
+```
+/wireframe features/enhancements/017-colorblind-mode/spec.md
+```
+```
+/wireframe features/enhancements/018-font-switcher/spec.md
+```
+```
+/wireframe features/enhancements/019-google-analytics/spec.md
+```
+```
+/wireframe features/enhancements/020-pwa-background-sync/spec.md
+```
+```
+/wireframe features/enhancements/021-geolocation-map/spec.md
+```
+
+### Integrations
+```
+/wireframe features/integrations/022-web3forms-integration/spec.md
+```
+```
+/wireframe features/integrations/023-emailjs-integration/spec.md
+```
+```
+/wireframe features/integrations/024-payment-integration/spec.md
+```
+```
+/wireframe features/integrations/026-unified-messaging-sidebar/spec.md
+```
+
+### Payments
+```
+/wireframe features/payments/038-payment-dashboard/spec.md
+```
+```
+/wireframe features/payments/039-payment-offline-queue/spec.md
+```
+```
+/wireframe features/payments/040-payment-retry-ui/spec.md
+```
+```
+/wireframe features/payments/042-payment-rls-policies/spec.md
+```
+```
+/wireframe features/payments/043-group-service/spec.md
+```
+
+---
+
 **See your project clearly from the first frame.** Plan features with specs and wireframes before writing code.
 
 ![ScriptHammer Preview](docs/design/wireframes/preview.svg)

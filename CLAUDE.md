@@ -188,15 +188,30 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 
 ## Generating Wireframes
 
-Use `/wireframe` (dark theme) or `/wireframe-light` (light theme) to generate SVGs from specs:
+Use `/wireframe` (dark theme) or `/wireframe-light` (light theme) to generate SVGs from specs.
 
+**CRITICAL RULES**:
+1. **Every feature gets wireframes** - no exceptions
+2. **Number of wireframes depends on spec content** - NOT 1:1 with features
+3. **Wireframe type depends on feature type**:
+
+| Feature Type | Wireframe Approach |
+|--------------|-------------------|
+| UI screens | Desktop + Mobile side-by-side layouts |
+| Backend/infrastructure | Architecture diagrams, data flow |
+| Testing frameworks | Test flow diagrams, coverage dashboards |
+| Integrations | System diagrams, API flow charts |
+| Security features | Security architecture diagrams |
+
+**Process**:
 1. Reads the spec to understand the feature
-2. Creates **side-by-side** wireframes (Desktop left, Mobile right) at **1400×800**
-3. Saves SVGs to `docs/design/wireframes/[feature-folder]/`
-4. Updates `index.html` navigation (wireframes array + nav section)
+2. Counts user stories, screens, states, and roles to determine wireframe count
+3. Creates appropriate wireframe type(s) at **1400×800** (or larger for complex diagrams)
+4. Saves SVGs to `docs/design/wireframes/[feature-folder]/`
+5. Updates `index.html` navigation (wireframes array + nav section)
 
-### SVG Layout Dimensions
-- **Canvas**: 1400×800
+### SVG Layout Dimensions (for UI wireframes)
+- **Canvas**: 1400×800 (standard), 1600×800 (wide), 1400×1000 (tall)
 - **Desktop area**: x=40, y=60, 900px wide (3-column: 200 sidebar | 440 main | 240 detail)
 - **Mobile area**: x=980, y=60, 360×700 phone frame
 
