@@ -1044,7 +1044,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~23 done~~ / **22 need SVG** / *0 need spec*
+**Progress:** ~~25 done~~ / **20 need SVG** / *0 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -1097,9 +1097,9 @@
 ### Integrations
 ~~`/wireframe features/integrations/022-web3forms-integration/spec.md`~~
 
-**`/wireframe features/integrations/023-emailjs-integration/spec.md`**
+~~`/wireframe features/integrations/023-emailjs-integration/spec.md`~~
 
-**`/wireframe features/integrations/024-payment-integration/spec.md`**
+~~`/wireframe features/integrations/024-payment-integration/spec.md`~~
 
 **`/wireframe features/integrations/025-blog-social-features/spec.md`**
 
