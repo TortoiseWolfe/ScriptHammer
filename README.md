@@ -1044,7 +1044,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~14 done~~ / **31 need SVG** / *0 need spec*
+**Progress:** ~~23 done~~ / **22 need SVG** / *0 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -1077,25 +1077,25 @@
 ### Auth OAuth
 ~~`/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md`~~
 
-**`/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md`**
+~~`/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md`~~
 
-**`/wireframe features/auth-oauth/015-oauth-display-name/spec.md`**
+~~`/wireframe features/auth-oauth/015-oauth-display-name/spec.md`~~
 
-**`/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md`**
+~~`/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md`~~
 
 ### Enhancements
-**`/wireframe features/enhancements/017-colorblind-mode/spec.md`**
+~~`/wireframe features/enhancements/017-colorblind-mode/spec.md`~~
 
-**`/wireframe features/enhancements/018-font-switcher/spec.md`**
+~~`/wireframe features/enhancements/018-font-switcher/spec.md`~~
 
-**`/wireframe features/enhancements/019-google-analytics/spec.md`**
+~~`/wireframe features/enhancements/019-google-analytics/spec.md`~~
 
-**`/wireframe features/enhancements/020-pwa-background-sync/spec.md`**
+~~`/wireframe features/enhancements/020-pwa-background-sync/spec.md`~~
 
-**`/wireframe features/enhancements/021-geolocation-map/spec.md`**
+~~`/wireframe features/enhancements/021-geolocation-map/spec.md`~~
 
 ### Integrations
-**`/wireframe features/integrations/022-web3forms-integration/spec.md`**
+~~`/wireframe features/integrations/022-web3forms-integration/spec.md`~~
 
 **`/wireframe features/integrations/023-emailjs-integration/spec.md`**
 

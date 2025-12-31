@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 14 features (37 SVGs) |
+| wireframes complete | 23 features (60 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -105,32 +105,46 @@ All 45 features have been specified!
 | 012-welcome-message-architecture | 2 | ✅ |
 | 010-unified-blog-content | 3 | ✅ |
 | 013-oauth-messaging-password | 3 | ✅ |
-| **Total** | **37** | |
+| 014-admin-welcome-email-gate | 2 | ✅ |
+| 015-oauth-display-name | 2 | ✅ |
+| 016-messaging-critical-fixes | 2 | ✅ |
+| 017-colorblind-mode | 2 | ✅ |
+| 018-font-switcher | 2 | ✅ |
+| 019-google-analytics | 2 | ✅ |
+| 020-pwa-background-sync | 5 | ✅ |
+| 021-geolocation-map | 3 | ✅ |
+| 022-web3forms-integration | 3 | ✅ |
+| **Total** | **60** | |
 
-### Features with spec.md needing wireframes (18)
+### Features with spec.md needing wireframes (22)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **016-messaging-critical-fixes** | auth-oauth |
-| 15 | 014-admin-welcome-email-gate | auth-oauth |
-| 16 | 015-oauth-display-name | auth-oauth |
-| 17 | 043-group-service | payments |
-| 18 | 026-unified-messaging-sidebar | integrations |
-| 19 | 024-payment-integration | integrations |
-| 20 | 042-payment-rls-policies | payments |
-| 21 | 038-payment-dashboard | payments |
-| 22 | 039-payment-offline-queue | payments |
-| 23 | 040-payment-retry-ui | payments |
-| 24 | 025-blog-social-features | integrations |
-| 26 | 022-web3forms-integration | integrations |
-| 27 | 023-emailjs-integration | integrations |
-| 28 | 017-colorblind-mode | enhancements |
-| 29 | 018-font-switcher | enhancements |
-| 30 | 020-pwa-background-sync | enhancements |
-| 31 | 021-geolocation-map | enhancements |
-| 32 | 019-google-analytics | enhancements |
+| Next → | **023-emailjs-integration** | integrations |
+| 24 | 024-payment-integration | integrations |
+| 25 | 025-blog-social-features | integrations |
+| 26 | 026-unified-messaging-sidebar | integrations |
+| 27 | 027-ux-polish | polish |
+| 28 | 028-enhanced-geolocation | polish |
+| 29 | 029-seo-editorial-assistant | polish |
+| 30 | 030-calendar-integration | polish |
+| 31 | 031-standardize-test-users | testing |
+| 32 | 032-signup-e2e-tests | testing |
+| 33 | 033-seo-library-tests | testing |
+| 34 | 034-blog-library-tests | testing |
+| 35 | 035-messaging-service-tests | testing |
+| 36 | 036-auth-component-tests | testing |
+| 37 | 037-game-a11y-tests | testing |
+| 38 | 038-payment-dashboard | payments |
+| 39 | 039-payment-offline-queue | payments |
+| 40 | 040-payment-retry-ui | payments |
+| 41 | 041-paypal-subscriptions | payments |
+| 42 | 042-payment-rls-policies | payments |
+| 43 | 043-group-service | payments |
+| 44 | 044-error-handler-integrations | code-quality |
+| 45 | 045-disqus-theme | code-quality |
 
 ---
 
