@@ -1,33 +1,34 @@
 # SpecKit Progress Tracker
 
-Last updated: 2025-12-30
+Last updated: 2025-12-31
 
 ## Summary
 
 | Status | Count |
 |--------|-------|
-| spec.md complete | 28 |
-| spec.md pending | 17 |
-| **Total** | **45** |
+| spec.md complete | 33 |
+| spec.md pending | 12 |
+| wireframes complete | 10 features (24 SVGs) |
+| **Total Features** | **45** |
 
 ---
 
-## Completed (28 features have spec.md)
+## Completed (33 features have spec.md)
 
-### Foundation (6/7)
+### Foundation (7/7)
 - [x] 000-rls-implementation
 - [x] 001-wcag-aa-compliance
 - [x] 002-cookie-consent
 - [x] 003-user-authentication
-- [ ] 004-mobile-first-design
+- [x] 004-mobile-first-design
 - [x] 005-security-hardening
 - [x] 006-template-fork-experience
 
-### Core Features (4/6)
+### Core Features (6/6)
 - [x] 007-e2e-testing-framework
-- [ ] 008-on-the-account
+- [x] 008-on-the-account
 - [x] 009-user-messaging-system
-- [ ] 010-unified-blog-content
+- [x] 010-unified-blog-content
 - [x] 011-group-chats
 - [x] 012-welcome-message-architecture
 
@@ -44,15 +45,15 @@ Last updated: 2025-12-30
 - [x] 020-pwa-background-sync
 - [x] 021-geolocation-map
 
-### Integrations (4/5)
+### Integrations (5/5)
 - [x] 022-web3forms-integration
 - [x] 023-emailjs-integration
 - [x] 024-payment-integration
-- [ ] 025-blog-social-features
+- [x] 025-blog-social-features
 - [x] 026-unified-messaging-sidebar
 
-### Polish (0/4)
-- [ ] 027-ux-polish
+### Polish (1/4)
+- [x] 027-ux-polish
 - [ ] 028-enhanced-geolocation
 - [ ] 029-seo-editorial-assistant
 - [ ] 030-calendar-integration
@@ -80,17 +81,12 @@ Last updated: 2025-12-30
 
 ---
 
-## Pending /specify (17 features)
+## Pending /specify (12 features)
 
 Run `/speckit.specify` then `/speckit.clarify` on these:
 
 | # | Feature | Category |
 |---|---------|----------|
-| 004 | mobile-first-design | foundation |
-| 008 | on-the-account | core-features |
-| 010 | unified-blog-content | core-features |
-| 025 | blog-social-features | integrations |
-| 027 | ux-polish | polish |
 | 028 | enhanced-geolocation | polish |
 | 029 | seo-editorial-assistant | polish |
 | 030 | calendar-integration | polish |
@@ -109,13 +105,45 @@ Run `/speckit.specify` then `/speckit.clarify` on these:
 
 ## Wireframe Progress
 
-| Feature | Wireframes |
-|---------|------------|
-| 000-rls-implementation | 1 |
-| 001-wcag-aa-compliance | 2 |
-| 002-cookie-consent | 2 |
-| 003-user-authentication | 3 |
-| 005-security-hardening | 2 |
-| **Total** | **10** |
+| Feature | Wireframes | Status |
+|---------|------------|--------|
+| 000-rls-implementation | 1 | ✅ |
+| 001-wcag-aa-compliance | 2 | ✅ |
+| 002-cookie-consent | 2 | ✅ |
+| 003-user-authentication | 3 | ✅ |
+| 005-security-hardening | 2 | ✅ |
+| 006-template-fork-experience | 2 | ✅ |
+| 007-e2e-testing-framework | 2 | ✅ |
+| 009-user-messaging-system | 4 | ✅ |
+| 011-group-chats | 4 | ✅ |
+| 012-welcome-message-architecture | 2 | ✅ |
+| **Total** | **24** | |
 
-Features with spec.md but no wireframes yet: 23
+### Features with spec.md needing wireframes (22)
+
+Following IMPLEMENTATION_ORDER.md sequence:
+
+| Order | Feature | Category |
+|-------|---------|----------|
+| Next → | **013-oauth-messaging-password** | auth-oauth |
+| 14 | 016-messaging-critical-fixes | auth-oauth |
+| 15 | 014-admin-welcome-email-gate | auth-oauth |
+| 16 | 015-oauth-display-name | auth-oauth |
+| 17 | 043-group-service | payments |
+| 18 | 026-unified-messaging-sidebar | integrations |
+| 19 | 024-payment-integration | integrations |
+| 20 | 042-payment-rls-policies | payments |
+| 21 | 038-payment-dashboard | payments |
+| 22 | 039-payment-offline-queue | payments |
+| 23 | 040-payment-retry-ui | payments |
+| 24 | 010-unified-blog-content | core-features |
+| 25 | 025-blog-social-features | integrations |
+| 26 | 022-web3forms-integration | integrations |
+| 27 | 023-emailjs-integration | integrations |
+| 28 | 017-colorblind-mode | enhancements |
+| 29 | 018-font-switcher | enhancements |
+| 30 | 020-pwa-background-sync | enhancements |
+| 31 | 021-geolocation-map | enhancements |
+| 32 | 008-on-the-account | core-features |
+| 33 | 004-mobile-first-design | foundation |
+| 34 | 019-google-analytics | enhancements |
