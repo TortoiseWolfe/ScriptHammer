@@ -1044,7 +1044,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~29 done~~ / **16 need SVG** / *0 need spec*
+**Progress:** ~~38 done~~ / **7 need SVG** / *0 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -1110,27 +1110,27 @@
 
 ~~`/wireframe features/polish/028-enhanced-geolocation/spec.md`~~
 
-**`/wireframe features/polish/029-seo-editorial-assistant/spec.md`**
+~~`/wireframe features/polish/029-seo-editorial-assistant/spec.md`~~
 
-**`/wireframe features/polish/030-calendar-integration/spec.md`**
+~~`/wireframe features/polish/030-calendar-integration/spec.md`~~
 
 ### Testing
-**`/wireframe features/testing/031-standardize-test-users/spec.md`**
+~~`/wireframe features/testing/031-standardize-test-users/spec.md`~~
 
-**`/wireframe features/testing/032-signup-e2e-tests/spec.md`**
+~~`/wireframe features/testing/032-signup-e2e-tests/spec.md`~~
 
-**`/wireframe features/testing/033-seo-library-tests/spec.md`**
+~~`/wireframe features/testing/033-seo-library-tests/spec.md`~~
 
-**`/wireframe features/testing/034-blog-library-tests/spec.md`**
+~~`/wireframe features/testing/034-blog-library-tests/spec.md`~~
 
-**`/wireframe features/testing/035-messaging-service-tests/spec.md`**
+~~`/wireframe features/testing/035-messaging-service-tests/spec.md`~~
 
-**`/wireframe features/testing/036-auth-component-tests/spec.md`**
+~~`/wireframe features/testing/036-auth-component-tests/spec.md`~~
 
 **`/wireframe features/testing/037-game-a11y-tests/spec.md`**
 
 ### Payments
-**`/wireframe features/payments/038-payment-dashboard/spec.md`**
+~~`/wireframe features/payments/038-payment-dashboard/spec.md`~~
 
 **`/wireframe features/payments/039-payment-offline-queue/spec.md`**
 

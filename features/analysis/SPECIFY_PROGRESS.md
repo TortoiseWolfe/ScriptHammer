@@ -8,7 +8,7 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 45 |
 | spec.md pending | 0 |
-| wireframes complete | 29 features (77 SVGs) |
+| wireframes complete | 38 features (101 SVGs) |
 | **Total Features** | **45** |
 
 ---
@@ -103,7 +103,7 @@ All 45 features have been specified!
 | 009-user-messaging-system | 4 | ✅ |
 | 011-group-chats | 4 | ✅ |
 | 012-welcome-message-architecture | 2 | ✅ |
-| 010-unified-blog-content | 3 | ✅ |
+| 010-unified-blog-content | 4 | ✅ |
 | 013-oauth-messaging-password | 3 | ✅ |
 | 014-admin-welcome-email-gate | 2 | ✅ |
 | 015-oauth-display-name | 2 | ✅ |
@@ -120,24 +120,24 @@ All 45 features have been specified!
 | 026-unified-messaging-sidebar | 3 | ✅ |
 | 027-ux-polish | 2 | ✅ |
 | 028-enhanced-geolocation | 3 | ✅ |
-| **Total** | **77** | |
+| 029-seo-editorial-assistant | 5 | ✅ |
+| 030-calendar-integration | 3 | ✅ |
+| 031-standardize-test-users | 2 | ✅ |
+| 032-signup-e2e-tests | 2 | ✅ |
+| 033-seo-library-tests | 2 | ✅ |
+| 034-blog-library-tests | 2 | ✅ |
+| 035-messaging-service-tests | 2 | ✅ |
+| 036-auth-component-tests | 2 | ✅ |
+| 038-payment-dashboard | 3 | ✅ |
+| **Total** | **101** | |
 
-### Features with spec.md needing wireframes (16)
+### Features with spec.md needing wireframes (7)
 
 Following IMPLEMENTATION_ORDER.md sequence:
 
 | Order | Feature | Category |
 |-------|---------|----------|
-| Next → | **029-seo-editorial-assistant** | polish |
-| 30 | 030-calendar-integration | polish |
-| 31 | 031-standardize-test-users | testing |
-| 32 | 032-signup-e2e-tests | testing |
-| 33 | 033-seo-library-tests | testing |
-| 34 | 034-blog-library-tests | testing |
-| 35 | 035-messaging-service-tests | testing |
-| 36 | 036-auth-component-tests | testing |
-| 37 | 037-game-a11y-tests | testing |
-| 38 | 038-payment-dashboard | payments |
+| Next → | **037-game-a11y-tests** | testing |
 | 39 | 039-payment-offline-queue | payments |
 | 40 | 040-payment-retry-ui | payments |
 | 41 | 041-paypal-subscriptions | payments |
