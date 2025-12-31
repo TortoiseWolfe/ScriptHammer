@@ -1044,7 +1044,7 @@
 
 **Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
 
-**Progress:** ~~45 done~~ / **1 need SVG** / *0 need spec*
+**Progress:** ~~46 done~~ / **0 need SVG** / *0 need spec*
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
@@ -1145,7 +1145,7 @@
 ### Code Quality
 ~~`/wireframe features/code-quality/044-error-handler-integrations/spec.md`~~
 
-**`/wireframe features/code-quality/045-disqus-theme/spec.md`**
+~~`/wireframe features/code-quality/045-disqus-theme/spec.md`~~
 
 ---
 
