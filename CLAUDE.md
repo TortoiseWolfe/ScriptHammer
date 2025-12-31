@@ -55,6 +55,62 @@ After wireframe review, run on each feature:
 
 ---
 
+## Progress Tracking System
+
+Track progress across two files when running SpecKit workflow in other terminals.
+
+### Tracking Files
+
+| File | Purpose |
+|------|---------|
+| `README.md` | Implementation Commands (225 fenced code blocks) + Wireframe Commands |
+| `features/analysis/SPECIFY_PROGRESS.md` | Detailed tracker with wireframe table + implementation table |
+
+### Implementation Phase Styling (README.md)
+
+| Phase | Command | Starting Style | Completed Style |
+|-------|---------|----------------|-----------------|
+| 1. Plan | `/speckit.plan` | 🔵 **Bold** | 🟡 *Italic* |
+| 2. Checklist | `/speckit.checklist` | 🔵 **Bold** | 🟠 `Code` |
+| 3. Tasks | `/speckit.tasks` | 🔵 **Bold** | 🟣 Plain |
+| 4. Analyze | `/speckit.analyze` | 🔵 **Bold** | ✅ ~~Strike~~ |
+| 5. Implement | `/speckit.implement` | 🔵 **Bold** | ✅ ~~Strike~~ |
+
+Progress line: `**Progress:** 🔵 **45** / 🟡 *0* / 🟠 \`0\` / 🟣 0 / ✅ ~~0~~`
+
+### On-Demand Progress Check
+
+Run these commands only when you want to see what changed:
+
+```bash
+# Check for new plan.md files (phase 1 complete)
+find features -name "plan.md" -newer README.md
+
+# Check for new checklist/tasks files
+find features -name "checklist.md" -newer README.md
+find features -name "tasks.md" -newer README.md
+
+# Check for new wireframes
+find docs/design/wireframes -name "*.svg" -newer README.md
+```
+
+### When Updating After Changes
+
+1. **README.md**: Change command styling + update progress counter
+2. **SPECIFY_PROGRESS.md**: Update Implementation Progress table (⬜→✅)
+
+Both files should stay in sync for implementation phases.
+
+### Current State (2025-12-31)
+
+| Metric | Value |
+|--------|-------|
+| spec.md complete | 45/45 |
+| Wireframes complete | 14 features (37 SVGs) |
+| Implementation phase | All 45 at Phase 1 (🔵 ready for /plan) |
+
+---
+
 ## Repository Purpose
 
 This is a **planning template** for projects using the SpecKit workflow. It contains:
