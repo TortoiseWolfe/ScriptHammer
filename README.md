@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **34** / ✅ ~~12~~
+**Progress:** 🎨 **27** / ✅ ~~19~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -46,44 +46,23 @@
 
 #### ~~011-group-chats~~ — ✅ Done
 
-#### **012-welcome-message-architecture** — 🎨 Pending
-```
-/wireframe features/core-features/012-welcome-message-architecture/spec.md
-```
+#### ~~012-welcome-message-architecture~~ — ✅ Done
 
 ### Auth OAuth
 
-#### **013-oauth-messaging-password** — 🎨 Pending
-```
-/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md
-```
+#### ~~013-oauth-messaging-password~~ — ✅ Done
 
-#### **014-admin-welcome-email-gate** — 🎨 Pending
-```
-/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md
-```
+#### ~~014-admin-welcome-email-gate~~ — ✅ Done
 
-#### **015-oauth-display-name *(backend)*** — 🎨 Pending
-```
-/wireframe features/auth-oauth/015-oauth-display-name/spec.md
-```
+#### ~~015-oauth-display-name *(backend)*~~ — ✅ Done
 
-#### **016-messaging-critical-fixes** — 🎨 Pending
-```
-/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md
-```
+#### ~~016-messaging-critical-fixes~~ — ✅ Done
 
 ### Enhancements
 
-#### **017-colorblind-mode** — 🎨 Pending
-```
-/wireframe features/enhancements/017-colorblind-mode/spec.md
-```
+#### ~~017-colorblind-mode~~ — ✅ Done
 
-#### **018-font-switcher** — 🎨 Pending
-```
-/wireframe features/enhancements/018-font-switcher/spec.md
-```
+#### ~~018-font-switcher~~ — ✅ Done
 
 #### **019-google-analytics *(backend)*** — 🎨 Pending
 ```
