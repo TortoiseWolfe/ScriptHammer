@@ -1042,9 +1042,13 @@
 
 ## 📋 Wireframe Commands (46 features)
 
-**Legend:** ~~Done~~ | **Needs SVG** | *Needs spec.md*
+**Legend:** ~~Done~~ | **Needs Regeneration**
 
-**Progress:** ~~46 done~~ / **0 need SVG** / *0 need spec*
+**Progress:** ~~46 done~~ / **0 need regeneration**
+
+**Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend
+- Use `/wireframe-dark` to force dark theme
+- Use `/wireframe-light` to force light theme
 
 ### Foundation
 ~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~

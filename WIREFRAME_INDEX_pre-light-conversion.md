@@ -2,10 +2,6 @@
 
 **Total**: 123 SVGs across 46 features
 
-**Theme:** `/wireframe` auto-selects theme per SVG
-- UX wireframes → Light theme (Indigo palette)
-- Backend wireframes → Dark theme (Slate/Violet palette)
-
 ---
 
 ## UX/Frontend Wireframes (85 SVGs)
@@ -139,7 +135,7 @@ User interfaces, forms, dashboards, modals, and interactive screens.
 - `docs/design/wireframes/029-seo-editorial-assistant/02-seo-score-states.svg` - SEO score indicators
 - `docs/design/wireframes/029-seo-editorial-assistant/03-export-flow.svg` - Export dialog
 - `docs/design/wireframes/029-seo-editorial-assistant/04-import-diff-view.svg` - Import diff viewer
-- `docs/design/wireframes/029-seo-editorial-assistant/05-terminal-output.svg` - Terminal output view (backend - stays dark)
+- `docs/design/wireframes/029-seo-editorial-assistant/05-terminal-output.svg` - Terminal output view
 
 #### 030-calendar-integration
 - `docs/design/wireframes/030-calendar-integration/01-schedule-page-booking.svg` - Calendar booking UI
