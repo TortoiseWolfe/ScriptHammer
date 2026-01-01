@@ -95,8 +95,8 @@ All 46 features have been specified!
 | 001-wcag-aa-compliance | 2 | ✅ |
 | 002-cookie-consent | 2 | ✅ |
 | 003-user-authentication | 3 | ✅ |
-| 004-mobile-first-design | 4 | ✅ |
-| 005-security-hardening | 2 | ✅ |
+| 004-mobile-first-design | 4 | ✅ regen |
+| 005-security-hardening | 2 | ✅ regen |
 | 006-template-fork-experience | 2 | ✅ |
 | 007-e2e-testing-framework | 2 | ✅ |
 | 008-on-the-account | 3 | ✅ |
