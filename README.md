@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **21** / ✅ ~~25~~
+**Progress:** 🎨 **18** / ✅ ~~28~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -78,22 +78,13 @@
 
 #### ~~024-payment-integration~~ — ✅ Done
 
-#### **025-blog-social-features** — 🎨 Pending
-```
-/wireframe features/integrations/025-blog-social-features/spec.md
-```
+#### ~~025-blog-social-features~~ — ✅ Done
 
-#### **026-unified-messaging-sidebar** — 🎨 Pending
-```
-/wireframe features/integrations/026-unified-messaging-sidebar/spec.md
-```
+#### ~~026-unified-messaging-sidebar~~ — ✅ Done
 
 ### Polish
 
-#### **027-ux-polish** — 🎨 Pending
-```
-/wireframe features/polish/027-ux-polish/spec.md
-```
+#### ~~027-ux-polish~~ — ✅ Done
 
 #### **028-enhanced-geolocation** — 🎨 Pending
 ```
