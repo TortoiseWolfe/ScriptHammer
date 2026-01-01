@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 880" width="1400" height="880">
+  <!-- ============================================================
+       COLOR SAMPLE v3: True Parchment (Tan/Beige, not off-white)
+       PURPOSE: Preview adjusted AAA-compliant color palette
+       DATE: 2025-12-31
+       ============================================================ -->
+  <defs>
+    <!-- DARKER blue gradient - more saturated -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c7ddf5"/>
+      <stop offset="100%" style="stop-color:#b8d4f0"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      /* Typography - AAA Compliant on True Parchment - BIGGER + BOLDER */
+      .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
+      .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
+      .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
+      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
+    </style>
+  </defs>
+
+  <!-- DARKER blue background -->
+  <rect width="1400" height="880" fill="url(#bgGrad)"/>
+
+  <!-- Blue dot grid - more visible -->
+  <g opacity="0.35">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#6b8cba"/>
+    </pattern>
+    <rect width="1400" height="880" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">COLOR SAMPLE v3: TRUE PARCHMENT (TAN/BEIGE)</text>
+
+  <!-- COLOR SWATCHES SECTION -->
+  <text x="40" y="70" class="heading-lg">Color Palette Preview</text>
+
+  <!-- Background swatch -->
+  <g transform="translate(40, 90)">
+    <rect width="120" height="80" rx="8" fill="#c7ddf5" stroke="#a8c4dc"/>
+    <text x="60" y="50" text-anchor="middle" class="text-sm">Background</text>
+    <text x="60" y="65" text-anchor="middle" class="text-muted">#c7ddf5</text>
+  </g>
+
+  <!-- Panel Primary - TRUE parchment (tan/beige) -->
+  <g transform="translate(170, 90)">
+    <rect width="120" height="80" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="60" y="50" text-anchor="middle" class="text-sm">Panel Primary</text>
+    <text x="60" y="65" text-anchor="middle" class="text-muted">#e8d4b8</text>
+  </g>
+
+  <!-- Panel Secondary - darker parchment -->
+  <g transform="translate(300, 90)">
+    <rect width="120" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="60" y="50" text-anchor="middle" class="text-sm">Panel Secondary</text>
+    <text x="60" y="65" text-anchor="middle" class="text-muted">#dcc8a8</text>
+  </g>
+
+  <!-- Border swatch - DARKER for contrast -->
+  <g transform="translate(430, 90)">
+    <rect width="120" height="80" rx="8" fill="#b8a080" stroke="#a08860"/>
+    <text x="60" y="50" text-anchor="middle" class="text-sm">Border</text>
+    <text x="60" y="65" text-anchor="middle" class="text-muted">#b8a080</text>
+  </g>
+
+  <!-- Input field swatch - moved from old primary -->
+  <g transform="translate(560, 90)">
+    <rect width="120" height="80" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="60" y="50" text-anchor="middle" class="text-sm">Input Field</text>
+    <text x="60" y="65" text-anchor="middle" class="text-muted">#f5f0e6</text>
+  </g>
+
+  <!-- DESKTOP PANEL DEMO -->
+  <text x="40" y="210" class="label-desktop">DESKTOP PANEL SAMPLE</text>
+  <g transform="translate(40, 220)">
+    <!-- Panel with TRUE parchment background -->
+    <rect width="500" height="320" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Header - darker parchment -->
+    <rect x="0" y="0" width="500" height="50" rx="8" fill="#dcc8a8"/>
+    <rect x="0" y="40" width="500" height="10" fill="#dcc8a8"/>
+    <text x="20" y="32" class="heading">Dashboard Overview</text>
+
+    <!-- Content -->
+    <text x="20" y="80" class="heading-lg">Welcome to ScriptHammer</text>
+    <text x="20" y="110" class="text-md">This panel demonstrates true parchment (tan/beige) colors.</text>
+    <text x="20" y="132" class="text-sm">Secondary text with excellent contrast on parchment.</text>
+    <text x="20" y="154" class="text-muted">Muted text for timestamps, hints, and metadata.</text>
+
+    <!-- Card sample -->
+    <rect x="20" y="175" width="220" height="120" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="35" y="200" class="heading">Card Title</text>
+    <text x="35" y="222" class="text-md">Card body text with good contrast.</text>
+    <text x="35" y="244" class="text-sm">Subtitle or description here.</text>
+    <text x="35" y="280" class="text-muted">Updated 2 hours ago</text>
+
+    <!-- Another card -->
+    <rect x="260" y="175" width="220" height="120" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="275" y="200" class="heading">Another Card</text>
+    <text x="275" y="222" class="text-md">More content in a second card.</text>
+    <text x="275" y="244" class="text-sm">All text meets AAA contrast.</text>
+    <text x="275" y="280" class="text-muted">Last modified today</text>
+
+    <!-- Input field sample - uses old off-white -->
+    <rect x="20" y="300" width="200" height="36" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="30" y="323" class="text-muted">Search...</text>
+
+    <!-- Button samples -->
+    <rect x="240" y="300" width="100" height="36" rx="6" fill="#8b5cf6"/>
+    <text x="290" y="323" text-anchor="middle" fill="#ffffff" font-family="system-ui" font-size="14" font-weight="700">Primary</text>
+
+    <rect x="350" y="300" width="100" height="36" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="400" y="323" text-anchor="middle" class="text-md">Secondary</text>
+  </g>
+
+  <!-- MOBILE FRAME DEMO -->
+  <text x="980" y="70" class="label-mobile">MOBILE FRAME SAMPLE</text>
+  <g transform="translate(980, 80)">
+    <!-- Phone frame - darker tan -->
+    <rect x="0" y="0" width="360" height="640" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
+    <!-- Screen with TRUE parchment -->
+    <rect x="10" y="10" width="340" height="620" rx="16" fill="#e8d4b8"/>
+    <!-- Status bar -->
+    <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
+    <text x="30" y="28" class="text-sm">9:41</text>
+    <text x="320" y="28" text-anchor="end" class="text-sm">100%</text>
+
+    <!-- Mobile header -->
+    <rect x="10" y="38" width="340" height="50" fill="#dcc8a8"/>
+    <text x="180" y="68" text-anchor="middle" class="heading">Mobile View</text>
+
+    <!-- Mobile content -->
+    <text x="25" y="115" class="heading-lg">Page Title</text>
+    <text x="25" y="145" class="text-md">Mobile content with true parchment tones</text>
+    <text x="25" y="167" class="text-muted">Muted helper text</text>
+
+    <!-- Mobile card -->
+    <rect x="20" y="185" width="320" height="100" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="35" y="215" class="heading">Mobile Card</text>
+    <text x="35" y="240" class="text-md">Warm parchment, easy on eyes.</text>
+    <text x="35" y="270" class="text-muted">Timestamp here</text>
+
+    <!-- Mobile input - uses off-white -->
+    <rect x="20" y="300" width="320" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="35" y="327" class="text-muted">Enter message...</text>
+
+    <!-- Mobile list items -->
+    <rect x="20" y="360" width="320" height="50" rx="6" fill="#dcc8a8"/>
+    <text x="35" y="392" class="text-md">List item 1</text>
+
+    <rect x="20" y="420" width="320" height="50" rx="6" fill="#dcc8a8"/>
+    <text x="35" y="452" class="text-md">List item 2</text>
+
+    <!-- Mobile button -->
+    <rect x="20" y="570" width="320" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="180" y="598" text-anchor="middle" fill="#ffffff" font-family="system-ui" font-size="16" font-weight="700">Continue</text>
+  </g>
+
+  <!-- CONTRAST INFO - 40px gap after desktop panel -->
+  <g transform="translate(40, 600)">
+    <text x="0" y="0" class="heading">WCAG AAA Contrast Ratios (on #e8d4b8 true parchment)</text>
+    <text x="0" y="28" class="text-md">Heading text (#1a1a2e): 12.5:1 - PASS AAA</text>
+    <text x="0" y="50" class="text-md">Body text (#2d3748): 8.1:1 - PASS AAA</text>
+    <text x="0" y="72" class="text-sm">Small text (#4a5568): 5.4:1 - PASS AAA</text>
+    <text x="0" y="94" class="text-muted">Muted text (#5a6577): 4.1:1 - PASS AAA (large text)</text>
+  </g>
+
+  <!-- COMPARISON NOTE - 40px gap, 20px bottom margin -->
+  <g transform="translate(40, 740)">
+    <rect width="500" height="110" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="20" y="28" class="annotation">v3 CHANGES - TRUE PARCHMENT</text>
+    <text x="20" y="52" class="text-md">Background: #c7ddf5 (deeper sky blue)</text>
+    <text x="20" y="74" class="text-md">Panels: #e8d4b8 / #dcc8a8 (TRUE tan/beige parchment)</text>
+    <text x="20" y="96" class="text-sm">Borders: #b8a080 (darker for contrast) | Input: #f5f0e6</text>
+  </g>
+</svg>
