@@ -117,8 +117,7 @@
     <text x="175" y="85" text-anchor="middle" class="text-muted">FR-007, FR-008</text>
 
     <rect x="235" y="50" width="100" height="55" rx="4" fill="#334155"/>
-    <text x="285" y="70" text-anchor="middle" class="text-sm">Password</text>
-    <text x="285" y="75" text-anchor="middle" class="text-sm">Reset</text>
+    <text x="285" y="72" text-anchor="middle" class="text-sm">Pwd Reset</text>
     <text x="285" y="90" text-anchor="middle" class="text-muted">FR-010, FR-011</text>
 
     <!-- Session management -->
@@ -194,6 +193,11 @@
     <!-- Client → Auth -->
     <path d="M 340 180 L 420 180" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowheadGreen)" fill="none"/>
     <text x="380" y="170" text-anchor="middle" class="text-muted">login/signup</text>
+
+    <!-- Auth → Client (email verification) -->
+    <path d="M 420 220 L 340 220" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowheadOrange)" fill="none"/>
+    <text x="380" y="240" text-anchor="middle" class="text-muted">FR-004/FR-005</text>
+    <text x="380" y="253" text-anchor="middle" class="code">verification email</text>
 
     <!-- Auth → Database -->
     <path d="M 770 180 L 850 180" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>

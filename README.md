@@ -15,7 +15,7 @@
 
 **Legend:** 🔍 **Pending** | 🟢 *Pass* | 🔴 `Regen` | ✅ ~~Done~~
 
-**Progress:** 🔍 **45** / 🟢 *1* / 🔴 `0` / ✅ ~~0~~
+**Progress:** 🔍 **44** / 🟢 *2* / 🔴 `0` / ✅ ~~0~~
 
 **Classification:**
 - 🟢 **PATCHABLE** (color, typo, font, missing class) → `/wireframe-fix`
@@ -25,20 +25,8 @@
 <summary><strong>Foundation</strong> (7 features)</summary>
 
 **000-rls-implementation** — 🟢 *Pass*
-```
-/wireframe 000-rls-implementation
-```
-```
-/wireframe-review 000-rls-implementation
-```
 
-**001-wcag-aa-compliance** — 🔍 Pending
-```
-/wireframe 001-wcag-aa-compliance
-```
-```
-/wireframe-review 001-wcag-aa-compliance
-```
+**001-wcag-aa-compliance** — 🟢 *Pass*
 
 **002-cookie-consent** — 🔍 Pending
 ```
