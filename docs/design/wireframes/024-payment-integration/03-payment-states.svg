@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-section { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
   </defs>
@@ -41,7 +41,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">PAYMENT INTEGRATION — PAYMENT &amp; SUBSCRIPTION STATES</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">PAYMENT INTEGRATION — PAYMENT &amp; SUBSCRIPTION STATES</text>
 
   <!-- STATE 1: PROCESSING -->
   <text x="60" y="60" class="label-section">STATE 1: PROCESSING</text>
@@ -223,7 +223,7 @@
 
   <!-- Status bar -->
   <rect x="1088" y="403" width="244" height="22" rx="14" fill="#dcc8a8"/>
-  <text x="1100" y="417" font-size="9" fill="#5a6577">9:41</text>
+  <text x="1100" y="417" font-size="9" fill="#4b5563">9:41</text>
 
   <!-- Content placeholder -->
   <rect x="1100" y="435" width="220" height="200" rx="8" fill="#f5f0e6" opacity="0.5"/>

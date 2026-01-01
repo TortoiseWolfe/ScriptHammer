@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .flow-arrow { fill: #8b5cf6; }
     </style>
@@ -42,7 +42,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">MOBILE DRAWER PATTERN — STATE TRANSITIONS</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">MOBILE DRAWER PATTERN — STATE TRANSITIONS</text>
 
   <!-- STATE 1: Drawer Open (Sidebar View) -->
   <text x="120" y="52" class="label-mobile">STATE 1: DRAWER OPEN</text>
@@ -53,7 +53,7 @@
     <rect x="8" y="8" width="264" height="534" rx="14" fill="#e8d4b8"/>
     <!-- Status bar -->
     <rect x="8" y="8" width="264" height="24" rx="14" fill="#dcc8a8"/>
-    <text x="24" y="24" fill="#4a5568" font-family="system-ui" font-size="10">9:41</text>
+    <text x="24" y="24" fill="#374151" font-family="system-ui" font-size="10">9:41</text>
 
     <!-- Header -->
     <rect x="8" y="32" width="264" height="40" fill="#dcc8a8"/>
@@ -63,29 +63,29 @@
     <rect x="16" y="78" width="248" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
     <rect x="20" y="82" width="76" height="24" rx="3" fill="#8b5cf6"/>
     <text x="58" y="99" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="10" font-weight="600">Chats (3)</text>
-    <text x="140" y="99" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10">Connect</text>
-    <text x="220" y="99" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10">Find</text>
+    <text x="140" y="99" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10">Connect</text>
+    <text x="220" y="99" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10">Find</text>
 
     <!-- Conversation List -->
     <rect x="16" y="118" width="248" height="50" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
     <circle cx="40" cy="143" r="14" fill="#dcc8a8"/>
-    <text x="40" y="147" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">JD</text>
+    <text x="40" y="147" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">JD</text>
     <text x="62" y="137" fill="#1a1a2e" font-family="system-ui" font-size="11" font-weight="600">Jane Doe</text>
-    <text x="62" y="151" fill="#4a5568" font-family="system-ui" font-size="9">Hey! Are you coming...</text>
+    <text x="62" y="151" fill="#374151" font-family="system-ui" font-size="9">Hey! Are you coming...</text>
     <circle cx="248" cy="143" r="4" fill="#8b5cf6"/>
 
     <rect x="16" y="174" width="248" height="50" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
     <circle cx="40" cy="199" r="14" fill="#dcc8a8"/>
-    <text x="40" y="203" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">MS</text>
+    <text x="40" y="203" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">MS</text>
     <text x="62" y="193" fill="#1a1a2e" font-family="system-ui" font-size="11" font-weight="600">Mike Smith</text>
-    <text x="62" y="207" fill="#4a5568" font-family="system-ui" font-size="9">Thanks for the update!</text>
+    <text x="62" y="207" fill="#374151" font-family="system-ui" font-size="9">Thanks for the update!</text>
     <circle cx="248" cy="199" r="4" fill="#8b5cf6"/>
 
     <rect x="16" y="230" width="248" height="50" rx="4" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="40" cy="255" r="14" fill="#dcc8a8"/>
-    <text x="40" y="259" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">AS</text>
+    <text x="40" y="259" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">AS</text>
     <text x="62" y="249" fill="#2d3748" font-family="system-ui" font-size="11">Alex Smith</text>
-    <text x="62" y="263" fill="#4a5568" font-family="system-ui" font-size="9">Sounds good, let me...</text>
+    <text x="62" y="263" fill="#374151" font-family="system-ui" font-size="9">Sounds good, let me...</text>
 
     <!-- Tap indicator -->
     <circle cx="140" cy="143" r="20" fill="none" stroke="#d946ef" stroke-width="2" stroke-dasharray="4,2"/>
@@ -93,7 +93,7 @@
 
     <!-- Bottom nav -->
     <rect x="8" y="500" width="264" height="42" rx="14" fill="#dcc8a8"/>
-    <text x="140" y="526" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9">Home   Search   Messages   Profile</text>
+    <text x="140" y="526" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9">Home   Search   Messages   Profile</text>
   </g>
 
   <!-- Arrow 1 -->
@@ -111,7 +111,7 @@
     <rect x="8" y="8" width="264" height="534" rx="14" fill="#e8d4b8"/>
     <!-- Status bar -->
     <rect x="8" y="8" width="264" height="24" rx="14" fill="#dcc8a8"/>
-    <text x="24" y="24" fill="#4a5568" font-family="system-ui" font-size="10">9:41</text>
+    <text x="24" y="24" fill="#374151" font-family="system-ui" font-size="10">9:41</text>
 
     <!-- Chat Header with Back Button -->
     <rect x="8" y="32" width="264" height="48" fill="#dcc8a8"/>
@@ -120,7 +120,7 @@
     <text x="32" y="62" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12">←</text>
     <!-- User info -->
     <circle cx="68" cy="56" r="16" fill="#e8d4b8"/>
-    <text x="68" y="60" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">JD</text>
+    <text x="68" y="60" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">JD</text>
     <text x="95" y="52" fill="#1a1a2e" font-family="system-ui" font-size="12" font-weight="600">Jane Doe</text>
     <text x="95" y="66" fill="#22c55e" font-family="system-ui" font-size="9">● Online</text>
 
@@ -137,7 +137,7 @@
 
     <!-- Message Input -->
     <rect x="16" y="490" width="200" height="36" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="28" y="513" fill="#5a6577" font-family="system-ui" font-size="10">Type a message...</text>
+    <text x="28" y="513" fill="#4b5563" font-family="system-ui" font-size="10">Type a message...</text>
     <rect x="222" y="492" width="48" height="32" rx="6" fill="#8b5cf6"/>
     <text x="246" y="513" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="10" font-weight="600">Send</text>
 
@@ -161,7 +161,7 @@
     <rect x="8" y="8" width="264" height="534" rx="14" fill="#e8d4b8"/>
     <!-- Status bar -->
     <rect x="8" y="8" width="264" height="24" rx="14" fill="#dcc8a8"/>
-    <text x="24" y="24" fill="#4a5568" font-family="system-ui" font-size="10">9:41</text>
+    <text x="24" y="24" fill="#374151" font-family="system-ui" font-size="10">9:41</text>
 
     <!-- Header -->
     <rect x="8" y="32" width="264" height="40" fill="#dcc8a8"/>
@@ -171,29 +171,29 @@
     <rect x="16" y="78" width="248" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
     <rect x="20" y="82" width="76" height="24" rx="3" fill="#8b5cf6"/>
     <text x="58" y="99" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="10" font-weight="600">Chats (2)</text>
-    <text x="140" y="99" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10">Connect</text>
-    <text x="220" y="99" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10">Find</text>
+    <text x="140" y="99" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10">Connect</text>
+    <text x="220" y="99" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10">Find</text>
 
     <!-- Updated Conversation List - Jane now read -->
     <rect x="16" y="118" width="248" height="50" rx="4" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="40" cy="143" r="14" fill="#dcc8a8"/>
-    <text x="40" y="147" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">JD</text>
+    <text x="40" y="147" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">JD</text>
     <text x="62" y="137" fill="#2d3748" font-family="system-ui" font-size="11">Jane Doe</text>
-    <text x="62" y="151" fill="#4a5568" font-family="system-ui" font-size="9">Awesome, see you at 6!</text>
+    <text x="62" y="151" fill="#374151" font-family="system-ui" font-size="9">Awesome, see you at 6!</text>
     <!-- No unread dot -->
 
     <rect x="16" y="174" width="248" height="50" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
     <circle cx="40" cy="199" r="14" fill="#dcc8a8"/>
-    <text x="40" y="203" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">MS</text>
+    <text x="40" y="203" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">MS</text>
     <text x="62" y="193" fill="#1a1a2e" font-family="system-ui" font-size="11" font-weight="600">Mike Smith</text>
-    <text x="62" y="207" fill="#4a5568" font-family="system-ui" font-size="9">Thanks for the update!</text>
+    <text x="62" y="207" fill="#374151" font-family="system-ui" font-size="9">Thanks for the update!</text>
     <circle cx="248" cy="199" r="4" fill="#8b5cf6"/>
 
     <rect x="16" y="230" width="248" height="50" rx="4" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="40" cy="255" r="14" fill="#dcc8a8"/>
-    <text x="40" y="259" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9" font-weight="600">AS</text>
+    <text x="40" y="259" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9" font-weight="600">AS</text>
     <text x="62" y="249" fill="#2d3748" font-family="system-ui" font-size="11">Alex Smith</text>
-    <text x="62" y="263" fill="#4a5568" font-family="system-ui" font-size="9">Sounds good, let me...</text>
+    <text x="62" y="263" fill="#374151" font-family="system-ui" font-size="9">Sounds good, let me...</text>
 
     <!-- Scroll position preserved indicator -->
     <rect x="16" y="290" width="248" height="20" rx="4" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
@@ -201,7 +201,7 @@
 
     <!-- Bottom nav -->
     <rect x="8" y="500" width="264" height="42" rx="14" fill="#dcc8a8"/>
-    <text x="140" y="526" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="9">Home   Search   Messages   Profile</text>
+    <text x="140" y="526" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="9">Home   Search   Messages   Profile</text>
   </g>
 
   <!-- Return Arrow (curved) -->

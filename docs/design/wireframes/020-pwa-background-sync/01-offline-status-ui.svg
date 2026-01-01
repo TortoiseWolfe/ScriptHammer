@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
@@ -42,7 +42,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">PWA BACKGROUND SYNC — OFFLINE STATUS UI</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">PWA BACKGROUND SYNC — OFFLINE STATUS UI</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP — OFFLINE STATE</text>
@@ -71,19 +71,19 @@
   <!-- Form fields -->
   <text x="80" y="220" class="text-md" font-weight="600">Name *</text>
   <rect x="80" y="230" width="480" height="40" rx="6" fill="#fff" stroke="#b8a080" stroke-width="1"/>
-  <text x="95" y="256" class="text-sm" fill="#4a5568">John Doe</text>
+  <text x="95" y="256" class="text-sm" fill="#374151">John Doe</text>
 
   <text x="80" y="295" class="text-md" font-weight="600">Email *</text>
   <rect x="80" y="305" width="480" height="40" rx="6" fill="#fff" stroke="#b8a080" stroke-width="1"/>
-  <text x="95" y="331" class="text-sm" fill="#4a5568">john@example.com</text>
+  <text x="95" y="331" class="text-sm" fill="#374151">john@example.com</text>
 
   <text x="80" y="370" class="text-md" font-weight="600">Subject</text>
   <rect x="80" y="380" width="480" height="40" rx="6" fill="#fff" stroke="#b8a080" stroke-width="1"/>
-  <text x="95" y="406" class="text-sm" fill="#4a5568">Question about services</text>
+  <text x="95" y="406" class="text-sm" fill="#374151">Question about services</text>
 
   <text x="80" y="445" class="text-md" font-weight="600">Message *</text>
   <rect x="80" y="455" width="480" height="140" rx="6" fill="#fff" stroke="#b8a080" stroke-width="1"/>
-  <text x="95" y="480" class="text-sm" fill="#4a5568">Hello, I have a question about...</text>
+  <text x="95" y="480" class="text-sm" fill="#374151">Hello, I have a question about...</text>
 
   <!-- Submit button - styled for offline -->
   <rect x="80" y="620" width="200" height="44" rx="8" fill="#8b5cf6"/>

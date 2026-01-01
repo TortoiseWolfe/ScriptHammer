@@ -23,9 +23,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
@@ -46,7 +46,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">021 - GEOLOCATION MAP - MAIN INTERFACE</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">021 - GEOLOCATION MAP - MAIN INTERFACE</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP</text>

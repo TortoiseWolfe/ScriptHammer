@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
@@ -42,7 +42,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">UNIFIED MESSAGING SIDEBAR — CONNECTIONS TAB</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">UNIFIED MESSAGING SIDEBAR — CONNECTIONS TAB</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP (768px+)</text>
@@ -61,7 +61,7 @@
       <rect x="50" y="120" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
 
       <!-- Chats Tab -->
-      <text x="90" y="147" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="13" font-weight="500">Chats</text>
+      <text x="90" y="147" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="13" font-weight="500">Chats</text>
       <circle cx="118" cy="137" r="9" fill="#ef4444"/>
       <text x="118" y="141" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="10" font-weight="700">3</text>
 
@@ -72,7 +72,7 @@
       <text x="235" y="139" text-anchor="middle" fill="#8b5cf6" font-family="system-ui" font-size="10" font-weight="700">2</text>
 
       <!-- Find People Tab -->
-      <text x="310" y="147" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="13" font-weight="500">Find</text>
+      <text x="310" y="147" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="13" font-weight="500">Find</text>
     </g>
 
     <!-- Pending Connections Section -->
@@ -81,7 +81,7 @@
     <!-- Pending 1 -->
     <rect x="50" y="200" width="300" height="70" rx="6" fill="#f5f0e6" stroke="#eab308" stroke-width="2"/>
     <circle cx="80" cy="235" r="20" fill="#dcc8a8"/>
-    <text x="80" y="240" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="14" font-weight="600">TW</text>
+    <text x="80" y="240" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="14" font-weight="600">TW</text>
     <text x="110" y="225" class="heading">Tom Wilson</text>
     <text x="110" y="243" class="text-sm">Wants to connect</text>
     <!-- Accept/Decline buttons -->
@@ -93,7 +93,7 @@
     <!-- Pending 2 -->
     <rect x="50" y="280" width="300" height="70" rx="6" fill="#f5f0e6" stroke="#eab308" stroke-width="2"/>
     <circle cx="80" cy="315" r="20" fill="#dcc8a8"/>
-    <text x="80" y="320" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="14" font-weight="600">LM</text>
+    <text x="80" y="320" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="14" font-weight="600">LM</text>
     <text x="110" y="305" class="heading">Lisa Miller</text>
     <text x="110" y="323" class="text-sm">Wants to connect</text>
     <rect x="220" y="300" width="55" height="28" rx="4" fill="#22c55e"/>
@@ -107,7 +107,7 @@
     <!-- Connection 1 -->
     <rect x="50" y="395" width="300" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="80" cy="425" r="18" fill="#dcc8a8"/>
-    <text x="80" y="430" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12" font-weight="600">JD</text>
+    <text x="80" y="430" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12" font-weight="600">JD</text>
     <text x="108" y="418" class="text-md">Jane Doe</text>
     <text x="108" y="436" class="text-muted">Connected 2 weeks ago</text>
     <!-- Message Button (Core feature!) -->
@@ -117,7 +117,7 @@
     <!-- Connection 2 -->
     <rect x="50" y="465" width="300" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="80" cy="495" r="18" fill="#dcc8a8"/>
-    <text x="80" y="500" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12" font-weight="600">MS</text>
+    <text x="80" y="500" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12" font-weight="600">MS</text>
     <text x="108" y="488" class="text-md">Mike Smith</text>
     <text x="108" y="506" class="text-muted">Connected 1 month ago</text>
     <rect x="260" y="480" width="80" height="32" rx="6" fill="#8b5cf6"/>
@@ -126,7 +126,7 @@
     <!-- Connection 3 -->
     <rect x="50" y="535" width="300" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="80" cy="565" r="18" fill="#dcc8a8"/>
-    <text x="80" y="570" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12" font-weight="600">AS</text>
+    <text x="80" y="570" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12" font-weight="600">AS</text>
     <text x="108" y="558" class="text-md">Alex Smith</text>
     <text x="108" y="576" class="text-muted">Connected 2 months ago</text>
     <rect x="260" y="550" width="80" height="32" rx="6" fill="#8b5cf6"/>
@@ -135,7 +135,7 @@
     <!-- Connection 4 -->
     <rect x="50" y="605" width="300" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="80" cy="635" r="18" fill="#dcc8a8"/>
-    <text x="80" y="640" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12" font-weight="600">SJ</text>
+    <text x="80" y="640" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12" font-weight="600">SJ</text>
     <text x="108" y="628" class="text-md">Sarah Johnson</text>
     <text x="108" y="646" class="text-muted">Connected 3 months ago</text>
     <rect x="260" y="620" width="80" height="32" rx="6" fill="#8b5cf6"/>
@@ -171,14 +171,14 @@
     <rect x="20" y="95" width="320" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
 
     <!-- Chats Tab -->
-    <text x="60" y="120" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12">Chats (3)</text>
+    <text x="60" y="120" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12">Chats (3)</text>
 
     <!-- Connections Tab (Active) -->
     <rect x="115" y="99" width="110" height="32" rx="4" fill="#8b5cf6"/>
     <text x="170" y="120" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12" font-weight="600">Connect (2)</text>
 
     <!-- Find Tab -->
-    <text x="285" y="120" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="12">Find</text>
+    <text x="285" y="120" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="12">Find</text>
 
     <!-- Pending Section -->
     <text x="30" y="160" fill="#1a1a2e" font-family="system-ui" font-size="13" font-weight="700">Pending (2)</text>
@@ -186,7 +186,7 @@
     <!-- Pending 1 Mobile -->
     <rect x="20" y="170" width="320" height="55" rx="6" fill="#f5f0e6" stroke="#eab308" stroke-width="2"/>
     <circle cx="50" cy="197" r="16" fill="#dcc8a8"/>
-    <text x="50" y="201" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">TW</text>
+    <text x="50" y="201" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">TW</text>
     <text x="75" y="192" fill="#1a1a2e" font-family="system-ui" font-size="13" font-weight="600">Tom Wilson</text>
     <text x="75" y="208" class="text-muted">Wants to connect</text>
     <rect x="230" y="185" width="44" height="24" rx="4" fill="#22c55e"/>
@@ -197,7 +197,7 @@
     <!-- Pending 2 Mobile -->
     <rect x="20" y="233" width="320" height="55" rx="6" fill="#f5f0e6" stroke="#eab308" stroke-width="2"/>
     <circle cx="50" cy="260" r="16" fill="#dcc8a8"/>
-    <text x="50" y="264" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">LM</text>
+    <text x="50" y="264" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">LM</text>
     <text x="75" y="255" fill="#1a1a2e" font-family="system-ui" font-size="13" font-weight="600">Lisa Miller</text>
     <text x="75" y="271" class="text-muted">Wants to connect</text>
     <rect x="230" y="248" width="44" height="24" rx="4" fill="#22c55e"/>
@@ -211,7 +211,7 @@
     <!-- Connection 1 Mobile -->
     <rect x="20" y="325" width="320" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="50" cy="350" r="16" fill="#dcc8a8"/>
-    <text x="50" y="354" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">JD</text>
+    <text x="50" y="354" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">JD</text>
     <text x="75" y="345" class="text-md">Jane Doe</text>
     <text x="75" y="361" class="text-muted">2 weeks ago</text>
     <rect x="255" y="337" width="70" height="28" rx="4" fill="#8b5cf6"/>
@@ -220,7 +220,7 @@
     <!-- Connection 2 Mobile -->
     <rect x="20" y="383" width="320" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="50" cy="408" r="16" fill="#dcc8a8"/>
-    <text x="50" y="412" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">MS</text>
+    <text x="50" y="412" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">MS</text>
     <text x="75" y="403" class="text-md">Mike Smith</text>
     <text x="75" y="419" class="text-muted">1 month ago</text>
     <rect x="255" y="395" width="70" height="28" rx="4" fill="#8b5cf6"/>
@@ -229,7 +229,7 @@
     <!-- Connection 3 Mobile -->
     <rect x="20" y="441" width="320" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="50" cy="466" r="16" fill="#dcc8a8"/>
-    <text x="50" y="470" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">AS</text>
+    <text x="50" y="470" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">AS</text>
     <text x="75" y="461" class="text-md">Alex Smith</text>
     <text x="75" y="477" class="text-muted">2 months ago</text>
     <rect x="255" y="453" width="70" height="28" rx="4" fill="#8b5cf6"/>
@@ -238,7 +238,7 @@
     <!-- Connection 4 Mobile -->
     <rect x="20" y="499" width="320" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <circle cx="50" cy="524" r="16" fill="#dcc8a8"/>
-    <text x="50" y="528" text-anchor="middle" fill="#4a5568" font-family="system-ui" font-size="10" font-weight="600">SJ</text>
+    <text x="50" y="528" text-anchor="middle" fill="#374151" font-family="system-ui" font-size="10" font-weight="600">SJ</text>
     <text x="75" y="519" class="text-md">Sarah Johnson</text>
     <text x="75" y="535" class="text-muted">3 months ago</text>
     <rect x="255" y="511" width="70" height="28" rx="4" fill="#8b5cf6"/>

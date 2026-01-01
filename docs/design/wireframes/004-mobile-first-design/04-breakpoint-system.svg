@@ -20,9 +20,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .spec-label { fill: #22c55e; font-family: monospace; font-size: 10px; font-weight: 600; }
@@ -46,7 +46,7 @@
   <rect x="0" y="0" width="1600" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="800" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">BREAKPOINT SYSTEM — MOBILE-FIRST PROGRESSIVE ENHANCEMENT</text>
+  <text x="800" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">BREAKPOINT SYSTEM — MOBILE-FIRST PROGRESSIVE ENHANCEMENT</text>
 
   <!-- BREAKPOINT SCALE VISUALIZATION -->
   <g id="breakpoint-scale" transform="translate(40, 45)">
@@ -78,16 +78,16 @@
     <text x="620" y="35" text-anchor="middle" class="dimension">1024</text>
 
     <!-- Common device markers -->
-    <line x1="60" y1="83" x2="60" y2="90" stroke="#5a6577" stroke-width="1"/>
+    <line x1="60" y1="83" x2="60" y2="90" stroke="#4b5563" stroke-width="1"/>
     <text x="60" y="20" text-anchor="middle" class="text-muted">SE</text>
 
-    <line x1="145" y1="83" x2="145" y2="90" stroke="#5a6577" stroke-width="1"/>
+    <line x1="145" y1="83" x2="145" y2="90" stroke="#4b5563" stroke-width="1"/>
     <text x="145" y="20" text-anchor="middle" class="text-muted">375</text>
 
-    <line x1="200" y1="83" x2="200" y2="90" stroke="#5a6577" stroke-width="1"/>
+    <line x1="200" y1="83" x2="200" y2="90" stroke="#4b5563" stroke-width="1"/>
     <text x="200" y="20" text-anchor="middle" class="text-muted">390</text>
 
-    <line x1="280" y1="83" x2="280" y2="90" stroke="#5a6577" stroke-width="1"/>
+    <line x1="280" y1="83" x2="280" y2="90" stroke="#4b5563" stroke-width="1"/>
     <text x="280" y="20" text-anchor="middle" class="text-muted">428</text>
   </g>
 
@@ -105,7 +105,7 @@
 
     <!-- Status bar -->
     <rect x="8" y="33" width="144" height="20" rx="12" fill="#dcc8a8"/>
-    <text x="20" y="47" font-size="8" fill="#4a5568">9:41</text>
+    <text x="20" y="47" font-size="8" fill="#374151">9:41</text>
 
     <!-- Header - cramped -->
     <rect x="14" y="58" width="132" height="36" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
@@ -118,12 +118,12 @@
     <!-- Content cards - single column -->
     <rect x="14" y="100" width="132" height="80" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="24" y="120" font-size="10" font-weight="bold" fill="#1a1a2e">Post Title</text>
-    <text x="24" y="135" font-size="8" fill="#4a5568">Content preview here...</text>
-    <text x="24" y="150" font-size="8" fill="#4a5568">with more text.</text>
+    <text x="24" y="135" font-size="8" fill="#374151">Content preview here...</text>
+    <text x="24" y="150" font-size="8" fill="#374151">with more text.</text>
 
     <rect x="14" y="188" width="132" height="80" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="24" y="208" font-size="10" font-weight="bold" fill="#1a1a2e">Another Post</text>
-    <text x="24" y="223" font-size="8" fill="#4a5568">More preview text...</text>
+    <text x="24" y="223" font-size="8" fill="#374151">More preview text...</text>
 
     <rect x="14" y="276" width="132" height="70" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="24" y="296" font-size="10" font-weight="bold" fill="#1a1a2e">Third Item</text>
@@ -144,7 +144,7 @@
 
     <!-- Status bar -->
     <rect x="8" y="33" width="172" height="22" rx="14" fill="#dcc8a8"/>
-    <text x="22" y="48" font-size="9" fill="#4a5568">9:41</text>
+    <text x="22" y="48" font-size="9" fill="#374151">9:41</text>
 
     <!-- Header - more space -->
     <rect x="14" y="60" width="160" height="40" rx="5" fill="#dcc8a8" stroke="#b8a080"/>
@@ -158,12 +158,12 @@
     <!-- Content cards -->
     <rect x="14" y="106" width="160" height="85" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="128" font-size="11" font-weight="bold" fill="#1a1a2e">Blog Post Title</text>
-    <text x="26" y="145" font-size="9" fill="#4a5568">Content preview with</text>
-    <text x="26" y="160" font-size="9" fill="#4a5568">more room to breathe.</text>
+    <text x="26" y="145" font-size="9" fill="#374151">Content preview with</text>
+    <text x="26" y="160" font-size="9" fill="#374151">more room to breathe.</text>
 
     <rect x="14" y="199" width="160" height="85" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="221" font-size="11" font-weight="bold" fill="#1a1a2e">Another Article</text>
-    <text x="26" y="238" font-size="9" fill="#4a5568">Additional preview...</text>
+    <text x="26" y="238" font-size="9" fill="#374151">Additional preview...</text>
 
     <rect x="14" y="292" width="160" height="55" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="314" font-size="11" font-weight="bold" fill="#1a1a2e">Third Post</text>
@@ -184,8 +184,8 @@
 
     <!-- Status bar -->
     <rect x="8" y="33" width="179" height="22" rx="14" fill="#dcc8a8"/>
-    <text x="22" y="48" font-size="9" fill="#4a5568">9:41</text>
-    <text x="155" y="48" font-size="8" fill="#4a5568">📶🔋</text>
+    <text x="22" y="48" font-size="9" fill="#374151">9:41</text>
+    <text x="155" y="48" font-size="8" fill="#374151">📶🔋</text>
 
     <!-- Header -->
     <rect x="14" y="60" width="167" height="42" rx="5" fill="#dcc8a8" stroke="#b8a080"/>
@@ -199,13 +199,13 @@
     <!-- Content cards -->
     <rect x="14" y="108" width="167" height="90" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="130" font-size="12" font-weight="bold" fill="#1a1a2e">Blog Post Title Here</text>
-    <text x="26" y="150" font-size="10" fill="#4a5568">Content preview text that</text>
-    <text x="26" y="168" font-size="10" fill="#4a5568">fits nicely on screen.</text>
-    <text x="26" y="188" font-size="8" fill="#5a6577">5 min read • 2 days ago</text>
+    <text x="26" y="150" font-size="10" fill="#374151">Content preview text that</text>
+    <text x="26" y="168" font-size="10" fill="#374151">fits nicely on screen.</text>
+    <text x="26" y="188" font-size="8" fill="#4b5563">5 min read • 2 days ago</text>
 
     <rect x="14" y="206" width="167" height="90" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="228" font-size="12" font-weight="bold" fill="#1a1a2e">Another Great Post</text>
-    <text x="26" y="248" font-size="10" fill="#4a5568">More preview text...</text>
+    <text x="26" y="248" font-size="10" fill="#374151">More preview text...</text>
 
     <rect x="14" y="304" width="167" height="45" rx="5" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="26" y="326" font-size="12" font-weight="bold" fill="#1a1a2e">Third Article</text>
@@ -226,8 +226,8 @@
 
     <!-- Status bar -->
     <rect x="8" y="33" width="198" height="24" rx="16" fill="#dcc8a8"/>
-    <text x="24" y="49" font-size="10" fill="#4a5568">9:41</text>
-    <text x="175" y="49" font-size="9" fill="#4a5568">📶 🔋</text>
+    <text x="24" y="49" font-size="10" fill="#374151">9:41</text>
+    <text x="175" y="49" font-size="9" fill="#374151">📶 🔋</text>
 
     <!-- Header - most spacious -->
     <rect x="14" y="62" width="186" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
@@ -241,13 +241,13 @@
     <!-- Content cards -->
     <rect x="14" y="112" width="186" height="95" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="28" y="136" font-size="13" font-weight="bold" fill="#1a1a2e">Featured Blog Post</text>
-    <text x="28" y="158" font-size="11" fill="#4a5568">Full content preview with</text>
-    <text x="28" y="178" font-size="11" fill="#4a5568">plenty of reading space.</text>
-    <text x="28" y="198" font-size="9" fill="#5a6577">5 min read • 2 days ago</text>
+    <text x="28" y="158" font-size="11" fill="#374151">Full content preview with</text>
+    <text x="28" y="178" font-size="11" fill="#374151">plenty of reading space.</text>
+    <text x="28" y="198" font-size="9" fill="#4b5563">5 min read • 2 days ago</text>
 
     <rect x="14" y="215" width="186" height="95" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="28" y="239" font-size="13" font-weight="bold" fill="#1a1a2e">Another Article</text>
-    <text x="28" y="261" font-size="11" fill="#4a5568">More preview text here...</text>
+    <text x="28" y="261" font-size="11" fill="#374151">More preview text here...</text>
 
     <rect x="14" y="318" width="186" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="28" y="338" font-size="12" font-weight="bold" fill="#1a1a2e">Third Post</text>
@@ -268,7 +268,7 @@
 
     <!-- Status bar -->
     <rect x="10" y="35" width="310" height="20" rx="8" fill="#dcc8a8"/>
-    <text x="24" y="49" font-size="10" fill="#4a5568">9:41</text>
+    <text x="24" y="49" font-size="10" fill="#374151">9:41</text>
 
     <!-- Header with horizontal nav -->
     <rect x="18" y="60" width="294" height="36" rx="5" fill="#dcc8a8" stroke="#b8a080"/>
@@ -282,11 +282,11 @@
     <!-- Two-column grid -->
     <rect x="18" y="102" width="143" height="70" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="30" y="120" font-size="11" font-weight="bold" fill="#1a1a2e">Blog Post</text>
-    <text x="30" y="138" font-size="9" fill="#4a5568">Preview text...</text>
+    <text x="30" y="138" font-size="9" fill="#374151">Preview text...</text>
 
     <rect x="169" y="102" width="143" height="70" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="181" y="120" font-size="11" font-weight="bold" fill="#1a1a2e">Another Post</text>
-    <text x="181" y="138" font-size="9" fill="#4a5568">More text...</text>
+    <text x="181" y="138" font-size="9" fill="#374151">More text...</text>
 
     <rect x="18" y="180" width="143" height="65" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="30" y="198" font-size="11" font-weight="bold" fill="#1a1a2e">Third Article</text>
@@ -320,17 +320,17 @@
 
     <!-- Sidebar + 2-column grid -->
     <rect x="18" y="80" width="60" height="170" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="48" y="100" text-anchor="middle" font-size="8" fill="#4a5568">Sidebar</text>
-    <text x="48" y="115" text-anchor="middle" font-size="7" fill="#5a6577">Links</text>
-    <text x="48" y="130" text-anchor="middle" font-size="7" fill="#5a6577">Tags</text>
+    <text x="48" y="100" text-anchor="middle" font-size="8" fill="#374151">Sidebar</text>
+    <text x="48" y="115" text-anchor="middle" font-size="7" fill="#4b5563">Links</text>
+    <text x="48" y="130" text-anchor="middle" font-size="7" fill="#4b5563">Tags</text>
 
     <rect x="84" y="80" width="108" height="80" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="94" y="98" font-size="10" font-weight="bold" fill="#1a1a2e">Featured</text>
-    <text x="94" y="115" font-size="8" fill="#4a5568">Preview...</text>
+    <text x="94" y="115" font-size="8" fill="#374151">Preview...</text>
 
     <rect x="198" y="80" width="108" height="80" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="208" y="98" font-size="10" font-weight="bold" fill="#1a1a2e">Second</text>
-    <text x="208" y="115" font-size="8" fill="#4a5568">Preview...</text>
+    <text x="208" y="115" font-size="8" fill="#374151">Preview...</text>
 
     <rect x="84" y="166" width="108" height="80" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="94" y="184" font-size="10" font-weight="bold" fill="#1a1a2e">Third</text>
@@ -365,11 +365,11 @@
     <!-- Landscape card row -->
     <rect x="40" y="115" width="180" height="55" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="55" y="135" font-size="10" font-weight="bold" fill="#1a1a2e">Post Title</text>
-    <text x="55" y="150" font-size="8" fill="#4a5568">Preview text...</text>
+    <text x="55" y="150" font-size="8" fill="#374151">Preview text...</text>
 
     <rect x="230" y="115" width="180" height="55" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="245" y="135" font-size="10" font-weight="bold" fill="#1a1a2e">Another Post</text>
-    <text x="245" y="150" font-size="8" fill="#4a5568">More text...</text>
+    <text x="245" y="150" font-size="8" fill="#374151">More text...</text>
 
     <!-- Key insight box -->
     <rect x="460" y="70" width="220" height="110" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>

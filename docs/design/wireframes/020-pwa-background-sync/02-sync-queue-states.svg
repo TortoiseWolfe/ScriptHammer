@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .state-label { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; }
@@ -43,7 +43,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">PWA BACKGROUND SYNC — QUEUE STATE VARIATIONS</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">PWA BACKGROUND SYNC — QUEUE STATE VARIATIONS</text>
 
   <!-- STATE 1: PENDING -->
   <text x="60" y="60" class="label-desktop">STATE 1: PENDING</text>
@@ -133,7 +133,7 @@
   <!-- Empty state -->
   <rect x="730" y="210" width="290" height="150" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
   <circle cx="875" cy="260" r="30" fill="#dcc8a8"/>
-  <text x="875" y="268" text-anchor="middle" fill="#5a6577" font-size="24">✓</text>
+  <text x="875" y="268" text-anchor="middle" fill="#4b5563" font-size="24">✓</text>
   <text x="875" y="310" text-anchor="middle" class="text-md">Queue is empty</text>
   <text x="875" y="330" text-anchor="middle" class="text-muted">All submissions delivered</text>
 
@@ -277,9 +277,9 @@
   <text x="1310" y="552" text-anchor="middle" fill="#fff" font-size="10">Failed</text>
 
   <!-- Arrows -->
-  <line x1="1145" y1="507" x2="1158" y2="507" stroke="#4a5568" stroke-width="2" marker-end="url(#arrowhead)"/>
-  <line x1="1220" y1="507" x2="1233" y2="507" stroke="#4a5568" stroke-width="2"/>
-  <line x1="1220" y1="520" x2="1280" y2="545" stroke="#4a5568" stroke-width="1"/>
+  <line x1="1145" y1="507" x2="1158" y2="507" stroke="#374151" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="1220" y1="507" x2="1233" y2="507" stroke="#374151" stroke-width="2"/>
+  <line x1="1220" y1="520" x2="1280" y2="545" stroke="#374151" stroke-width="1"/>
 
   <!-- Retry arrow -->
   <path d="M1280,555 Q1250,580 1160,520" stroke="#ef4444" stroke-width="1" fill="none" stroke-dasharray="4,2"/>

@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-section { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
   </defs>
@@ -41,7 +41,7 @@
   <rect x="0" y="0" width="1600" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="800" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">FONT COMPARISON &amp; PERSISTENCE</text>
+  <text x="800" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">FONT COMPARISON &amp; PERSISTENCE</text>
 
   <!-- FONT COMPARISON GRID -->
   <text x="40" y="55" class="label-section">FONT COMPARISON - ALL 6 OPTIONS</text>
@@ -58,8 +58,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="30" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#1a1a2e">jumps over the lazy dog</text>
-        <text x="0" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="70" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="95" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Uses device native fonts</text>
       </g>
     </g>
@@ -74,8 +74,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="Inter, Roboto, sans-serif" font-size="22" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="30" font-family="Inter, Roboto, sans-serif" font-size="22" fill="#1a1a2e">jumps over the lazy dog</text>
-        <text x="0" y="70" font-family="Inter, Roboto, sans-serif" font-size="14" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="95" font-family="Inter, Roboto, sans-serif" font-size="14" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="70" font-family="Inter, Roboto, sans-serif" font-size="14" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="95" font-family="Inter, Roboto, sans-serif" font-size="14" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Optimized for digital screens</text>
       </g>
     </g>
@@ -91,8 +91,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="20" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="30" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="20" fill="#1a1a2e">jumps over the lazy dog</text>
-        <text x="0" y="70" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="13" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="95" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="13" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="70" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="13" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="95" font-family="OpenDyslexic, Comic Sans MS, sans-serif" font-size="13" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Weighted bottoms for dyslexia</text>
       </g>
     </g>
@@ -108,8 +108,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="22" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="30" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="22" fill="#1a1a2e">jumps over the lazy dog</text>
-        <text x="0" y="70" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="14" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="95" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="14" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="70" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="14" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="95" font-family="Atkinson Hyperlegible, Verdana, sans-serif" font-size="14" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Max character distinction</text>
       </g>
     </g>
@@ -126,8 +126,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="Georgia, Times New Roman, serif" font-size="22" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="30" font-family="Georgia, Times New Roman, serif" font-size="22" fill="#1a1a2e">jumps over the lazy dog</text>
-        <text x="0" y="70" font-family="Georgia, Times New Roman, serif" font-size="14" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="95" font-family="Georgia, Times New Roman, serif" font-size="14" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="70" font-family="Georgia, Times New Roman, serif" font-size="14" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="95" font-family="Georgia, Times New Roman, serif" font-size="14" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Traditional long-form reading</text>
       </g>
     </g>
@@ -141,8 +141,8 @@
       <g transform="translate(20, 55)">
         <text x="0" y="0" font-family="monospace" font-size="18" fill="#1a1a2e">The quick brown fox</text>
         <text x="0" y="28" font-family="monospace" font-size="18" fill="#1a1a2e">jumps over the lazy</text>
-        <text x="0" y="65" font-family="monospace" font-size="13" fill="#4a5568">ABCDEFGHIJ 0123456789</text>
-        <text x="0" y="90" font-family="monospace" font-size="13" fill="#4a5568">abcdefghij !@#$%</text>
+        <text x="0" y="65" font-family="monospace" font-size="13" fill="#374151">ABCDEFGHIJ 0123456789</text>
+        <text x="0" y="90" font-family="monospace" font-size="13" fill="#374151">abcdefghij !@#$%</text>
         <text x="0" y="125" class="text-muted">Code and technical content</text>
       </g>
     </g>

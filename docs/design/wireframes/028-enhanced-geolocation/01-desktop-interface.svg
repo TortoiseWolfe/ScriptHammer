@@ -19,9 +19,9 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
@@ -42,7 +42,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">ENHANCED GEOLOCATION - DESKTOP INTERFACE</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">ENHANCED GEOLOCATION - DESKTOP INTERFACE</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP - ADDRESS SEARCH &amp; CLICK-TO-SET</text>
@@ -125,11 +125,11 @@
       <rect x="640" y="330" width="280" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
       <text x="660" y="358" class="heading">📍 Current Location</text>
 
-      <text x="660" y="390" class="text-sm" fill="#5a6577">ADDRESS</text>
+      <text x="660" y="390" class="text-sm" fill="#4b5563">ADDRESS</text>
       <text x="660" y="412" class="text-md">123 Main Street</text>
       <text x="660" y="432" class="text-md">Springfield, IL 62701</text>
 
-      <text x="660" y="465" class="text-sm" fill="#5a6577">COORDINATES</text>
+      <text x="660" y="465" class="text-sm" fill="#4b5563">COORDINATES</text>
       <text x="660" y="487" class="text-md">39.7817° N, 89.6501° W</text>
 
       <!-- Source badge -->
@@ -223,7 +223,7 @@
 
     <!-- Accuracy legend -->
     <rect x="20" y="600" width="320" height="80" rx="8" fill="#dcc8a8"/>
-    <text x="40" y="625" class="text-sm" fill="#5a6577">ACCURACY LEVELS</text>
+    <text x="40" y="625" class="text-sm" fill="#4b5563">ACCURACY LEVELS</text>
 
     <circle cx="50" cy="650" r="6" fill="#22c55e"/>
     <text x="65" y="654" class="text-sm">High (&lt;10m)</text>

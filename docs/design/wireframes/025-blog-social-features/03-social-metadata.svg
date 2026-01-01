@@ -21,7 +21,7 @@
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
       .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 10px; }
       .code { fill: #fbbf24; font-family: monospace; font-size: 10px; }
       .label { fill: #94a3b8; font-family: monospace; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
     </style>
