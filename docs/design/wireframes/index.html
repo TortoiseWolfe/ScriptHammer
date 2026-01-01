@@ -352,6 +352,96 @@
 
     <!-- Wireframe nav sections will be added here by /wireframe skill -->
 
+    <div class="nav-section">
+      <h2>000 - RLS Implementation</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="000-rls-implementation/01-rls-architecture-overview.svg">
+          Architecture Overview
+          <span class="path">Roles, tables, policy layer</span>
+        </a>
+        <a href="#" data-svg="000-rls-implementation/02-policy-patterns.svg">
+          Policy Patterns
+          <span class="path">4 reusable RLS templates</span>
+        </a>
+        <a href="#" data-svg="000-rls-implementation/03-access-control-matrix.svg">
+          Access Control Matrix
+          <span class="path">Role x Table x Operation</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>001 - WCAG AAA Compliance</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="001-wcag-aa-compliance/01-a11y-testing-pipeline.svg">
+          A11y Testing Pipeline
+          <span class="path">CI/CD with Pa11y + axe-core</span>
+        </a>
+        <a href="#" data-svg="001-wcag-aa-compliance/02-a11y-dashboard.svg">
+          Accessibility Dashboard
+          <span class="path">Scores, trends, issue drill-down</span>
+        </a>
+        <a href="#" data-svg="001-wcag-aa-compliance/03-dev-feedback-tooling.svg">
+          Developer Feedback Tooling
+          <span class="path">IDE + Storybook + console</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>002 - Cookie Consent</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="002-cookie-consent/01-consent-modal.svg">
+          Consent Modal
+          <span class="path">First visit, 4 categories, no dark patterns</span>
+        </a>
+        <a href="#" data-svg="002-cookie-consent/02-privacy-settings.svg">
+          Privacy Settings
+          <span class="path">Preferences, data export, deletion</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>003 - User Authentication</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="003-user-authentication/01-login-signup.svg">
+          Login &amp; Signup
+          <span class="path">Email/password, OAuth buttons</span>
+        </a>
+        <a href="#" data-svg="003-user-authentication/02-password-reset.svg">
+          Password Reset
+          <span class="path">Request, email sent, new password</span>
+        </a>
+        <a href="#" data-svg="003-user-authentication/03-email-verification.svg">
+          Email Verification
+          <span class="path">Pending, success, expired states</span>
+        </a>
+        <a href="#" data-svg="003-user-authentication/04-profile-settings.svg">
+          Profile &amp; Settings
+          <span class="path">Profile, sessions, delete account</span>
+        </a>
+        <a href="#" data-svg="003-user-authentication/05-auth-flow-architecture.svg">
+          Auth Architecture
+          <span class="path">Token flow, route protection</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>005 - Security Hardening</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="005-security-hardening/01-security-architecture.svg">
+          Security Architecture
+          <span class="path">RLS, OAuth CSRF, rate limiting, audit</span>
+        </a>
+        <a href="#" data-svg="005-security-hardening/02-auth-security-ux.svg">
+          Auth Security UX
+          <span class="path">Password strength, lockout, timeout</span>
+        </a>
+      </div>
+    </div>
+
   </nav>
 
   <main>
@@ -389,7 +479,26 @@
 
   <script>
     const wireframes = [
-      // Wireframes will be added by /wireframe skill
+      // 000 - RLS Implementation
+      { path: '000-rls-implementation/01-rls-architecture-overview.svg', title: 'RLS Architecture Overview' },
+      { path: '000-rls-implementation/02-policy-patterns.svg', title: 'RLS Policy Patterns' },
+      { path: '000-rls-implementation/03-access-control-matrix.svg', title: 'RLS Access Control Matrix' },
+      // 001 - WCAG AAA Compliance
+      { path: '001-wcag-aa-compliance/01-a11y-testing-pipeline.svg', title: 'A11y Testing Pipeline' },
+      { path: '001-wcag-aa-compliance/02-a11y-dashboard.svg', title: 'Accessibility Dashboard' },
+      { path: '001-wcag-aa-compliance/03-dev-feedback-tooling.svg', title: 'Developer Feedback Tooling' },
+      // 002 - Cookie Consent
+      { path: '002-cookie-consent/01-consent-modal.svg', title: 'Consent Modal' },
+      { path: '002-cookie-consent/02-privacy-settings.svg', title: 'Privacy Settings' },
+      // 003 - User Authentication
+      { path: '003-user-authentication/01-login-signup.svg', title: 'Login & Signup' },
+      { path: '003-user-authentication/02-password-reset.svg', title: 'Password Reset Flow' },
+      { path: '003-user-authentication/03-email-verification.svg', title: 'Email Verification States' },
+      { path: '003-user-authentication/04-profile-settings.svg', title: 'Profile & Settings' },
+      { path: '003-user-authentication/05-auth-flow-architecture.svg', title: 'Auth Flow Architecture' },
+      // 005 - Security Hardening
+      { path: '005-security-hardening/01-security-architecture.svg', title: 'Security Architecture' },
+      { path: '005-security-hardening/02-auth-security-ux.svg', title: 'Auth Security UX' },
     ];
 
     let currentIndex = 0;

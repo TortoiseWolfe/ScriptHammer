@@ -1,6 +1,6 @@
 # Wireframe Index
 
-**Total**: 123 SVGs across 46 features
+**Total**: 12 SVGs across 4/46 features (regenerating...)
 
 **Theme:** `/wireframe` auto-selects theme per SVG
 - UX wireframes → Light theme (Indigo palette)

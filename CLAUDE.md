@@ -106,7 +106,7 @@ Both files should stay in sync for implementation phases.
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
-| Wireframes complete | 46 features (123 SVGs) |
+| Wireframes complete | 4/46 features (12 SVGs) |
 | Implementation phase | All 46 at Phase 1 (🔵 ready for /plan) |
 
 ---
