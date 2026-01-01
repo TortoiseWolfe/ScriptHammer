@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **36** / ✅ ~~10~~
+**Progress:** 🎨 **34** / ✅ ~~12~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -38,17 +38,11 @@
 
 #### ~~007-e2e-testing-framework *(backend)*~~ — ✅ Done
 
-#### **008-on-the-account** — 🎨 Pending
-```
-/wireframe features/core-features/008-on-the-account/spec.md
-```
+#### ~~008-on-the-account~~ — ✅ Done
 
 #### ~~009-user-messaging-system~~ — ✅ Done
 
-#### **010-unified-blog-content** — 🎨 Pending
-```
-/wireframe features/core-features/010-unified-blog-content/spec.md
-```
+#### ~~010-unified-blog-content~~ — ✅ Done
 
 #### ~~011-group-chats~~ — ✅ Done
 
