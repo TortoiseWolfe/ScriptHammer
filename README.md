@@ -24,9 +24,21 @@
 <details>
 <summary><strong>Foundation</strong> (7 features)</summary>
 
-**000-rls-implementation** — 🟢 *Pass*
+**~~000-rls-implementation~~** — 🟢 *Pass*
+```
+/wireframe 000-rls-implementation
+```
+```
+/wireframe-review 000-rls-implementation
+```
 
-**001-wcag-aa-compliance** — 🟢 *Pass*
+**~~001-wcag-aa-compliance~~** — 🟢 *Pass*
+```
+/wireframe 001-wcag-aa-compliance
+```
+```
+/wireframe-review 001-wcag-aa-compliance
+```
 
 **002-cookie-consent** — 🔍 Pending
 ```
