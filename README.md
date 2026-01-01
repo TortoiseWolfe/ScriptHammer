@@ -139,35 +139,56 @@
 
 **000-rls-implementation** — 🟢 *Pass*
 ```
+/wireframe 000-rls-implementation
+```
+```
 /wireframe-review 000-rls-implementation
 ```
 
 **001-wcag-aa-compliance** — 🔍 Pending
+```
+/wireframe 001-wcag-aa-compliance
+```
 ```
 /wireframe-review 001-wcag-aa-compliance
 ```
 
 **002-cookie-consent** — 🔍 Pending
 ```
+/wireframe 002-cookie-consent
+```
+```
 /wireframe-review 002-cookie-consent
 ```
 
 **003-user-authentication** — 🔍 Pending
+```
+/wireframe 003-user-authentication
+```
 ```
 /wireframe-review 003-user-authentication
 ```
 
 **004-mobile-first-design** — 🔍 Pending
 ```
+/wireframe 004-mobile-first-design
+```
+```
 /wireframe-review 004-mobile-first-design
 ```
 
 **005-security-hardening** — 🔍 Pending
 ```
+/wireframe 005-security-hardening
+```
+```
 /wireframe-review 005-security-hardening
 ```
 
 **006-template-fork-experience** — 🔍 Pending
+```
+/wireframe 006-template-fork-experience
+```
 ```
 /wireframe-review 006-template-fork-experience
 ```
@@ -179,30 +200,48 @@
 
 **007-e2e-testing-framework** — 🔍 Pending
 ```
+/wireframe 007-e2e-testing-framework
+```
+```
 /wireframe-review 007-e2e-testing-framework
 ```
 
 **008-on-the-account** — 🔍 Pending
+```
+/wireframe 008-on-the-account
+```
 ```
 /wireframe-review 008-on-the-account
 ```
 
 **009-user-messaging-system** — 🔍 Pending
 ```
+/wireframe 009-user-messaging-system
+```
+```
 /wireframe-review 009-user-messaging-system
 ```
 
 **010-unified-blog-content** — 🔍 Pending
+```
+/wireframe 010-unified-blog-content
+```
 ```
 /wireframe-review 010-unified-blog-content
 ```
 
 **011-group-chats** — 🔍 Pending
 ```
+/wireframe 011-group-chats
+```
+```
 /wireframe-review 011-group-chats
 ```
 
 **012-welcome-message-architecture** — 🔍 Pending
+```
+/wireframe 012-welcome-message-architecture
+```
 ```
 /wireframe-review 012-welcome-message-architecture
 ```
@@ -214,20 +253,32 @@
 
 **013-oauth-messaging-password** — 🔍 Pending
 ```
+/wireframe 013-oauth-messaging-password
+```
+```
 /wireframe-review 013-oauth-messaging-password
 ```
 
 **014-admin-welcome-email-gate** — 🔍 Pending
+```
+/wireframe 014-admin-welcome-email-gate
+```
 ```
 /wireframe-review 014-admin-welcome-email-gate
 ```
 
 **015-oauth-display-name** — 🔍 Pending
 ```
+/wireframe 015-oauth-display-name
+```
+```
 /wireframe-review 015-oauth-display-name
 ```
 
 **016-messaging-critical-fixes** — 🔍 Pending
+```
+/wireframe 016-messaging-critical-fixes
+```
 ```
 /wireframe-review 016-messaging-critical-fixes
 ```
@@ -239,25 +290,40 @@
 
 **017-colorblind-mode** — 🔍 Pending
 ```
+/wireframe 017-colorblind-mode
+```
+```
 /wireframe-review 017-colorblind-mode
 ```
 
 **018-font-switcher** — 🔍 Pending
+```
+/wireframe 018-font-switcher
+```
 ```
 /wireframe-review 018-font-switcher
 ```
 
 **019-google-analytics** — 🔍 Pending
 ```
+/wireframe 019-google-analytics
+```
+```
 /wireframe-review 019-google-analytics
 ```
 
 **020-pwa-background-sync** — 🔍 Pending
 ```
+/wireframe 020-pwa-background-sync
+```
+```
 /wireframe-review 020-pwa-background-sync
 ```
 
 **021-geolocation-map** — 🔍 Pending
+```
+/wireframe 021-geolocation-map
+```
 ```
 /wireframe-review 021-geolocation-map
 ```
@@ -269,25 +335,40 @@
 
 **022-web3forms-integration** — 🔍 Pending
 ```
+/wireframe 022-web3forms-integration
+```
+```
 /wireframe-review 022-web3forms-integration
 ```
 
 **023-emailjs-integration** — 🔍 Pending
+```
+/wireframe 023-emailjs-integration
+```
 ```
 /wireframe-review 023-emailjs-integration
 ```
 
 **024-payment-integration** — 🔍 Pending
 ```
+/wireframe 024-payment-integration
+```
+```
 /wireframe-review 024-payment-integration
 ```
 
 **025-blog-social-features** — 🔍 Pending
 ```
+/wireframe 025-blog-social-features
+```
+```
 /wireframe-review 025-blog-social-features
 ```
 
 **026-unified-messaging-sidebar** — 🔍 Pending
+```
+/wireframe 026-unified-messaging-sidebar
+```
 ```
 /wireframe-review 026-unified-messaging-sidebar
 ```
@@ -299,20 +380,32 @@
 
 **027-ux-polish** — 🔍 Pending
 ```
+/wireframe 027-ux-polish
+```
+```
 /wireframe-review 027-ux-polish
 ```
 
 **028-enhanced-geolocation** — 🔍 Pending
+```
+/wireframe 028-enhanced-geolocation
+```
 ```
 /wireframe-review 028-enhanced-geolocation
 ```
 
 **029-seo-editorial-assistant** — 🔍 Pending
 ```
+/wireframe 029-seo-editorial-assistant
+```
+```
 /wireframe-review 029-seo-editorial-assistant
 ```
 
 **030-calendar-integration** — 🔍 Pending
+```
+/wireframe 030-calendar-integration
+```
 ```
 /wireframe-review 030-calendar-integration
 ```
@@ -324,35 +417,56 @@
 
 **031-standardize-test-users** — 🔍 Pending
 ```
+/wireframe 031-standardize-test-users
+```
+```
 /wireframe-review 031-standardize-test-users
 ```
 
 **032-signup-e2e-tests** — 🔍 Pending
+```
+/wireframe 032-signup-e2e-tests
+```
 ```
 /wireframe-review 032-signup-e2e-tests
 ```
 
 **033-seo-library-tests** — 🔍 Pending
 ```
+/wireframe 033-seo-library-tests
+```
+```
 /wireframe-review 033-seo-library-tests
 ```
 
 **034-blog-library-tests** — 🔍 Pending
+```
+/wireframe 034-blog-library-tests
+```
 ```
 /wireframe-review 034-blog-library-tests
 ```
 
 **035-messaging-service-tests** — 🔍 Pending
 ```
+/wireframe 035-messaging-service-tests
+```
+```
 /wireframe-review 035-messaging-service-tests
 ```
 
 **036-auth-component-tests** — 🔍 Pending
 ```
+/wireframe 036-auth-component-tests
+```
+```
 /wireframe-review 036-auth-component-tests
 ```
 
 **037-game-a11y-tests** — 🔍 Pending
+```
+/wireframe 037-game-a11y-tests
+```
 ```
 /wireframe-review 037-game-a11y-tests
 ```
@@ -364,30 +478,48 @@
 
 **038-payment-dashboard** — 🔍 Pending
 ```
+/wireframe 038-payment-dashboard
+```
+```
 /wireframe-review 038-payment-dashboard
 ```
 
 **039-payment-offline-queue** — 🔍 Pending
+```
+/wireframe 039-payment-offline-queue
+```
 ```
 /wireframe-review 039-payment-offline-queue
 ```
 
 **040-payment-retry-ui** — 🔍 Pending
 ```
+/wireframe 040-payment-retry-ui
+```
+```
 /wireframe-review 040-payment-retry-ui
 ```
 
 **041-paypal-subscriptions** — 🔍 Pending
+```
+/wireframe 041-paypal-subscriptions
+```
 ```
 /wireframe-review 041-paypal-subscriptions
 ```
 
 **042-payment-rls-policies** — 🔍 Pending
 ```
+/wireframe 042-payment-rls-policies
+```
+```
 /wireframe-review 042-payment-rls-policies
 ```
 
 **043-group-service** — 🔍 Pending
+```
+/wireframe 043-group-service
+```
 ```
 /wireframe-review 043-group-service
 ```
@@ -399,10 +531,16 @@
 
 **044-error-handler-integrations** — 🔍 Pending
 ```
+/wireframe 044-error-handler-integrations
+```
+```
 /wireframe-review 044-error-handler-integrations
 ```
 
 **045-disqus-theme** — 🔍 Pending
+```
+/wireframe 045-disqus-theme
+```
 ```
 /wireframe-review 045-disqus-theme
 ```
