@@ -158,9 +158,9 @@ For EACH requirement, ask:
 
 ---
 
-## Issue Classification (🟢 vs 🔴)
+## Issue Classification (🟢 vs 🔴) - BINARY ONLY
 
-**CRITICAL**: Classify each issue as patchable or regeneration-required.
+**CRITICAL**: Every issue must be classified as EITHER patchable OR regeneration-required. There is NO third option.
 
 ### 🟢 PATCHABLE (safe to auto-fix)
 - Missing CSS class definition
@@ -175,8 +175,19 @@ For EACH requirement, ask:
 - Canvas size problems
 - Row/section arrangement
 - Touch target sizing (may need layout reflow)
+- **Missing content/rows** (e.g., "missing sessions row")
+- **Any structural addition or removal**
 
-**Rule**: If ANY issue in a file is 🔴, the ENTIRE file needs regeneration.
+### ❌ NO EXCEPTIONS - EVERY ISSUE GETS FIXED
+
+If you find a problem, log it. If you log it, it gets fixed. No exceptions.
+
+- 🟢 → will be patched by `/wireframe-fix`
+- 🔴 → will trigger regeneration by `/wireframe`
+
+**There is no "acceptable as-is."** The review's job is to be rigorous. If something is wrong, it's wrong. Log it, classify it, and it will be fixed.
+
+**Rule**: If ANY issue in a file is 🔴, the ENTIRE file needs regeneration. Do NOT patch other issues in that file - they'll be overwritten anyway.
 
 ---
 

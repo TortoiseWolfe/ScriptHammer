@@ -48,15 +48,23 @@ If ANY of these issues exist → **skip the ENTIRE file**:
 
 | Category | Detection Keywords | Why Regenerate |
 |----------|-------------------|----------------|
-| **Layout/Structure** | overlap, collision, swap, move, rearrange, row | Requires holistic layout decisions |
+| **Layout/Structure** | overlap, collision, swap, move, rearrange | Requires holistic layout decisions |
 | **Spacing/Positioning** | cramped, spacing, gap, wasted space | Affects multiple elements in cascade |
 | **Element Position** | x=, y=, transform, shift, extend | Changes coordinate system |
 | **Canvas/Size** | canvas, 1600, resize, extend | Structural change |
-| **Content** | missing section, add content, new panel | Requires design decisions |
+| **Missing Content** | missing row, missing section, add content, new panel | Requires design decisions |
 | **Touch targets** | 44x44, touch target, undersized | May need layout reflow |
 | **Element counts** | too many, add device, remove | Structural change |
 
 **Why**: Patching structural issues creates cascading problems. The 004-mobile-first-design disaster proved this - patching made it WORSE.
+
+## ❌ NO EXCEPTIONS - EVERY ISSUE GETS FIXED
+
+There are only two outcomes:
+- 🟢 **PATCH** → Apply the fix now
+- 🔴 **REGENERATE** → Skip the entire file, flag for `/wireframe`
+
+**If the review found it, it gets fixed.** No "acceptable as-is." No "deferred." No discretion. The review's job is to find problems. The fix command's job is to fix them. Every. Single. One.
 
 ## Example Output
 
