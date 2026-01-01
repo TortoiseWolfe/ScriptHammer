@@ -6,6 +6,8 @@
 
 ![ScriptHammer Preview](docs/design/wireframes/preview.svg)
 
+### [👀 View Example Wireframes](https://tortoisewolfe.github.io/ScriptHammer/)
+
 ---
 
 ## 🎨 Wireframe Commands (46 features)
@@ -1350,9 +1352,6 @@
 /speckit.implement features/code-quality/045-disqus-theme/spec.md
 ```
 
-## [👀 View Example Wireframes](https://tortoisewolfe.github.io/First-Frame/design/wireframes/)
-
-Interactive wireframe viewer demonstrating the template structure.
 
 ## 🤔 What is ScriptHammer?
 
