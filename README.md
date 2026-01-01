@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **38** / ✅ ~~8~~
+**Progress:** 🎨 **36** / ✅ ~~10~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -32,10 +32,7 @@
 
 #### ~~005-security-hardening~~ — ✅ Done
 
-#### **006-template-fork-experience** — 🎨 Pending
-```
-/wireframe features/foundation/006-template-fork-experience/spec.md
-```
+#### ~~006-template-fork-experience~~ — ✅ Done
 
 ### Core Features
 
@@ -53,10 +50,7 @@
 /wireframe features/core-features/010-unified-blog-content/spec.md
 ```
 
-#### **011-group-chats** — 🎨 Pending
-```
-/wireframe features/core-features/011-group-chats/spec.md
-```
+#### ~~011-group-chats~~ — ✅ Done
 
 #### **012-welcome-message-architecture** — 🎨 Pending
 ```
