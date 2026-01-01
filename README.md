@@ -10,7 +10,8 @@
 
 ---
 
-## 🎨 Wireframe Commands (46 features)
+<details>
+<summary><h2>🎨 Wireframe Commands (46 features)</h2></summary>
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
@@ -18,119 +19,112 @@
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
-### Foundation
+<details>
+<summary><strong>Foundation</strong> (7 features)</summary>
 
-#### ~~000-rls-implementation *(backend)*~~ — ✅ Done
+- ~~000-rls-implementation *(backend)*~~ — ✅ Done
+- ~~001-wcag-aa-compliance~~ — ✅ Done
+- ~~002-cookie-consent~~ — ✅ Done
+- ~~003-user-authentication~~ — ✅ Done
+- ~~004-mobile-first-design~~ — ✅ Done
+- ~~005-security-hardening~~ — ✅ Done
+- ~~006-template-fork-experience~~ — ✅ Done
 
-#### ~~001-wcag-aa-compliance~~ — ✅ Done
+</details>
 
-#### ~~002-cookie-consent~~ — ✅ Done
+<details>
+<summary><strong>Core Features</strong> (6 features)</summary>
 
-#### ~~003-user-authentication~~ — ✅ Done
+- ~~007-e2e-testing-framework *(backend)*~~ — ✅ Done
+- ~~008-on-the-account~~ — ✅ Done
+- ~~009-user-messaging-system~~ — ✅ Done
+- ~~010-unified-blog-content~~ — ✅ Done
+- ~~011-group-chats~~ — ✅ Done
+- ~~012-welcome-message-architecture~~ — ✅ Done
 
-#### ~~004-mobile-first-design~~ — ✅ Done
+</details>
 
-#### ~~005-security-hardening~~ — ✅ Done
+<details>
+<summary><strong>Auth OAuth</strong> (4 features)</summary>
 
-#### ~~006-template-fork-experience~~ — ✅ Done
+- ~~013-oauth-messaging-password~~ — ✅ Done
+- ~~014-admin-welcome-email-gate~~ — ✅ Done
+- ~~015-oauth-display-name *(backend)*~~ — ✅ Done
+- ~~016-messaging-critical-fixes~~ — ✅ Done
 
-### Core Features
+</details>
 
-#### ~~007-e2e-testing-framework *(backend)*~~ — ✅ Done
+<details>
+<summary><strong>Enhancements</strong> (5 features)</summary>
 
-#### ~~008-on-the-account~~ — ✅ Done
+- ~~017-colorblind-mode~~ — ✅ Done
+- ~~018-font-switcher~~ — ✅ Done
+- ~~019-google-analytics *(backend)*~~ — ✅ Done
+- ~~020-pwa-background-sync~~ — ✅ Done
+- ~~021-geolocation-map~~ — ✅ Done
 
-#### ~~009-user-messaging-system~~ — ✅ Done
+</details>
 
-#### ~~010-unified-blog-content~~ — ✅ Done
+<details>
+<summary><strong>Integrations</strong> (5 features)</summary>
 
-#### ~~011-group-chats~~ — ✅ Done
+- ~~022-web3forms-integration~~ — ✅ Done
+- ~~023-emailjs-integration~~ — ✅ Done
+- ~~024-payment-integration~~ — ✅ Done
+- ~~025-blog-social-features~~ — ✅ Done
+- ~~026-unified-messaging-sidebar~~ — ✅ Done
 
-#### ~~012-welcome-message-architecture~~ — ✅ Done
+</details>
 
-### Auth OAuth
+<details>
+<summary><strong>Polish</strong> (4 features)</summary>
 
-#### ~~013-oauth-messaging-password~~ — ✅ Done
+- ~~027-ux-polish~~ — ✅ Done
+- ~~028-enhanced-geolocation~~ — ✅ Done
+- ~~029-seo-editorial-assistant~~ — ✅ Done
+- ~~030-calendar-integration~~ — ✅ Done
 
-#### ~~014-admin-welcome-email-gate~~ — ✅ Done
+</details>
 
-#### ~~015-oauth-display-name *(backend)*~~ — ✅ Done
+<details>
+<summary><strong>Testing</strong> (7 features) <em>all backend</em></summary>
 
-#### ~~016-messaging-critical-fixes~~ — ✅ Done
+- ~~031-standardize-test-users *(backend)*~~ — ✅ Done
+- ~~032-signup-e2e-tests~~ — ✅ Done
+- ~~033-seo-library-tests *(backend)*~~ — ✅ Done
+- ~~034-blog-library-tests *(backend)*~~ — ✅ Done
+- ~~035-messaging-service-tests *(backend)*~~ — ✅ Done
+- ~~036-auth-component-tests *(backend)*~~ — ✅ Done
+- ~~037-game-a11y-tests *(backend)*~~ — ✅ Done
 
-### Enhancements
+</details>
 
-#### ~~017-colorblind-mode~~ — ✅ Done
+<details>
+<summary><strong>Payments</strong> (6 features)</summary>
 
-#### ~~018-font-switcher~~ — ✅ Done
+- ~~038-payment-dashboard~~ — ✅ Done
+- ~~039-payment-offline-queue *(backend)*~~ — ✅ Done
+- ~~040-payment-retry-ui~~ — ✅ Done
+- ~~041-paypal-subscriptions~~ — ✅ Done
+- ~~042-payment-rls-policies *(backend)*~~ — ✅ Done
+- ~~043-group-service *(backend)*~~ — ✅ Done
 
-#### ~~019-google-analytics *(backend)*~~ — ✅ Done
+</details>
 
-#### ~~020-pwa-background-sync~~ — ✅ Done
+<details>
+<summary><strong>Code Quality</strong> (2 features)</summary>
 
-#### ~~021-geolocation-map~~ — ✅ Done
+- ~~044-error-handler-integrations~~ — ✅ Done
+- ~~045-disqus-theme~~ — ✅ Done
 
-### Integrations
+</details>
 
-#### ~~022-web3forms-integration~~ — ✅ Done
-
-#### ~~023-emailjs-integration~~ — ✅ Done
-
-#### ~~024-payment-integration~~ — ✅ Done
-
-#### ~~025-blog-social-features~~ — ✅ Done
-
-#### ~~026-unified-messaging-sidebar~~ — ✅ Done
-
-### Polish
-
-#### ~~027-ux-polish~~ — ✅ Done
-
-#### ~~028-enhanced-geolocation~~ — ✅ Done
-
-#### ~~029-seo-editorial-assistant~~ — ✅ Done
-
-#### ~~030-calendar-integration~~ — ✅ Done
-
-### Testing *(all backend)*
-
-#### ~~031-standardize-test-users *(backend)*~~ — ✅ Done
-
-#### ~~032-signup-e2e-tests~~ — ✅ Done
-
-#### ~~033-seo-library-tests *(backend)*~~ — ✅ Done
-
-#### ~~034-blog-library-tests *(backend)*~~ — ✅ Done
-
-#### ~~035-messaging-service-tests *(backend)*~~ — ✅ Done
-
-#### ~~036-auth-component-tests *(backend)*~~ — ✅ Done
-
-#### ~~037-game-a11y-tests *(backend)*~~ — ✅ Done
-
-### Payments
-
-#### ~~038-payment-dashboard~~ — ✅ Done
-
-#### ~~039-payment-offline-queue *(backend)*~~ — ✅ Done
-
-#### ~~040-payment-retry-ui~~ — ✅ Done
-
-#### ~~041-paypal-subscriptions~~ — ✅ Done
-
-#### ~~042-payment-rls-policies *(backend)*~~ — ✅ Done
-
-#### ~~043-group-service *(backend)*~~ — ✅ Done
-
-### Code Quality
-
-#### ~~044-error-handler-integrations~~ — ✅ Done
-
-#### ~~045-disqus-theme~~ — ✅ Done
+</details>
 
 ---
 
-## 🔍 Wireframe Review Commands (46 features)
+<details>
+<summary><h2>🔍 Wireframe Review Commands (46 features)</h2></summary>
 
 **Legend:** 🔍 **Pending** | 🟢 *Pass* | 🔴 `Regen` | ✅ ~~Done~~
 
@@ -140,265 +134,297 @@
 - 🟢 **PATCHABLE** (color, typo, font, missing class) → `/wireframe-fix`
 - 🔴 **REGENERATE** (layout, spacing, overlap) → `/wireframe` with feedback
 
-### Foundation
+<details>
+<summary><strong>Foundation</strong> (7 features)</summary>
 
-#### 000-rls-implementation — 🟢 *Pass*
+**000-rls-implementation** — 🟢 *Pass*
 ```
 /wireframe-review 000-rls-implementation
 ```
 
-#### **001-wcag-aa-compliance** — 🔍 Pending
+**001-wcag-aa-compliance** — 🔍 Pending
 ```
 /wireframe-review 001-wcag-aa-compliance
 ```
 
-#### **002-cookie-consent** — 🔍 Pending
+**002-cookie-consent** — 🔍 Pending
 ```
 /wireframe-review 002-cookie-consent
 ```
 
-#### **003-user-authentication** — 🔍 Pending
+**003-user-authentication** — 🔍 Pending
 ```
 /wireframe-review 003-user-authentication
 ```
 
-#### **004-mobile-first-design** — 🔍 Pending
+**004-mobile-first-design** — 🔍 Pending
 ```
 /wireframe-review 004-mobile-first-design
 ```
 
-#### **005-security-hardening** — 🔍 Pending
+**005-security-hardening** — 🔍 Pending
 ```
 /wireframe-review 005-security-hardening
 ```
 
-#### **006-template-fork-experience** — 🔍 Pending
+**006-template-fork-experience** — 🔍 Pending
 ```
 /wireframe-review 006-template-fork-experience
 ```
 
-### Core Features
+</details>
 
-#### **007-e2e-testing-framework** — 🔍 Pending
+<details>
+<summary><strong>Core Features</strong> (6 features)</summary>
+
+**007-e2e-testing-framework** — 🔍 Pending
 ```
 /wireframe-review 007-e2e-testing-framework
 ```
 
-#### **008-on-the-account** — 🔍 Pending
+**008-on-the-account** — 🔍 Pending
 ```
 /wireframe-review 008-on-the-account
 ```
 
-#### **009-user-messaging-system** — 🔍 Pending
+**009-user-messaging-system** — 🔍 Pending
 ```
 /wireframe-review 009-user-messaging-system
 ```
 
-#### **010-unified-blog-content** — 🔍 Pending
+**010-unified-blog-content** — 🔍 Pending
 ```
 /wireframe-review 010-unified-blog-content
 ```
 
-#### **011-group-chats** — 🔍 Pending
+**011-group-chats** — 🔍 Pending
 ```
 /wireframe-review 011-group-chats
 ```
 
-#### **012-welcome-message-architecture** — 🔍 Pending
+**012-welcome-message-architecture** — 🔍 Pending
 ```
 /wireframe-review 012-welcome-message-architecture
 ```
 
-### Auth OAuth
+</details>
 
-#### **013-oauth-messaging-password** — 🔍 Pending
+<details>
+<summary><strong>Auth OAuth</strong> (4 features)</summary>
+
+**013-oauth-messaging-password** — 🔍 Pending
 ```
 /wireframe-review 013-oauth-messaging-password
 ```
 
-#### **014-admin-welcome-email-gate** — 🔍 Pending
+**014-admin-welcome-email-gate** — 🔍 Pending
 ```
 /wireframe-review 014-admin-welcome-email-gate
 ```
 
-#### **015-oauth-display-name** — 🔍 Pending
+**015-oauth-display-name** — 🔍 Pending
 ```
 /wireframe-review 015-oauth-display-name
 ```
 
-#### **016-messaging-critical-fixes** — 🔍 Pending
+**016-messaging-critical-fixes** — 🔍 Pending
 ```
 /wireframe-review 016-messaging-critical-fixes
 ```
 
-### Enhancements
+</details>
 
-#### **017-colorblind-mode** — 🔍 Pending
+<details>
+<summary><strong>Enhancements</strong> (5 features)</summary>
+
+**017-colorblind-mode** — 🔍 Pending
 ```
 /wireframe-review 017-colorblind-mode
 ```
 
-#### **018-font-switcher** — 🔍 Pending
+**018-font-switcher** — 🔍 Pending
 ```
 /wireframe-review 018-font-switcher
 ```
 
-#### **019-google-analytics** — 🔍 Pending
+**019-google-analytics** — 🔍 Pending
 ```
 /wireframe-review 019-google-analytics
 ```
 
-#### **020-pwa-background-sync** — 🔍 Pending
+**020-pwa-background-sync** — 🔍 Pending
 ```
 /wireframe-review 020-pwa-background-sync
 ```
 
-#### **021-geolocation-map** — 🔍 Pending
+**021-geolocation-map** — 🔍 Pending
 ```
 /wireframe-review 021-geolocation-map
 ```
 
-### Integrations
+</details>
 
-#### **022-web3forms-integration** — 🔍 Pending
+<details>
+<summary><strong>Integrations</strong> (5 features)</summary>
+
+**022-web3forms-integration** — 🔍 Pending
 ```
 /wireframe-review 022-web3forms-integration
 ```
 
-#### **023-emailjs-integration** — 🔍 Pending
+**023-emailjs-integration** — 🔍 Pending
 ```
 /wireframe-review 023-emailjs-integration
 ```
 
-#### **024-payment-integration** — 🔍 Pending
+**024-payment-integration** — 🔍 Pending
 ```
 /wireframe-review 024-payment-integration
 ```
 
-#### **025-blog-social-features** — 🔍 Pending
+**025-blog-social-features** — 🔍 Pending
 ```
 /wireframe-review 025-blog-social-features
 ```
 
-#### **026-unified-messaging-sidebar** — 🔍 Pending
+**026-unified-messaging-sidebar** — 🔍 Pending
 ```
 /wireframe-review 026-unified-messaging-sidebar
 ```
 
-### Polish
+</details>
 
-#### **027-ux-polish** — 🔍 Pending
+<details>
+<summary><strong>Polish</strong> (4 features)</summary>
+
+**027-ux-polish** — 🔍 Pending
 ```
 /wireframe-review 027-ux-polish
 ```
 
-#### **028-enhanced-geolocation** — 🔍 Pending
+**028-enhanced-geolocation** — 🔍 Pending
 ```
 /wireframe-review 028-enhanced-geolocation
 ```
 
-#### **029-seo-editorial-assistant** — 🔍 Pending
+**029-seo-editorial-assistant** — 🔍 Pending
 ```
 /wireframe-review 029-seo-editorial-assistant
 ```
 
-#### **030-calendar-integration** — 🔍 Pending
+**030-calendar-integration** — 🔍 Pending
 ```
 /wireframe-review 030-calendar-integration
 ```
 
-### Testing
+</details>
 
-#### **031-standardize-test-users** — 🔍 Pending
+<details>
+<summary><strong>Testing</strong> (7 features)</summary>
+
+**031-standardize-test-users** — 🔍 Pending
 ```
 /wireframe-review 031-standardize-test-users
 ```
 
-#### **032-signup-e2e-tests** — 🔍 Pending
+**032-signup-e2e-tests** — 🔍 Pending
 ```
 /wireframe-review 032-signup-e2e-tests
 ```
 
-#### **033-seo-library-tests** — 🔍 Pending
+**033-seo-library-tests** — 🔍 Pending
 ```
 /wireframe-review 033-seo-library-tests
 ```
 
-#### **034-blog-library-tests** — 🔍 Pending
+**034-blog-library-tests** — 🔍 Pending
 ```
 /wireframe-review 034-blog-library-tests
 ```
 
-#### **035-messaging-service-tests** — 🔍 Pending
+**035-messaging-service-tests** — 🔍 Pending
 ```
 /wireframe-review 035-messaging-service-tests
 ```
 
-#### **036-auth-component-tests** — 🔍 Pending
+**036-auth-component-tests** — 🔍 Pending
 ```
 /wireframe-review 036-auth-component-tests
 ```
 
-#### **037-game-a11y-tests** — 🔍 Pending
+**037-game-a11y-tests** — 🔍 Pending
 ```
 /wireframe-review 037-game-a11y-tests
 ```
 
-### Payments
+</details>
 
-#### **038-payment-dashboard** — 🔍 Pending
+<details>
+<summary><strong>Payments</strong> (6 features)</summary>
+
+**038-payment-dashboard** — 🔍 Pending
 ```
 /wireframe-review 038-payment-dashboard
 ```
 
-#### **039-payment-offline-queue** — 🔍 Pending
+**039-payment-offline-queue** — 🔍 Pending
 ```
 /wireframe-review 039-payment-offline-queue
 ```
 
-#### **040-payment-retry-ui** — 🔍 Pending
+**040-payment-retry-ui** — 🔍 Pending
 ```
 /wireframe-review 040-payment-retry-ui
 ```
 
-#### **041-paypal-subscriptions** — 🔍 Pending
+**041-paypal-subscriptions** — 🔍 Pending
 ```
 /wireframe-review 041-paypal-subscriptions
 ```
 
-#### **042-payment-rls-policies** — 🔍 Pending
+**042-payment-rls-policies** — 🔍 Pending
 ```
 /wireframe-review 042-payment-rls-policies
 ```
 
-#### **043-group-service** — 🔍 Pending
+**043-group-service** — 🔍 Pending
 ```
 /wireframe-review 043-group-service
 ```
 
-### Code Quality
+</details>
 
-#### **044-error-handler-integrations** — 🔍 Pending
+<details>
+<summary><strong>Code Quality</strong> (2 features)</summary>
+
+**044-error-handler-integrations** — 🔍 Pending
 ```
 /wireframe-review 044-error-handler-integrations
 ```
 
-#### **045-disqus-theme** — 🔍 Pending
+**045-disqus-theme** — 🔍 Pending
 ```
 /wireframe-review 045-disqus-theme
 ```
 
+</details>
+
+</details>
+
 ---
 
-## 🛠️ Implementation Commands (46 features)
+<details>
+<summary><h2>🛠️ Implementation Commands (46 features)</h2></summary>
 
 **Legend:** 🔵 **Plan** | 🟡 *Checklist* | 🟠 `Tasks` | 🟣 Analyze | ✅ ~~Done~~
 
 **Progress:** 🔵 **46** / 🟡 *0* / 🟠 `0` / 🟣 0 / ✅ ~~0~~
 
-### Foundation
+<details>
+<summary><strong>Foundation</strong> (7 features)</summary>
 
-#### 000-rls-implementation
+**000-rls-implementation**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/000-rls-implementation/spec.md
@@ -420,7 +446,8 @@
 /speckit.implement features/foundation/000-rls-implementation/spec.md
 ```
 
-#### 001-wcag-aa-compliance
+**001-wcag-aa-compliance**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/001-wcag-aa-compliance/spec.md
@@ -442,7 +469,8 @@
 /speckit.implement features/foundation/001-wcag-aa-compliance/spec.md
 ```
 
-#### 002-cookie-consent
+**002-cookie-consent**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/002-cookie-consent/spec.md
@@ -464,7 +492,8 @@
 /speckit.implement features/foundation/002-cookie-consent/spec.md
 ```
 
-#### 003-user-authentication
+**003-user-authentication**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/003-user-authentication/spec.md
@@ -486,7 +515,8 @@
 /speckit.implement features/foundation/003-user-authentication/spec.md
 ```
 
-#### 004-mobile-first-design
+**004-mobile-first-design**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/004-mobile-first-design/spec.md
@@ -508,7 +538,8 @@
 /speckit.implement features/foundation/004-mobile-first-design/spec.md
 ```
 
-#### 005-security-hardening
+**005-security-hardening**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/005-security-hardening/spec.md
@@ -530,7 +561,8 @@
 /speckit.implement features/foundation/005-security-hardening/spec.md
 ```
 
-#### 006-template-fork-experience
+**006-template-fork-experience**
+
 🔵 **Plan**
 ```
 /speckit.plan features/foundation/006-template-fork-experience/spec.md
@@ -552,9 +584,13 @@
 /speckit.implement features/foundation/006-template-fork-experience/spec.md
 ```
 
-### Core Features
+</details>
 
-#### 007-e2e-testing-framework
+<details>
+<summary><strong>Core Features</strong> (6 features)</summary>
+
+**007-e2e-testing-framework**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/007-e2e-testing-framework/spec.md
@@ -576,7 +612,8 @@
 /speckit.implement features/core-features/007-e2e-testing-framework/spec.md
 ```
 
-#### 008-on-the-account
+**008-on-the-account**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/008-on-the-account/spec.md
@@ -598,7 +635,8 @@
 /speckit.implement features/core-features/008-on-the-account/spec.md
 ```
 
-#### 009-user-messaging-system
+**009-user-messaging-system**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/009-user-messaging-system/spec.md
@@ -620,7 +658,8 @@
 /speckit.implement features/core-features/009-user-messaging-system/spec.md
 ```
 
-#### 010-unified-blog-content
+**010-unified-blog-content**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/010-unified-blog-content/spec.md
@@ -642,7 +681,8 @@
 /speckit.implement features/core-features/010-unified-blog-content/spec.md
 ```
 
-#### 011-group-chats
+**011-group-chats**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/011-group-chats/spec.md
@@ -664,7 +704,8 @@
 /speckit.implement features/core-features/011-group-chats/spec.md
 ```
 
-#### 012-welcome-message-architecture
+**012-welcome-message-architecture**
+
 🔵 **Plan**
 ```
 /speckit.plan features/core-features/012-welcome-message-architecture/spec.md
@@ -686,9 +727,13 @@
 /speckit.implement features/core-features/012-welcome-message-architecture/spec.md
 ```
 
-### Auth OAuth
+</details>
 
-#### 013-oauth-messaging-password
+<details>
+<summary><strong>Auth OAuth</strong> (4 features)</summary>
+
+**013-oauth-messaging-password**
+
 🔵 **Plan**
 ```
 /speckit.plan features/auth-oauth/013-oauth-messaging-password/spec.md
@@ -710,7 +755,8 @@
 /speckit.implement features/auth-oauth/013-oauth-messaging-password/spec.md
 ```
 
-#### 014-admin-welcome-email-gate
+**014-admin-welcome-email-gate**
+
 🔵 **Plan**
 ```
 /speckit.plan features/auth-oauth/014-admin-welcome-email-gate/spec.md
@@ -732,7 +778,8 @@
 /speckit.implement features/auth-oauth/014-admin-welcome-email-gate/spec.md
 ```
 
-#### 015-oauth-display-name
+**015-oauth-display-name**
+
 🔵 **Plan**
 ```
 /speckit.plan features/auth-oauth/015-oauth-display-name/spec.md
@@ -754,7 +801,8 @@
 /speckit.implement features/auth-oauth/015-oauth-display-name/spec.md
 ```
 
-#### 016-messaging-critical-fixes
+**016-messaging-critical-fixes**
+
 🔵 **Plan**
 ```
 /speckit.plan features/auth-oauth/016-messaging-critical-fixes/spec.md
@@ -776,9 +824,13 @@
 /speckit.implement features/auth-oauth/016-messaging-critical-fixes/spec.md
 ```
 
-### Enhancements
+</details>
 
-#### 017-colorblind-mode
+<details>
+<summary><strong>Enhancements</strong> (5 features)</summary>
+
+**017-colorblind-mode**
+
 🔵 **Plan**
 ```
 /speckit.plan features/enhancements/017-colorblind-mode/spec.md
@@ -800,7 +852,8 @@
 /speckit.implement features/enhancements/017-colorblind-mode/spec.md
 ```
 
-#### 018-font-switcher
+**018-font-switcher**
+
 🔵 **Plan**
 ```
 /speckit.plan features/enhancements/018-font-switcher/spec.md
@@ -822,7 +875,8 @@
 /speckit.implement features/enhancements/018-font-switcher/spec.md
 ```
 
-#### 019-google-analytics
+**019-google-analytics**
+
 🔵 **Plan**
 ```
 /speckit.plan features/enhancements/019-google-analytics/spec.md
@@ -844,7 +898,8 @@
 /speckit.implement features/enhancements/019-google-analytics/spec.md
 ```
 
-#### 020-pwa-background-sync
+**020-pwa-background-sync**
+
 🔵 **Plan**
 ```
 /speckit.plan features/enhancements/020-pwa-background-sync/spec.md
@@ -866,7 +921,8 @@
 /speckit.implement features/enhancements/020-pwa-background-sync/spec.md
 ```
 
-#### 021-geolocation-map
+**021-geolocation-map**
+
 🔵 **Plan**
 ```
 /speckit.plan features/enhancements/021-geolocation-map/spec.md
@@ -888,9 +944,13 @@
 /speckit.implement features/enhancements/021-geolocation-map/spec.md
 ```
 
-### Integrations
+</details>
 
-#### 022-web3forms-integration
+<details>
+<summary><strong>Integrations</strong> (5 features)</summary>
+
+**022-web3forms-integration**
+
 🔵 **Plan**
 ```
 /speckit.plan features/integrations/022-web3forms-integration/spec.md
@@ -912,7 +972,8 @@
 /speckit.implement features/integrations/022-web3forms-integration/spec.md
 ```
 
-#### 023-emailjs-integration
+**023-emailjs-integration**
+
 🔵 **Plan**
 ```
 /speckit.plan features/integrations/023-emailjs-integration/spec.md
@@ -934,7 +995,8 @@
 /speckit.implement features/integrations/023-emailjs-integration/spec.md
 ```
 
-#### 024-payment-integration
+**024-payment-integration**
+
 🔵 **Plan**
 ```
 /speckit.plan features/integrations/024-payment-integration/spec.md
@@ -956,7 +1018,8 @@
 /speckit.implement features/integrations/024-payment-integration/spec.md
 ```
 
-#### 025-blog-social-features
+**025-blog-social-features**
+
 🔵 **Plan**
 ```
 /speckit.plan features/integrations/025-blog-social-features/spec.md
@@ -978,7 +1041,8 @@
 /speckit.implement features/integrations/025-blog-social-features/spec.md
 ```
 
-#### 026-unified-messaging-sidebar
+**026-unified-messaging-sidebar**
+
 🔵 **Plan**
 ```
 /speckit.plan features/integrations/026-unified-messaging-sidebar/spec.md
@@ -1000,9 +1064,13 @@
 /speckit.implement features/integrations/026-unified-messaging-sidebar/spec.md
 ```
 
-### Polish
+</details>
 
-#### 027-ux-polish
+<details>
+<summary><strong>Polish</strong> (4 features)</summary>
+
+**027-ux-polish**
+
 🔵 **Plan**
 ```
 /speckit.plan features/polish/027-ux-polish/spec.md
@@ -1024,7 +1092,8 @@
 /speckit.implement features/polish/027-ux-polish/spec.md
 ```
 
-#### 028-enhanced-geolocation
+**028-enhanced-geolocation**
+
 🔵 **Plan**
 ```
 /speckit.plan features/polish/028-enhanced-geolocation/spec.md
@@ -1046,7 +1115,8 @@
 /speckit.implement features/polish/028-enhanced-geolocation/spec.md
 ```
 
-#### 029-seo-editorial-assistant
+**029-seo-editorial-assistant**
+
 🔵 **Plan**
 ```
 /speckit.plan features/polish/029-seo-editorial-assistant/spec.md
@@ -1068,7 +1138,8 @@
 /speckit.implement features/polish/029-seo-editorial-assistant/spec.md
 ```
 
-#### 030-calendar-integration
+**030-calendar-integration**
+
 🔵 **Plan**
 ```
 /speckit.plan features/polish/030-calendar-integration/spec.md
@@ -1090,9 +1161,13 @@
 /speckit.implement features/polish/030-calendar-integration/spec.md
 ```
 
-### Testing
+</details>
 
-#### 031-standardize-test-users
+<details>
+<summary><strong>Testing</strong> (7 features)</summary>
+
+**031-standardize-test-users**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/031-standardize-test-users/spec.md
@@ -1114,7 +1189,8 @@
 /speckit.implement features/testing/031-standardize-test-users/spec.md
 ```
 
-#### 032-signup-e2e-tests
+**032-signup-e2e-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/032-signup-e2e-tests/spec.md
@@ -1136,7 +1212,8 @@
 /speckit.implement features/testing/032-signup-e2e-tests/spec.md
 ```
 
-#### 033-seo-library-tests
+**033-seo-library-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/033-seo-library-tests/spec.md
@@ -1158,7 +1235,8 @@
 /speckit.implement features/testing/033-seo-library-tests/spec.md
 ```
 
-#### 034-blog-library-tests
+**034-blog-library-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/034-blog-library-tests/spec.md
@@ -1180,7 +1258,8 @@
 /speckit.implement features/testing/034-blog-library-tests/spec.md
 ```
 
-#### 035-messaging-service-tests
+**035-messaging-service-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/035-messaging-service-tests/spec.md
@@ -1202,7 +1281,8 @@
 /speckit.implement features/testing/035-messaging-service-tests/spec.md
 ```
 
-#### 036-auth-component-tests
+**036-auth-component-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/036-auth-component-tests/spec.md
@@ -1224,7 +1304,8 @@
 /speckit.implement features/testing/036-auth-component-tests/spec.md
 ```
 
-#### 037-game-a11y-tests
+**037-game-a11y-tests**
+
 🔵 **Plan**
 ```
 /speckit.plan features/testing/037-game-a11y-tests/spec.md
@@ -1246,9 +1327,13 @@
 /speckit.implement features/testing/037-game-a11y-tests/spec.md
 ```
 
-### Payments
+</details>
 
-#### 038-payment-dashboard
+<details>
+<summary><strong>Payments</strong> (6 features)</summary>
+
+**038-payment-dashboard**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/038-payment-dashboard/spec.md
@@ -1270,7 +1355,8 @@
 /speckit.implement features/payments/038-payment-dashboard/spec.md
 ```
 
-#### 039-payment-offline-queue
+**039-payment-offline-queue**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/039-payment-offline-queue/spec.md
@@ -1292,7 +1378,8 @@
 /speckit.implement features/payments/039-payment-offline-queue/spec.md
 ```
 
-#### 040-payment-retry-ui
+**040-payment-retry-ui**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/040-payment-retry-ui/spec.md
@@ -1314,7 +1401,8 @@
 /speckit.implement features/payments/040-payment-retry-ui/spec.md
 ```
 
-#### 041-paypal-subscriptions
+**041-paypal-subscriptions**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/041-paypal-subscriptions/spec.md
@@ -1336,7 +1424,8 @@
 /speckit.implement features/payments/041-paypal-subscriptions/spec.md
 ```
 
-#### 042-payment-rls-policies
+**042-payment-rls-policies**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/042-payment-rls-policies/spec.md
@@ -1358,7 +1447,8 @@
 /speckit.implement features/payments/042-payment-rls-policies/spec.md
 ```
 
-#### 043-group-service
+**043-group-service**
+
 🔵 **Plan**
 ```
 /speckit.plan features/payments/043-group-service/spec.md
@@ -1380,9 +1470,13 @@
 /speckit.implement features/payments/043-group-service/spec.md
 ```
 
-### Code Quality
+</details>
 
-#### 044-error-handler-integrations
+<details>
+<summary><strong>Code Quality</strong> (2 features)</summary>
+
+**044-error-handler-integrations**
+
 🔵 **Plan**
 ```
 /speckit.plan features/code-quality/044-error-handler-integrations/spec.md
@@ -1404,7 +1498,8 @@
 /speckit.implement features/code-quality/044-error-handler-integrations/spec.md
 ```
 
-#### 045-disqus-theme
+**045-disqus-theme**
+
 🔵 **Plan**
 ```
 /speckit.plan features/code-quality/045-disqus-theme/spec.md
@@ -1426,6 +1521,11 @@
 /speckit.implement features/code-quality/045-disqus-theme/spec.md
 ```
 
+</details>
+
+</details>
+
+---
 
 ## 🤔 What is ScriptHammer?
 
