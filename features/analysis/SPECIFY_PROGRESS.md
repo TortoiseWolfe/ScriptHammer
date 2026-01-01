@@ -91,7 +91,7 @@ All 46 features have been specified!
 
 | Feature | Wireframes | Status |
 |---------|------------|--------|
-| 000-rls-implementation | 1 | ✅ |
+| 000-rls-implementation | 3 | ✅ |
 | 001-wcag-aa-compliance | 2 | ✅ |
 | 002-cookie-consent | 2 | ✅ |
 | 003-user-authentication | 3 | ✅ |
