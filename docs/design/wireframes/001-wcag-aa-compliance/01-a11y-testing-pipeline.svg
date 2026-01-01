@@ -28,8 +28,8 @@
       .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .annotation { fill: #6d28d9; font-family: monospace; font-size: 10px; }
+      .text-muted { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #a78bfa; font-family: monospace; font-size: 10px; }
       .label { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
     </style>
     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -145,6 +145,7 @@
       <text x="90" y="42" text-anchor="middle" class="text-sm">Normal text: 7:1</text>
       <text x="90" y="58" text-anchor="middle" class="text-sm">Large text: 4.5:1</text>
       <text x="90" y="74" text-anchor="middle" class="text-muted">32 themes tested</text>
+      <text x="90" y="92" text-anchor="middle" class="annotation">FR-006, FR-007, FR-008</text>
     </g>
 
     <!-- Touch Targets -->
@@ -154,6 +155,7 @@
       <text x="90" y="42" text-anchor="middle" class="text-sm">Min: 44×44 CSS px</text>
       <text x="90" y="58" text-anchor="middle" class="text-sm">Button spacing</text>
       <text x="90" y="74" text-anchor="middle" class="text-muted">Motor accessibility</text>
+      <text x="90" y="92" text-anchor="middle" class="annotation">FR-016, FR-017</text>
     </g>
 
     <!-- Keyboard Nav -->
@@ -163,6 +165,7 @@
       <text x="90" y="42" text-anchor="middle" class="text-sm">Tab order logical</text>
       <text x="90" y="58" text-anchor="middle" class="text-sm">Focus visible 2px+</text>
       <text x="90" y="74" text-anchor="middle" class="text-muted">No focus traps</text>
+      <text x="90" y="92" text-anchor="middle" class="annotation">FR-011, FR-012, FR-014</text>
     </g>
 
     <!-- ARIA / Screen Reader -->
@@ -172,6 +175,7 @@
       <text x="90" y="42" text-anchor="middle" class="text-sm">ARIA landmarks</text>
       <text x="90" y="58" text-anchor="middle" class="text-sm">Live regions</text>
       <text x="90" y="74" text-anchor="middle" class="text-muted">Alt text verified</text>
+      <text x="90" y="92" text-anchor="middle" class="annotation">FR-019, FR-020, FR-021</text>
     </g>
   </g>
 

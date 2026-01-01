@@ -1,5 +1,5 @@
 ---
-description: Generate SVG wireframes with auto theme selection (light for UX, dark for backend) from a spec.
+description: Generate, fix, or regenerate SVG wireframes with smart triage (patches 🟢 issues, regenerates 🔴 issues)
 ---
 
 ## User Input
@@ -10,9 +10,25 @@ $ARGUMENTS
 
 ## Outline
 
-Generate SVG wireframes from a feature specification with automatic theme selection:
+**Smart wireframe command** that handles the full lifecycle:
+- **Fresh generation**: Creates wireframes from spec (no feedback file)
+- **Fix cycle**: Patches 🟢 issues in place, regenerates 🔴 files with feedback
+
+Theme selection:
 - **Light theme** (Indigo palette) for UX/Frontend wireframes
 - **Dark theme** (Slate/Violet palette) for Backend/Architecture wireframes
+
+### Workflow (Simplified)
+
+```
+/wireframe-review [feature]     # Creates WIREFRAME_ISSUES.md with feedback
+    ↓
+/wireframe [feature]            # Smart: patches 🟢, regenerates 🔴, skips ✅
+    ↓
+(repeat until all issues resolved)
+```
+
+**Note**: `/wireframe-fix` is deprecated - this command now handles both patching and regeneration.
 
 ### 1. Identify the Spec
 
@@ -34,6 +50,119 @@ Ask the user which spec to use if multiple exist, or use the only one if there's
 - Error states or edge cases mentioned
 
 This is critical - wireframes must accurately reflect the spec requirements.
+
+### 2b. Check for Review Feedback & Triage (CRITICAL)
+
+**Before generating, check if this is a fix/regeneration with feedback from a previous review.**
+
+Look for `WIREFRAME_ISSUES.md` in the feature directory:
+```
+features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
+```
+
+**If no WIREFRAME_ISSUES.md exists** → Fresh generation, proceed to Step 3.
+
+**If WIREFRAME_ISSUES.md exists** → This is a fix/regeneration cycle. Triage each file:
+
+---
+
+#### Triage Logic: 🟢 Patch vs 🔴 Regenerate
+
+**For each SVG file listed in the issues:**
+
+**Step 1: Classify each issue**
+
+🟢 **PATCHABLE** (only these 4 types):
+| Issue Type | Fix Method |
+|------------|------------|
+| Wrong color value | Find/replace hex in fill/stroke |
+| Font size too small | Update `font-size` attribute |
+| Typo in text | Update text content |
+| Missing CSS class | Add to `<style>` block |
+
+🔴 **REGENERATE** (if ANY of these keywords appear):
+| Category | Detection Keywords |
+|----------|-------------------|
+| Layout/Structure | overlap, collision, swap, move, rearrange |
+| Spacing/Positioning | cramped, spacing, gap, wasted space |
+| Element Position | x=, y=, transform, shift, extend |
+| Canvas/Size | canvas, 1600, resize, extend |
+| Missing Content | missing row, missing section, add content, new panel, add annotation |
+| Touch targets | 44x44, touch target, undersized |
+| Element counts | too many, add device, remove |
+
+**Step 2: Determine file action**
+
+| File has... | Action |
+|-------------|--------|
+| No issues | ✅ SKIP - already good |
+| Only 🟢 issues | 🟢 PATCH in place |
+| Any 🔴 issues | 🔴 REGENERATE from scratch |
+
+---
+
+#### For 🟢 PATCH files (all issues patchable):
+
+Apply fixes directly to the existing SVG:
+1. Read the SVG file
+2. For color fixes: find/replace the hex value
+3. For font fixes: update the font-size attribute
+4. For typos: update the text content
+5. For CSS class: add to the `<style>` block
+6. Write the patched SVG back
+7. Mark issues as ✅ FIXED in WIREFRAME_ISSUES.md
+
+**Do NOT regenerate these files** - patching preserves the existing layout.
+
+---
+
+#### For 🔴 REGENERATE files:
+
+Read the **🔴 REGENERATION FEEDBACK section** for that file:
+- **Diagnosis**: What's visually broken (coordinates, element names, specific issues)
+- **Root Cause**: WHY the layout doesn't work
+- **Suggested Layout**: Concrete alternative arrangement
+- **Spec Requirements to Preserve**: FR/SC items that must remain
+- **CSS Fixes to Apply**: Color/font corrections to include in regeneration
+
+**This feedback is MANDATORY guidance.** When regenerating, you MUST:
+1. Apply all CSS fixes from the feedback
+2. Follow the suggested layout changes
+3. Address every issue in the Diagnosis
+4. Preserve all spec requirements listed
+
+---
+
+#### Example Triage Output
+
+```
+Analyzing WIREFRAME_ISSUES.md for 004-mobile-first-design...
+
+Found 4 SVG files with 23 total issues.
+
+Triaging files...
+  01-responsive-navigation.svg: 15 issues
+    🔴 REGENERATE - contains structural issues (overlap, cramped, spacing)
+  02-content-typography.svg: 3 issues
+    🔴 REGENERATE - contains structural issues (spacing)
+  03-touch-targets.svg: 2 issues
+    🟢 PATCH - all issues patchable (color only)
+  04-breakpoint-system.svg: 3 issues
+    🔴 REGENERATE - contains structural issues (cramped)
+
+Actions:
+  🟢 03-touch-targets.svg: Patching 2 color fixes...
+  🔴 01, 02, 04: Regenerating with feedback...
+```
+
+---
+
+#### After Processing
+
+Update WIREFRAME_ISSUES.md:
+- Mark patched issues with ✅ FIXED
+- Mark regenerated files with 🔄 REGENERATED
+- Update summary section with completion status
 
 ### 3. Plan the Wireframes
 
@@ -139,10 +268,35 @@ Create SVG wireframes using the appropriate theme.
 **MANDATORY WATERMARK**: Every SVG file MUST include the generation header comment immediately after the opening `<svg>` tag. Replace placeholders:
 - `[SPEC_FILE_PATH]` → actual spec file path (e.g., `features/foundation/000-rls-implementation/spec.md`)
 - `[YYYY-MM-DD]` → current date
+- If regenerating with feedback, add `REGENERATED WITH FEEDBACK` line
+
+**Standard watermark:**
+```xml
+<!-- ============================================================
+     GENERATED BY: /wireframe skill
+     SOURCE: [SPEC_FILE_PATH]
+     DATE: [YYYY-MM-DD]
+     THEME: Dark (Backend/Architecture)
+     DO NOT MANUALLY EDIT - Regenerate with /wireframe command
+     ============================================================ -->
+```
+
+**Regeneration watermark (when WIREFRAME_ISSUES.md feedback was used):**
+```xml
+<!-- ============================================================
+     GENERATED BY: /wireframe skill
+     SOURCE: [SPEC_FILE_PATH]
+     DATE: [YYYY-MM-DD]
+     THEME: Dark (Backend/Architecture)
+     REGENERATED WITH FEEDBACK: features/.../WIREFRAME_ISSUES.md
+     DO NOT MANUALLY EDIT - Regenerate with /wireframe command
+     ============================================================ -->
+```
 
 This watermark enables verification in future sessions via:
 ```bash
 grep -r "GENERATED BY: /wireframe skill" docs/design/wireframes/
+grep -r "REGENERATED WITH FEEDBACK" docs/design/wireframes/
 ```
 
 **File location**: `docs/design/wireframes/[feature-folder]/`

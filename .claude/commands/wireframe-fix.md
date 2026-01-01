@@ -1,8 +1,26 @@
 ---
-description: Apply fixes to wireframe issues documented in WIREFRAME_ISSUES.md
+description: "⚠️ DEPRECATED - Use /wireframe instead (now handles both patching and regeneration)"
 ---
 
-# Wireframe Fix
+# ⚠️ DEPRECATED: Wireframe Fix
+
+**This command is deprecated.** Use `/wireframe` instead.
+
+The `/wireframe` command now handles the full lifecycle:
+- Patches 🟢 issues (color, font, typo, CSS class) in place
+- Regenerates 🔴 files (structural issues) with feedback
+- Skips files with no issues
+
+## New Workflow
+
+```
+/wireframe-review [feature]     # Creates WIREFRAME_ISSUES.md
+/wireframe [feature]            # Smart: patches 🟢, regenerates 🔴
+```
+
+---
+
+# Legacy Documentation (for reference)
 
 Fix documented issues for a feature's wireframes. Skips files needing regeneration.
 
