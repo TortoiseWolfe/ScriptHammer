@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **18** / ✅ ~~28~~
+**Progress:** 🎨 **11** / ✅ ~~35~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -86,37 +86,19 @@
 
 #### ~~027-ux-polish~~ — ✅ Done
 
-#### **028-enhanced-geolocation** — 🎨 Pending
-```
-/wireframe features/polish/028-enhanced-geolocation/spec.md
-```
+#### ~~028-enhanced-geolocation~~ — ✅ Done
 
-#### **029-seo-editorial-assistant** — 🎨 Pending
-```
-/wireframe features/polish/029-seo-editorial-assistant/spec.md
-```
+#### ~~029-seo-editorial-assistant~~ — ✅ Done
 
-#### **030-calendar-integration** — 🎨 Pending
-```
-/wireframe features/polish/030-calendar-integration/spec.md
-```
+#### ~~030-calendar-integration~~ — ✅ Done
 
 ### Testing *(all backend)*
 
-#### **031-standardize-test-users** — 🎨 Pending
-```
-/wireframe features/testing/031-standardize-test-users/spec.md
-```
+#### ~~031-standardize-test-users *(backend)*~~ — ✅ Done
 
-#### **032-signup-e2e-tests** — 🎨 Pending
-```
-/wireframe features/testing/032-signup-e2e-tests/spec.md
-```
+#### ~~032-signup-e2e-tests~~ — ✅ Done
 
-#### **033-seo-library-tests** — 🎨 Pending
-```
-/wireframe features/testing/033-seo-library-tests/spec.md
-```
+#### ~~033-seo-library-tests *(backend)*~~ — ✅ Done
 
 #### **034-blog-library-tests** — 🎨 Pending
 ```
