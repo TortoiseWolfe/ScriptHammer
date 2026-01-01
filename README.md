@@ -14,41 +14,23 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **41** / ✅ ~~5~~
+**Progress:** 🎨 **38** / ✅ ~~8~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
 ### Foundation
 
 #### ~~000-rls-implementation *(backend)*~~ — ✅ Done
-```
-/wireframe features/foundation/000-rls-implementation/spec.md
-```
 
 #### ~~001-wcag-aa-compliance~~ — ✅ Done
-```
-/wireframe features/foundation/001-wcag-aa-compliance/spec.md
-```
 
 #### ~~002-cookie-consent~~ — ✅ Done
-```
-/wireframe features/foundation/002-cookie-consent/spec.md
-```
 
 #### ~~003-user-authentication~~ — ✅ Done
-```
-/wireframe features/foundation/003-user-authentication/spec.md
-```
 
-#### **004-mobile-first-design** — 🎨 Pending
-```
-/wireframe features/foundation/004-mobile-first-design/spec.md
-```
+#### ~~004-mobile-first-design~~ — ✅ Done
 
 #### ~~005-security-hardening~~ — ✅ Done
-```
-/wireframe features/foundation/005-security-hardening/spec.md
-```
 
 #### **006-template-fork-experience** — 🎨 Pending
 ```
@@ -57,20 +39,14 @@
 
 ### Core Features
 
-#### **007-e2e-testing-framework *(backend)*** — 🎨 Pending
-```
-/wireframe features/core-features/007-e2e-testing-framework/spec.md
-```
+#### ~~007-e2e-testing-framework *(backend)*~~ — ✅ Done
 
 #### **008-on-the-account** — 🎨 Pending
 ```
 /wireframe features/core-features/008-on-the-account/spec.md
 ```
 
-#### **009-user-messaging-system** — 🎨 Pending
-```
-/wireframe features/core-features/009-user-messaging-system/spec.md
-```
+#### ~~009-user-messaging-system~~ — ✅ Done
 
 #### **010-unified-blog-content** — 🎨 Pending
 ```
