@@ -1044,81 +1044,81 @@
 
 **Legend:** ~~Done~~ | **Needs Regeneration**
 
-**Progress:** ~~46 done~~ / **0 need regeneration**
+**Progress:** ~~13 done (backend-only)~~ / **33 need light theme (UX)**
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend
 - Use `/wireframe-dark` to force dark theme
 - Use `/wireframe-light` to force light theme
 
 ### Foundation
-~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~
+~~`/wireframe features/foundation/000-rls-implementation/spec.md`~~ *(backend)*
 
-~~`/wireframe features/foundation/001-wcag-aa-compliance/spec.md`~~
+**`/wireframe features/foundation/001-wcag-aa-compliance/spec.md`**
 
-~~`/wireframe features/foundation/002-cookie-consent/spec.md`~~
+**`/wireframe features/foundation/002-cookie-consent/spec.md`**
 
-~~`/wireframe features/foundation/003-user-authentication/spec.md`~~
+**`/wireframe features/foundation/003-user-authentication/spec.md`**
 
-~~`/wireframe features/foundation/004-mobile-first-design/spec.md`~~
+**`/wireframe features/foundation/004-mobile-first-design/spec.md`**
 
-~~`/wireframe features/foundation/005-security-hardening/spec.md`~~
+**`/wireframe features/foundation/005-security-hardening/spec.md`**
 
-~~`/wireframe features/foundation/006-template-fork-experience/spec.md`~~
+**`/wireframe features/foundation/006-template-fork-experience/spec.md`**
 
 ### Core Features
-~~`/wireframe features/core-features/007-e2e-testing-framework/spec.md`~~
+~~`/wireframe features/core-features/007-e2e-testing-framework/spec.md`~~ *(backend)*
 
-~~`/wireframe features/core-features/008-on-the-account/spec.md`~~
+**`/wireframe features/core-features/008-on-the-account/spec.md`**
 
-~~`/wireframe features/core-features/009-user-messaging-system/spec.md`~~
+**`/wireframe features/core-features/009-user-messaging-system/spec.md`**
 
-~~`/wireframe features/core-features/010-unified-blog-content/spec.md`~~
+**`/wireframe features/core-features/010-unified-blog-content/spec.md`**
 
-~~`/wireframe features/core-features/011-group-chats/spec.md`~~
+**`/wireframe features/core-features/011-group-chats/spec.md`**
 
-~~`/wireframe features/core-features/012-welcome-message-architecture/spec.md`~~
+**`/wireframe features/core-features/012-welcome-message-architecture/spec.md`**
 
 ### Auth OAuth
-~~`/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md`~~
+**`/wireframe features/auth-oauth/013-oauth-messaging-password/spec.md`**
 
-~~`/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md`~~
+**`/wireframe features/auth-oauth/014-admin-welcome-email-gate/spec.md`**
 
-~~`/wireframe features/auth-oauth/015-oauth-display-name/spec.md`~~
+~~`/wireframe features/auth-oauth/015-oauth-display-name/spec.md`~~ *(backend)*
 
-~~`/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md`~~
+**`/wireframe features/auth-oauth/016-messaging-critical-fixes/spec.md`**
 
 ### Enhancements
-~~`/wireframe features/enhancements/017-colorblind-mode/spec.md`~~
+**`/wireframe features/enhancements/017-colorblind-mode/spec.md`**
 
-~~`/wireframe features/enhancements/018-font-switcher/spec.md`~~
+**`/wireframe features/enhancements/018-font-switcher/spec.md`**
 
-~~`/wireframe features/enhancements/019-google-analytics/spec.md`~~
+~~`/wireframe features/enhancements/019-google-analytics/spec.md`~~ *(backend)*
 
-~~`/wireframe features/enhancements/020-pwa-background-sync/spec.md`~~
+**`/wireframe features/enhancements/020-pwa-background-sync/spec.md`**
 
-~~`/wireframe features/enhancements/021-geolocation-map/spec.md`~~
+**`/wireframe features/enhancements/021-geolocation-map/spec.md`**
 
 ### Integrations
-~~`/wireframe features/integrations/022-web3forms-integration/spec.md`~~
+**`/wireframe features/integrations/022-web3forms-integration/spec.md`**
 
-~~`/wireframe features/integrations/023-emailjs-integration/spec.md`~~
+**`/wireframe features/integrations/023-emailjs-integration/spec.md`**
 
-~~`/wireframe features/integrations/024-payment-integration/spec.md`~~
+**`/wireframe features/integrations/024-payment-integration/spec.md`**
 
-~~`/wireframe features/integrations/025-blog-social-features/spec.md`~~
+**`/wireframe features/integrations/025-blog-social-features/spec.md`**
 
-~~`/wireframe features/integrations/026-unified-messaging-sidebar/spec.md`~~
+**`/wireframe features/integrations/026-unified-messaging-sidebar/spec.md`**
 
 ### Polish
-~~`/wireframe features/polish/027-ux-polish/spec.md`~~
+**`/wireframe features/polish/027-ux-polish/spec.md`**
 
-~~`/wireframe features/polish/028-enhanced-geolocation/spec.md`~~
+**`/wireframe features/polish/028-enhanced-geolocation/spec.md`**
 
-~~`/wireframe features/polish/029-seo-editorial-assistant/spec.md`~~
+**`/wireframe features/polish/029-seo-editorial-assistant/spec.md`**
 
-~~`/wireframe features/polish/030-calendar-integration/spec.md`~~
+**`/wireframe features/polish/030-calendar-integration/spec.md`**
 
-### Testing
+### Testing *(all backend)*
 ~~`/wireframe features/testing/031-standardize-test-users/spec.md`~~
 
 ~~`/wireframe features/testing/032-signup-e2e-tests/spec.md`~~
@@ -1134,22 +1134,22 @@
 ~~`/wireframe features/testing/037-game-a11y-tests/spec.md`~~
 
 ### Payments
-~~`/wireframe features/payments/038-payment-dashboard/spec.md`~~
+**`/wireframe features/payments/038-payment-dashboard/spec.md`**
 
-~~`/wireframe features/payments/039-payment-offline-queue/spec.md`~~
+**`/wireframe features/payments/039-payment-offline-queue/spec.md`**
 
-~~`/wireframe features/payments/040-payment-retry-ui/spec.md`~~
+**`/wireframe features/payments/040-payment-retry-ui/spec.md`**
 
-~~`/wireframe features/payments/041-paypal-subscriptions/spec.md`~~
+**`/wireframe features/payments/041-paypal-subscriptions/spec.md`**
 
-~~`/wireframe features/payments/042-payment-rls-policies/spec.md`~~
+~~`/wireframe features/payments/042-payment-rls-policies/spec.md`~~ *(backend)*
 
-~~`/wireframe features/payments/043-group-service/spec.md`~~
+~~`/wireframe features/payments/043-group-service/spec.md`~~ *(backend)*
 
 ### Code Quality
-~~`/wireframe features/code-quality/044-error-handler-integrations/spec.md`~~
+**`/wireframe features/code-quality/044-error-handler-integrations/spec.md`**
 
-~~`/wireframe features/code-quality/045-disqus-theme/spec.md`~~
+**`/wireframe features/code-quality/045-disqus-theme/spec.md`**
 
 ---
 
