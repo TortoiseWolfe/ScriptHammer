@@ -89,6 +89,74 @@
       flex-shrink: 0;
     }
 
+    /* Category groups (3-tier: Category > Feature > Wireframe) */
+    .nav-category {
+      border-top: 1px solid #374151;
+    }
+
+    .nav-category:first-of-type {
+      border-top: none;
+    }
+
+    .nav-category .category-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: #8b5cf6;
+      padding: 14px 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+      background: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .nav-category .category-header:hover {
+      color: #a78bfa;
+    }
+
+    .nav-category .category-header::before {
+      content: '▼';
+      font-size: 8px;
+      transition: transform 0.2s;
+    }
+
+    .nav-category.collapsed .category-header::before {
+      transform: rotate(-90deg);
+    }
+
+    .nav-category .category-links {
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+      max-height: 3000px;
+    }
+
+    .nav-category.collapsed .category-links {
+      max-height: 0;
+    }
+
+    /* Feature sections inside categories */
+    .nav-category .nav-section {
+      padding: 8px 0;
+      margin-left: 12px;
+      border-left: 2px solid #374151;
+    }
+
+    .nav-category .nav-section h2 {
+      padding-left: 16px;
+      font-size: 10px;
+      color: #fbbf24;  /* Amber/yellow for feature level */
+    }
+
+    .nav-category .nav-section a {
+      padding-left: 24px;
+    }
+
     .nav-section {
       padding: 16px 0 8px 0;
     }
@@ -352,6 +420,11 @@
 
     <!-- Wireframe nav sections will be added here by /wireframe skill -->
 
+    <!-- Foundation (000-006) -->
+    <div class="nav-category">
+      <div class="category-header">Foundation</div>
+      <div class="category-links">
+
     <div class="nav-section">
       <h2>000 - RLS Implementation</h2>
       <div class="nav-links">
@@ -482,6 +555,14 @@
       </div>
     </div>
 
+      </div>
+    </div>
+
+    <!-- Core Features (007-012) -->
+    <div class="nav-category">
+      <div class="category-header">Core Features</div>
+      <div class="category-links">
+
     <div class="nav-section">
       <h2>007 - E2E Testing Framework</h2>
       <div class="nav-links">
@@ -602,6 +683,14 @@
       </div>
     </div>
 
+      </div>
+    </div>
+
+    <!-- Auth OAuth (013-016) -->
+    <div class="nav-category">
+      <div class="category-header">Auth OAuth</div>
+      <div class="category-links">
+
     <div class="nav-section">
       <h2>013 - OAuth Messaging Password</h2>
       <div class="nav-links">
@@ -661,6 +750,14 @@
         </a>
       </div>
     </div>
+
+      </div>
+    </div>
+
+    <!-- Enhancements (017-021) -->
+    <div class="nav-category">
+      <div class="category-header">Enhancements</div>
+      <div class="category-links">
 
     <div class="nav-section">
       <h2>017 - Colorblind Mode</h2>
@@ -739,6 +836,14 @@
         </a>
       </div>
     </div>
+
+      </div>
+    </div>
+
+    <!-- Integrations (022-026) -->
+    <div class="nav-category">
+      <div class="category-header">Integrations</div>
+      <div class="category-links">
 
     <div class="nav-section">
       <h2>022 - Web3Forms Integration</h2>
@@ -834,6 +939,14 @@
       </div>
     </div>
 
+      </div>
+    </div>
+
+    <!-- Polish (027-030) -->
+    <div class="nav-category">
+      <div class="category-header">Polish</div>
+      <div class="category-links">
+
     <div class="nav-section">
       <h2>027 - UX Polish</h2>
       <div class="nav-links">
@@ -905,6 +1018,14 @@
         </a>
       </div>
     </div>
+
+      </div>
+    </div>
+
+    <!-- Testing (031-037) -->
+    <div class="nav-category">
+      <div class="category-header">Testing</div>
+      <div class="category-links">
 
     <div class="nav-section">
       <h2>031 - Standardize Test Users</h2>
@@ -1003,6 +1124,14 @@
         </a>
       </div>
     </div>
+
+      </div>
+    </div>
+
+    <!-- Payments (038-043) -->
+    <div class="nav-category">
+      <div class="category-header">Payments</div>
+      <div class="category-links">
 
     <div class="nav-section">
       <h2>038 - Payment Dashboard</h2>
@@ -1108,6 +1237,14 @@
       </div>
     </div>
 
+      </div>
+    </div>
+
+    <!-- Code Quality (044-045) -->
+    <div class="nav-category">
+      <div class="category-header">Code Quality</div>
+      <div class="category-links">
+
     <div class="nav-section">
       <h2>044 - Error Handler Integrations</h2>
       <div class="nav-links">
@@ -1141,6 +1278,9 @@
           Integration Architecture
           <span class="path">Theme detect → consent → load flow</span>
         </a>
+      </div>
+    </div>
+
       </div>
     </div>
 
@@ -1374,12 +1514,24 @@
     const counterEl = document.getElementById('counter-text');
     const navLinks = document.querySelectorAll('nav a[data-svg]');
     const navSections = document.querySelectorAll('.nav-section');
+    const navCategories = document.querySelectorAll('.nav-category');
     const zoomInBtn = document.getElementById('zoom-in');
     const zoomOutBtn = document.getElementById('zoom-out');
     const zoomDisplay = document.getElementById('zoom-display');
 
-    // Section collapse/expand functionality
+    // Section collapse/expand functionality - only active category expanded
     function expandSectionForPath(path) {
+      // Collapse all categories except the one containing the active link
+      navCategories.forEach(category => {
+        const hasActiveLink = category.querySelector(`a[data-svg="${path}"]`);
+        if (hasActiveLink) {
+          category.classList.remove('collapsed');
+        } else {
+          category.classList.add('collapsed');
+        }
+      });
+
+      // Features still auto-collapse (existing behavior)
       navSections.forEach(section => {
         const hasActiveLink = section.querySelector(`a[data-svg="${path}"]`);
         if (hasActiveLink) {
@@ -1389,6 +1541,14 @@
         }
       });
     }
+
+    // Click handlers for category headers
+    navCategories.forEach(category => {
+      const header = category.querySelector('.category-header');
+      header.addEventListener('click', () => {
+        category.classList.toggle('collapsed');
+      });
+    });
 
     // Click handlers for section headers
     navSections.forEach(section => {
