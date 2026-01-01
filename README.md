@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **27** / ✅ ~~19~~
+**Progress:** 🎨 **21** / ✅ ~~25~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -64,37 +64,19 @@
 
 #### ~~018-font-switcher~~ — ✅ Done
 
-#### **019-google-analytics *(backend)*** — 🎨 Pending
-```
-/wireframe features/enhancements/019-google-analytics/spec.md
-```
+#### ~~019-google-analytics *(backend)*~~ — ✅ Done
 
-#### **020-pwa-background-sync** — 🎨 Pending
-```
-/wireframe features/enhancements/020-pwa-background-sync/spec.md
-```
+#### ~~020-pwa-background-sync~~ — ✅ Done
 
-#### **021-geolocation-map** — 🎨 Pending
-```
-/wireframe features/enhancements/021-geolocation-map/spec.md
-```
+#### ~~021-geolocation-map~~ — ✅ Done
 
 ### Integrations
 
-#### **022-web3forms-integration** — 🎨 Pending
-```
-/wireframe features/integrations/022-web3forms-integration/spec.md
-```
+#### ~~022-web3forms-integration~~ — ✅ Done
 
-#### **023-emailjs-integration** — 🎨 Pending
-```
-/wireframe features/integrations/023-emailjs-integration/spec.md
-```
+#### ~~023-emailjs-integration~~ — ✅ Done
 
-#### **024-payment-integration** — 🎨 Pending
-```
-/wireframe features/integrations/024-payment-integration/spec.md
-```
+#### ~~024-payment-integration~~ — ✅ Done
 
 #### **025-blog-social-features** — 🎨 Pending
 ```
