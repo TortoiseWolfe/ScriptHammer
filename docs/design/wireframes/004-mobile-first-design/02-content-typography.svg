@@ -4,7 +4,6 @@
        SOURCE: features/foundation/004-mobile-first-design/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
-       DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -19,241 +18,153 @@
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 11px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .spec-label { fill: #22c55e; font-family: monospace; font-size: 10px; font-weight: 600; }
-      .dimension { fill: #ef4444; font-family: monospace; font-size: 10px; font-weight: 600; }
-      .code-text { fill: #22c55e; font-family: monospace; font-size: 11px; }
+      .code-text { fill: #e8d4b8; font-family: monospace; font-size: 11px; }
     </style>
   </defs>
 
   <!-- Background -->
   <rect width="1400" height="800" fill="url(#bgGrad)"/>
-
-  <!-- Dot grid pattern -->
   <g opacity="0.35">
     <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
       <circle cx="15" cy="15" r="1" fill="#6b8cba"/>
     </pattern>
     <rect width="1400" height="800" fill="url(#dots)"/>
   </g>
-
-  <!-- Accent line top -->
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">CONTENT TYPOGRAPHY — READABLE TEXT &amp; CODE BLOCKS</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">READABLE CONTENT — FR-006 TO FR-016</text>
 
-  <!-- DESKTOP BLOG VIEW -->
+  <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP BLOG POST</text>
-  <g id="desktop-blog">
-    <!-- Main content area -->
-    <rect x="40" y="60" width="580" height="680" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+
+  <g transform="translate(40, 60)">
+    <!-- Blog content area -->
+    <rect x="0" y="0" width="900" height="700" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
 
     <!-- Article header -->
-    <text x="60" y="95" class="heading-lg">Building Mobile-First Apps</text>
-    <text x="60" y="115" class="text-muted">Published: January 1, 2026 • 5 min read</text>
+    <rect x="20" y="20" width="860" height="100" rx="6" fill="#e8d4b8"/>
+    <text x="40" y="55" class="heading-lg">Mobile-First Design Principles</text>
+    <text x="40" y="80" class="text-muted">Published: Dec 30, 2025 • 8 min read</text>
+    <text x="40" y="105" class="text-sm">By ScriptHammer Team</text>
 
-    <!-- Typography specs box -->
-    <rect x="60" y="130" width="200" height="30" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="160" y="150" text-anchor="middle" class="annotation">H1: 32px desktop</text>
+    <!-- Body text with proper sizing -->
+    <text x="40" y="150" class="text-md">Mobile-first design ensures your website looks great on all devices.</text>
+    <text x="40" y="175" class="text-md">Starting with the smallest screen forces you to prioritize content</text>
+    <text x="40" y="200" class="text-md">and create a streamlined user experience.</text>
 
-    <!-- Body text -->
-    <rect x="60" y="175" width="540" height="100" rx="6" fill="#f5f0e6"/>
-    <text x="75" y="200" class="text-md">Mobile-first design is an approach where you design for</text>
-    <text x="75" y="222" class="text-md">the smallest screen first and progressively enhance for</text>
-    <text x="75" y="244" class="text-md">larger screens. This ensures essential features work on</text>
-    <text x="75" y="266" class="text-md">all devices without compromise.</text>
+    <!-- Typography specs annotation -->
+    <rect x="650" y="140" width="200" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="665" y="160" class="annotation">FR-006: 16px min</text>
+    <text x="665" y="180" class="annotation">FR-008: 1.5 line-height</text>
+    <text x="665" y="200" class="spec-label">Body text readable ✓</text>
 
-    <!-- Typography annotation -->
-    <rect x="420" y="175" width="180" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="510" y="195" text-anchor="middle" class="annotation">Body: 18px</text>
-    <text x="510" y="215" text-anchor="middle" class="spec-label">line-height: 1.6</text>
-
-    <!-- Code block with internal scroll -->
-    <text x="60" y="305" class="heading">Code Example</text>
-    <rect x="60" y="315" width="540" height="120" rx="6" fill="#1e293b" stroke="#475569"/>
-
-    <!-- Code content -->
-    <text x="75" y="340" class="code-text">// Mobile-first breakpoints</text>
-    <text x="75" y="360" class="code-text">const breakpoints = {</text>
-    <text x="75" y="380" class="code-text">  mobile: '320px',   // Base</text>
-    <text x="75" y="400" class="code-text">  tablet: '768px',   // md</text>
-    <text x="75" y="420" class="code-text">  desktop: '1024px', // lg ............</text>
-
-    <!-- Horizontal scroll indicator in code block -->
-    <rect x="510" y="395" width="80" height="25" rx="4" fill="#334155"/>
-    <text x="550" y="412" text-anchor="middle" fill="#94a3b8" font-size="10">→ scroll</text>
+    <!-- Code block example -->
+    <text x="40" y="240" class="heading">Code Example</text>
+    <rect x="40" y="255" width="600" height="120" rx="6" fill="#1e293b"/>
+    <text x="55" y="280" class="code-text">@media (max-width: 767px) {</text>
+    <text x="55" y="300" class="code-text">  .nav-links { display: none; }</text>
+    <text x="55" y="320" class="code-text">  .hamburger { display: flex; }</text>
+    <text x="55" y="340" class="code-text">  body { font-size: 16px; }</text>
+    <text x="55" y="360" class="code-text">}</text>
 
     <!-- Code block annotation -->
-    <rect x="60" y="445" width="200" height="35" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="1"/>
-    <text x="160" y="468" text-anchor="middle" class="spec-label">overflow-x: auto (FR-014)</text>
+    <rect x="650" y="255" width="200" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="665" y="275" class="annotation">FR-014: overflow-x</text>
+    <text x="665" y="295" class="spec-label">Internal scroll ✓</text>
 
-    <!-- Image placeholder -->
-    <text x="60" y="510" class="heading">Responsive Image</text>
-    <rect x="60" y="520" width="540" height="180" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="330" y="615" text-anchor="middle" class="text-muted">📷 Mobile-first diagram</text>
-    <text x="330" y="635" text-anchor="middle" class="text-muted">1200×800 → srcset with WebP</text>
+    <!-- Scroll indicator on code block -->
+    <rect x="620" y="355" width="15" height="15" rx="2" fill="#475569"/>
+    <text x="627" y="367" text-anchor="middle" fill="#fff" font-size="8">→</text>
+
+    <!-- Image example -->
+    <text x="40" y="410" class="heading">Responsive Image</text>
+    <rect x="40" y="425" width="400" height="180" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="240" y="520" text-anchor="middle" class="text-muted">Responsive image</text>
+    <text x="240" y="540" text-anchor="middle" class="text-muted">srcset with multiple sizes</text>
 
     <!-- Image annotation -->
-    <rect x="420" y="520" width="175" height="50" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="507" y="540" text-anchor="middle" class="annotation">Responsive srcset</text>
-    <text x="507" y="555" text-anchor="middle" class="spec-label">FR-012, FR-013</text>
+    <rect x="460" y="425" width="200" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="475" y="445" class="annotation">FR-012: srcset</text>
+    <text x="475" y="465" class="annotation">FR-013: WebP/AVIF</text>
+    <text x="475" y="485" class="spec-label">Responsive ✓</text>
+
+    <!-- Heading hierarchy -->
+    <text x="40" y="640" class="heading">Heading Hierarchy</text>
+    <rect x="40" y="655" width="400" height="30" rx="4" fill="#e8d4b8"/>
+    <text x="55" y="675" font-size="18" font-weight="700" fill="#1a1a2e">H1: 24px → 18px mobile</text>
+    <rect x="450" y="655" width="200" height="30" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="465" y="675" class="annotation">FR-009: 60-75%</text>
   </g>
 
-  <!-- Desktop typography specs -->
-  <g id="desktop-specs" transform="translate(640, 60)">
-    <rect x="0" y="0" width="300" height="340" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="20" y="30" class="heading">Desktop Typography</text>
-
-    <!-- Size specs -->
-    <g transform="translate(20, 50)">
-      <rect x="0" y="0" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="23" class="text-md">H1</text>
-      <text x="130" y="23" class="text-md">32px</text>
-      <text x="200" y="23" class="text-muted">bold</text>
-
-      <rect x="0" y="45" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="68" class="text-md">H2</text>
-      <text x="130" y="68" class="text-md">24px</text>
-      <text x="200" y="68" class="text-muted">bold</text>
-
-      <rect x="0" y="90" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="113" class="text-md">H3</text>
-      <text x="130" y="113" class="text-md">20px</text>
-      <text x="200" y="113" class="text-muted">semibold</text>
-
-      <rect x="0" y="135" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="158" class="text-md">Body</text>
-      <text x="130" y="158" class="text-md">18px</text>
-      <text x="200" y="158" class="text-muted">normal</text>
-
-      <rect x="0" y="180" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="203" class="text-md">Small</text>
-      <text x="130" y="203" class="text-md">14px</text>
-      <text x="200" y="203" class="text-muted">normal</text>
-
-      <!-- Line height -->
-      <rect x="0" y="230" width="260" height="45" rx="4" fill="#dcc8a8" stroke="#22c55e" stroke-width="1"/>
-      <text x="15" y="255" class="text-md">Line Height</text>
-      <text x="130" y="255" class="text-md">1.5 - 1.6</text>
-      <text x="200" y="255" class="spec-label">FR-008</text>
-    </g>
-  </g>
-
-  <!-- MOBILE PHONE FRAME -->
-  <text x="980" y="52" class="label-mobile">MOBILE BLOG POST (390px)</text>
-  <g id="mobile-view" transform="translate(980, 60)">
-    <!-- Phone frame -->
+  <!-- MOBILE SECTION -->
+  <text x="980" y="52" class="label-mobile">MOBILE (390px)</text>
+  <g transform="translate(980, 60)">
     <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
     <rect x="10" y="10" width="340" height="680" rx="16" fill="#e8d4b8"/>
 
     <!-- Status bar -->
     <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
     <text x="30" y="28" class="text-sm">9:41</text>
-    <text x="300" y="28" class="text-sm">📶 🔋</text>
+    <text x="310" y="28" class="text-sm">📶 🔋</text>
 
-    <!-- Header -->
+    <!-- Mobile header -->
     <rect x="20" y="48" width="320" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <rect x="30" y="55" width="30" height="30" rx="4" fill="#8b5cf6"/>
-    <text x="45" y="75" text-anchor="middle" fill="#fff" font-size="16">☰</text>
-    <text x="180" y="75" text-anchor="middle" class="heading">Blog</text>
+    <rect x="30" y="55" width="36" height="30" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="48" y="75" text-anchor="middle" class="text-sm">☰</text>
+    <rect x="74" y="55" width="80" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="114" y="75" text-anchor="middle" fill="#fff" font-size="10">Script</text>
 
-    <!-- Article content -->
-    <g transform="translate(20, 100)">
-      <!-- Title -->
-      <text x="10" y="25" font-family="system-ui" font-size="20" font-weight="800" fill="#1a1a2e">Building Mobile-First</text>
-      <text x="10" y="48" font-family="system-ui" font-size="20" font-weight="800" fill="#1a1a2e">Apps</text>
+    <!-- Article content mobile -->
+    <rect x="20" y="102" width="320" height="580" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
 
-      <!-- Mobile heading annotation -->
-      <rect x="190" y="8" width="110" height="40" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="1"/>
-      <text x="245" y="28" text-anchor="middle" class="annotation">H1: 20px</text>
-      <text x="245" y="42" text-anchor="middle" class="spec-label">60-75%</text>
+    <!-- Mobile article header -->
+    <text x="35" y="130" font-size="16" font-weight="700" fill="#1a1a2e">Mobile-First Design</text>
+    <text x="35" y="150" class="text-muted">Dec 30, 2025 • 8 min</text>
 
-      <text x="10" y="70" class="text-muted">Jan 1, 2026 • 5 min</text>
+    <!-- Mobile body text - 16px minimum -->
+    <text x="35" y="180" class="text-md">Mobile-first design ensures</text>
+    <text x="35" y="200" class="text-md">your website looks great on</text>
+    <text x="35" y="220" class="text-md">all devices. Starting small</text>
+    <text x="35" y="240" class="text-md">forces content priority.</text>
 
-      <!-- Body text with 16px minimum -->
-      <rect x="0" y="85" width="300" height="90" rx="6" fill="#f5f0e6"/>
-      <text x="10" y="108" font-family="system-ui" font-size="16" fill="#2d3748">Mobile-first design ensures</text>
-      <text x="10" y="130" font-family="system-ui" font-size="16" fill="#2d3748">essential features work on</text>
-      <text x="10" y="152" font-family="system-ui" font-size="16" fill="#2d3748">all devices first.</text>
+    <!-- Annotation for mobile text -->
+    <rect x="35" y="255" width="150" height="25" rx="4" fill="#e8d4b8" stroke="#22c55e"/>
+    <text x="110" y="272" text-anchor="middle" class="spec-label">16px min ✓ (FR-006)</text>
 
-      <!-- 16px annotation -->
-      <rect x="0" y="180" width="130" height="28" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="1"/>
-      <text x="65" y="199" text-anchor="middle" class="spec-label">16px min (FR-006)</text>
+    <!-- Mobile code block with scroll -->
+    <rect x="35" y="295" width="280" height="80" rx="4" fill="#1e293b"/>
+    <text x="45" y="315" font-family="monospace" font-size="10" fill="#e8d4b8">@media (max-width:</text>
+    <text x="45" y="330" font-family="monospace" font-size="10" fill="#e8d4b8">  767px) {</text>
+    <text x="45" y="345" font-family="monospace" font-size="10" fill="#e8d4b8">  .nav { ... }</text>
+    <text x="45" y="360" font-family="monospace" font-size="10" fill="#e8d4b8">}</text>
 
-      <!-- Mobile code block with scroll -->
-      <rect x="0" y="220" width="300" height="100" rx="6" fill="#1e293b" stroke="#475569"/>
-      <text x="10" y="245" class="code-text">const bp = {</text>
-      <text x="10" y="265" class="code-text">  mobile: '320px',</text>
-      <text x="10" y="285" class="code-text">  tablet: '768px' ...</text>
+    <!-- Scroll indicator -->
+    <rect x="295" y="355" width="15" height="15" rx="2" fill="#475569"/>
+    <text x="302" y="367" text-anchor="middle" fill="#fff" font-size="8">→</text>
 
-      <!-- Scroll indicator -->
-      <rect x="250" y="290" width="40" height="20" rx="4" fill="#334155"/>
-      <text x="270" y="304" text-anchor="middle" fill="#94a3b8" font-size="8">→</text>
+    <!-- Mobile image -->
+    <rect x="35" y="390" width="280" height="120" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="175" y="455" text-anchor="middle" class="text-muted">Responsive image</text>
 
-      <!-- Code block annotation -->
-      <rect x="0" y="325" width="160" height="28" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="1"/>
-      <text x="80" y="344" text-anchor="middle" class="spec-label">Internal scroll (FR-014)</text>
+    <!-- Image fits viewport annotation -->
+    <rect x="35" y="520" width="170" height="25" rx="4" fill="#e8d4b8" stroke="#22c55e"/>
+    <text x="120" y="537" text-anchor="middle" class="spec-label">Fits viewport ✓ (FR-012)</text>
 
-      <!-- Responsive image -->
-      <rect x="0" y="365" width="300" height="130" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-      <text x="150" y="430" text-anchor="middle" class="text-muted">📷 Image fits viewport</text>
-      <text x="150" y="450" text-anchor="middle" class="text-muted">srcset: 400w, 800w, 1200w</text>
+    <!-- Mobile heading example -->
+    <text x="35" y="575" font-size="14" font-weight="700" fill="#1a1a2e">H1 at 75% scale</text>
+    <rect x="35" y="585" width="140" height="22" rx="4" fill="#e8d4b8" stroke="#22c55e"/>
+    <text x="105" y="600" text-anchor="middle" class="spec-label">FR-009 ✓</text>
 
-      <!-- Image annotation -->
-      <rect x="150" y="365" width="140" height="35" rx="4" fill="#f5f0e6" stroke="#22c55e" stroke-width="1"/>
-      <text x="220" y="385" text-anchor="middle" class="spec-label">max-width: 100%</text>
-    </g>
-
-    <!-- No horizontal scroll indicator -->
-    <rect x="20" y="650" width="320" height="28" rx="4" fill="#22c55e" opacity="0.15" stroke="#22c55e"/>
-    <text x="180" y="668" text-anchor="middle" class="spec-label">✓ Zero horizontal scroll</text>
-  </g>
-
-  <!-- Mobile typography specs -->
-  <g id="mobile-specs" transform="translate(640, 420)">
-    <rect x="0" y="0" width="300" height="320" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="20" y="30" class="heading">Mobile Typography (FR-009)</text>
-    <text x="20" y="50" class="text-muted">60-75% of desktop sizes</text>
-
-    <!-- Size specs -->
-    <g transform="translate(20, 65)">
-      <rect x="0" y="0" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="23" class="text-md">H1</text>
-      <text x="80" y="23" class="text-muted">32px →</text>
-      <text x="145" y="23" class="text-md">20-24px</text>
-      <text x="220" y="23" class="spec-label">75%</text>
-
-      <rect x="0" y="45" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="68" class="text-md">H2</text>
-      <text x="80" y="68" class="text-muted">24px →</text>
-      <text x="145" y="68" class="text-md">16-18px</text>
-      <text x="220" y="68" class="spec-label">70%</text>
-
-      <rect x="0" y="90" width="260" height="35" rx="4" fill="#e8d4b8"/>
-      <text x="15" y="113" class="text-md">H3</text>
-      <text x="80" y="113" class="text-muted">20px →</text>
-      <text x="145" y="113" class="text-md">14-16px</text>
-      <text x="220" y="113" class="spec-label">70%</text>
-
-      <rect x="0" y="135" width="260" height="35" rx="4" fill="#22c55e" opacity="0.15" stroke="#22c55e"/>
-      <text x="15" y="158" class="text-md">Body</text>
-      <text x="80" y="158" class="text-muted">18px →</text>
-      <text x="145" y="158" fill="#22c55e" font-weight="bold" font-size="14">16px MIN</text>
-
-      <!-- Font size cap -->
-      <rect x="0" y="185" width="260" height="50" rx="4" fill="#eab308" opacity="0.15" stroke="#eab308"/>
-      <text x="15" y="208" class="text-md">Font Size Cap</text>
-      <text x="15" y="228" class="text-muted">&lt;375px: x-large disabled (FR-007)</text>
-    </g>
-  </g>
-
-  <!-- Leader lines -->
-  <g id="leader-lines">
-    <line x1="600" y1="150" x2="640" y2="80" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <!-- Line length annotation -->
+    <rect x="35" y="620" width="280" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="50" y="640" class="annotation">Max line length: ~65ch</text>
+    <text x="50" y="660" class="spec-label">Comfortable reading ✓</text>
   </g>
 </svg>

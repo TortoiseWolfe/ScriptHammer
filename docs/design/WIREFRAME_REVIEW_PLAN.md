@@ -32,6 +32,58 @@ Visual quality review of all SVG wireframes using computer vision to document is
 
 ---
 
+## Review → Fix Workflow
+
+```
+/wireframe-review batch N       # Review → classify issues as 🟢/🔴
+    ↓
+WIREFRAME_ISSUES.md created with:
+  - 🟢 PATCHABLE: color, font-size, typo, missing CSS class
+  - 🔴 REGENERATE: layout, spacing, overlap (WITH constructive feedback)
+    ↓
+/wireframe-fix [feature]        # ONLY fixes 🟢 files, SKIPS 🔴 entirely
+    ↓
+/wireframe [feature]            # Regenerate 🔴 files using feedback
+```
+
+### Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/wireframe-review batch N` | Review batch, classify 🟢/🔴, create WIREFRAME_ISSUES.md |
+| `/wireframe-review [feature]` | Review single feature |
+| `/wireframe-fix [feature]` | Auto-fix 🟢 patchable issues ONLY |
+| `/wireframe [feature]` | Regenerate 🔴 wireframes from spec with feedback |
+
+### 🟢 Patchable (NARROW list)
+
+ONLY these 4 things can be patched:
+- Missing CSS class definition
+- Wrong color hex value
+- Font size too small
+- Typo in visible text
+
+### 🔴 Regeneration Required
+
+Everything else needs regeneration (NOT patching):
+- Layout overlap/collision
+- Spacing issues (cramped, gaps)
+- Element positioning (x, y, transform)
+- Canvas size changes
+- Touch target sizing
+
+**Rule**: If ANY issue in a file is 🔴, skip the ENTIRE file.
+
+### Regeneration Feedback (REQUIRED)
+
+When flagging 🔴 issues, provide:
+1. **Diagnosis** - What's broken (coordinates, overlaps)
+2. **Root Cause** - WHY it doesn't work
+3. **Suggested Layout** - Concrete alternative
+4. **Spec Requirements** - FR/SC items to preserve
+
+---
+
 ## Issue Categories Checklist
 
 ### Visual/Rendering Issues
@@ -164,3 +216,38 @@ Visual quality review of all SVG wireframes using computer vision to document is
 |------|-------|---------------|--------------|-------|
 | 2026-01-01 | 1 (Foundation) | 22 | 1 minor | 000-rls-implementation: Anonymous role arrow doesn't show blocked result |
 | 2026-01-01 | 2 (Core Features) | 21 | 0 | All wireframes passed review - high quality across messaging, blog, groups, account |
+
+---
+
+## Lessons Learned
+
+### Case Study: 004-mobile-first-design Patching Failure
+
+**What happened**: The review found 23 issues in 004-mobile-first-design wireframes, including structural problems like row collisions and cramped layouts. Instead of regenerating, we attempted to patch the SVGs.
+
+**The patching attempt**:
+- Extended canvas from 1400px to 1600px
+- Rearranged mobile devices into 2x2 grid
+- Moved requirements panel down
+- Added "Layout Strategy" annotation panel
+
+**The result**: **Made things WORSE**
+- Requirements panel now overlaps with Mobile Expanded Nav phone frame
+- Large wasted space between sections
+- New collision zones created
+- More issues than before
+
+**Root cause**: Patching structural issues creates cascading problems. Moving one element affects everything around it. Without holistic layout recalculation, patches create new problems.
+
+**Lesson**:
+> **Structural issues should ALWAYS trigger regeneration, not patching.**
+>
+> Only patch atomic style fixes (color, font, typo). Everything else = regenerate fresh.
+
+### Process Update (2026-01-01)
+
+Based on this failure, the workflow was updated:
+1. Issues now classified as 🟢 (patchable) or 🔴 (regenerate)
+2. Patchable list narrowed to 4 items only
+3. Regeneration requires constructive feedback (not just "try again")
+4. `/wireframe-fix` skips entire files with ANY 🔴 issues

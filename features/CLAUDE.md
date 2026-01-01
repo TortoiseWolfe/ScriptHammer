@@ -31,18 +31,41 @@ features/
 Execute these commands **in order** - do not skip steps:
 
 ```bash
+# Phase 1: Specification
 /speckit.specify        # 1. Generate spec.md from *_feature.md
 /speckit.clarify        # 2. Refine requirements interactively
-/wireframe              # 3. Generate dark theme SVG wireframes (1400x800)
-# --- STOP FOR REVIEW --- User reviews wireframes before continuing
-/speckit.plan           # 4. Generate plan.md (implementation design)
-/speckit.checklist      # 5. Generate checklist.md (implementation checklist)
-/speckit.tasks          # 6. Generate tasks.md (actionable breakdown)
-/speckit.analyze        # 7. Review cross-artifact consistency
-/speckit.implement      # 8. Execute implementation
+/wireframe              # 3. Generate SVG wireframes (1400x800)
+
+# Phase 2: Wireframe Review (MANDATORY GATE)
+/wireframe-review       # 4. Review SVGs with 🟢/🔴 classification
+# → 🟢 PATCHABLE issues: /wireframe-fix (color, typo, font, missing class)
+# → 🔴 STRUCTURAL issues: /wireframe with constructive feedback
+# REPEAT until all wireframes pass review
+
+# Phase 3: Implementation (BLOCKED until Phase 2 complete)
+/speckit.plan           # 5. Generate plan.md (implementation design)
+/speckit.checklist      # 6. Generate checklist.md (implementation checklist)
+/speckit.tasks          # 7. Generate tasks.md (actionable breakdown)
+/speckit.analyze        # 8. Review cross-artifact consistency
+/speckit.implement      # 9. Execute implementation
 ```
 
-**All steps are mandatory.** Wait for user review after wireframe generation before proceeding to plan.
+**All steps are mandatory.** Phase 3 is BLOCKED until wireframe review is complete for ALL features.
+
+## Wireframe Review Process
+
+**Key Insight**: Patching structural issues makes things WORSE. Only patch cosmetic issues.
+
+| Issue Type | Classification | Action |
+|------------|----------------|--------|
+| Wrong color value | 🟢 PATCHABLE | `/wireframe-fix` |
+| Typo in text | 🟢 PATCHABLE | `/wireframe-fix` |
+| Font size wrong | 🟢 PATCHABLE | `/wireframe-fix` |
+| Missing CSS class | 🟢 PATCHABLE | `/wireframe-fix` |
+| Layout problems | 🔴 REGENERATE | `/wireframe` with feedback |
+| Spacing issues | 🔴 REGENERATE | `/wireframe` with feedback |
+| Overlapping elements | 🔴 REGENERATE | `/wireframe` with feedback |
+| Positioning errors | 🔴 REGENERATE | `/wireframe` with feedback |
 
 ## Feature File Format (PRP Structure)
 

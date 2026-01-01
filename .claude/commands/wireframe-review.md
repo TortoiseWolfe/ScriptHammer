@@ -102,6 +102,36 @@ For AAA compliance, check these color combinations:
 - **Line length** - Are any lines too long (>75 characters)?
 - **Placeholder vs real content** - Is there lazy "Lorem ipsum" anywhere?
 
+### 11. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
+
+**Before reviewing ANY wireframe, READ THE SPEC FIRST.**
+
+Location: `features/[category]/[feature-folder]/spec.md`
+
+#### Extraction Checklist
+- [ ] List ALL functional requirements (FR-XXX)
+- [ ] List ALL success criteria (SC-XXX)
+- [ ] List ALL non-functional requirements (NFR-XXX)
+- [ ] Note any user stories that imply specific UI elements
+
+#### Coverage Verification
+For EACH requirement, ask:
+- **Is it visualized?** - Does ANY wireframe show this requirement?
+- **Is it labeled?** - Is there an annotation pointing to where it's demonstrated?
+- **Is it accurate?** - Does the wireframe match what the spec describes?
+
+#### Common Gaps to Catch
+- **Missing states** - Spec mentions error/loading/empty states, wireframe only shows happy path
+- **Missing user roles** - Spec has admin vs member views, wireframe only shows one
+- **Missing flows** - Spec describes multi-step process, wireframe only shows step 1
+- **Missing edge cases** - Spec mentions "if X then Y", wireframe doesn't show Y
+- **Phantom requirements** - Wireframe shows FR-XXX label but that FR doesn't exist in spec
+
+#### Severity for Spec Issues
+- **CRITICAL**: Entire FR/SC not visualized anywhere
+- **MAJOR**: FR partially shown but missing key aspect
+- **MINOR**: FR shown but not annotated/labeled
+
 ---
 
 ## Severity Ratings
@@ -128,6 +158,85 @@ For AAA compliance, check these color combinations:
 
 ---
 
+## Issue Classification (🟢 vs 🔴)
+
+**CRITICAL**: Classify each issue as patchable or regeneration-required.
+
+### 🟢 PATCHABLE (safe to auto-fix)
+- Missing CSS class definition
+- Wrong color hex value
+- Font size too small
+- Typo in visible text
+
+### 🔴 REGENERATE (do NOT attempt to patch)
+- Layout overlap/collision
+- Element positioning (x, y, transform)
+- Spacing issues (cramped, gaps, wasted space)
+- Canvas size problems
+- Row/section arrangement
+- Touch target sizing (may need layout reflow)
+
+**Rule**: If ANY issue in a file is 🔴, the ENTIRE file needs regeneration.
+
+---
+
+## 🔴 Regeneration Feedback (REQUIRED)
+
+When flagging a file for regeneration, you MUST provide constructive feedback - not just "regenerate":
+
+### Template for Regeneration Cases
+
+```markdown
+## 🔴 REGENERATION REQUIRED: [filename.svg]
+
+### Diagnosis
+What's visually broken (be specific: coordinates, element names, overlap areas)
+
+### Root Cause
+WHY the layout doesn't work (not just "it overlaps" - explain the structural problem)
+
+### Suggested Layout
+Concrete alternative arrangement:
+- Row 1: [what should be here]
+- Row 2: [what should be here]
+- Consider: [specific layout approach]
+
+### Spec Requirements to Preserve
+FR/SC items the regenerated version must still demonstrate
+```
+
+### Example Feedback (from 004 failure)
+
+```markdown
+## 🔴 REGENERATION REQUIRED: 01-responsive-navigation.svg
+
+### Diagnosis
+Mobile breakpoints row (4 devices horizontal at y=240) collides with Mobile Expanded Nav
+phone frame. The 320px device extends to x=1090, but expanded nav starts at x=980.
+They overlap by 110px.
+
+### Root Cause
+Trying to fit 4 mobile device previews + 1 full-height phone frame in a single row.
+Too much horizontal content for 1400px canvas.
+
+### Suggested Layout
+- Row 1: Desktop + Tablet headers (1024px and 768px views)
+- Row 2: Mobile breakpoints 2x2 grid (LEFT) + Expanded Nav phone (RIGHT)
+- Row 3: Requirements panel (full width, below both)
+
+This separates dense mobile content from the full-height phone, eliminating collision.
+
+### Spec Requirements to Preserve
+- FR-001: Viewport fit (320-428px, no h-scroll)
+- FR-002: Proportional shrinking
+- FR-004: 44x44px touch targets (show actual measurements)
+- FR-005: 8px spacing minimum
+```
+
+**Why this matters**: This feedback passes to `/wireframe` so the regeneration attempt has guidance, not just "try again and hope for better."
+
+---
+
 ## Batch Mapping
 
 | Batch | Features |
@@ -144,13 +253,28 @@ For AAA compliance, check these color combinations:
 
 ## Review Process
 
-### 1. Read Each SVG (visual inspection via Read tool)
+### 1. Read the Spec FIRST (MANDATORY)
 
-### 2. For EACH wireframe, work through ALL 10 category checklists above
+```bash
+# Location pattern
+features/[category]/[feature-folder]/spec.md
+```
+
+Extract and document:
+- All FR-XXX (Functional Requirements)
+- All SC-XXX (Success Criteria)
+- All NFR-XXX (Non-Functional Requirements)
+- Key user stories and flows
+
+**Do NOT proceed to SVG review until you have the requirements list.**
+
+### 2. Read Each SVG (visual inspection via Read tool)
+
+### 3. For EACH wireframe, work through ALL 11 category checklists above
 
 Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 
-### 3. Document EVERY issue found
+### 4. Document EVERY issue found
 
 ```markdown
 # Wireframe Issues: [Feature Name]
@@ -171,11 +295,11 @@ Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 | 3 | Cramped | Minor | 320px device | Logo and icons too close, no breathing room | Reduce logo width or stack icons |
 ```
 
-### 4. Include "Suggested Fix" for every issue
+### 5. Include "Suggested Fix" for every issue
 
 Don't just identify problems - propose solutions.
 
-### 5. Update Progress Tracker
+### 6. Update Progress Tracker
 
 File: `docs/design/WIREFRAME_REVIEW_PLAN.md`
 
@@ -230,3 +354,51 @@ These wireframes have enough issues to warrant regeneration rather than patching
 **Your job is to make these wireframes BETTER, not to make the creator feel good.**
 
 Find the flaws. Document them clearly. Propose fixes. Be relentless.
+
+---
+
+## After Review
+
+### For 🟢 Files (all issues patchable)
+
+Use `/wireframe-fix [feature]` to automatically apply fixes:
+
+```bash
+/wireframe-fix 004    # Fix color, font, typo issues ONLY
+```
+
+The fix command will:
+- **ONLY patch**: Missing CSS class, wrong color, font size, typos
+- **Skip files with ANY 🔴 issues** - no partial patches
+- **Mark issues ✅ FIXED** in WIREFRAME_ISSUES.md
+
+### For 🔴 Files (needs regeneration)
+
+Use `/wireframe [feature]` to regenerate from spec:
+
+```bash
+/wireframe 004    # Regenerate with feedback from WIREFRAME_ISSUES.md
+```
+
+The wireframe command will:
+- Read the constructive feedback (Diagnosis, Root Cause, Suggested Layout)
+- Generate a fresh SVG using the suggested layout
+- Preserve spec requirements listed in the feedback
+
+### Workflow
+
+```
+/wireframe-review batch N       # Review → classify 🟢/🔴
+    ↓
+WIREFRAME_ISSUES.md created with:
+  - 🟢 patchable issues (color, font, typo)
+  - 🔴 regeneration issues (WITH constructive feedback)
+    ↓
+/wireframe-fix [feature]        # Patch 🟢 files only
+    ↓
+/wireframe [feature]            # Regenerate 🔴 files with feedback
+```
+
+### Lesson Learned (004 Failure)
+
+**DO NOT** try to patch structural issues. The 004-mobile-first-design attempt to "fix" overlap by extending canvas and moving elements made things WORSE - creating new overlaps and wasted space. When layout is broken, regenerate fresh.

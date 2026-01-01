@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **5** / ✅ ~~41~~
+**Progress:** 🎨 **6** / ✅ ~~40~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -144,6 +144,266 @@
 #### **045-disqus-theme** — 🎨 Pending
 ```
 /wireframe features/code-quality/045-disqus-theme/spec.md
+```
+
+---
+
+## 🔍 Wireframe Review Commands (46 features)
+
+**Legend:** 🔍 **Pending** | 🟢 *Pass* | 🔴 `Regen` | ✅ ~~Done~~
+
+**Progress:** 🔍 **45** / 🟢 *1* / 🔴 `0` / ✅ ~~0~~
+
+**Classification:**
+- 🟢 **PATCHABLE** (color, typo, font, missing class) → `/wireframe-fix`
+- 🔴 **REGENERATE** (layout, spacing, overlap) → `/wireframe` with feedback
+
+### Foundation
+
+#### 000-rls-implementation — 🟢 *Pass*
+```
+/wireframe-review 000-rls-implementation
+```
+
+#### **001-wcag-aa-compliance** — 🔍 Pending
+```
+/wireframe-review 001-wcag-aa-compliance
+```
+
+#### **002-cookie-consent** — 🔍 Pending
+```
+/wireframe-review 002-cookie-consent
+```
+
+#### **003-user-authentication** — 🔍 Pending
+```
+/wireframe-review 003-user-authentication
+```
+
+#### **004-mobile-first-design** — 🔍 Pending
+```
+/wireframe-review 004-mobile-first-design
+```
+
+#### **005-security-hardening** — 🔍 Pending
+```
+/wireframe-review 005-security-hardening
+```
+
+#### **006-template-fork-experience** — 🔍 Pending
+```
+/wireframe-review 006-template-fork-experience
+```
+
+### Core Features
+
+#### **007-e2e-testing-framework** — 🔍 Pending
+```
+/wireframe-review 007-e2e-testing-framework
+```
+
+#### **008-on-the-account** — 🔍 Pending
+```
+/wireframe-review 008-on-the-account
+```
+
+#### **009-user-messaging-system** — 🔍 Pending
+```
+/wireframe-review 009-user-messaging-system
+```
+
+#### **010-unified-blog-content** — 🔍 Pending
+```
+/wireframe-review 010-unified-blog-content
+```
+
+#### **011-group-chats** — 🔍 Pending
+```
+/wireframe-review 011-group-chats
+```
+
+#### **012-welcome-message-architecture** — 🔍 Pending
+```
+/wireframe-review 012-welcome-message-architecture
+```
+
+### Auth OAuth
+
+#### **013-oauth-messaging-password** — 🔍 Pending
+```
+/wireframe-review 013-oauth-messaging-password
+```
+
+#### **014-admin-welcome-email-gate** — 🔍 Pending
+```
+/wireframe-review 014-admin-welcome-email-gate
+```
+
+#### **015-oauth-display-name** — 🔍 Pending
+```
+/wireframe-review 015-oauth-display-name
+```
+
+#### **016-messaging-critical-fixes** — 🔍 Pending
+```
+/wireframe-review 016-messaging-critical-fixes
+```
+
+### Enhancements
+
+#### **017-colorblind-mode** — 🔍 Pending
+```
+/wireframe-review 017-colorblind-mode
+```
+
+#### **018-font-switcher** — 🔍 Pending
+```
+/wireframe-review 018-font-switcher
+```
+
+#### **019-google-analytics** — 🔍 Pending
+```
+/wireframe-review 019-google-analytics
+```
+
+#### **020-pwa-background-sync** — 🔍 Pending
+```
+/wireframe-review 020-pwa-background-sync
+```
+
+#### **021-geolocation-map** — 🔍 Pending
+```
+/wireframe-review 021-geolocation-map
+```
+
+### Integrations
+
+#### **022-web3forms-integration** — 🔍 Pending
+```
+/wireframe-review 022-web3forms-integration
+```
+
+#### **023-emailjs-integration** — 🔍 Pending
+```
+/wireframe-review 023-emailjs-integration
+```
+
+#### **024-payment-integration** — 🔍 Pending
+```
+/wireframe-review 024-payment-integration
+```
+
+#### **025-blog-social-features** — 🔍 Pending
+```
+/wireframe-review 025-blog-social-features
+```
+
+#### **026-unified-messaging-sidebar** — 🔍 Pending
+```
+/wireframe-review 026-unified-messaging-sidebar
+```
+
+### Polish
+
+#### **027-ux-polish** — 🔍 Pending
+```
+/wireframe-review 027-ux-polish
+```
+
+#### **028-enhanced-geolocation** — 🔍 Pending
+```
+/wireframe-review 028-enhanced-geolocation
+```
+
+#### **029-seo-editorial-assistant** — 🔍 Pending
+```
+/wireframe-review 029-seo-editorial-assistant
+```
+
+#### **030-calendar-integration** — 🔍 Pending
+```
+/wireframe-review 030-calendar-integration
+```
+
+### Testing
+
+#### **031-standardize-test-users** — 🔍 Pending
+```
+/wireframe-review 031-standardize-test-users
+```
+
+#### **032-signup-e2e-tests** — 🔍 Pending
+```
+/wireframe-review 032-signup-e2e-tests
+```
+
+#### **033-seo-library-tests** — 🔍 Pending
+```
+/wireframe-review 033-seo-library-tests
+```
+
+#### **034-blog-library-tests** — 🔍 Pending
+```
+/wireframe-review 034-blog-library-tests
+```
+
+#### **035-messaging-service-tests** — 🔍 Pending
+```
+/wireframe-review 035-messaging-service-tests
+```
+
+#### **036-auth-component-tests** — 🔍 Pending
+```
+/wireframe-review 036-auth-component-tests
+```
+
+#### **037-game-a11y-tests** — 🔍 Pending
+```
+/wireframe-review 037-game-a11y-tests
+```
+
+### Payments
+
+#### **038-payment-dashboard** — 🔍 Pending
+```
+/wireframe-review 038-payment-dashboard
+```
+
+#### **039-payment-offline-queue** — 🔍 Pending
+```
+/wireframe-review 039-payment-offline-queue
+```
+
+#### **040-payment-retry-ui** — 🔍 Pending
+```
+/wireframe-review 040-payment-retry-ui
+```
+
+#### **041-paypal-subscriptions** — 🔍 Pending
+```
+/wireframe-review 041-paypal-subscriptions
+```
+
+#### **042-payment-rls-policies** — 🔍 Pending
+```
+/wireframe-review 042-payment-rls-policies
+```
+
+#### **043-group-service** — 🔍 Pending
+```
+/wireframe-review 043-group-service
+```
+
+### Code Quality
+
+#### **044-error-handler-integrations** — 🔍 Pending
+```
+/wireframe-review 044-error-handler-integrations
+```
+
+#### **045-disqus-theme** — 🔍 Pending
+```
+/wireframe-review 045-disqus-theme
 ```
 
 ---

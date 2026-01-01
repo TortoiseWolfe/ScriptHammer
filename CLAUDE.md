@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
-## Current Progress (2025-12-30)
+## Current Progress (2026-01-01)
 
 ### Completed
 - [x] Analyzed all 46 feature specifications
@@ -12,24 +12,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Created `features/IMPLEMENTATION_ORDER.md` - **REQUIRED READING**
 - [x] Created `features/analysis/ANALYSIS_REPORT.md`
 - [x] Created `features/analysis/ACTION_ITEMS.md` (all fixed)
+- [x] Generated spec.md for all 46 features
+- [x] Generated wireframes for all 46 features (123 SVGs total)
 
-### Next Session: Phase 1 - Specify & Wireframe
+### Next Session: Phase 2 - Wireframe Review
 
 **START HERE**: Feature **000-rls-implementation**
 
-Run these 3 commands on EACH feature (in implementation order from `IMPLEMENTATION_ORDER.md`):
+**MANDATORY**: Review ALL wireframes before proceeding to `/plan`. Run `/wireframe-review` on each feature:
 
 ```bash
-/speckit.specify    # Generate spec.md from *_feature.md
-/speckit.clarify    # Refine requirements interactively
-/wireframe          # Generate dark theme SVG wireframes (1400x800)
+/wireframe-review   # Review SVGs with 🟢/🔴 classification
 ```
 
-**STOP after wireframes for ALL 46 features. Review before continuing.**
+**Classification System**:
+- 🟢 **PATCHABLE** (color, typo, font size, missing CSS class) → `/wireframe-fix`
+- 🔴 **REGENERATE** (layout, spacing, positioning, overlap) → `/wireframe` with constructive feedback
 
-### Later: Phase 2 - Plan & Implement
+**Key Insight**: Patching structural issues makes things WORSE. Only patch minor cosmetic issues.
 
-After wireframe review, run on each feature:
+### Later: Phase 3 - Plan & Implement
+
+After wireframe review is complete for ALL features, run on each feature:
 
 ```bash
 /speckit.plan       # Generate plan.md
@@ -101,13 +105,14 @@ find docs/design/wireframes -name "*.svg" -newer README.md
 
 Both files should stay in sync for implementation phases.
 
-### Current State (2025-12-31)
+### Current State (2026-01-01)
 
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
-| Wireframes complete | 4/46 features (12 SVGs) |
-| Implementation phase | All 46 at Phase 1 (🔵 ready for /plan) |
+| Wireframes generated | 46/46 features (123 SVGs) |
+| Wireframes reviewed | 0/46 (starting fresh) |
+| Implementation phase | All 46 blocked until wireframe review complete |
 
 ---
 
@@ -200,11 +205,18 @@ npx playwright install chromium  # Install browser (first time)
 ### SpecKit Workflow
 
 ```bash
+# Phase 1: Specification (COMPLETE)
 /speckit.constitution   # Define project vision
 /speckit.specify        # Create feature specs
 /speckit.clarify        # Refine requirements
-/wireframe              # Generate dark theme SVG wireframes (1400x800, side-by-side)
-/wireframe-light        # Generate light theme SVG wireframes
+/wireframe              # Generate SVG wireframes (1400x800)
+
+# Phase 2: Wireframe Review (CURRENT)
+/wireframe-review       # Review SVGs with 🟢/🔴 classification
+/wireframe-fix          # Patch ONLY: color, typo, font, missing class
+/wireframe              # Regenerate for structural issues (with feedback)
+
+# Phase 3: Implementation (BLOCKED until review complete)
 /speckit.plan           # Design implementation
 /speckit.checklist      # Generate implementation checklist
 /speckit.tasks          # Generate task list
