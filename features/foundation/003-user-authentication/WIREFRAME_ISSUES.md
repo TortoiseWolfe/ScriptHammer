@@ -3,13 +3,15 @@
 ## Summary
 - **Files reviewed**: 5 SVGs
 - **Issues found**: 12 total (0 critical, 5 major, 7 minor)
-- **Pass**: 1
+- **Pass**: 3
 - **Reviewed on**: 2026-01-01
 
 ## Review History
 | Pass | Date | Found | Resolved | New | Remaining |
 |------|------|-------|----------|-----|-----------|
 | 1 | 2026-01-01 | 12 | - | 12 | 12 |
+| 2 | 2026-01-01 | 9 | 3 | 0 | 9 |
+| 3 | 2026-01-01 | 4 | 5 | 0 | 4 |
 
 ## Spec Requirements Extracted
 
@@ -34,26 +36,26 @@
 
 ## Issues by File
 
-### 01-login-signup.svg
+### 01-login-signup.svg ✅ PASS
 
 | # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
 |---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 1 | Touch Target | Major | 🔴 | Pass 1 | Desktop signup OAuth buttons (y=535) | OAuth buttons are 40px height instead of 44px minimum | Change height from 40 to 44, adjust y positions |
-| 2 | Touch Target | Major | 🔴 | Pass 1 | Desktop signup input fields | Input fields are 40px height instead of 44px | Change all input heights from 40 to 44 |
-| 3 | Spacing | Minor | 🔴 | Pass 1 | Mobile section label (x=940) | Mobile phone starts at x=940 but standard layout expects x=980 | Shift phone frame to x=980 for consistency |
+| 1 | Touch Target | Major | 🔴 | ✅ RESOLVED | Desktop signup OAuth buttons | OAuth buttons now 44px height | Fixed in regeneration |
+| 2 | Touch Target | Major | 🔴 | ✅ RESOLVED | Desktop signup input fields | Input fields now 44px height | Fixed in regeneration |
+| 3 | Spacing | Minor | 🔴 | ✅ RESOLVED | Mobile section transform | Mobile phone now at x=980 | Fixed in regeneration |
 
-**Overall Assessment**: Login form is well-designed with proper touch targets (44px buttons). Signup form has smaller input fields (40px) that should be 44px for AAA touch target compliance. Mobile view is comprehensive.
+**Pass 3 Verification**: All 3 issues confirmed resolved. File passes review.
 
 ---
 
-### 02-password-reset.svg
+### 02-password-reset.svg ✅ PASS
 
 | # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
 |---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 4 | Spec Compliance | Minor | 🟢 | Pass 1 | Success state inset | SC-005 (<2 min completion) not annotated in success state | Add "SC-005" annotation to success banner |
-| 5 | Touch Target | Minor | 🔴 | Pass 1 | Step 1 & 2 buttons | Buttons are 40px height, should be 44px | Change button heights from 40 to 44 |
+| 4 | Spec Compliance | Minor | 🟢 | ✅ RESOLVED | Success state inset | SC-005 (<2 min completion) annotated | Fixed in Pass 1 |
+| 5 | Touch Target | Minor | 🔴 | ✅ RESOLVED | Step 1 & 3 buttons | Buttons now 44px height | Fixed in regeneration |
 
-**Overall Assessment**: Excellent 3-step flow visualization. Expired state shown in mobile view addresses edge case. Flow arrows clearly indicate progression. Minor touch target adjustments needed.
+**Pass 3 Verification**: All issues confirmed resolved. File passes review.
 
 ---
 
@@ -61,10 +63,10 @@
 
 | # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
 |---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 6 | Touch Target | Minor | 🔴 | Pass 1 | "Resend Verification Email" button (y=335) | Button height is 40px, should be 44px | Change height from 40 to 44 |
-| 7 | Alignment | Minor | 🟢 | Pass 1 | Mobile phone frame | Phone width is 340px instead of standard 360px | Keep as-is (minor variation acceptable) or adjust to 360px |
+| 6 | Touch Target | Minor | 🔴 | Pass 1 | "Resend Verification Email" button (line 76) | Button height is 40px, should be 44px | Change height from 40 to 44 |
+| 7 | Alignment | Minor | 🟢 | ✅ RESOLVED | Mobile phone frame | Phone width 340px (acceptable variation) | N/A - accepted |
 
-**Overall Assessment**: All three verification states (pending, success, expired) are clearly visualized. Mobile view correctly shows unverified user blocking scenario (User Story 7). FR-005 and FR-018 properly annotated.
+**Pass 3 Assessment**: 1 remaining issue - resend button touch target.
 
 ---
 
@@ -72,71 +74,26 @@
 
 | # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
 |---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 8 | Touch Target | Major | 🔴 | Pass 1 | Sidebar nav items (160-310) | Nav items are 40px height, should be 44px | Increase all nav item heights from 40 to 44 |
-| 9 | Touch Target | Major | 🔴 | Pass 1 | Upload/Remove buttons (y=120) | Buttons are 32px height, should be 44px | Increase button heights from 32 to 44 |
-| 10 | Spacing | Minor | 🔴 | Pass 1 | Sessions panel layout | "Revoke" text links need proper touch target area, not just text | Wrap "Revoke" in a 44x24 tap target rect |
+| 8 | Touch Target | Major | 🔴 | Pass 1 | Sidebar nav items (lines 68, 71, 74, 77, 83, 87) | Nav items are 40px height, should be 44px | Increase all nav item heights from 40 to 44 |
+| 9 | Touch Target | Major | 🔴 | Pass 1 | Upload/Remove buttons (lines 102, 104) | Buttons are 32px height, should be 44px | Increase button heights from 32 to 44 |
+| 10 | Spacing | Minor | 🔴 | Pass 1 | Sessions panel "Revoke" links (lines 158, 166) | "Revoke" text links need proper touch target area | Add 44×24 tap target rect behind each "Revoke" text |
 
-**Overall Assessment**: Comprehensive profile and sessions view. Shows FR-024-030 well. Delete account flow in mobile shows FR-027/FR-028 cascade delete. Touch targets need adjustment for AAA compliance.
+**Pass 3 Assessment**: All 3 issues remain. Regeneration still required.
 
 ---
 
-### 05-auth-flow-architecture.svg
+### 05-auth-flow-architecture.svg ✅ PASS
 
 | # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
 |---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 11 | Content | Minor | 🟢 | Pass 1 | Password Reset box (y=50) | Text "Password" and "Reset" are on separate lines, breaking the label | Combine into single line "Pwd Reset" or expand box width |
-| 12 | Spec Compliance | Minor | 🟢 | Pass 1 | Email verification not shown | FR-004 (verification email) and FR-005 (24hr expiration) not in flow diagram | Add email verification step in Client → Auth flow |
+| 11 | Content | Minor | 🟢 | ✅ RESOLVED | Password Reset box (line 120) | Text now shows "Pwd Reset" on single line | N/A |
+| 12 | Spec Compliance | Minor | 🟢 | ✅ RESOLVED | Email verification flow (lines 197-200) | FR-004/FR-005 now shown with dashed arrow | N/A |
 
-**Overall Assessment**: Excellent architecture diagram showing all major components, token lifecycle, and route protection logic. OAuth flow, session management, and success criteria are all visualized. Minor content and spec coverage improvements needed.
+**Pass 3 Verification**: All issues confirmed resolved. File passes review.
 
 ---
 
 ## Regeneration Feedback
-
-### 01-login-signup.svg
-
-#### Diagnosis
-1. Desktop Signup section has input fields with 40px height (lines 122, 126, 131, 135) instead of 44px
-2. OAuth buttons in signup are 40px (lines 151, 154) instead of 44px
-3. Mobile phone positioned at x=940 (line 164) instead of standard x=980
-
-#### Root Cause
-Touch target sizing not consistently applied to signup form - login form has correct 44px buttons but signup uses 40px fields/buttons.
-
-#### Suggested Layout
-- Keep login card as-is (correct sizing)
-- Update signup card input heights: 40→44
-- Update signup OAuth button heights: 40→44
-- Shift mobile phone transform from `translate(940, 60)` to `translate(980, 60)`
-- Adjust y-positions to maintain spacing after height increases
-
-#### Spec Requirements to Preserve
-- FR-001-005: Account creation with all fields
-- FR-007, FR-008: OAuth buttons for GitHub/Google
-- FR-003: Password requirements annotation
-- FR-016: Lockout annotation
-
----
-
-### 02-password-reset.svg
-
-#### Diagnosis
-Step 1 "Send Reset Link" button is 40px (line 78), Step 3 "Reset Password" button is 40px (line 145).
-
-#### Root Cause
-Inconsistent button heights across the 3-step flow cards.
-
-#### Suggested Layout
-- Step 1: Change button height from 40 to 44 (line 78)
-- Step 2: (no button, just informational - OK)
-- Step 3: Change button height from 40 to 44 (line 145)
-- Adjust card heights or internal spacing to accommodate
-
-#### Spec Requirements to Preserve
-- FR-010, FR-011: Password reset with 1-hour expiration
-- SC-005: Under 2 minutes completion time
-
----
 
 ### 03-email-verification.svg
 
@@ -144,11 +101,11 @@ Inconsistent button heights across the 3-step flow cards.
 "Resend Verification Email" button in pending state is 40px (line 76).
 
 #### Root Cause
-Minor touch target sizing inconsistency.
+Minor touch target sizing inconsistency not caught in previous regeneration.
 
 #### Suggested Layout
 - Change resend button height from 40 to 44
-- Adjust card height or internal spacing
+- Adjust card height or internal spacing to accommodate
 
 #### Spec Requirements to Preserve
 - FR-004: Verification email on signup
@@ -181,19 +138,33 @@ Design used 40px for nav items and 32px for secondary actions, but AAA complianc
 
 ## Classification Summary
 
-| File | 🟢 Patchable | 🔴 Regenerate | Action |
+| File | 🟢 Patchable | 🔴 Regenerate | Status |
 |------|-------------|---------------|--------|
-| 01-login-signup.svg | 0 | 3 | REGENERATE |
-| 02-password-reset.svg | 1 | 1 | REGENERATE |
-| 03-email-verification.svg | 1 | 1 | REGENERATE |
+| 01-login-signup.svg | 0 | 0 | ✅ PASS |
+| 02-password-reset.svg | 0 | 0 | ✅ PASS |
+| 03-email-verification.svg | 0 | 1 | REGENERATE |
 | 04-profile-settings.svg | 0 | 3 | REGENERATE |
-| 05-auth-flow-architecture.svg | 3 | 0 | PATCH |
+| 05-auth-flow-architecture.svg | 0 | 0 | ✅ PASS |
+
+## Pass 3 Summary
+
+```
+Pass 3 Complete:
+- Issues from Pass 2: 9
+- Resolved this pass: 5
+- Still remaining: 4
+- NEW issues found: 0
+- Total remaining: 4
+
+Files resolved: 3 (01, 02, 05)
+Files needing work: 2 (03, 04)
+```
 
 ## Next Steps
 
 Run `/wireframe 003-user-authentication` to:
-1. **REGENERATE** 01-login-signup.svg (touch target fixes for signup form)
-2. **REGENERATE** 02-password-reset.svg (button height fixes)
-3. **REGENERATE** 03-email-verification.svg (button height fix)
-4. **REGENERATE** 04-profile-settings.svg (nav and button height fixes)
-5. **PATCH** 05-auth-flow-architecture.svg (3 minor annotation/text fixes)
+1. **SKIP** 01-login-signup.svg (all issues resolved)
+2. **SKIP** 02-password-reset.svg (all issues resolved)
+3. **REGENERATE** 03-email-verification.svg (1 touch target fix)
+4. **REGENERATE** 04-profile-settings.svg (3 touch target fixes)
+5. **SKIP** 05-auth-flow-architecture.svg (all issues resolved)

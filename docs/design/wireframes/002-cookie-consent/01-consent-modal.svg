@@ -4,6 +4,7 @@
        SOURCE: features/foundation/002-cookie-consent/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
+       REGENERATED WITH FEEDBACK: features/foundation/002-cookie-consent/WIREFRAME_ISSUES.md
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -21,7 +22,7 @@
       .heading-sm { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
       .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .text-muted { fill: #374151; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
       .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
@@ -43,7 +44,7 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">COOKIE CONSENT MODAL - FIRST VISIT</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151" letter-spacing="1">COOKIE CONSENT MODAL - FIRST VISIT EXPERIENCE</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP</text>
@@ -56,90 +57,92 @@
     <rect x="40" y="60" width="900" height="680" rx="8" fill="rgba(0,0,0,0.5)"/>
 
     <!-- Modal -->
-    <rect x="140" y="100" width="700" height="600" rx="12" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+    <rect x="140" y="90" width="700" height="620" rx="12" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
 
     <!-- Modal Header -->
-    <rect x="140" y="100" width="700" height="60" rx="12" fill="#e8d4b8"/>
-    <rect x="140" y="148" width="700" height="12" fill="#e8d4b8"/>
-    <text x="490" y="138" text-anchor="middle" class="heading">🍪 Cookie Preferences</text>
+    <rect x="140" y="90" width="700" height="55" rx="12" fill="#e8d4b8"/>
+    <rect x="140" y="133" width="700" height="12" fill="#e8d4b8"/>
+    <text x="490" y="125" text-anchor="middle" class="heading">Cookie Preferences</text>
 
     <!-- Description -->
-    <text x="170" y="190" class="text-md">We use cookies to enhance your experience. You can customize your</text>
-    <text x="170" y="210" class="text-md">preferences below. Your choices are saved and can be changed anytime.</text>
+    <text x="170" y="175" class="text-md">We use cookies to enhance your experience. You can customize your</text>
+    <text x="170" y="195" class="text-md">preferences below. Your choices are saved and can be changed anytime.</text>
 
-    <!-- Main Action Buttons - NO DARK PATTERNS (equal styling) -->
-    <text x="170" y="250" class="heading-sm">Quick Actions</text>
+    <!-- Main Action Buttons - NO DARK PATTERNS (equal styling) - 44px height -->
+    <text x="170" y="235" class="heading-sm">Quick Actions</text>
 
-    <rect x="170" y="265" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
-    <text x="270" y="293" text-anchor="middle" class="text-md">Accept All</text>
+    <rect x="170" y="250" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="270" y="278" text-anchor="middle" class="text-md">Accept All</text>
 
-    <rect x="390" y="265" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
-    <text x="490" y="293" text-anchor="middle" class="text-md">Reject All</text>
+    <rect x="390" y="250" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="490" y="278" text-anchor="middle" class="text-md">Reject All</text>
 
-    <rect x="610" y="265" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
-    <text x="710" y="293" text-anchor="middle" class="text-md">Manage Preferences</text>
-
-    <!-- Annotation: No dark patterns -->
-    <rect x="860" y="250" width="140" height="60" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="930" y="272" text-anchor="middle" class="annotation">No dark patterns</text>
-    <text x="930" y="290" text-anchor="middle" class="text-muted">Equal button styling</text>
-    <text x="930" y="305" text-anchor="middle" class="text-muted">FR-004</text>
+    <rect x="610" y="250" width="200" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="710" y="278" text-anchor="middle" class="text-md">Manage Preferences</text>
 
     <!-- Divider -->
-    <line x1="170" y1="330" x2="810" y2="330" stroke="#b8a080" stroke-width="1"/>
+    <line x1="170" y1="315" x2="810" y2="315" stroke="#b8a080" stroke-width="1"/>
 
     <!-- Cookie Categories -->
-    <text x="170" y="360" class="heading-sm">Cookie Categories</text>
+    <text x="170" y="345" class="heading-sm">Cookie Categories</text>
 
     <!-- Category 1: Necessary (Always On) -->
-    <rect x="170" y="375" width="620" height="70" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
-    <text x="190" y="400" class="heading-sm">Necessary Cookies</text>
-    <text x="190" y="420" class="text-sm">Required for core functionality. Cannot be disabled.</text>
-    <text x="190" y="438" class="text-muted">Session, security, accessibility preferences</text>
-    <!-- Toggle (disabled, always on) -->
-    <rect x="720" y="395" width="50" height="26" rx="13" fill="#22c55e"/>
-    <circle cx="757" cy="408" r="10" fill="#fff"/>
-    <text x="730" y="438" text-anchor="middle" class="text-muted">Always On</text>
+    <rect x="170" y="360" width="620" height="65" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="190" y="385" class="heading-sm">Necessary Cookies</text>
+    <text x="190" y="403" class="text-sm">Required for core functionality. Cannot be disabled.</text>
+    <text x="190" y="418" class="text-muted">Session, security, accessibility preferences</text>
+    <rect x="720" y="378" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="757" cy="391" r="10" fill="#fff"/>
 
     <!-- Category 2: Functional -->
-    <rect x="170" y="455" width="620" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="190" y="480" class="heading-sm">Functional Cookies</text>
-    <text x="190" y="500" class="text-sm">Enhanced features like preferences and personalization.</text>
-    <text x="190" y="518" class="text-muted">Language, theme, remembered choices</text>
-    <!-- Toggle (off) -->
-    <rect x="720" y="475" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="733" cy="488" r="10" fill="#fff"/>
+    <rect x="170" y="435" width="620" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="190" y="460" class="heading-sm">Functional Cookies</text>
+    <text x="190" y="478" class="text-sm">Enhanced features like preferences and personalization.</text>
+    <text x="190" y="493" class="text-muted">Language, theme, remembered choices</text>
+    <rect x="720" y="453" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="733" cy="466" r="10" fill="#fff"/>
 
     <!-- Category 3: Analytics -->
-    <rect x="170" y="535" width="620" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="190" y="560" class="heading-sm">Analytics Cookies</text>
-    <text x="190" y="580" class="text-sm">Help us understand how visitors use our site.</text>
-    <text x="190" y="598" class="text-muted">Page views, session duration, anonymous usage data</text>
-    <!-- Toggle (off) -->
-    <rect x="720" y="555" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="733" cy="568" r="10" fill="#fff"/>
+    <rect x="170" y="510" width="620" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="190" y="535" class="heading-sm">Analytics Cookies</text>
+    <text x="190" y="553" class="text-sm">Help us understand how visitors use our site.</text>
+    <text x="190" y="568" class="text-muted">Page views, session duration, anonymous usage data</text>
+    <rect x="720" y="528" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="733" cy="541" r="10" fill="#fff"/>
 
     <!-- Category 4: Marketing -->
-    <rect x="170" y="615" width="620" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
-    <text x="190" y="640" class="heading-sm">Marketing Cookies</text>
-    <text x="190" y="660" class="text-sm">Used for targeted advertising and remarketing.</text>
-    <text x="190" y="678" class="text-muted">Ad personalization, cross-site tracking</text>
-    <!-- Toggle (off) -->
-    <rect x="720" y="635" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="733" cy="648" r="10" fill="#fff"/>
+    <rect x="170" y="585" width="620" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="190" y="610" class="heading-sm">Marketing Cookies</text>
+    <text x="190" y="628" class="text-sm">Used for targeted advertising and remarketing.</text>
+    <text x="190" y="643" class="text-muted">Ad personalization, cross-site tracking</text>
+    <rect x="720" y="603" width="50" height="26" rx="13" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="733" cy="616" r="10" fill="#fff"/>
 
-    <!-- Annotation: 4 categories -->
-    <rect x="860" y="375" width="130" height="80" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="925" y="397" text-anchor="middle" class="annotation">4 Categories</text>
-    <text x="925" y="415" text-anchor="middle" class="text-muted">• Necessary ✓</text>
-    <text x="925" y="430" text-anchor="middle" class="text-muted">• Functional</text>
-    <text x="925" y="445" text-anchor="middle" class="text-muted">• Analytics</text>
-
-    <!-- Annotation: Granular control -->
-    <rect x="860" y="480" width="130" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="925" y="502" text-anchor="middle" class="annotation">Granular Control</text>
-    <text x="925" y="520" text-anchor="middle" class="text-muted">FR-005, FR-006</text>
+    <!-- Save Button -->
+    <rect x="580" y="660" width="230" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="695" y="688" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="600">Save Preferences</text>
   </g>
+
+  <!-- ANNOTATIONS (Desktop) -->
+  <!-- FR-001, FR-002, FR-003 annotation -->
+  <rect x="855" y="90" width="130" height="80" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="920" y="112" text-anchor="middle" class="annotation">First Visit Modal</text>
+  <text x="920" y="130" text-anchor="middle" class="text-muted">FR-001: Blocks cookies</text>
+  <text x="920" y="145" text-anchor="middle" class="text-muted">FR-002: 3 options</text>
+  <text x="920" y="160" text-anchor="middle" class="text-muted">FR-003: Until consent</text>
+
+  <!-- FR-004 annotation -->
+  <rect x="855" y="185" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="920" y="207" text-anchor="middle" class="annotation">No Dark Patterns</text>
+  <text x="920" y="225" text-anchor="middle" class="text-muted">FR-004: Equal styling</text>
+  <text x="920" y="238" text-anchor="middle" class="text-muted">No manipulation</text>
+
+  <!-- FR-005 to FR-008 annotation -->
+  <rect x="855" y="360" width="130" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="920" y="382" text-anchor="middle" class="annotation">4 Categories</text>
+  <text x="920" y="400" text-anchor="middle" class="text-muted">FR-005: Categorized</text>
+  <text x="920" y="415" text-anchor="middle" class="text-muted">FR-006-007: Granular</text>
+  <text x="920" y="428" text-anchor="middle" class="text-muted">FR-008: Necessary ON</text>
 
   <!-- MOBILE SECTION -->
   <text x="980" y="52" class="label-mobile">MOBILE</text>
@@ -158,65 +161,67 @@
     <rect x="10" y="38" width="340" height="652" rx="8" fill="rgba(0,0,0,0.5)"/>
 
     <!-- Modal (full-screen on mobile) -->
-    <rect x="20" y="60" width="320" height="620" rx="12" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+    <rect x="20" y="55" width="320" height="625" rx="12" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
 
     <!-- Modal Header -->
-    <rect x="20" y="60" width="320" height="50" rx="12" fill="#e8d4b8"/>
-    <rect x="20" y="98" width="320" height="12" fill="#e8d4b8"/>
-    <text x="180" y="92" text-anchor="middle" class="heading-sm">🍪 Cookie Preferences</text>
+    <rect x="20" y="55" width="320" height="45" rx="12" fill="#e8d4b8"/>
+    <rect x="20" y="88" width="320" height="12" fill="#e8d4b8"/>
+    <text x="180" y="85" text-anchor="middle" class="heading-sm">Cookie Preferences</text>
 
     <!-- Description -->
-    <text x="35" y="135" class="text-sm">We use cookies to enhance your</text>
-    <text x="35" y="150" class="text-sm">experience. Customize below.</text>
+    <text x="35" y="125" class="text-sm">We use cookies to enhance your</text>
+    <text x="35" y="140" class="text-sm">experience. Customize below.</text>
 
-    <!-- Action Buttons (stacked on mobile) -->
-    <rect x="35" y="170" width="130" height="36" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="100" y="193" text-anchor="middle" class="text-sm">Accept All</text>
+    <!-- Action Buttons (STACKED on mobile - 44px height, 12px gaps) -->
+    <rect x="35" y="158" width="270" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="170" y="186" text-anchor="middle" class="text-md">Accept All</text>
 
-    <rect x="175" y="170" width="130" height="36" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="240" y="193" text-anchor="middle" class="text-sm">Reject All</text>
+    <rect x="35" y="214" width="270" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="170" y="242" text-anchor="middle" class="text-md">Reject All</text>
+
+    <rect x="35" y="270" width="270" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="170" y="298" text-anchor="middle" class="text-md">Manage Preferences</text>
 
     <!-- Divider -->
-    <line x1="35" y1="225" x2="305" y2="225" stroke="#b8a080" stroke-width="1"/>
+    <line x1="35" y1="330" x2="305" y2="330" stroke="#b8a080" stroke-width="1"/>
 
     <!-- Category 1: Necessary -->
-    <rect x="35" y="240" width="270" height="55" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
-    <text x="50" y="260" class="heading-sm">Necessary</text>
-    <text x="50" y="280" class="text-muted">Required for core functionality</text>
-    <rect x="255" y="252" width="40" height="22" rx="11" fill="#22c55e"/>
-    <circle cx="285" cy="263" r="8" fill="#fff"/>
+    <rect x="35" y="345" width="270" height="50" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="50" y="367" class="heading-sm">Necessary</text>
+    <text x="50" y="385" class="text-muted">Required for core functionality</text>
+    <rect x="255" y="357" width="40" height="22" rx="11" fill="#22c55e"/>
+    <circle cx="285" cy="368" r="8" fill="#fff"/>
 
     <!-- Category 2: Functional -->
-    <rect x="35" y="305" width="270" height="55" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="50" y="325" class="heading-sm">Functional</text>
-    <text x="50" y="345" class="text-muted">Enhanced features, preferences</text>
-    <rect x="255" y="317" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="265" cy="328" r="8" fill="#fff"/>
+    <rect x="35" y="405" width="270" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="50" y="427" class="heading-sm">Functional</text>
+    <text x="50" y="445" class="text-muted">Enhanced features, preferences</text>
+    <rect x="255" y="417" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="265" cy="428" r="8" fill="#fff"/>
 
     <!-- Category 3: Analytics -->
-    <rect x="35" y="370" width="270" height="55" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="50" y="390" class="heading-sm">Analytics</text>
-    <text x="50" y="410" class="text-muted">Usage data, page views</text>
-    <rect x="255" y="382" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="265" cy="393" r="8" fill="#fff"/>
+    <rect x="35" y="465" width="270" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="50" y="487" class="heading-sm">Analytics</text>
+    <text x="50" y="505" class="text-muted">Usage data, page views</text>
+    <rect x="255" y="477" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="265" cy="488" r="8" fill="#fff"/>
 
     <!-- Category 4: Marketing -->
-    <rect x="35" y="435" width="270" height="55" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="50" y="455" class="heading-sm">Marketing</text>
-    <text x="50" y="475" class="text-muted">Targeted advertising</text>
-    <rect x="255" y="447" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="265" cy="458" r="8" fill="#fff"/>
+    <rect x="35" y="525" width="270" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="50" y="547" class="heading-sm">Marketing</text>
+    <text x="50" y="565" class="text-muted">Targeted advertising</text>
+    <rect x="255" y="537" width="40" height="22" rx="11" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="265" cy="548" r="8" fill="#fff"/>
 
-    <!-- Save Button -->
-    <rect x="35" y="510" width="270" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="170" y="538" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="600">Save Preferences</text>
+    <!-- Save Button - 44px height -->
+    <rect x="35" y="590" width="270" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="170" y="618" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="600">Save Preferences</text>
 
-    <!-- Privacy Policy Link -->
-    <text x="170" y="580" text-anchor="middle" class="annotation">View Privacy Policy</text>
+    <!-- Accessibility hint -->
+    <text x="180" y="652" text-anchor="middle" class="text-muted">Tab to navigate • Space to toggle</text>
 
     <!-- Consent Version -->
-    <text x="170" y="620" text-anchor="middle" class="text-muted">Consent Version: 1.0.0</text>
-    <text x="170" y="638" text-anchor="middle" class="text-muted">Last updated: Jan 2026</text>
+    <text x="180" y="672" text-anchor="middle" class="text-muted">Consent v1.0.0 • FR-022-024</text>
   </g>
 
   <!-- Footer -->
@@ -224,8 +229,8 @@
 
   <!-- Leader lines -->
   <g id="leader-lines">
-    <line x1="810" y1="285" x2="860" y2="280" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="790" y1="410" x2="860" y2="410" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="770" y1="510" x2="860" y2="505" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="840" y1="130" x2="855" y2="130" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="810" y1="272" x2="855" y2="212" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="790" y1="420" x2="855" y2="400" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
   </g>
 </svg>

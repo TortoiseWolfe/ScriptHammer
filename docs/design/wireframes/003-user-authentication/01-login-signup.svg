@@ -4,6 +4,7 @@
        SOURCE: features/foundation/003-user-authentication/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
+       REGENERATED WITH FEEDBACK: features/foundation/003-user-authentication/WIREFRAME_ISSUES.md
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -16,25 +17,25 @@
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
     <style>
-      .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
+      .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 22px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
       .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
       .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
+      .annotation { fill: #6d28d9; font-family: monospace; font-size: 11px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .input-label { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 600; }
       .link-text { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
       .btn-text { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; }
-      .error-text { fill: #ef4444; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .error-text { fill: #dc2626; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
     </style>
   </defs>
 
   <!-- Background -->
   <rect width="1400" height="800" fill="url(#bgGrad)"/>
 
-  <!-- Dot grid pattern -->
+  <!-- Dot grid -->
   <g opacity="0.35">
     <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
       <circle cx="15" cy="15" r="1" fill="#6b8cba"/>
@@ -42,195 +43,190 @@
     <rect width="1400" height="800" fill="url(#dots)"/>
   </g>
 
-  <!-- Accent line top -->
+  <!-- Accent line -->
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION - LOGIN &amp; SIGNUP</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION — LOGIN &amp; SIGNUP (User Stories 1, 2, 4)</text>
 
-  <!-- ==================== DESKTOP SECTION ==================== -->
-  <text x="40" y="52" class="label-desktop">DESKTOP - LOGIN</text>
+  <!-- ==================== DESKTOP LOGIN ==================== -->
+  <text x="40" y="52" class="label-desktop">DESKTOP — SIGN IN</text>
 
-  <!-- Desktop Login Card -->
-  <g id="desktop-login" transform="translate(40, 60)">
-    <!-- Main card -->
-    <rect x="0" y="0" width="420" height="620" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+  <g id="login-card" transform="translate(40, 65)">
+    <rect x="0" y="0" width="400" height="560" rx="12" fill="#e8d4b8" stroke="#b8a080"/>
 
-    <!-- Logo placeholder -->
-    <circle cx="210" cy="50" r="30" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="210" y="56" text-anchor="middle" class="heading">SH</text>
+    <!-- Logo -->
+    <circle cx="200" cy="45" r="28" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="200" y="52" text-anchor="middle" class="heading">SH</text>
 
     <!-- Title -->
-    <text x="210" y="105" text-anchor="middle" class="heading-lg">Welcome Back</text>
-    <text x="210" y="125" text-anchor="middle" class="text-muted">Sign in to your account</text>
+    <text x="200" y="100" text-anchor="middle" class="heading-lg">Welcome Back</text>
+    <text x="200" y="120" text-anchor="middle" class="text-muted">Sign in to your account</text>
 
-    <!-- Email field -->
-    <text x="40" y="165" class="input-label">Email Address</text>
-    <rect x="40" y="175" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="55" y="202" class="text-muted">you@example.com</text>
+    <!-- Email - 44px -->
+    <text x="30" y="155" class="input-label">Email Address</text>
+    <rect x="30" y="165" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="193" class="text-muted">you@example.com</text>
 
-    <!-- Password field -->
-    <text x="40" y="245" class="input-label">Password</text>
-    <rect x="40" y="255" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="55" y="282" class="text-muted">••••••••</text>
-    <!-- Eye icon -->
-    <circle cx="355" cy="277" r="10" fill="#dcc8a8"/>
+    <!-- Password - 44px -->
+    <text x="30" y="230" class="input-label">Password</text>
+    <rect x="30" y="240" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="268" class="text-muted">••••••••</text>
+    <circle cx="350" cy="262" r="10" fill="#dcc8a8"/>
 
-    <!-- Remember me + Forgot password row -->
-    <rect x="40" y="315" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="65" y="328" class="text-sm">Remember me (30 days)</text>
-    <text x="380" y="328" text-anchor="end" class="link-text">Forgot password?</text>
+    <!-- Remember + Forgot -->
+    <g transform="translate(30, 300)">
+      <rect x="0" y="0" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="24" y="13" class="text-sm">Remember me (30 days)</text>
+      <text x="340" y="13" text-anchor="end" class="link-text">Forgot password?</text>
+    </g>
 
-    <!-- Sign In button -->
-    <rect x="40" y="355" width="340" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="210" y="383" text-anchor="middle" class="btn-text">Sign In</text>
+    <!-- Sign In button - 44px -->
+    <rect x="30" y="335" width="340" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="200" y="363" text-anchor="middle" class="btn-text">Sign In</text>
 
     <!-- Divider -->
-    <line x1="40" y1="425" x2="170" y2="425" stroke="#b8a080"/>
-    <text x="210" y="430" text-anchor="middle" class="text-muted">or continue with</text>
-    <line x1="250" y1="425" x2="380" y2="425" stroke="#b8a080"/>
+    <line x1="30" y1="405" x2="160" y2="405" stroke="#b8a080"/>
+    <text x="200" y="410" text-anchor="middle" class="text-muted">or continue with</text>
+    <line x1="240" y1="405" x2="370" y2="405" stroke="#b8a080"/>
 
-    <!-- OAuth buttons -->
-    <rect x="40" y="450" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="122" y="478" text-anchor="middle" class="text-md">GitHub</text>
+    <!-- OAuth - 44px each -->
+    <rect x="30" y="425" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="112" y="453" text-anchor="middle" class="text-md">GitHub</text>
 
-    <rect x="215" y="450" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="297" y="478" text-anchor="middle" class="text-md">Google</text>
+    <rect x="205" y="425" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="287" y="453" text-anchor="middle" class="text-md">Google</text>
 
-    <!-- Sign up link -->
-    <text x="210" y="540" text-anchor="middle" class="text-sm">Don't have an account?</text>
-    <text x="210" y="560" text-anchor="middle" class="link-text">Create an account</text>
+    <!-- Create account link -->
+    <text x="200" y="505" text-anchor="middle" class="text-sm">Don't have an account?</text>
+    <text x="200" y="525" text-anchor="middle" class="link-text">Create an account</text>
 
-    <!-- Error state example -->
-    <rect x="40" y="580" width="340" height="30" rx="6" fill="#fef2f2" stroke="#ef4444"/>
-    <text x="210" y="600" text-anchor="middle" class="error-text">Invalid email or password</text>
+    <!-- Error state -->
+    <rect x="30" y="540" width="340" height="28" rx="4" fill="#fef2f2" stroke="#dc2626"/>
+    <text x="200" y="559" text-anchor="middle" class="error-text">Invalid email or password</text>
   </g>
 
   <!-- ==================== DESKTOP SIGNUP ==================== -->
-  <text x="480" y="52" class="label-desktop">DESKTOP - SIGNUP</text>
+  <text x="460" y="52" class="label-desktop">DESKTOP — CREATE ACCOUNT</text>
 
-  <g id="desktop-signup" transform="translate(480, 60)">
-    <!-- Main card -->
-    <rect x="0" y="0" width="420" height="620" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+  <g id="signup-card" transform="translate(460, 65)">
+    <rect x="0" y="0" width="400" height="560" rx="12" fill="#e8d4b8" stroke="#b8a080"/>
 
     <!-- Title -->
-    <text x="210" y="45" text-anchor="middle" class="heading-lg">Create Account</text>
-    <text x="210" y="65" text-anchor="middle" class="text-muted">Start your journey with ScriptHammer</text>
+    <text x="200" y="35" text-anchor="middle" class="heading-lg">Create Account</text>
+    <text x="200" y="55" text-anchor="middle" class="text-muted">Start your journey with ScriptHammer</text>
 
-    <!-- Email field -->
-    <text x="40" y="100" class="input-label">Email Address *</text>
-    <rect x="40" y="110" width="340" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <!-- Email - 44px -->
+    <text x="30" y="85" class="input-label">Email Address *</text>
+    <rect x="30" y="95" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Password field with requirements -->
-    <text x="40" y="170" class="input-label">Password *</text>
-    <rect x="40" y="180" width="340" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="238" class="text-muted">Min 8 chars: uppercase, lowercase, number, special</text>
+    <!-- Password - 44px -->
+    <text x="30" y="160" class="input-label">Password *</text>
+    <rect x="30" y="170" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="30" y="232" class="text-muted">Min 8 chars: uppercase, lowercase, number, special</text>
 
-    <!-- Confirm password -->
-    <text x="40" y="268" class="input-label">Confirm Password *</text>
-    <rect x="40" y="278" width="340" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <!-- Confirm - 44px -->
+    <text x="30" y="262" class="input-label">Confirm Password *</text>
+    <rect x="30" y="272" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Display name (optional) -->
-    <text x="40" y="340" class="input-label">Display Name (optional)</text>
-    <rect x="40" y="350" width="340" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <!-- Display name - 44px -->
+    <text x="30" y="337" class="input-label">Display Name (optional)</text>
+    <rect x="30" y="347" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Terms checkbox -->
-    <rect x="40" y="410" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="65" y="423" class="text-sm">I agree to Terms of Service and Privacy Policy</text>
+    <!-- Terms -->
+    <g transform="translate(30, 405)">
+      <rect x="0" y="0" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="24" y="13" class="text-sm">I agree to Terms and Privacy Policy</text>
+    </g>
 
-    <!-- Create Account button -->
-    <rect x="40" y="450" width="340" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="210" y="478" text-anchor="middle" class="btn-text">Create Account</text>
+    <!-- Create button - 44px -->
+    <rect x="30" y="435" width="340" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="200" y="463" text-anchor="middle" class="btn-text">Create Account</text>
 
     <!-- Divider -->
-    <line x1="40" y1="515" x2="170" y2="515" stroke="#b8a080"/>
-    <text x="210" y="520" text-anchor="middle" class="text-muted">or sign up with</text>
-    <line x1="250" y1="515" x2="380" y2="515" stroke="#b8a080"/>
+    <line x1="30" y1="500" x2="160" y2="500" stroke="#b8a080"/>
+    <text x="200" y="505" text-anchor="middle" class="text-muted">or sign up with</text>
+    <line x1="240" y1="500" x2="370" y2="500" stroke="#b8a080"/>
 
-    <!-- OAuth buttons -->
-    <rect x="40" y="535" width="165" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="122" y="560" text-anchor="middle" class="text-md">GitHub</text>
+    <!-- OAuth - 44px each -->
+    <rect x="30" y="515" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="112" y="543" text-anchor="middle" class="text-md">GitHub</text>
 
-    <rect x="215" y="535" width="165" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="297" y="560" text-anchor="middle" class="text-md">Google</text>
-
-    <!-- Sign in link -->
-    <text x="210" y="605" text-anchor="middle" class="text-sm">Already have an account? <tspan class="link-text">Sign in</tspan></text>
+    <rect x="205" y="515" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="287" y="543" text-anchor="middle" class="text-md">Google</text>
   </g>
 
-  <!-- ==================== MOBILE SECTION ==================== -->
-  <text x="940" y="52" class="label-mobile">MOBILE</text>
+  <!-- ==================== MOBILE ==================== -->
+  <text x="980" y="52" class="label-mobile">MOBILE — SIGN IN</text>
 
-  <g id="mobile-view" transform="translate(940, 60)">
+  <g id="mobile-login" transform="translate(980, 65)">
     <!-- Phone frame -->
-    <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
-    <!-- Screen -->
-    <rect x="10" y="10" width="340" height="680" rx="16" fill="#e8d4b8"/>
+    <rect x="0" y="0" width="360" height="660" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
+    <rect x="10" y="10" width="340" height="640" rx="16" fill="#e8d4b8"/>
+
     <!-- Status bar -->
     <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
-    <text x="30" y="28" class="text-sm">9:41</text>
+    <text x="28" y="28" class="text-sm">9:41</text>
     <text x="320" y="28" text-anchor="end" class="text-sm">100%</text>
 
-    <!-- Mobile Login Content -->
     <!-- Logo -->
-    <circle cx="180" cy="80" r="24" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="180" y="86" text-anchor="middle" class="heading">SH</text>
+    <circle cx="180" cy="75" r="22" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="180" y="81" text-anchor="middle" class="heading">SH</text>
 
     <!-- Title -->
-    <text x="180" y="130" text-anchor="middle" class="heading">Welcome Back</text>
-    <text x="180" y="148" text-anchor="middle" class="text-muted">Sign in to continue</text>
+    <text x="180" y="120" text-anchor="middle" class="heading">Welcome Back</text>
+    <text x="180" y="138" text-anchor="middle" class="text-muted">Sign in to continue</text>
 
-    <!-- Email field -->
-    <text x="30" y="180" class="input-label">Email</text>
-    <rect x="30" y="188" width="280" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <!-- Email - 44px -->
+    <text x="25" y="168" class="input-label">Email</text>
+    <rect x="25" y="178" width="290" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Password field -->
-    <text x="30" y="248" class="input-label">Password</text>
-    <rect x="30" y="256" width="280" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <!-- Password - 44px -->
+    <text x="25" y="243" class="input-label">Password</text>
+    <rect x="25" y="253" width="290" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Forgot password -->
-    <text x="310" y="315" text-anchor="end" class="link-text">Forgot password?</text>
+    <!-- Forgot -->
+    <text x="315" y="318" text-anchor="end" class="link-text">Forgot password?</text>
 
-    <!-- Sign In button -->
-    <rect x="30" y="335" width="280" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="170" y="363" text-anchor="middle" class="btn-text">Sign In</text>
+    <!-- Sign In - 44px -->
+    <rect x="25" y="338" width="290" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="170" y="366" text-anchor="middle" class="btn-text">Sign In</text>
 
-    <!-- Divider -->
+    <!-- Or -->
     <text x="170" y="410" text-anchor="middle" class="text-muted">or</text>
 
-    <!-- OAuth buttons (stacked on mobile) -->
-    <rect x="30" y="425" width="280" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="170" y="450" text-anchor="middle" class="text-md">Continue with GitHub</text>
+    <!-- OAuth stacked - 44px each -->
+    <rect x="25" y="425" width="290" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="170" y="453" text-anchor="middle" class="text-md">Continue with GitHub</text>
 
-    <rect x="30" y="475" width="280" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="170" y="500" text-anchor="middle" class="text-md">Continue with Google</text>
+    <rect x="25" y="480" width="290" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="170" y="508" text-anchor="middle" class="text-md">Continue with Google</text>
 
-    <!-- Sign up link -->
+    <!-- Create account -->
     <text x="170" y="560" text-anchor="middle" class="text-sm">Don't have an account?</text>
     <text x="170" y="580" text-anchor="middle" class="link-text">Create an account</text>
 
     <!-- Home indicator -->
-    <rect x="140" y="665" width="80" height="5" rx="2.5" fill="#b8a080"/>
+    <rect x="140" y="625" width="80" height="5" rx="2.5" fill="#b8a080"/>
   </g>
 
   <!-- ==================== ANNOTATIONS ==================== -->
-  <g id="annotations">
-    <!-- Login annotations -->
-    <rect x="40" y="710" width="180" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="50" y="730" class="annotation">FR-006, FR-007, FR-008</text>
-    <text x="50" y="745" class="text-muted">Email + OAuth sign-in</text>
+  <g id="annotations" transform="translate(0, 640)">
+    <rect x="40" y="0" width="200" height="55" rx="6" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="50" y="20" class="annotation">FR-006, FR-007, FR-008</text>
+    <text x="50" y="38" class="text-muted">Email + OAuth sign-in</text>
 
-    <rect x="240" y="710" width="180" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="250" y="730" class="annotation">FR-013, FR-014</text>
-    <text x="250" y="745" class="text-muted">Remember me: 30d / 7d</text>
+    <rect x="260" y="0" width="200" height="55" rx="6" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="270" y="20" class="annotation">FR-013, FR-014</text>
+    <text x="270" y="38" class="text-muted">Remember me: 30d / 7d</text>
 
-    <rect x="440" y="710" width="180" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="450" y="730" class="annotation">FR-001 to FR-005</text>
-    <text x="450" y="745" class="text-muted">Account creation flow</text>
+    <rect x="480" y="0" width="200" height="55" rx="6" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="490" y="20" class="annotation">FR-001 to FR-005</text>
+    <text x="490" y="38" class="text-muted">Account creation + verify</text>
 
-    <rect x="640" y="710" width="200" height="50" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="650" y="730" class="annotation">FR-016</text>
-    <text x="650" y="745" class="text-muted">5 attempts / 15 min lockout</text>
+    <rect x="700" y="0" width="200" height="55" rx="6" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="710" y="20" class="annotation">FR-016</text>
+    <text x="710" y="38" class="text-muted">5 attempts / 15 min lockout</text>
   </g>
 
   <!-- Footer -->

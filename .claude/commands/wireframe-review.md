@@ -152,15 +152,36 @@ For AAA compliance, check these color combinations:
 - **Label positioning** - Are labels close to what they describe?
 - **Connector gaps** - Are there suspicious gaps in connection lines?
 
-### 9. MOBILE-SPECIFIC ISSUES
+### 9. TOUCH TARGET COMPLIANCE (WCAG AAA = 44×44px minimum) ⚠️ CRITICAL
+
+**This applies to BOTH desktop AND mobile. Check EVERY interactive element.**
+
+For EACH of these element types, verify height ≥ 44px:
+- **Buttons** (primary, secondary, icon) - Check `height` attribute
+- **Input fields** (text, email, password, search) - Check `height` attribute
+- **Navigation items** (sidebar links, tab items) - Check `height` attribute
+- **List items** (if tappable/clickable) - Check `height` attribute
+- **OAuth buttons** - Check `height` attribute
+- **Form controls** (checkboxes, radios, toggles) - Check tap target area
+- **Action links** (Revoke, Delete, Edit) - Must have invisible tap target rect
+
+**How to verify**: Search SVG for `height="` and check values. Any value <44 on an interactive element is a 🔴 REGENERATE issue.
+
+**Common failures**:
+- `height="40"` - Close but fails (often buttons/inputs)
+- `height="36"` - Fails (old template default)
+- `height="32"` - Fails significantly
+- Text links without tap target rect - Fails
+
+### 10. MOBILE-SPECIFIC ISSUES
 
 - **Safe area violations** - Does content intrude on notch/home indicator areas?
-- **Touch target size** - Are ALL tappable elements at least 44x44px?
+- **Touch target size** - Verify 44px (covered in section 9, double-check here)
 - **Thumb zone** - Are important actions in the thumb-reachable zone?
 - **Status bar overlap** - Does any content go behind the status bar?
 - **Keyboard avoidance** - Would the keyboard cover input fields?
 
-### 10. CONTENT & TYPOGRAPHY
+### 11. CONTENT & TYPOGRAPHY
 
 - **Typos** - Spell-check EVERYTHING
 - **Orphaned words** - Single words on their own line?
@@ -168,7 +189,7 @@ For AAA compliance, check these color combinations:
 - **Line length** - Are any lines too long (>75 characters)?
 - **Placeholder vs real content** - Is there lazy "Lorem ipsum" anywhere?
 
-### 11. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
+### 12. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
 
 **Before reviewing ANY wireframe, READ THE SPEC FIRST.**
 

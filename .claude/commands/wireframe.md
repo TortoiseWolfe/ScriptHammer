@@ -1,5 +1,5 @@
 ---
-description: Generate, fix, or regenerate SVG wireframes with smart triage (patches 🟢 issues, regenerates 🔴 issues)
+description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerates 🔴 and ✅ PASS - never skips files)
 ---
 
 ## User Input
@@ -10,9 +10,10 @@ $ARGUMENTS
 
 ## Outline
 
-**Smart wireframe command** that handles the full lifecycle:
+**Comprehensive wireframe command** that handles the full lifecycle:
 - **Fresh generation**: Creates wireframes from spec (no feedback file)
-- **Fix cycle**: Patches 🟢 issues in place, regenerates 🔴 files with feedback
+- **Fix cycle**: Patches 🟢 issues in place, regenerates 🔴 AND ✅ PASS files
+- **Never skips**: ALL files are processed every time - quality over efficiency
 
 Theme selection:
 - **Light theme** (Indigo palette) for UX/Frontend wireframes
@@ -23,10 +24,12 @@ Theme selection:
 ```
 /wireframe-review [feature]     # Creates WIREFRAME_ISSUES.md with feedback
     ↓
-/wireframe [feature]            # Smart: patches 🟢, regenerates 🔴, skips ✅
+/wireframe [feature]            # Regenerates ALL files (patches 🟢, regenerates 🔴 and ✅ PASS)
     ↓
 (repeat until all issues resolved)
 ```
+
+**Philosophy**: Never skip files. Fresh eyes on every file might catch issues that were overlooked.
 
 **Note**: `/wireframe-fix` is deprecated - this command now handles both patching and regeneration.
 
@@ -95,9 +98,11 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 
 | File has... | Action |
 |-------------|--------|
-| No issues | ✅ SKIP - already good |
+| No issues / ✅ PASS | 🔄 REGENERATE - fresh eyes might catch something missed |
 | Only 🟢 issues | 🟢 PATCH in place |
 | Any 🔴 issues | 🔴 REGENERATE from scratch |
+
+**IMPORTANT**: Never skip files just because they "passed" a previous review. A fresh regeneration might catch issues that were overlooked. Quality over efficiency.
 
 ---
 
@@ -118,18 +123,82 @@ Apply fixes directly to the existing SVG:
 
 #### For 🔴 REGENERATE files:
 
-Read the **🔴 REGENERATION FEEDBACK section** for that file:
-- **Diagnosis**: What's visually broken (coordinates, element names, specific issues)
-- **Root Cause**: WHY the layout doesn't work
-- **Suggested Layout**: Concrete alternative arrangement
-- **Spec Requirements to Preserve**: FR/SC items that must remain
-- **CSS Fixes to Apply**: Color/font corrections to include in regeneration
+## ⛔ CRITICAL: REGENERATION ≠ PATCHING ⛔
 
-**This feedback is MANDATORY guidance.** When regenerating, you MUST:
-1. Apply all CSS fixes from the feedback
-2. Follow the suggested layout changes
-3. Address every issue in the Diagnosis
-4. Preserve all spec requirements listed
+**DO NOT edit the existing file in place.** Regeneration means creating a NEW wireframe from scratch.
+
+### Step 1: Rename Old File as Reference
+
+Before generating, rename the existing SVG to preserve it as reference:
+```bash
+mv docs/design/wireframes/[feature]/[filename].svg \
+   docs/design/wireframes/[feature]/[filename].reference.svg
+```
+
+### Step 2: Read for Context (NOT for copying)
+
+Read these files to understand context:
+1. **spec.md** - Primary source of requirements
+2. **WIREFRAME_ISSUES.md** - What went wrong and why
+3. **[filename].reference.svg** - Visual reference for what worked vs. didn't
+
+When reading the reference SVG, note:
+- ✅ What worked well (keep similar approach)
+- ❌ What failed (avoid these patterns)
+- 📐 Layout decisions that were good vs. problematic
+
+### Step 3: Design Fresh from Spec + Template
+
+Create a NEW wireframe by:
+1. Starting with the appropriate theme template (Light/Dark)
+2. Designing layout fresh based on spec requirements
+3. Applying learnings from feedback (e.g., 44px touch targets)
+4. Building each element from scratch - don't copy-paste from reference
+
+### Step 4: Write New SVG
+
+Write the new design to the original filename:
+```
+docs/design/wireframes/[feature]/[filename].svg
+```
+
+### Step 5: Clean Up Reference Files
+
+After wireframe review passes, delete the `.reference.svg` files:
+```bash
+rm docs/design/wireframes/[feature]/*.reference.svg
+```
+
+### What to Extract from Feedback:
+
+Read the **🔴 REGENERATION FEEDBACK section** for learnings:
+- **Diagnosis**: What went wrong (avoid these mistakes)
+- **Root Cause**: WHY the layout failed (understand the structural issue)
+- **Suggested Layout**: Guidance for the new design approach
+- **Spec Requirements to Preserve**: FR/SC items the new design must show
+- **Design Standards**: e.g., "all touch targets must be 44px"
+
+### Example: WRONG vs RIGHT
+
+❌ **WRONG** (This is patching, not regeneration):
+```
+1. Read 01-login-signup.svg
+2. Find height="40", change to height="44"
+3. Adjust y-positions to compensate
+4. Write modified file back
+```
+
+✅ **RIGHT** (True regeneration):
+```
+1. mv 01-login-signup.svg → 01-login-signup.reference.svg
+2. Read spec.md for requirements
+3. Read feedback for learnings ("need 44px touch targets")
+4. Glance at reference to see what worked/didn't
+5. Design fresh using template, 44px from the start
+6. Write new 01-login-signup.svg
+```
+
+**Key distinction**: Reference informs your design thinking. It doesn't provide copy-paste material.
 
 ---
 
@@ -138,9 +207,8 @@ Read the **🔴 REGENERATION FEEDBACK section** for that file:
 ```
 Analyzing WIREFRAME_ISSUES.md for 004-mobile-first-design...
 
-Found 4 SVG files with 23 total issues.
+Found 5 SVG files. Triaging...
 
-Triaging files...
   01-responsive-navigation.svg: 15 issues
     🔴 REGENERATE - contains structural issues (overlap, cramped, spacing)
   02-content-typography.svg: 3 issues
@@ -149,10 +217,15 @@ Triaging files...
     🟢 PATCH - all issues patchable (color only)
   04-breakpoint-system.svg: 3 issues
     🔴 REGENERATE - contains structural issues (cramped)
+  05-architecture.svg: 0 issues (✅ PASS)
+    🔄 REGENERATE - fresh review (might catch something missed)
 
 Actions:
   🟢 03-touch-targets.svg: Patching 2 color fixes...
+  🔄 05-architecture.svg: Regenerating fresh (no issues but reviewing again)...
   🔴 01, 02, 04: Regenerating with feedback...
+
+ALL 5 files processed. No files skipped.
 ```
 
 ---
@@ -496,18 +569,22 @@ To prevent overlap/clipping in generated wireframes:
 | Mobile area | x=980, y=60 | 360×700 | Phone frame |
 | - Content | x=990, y=70 | 340×660 | 10px padding |
 
-**Component Sizing Standards** (use consistently):
-| Component | Desktop | Mobile | rx |
-|-----------|---------|--------|-----|
-| Primary button | 100×36 | 80×32 | 6 |
-| Icon button | 40×40 | 36×36 | 6 |
-| FAB | r=28 | r=24 | circle |
-| Text input | height=36 | height=32 | 6 |
-| Card | - | - | 8 |
-| List item | - | - | 6 |
-| Badge (pill) | height=22 | height=20 | 11 |
-| Avatar large | r=24 | r=20 | circle |
-| Avatar small | r=16 | r=14 | circle |
+**Component Sizing Standards** (WCAG AAA touch targets = 44px minimum):
+| Component | Desktop | Mobile | rx | Notes |
+|-----------|---------|--------|-----|-------|
+| Primary button | width×44 | width×44 | 6 | **44px height mandatory** |
+| Secondary button | width×44 | width×44 | 6 | **44px height mandatory** |
+| Icon button | 44×44 | 44×44 | 6 | **44px minimum** |
+| Text input | height=44 | height=44 | 6 | **44px height mandatory** |
+| Nav item | width×44 | width×44 | 6 | **44px height mandatory** |
+| List item (tappable) | height=44+ | height=44+ | 6 | **44px minimum** |
+| FAB | r=28 (56px) | r=24 (48px) | circle | Already >44px |
+| Card | - | - | 8 | Container, not tappable |
+| Badge (pill) | height=22 | height=20 | 11 | Display only, not tappable |
+| Avatar large | r=24 | r=20 | circle | Display only |
+| Avatar small | r=16 | r=14 | circle | Display only |
+
+**⚠️ CRITICAL**: Any interactive/tappable element MUST be at least 44×44px. This is non-negotiable for WCAG AAA compliance.
 
 ---
 
