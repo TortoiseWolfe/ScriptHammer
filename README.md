@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **11** / ✅ ~~35~~
+**Progress:** 🎨 **5** / ✅ ~~41~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -100,37 +100,19 @@
 
 #### ~~033-seo-library-tests *(backend)*~~ — ✅ Done
 
-#### **034-blog-library-tests** — 🎨 Pending
-```
-/wireframe features/testing/034-blog-library-tests/spec.md
-```
+#### ~~034-blog-library-tests *(backend)*~~ — ✅ Done
 
-#### **035-messaging-service-tests** — 🎨 Pending
-```
-/wireframe features/testing/035-messaging-service-tests/spec.md
-```
+#### ~~035-messaging-service-tests *(backend)*~~ — ✅ Done
 
-#### **036-auth-component-tests** — 🎨 Pending
-```
-/wireframe features/testing/036-auth-component-tests/spec.md
-```
+#### ~~036-auth-component-tests *(backend)*~~ — ✅ Done
 
-#### **037-game-a11y-tests** — 🎨 Pending
-```
-/wireframe features/testing/037-game-a11y-tests/spec.md
-```
+#### ~~037-game-a11y-tests *(backend)*~~ — ✅ Done
 
 ### Payments
 
-#### **038-payment-dashboard** — 🎨 Pending
-```
-/wireframe features/payments/038-payment-dashboard/spec.md
-```
+#### ~~038-payment-dashboard~~ — ✅ Done
 
-#### **039-payment-offline-queue** — 🎨 Pending
-```
-/wireframe features/payments/039-payment-offline-queue/spec.md
-```
+#### ~~039-payment-offline-queue *(backend)*~~ — ✅ Done
 
 #### **040-payment-retry-ui** — 🎨 Pending
 ```
