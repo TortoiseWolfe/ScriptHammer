@@ -14,7 +14,7 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **6** / ✅ ~~40~~
+**Progress:** 🎨 **0** / ✅ ~~46~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
@@ -114,37 +114,19 @@
 
 #### ~~039-payment-offline-queue *(backend)*~~ — ✅ Done
 
-#### **040-payment-retry-ui** — 🎨 Pending
-```
-/wireframe features/payments/040-payment-retry-ui/spec.md
-```
+#### ~~040-payment-retry-ui~~ — ✅ Done
 
-#### **041-paypal-subscriptions** — 🎨 Pending
-```
-/wireframe features/payments/041-paypal-subscriptions/spec.md
-```
+#### ~~041-paypal-subscriptions~~ — ✅ Done
 
-#### **042-payment-rls-policies *(backend)*** — 🎨 Pending
-```
-/wireframe features/payments/042-payment-rls-policies/spec.md
-```
+#### ~~042-payment-rls-policies *(backend)*~~ — ✅ Done
 
-#### **043-group-service *(backend)*** — 🎨 Pending
-```
-/wireframe features/payments/043-group-service/spec.md
-```
+#### ~~043-group-service *(backend)*~~ — ✅ Done
 
 ### Code Quality
 
-#### **044-error-handler-integrations** — 🎨 Pending
-```
-/wireframe features/code-quality/044-error-handler-integrations/spec.md
-```
+#### ~~044-error-handler-integrations~~ — ✅ Done
 
-#### **045-disqus-theme** — 🎨 Pending
-```
-/wireframe features/code-quality/045-disqus-theme/spec.md
-```
+#### ~~045-disqus-theme~~ — ✅ Done
 
 ---
 

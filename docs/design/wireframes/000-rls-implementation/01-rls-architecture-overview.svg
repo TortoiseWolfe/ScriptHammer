@@ -46,8 +46,8 @@
       .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .annotation { fill: #6d28d9; font-family: monospace; font-size: 10px; }
+      .text-muted { fill: #9ca3af; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #a78bfa; font-family: monospace; font-size: 10px; }
       .table-name { fill: #ffffff; font-family: monospace; font-size: 13px; font-weight: bold; }
       .column-name { fill: #cbd5e1; font-family: monospace; font-size: 10px; }
       .role-label { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 11px; font-weight: bold; }
@@ -270,8 +270,8 @@
     <rect x="130" y="48" width="80" height="24" rx="4" fill="#334155" stroke="#22c55e"/>
     <text x="170" y="65" text-anchor="middle" class="text-sm" fill="#22c55e">SOC 2</text>
 
-    <rect x="230" y="48" width="100" height="24" rx="4" fill="#334155" stroke="#8494a8"/>
-    <text x="280" y="65" text-anchor="middle" class="text-sm" fill="#8494a8">99.9% SLA</text>
+    <rect x="230" y="48" width="100" height="24" rx="4" fill="#334155" stroke="#22c55e"/>
+    <text x="280" y="65" text-anchor="middle" class="text-sm" fill="#22c55e">99.9% SLA</text>
   </g>
 
   <!-- ==================== FOOTER ==================== -->

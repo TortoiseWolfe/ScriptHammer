@@ -1040,6 +1040,110 @@
       </div>
     </div>
 
+    <div class="nav-section">
+      <h2>040 - Payment Retry UI</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="040-payment-retry-ui/01-error-display.svg">
+          Error Display
+          <span class="path">8 error types, messages, actions</span>
+        </a>
+        <a href="#" data-svg="040-payment-retry-ui/02-retry-and-update.svg">
+          Retry &amp; Update Flow
+          <span class="path">States, card update form</span>
+        </a>
+        <a href="#" data-svg="040-payment-retry-ui/03-recovery-wizard.svg">
+          Recovery Wizard
+          <span class="path">Step-by-step resolution, escalation</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>041 - PayPal Subscriptions</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="041-paypal-subscriptions/01-subscription-list-empty.svg">
+          Subscription List &amp; Empty
+          <span class="path">Cards, status, billing, empty state</span>
+        </a>
+        <a href="#" data-svg="041-paypal-subscriptions/02-subscription-actions.svg">
+          Cancel &amp; Pause Dialogs
+          <span class="path">Confirmation, duration, states</span>
+        </a>
+        <a href="#" data-svg="041-paypal-subscriptions/03-subscription-architecture.svg">
+          Subscription Architecture
+          <span class="path">PayPal API, Edge Fn, RLS, cache</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>042 - Payment RLS Policies</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="042-payment-rls-policies/01-rls-policy-architecture.svg">
+          RLS Policy Architecture
+          <span class="path">4 tables, policies, security layer</span>
+        </a>
+        <a href="#" data-svg="042-payment-rls-policies/02-access-control-matrix.svg">
+          Access Control Matrix
+          <span class="path">Role × Table × Operation grid</span>
+        </a>
+        <a href="#" data-svg="042-payment-rls-policies/03-policy-evaluation-flow.svg">
+          Policy Evaluation Flow
+          <span class="path">Query path, &lt;10ms overhead</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>043 - Group Service</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="043-group-service/01-group-service-architecture.svg">
+          Service Architecture
+          <span class="path">8 operations, permissions, data layer</span>
+        </a>
+        <a href="#" data-svg="043-group-service/02-member-lifecycle-flow.svg">
+          Member Lifecycle Flow
+          <span class="path">States, edge cases, permission matrix</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>044 - Error Handler Integrations</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="044-error-handler-integrations/01-error-architecture.svg">
+          Error Architecture
+          <span class="path">Sources, consent, monitoring, queue</span>
+        </a>
+        <a href="#" data-svg="044-error-handler-integrations/02-toast-notifications.svg">
+          Toast Notifications
+          <span class="path">4 types, positioning, mobile layout</span>
+        </a>
+        <a href="#" data-svg="044-error-handler-integrations/03-error-boundaries.svg">
+          Error Boundaries
+          <span class="path">Fallback UI, retry, isolation</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <h2>045 - Disqus Theme</h2>
+      <div class="nav-links">
+        <a href="#" data-svg="045-disqus-theme/01-theme-mapping-preview.svg">
+          Theme Mapping Preview
+          <span class="path">32 DaisyUI themes → Disqus colors</span>
+        </a>
+        <a href="#" data-svg="045-disqus-theme/02-consent-placeholder-states.svg">
+          Consent Placeholder States
+          <span class="path">6 states: ask, denied, loading, loaded</span>
+        </a>
+        <a href="#" data-svg="045-disqus-theme/03-integration-architecture.svg">
+          Integration Architecture
+          <span class="path">Theme detect → consent → load flow</span>
+        </a>
+      </div>
+    </div>
+
   </nav>
 
   <main>
@@ -1229,6 +1333,29 @@
       { path: '039-payment-offline-queue/01-queue-status-indicator.svg', title: 'Queue Status Indicator' },
       { path: '039-payment-offline-queue/02-pending-payment-list.svg', title: 'Pending Payment List' },
       { path: '039-payment-offline-queue/03-queue-states.svg', title: 'Queue States & Dialogs' },
+      // 040 - Payment Retry UI
+      { path: '040-payment-retry-ui/01-error-display.svg', title: 'Error Display' },
+      { path: '040-payment-retry-ui/02-retry-and-update.svg', title: 'Retry & Update Flow' },
+      { path: '040-payment-retry-ui/03-recovery-wizard.svg', title: 'Recovery Wizard' },
+      // 041 - PayPal Subscriptions
+      { path: '041-paypal-subscriptions/01-subscription-list-empty.svg', title: 'Subscription List & Empty State' },
+      { path: '041-paypal-subscriptions/02-subscription-actions.svg', title: 'Cancel & Pause Dialogs' },
+      { path: '041-paypal-subscriptions/03-subscription-architecture.svg', title: 'Subscription Architecture' },
+      // 042 - Payment RLS Policies
+      { path: '042-payment-rls-policies/01-rls-policy-architecture.svg', title: 'RLS Policy Architecture' },
+      { path: '042-payment-rls-policies/02-access-control-matrix.svg', title: 'Access Control Matrix' },
+      { path: '042-payment-rls-policies/03-policy-evaluation-flow.svg', title: 'Policy Evaluation Flow' },
+      // 043 - Group Service
+      { path: '043-group-service/01-group-service-architecture.svg', title: 'Group Service Architecture' },
+      { path: '043-group-service/02-member-lifecycle-flow.svg', title: 'Member Lifecycle Flow' },
+      // 044 - Error Handler Integrations
+      { path: '044-error-handler-integrations/01-error-architecture.svg', title: 'Error Architecture' },
+      { path: '044-error-handler-integrations/02-toast-notifications.svg', title: 'Toast Notifications' },
+      { path: '044-error-handler-integrations/03-error-boundaries.svg', title: 'Error Boundaries' },
+      // 045 - Disqus Theme
+      { path: '045-disqus-theme/01-theme-mapping-preview.svg', title: 'Theme Mapping Preview' },
+      { path: '045-disqus-theme/02-consent-placeholder-states.svg', title: 'Consent Placeholder States' },
+      { path: '045-disqus-theme/03-integration-architecture.svg', title: 'Integration Architecture' },
     ];
 
     let currentIndex = 0;

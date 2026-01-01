@@ -21,7 +21,7 @@
       .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-muted { fill: #9ca3af; font-family: system-ui, sans-serif; font-size: 10px; }
       .table-header { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
       .table-cell { fill: #cbd5e1; font-family: monospace; font-size: 11px; }
       .cell-allow { fill: #22c55e; }
@@ -258,7 +258,7 @@
 
   <!-- ==================== LEGEND ==================== -->
   <g transform="translate(1070, 50)">
-    <rect x="0" y="0" width="290" height="200" rx="8" fill="#1e293b" stroke="#475569"/>
+    <rect x="0" y="0" width="290" height="165" rx="8" fill="#1e293b" stroke="#475569"/>
     <text x="145" y="25" text-anchor="middle" class="heading">Legend</text>
     <line x1="20" y1="35" x2="270" y2="35" stroke="#475569"/>
 
@@ -280,11 +280,6 @@
       <text x="65" y="16" class="text-md">Operation blocked</text>
     </g>
 
-    <g transform="translate(20, 155)">
-      <rect x="0" y="0" width="50" height="22" rx="4" fill="#f59e0b"/>
-      <text x="25" y="16" text-anchor="middle" class="text-sm" fill="#ffffff">COND</text>
-      <text x="65" y="16" class="text-md">Conditional (see notes)</text>
-    </g>
   </g>
 
   <!-- ==================== KEY REQUIREMENTS ==================== -->

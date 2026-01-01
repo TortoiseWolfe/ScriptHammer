@@ -40,7 +40,7 @@
       .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-muted { fill: #9ca3af; font-family: system-ui, sans-serif; font-size: 10px; }
       .code { fill: #e2e8f0; font-family: monospace; font-size: 10px; }
       .code-sm { fill: #cbd5e1; font-family: monospace; font-size: 9px; }
       .pattern-title { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
