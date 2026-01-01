@@ -14,38 +14,38 @@
 
 **Legend:** 🎨 **Pending** | ✅ ~~Done~~
 
-**Progress:** 🎨 **40** / ✅ ~~6~~
+**Progress:** 🎨 **46** / ✅ ~~0~~
 
 **Theme:** `/wireframe` auto-selects: Light for UX, Dark for Backend — Use `/wireframe-dark` or `/wireframe-light` to override
 
 ### Foundation
 
-#### ~~000-rls-implementation *(backend)*~~ — ✅ Done
+#### **000-rls-implementation *(backend)*** — 🎨 Pending
 ```
 /wireframe features/foundation/000-rls-implementation/spec.md
 ```
 
-#### ~~001-wcag-aa-compliance~~ — ✅ Done
+#### **001-wcag-aa-compliance** — 🎨 Pending
 ```
 /wireframe features/foundation/001-wcag-aa-compliance/spec.md
 ```
 
-#### ~~002-cookie-consent~~ — ✅ Done
+#### **002-cookie-consent** — 🎨 Pending
 ```
 /wireframe features/foundation/002-cookie-consent/spec.md
 ```
 
-#### ~~003-user-authentication~~ — ✅ Done
+#### **003-user-authentication** — 🎨 Pending
 ```
 /wireframe features/foundation/003-user-authentication/spec.md
 ```
 
-#### ~~004-mobile-first-design~~ — ✅ Done
+#### **004-mobile-first-design** — 🎨 Pending
 ```
 /wireframe features/foundation/004-mobile-first-design/spec.md
 ```
 
-#### ~~005-security-hardening~~ — ✅ Done
+#### **005-security-hardening** — 🎨 Pending
 ```
 /wireframe features/foundation/005-security-hardening/spec.md
 ```
