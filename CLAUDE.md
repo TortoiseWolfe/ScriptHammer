@@ -229,8 +229,9 @@ npx playwright install chromium  # Install browser (first time)
 
 ```bash
 /hot-reload-viewer      # Start wireframe viewer at localhost:3000
-/svg-to-png             # Convert SVG wireframes to PNG (1200x800)
 ```
+
+**Note**: PNG generation is now integrated into `/wireframe-review`. Screenshots are captured during review and saved to `docs/design/wireframes/png/[feature]/` for reuse in tutorials and marketing.
 
 ## Browser Testing with MCP Toolkit
 

@@ -193,6 +193,132 @@ Wireframes verified. Proceed to:
 
 ---
 
+## Step 1: Viewer Setup (MANDATORY) ⚠️ DO THIS FIRST
+
+**Before reviewing ANY wireframe, set up the viewer with the optimal viewing configuration.**
+
+This eliminates the trial-and-error zoom/focus cycle. Do this ONCE at the start of every review session.
+
+### 1a. Ensure Viewer is Running
+
+```bash
+# Check if viewer is already running
+curl -s http://localhost:3000 | head -5
+
+# If not running, start it:
+cd docs/design/wireframes && npm run dev &
+sleep 3
+```
+
+### 1b. Navigate and Configure Browser (Optimal Sequence)
+
+Use MCP browser tools in this EXACT order:
+
+```javascript
+// 1. Navigate to viewer
+mcp__MCP_DOCKER__browser_navigate({ url: "http://host.docker.internal:3000" })
+
+// 2. Select wireframe via data-svg attribute (NOT click - avoids timeout)
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => {
+    const link = document.querySelector('[data-svg="[FEATURE]/[FILE].svg"]');
+    if (link) link.click();
+    return !!link;
+  }`
+})
+
+// 3. Enter focus mode IMMEDIATELY (hides sidebar/footer)
+mcp__MCP_DOCKER__browser_press_key({ key: "f" })
+
+// 4. Reset zoom to 85% baseline
+mcp__MCP_DOCKER__browser_press_key({ key: "0" })
+
+// 5. Zoom out to fit all canvas sizes (55% fits 1600x1000)
+mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 70%
+mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 55%
+mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 40% (for architecture diagrams)
+```
+
+### 1c. Zoom Levels Reference
+
+| Canvas Size | Recommended Zoom | Key Presses After Reset |
+|-------------|------------------|------------------------|
+| 1400×800 (standard) | 55% | `0`, `-`, `-` |
+| 1600×800 (wide) | 55% | `0`, `-`, `-` |
+| 1600×1000 (architecture) | 40% | `0`, `-`, `-`, `-` |
+
+### 1d. Take Screenshots with Persistent Output
+
+**Screenshots are saved for reuse in tutorials and marketing.**
+
+```javascript
+// Screenshot naming convention: [FEATURE]-[PAGE]-[DESCRIPTION].png
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "003-01-login-signup.png"
+})
+```
+
+**Output location**: `/tmp/playwright-output/` (inside MCP Docker container)
+
+### 1e. Copy Screenshots to Persistent Location (After Review)
+
+After completing a feature's review, copy screenshots to the repo:
+
+```bash
+# Create feature PNG directory
+mkdir -p docs/design/wireframes/png/[FEATURE]/
+
+# Copy from MCP container (find container name first)
+docker ps | grep playwright
+docker cp [CONTAINER]:/tmp/playwright-output/[FEATURE]-*.png docs/design/wireframes/png/[FEATURE]/
+```
+
+### 1f. Navigate Between Wireframes
+
+Once in focus mode at correct zoom:
+
+```javascript
+// Next wireframe (maintains focus mode and zoom)
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" })
+
+// Previous wireframe
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowLeft" })
+
+// Take screenshot after each navigation
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
+```
+
+### 1g. Complete Viewer Setup Sequence (Copy-Paste Ready)
+
+For feature `003-user-authentication` with 5 wireframes:
+
+```javascript
+// Setup (do once)
+await mcp__MCP_DOCKER__browser_navigate({ url: "http://host.docker.internal:3000" });
+await mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => document.querySelector('[data-svg="003-user-authentication/01-login-signup.svg"]').click()`
+});
+await mcp__MCP_DOCKER__browser_press_key({ key: "f" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "0" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "-" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "-" });
+
+// Capture all 5 wireframes
+await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-01-login-signup.png" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
+await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-02-password-reset.png" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
+await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-03-email-verification.png" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
+await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-04-profile-settings.png" });
+await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
+await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-05-auth-architecture.png" });
+```
+
+**DO NOT skip this setup. DO NOT discover zoom/focus mid-review.**
+
+---
+
 ## Critical Review Philosophy
 
 **DO NOT give participation trophies.** These wireframes need to be BEST-IN-CLASS. Every pixel matters.
@@ -619,6 +745,48 @@ For EACH requirement, ask:
 - **CRITICAL**: Entire FR/SC not visualized anywhere
 - **MAJOR**: FR partially shown but missing key aspect
 - **MINOR**: FR shown but not annotated/labeled
+
+---
+
+### 14b. REQUIREMENTS LEGEND PANEL VERIFICATION (MANDATORY)
+
+**Every wireframe with FR or SC annotations MUST have a REQUIREMENTS KEY panel.**
+
+#### Checklist
+- [ ] **Legend exists**: REQUIREMENTS KEY panel present at y>=700
+- [ ] **Legend complete**: Every FR and SC code in annotations appears in legend
+- [ ] **No phantom entries**: Legend doesn't list FR/SC not on this page
+- [ ] **Short statements present**: Each entry has descriptive text
+- [ ] **MUST/SHOULD preserved**: Requirement keywords visible in FR statements
+- [ ] **Metrics preserved**: SC statements include measurable values
+- [ ] **Inline context**: ALL annotations show `XX-XXX: [context]`, not just codes
+- [ ] **US inline-only**: US codes have inline context but NO legend entry
+
+#### Detection Method
+```bash
+# Extract all FR/SC codes from annotations
+grep -oE "(FR|SC)-[0-9]{3}" [file].svg | sort -u > page_reqs.txt
+
+# Extract all FR/SC codes from legend
+grep "requirements-legend" -A 50 [file].svg | grep -oE "(FR|SC)-[0-9]{3}" | sort -u > legend_reqs.txt
+
+# Compare (should be identical)
+diff page_reqs.txt legend_reqs.txt
+
+# Check for US codes in legend (should be empty)
+grep "requirements-legend" -A 50 [file].svg | grep -oE "US-[0-9]{3}"
+```
+
+#### Issue Classifications
+| Issue | Classification |
+|-------|----------------|
+| Missing REQUIREMENTS KEY panel | 🔴 REGENERATE |
+| Legend missing some page FR/SC | 🔴 REGENERATE |
+| Legend has extra FR/SC not on page | 🔴 REGENERATE |
+| US code appears in legend | 🔴 REGENERATE |
+| FR/SC annotation missing inline context | 🟢 PATCH |
+| US annotation missing inline context | 🟢 PATCH |
+| Short statement too long (>45 chars) | 🟢 PATCH |
 
 ---
 
