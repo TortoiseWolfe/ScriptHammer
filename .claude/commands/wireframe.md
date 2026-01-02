@@ -2,56 +2,33 @@
 description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerates 🔴 and ✅ PASS - never skips files)
 ---
 
-## ⛔ MANDATORY PRE-FLIGHT CHECK (DO THIS FIRST)
+## ⛔ PRE-FLIGHT CHECK (BLOCKING)
 
-**Before generating ANY wireframe, answer these questions. This is BLOCKING - you cannot proceed without completing this check.**
+### Theme
 
-### Theme Decision (BLOCKING)
+**Q1**: Contains `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`?
+- **YES** → ⛔ DARK THEME (no exceptions)
+- **NO** → Q2
 
-**Question 1**: Does the feature name or wireframe title contain ANY of these keywords?
-- `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`
+**Q2**: Would end users see this screen?
+- **YES** → Light (settings, profile, dashboard)
+- **NO** → Dark (CI/CD, RLS, API, tests)
 
-| Answer | Action |
-|--------|--------|
-| **YES** | ⛔ **MUST use DARK THEME** - Do not proceed with light theme |
-| **NO** | Continue to Question 2 |
+### Canvas
 
-**Question 2**: Would a non-technical end user view this screen in the actual application?
+| Type | Size |
+|------|------|
+| UI screens | 1400×800 |
+| Architecture | 1600×1000 |
+| Complex flows | 1600×1200 |
 
-| Answer | Theme | Examples |
-|--------|-------|----------|
-| **YES** - users see this | **Light theme** | Settings page, profile, dashboard with user data |
-| **NO** - only developers/admins | **DARK theme** | CI/CD, RLS policies, API flow, test runner |
+⛔ Expand canvas, never shrink fonts.
 
-### ⛔ STOP CHECK
-
-**If you answered "architecture" or "backend" keywords in Q1 AND are about to use light theme → YOU ARE WRONG.**
-
-Architecture diagrams, auth flows, RLS diagrams, test pipelines = **ALWAYS DARK THEME**. No exceptions.
-
-### Canvas Size Check
-
-| Content Type | Canvas Size | viewBox |
-|--------------|-------------|---------|
-| Standard UI screens | 1400×800 | `0 0 1400 800` |
-| Architecture with many components | 1600×1000 | `0 0 1600 1000` |
-| Complex flows with arrows | 1600×1200 | `0 0 1600 1200` |
-
-**⛔ NEVER shrink fonts to fit content. ALWAYS expand canvas instead.**
-
-### Pre-Flight Verification Statement (MANDATORY)
-
-Before generating, you MUST write:
+### Verify
 
 ```
-PRE-FLIGHT CHECK COMPLETE:
-- Feature type: [UI/Architecture/Backend]
-- Theme selected: [Light/Dark]
-- Reason: [e.g., "Architecture diagram - developers only" or "User-facing settings page"]
-- Canvas size: [e.g., 1400×800 or 1600×1000]
+PRE-FLIGHT: [UI/Arch] | [Light/Dark] | [Reason] | [Size]
 ```
-
-**If you cannot write this statement with confidence, re-read the spec and feature name.**
 
 ---
 
@@ -80,34 +57,11 @@ $ARGUMENTS
 
 ## Outline
 
-**Comprehensive wireframe command** that handles the full lifecycle:
-- **Fresh generation**: Creates wireframes from spec (no feedback file)
-- **Fix cycle**: Patches 🟢 issues in place, regenerates 🔴 AND ✅ PASS files
-- **Never skips**: ALL files are processed every time - quality over efficiency
-
-Theme selection:
-- **Light theme** (Indigo palette) for UX/Frontend wireframes
-- **Dark theme** (Slate/Violet palette) for Backend/Architecture wireframes
-
-### Workflow (Simplified)
+Handles full lifecycle: fresh generation, 🟢 patches, 🔴 regenerates. Never skips files.
 
 ```
-/wireframe [feature]            # Generate fresh wireframes from spec
-    ↓
-/wireframe-review [feature]     # Review by READING actual SVG files
-    ↓
-/wireframe [feature]            # Regenerate to fix issues (if any found)
-    ↓
-(repeat until review finds no issues)
+/wireframe → /wireframe-review → /wireframe (repeat until clean)
 ```
-
-**Philosophy**:
-- Generate fresh from spec every time
-- Review means READING the SVG and doing boundary math
-- No tracker files - they enable false confidence
-- If issues exist, regenerate completely
-
-**Note**: `/wireframe-fix` is deprecated. Always regenerate - patching creates more problems.
 
 ### 1. Identify the Spec
 
@@ -121,92 +75,46 @@ Ask the user which spec to use if multiple exist, or use the only one if there's
 
 ### 1b. Page Filter (Per-Page Mode Only)
 
-**If `:PAGE` was provided in arguments:**
+**If `:PAGE` provided:**
+1. List SVGs in `docs/design/wireframes/[feature-folder]/`
+2. Filter: Numeric (`:01`) → `01-*.svg` | Text (`:responsive`) → `*responsive*.svg`
+3. **0 matches** → Error with available list | **2+ matches** → Ask user
+4. **1 match** → Extract spec from `grep "SOURCE:" [target].svg`
 
-1. List all SVG files in `docs/design/wireframes/[feature-folder]/`
-2. Apply filter:
-   - Numeric (`:01`, `:3`) → Match files starting with zero-padded number (`01-*.svg`)
-   - Text (`:responsive`) → Match files containing the text (case-insensitive)
-3. **If 0 matches**: Error with list of available SVGs
-4. **If 1 match**: Extract spec path from SVG watermark:
-   ```
-   grep "SOURCE:" [target].svg | Extract path after "SOURCE: "
-   ```
-5. **If 2+ matches**: Ask user to clarify
-
-**Per-page mode uses SVG watermark for context:**
-- The SVG header contains `SOURCE: features/[category]/[feature]/spec.md`
-- No need for user to specify spec path - extract from existing SVG
-- Still read FULL spec for regeneration context
+Spec path comes from SVG watermark. Still read FULL spec for context.
 
 ### 2. Read the Spec
 
-**Use the Read tool** to read the full spec file. Extract and note:
-- Feature name and purpose
-- User stories and acceptance criteria
-- UI requirements and interactions
-- Any mentioned screens, forms, lists, or components
-- Error states or edge cases mentioned
+Read full spec. Extract: feature purpose, user stories, UI requirements, screens/forms/lists, error states. Wireframes must reflect spec.
 
-This is critical - wireframes must accurately reflect the spec requirements.
+### 2c. Extract Requirements for Legend
 
-### 2c. Extract Requirements for Legend (MANDATORY)
+| Type | Source Section | Short Title (≤30 chars) |
+|------|----------------|-------------------------|
+| FR | `### Functional Requirements` | Keep MUST/SHOULD |
+| SC | `### Success Criteria` | Keep metric |
+| US | `### User Stories` | Inline only, no legend |
 
-Build lookup tables for FR, SC, and US during spec reading:
-
-#### FR Extraction (Functional Requirements)
-1. Locate `### Functional Requirements` section in spec.md
-2. For each line matching `**FR-XXX**: [statement]`:
-   - Extract code (FR-001, FR-002, etc.)
-   - Extract full statement
-   - Generate short title (<=30 chars): Remove "System", keep MUST/SHOULD
-
-#### SC Extraction (Success Criteria)
-1. Locate `### Success Criteria` section
-2. For each `**SC-XXX**: [measurable outcome]`:
-   - Extract code, full statement
-   - Generate short title (<=30 chars): Keep metric, remove fluff
-
-#### US Extraction (User Stories) - INLINE ONLY
-1. Locate `### User Stories` section
-2. For each `**US-XXX**: As a [role]...`:
-   - Extract code and role
-   - Generate short title: `US-XXX: As [role]...`
-   - **NO legend entry** (too verbose for legend panel)
-
-**REQUIREMENTS LOOKUP TABLE format:**
-| Type | Code | Short Title | Full Statement |
-|------|------|-------------|----------------|
-| FR | FR-001 | MUST enable RLS on users | System MUST enable security policies on users table |
-| SC | SC-001 | Auth response <2sec | Authentication response time MUST be under 2 seconds |
-| US | US-001 | As admin, manage users | *(inline only, no legend)* |
+**Lookup table:**
+| Type | Code | Short | Full |
+|------|------|-------|------|
+| FR | FR-001 | MUST enable RLS | Full statement... |
+| SC | SC-001 | Auth <2sec | Full statement... |
+| US | US-001 | As admin... | *(inline only)* |
 
 ---
 
 ### 2b. Check for Review Feedback & Triage (CRITICAL)
 
-**Before generating, check if this is a fix/regeneration with feedback from a previous review.**
-
-Look for `WIREFRAME_ISSUES.md` in the feature directory:
-```
-features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
-```
-
-**If no WIREFRAME_ISSUES.md exists** → Fresh generation, proceed to Step 3.
-
-**If WIREFRAME_ISSUES.md exists** → This is a fix/regeneration cycle. Triage each file:
+Check `features/[category]/[feature-folder]/WIREFRAME_ISSUES.md`:
+- **Not found** → Fresh generation, proceed to Step 3.
+- **Found** → Fix/regeneration cycle. Triage each file:
 
 ---
 
 #### Per-Page Mode File Selection
 
-**If per-page mode (`:PAGE` argument provided):**
-- Filter WIREFRAME_ISSUES.md entries to TARGET page only
-- Process ONLY that single file
-- Ignore other files in the issues list
-
-**If full-feature mode (no `:PAGE`):**
-- Process ALL files listed in issues (current batch behavior)
+**Per-page** (`:PAGE`): Process TARGET page only. **Full-feature**: Process all files.
 
 ---
 
@@ -247,99 +155,30 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 
 ---
 
-#### For 🟢 PATCH files (all issues patchable):
+#### For 🟢 PATCH files:
 
-Apply fixes directly to the existing SVG:
-1. Read the SVG file
-2. For color fixes: find/replace the hex value
-3. For font fixes: update the font-size attribute
-4. For typos: update the text content
-5. For CSS class: add to the `<style>` block
-6. Write the patched SVG back
-7. Mark issues as ✅ FIXED in WIREFRAME_ISSUES.md
-
-**Do NOT regenerate these files** - patching preserves the existing layout.
+Read SVG → find/replace hex, font-size, text, or add CSS class → write back → mark ✅ FIXED. Do NOT regenerate - patching preserves layout.
 
 ---
 
 #### For 🔴 REGENERATE files:
 
-## ⛔ CRITICAL: REGENERATION ≠ PATCHING ⛔
+## ⛔ REGENERATION ≠ PATCHING ⛔
 
-**DO NOT edit the existing file in place.** Regeneration means creating a NEW wireframe from scratch.
+**Create NEW wireframe from scratch. Do NOT edit existing file.**
 
-### Step 1: Rename Old File as Reference
+1. **Rename**: `mv [file].svg → [file].reference.svg`
+2. **Read context**: spec.md, WIREFRAME_ISSUES.md, reference.svg (what worked vs failed)
+3. **Design fresh**: Start from template, apply learnings (e.g., 44px targets)
+4. **Write new**: Save to original filename
+5. **Cleanup**: Delete `.reference.svg` after review passes
 
-Before generating, rename the existing SVG to preserve it as reference:
-```bash
-mv docs/design/wireframes/[feature]/[filename].svg \
-   docs/design/wireframes/[feature]/[filename].reference.svg
-```
+**From feedback, extract**: Diagnosis, root cause, suggested layout, FR/SC to preserve.
 
-### Step 2: Read for Context (NOT for copying)
+**❌ WRONG**: Read → find height="40" → change to 44 → adjust y-positions → write back
+**✅ RIGHT**: Rename → read spec+feedback → design fresh from template → write new
 
-Read these files to understand context:
-1. **spec.md** - Primary source of requirements
-2. **WIREFRAME_ISSUES.md** - What went wrong and why
-3. **[filename].reference.svg** - Visual reference for what worked vs. didn't
-
-When reading the reference SVG, note:
-- ✅ What worked well (keep similar approach)
-- ❌ What failed (avoid these patterns)
-- 📐 Layout decisions that were good vs. problematic
-
-### Step 3: Design Fresh from Spec + Template
-
-Create a NEW wireframe by:
-1. Starting with the appropriate theme template (Light/Dark)
-2. Designing layout fresh based on spec requirements
-3. Applying learnings from feedback (e.g., 44px touch targets)
-4. Building each element from scratch - don't copy-paste from reference
-
-### Step 4: Write New SVG
-
-Write the new design to the original filename:
-```
-docs/design/wireframes/[feature]/[filename].svg
-```
-
-### Step 5: Clean Up Reference Files
-
-After wireframe review passes, delete the `.reference.svg` files:
-```bash
-rm docs/design/wireframes/[feature]/*.reference.svg
-```
-
-### What to Extract from Feedback:
-
-Read the **🔴 REGENERATION FEEDBACK section** for learnings:
-- **Diagnosis**: What went wrong (avoid these mistakes)
-- **Root Cause**: WHY the layout failed (understand the structural issue)
-- **Suggested Layout**: Guidance for the new design approach
-- **Spec Requirements to Preserve**: FR/SC items the new design must show
-- **Design Standards**: e.g., "all touch targets must be 44px"
-
-### Example: WRONG vs RIGHT
-
-❌ **WRONG** (This is patching, not regeneration):
-```
-1. Read 01-login-signup.svg
-2. Find height="40", change to height="44"
-3. Adjust y-positions to compensate
-4. Write modified file back
-```
-
-✅ **RIGHT** (True regeneration):
-```
-1. mv 01-login-signup.svg → 01-login-signup.reference.svg
-2. Read spec.md for requirements
-3. Read feedback for learnings ("need 44px touch targets")
-4. Glance at reference to see what worked/didn't
-5. Design fresh using template, 44px from the start
-6. Write new 01-login-signup.svg
-```
-
-**Key distinction**: Reference informs your design thinking. It doesn't provide copy-paste material.
+Reference informs thinking, not copy-paste material.
 
 ---
 
@@ -380,10 +219,7 @@ Update WIREFRAME_ISSUES.md:
 
 ### 3. Plan the Wireframes
 
-**CRITICAL RULES**:
-1. **Every feature gets at least one wireframe** - no exceptions. If a feature exists, it gets visualized.
-2. **The number of wireframes is determined by the spec content** - do NOT assume 1 feature = 1 SVG.
-3. **Non-UI features still need wireframes** - use architecture diagrams, data flow diagrams, system diagrams, or process flows.
+**Rules**: Every feature gets wireframe(s). Count determined by spec, not 1:1. Non-UI features use architecture/flow diagrams.
 
 **Wireframe Types by Feature Category**:
 
@@ -396,110 +232,30 @@ Update WIREFRAME_ISSUES.md:
 | Security features | Security architecture, threat model diagrams | **Dark** |
 | Data features | Entity relationship diagrams, data flow visualizations | **Dark** |
 
-**Determine how many wireframes based on spec content**:
-- Count distinct user stories - each major flow may need its own wireframe
-- Count distinct screens mentioned - each screen needs visualization
-- Count distinct states (loading, error, empty, success) - consider separate wireframes for complex states
-- Count distinct user roles - different views may need separate wireframes
+**Count from spec**: User stories (major flows), screens, states (loading/error/empty/success), user roles → each may need wireframe.
 
-**Common wireframe needs**:
-- List views (showing multiple items)
-- Detail views (showing single item)
-- Forms (create/edit)
-- Special states (empty, loading, error)
-- Architecture/system diagrams (for non-UI features)
-- Flow diagrams (for processes and integrations)
+**Common types**: List views, detail views, forms, state variations, architecture diagrams, flow diagrams.
 
 ### 4. Theme Selection Per Wireframe
 
-**CRITICAL**: Select theme PER WIREFRAME, not per feature. Mixed features need both themes.
+Theme per wireframe, not per feature. **Mobile frame → Light (no exceptions).**
 
-#### 🚨 MANDATORY RULE (CHECK FIRST)
+Example (`010-unified-blog-content`): `01-blog-list-post.svg` → Light | `04-migration-dashboard.svg` → Dark
 
-**If the wireframe will include a mobile phone frame → USE LIGHT THEME. NO EXCEPTIONS.**
+**Multi-page triggers**: 3+ step flows, state variations, role-specific views.
 
-Mobile phone mockups are ALWAYS front-end UX elements that end users interact with. Even if the content shows developer tools (console output, IDE panels), the presence of a phone frame means it's demonstrating a mobile UX and MUST use light theme.
+| Naming | Pattern | Example |
+|--------|---------|---------|
+| Sequential | `NN-step.svg` | `01-login.svg` |
+| States | `screen-state.svg` | `dashboard-error.svg` |
+| Roles | `screen-role.svg` | `settings-admin.svg` |
 
-| Contains Mobile Frame? | Theme Decision |
-|------------------------|----------------|
-| **YES** | **Light theme ONLY** - Skip disambiguation test |
-| **NO** | Continue to disambiguation test below |
-
-#### ⛔ DISAMBIGUATION TEST (for wireframes WITHOUT mobile frames)
-
-Before selecting a theme, ask this question:
-
-> **"Would a non-technical end user view this screen?"**
-
-| Answer | Theme | Examples |
-|--------|-------|----------|
-| **YES** - end users see this | **Light** | Compliance dashboard, settings page, user profile, any screen with scores/data ABOUT the user |
-| **NO** - only developers/admins see this | **Dark** | CI/CD pipeline, RLS architecture, database schema, API flow, test runner output |
-
-**Common Mistakes to Avoid:**
-- "Accessibility Dashboard" showing compliance scores → **Light** (users view their scores)
-- "Test Coverage Dashboard" in CI → **Dark** (developers view build results)
-- "Analytics Dashboard" for site owners → **Light** (business users view metrics)
-- "System Architecture" diagram → **Dark** (developers reference this)
-
-#### Light Theme Indicators (use Parchment palette)
-Use light theme when the wireframe:
-- Shows screens that END USERS will see and interact with
-- Contains form inputs, buttons, or interactive controls
-- Displays content layouts (blog posts, lists, cards)
-- Has mobile phone frame mockups
-- Shows state variations (loading, empty, error, success)
-- Depicts dashboards showing USER-FACING data (scores, progress, settings)
-
-#### Dark Theme Indicators (use Slate/Violet palette)
-Use dark theme when the wireframe:
-- Shows diagrams that ONLY DEVELOPERS will reference
-- Is an architecture or system diagram
-- Shows data flow visualizations
-- Depicts CI/CD pipelines or test runner output
-- Contains security threat models
-- Shows database schemas or RLS policies
-- Depicts API integration diagrams
-
-#### Mixed Feature Example
-Feature `010-unified-blog-content` needs BOTH themes:
-- `01-blog-list-post.svg` → **Light** (UX - content display)
-- `02-offline-editor.svg` → **Light** (UX - form/editor)
-- `03-conflict-resolution.svg` → **Light** (UX - modal/UI)
-- `04-migration-dashboard.svg` → **Dark** (Backend - system architecture)
-
-**Always apply theme per-SVG based on content, not per-feature.**
-
-#### Determine Wireframe Strategy
-
-Based on the spec complexity, choose the appropriate approach:
-
-**Multi-Page** (create multiple SVG files):
-- User flows with 3+ steps (auth, checkout, onboarding)
-- State variations needing dedicated visualization (loading, error, empty, success)
-- Different user roles with distinct views
-
-**Naming conventions**:
-| Scenario | Pattern | Example |
-|----------|---------|---------|
-| Sequential flow | `NN-step-name.svg` | `01-login.svg`, `02-register.svg` |
-| State variations | `screen-state.svg` | `dashboard-empty.svg`, `dashboard-error.svg` |
-| Role variations | `screen-role.svg` | `settings-admin.svg`, `settings-member.svg` |
-
-**Expanded Canvas** (larger than 1400x800):
-- Extensive annotations explaining complex interactions
-- Flow arrows connecting multiple components
-- Dense dashboards with many interconnected elements
-
-**Canvas options**:
-| Canvas | viewBox | Use case |
-|--------|---------|----------|
-| Standard | `0 0 1400 800` | Default for most screens |
-| Wide | `0 0 1600 800` | Extra annotation margins (100px each side) |
-| Tall | `0 0 1400 1000` | Complex vertical layouts |
+| Canvas | viewBox | Use |
+|--------|---------|-----|
+| Standard | `0 0 1400 800` | Default |
+| Wide | `0 0 1600 800` | Extra annotation margins |
+| Tall | `0 0 1400 1000` | Complex vertical |
 | Extended | `0 0 1600 1000` | Full annotation mode |
-
-Present your strategy recommendation to the user before generating.
 
 ### 5. Generate SVG Wireframes
 
@@ -541,80 +297,30 @@ grep -r "REGENERATED WITH FEEDBACK" docs/design/wireframes/
 
 **File location**: `docs/design/wireframes/[feature-folder]/`
 
-### 5b. Track Page-Specific Requirements
+### 5b. Track Page Requirements
 
-As you create each SVG, maintain separate sets for FR, SC, and US:
+Track FR/SC/US per page → legend includes FR+SC only (US inline).
 
-1. Each annotation with FR/SC/US code → add to page's requirement sets
-2. Before footer, sort each set numerically
-3. Generate legend panel with FR + SC entries (US excluded from legend)
+### 5c. Requirements Legend Panel
 
-**Example tracking for a page:**
-```
-PAGE: 01-rls-architecture-overview.svg
-REFERENCED FRs: FR-001, FR-002, FR-003, FR-004, FR-005
-REFERENCED SCs: SC-001, SC-002
-REFERENCED USs: US-001, US-003 (inline only, no legend)
-LEGEND ENTRIES: 7 (5 FR + 2 SC) → 2 rows needed
-```
+| Entries | Height | Y |
+|---------|--------|---|
+| 1-4 | 60px | 690 |
+| 5-8 | 80px | 670 |
+| 9-12 | 100px | 650 |
 
-### 5c. Generate Requirements Legend Panel (MANDATORY)
-
-**Every wireframe with FR or SC annotations MUST include a unified REQUIREMENTS KEY panel.**
-
-#### Panel Sizing
-| Entry Count (FR+SC) | Panel Height | Content End Y |
-|---------------------|--------------|---------------|
-| 1-4 entries | 60px | y=690 |
-| 5-8 entries | 80px | y=670 |
-| 9-12 entries | 100px | y=650 |
-
-#### Template (Dark Theme)
+**Template** (colors: dark `#1e293b/#475569`, light `#dcc8a8/#b8a080`):
 ```xml
-<!-- REQUIREMENTS KEY (FR + SC only, US excluded) -->
 <g id="requirements-legend" transform="translate(40, 700)">
-  <rect width="1320" height="60" rx="6" fill="#1e293b" stroke="#475569"/>
+  <rect width="1320" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
-
-  <!-- FRs first, then SCs - 4 entries per row, ~320px each -->
+  <!-- 4/row, 320px each -->
   <g transform="translate(20, 38)">
     <text x="0" class="legend-code">FR-001:</text>
-    <text x="55" class="legend-text">MUST enable RLS on users table</text>
-  </g>
-  <g transform="translate(340, 38)">
-    <text x="0" class="legend-code">SC-001:</text>
-    <text x="55" class="legend-text">Auth response &lt;2 seconds</text>
+    <text x="55" class="legend-text">≤45 chars, keep MUST/SHOULD</text>
   </g>
 </g>
 ```
-
-#### Template (Light Theme)
-```xml
-<!-- REQUIREMENTS KEY (FR + SC only, US excluded) -->
-<g id="requirements-legend" transform="translate(40, 700)">
-  <rect width="1320" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-  <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
-
-  <!-- FRs first, then SCs - 4 entries per row, ~320px each -->
-  <g transform="translate(20, 38)">
-    <text x="0" class="legend-code">FR-001:</text>
-    <text x="55" class="legend-text">MUST enable RLS on users table</text>
-  </g>
-  <g transform="translate(340, 38)">
-    <text x="0" class="legend-code">SC-001:</text>
-    <text x="55" class="legend-text">Auth response &lt;2 seconds</text>
-  </g>
-</g>
-```
-
-#### Short Statement Rules
-| Type | Rule | Example |
-|------|------|---------|
-| FR | Remove "System", keep MUST/SHOULD | "MUST enable RLS on users" |
-| SC | Keep metric, remove fluff | "Auth response <2sec" |
-| US | N/A (inline only) | "As admin, manage users" |
-
-Max 45 characters per statement.
 
 ---
 
@@ -819,13 +525,7 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 | `#64748b` (gray) | `#ffffff` | ~4.8:1 | ✅ | Anonymous role badges - white OK |
 | `#eab308` (yellow) | `#1a1a2e` | ~8:1 | ✅ | Warning badges - **DARK TEXT** |
 
-**⚠️ PURPLE (#8b5cf6) REQUIRES DARK TEXT:**
-- `#8b5cf6` + white = ~4.2:1 (FAILS, needs 4.5:1)
-- **Use dark text `#1e1b4b` (indigo-950)** for ~5:1 contrast
-
-**⚠️ GREEN (#22c55e) and RED (#ef4444) REQUIRE DARK TEXT:**
-- White on green is only ~2.1:1 (FAILS AA)
-- White on red is only ~3.1:1 (FAILS AA)
+**⚠️ Green/Red/Purple ALL require dark text** - white fails AA on all three.
 
 ```xml
 <!-- ❌ WRONG: White on green/red - FAILS WCAG AA -->
@@ -848,23 +548,17 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 ---
 
-## ⛔ FONT SIZE RULES (MANDATORY - DO NOT REDUCE)
+## ⛔ FONT SIZE RULES (MANDATORY)
 
-**Font sizes in the template are MINIMUM sizes. NEVER shrink them to fit more content.**
+**Template sizes are MINIMUMS. Never shrink to fit.**
 
-| Class | Required Size | Common Mistake |
-|-------|---------------|----------------|
-| `.heading-lg` | **24px** | ❌ 20px, 18px |
-| `.heading` | **16px** | ❌ 14px, 12px |
-| `.heading-sm` | **14px** | ❌ 12px |
-| `.text-md` | **14px** | ❌ 12px, 11px |
-| `.text-sm` | **13px** | ❌ 10px, 9px |
-| `.text-muted` | **12px** | ❌ 10px, 8px |
+| Class | Min Size |
+|-------|----------|
+| `.heading-lg` | 24px |
+| `.heading` / `.text-md` | 16px / 14px |
+| `.text-sm` / `.text-muted` | 13px / 12px |
 
-**If content doesn't fit at these sizes:**
-1. **EXPAND the canvas** (1400→1600 wide, 800→1000 tall)
-2. **REDUCE content** (fewer items, shorter text)
-3. **NEVER shrink fonts** - readability is non-negotiable
+**Content doesn't fit?** Expand canvas or reduce content. Never shrink fonts.
 
 ```xml
 <!-- ❌ WRONG: Shrinking fonts to fit more content -->
@@ -1004,26 +698,20 @@ section_width = ((end_value - start_value) / max_data_value) × canvas_width
 
 ---
 
-## Spacing Rules (Mandatory - Both Themes)
+## Spacing Rules (Mandatory)
 
-To prevent overlap/clipping in generated wireframes:
+| Rule | Value | Notes |
+|------|-------|-------|
+| Panel padding | 20px | Inside panels |
+| Line spacing | 22-25px | Larger fonts |
+| Section gaps | 40px min | Between major sections |
+| Card padding | 15px min | Internal |
+| Content end | y≤750 | 30px gap to footer |
+| Footer | y=780, x=60 | LEFT-ALIGNED, `text-anchor="start"` |
 
-1. **Minimum padding**: 20px inside panels
-2. **Text line spacing**: 22-25px between lines (for larger fonts)
-3. **Section gaps**: 40px minimum between major sections
-4. **Bottom margin**: 20px from canvas edge
-5. **Card internal padding**: 15px minimum
-6. **Never overlap**: Text and elements must not overlap adjacent sections
-7. **Verify fit**: Before finalizing, verify all content fits within its container
-8. **Text containment**: ALL text MUST stay inside its containing box - if text would overflow, either enlarge the box or shorten the text
-9. **Footer positioning**: Page title MUST be at y=780 (canvas height - 20px), LEFT-ALIGNED at x=60 with `text-anchor="start"`. This avoids overlap with the viewer's focus mode hint which is centered at the bottom. Inconsistent footer positions across pages = failed review.
-10. **Vertical content distribution**: Content should use available vertical space. If main content ends before y=600 with footer at y=780, spread content vertically to fill space. Wasted empty space = failed review.
-11. **Content clearance**: ALL content (panels, text, annotations) MUST end by y=750. The zone from y=750 to y=780 is reserved for footer clearance (30px gap). If content extends past y=750, the wireframe WILL clip at the bottom.
-12. **Acronym clarity**: All acronyms MUST be expanded on first use OR be universally understood (HTML, CSS, URL). Compliance terms MUST always be expanded:
-    - GDPR → "GDPR (EU Data Protection)"
-    - SOC 2 → "SOC 2 (Security Audit)"
-    - WCAG → "WCAG (Web Accessibility)"
-    - RLS → "RLS (Row Level Security)"
+**Violations = failed review**: Text overflow, overlapping elements, wasted vertical space, inconsistent footer positions.
+
+**Acronym rule**: Expand on first use. Compliance terms always: `GDPR (EU Data Protection)`, `SOC 2 (Security Audit)`, `WCAG (Web Accessibility)`, `RLS (Row Level Security)`.
 
 ---
 
@@ -1103,51 +791,16 @@ Before drawing arrows, verify:
 
 ### Mobile Position Rule
 
-```
-Mobile phone frame MUST be at x=980, y=60 for ALL wireframes.
-```
+**Mobile frame: x=980, y=60** (1400 canvas - 360 frame - 60 margin = 980). No exceptions.
 
-**Why x=980?**
-- Canvas width: 1400px
-- Mobile frame width: 360px
-- Mobile ends at: 980 + 360 = 1340px (60px margin from edge)
-- This is the ONLY correct position
-
-**❌ NEVER DO THIS:**
 ```xml
-<!-- WRONG: Moving mobile closer to fill empty space -->
-<g id="mobile-view" transform="translate(770, 60)">  <!-- ❌ x=770 -->
+<!-- ❌ WRONG --> <g transform="translate(770, 60)">
+<!-- ✅ RIGHT --> <g transform="translate(980, 60)">
 ```
 
-**✅ ALWAYS DO THIS:**
-```xml
-<!-- CORRECT: Mobile at standard position -->
-<g id="mobile-view" transform="translate(980, 60)">  <!-- ✅ x=980 -->
-```
+Desktop x=40, mobile x=980. Empty space between is intentional. Never move mobile closer.
 
-### Desktop Content Rule
-
-**If desktop content is narrower than 900px:**
-- Keep desktop at x=40
-- Keep mobile at x=980
-- The empty space between is INTENTIONAL (annotations, breathing room)
-- Do NOT move mobile closer to "fill the gap"
-
-### Cross-Wireframe Consistency
-
-**ALL wireframes in a single feature MUST have:**
-- Mobile at x=980 (identical)
-- MOBILE label at x=980 (identical)
-- Consistent desktop width (900px recommended, smaller OK if needed)
-
-**Before writing ANY SVG, verify:**
-```
-□ Mobile group: transform="translate(980, 60)"
-□ MOBILE label: x="980"
-□ Matches other wireframes in this feature
-```
-
-**If you deviate from x=980, you are WRONG. There is no exception.**
+**Verify before writing**: `transform="translate(980, 60)"` + `MOBILE` label at x="980".
 
 ---
 
@@ -1333,25 +986,7 @@ Gap: 30px clear zone between content and footer
 
 ### Content Boundary Check
 
-```
-1. Find the lowest content element (sidebar, panel, mobile frame)
-2. Verify it ends at y ≤ 750
-3. Footer at y=780 → 30px gap ✓
-
-Example:
-  - Panel ends at y=720 → OK (under 750 limit)
-  - Sidebar ends at y=750 → OK (at limit)
-  - Content at y=760 → FAIL (extends into footer zone)
-```
-
-### If Content Is Too Tall
-
-If content extends past y=750, you have options:
-1. **Reduce content height** - compress vertical spacing
-2. **Use expanded canvas** - change to 1400×1000 viewBox
-3. **Move annotations to side margins** - place at x < 40 or x > 1360
-
-**NEVER** place annotations that overlap content or crowd the footer.
+All content ≤ y=750. Footer at y=780. If content too tall: reduce height, expand canvas (1400×1000), or move annotations to margins.
 
 ---
 
@@ -1361,21 +996,12 @@ If content extends past y=750, you have options:
 
 ### Success Criteria Labels
 
-**NEVER** use abbreviated SC codes without context:
-- ❌ `SC-001: <3 min` (cryptic - what takes 3 min?)
-- ❌ `SC-002: <2 sec` (meaningless without context)
-- ❌ `SC-004: 0 breach` (zero breach of what?)
-- ✅ `SC-001: Signup flow <3 min`
-- ✅ `SC-002: Login response <2 sec`
-- ✅ `SC-004: Zero security breaches`
-- ✅ `Registration: <3 min (SC-001)`
+**Always include context** - reader must understand without spec.md.
 
-**Format options** (be consistent per wireframe):
-| Format | Example |
-|--------|---------|
-| **Metric first** | `Login response: <2 sec` |
-| **Code + context** | `SC-002: Auth response <2 sec` |
-| **Full description** | `Users complete registration in under 3 minutes` |
+| ❌ Wrong | ✅ Right |
+|----------|----------|
+| `SC-001: <3 min` | `SC-001: Signup flow <3 min` |
+| `SC-002: <2 sec` | `Login response <2 sec` |
 
 ### Color Legend Requirements
 
@@ -1423,13 +1049,7 @@ When using different border colors for badges/pills:
 
 ### Self-Documentation Checklist
 
-**Before writing the SVG, verify each annotation passes:**
-- [ ] Can a reader understand what SC-XXX measures without reading spec.md?
-- [ ] If colors vary semantically, is there a legend explaining them?
-- [ ] Are ALL abbreviations defined in parentheses on first use?
-- [ ] Do metric labels specify WHAT is being measured?
-
-**If ANY annotation requires external context to understand, REWRITE IT.**
+**Verify**: SC codes have context, colors have legend, abbreviations defined, metrics specify what's measured. **If unclear without spec.md → rewrite.**
 
 ---
 
@@ -1507,23 +1127,9 @@ Place all leader lines in a dedicated group at the END of the SVG, just before `
 
 ### 6. Update the Wireframe Viewer
 
-#### Per-Page Mode: Skip if file already registered
+**Per-page**: Skip if file registered, add single entry if new. **Full-feature**: Update all entries.
 
-**If per-page mode AND file already in `index.html`:**
-- Skip index.html update (file already registered, viewer works)
-- Log: "Skipping index.html update - file already registered"
-
-**If per-page mode AND NEW file:**
-- Add single entry to wireframes array
-- Add single nav link to existing feature section
-- Log: "Added new file to index.html"
-
-**If full-feature mode:**
-- Update all entries (current batch behavior below)
-
----
-
-After creating the SVG files, update `docs/design/wireframes/index.html`:
+Update `docs/design/wireframes/index.html`:
 
 **a. Add to the wireframes array** (in the `<script>` section):
 ```javascript
@@ -1548,24 +1154,6 @@ const wireframes = [
 
 ### 7. Verify
 
-After updating:
-1. List the created SVG files
-2. Show the updated wireframes array
-3. Confirm the nav section was added
-4. Remind user to view at: `docs/design/wireframes/index.html`
+List SVGs, show wireframes array update, confirm nav added. View at: `docs/design/wireframes/index.html`
 
-## Example
-
-For a spec about "User Messaging" feature with mixed content:
-
-1. Create folder: `docs/design/wireframes/user-messaging/`
-2. Generate with appropriate themes:
-   - `01-conversation-list.svg` → **Light** (UX screen)
-   - `02-chat-interface.svg` → **Light** (UX screen)
-   - `03-message-architecture.svg` → **Dark** (system diagram)
-3. Update index.html with nav section and wireframes array entries
-
-## Alternative Commands
-
-- `/wireframe-dark spec.md` → Force dark theme for all wireframes
-- `/wireframe-light spec.md` → Force light theme for all wireframes
+## Alternative: `/wireframe-dark` or `/wireframe-light` to force theme.
