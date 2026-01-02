@@ -638,28 +638,43 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 ---
 
-## ⛔ TEXT CONTRAST RULES (MANDATORY)
+## ⛔ TEXT CONTRAST RULES (MANDATORY - WCAG AA)
 
-**Text ON colored backgrounds MUST use white (#ffffff) for readability.**
+**Text ON colored backgrounds MUST meet WCAG AA (4.5:1 minimum ratio).**
 
-| Background Color | Text Color | Example Use |
-|-----------------|------------|-------------|
-| `#22c55e` (green) | `#ffffff` | Success badges, role cards |
-| `#8b5cf6` (violet) | `#ffffff` | Service role badges |
-| `#64748b` (gray) | `#ffffff` | Anonymous role badges |
-| `#ef4444` (red) | `#ffffff` | Error badges, denied indicators |
-| `#eab308` (yellow) | `#1a1a2e` | Warning badges (dark text) |
+| Background Color | Text Color | Ratio | Status | Example Use |
+|-----------------|------------|-------|--------|-------------|
+| `#22c55e` (green) | `#052e16` (green-950) | ~12:1 | ✅ | Success badges - **DARK TEXT** |
+| `#ef4444` (red) | `#450a0a` (red-950) | ~10:1 | ✅ | Deny badges - **DARK TEXT** |
+| `#8b5cf6` (violet) | `#1e1b4b` (indigo-950) | ~5:1 | ✅ | OWN badges - **DARK TEXT** |
+| `#64748b` (gray) | `#ffffff` | ~4.8:1 | ✅ | Anonymous role badges - white OK |
+| `#eab308` (yellow) | `#1a1a2e` | ~8:1 | ✅ | Warning badges - **DARK TEXT** |
 
-**NEVER use light gray text on colored backgrounds** - it disappears.
+**⚠️ PURPLE (#8b5cf6) REQUIRES DARK TEXT:**
+- `#8b5cf6` + white = ~4.2:1 (FAILS, needs 4.5:1)
+- **Use dark text `#1e1b4b` (indigo-950)** for ~5:1 contrast
+
+**⚠️ GREEN (#22c55e) and RED (#ef4444) REQUIRE DARK TEXT:**
+- White on green is only ~2.1:1 (FAILS AA)
+- White on red is only ~3.1:1 (FAILS AA)
 
 ```xml
-<!-- ❌ WRONG: Light gray on green - unreadable -->
-<rect fill="#22c55e"/>
-<text fill="#dcfce7">Valid JWT Token</text>
+<!-- ❌ WRONG: White on green/red - FAILS WCAG AA -->
+<rect fill="#22c55e"/><text fill="#ffffff">ALL</text>     <!-- 2.1:1 -->
+<rect fill="#ef4444"/><text fill="#ffffff">DENY</text>    <!-- 3.1:1 -->
 
-<!-- ✅ CORRECT: White on green - readable -->
-<rect fill="#22c55e"/>
-<text fill="#ffffff">Valid JWT Token</text>
+<!-- ✅ CORRECT: Dark text on green/red - PASSES AA -->
+<rect fill="#22c55e"/><text fill="#052e16" font-weight="bold">ALL</text>   <!-- 12:1 -->
+<rect fill="#ef4444"/><text fill="#450a0a" font-weight="bold">DENY</text>  <!-- 10:1 -->
+```
+
+**Color-specific text classes (add to `<style>` block):**
+```css
+/* For text on #22c55e green backgrounds */
+.badge-text-on-green { fill: #052e16; font-weight: bold; }  /* green-950, ~12:1 */
+
+/* For text on #ef4444 red backgrounds */
+.badge-text-on-red { fill: #450a0a; font-weight: bold; }    /* red-950, ~10:1 */
 ```
 
 ---
@@ -834,6 +849,12 @@ To prevent overlap/clipping in generated wireframes:
 8. **Text containment**: ALL text MUST stay inside its containing box - if text would overflow, either enlarge the box or shorten the text
 9. **Footer positioning**: Page title MUST be at y=780 (canvas height - 20px), LEFT-ALIGNED at x=60 with `text-anchor="start"`. This avoids overlap with the viewer's focus mode hint which is centered at the bottom. Inconsistent footer positions across pages = failed review.
 10. **Vertical content distribution**: Content should use available vertical space. If main content ends before y=600 with footer at y=780, spread content vertically to fill space. Wasted empty space = failed review.
+11. **Content clearance**: ALL content (panels, text, annotations) MUST end by y=750. The zone from y=750 to y=780 is reserved for footer clearance (30px gap). If content extends past y=750, the wireframe WILL clip at the bottom.
+12. **Acronym clarity**: All acronyms MUST be expanded on first use OR be universally understood (HTML, CSS, URL). Compliance terms MUST always be expanded:
+    - GDPR → "GDPR (EU Data Protection)"
+    - SOC 2 → "SOC 2 (Security Audit)"
+    - WCAG → "WCAG (Web Accessibility)"
+    - RLS → "RLS (Row Level Security)"
 
 ---
 
@@ -1122,37 +1143,41 @@ Annotations must never overlap with content. Follow these rules:
 ```
 Canvas height: 800px
 Page title: y=780, x=60, text-anchor="start" (LEFT-ALIGNED)
-Safety margin: 30px above footer
+Content clearance: 30px above footer
 
-ANNOTATION SAFE ZONE: y ≤ 750
-
-Content should end at: y ≤ 740 (10px gap to annotations)
-Annotations start at: y = 750
-Page title at: y = 780, x = 60 (left-aligned to avoid focus hint overlap)
+CONTENT END: y ≤ 750 (mandatory - Rule 11)
+Footer at: y = 780, x = 60 (left-aligned)
+Gap: 30px clear zone between content and footer
 ```
 
 **Page title format:**
 ```xml
-<text x="60" y="780" text-anchor="start" class="text-muted">feature-name | Wireframe Title | ScriptHammer</text>
+<text x="60" y="780" text-anchor="start" class="text-muted">NNN:PP | Wireframe Title | ScriptHammer</text>
 ```
 
-### Calculation Before Placing Annotations
+**Footer numbering convention:**
+- `NNN` = 3-digit feature number (e.g., `000`, `001`, `042`)
+- `PP` = 2-digit page number (e.g., `01`, `02`, `03`)
+- Examples:
+  - `000:01 | RLS Architecture Overview | ScriptHammer`
+  - `004:03 | Touch Targets | ScriptHammer`
+
+### Content Boundary Check
 
 ```
 1. Find the lowest content element (sidebar, panel, mobile frame)
-2. Add 10px gap
-3. Place annotations
-4. Verify 30px gap to footer (y=780)
+2. Verify it ends at y ≤ 750
+3. Footer at y=780 → 30px gap ✓
 
 Example:
-  - Sidebar ends at y=740
-  - Add 10px gap → annotations at y=750
-  - Footer at y=780 → 30px gap ✓
+  - Panel ends at y=720 → OK (under 750 limit)
+  - Sidebar ends at y=750 → OK (at limit)
+  - Content at y=760 → FAIL (extends into footer zone)
 ```
 
 ### If Content Is Too Tall
 
-If content extends past y=720, you have options:
+If content extends past y=750, you have options:
 1. **Reduce content height** - compress vertical spacing
 2. **Use expanded canvas** - change to 1400×1000 viewBox
 3. **Move annotations to side margins** - place at x < 40 or x > 1360
