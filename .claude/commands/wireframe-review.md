@@ -33,6 +33,16 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 - Proceed with **FULL review of ALL files** (don't skip any - might catch overlooked issues)
 - After review, compare findings against previous pass
 
+⚠️ **CRITICAL: "RESOLVED" does NOT mean "skip review"**
+
+Files marked "✅ RESOLVED" or "✅ PASS" need EXTRA scrutiny, not less:
+- Regenerated files often introduce NEW issues while fixing old ones
+- Patched files may have unintended side effects
+- Your previous review may have missed things
+
+**Treat recently-fixed files with MORE suspicion than fresh files.**
+**Never trust a status label. Verify visually. Every time.**
+
 ### Comparison Logic (after full review):
 
 For each issue found in current pass:
@@ -57,20 +67,48 @@ Pass 2 Complete:
 Next: /wireframe [feature] to fix remaining issues
 ```
 
-### All Issues Resolved?
+### All Issues Resolved? ⚠️ FINAL VERIFICATION REQUIRED
 
-If remaining issues = 0:
+**If remaining issues = 0, DO NOT immediately celebrate. Verify first:**
+
+1. Did you complete the Devil's Advocate Checkpoint (Step 7)?
+2. Did you write Visual Descriptions for EVERY file (Step 3)?
+3. Did you actually VIEW the rendered wireframes, not just read SVG code?
+4. Did you create an Overlap Matrix for EVERY file (Step 3b)?
+
+### ⛔ File CANNOT pass if ANY of these are true:
+
+- [ ] Overlap Matrix not created for this file
+- [ ] Overlap Matrix has ANY ❌ entries (overlap detected)
+- [ ] Visual Description not written for this file
+- [ ] Devil's Advocate checkpoint not completed
+- [ ] Any text is visibly truncated in screenshot (FR codes cut off, labels ending in "...")
+- [ ] Any annotation label is not fully readable character-by-character
+
+**If ANY box above is checked, the file is 🔴 REGENERATE. No exceptions.**
+
+**Only after verification AND all boxes unchecked, output:**
 ```
-🎉 All wireframe issues resolved!
+All issues resolved - VERIFIED
+
+Verification checklist:
+- [x] Visual descriptions written for all X files
+- [x] Overlap matrices created for all X files (all show ✅, no ❌)
+- [x] Devil's advocate check completed
+- [x] Rendered wireframes viewed (method: [browser/viewer/screenshot])
+- [x] Re-examined "most likely overlooked" areas
+- [x] All annotation labels verified character-by-character (no truncation)
 
 Review History:
-- Pass 1: 12 issues found
-- Pass 2: 6 resolved, 2 new
-- Pass 3: 8 resolved, 0 new
+- Pass 1: X issues found
+- Pass 2: X resolved, X new
+- Pass N: X resolved, 0 new
 
-Wireframes are ready. Proceed to:
+Wireframes verified. Proceed to:
   /speckit.plan [feature]
 ```
+
+**DO NOT use celebratory language. Verification is not celebration.**
 
 ---
 
@@ -86,6 +124,15 @@ The goal is not to validate - it's to CHALLENGE these wireframes to be better.
 
 ## Issue Categories - SCRUTINIZE EACH ONE
 
+⛔ **STOP: Do NOT use these checklists until you have:**
+1. **Viewed the rendered wireframes** (Review Process Step 2)
+2. **Written Visual Descriptions** for each file (Review Process Step 3)
+
+Reading these categories first will bias you toward "checking boxes" instead of actually seeing.
+**Look first. Then use these as a second-pass verification.**
+
+---
+
 ### 1. OVERLAP & COLLISION ISSUES (Look at EVERY row/section boundary)
 
 - **Row collisions** - Does Row 1 content bleed into Row 2? Are sections fighting for the same space?
@@ -93,6 +140,9 @@ The goal is not to validate - it's to CHALLENGE these wireframes to be better.
 - **Panel boundary violations** - Does content extend beyond its containing panel?
 - **Mobile/Desktop overlap** - Does the mobile preview area collide with desktop content?
 - **Z-index conflicts** - Are elements stacking incorrectly?
+- **Indicator/badge overlay on text** - Do circular badges, score indicators, or status icons sit ON TOP of text, obscuring readability?
+- **Decorative element layering** - Do decorative elements (rings, backgrounds, shapes) overlap and clip text content behind them?
+- **Visual hierarchy violations** - Are informational elements (text, labels) being hidden by decorative elements (rings, backgrounds)?
 
 ### 2. CLIPPING & TRUNCATION (Check EVERY text element)
 
@@ -101,15 +151,110 @@ The goal is not to validate - it's to CHALLENGE these wireframes to be better.
 - **Long content handling** - What happens with longer strings?
 - **Icon clipping** - Are icons fully visible?
 - **Panel edge clipping** - Does content get too close to panel edges?
+- **Text obscured by overlays** - Is text hidden behind circular indicators, badge elements, or other layered graphics?
+- **Heading visibility under decorations** - Are section headings fully readable, not covered by decorative rings or score circles?
+- **Container overflow** - Does content extend BELOW or OUTSIDE its containing panel? If rows/items don't fit, the container must be sized larger - content should never escape its bounds.
+
+### 2b. ⛔ CONTAINER BOUNDARY MATH VALIDATION (MANDATORY)
+
+**For every element inside a container, verify the math:**
+
+```
+element_x + element_width ≤ container_x + container_width   (right edge)
+element_y + element_height ≤ container_y + container_height (bottom edge)
+```
+
+**Common overflow patterns to catch:**
+
+| Pattern | How to check |
+|---------|-------------|
+| Button row in header | Find all buttons, sum their widths + gaps, compare to header width |
+| Text in annotation box | Estimate text width (chars × ~7px), verify < box width |
+| Stacked list items | Count items × item_height, verify < container height |
+| Right-aligned controls | Find rightmost element, verify x + width < container right edge |
+
+**Example validation (desktop header):**
+```
+Header: x=0, width=900 → ends at x=900
+Buttons at x=760(w=44), x=812(w=44), x=864(w=44)
+Rightmost: 864 + 44 = 908 > 900 ❌ OVERFLOW BY 8px
+```
+
+**Text width estimation:**
+- Monospace 10px: ~6px/char
+- System font 12px: ~7px/char
+- System font 14px: ~8px/char
+
+**DO NOT EYEBALL. Do the math. Log any violation as 🔴 REGENERATE.**
+
+### 2c. ⛔ TRUNCATION SCAN (MANDATORY)
+
+**For EVERY text element that contains dynamic content (FR codes, descriptions, labels):**
+
+1. Find the text element in SVG
+2. Estimate text width: chars × ~7px (monospace ~6px)
+3. Find the containing element's width
+4. Verify: text_width < container_width - padding
+
+**Specifically check FR/SC annotation labels:**
+- If annotation shows "FR-024, FR-0" → IT'S TRUNCATED
+- Full text should be visible: "FR-024, FR-025, FR-026, FR-027"
+- If any "..." or cut-off text → 🔴 REGENERATE
+
+**Visual check in screenshot:** Can you read EVERY character of EVERY label? If not, it's truncated.
+
+**Common truncation locations:**
+- Annotation labels in cramped corners
+- FR codes next to small panels
+- Long text in narrow containers
+- Labels near canvas edges
+
+**DO NOT assume labels are complete. VERIFY by reading each one character by character.**
 
 ### 3. SPACING & DENSITY ISSUES (Measure with your eyes)
 
 - **Cramped areas** - Where are things squeezed together that shouldn't be?
-- **Wasted space** - Where is there empty space that could be used better?
 - **Inconsistent margins** - Are margins consistent between similar elements?
 - **Inconsistent padding** - Is padding uniform within containers?
 - **Gutter problems** - Are gaps between columns/rows consistent?
 - **Touch target spacing** - Is there 8px minimum between tappable elements?
+
+### 3b. ⛔ WASTED SPACE = MISSED OPPORTUNITY (MANDATORY CHECK)
+
+**Wasted space is NOT acceptable. It's a 🔴 REGENERATE issue.**
+
+If content is cramped OR arrows are routed around obstacles WHILE large empty areas exist, the solution is NOT "route around" - it's **MOVE THE CONTENT to use the space**.
+
+**Canvas utilization check:**
+1. Identify the bounding box of all content (leftmost to rightmost, topmost to bottommost)
+2. Calculate: `used_area / canvas_area × 100 = utilization%`
+3. If utilization < 70%, flag as 🔴 WASTED SPACE
+
+**Common wasted space patterns (ALL are 🔴 REGENERATE):**
+
+| Pattern | Wrong Fix | Right Fix |
+|---------|-----------|-----------|
+| Content at top, empty bottom | Route arrows around content | Move content down to center vertically |
+| Content at left, empty right | Squeeze content tighter | Spread content to use full width |
+| Cramped tables + empty space below | Route arrows below tables | Move tables down into the empty space |
+| Dense header + empty body | Smaller header elements | Expand content to fill the space |
+
+**Wasted space is a DESIGN FAILURE, not a feature.**
+
+```
+❌ WRONG: "Route arrows through empty space to avoid collision"
+   This treats the symptom (collision) not the disease (bad layout)
+
+✅ RIGHT: "Move tables down 150px to center content and eliminate collision"
+   This uses available space AND fixes the collision
+```
+
+**When reviewing, ask:**
+- Is there >100px of unused vertical space? → Move content down
+- Is there >100px of unused horizontal space? → Spread content out
+- Did the designer route AROUND something when they could have MOVED it?
+
+**If the answer to any is YES → 🔴 REGENERATE with feedback: "Move [elements] to use wasted space at [location]"**
 
 ### 4. SIZE & PROPORTION ISSUES (Question every element's size)
 
@@ -151,6 +296,40 @@ For AAA compliance, check these color combinations:
 - **Flow direction clarity** - Is the flow direction obvious?
 - **Label positioning** - Are labels close to what they describe?
 - **Connector gaps** - Are there suspicious gaps in connection lines?
+- **Arrow-through-text collision** - Do ANY arrows pass through text/labels? (🔴 REGENERATE)
+
+### 8b. ⛔ ARROW-THROUGH-TEXT DETECTION (MANDATORY for Architecture Diagrams)
+
+**Flow arrows MUST NEVER cross through text, labels, or content. This is a 🔴 REGENERATE issue.**
+
+**Detection method:**
+1. Find ALL flow arrows (lines with arrow markers, path elements connecting components)
+2. Find ALL text elements (headings, labels, annotations, section titles)
+3. For each arrow, trace its path - does it visually cross any text?
+
+**Common failure patterns:**
+
+| Pattern | How to Detect |
+|---------|---------------|
+| Decision diamond arrow through section label | Arrow from diamond at y=X crosses label at y=Y where X < Y < target |
+| Horizontal arrow through vertical label | Arrow path intersects label's bounding box |
+| Bypass arrow cutting through panel title | Arrow routed "around" a panel but crosses its heading text |
+
+**Visual check:**
+- In the rendered wireframe, can you trace each arrow WITHOUT your eye crossing any text?
+- If an arrow obscures even ONE character of text → 🔴 REGENERATE
+
+**The fix is NEVER to move the text. The fix is to:**
+1. Route the arrow around the text (orthogonal path with 90° turns)
+2. Use available empty space for arrow channels
+3. If no clear path exists, reorganize the layout to create flow channels
+
+**If wasted space exists AND arrows cross text, the feedback should be:**
+```
+"Move [content] to use the wasted space at [location], creating a clear flow channel for arrows"
+```
+
+**Arrow-through-text + wasted space = DOUBLE DESIGN FAILURE**
 
 ### 9. TOUCH TARGET COMPLIANCE (WCAG AAA = 44×44px minimum) ⚠️ CRITICAL
 
@@ -173,6 +352,40 @@ For EACH of these element types, verify height ≥ 44px:
 - `height="32"` - Fails significantly
 - Text links without tap target rect - Fails
 
+**Common visual layering failures** (indicators overlapping text):
+
+⚠️ **You MUST view the rendered wireframe to catch these. Reading SVG code alone will miss them.**
+
+```
+WRONG: Circle indicator (r=60) centered over heading text
+- "Overall Score" heading at y=122
+- Circle ring at cy=180, r=60 → top edge at y=120
+- Result: Ring overlaps heading by 2px, clipping text
+
+FIX options:
+- Move heading above circle (y < 110)
+- Use smaller circle (r=50 → top at y=130, no overlap)
+- Reposition circle lower (cy=200)
+- Add solid background behind heading text
+```
+
+**Common container overflow failures** (content escaping bounds):
+
+⚠️ **You MUST view the rendered wireframe to catch these. Reading SVG code alone will miss them.**
+
+```
+WRONG: Table rows overflow below panel
+- Panel height: 200px (y=100 to y=300)
+- 4 rows at 40px each = 160px content + 20px header = 180px
+- But padding/margins push last row to y=310
+- Result: "Analytics" row escapes below panel boundary
+
+FIX: Calculate actual content height including ALL rows, padding, and margins:
+- Content height = header + (rows × row_height) + internal_padding
+- Container height = content height + container_padding
+- Never hardcode container sizes without counting content
+```
+
 ### 10. MOBILE-SPECIFIC ISSUES
 
 - **Safe area violations** - Does content intrude on notch/home indicator areas?
@@ -189,7 +402,40 @@ For EACH of these element types, verify height ≥ 44px:
 - **Line length** - Are any lines too long (>75 characters)?
 - **Placeholder vs real content** - Is there lazy "Lorem ipsum" anywhere?
 
-### 12. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
+### 12. ⛔ SEMANTIC POSITIONING VALIDATION (Data Visualizations)
+
+**When a wireframe shows a spectrum, timeline, scale, or any proportional visualization:**
+
+1. **Verify the origin is at the logical zero** - NOT at the minimum data value
+2. **Verify positions are proportionally scaled**
+
+**Breakpoint Spectrum Example (COMMON FAILURE):**
+
+```
+❌ WRONG: Mobile section at x=0 labeled "320px"
+   - This treats 320px as the origin
+   - The spectrum shows breakpoints, not viewport widths
+   - 0px should be at the left edge, 320px should be positioned proportionally
+
+✅ CORRECT: Origin at x=0 labeled "0px", mobile section starts at proportional position
+   - Scale: 0 to 1440px mapped to canvas width
+   - 320px position = (320/1440) × canvas_width
+```
+
+**Validation checklist for data visualizations:**
+
+| Visualization | Check |
+|--------------|-------|
+| Breakpoint spectrum | Does 0px appear at origin? Is 320px positioned at ~22% of the width? |
+| Timeline | Does the start date appear at left edge? Are events proportionally spaced? |
+| Progress indicator | Does 0% appear at the start? Is 100% at the end? |
+| Scale/axis | Is the zero point at the origin, not at the minimum value? |
+
+**If the minimum data value is at the origin, log as 🔴 REGENERATE with feedback explaining the semantic error.**
+
+---
+
+### 13. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
 
 **Before reviewing ANY wireframe, READ THE SPEC FIRST.**
 
@@ -226,6 +472,8 @@ For EACH requirement, ask:
 ### CRITICAL (Must fix before implementation)
 - Content completely unreadable
 - Major layout collision/overlap
+- Text obscured by decorative elements (badges, indicators, rings)
+- Content overflowing outside container bounds (rows escaping panels)
 - Missing functional requirements
 - Accessibility failure (contrast below 4.5:1)
 - Elements clipped to invisibility
@@ -264,6 +512,8 @@ For EACH requirement, ask:
 - Touch target sizing (may need layout reflow)
 - **Missing content/rows** (e.g., "missing sessions row")
 - **Any structural addition or removal**
+- **Arrow-through-text collision** (flow arrows crossing labels/content)
+- **Wasted space** (>100px unused while content is cramped or arrows detour)
 
 ### ❌ NO EXCEPTIONS - EVERY ISSUE GETS FIXED
 
@@ -366,13 +616,89 @@ Extract and document:
 
 **Do NOT proceed to SVG review until you have the requirements list.**
 
-### 2. Read Each SVG (visual inspection via Read tool)
+### 2. MANDATORY: View Rendered Wireframes Visually ⚠️ CRITICAL
 
-### 3. For EACH wireframe, work through ALL 11 category checklists above
+**Reading SVG code is NOT enough. You MUST view the actual rendered images.**
+
+Options for visual inspection:
+1. **Hot-reload viewer**: `npm run dev` in `docs/design/wireframes/` → browse localhost:3000
+2. **Browser MCP tools**: Use `mcp__MCP_DOCKER__browser_navigate` to view wireframes
+3. **Screenshot comparison**: Take screenshots and examine them visually
+
+**Why this matters**: SVG source code doesn't reveal visual issues like:
+- Text obscured by overlapping elements (z-order problems)
+- Clipping that only appears when rendered
+- Color/contrast issues that look different when rendered
+- Spacing that "looks fine" in code but is visually wrong
+
+**DO NOT mark a review complete if you only read the SVG source.**
+**DO NOT trust "the math checks out" - LOOK AT IT.**
+
+### 3. MANDATORY: Visual Description for Each Wireframe ⚠️ REQUIRED OUTPUT
+
+**For EACH SVG file, you MUST write a visual description BEFORE listing issues.**
+
+This forces you to actually observe the rendered image rather than pattern-match against code.
+
+**Required format in WIREFRAME_ISSUES.md:**
+
+```markdown
+### [filename.svg]
+
+**Visual Description** (what I see in the rendered image):
+- Layout: [describe the major sections/panels and their arrangement]
+- Score/indicator elements: [describe any circular indicators, badges, progress rings]
+- Text readability: [can all text be read clearly? any clipping?]
+- Mobile section: [describe the phone frame area]
+- Overall impression: [does anything look "off" at first glance?]
+
+**Issues Found:**
+| # | Category | Severity | ... |
+```
+
+**If you cannot write a visual description, you did not look at the rendered image.**
+**Skipping this section = automatic review failure.**
+
+### 3b. MANDATORY: Overlap Matrix for Each Wireframe ⚠️ REQUIRED OUTPUT
+
+**For EACH SVG file, you MUST create an overlap matrix showing every pair of adjacent regions.**
+
+This forces you to explicitly verify that no regions collide. You cannot "glance and pass."
+
+**Required format in WIREFRAME_ISSUES.md:**
+
+```markdown
+### [filename.svg] - Boundary Verification
+
+| Region A | A-bounds | Region B | B-bounds | Gap/Overlap |
+|----------|----------|----------|----------|-------------|
+| Row 1 Test Suite | y=80-200 | Row 2 Test Criteria | y=220-375 | ✅ 20px gap |
+| Time & Cognitive | x=890-1080, y=220-360 | BUILD FAILED | x=970-1110, y=260-360 | ❌ OVERLAP x=970-1080 |
+| Desktop area | x=40-940 | Mobile area | x=980-1340 | ✅ 40px gap |
+
+**Overlap detected: 1** → File cannot pass
+```
+
+**Rules:**
+1. List EVERY pair of adjacent elements (horizontally or vertically adjacent)
+2. Calculate actual pixel boundaries from SVG coordinates
+3. If Gap/Overlap shows negative number or "OVERLAP" → File is 🔴 REGENERATE
+4. You CANNOT declare ✅ PASS if the overlap matrix has ANY ❌ entries
+
+**Minimum checks per wireframe:**
+- Desktop section vs Mobile section (horizontal)
+- Each row vs the row below it (vertical)
+- Annotation labels vs their adjacent panels
+- Any elements that appear "close" in the screenshot
+
+**If you skip this section, the review is invalid.**
+**No overlap matrix = No pass. Period.**
+
+### 4. For EACH wireframe, work through ALL 12 category checklists above
 
 Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 
-### 4. Document EVERY issue found
+### 5. Document EVERY issue found
 
 ```markdown
 # Wireframe Issues: [Feature Name]
@@ -405,11 +731,57 @@ Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 - `NEW Pass N` - Issue newly discovered in Pass N
 - `✅ RESOLVED` - Issue was fixed (keep for history)
 
-### 5. Include "Suggested Fix" for every issue
+### 6. Include "Suggested Fix" for every issue
 
 Don't just identify problems - propose solutions.
 
-### 6. Update Progress Tracker
+### 7. Devil's Advocate Checkpoint ⚠️ REQUIRED BEFORE DECLARING "RESOLVED"
+
+**Before marking ANY file as "✅ PASS" or declaring "All Issues Resolved", you MUST ask yourself:**
+
+1. **What's the most likely issue I overlooked?**
+   - Did I actually look at circular indicators overlapping text?
+   - Did I check ALL text for clipping, not just headings?
+   - Did I verify the mobile section separately from desktop?
+
+2. **If I had to find ONE more issue, where would it be?**
+   - Look there. Actually look.
+
+3. **What would a fresh reviewer catch that I missed?**
+   - You've been staring at this. You're blind to it now.
+   - Assume you missed something. Find it.
+
+4. **Did I create the Overlap Matrix?**
+   - If no matrix exists for this file → review is INVALID
+   - If matrix exists but has ANY ❌ entries → file CANNOT pass
+   - Look at the screenshot again. Trace each region boundary with your eyes.
+
+5. **The Overlap Blindness Test:**
+   - Find TWO elements that are close together in this wireframe
+   - State their exact boundaries: Region A at (x, y, width, height), Region B at (x, y, width, height)
+   - Calculate the gap: `Region_B_start - Region_A_end = gap`
+   - If you can't do this math for the closest pair of elements, **you didn't look carefully enough**
+
+6. **The Truncation Blindness Test:**
+   - Find the longest annotation label in the wireframe
+   - Read it out loud, character by character
+   - Does it end abruptly? Does it say "FR-024, FR-0" instead of "FR-024, FR-025, FR-026, FR-027"?
+   - If you can't read the COMPLETE text of EVERY label, **it's truncated**
+
+**Document your devil's advocate check:**
+```markdown
+## Devil's Advocate Check
+- Most likely overlooked area: [where]
+- I re-examined and found: [nothing new / new issue X]
+- Fresh reviewer would catch: [what]
+- Overlap Matrix created: [yes/no] - if no, STOP and create it
+- Closest element pair: [Region A] at [bounds] vs [Region B] at [bounds] = [gap]px
+- Longest label verified: "[full text of label]" - complete? [yes/no]
+```
+
+**Skipping this step = you WILL miss issues. This is not optional.**
+
+### 8. Update Progress Tracker
 
 File: `docs/design/WIREFRAME_REVIEW_PLAN.md`
 

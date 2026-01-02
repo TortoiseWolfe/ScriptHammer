@@ -74,8 +74,10 @@
     <text x="45" y="268" class="text-muted">••••••••</text>
     <circle cx="350" cy="262" r="10" fill="#dcc8a8"/>
 
-    <!-- Remember + Forgot -->
+    <!-- Remember + Forgot - 44px tap target for checkbox (Issue #1 fix) -->
     <g transform="translate(30, 300)">
+      <!-- Invisible 44x44 tap target for checkbox -->
+      <rect x="-14" y="-14" width="44" height="44" rx="6" fill="transparent"/>
       <rect x="0" y="0" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="24" y="13" class="text-sm">Remember me (30 days)</text>
       <text x="340" y="13" text-anchor="end" class="link-text">Forgot password?</text>

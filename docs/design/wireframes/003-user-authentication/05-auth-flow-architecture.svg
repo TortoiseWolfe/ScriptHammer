@@ -4,6 +4,7 @@
        SOURCE: features/foundation/003-user-authentication/spec.md
        DATE: 2026-01-01
        THEME: Dark (Backend/Architecture)
+       PATCHED: Issue #5 - muted text uses #8494a8 for AAA contrast
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>

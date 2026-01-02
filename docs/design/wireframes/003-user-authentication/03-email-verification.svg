@@ -4,7 +4,8 @@
        SOURCE: features/foundation/003-user-authentication/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
-       DO NOT MANUALLY EDIT - Regenerate with /wireframe command
+       REGENERATED WITH FEEDBACK: features/foundation/003-user-authentication/WIREFRAME_ISSUES.md
+       Fixed: Resend button touch target now 44px (was 40px)
        ============================================================ -->
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -51,7 +52,7 @@
   <text x="40" y="52" class="label-desktop">PENDING VERIFICATION</text>
 
   <g id="state-pending" transform="translate(40, 60)">
-    <rect x="0" y="0" width="300" height="400" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <rect x="0" y="0" width="300" height="410" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
 
     <!-- State badge -->
     <rect x="200" y="15" width="85" height="24" rx="12" fill="#fef3c7" stroke="#eab308"/>
@@ -72,19 +73,20 @@
     <text x="150" y="295" text-anchor="middle" class="text-sm">to activate your account</text>
     <text x="150" y="315" text-anchor="middle" class="text-muted">Link expires in 24 hours</text>
 
-    <!-- Resend button -->
-    <rect x="25" y="335" width="250" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="150" y="360" text-anchor="middle" class="text-md">Resend Verification Email</text>
+    <!-- Resend button - NOW 44px height (was 40px) -->
+    <rect x="25" y="335" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="150" y="363" text-anchor="middle" class="text-md">Resend Verification Email</text>
 
-    <!-- Help link -->
-    <text x="150" y="395" text-anchor="middle" class="link-text">Wrong email? Update it here</text>
+    <!-- Help link with tap target -->
+    <rect x="25" y="390" width="250" height="24" rx="3" fill="transparent"/>
+    <text x="150" y="405" text-anchor="middle" class="link-text">Wrong email? Update it here</text>
   </g>
 
   <!-- ==================== STATE 2: SUCCESS ==================== -->
   <text x="360" y="52" class="label-desktop">VERIFIED SUCCESS</text>
 
   <g id="state-success" transform="translate(360, 60)">
-    <rect x="0" y="0" width="300" height="400" rx="12" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
+    <rect x="0" y="0" width="300" height="410" rx="12" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
 
     <!-- State badge -->
     <rect x="200" y="15" width="85" height="24" rx="12" fill="#dcfce7" stroke="#22c55e"/>
@@ -105,7 +107,7 @@
     <text x="45" y="300" class="text-sm" fill="#166534">&#x2022; Payment features</text>
     <text x="45" y="318" class="text-sm" fill="#166534">&#x2022; Your profile settings</text>
 
-    <!-- Continue button -->
+    <!-- Continue button - 44px height -->
     <rect x="25" y="345" width="250" height="44" rx="6" fill="#22c55e"/>
     <text x="150" y="373" text-anchor="middle" class="btn-text">Go to Dashboard</text>
   </g>
@@ -114,7 +116,7 @@
   <text x="680" y="52" class="label-desktop">LINK EXPIRED</text>
 
   <g id="state-expired" transform="translate(680, 60)">
-    <rect x="0" y="0" width="300" height="400" rx="12" fill="#e8d4b8" stroke="#ef4444" stroke-width="2"/>
+    <rect x="0" y="0" width="300" height="410" rx="12" fill="#e8d4b8" stroke="#ef4444" stroke-width="2"/>
 
     <!-- State badge -->
     <rect x="200" y="15" width="85" height="24" rx="12" fill="#fef2f2" stroke="#ef4444"/>
@@ -135,12 +137,13 @@
     <text x="150" y="290" text-anchor="middle" class="text-sm" fill="#991b1b">24 hours for security reasons</text>
     <text x="150" y="310" text-anchor="middle" class="text-muted">(FR-005)</text>
 
-    <!-- Resend button -->
+    <!-- Resend button - 44px height -->
     <rect x="25" y="330" width="250" height="44" rx="6" fill="#8b5cf6"/>
     <text x="150" y="358" text-anchor="middle" class="btn-text">Send New Link</text>
 
-    <!-- Contact support -->
-    <text x="150" y="395" text-anchor="middle" class="link-text">Need help? Contact support</text>
+    <!-- Contact support with tap target -->
+    <rect x="25" y="385" width="250" height="24" rx="3" fill="transparent"/>
+    <text x="150" y="400" text-anchor="middle" class="link-text">Need help? Contact support</text>
   </g>
 
   <!-- ==================== MOBILE SECTION ==================== -->
@@ -162,40 +165,42 @@
     <text x="170" y="88" text-anchor="middle" class="text-muted" fill="#92400e">to access payment features</text>
 
     <!-- Lock icon -->
-    <circle cx="170" cy="170" r="50" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="170" y="185" text-anchor="middle" font-size="40">&#x1F512;</text>
+    <circle cx="170" cy="165" r="50" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="170" y="180" text-anchor="middle" font-size="40">&#x1F512;</text>
 
     <!-- Title -->
-    <text x="170" y="255" text-anchor="middle" class="heading-lg">Access Restricted</text>
-    <text x="170" y="285" text-anchor="middle" class="text-md">Please verify your email</text>
-    <text x="170" y="305" text-anchor="middle" class="text-md">before accessing payments</text>
+    <text x="170" y="250" text-anchor="middle" class="heading-lg">Access Restricted</text>
+    <text x="170" y="280" text-anchor="middle" class="text-md">Please verify your email</text>
+    <text x="170" y="300" text-anchor="middle" class="text-md">before accessing payments</text>
 
     <!-- User email -->
-    <rect x="30" y="330" width="280" height="45" rx="8" fill="#dcc8a8"/>
-    <text x="170" y="350" text-anchor="middle" class="text-sm">Verification email sent to:</text>
-    <text x="170" y="368" text-anchor="middle" class="text-md" font-weight="700">user@example.com</text>
+    <rect x="30" y="325" width="260" height="50" rx="8" fill="#dcc8a8"/>
+    <text x="160" y="348" text-anchor="middle" class="text-sm">Verification email sent to:</text>
+    <text x="160" y="368" text-anchor="middle" class="text-md" font-weight="700">user@example.com</text>
 
-    <!-- Resend button -->
-    <rect x="30" y="395" width="280" height="48" rx="6" fill="#8b5cf6"/>
-    <text x="170" y="425" text-anchor="middle" class="btn-text">Resend Verification</text>
+    <!-- Resend button - 48px for mobile (thumb-friendly) -->
+    <rect x="30" y="395" width="260" height="48" rx="6" fill="#8b5cf6"/>
+    <text x="160" y="425" text-anchor="middle" class="btn-text">Resend Verification</text>
 
-    <!-- Check inbox -->
-    <rect x="30" y="455" width="280" height="48" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="170" y="485" text-anchor="middle" class="text-md">Open Email App</text>
+    <!-- Check inbox - 48px -->
+    <rect x="30" y="455" width="260" height="48" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="160" y="485" text-anchor="middle" class="text-md">Open Email App</text>
 
-    <!-- Change email -->
-    <text x="170" y="535" text-anchor="middle" class="link-text">Use different email address</text>
+    <!-- Change email with tap target -->
+    <rect x="30" y="520" width="260" height="44" rx="3" fill="transparent"/>
+    <text x="160" y="547" text-anchor="middle" class="link-text">Use different email address</text>
 
-    <!-- Sign out option -->
-    <text x="170" y="580" text-anchor="middle" class="text-muted">Signed in as user@example.com</text>
-    <text x="170" y="600" text-anchor="middle" class="link-text">Sign out</text>
+    <!-- Sign out option with tap target -->
+    <rect x="30" y="575" width="260" height="44" rx="3" fill="transparent"/>
+    <text x="160" y="590" text-anchor="middle" class="text-muted">Signed in as user@example.com</text>
+    <text x="160" y="608" text-anchor="middle" class="link-text">Sign out</text>
 
     <!-- Home indicator -->
     <rect x="130" y="650" width="80" height="5" rx="2.5" fill="#b8a080"/>
   </g>
 
   <!-- ==================== ANNOTATIONS ==================== -->
-  <g id="annotations" transform="translate(40, 480)">
+  <g id="annotations" transform="translate(40, 490)">
     <rect x="0" y="0" width="300" height="100" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
     <text x="15" y="22" class="annotation">User Story 1 &amp; 7</text>
     <text x="15" y="42" class="text-sm">Email verification required</text>
@@ -206,7 +211,7 @@
     <rect x="320" y="0" width="300" height="100" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
     <text x="335" y="22" class="annotation">Success Criteria</text>
     <text x="335" y="42" class="text-sm">SC-001: Registration &lt;3 min</text>
-    <text x="335" y="62" class="text-muted">signup → verify → sign in</text>
+    <text x="335" y="62" class="text-muted">signup &#x2192; verify &#x2192; sign in</text>
     <text x="335" y="82" class="text-muted">Includes email delivery time</text>
 
     <rect x="640" y="0" width="300" height="100" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
@@ -217,7 +222,7 @@
   </g>
 
   <!-- ==================== FLOW DIAGRAM ==================== -->
-  <g id="flow" transform="translate(40, 600)">
+  <g id="flow" transform="translate(40, 610)">
     <rect x="0" y="0" width="620" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="310" y="22" text-anchor="middle" class="heading">Verification Flow</text>
 
@@ -225,22 +230,22 @@
     <rect x="20" y="35" width="80" height="30" rx="4" fill="#8b5cf6"/>
     <text x="60" y="55" text-anchor="middle" class="btn-text" font-size="10">Signup</text>
 
-    <text x="115" y="55" class="text-md">→</text>
+    <text x="115" y="55" class="text-md">&#x2192;</text>
 
     <rect x="130" y="35" width="100" height="30" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="180" y="55" text-anchor="middle" class="text-sm">Email Sent</text>
 
-    <text x="245" y="55" class="text-md">→</text>
+    <text x="245" y="55" class="text-md">&#x2192;</text>
 
     <rect x="260" y="35" width="100" height="30" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="310" y="55" text-anchor="middle" class="text-sm">Click Link</text>
 
-    <text x="375" y="55" class="text-md">→</text>
+    <text x="375" y="55" class="text-md">&#x2192;</text>
 
     <rect x="390" y="35" width="100" height="30" rx="4" fill="#22c55e"/>
     <text x="440" y="55" text-anchor="middle" class="btn-text" font-size="10">Verified</text>
 
-    <text x="505" y="55" class="text-md">→</text>
+    <text x="505" y="55" class="text-md">&#x2192;</text>
 
     <rect x="520" y="35" width="80" height="30" rx="4" fill="#dcfce7" stroke="#22c55e"/>
     <text x="560" y="55" text-anchor="middle" class="text-sm" fill="#166534">Access</text>

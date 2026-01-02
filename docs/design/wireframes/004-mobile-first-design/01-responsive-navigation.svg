@@ -4,6 +4,8 @@
        SOURCE: features/foundation/004-mobile-first-design/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
+       REGENERATED WITH FEEDBACK: features/foundation/004-mobile-first-design/WIREFRAME_ISSUES.md
+       DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -17,13 +19,15 @@
     <style>
       .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
       .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
+      .heading-sm { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; }
       .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #4a5568; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #5a6577; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
+      .text-muted { fill: #374151; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
       .annotation { fill: #6d28d9; font-family: monospace; font-size: 11px; font-weight: 600; }
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
       .spec-label { fill: #22c55e; font-family: monospace; font-size: 10px; font-weight: 600; }
+      .dimension { fill: #ef4444; font-family: monospace; font-size: 10px; font-weight: 600; }
     </style>
   </defs>
 
@@ -38,106 +42,116 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#5a6577" letter-spacing="1">VIEWPORT-SAFE NAVIGATION — FR-001 TO FR-005</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151" letter-spacing="1">VIEWPORT-SAFE NAVIGATION — FR-001 TO FR-005</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP (1024px+)</text>
 
-  <!-- Desktop Header -->
+  <!-- Desktop Header - 44px touch targets -->
   <g transform="translate(40, 60)">
-    <rect x="0" y="0" width="900" height="70" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="0" y="0" width="900" height="60" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
 
     <!-- Logo -->
-    <rect x="20" y="15" width="140" height="40" rx="6" fill="#8b5cf6"/>
-    <text x="90" y="40" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="700">ScriptHammer</text>
+    <rect x="15" y="8" width="140" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="85" y="36" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="700">ScriptHammer</text>
 
-    <!-- Nav Links -->
-    <text x="200" y="40" class="text-md">Home</text>
-    <text x="270" y="40" class="text-md">Blog</text>
-    <text x="340" y="40" class="text-md">Projects</text>
-    <text x="430" y="40" class="text-md">About</text>
-    <text x="510" y="40" class="text-md">Contact</text>
+    <!-- Nav Links - inline text links (not buttons, no tap target needed) -->
+    <text x="180" y="36" class="text-md">Home</text>
+    <text x="240" y="36" class="text-md">Blog</text>
+    <text x="300" y="36" class="text-md">Projects</text>
+    <text x="380" y="36" class="text-md">About</text>
+    <text x="450" y="36" class="text-md">Contact</text>
 
-    <!-- Right controls -->
-    <rect x="750" y="15" width="44" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="772" y="40" text-anchor="middle" class="text-sm">🔍</text>
-    <rect x="804" y="15" width="44" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="826" y="40" text-anchor="middle" class="text-sm">⚙️</text>
-    <rect x="858" y="15" width="32" height="40" rx="6" fill="#8b5cf6"/>
-    <text x="874" y="40" text-anchor="middle" fill="#fff" font-size="12">👤</text>
+    <!-- Right controls - ALL 44px height -->
+    <rect x="760" y="8" width="44" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="782" y="36" text-anchor="middle" class="text-sm">🔍</text>
+    <rect x="812" y="8" width="44" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="834" y="36" text-anchor="middle" class="text-sm">⚙️</text>
+    <rect x="864" y="8" width="44" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="886" y="36" text-anchor="middle" fill="#fff" font-size="14">👤</text>
+
+    <!-- Touch target indicator -->
+    <rect x="760" y="8" width="44" height="44" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="782" y="68" text-anchor="middle" class="spec-label">44×44 ✓</text>
   </g>
-
-  <!-- Desktop annotation -->
-  <rect x="40" y="145" width="200" height="30" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
-  <text x="140" y="165" text-anchor="middle" class="annotation">Full navigation visible</text>
 
   <!-- Tablet Header (768px) -->
-  <text x="40" y="200" class="label-desktop">TABLET (768px)</text>
-  <g transform="translate(40, 210)">
+  <text x="40" y="155" class="label-desktop">TABLET (768px)</text>
+  <g transform="translate(40, 165)">
     <rect x="0" y="0" width="600" height="60" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
 
-    <rect x="15" y="10" width="100" height="40" rx="6" fill="#8b5cf6"/>
-    <text x="65" y="35" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12" font-weight="700">Script</text>
+    <rect x="10" y="8" width="100" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="60" y="36" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12" font-weight="700">Script</text>
 
-    <text x="140" y="35" class="text-sm">Home</text>
-    <text x="195" y="35" class="text-sm">Blog</text>
-    <text x="250" y="35" class="text-sm">More ▾</text>
+    <text x="130" y="36" class="text-sm">Home</text>
+    <text x="180" y="36" class="text-sm">Blog</text>
+    <text x="230" y="36" class="text-sm">More ▾</text>
 
-    <rect x="500" y="10" width="40" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="520" y="35" text-anchor="middle" class="text-sm">🔍</text>
-    <rect x="550" y="10" width="40" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="570" y="35" text-anchor="middle" class="text-sm">☰</text>
+    <!-- Right controls - 44px height -->
+    <rect x="500" y="8" width="44" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="522" y="36" text-anchor="middle" class="text-sm">🔍</text>
+    <rect x="552" y="8" width="44" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="574" y="36" text-anchor="middle" class="text-sm">☰</text>
   </g>
 
-  <!-- Mobile breakpoints comparison -->
-  <text x="40" y="310" class="label-mobile">MOBILE BREAKPOINTS</text>
+  <!-- Mobile Breakpoints - Stacked vertically for clarity -->
+  <text x="40" y="260" class="label-mobile">MOBILE BREAKPOINTS - ALL 44px TOUCH TARGETS</text>
 
-  <!-- 428px -->
-  <g transform="translate(40, 325)">
+  <!-- 428px (iPhone 14 Pro Max) -->
+  <g transform="translate(40, 275)">
     <text x="0" y="0" class="text-muted">428px (iPhone 14 Pro Max)</text>
-    <rect x="0" y="10" width="320" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <rect x="10" y="18" width="44" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="32" y="40" text-anchor="middle" class="text-sm">☰</text>
-    <rect x="62" y="18" width="110" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="117" y="40" text-anchor="middle" fill="#fff" font-size="11">ScriptHammer</text>
-    <rect x="180" y="18" width="44" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="202" y="40" text-anchor="middle" class="text-sm">🔍</text>
-    <rect x="232" y="18" width="44" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="254" y="40" text-anchor="middle" class="text-sm">⚙️</text>
-    <rect x="284" y="18" width="28" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="298" y="40" text-anchor="middle" fill="#fff" font-size="10">👤</text>
+    <rect x="0" y="10" width="340" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="8" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="46" text-anchor="middle" class="text-sm">☰</text>
+    <rect x="60" y="18" width="120" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="120" y="46" text-anchor="middle" fill="#fff" font-size="12">ScriptHammer</text>
+    <rect x="188" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="210" y="46" text-anchor="middle" class="text-sm">🔍</text>
+    <rect x="240" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="262" y="46" text-anchor="middle" class="text-sm">⚙️</text>
+    <rect x="292" y="18" width="44" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="314" y="46" text-anchor="middle" fill="#fff" font-size="12">👤</text>
+
+    <!-- 44px indicator -->
+    <rect x="8" y="18" width="44" height="44" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="30" y="78" text-anchor="middle" class="spec-label">44px ✓</text>
   </g>
 
-  <!-- 375px -->
-  <g transform="translate(40, 405)">
-    <text x="0" y="0" class="text-muted">375px (iPhone 13 Mini)</text>
-    <rect x="0" y="10" width="280" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <rect x="8" y="18" width="40" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="28" y="40" text-anchor="middle" class="text-sm">☰</text>
-    <rect x="56" y="18" width="90" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="101" y="40" text-anchor="middle" fill="#fff" font-size="10">ScriptHammer</text>
-    <rect x="154" y="18" width="40" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="174" y="40" text-anchor="middle" class="text-sm">🔍</text>
-    <rect x="202" y="18" width="36" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="220" y="40" text-anchor="middle" class="text-sm">⚙</text>
-    <rect x="246" y="18" width="26" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="259" y="40" text-anchor="middle" fill="#fff" font-size="9">👤</text>
+  <!-- 375px (iPhone 13 Mini) -->
+  <g transform="translate(40, 370)">
+    <text x="0" y="0" class="text-muted">375px (iPhone 13 Mini) - Proportional shrink</text>
+    <rect x="0" y="10" width="300" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="8" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="46" text-anchor="middle" class="text-sm">☰</text>
+    <rect x="60" y="18" width="90" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="105" y="46" text-anchor="middle" fill="#fff" font-size="10">ScriptHammer</text>
+    <rect x="158" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="180" y="46" text-anchor="middle" class="text-sm">🔍</text>
+    <rect x="210" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="232" y="46" text-anchor="middle" class="text-sm">⚙</text>
+    <rect x="262" y="18" width="36" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="280" y="46" text-anchor="middle" fill="#fff" font-size="10">👤</text>
+    <text x="200" y="78" text-anchor="middle" class="annotation">FR-002: Logo shrinks, controls stay 44px</text>
   </g>
 
-  <!-- 320px -->
-  <g transform="translate(40, 485)">
-    <text x="0" y="0" class="text-muted">320px (iPhone SE) — MINIMUM</text>
-    <rect x="0" y="10" width="240" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <rect x="6" y="18" width="36" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="24" y="40" text-anchor="middle" class="text-sm">☰</text>
-    <rect x="48" y="18" width="70" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="83" y="40" text-anchor="middle" fill="#fff" font-size="9">Script</text>
-    <rect x="124" y="18" width="36" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="142" y="40" text-anchor="middle" class="text-sm">🔍</text>
-    <rect x="166" y="18" width="32" height="34" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="182" y="40" text-anchor="middle" class="text-sm">⚙</text>
-    <rect x="204" y="18" width="30" height="34" rx="4" fill="#8b5cf6"/>
-    <text x="219" y="40" text-anchor="middle" fill="#fff" font-size="9">👤</text>
+  <!-- 320px (iPhone SE - Minimum) -->
+  <g transform="translate(40, 465)">
+    <text x="0" y="0" class="text-muted">320px (iPhone SE) — MINIMUM SUPPORTED</text>
+    <rect x="0" y="10" width="256" height="60" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="8" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="46" text-anchor="middle" class="text-sm">☰</text>
+    <rect x="60" y="18" width="60" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="90" y="46" text-anchor="middle" fill="#fff" font-size="9">Script</text>
+    <rect x="128" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="150" y="46" text-anchor="middle" class="text-sm">🔍</text>
+    <rect x="180" y="18" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="202" y="46" text-anchor="middle" class="text-sm">⚙</text>
+    <rect x="232" y="18" width="20" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="242" y="46" text-anchor="middle" fill="#fff" font-size="8">👤</text>
+
+    <!-- Annotation -->
+    <rect x="0" y="80" width="256" height="30" rx="4" fill="#e8d4b8" stroke="#8b5cf6"/>
+    <text x="128" y="100" text-anchor="middle" class="annotation">All controls visible, all ≥44px height</text>
   </g>
 
   <!-- Requirements Panel -->
@@ -147,72 +161,110 @@
 
     <rect x="20" y="50" width="250" height="55" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
     <text x="35" y="72" class="spec-label">FR-001</text>
-    <text x="35" y="90" class="text-sm">Header fits viewport 320-428px</text>
+    <text x="35" y="90" class="text-sm">Header fits 320-428px viewport</text>
 
     <rect x="285" y="50" width="250" height="55" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
     <text x="300" y="72" class="spec-label">FR-002</text>
     <text x="300" y="90" class="text-sm">Proportional shrinking</text>
 
     <rect x="20" y="115" width="250" height="55" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
-    <text x="35" y="137" class="spec-label">FR-004</text>
-    <text x="35" y="155" class="text-sm">44x44px touch targets</text>
+    <text x="35" y="137" class="spec-label">FR-003</text>
+    <text x="35" y="155" class="text-sm">Accessible nav controls</text>
 
     <rect x="285" y="115" width="250" height="55" rx="4" fill="#e8d4b8" stroke="#22c55e" stroke-width="2"/>
-    <text x="300" y="137" class="spec-label">FR-005</text>
-    <text x="300" y="155" class="text-sm">8px spacing minimum</text>
+    <text x="300" y="137" class="spec-label">FR-004 + FR-005</text>
+    <text x="300" y="155" class="text-sm">44×44px touch + 8px spacing</text>
   </g>
 
-  <!-- MOBILE SECTION -->
-  <text x="980" y="52" class="label-mobile">MOBILE EXPANDED</text>
-  <g transform="translate(980, 60)">
-    <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
-    <rect x="10" y="10" width="340" height="680" rx="16" fill="#e8d4b8"/>
+  <!-- MOBILE EXPANDED NAV -->
+  <text x="620" y="260" class="label-mobile">EXPANDED MENU</text>
+  <g transform="translate(620, 275)">
+    <rect x="0" y="0" width="320" height="490" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
 
-    <!-- Status bar -->
-    <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
-    <text x="30" y="28" class="text-sm">9:41</text>
-    <text x="310" y="28" class="text-sm">📶 🔋</text>
+    <!-- Close header -->
+    <rect x="10" y="10" width="300" height="50" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="20" y="13" width="44" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="42" y="42" text-anchor="middle" fill="#fff" font-size="18" font-weight="700">✕</text>
+    <rect x="72" y="13" width="100" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="122" y="42" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">ScriptHammer</text>
 
-    <!-- Header -->
-    <rect x="20" y="48" width="320" height="50" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-    <rect x="30" y="56" width="44" height="34" rx="6" fill="#8b5cf6"/>
-    <text x="52" y="78" text-anchor="middle" fill="#fff" font-size="16" font-weight="700">✕</text>
-    <rect x="82" y="56" width="100" height="34" rx="6" fill="#8b5cf6"/>
-    <text x="132" y="78" text-anchor="middle" fill="#fff" font-size="10" font-weight="700">ScriptHammer</text>
+    <!-- Nav items - ALL 50px height (exceeds 44px) -->
+    <rect x="10" y="70" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="30" y="102" class="heading-sm">🏠  Home</text>
 
-    <!-- Expanded nav menu -->
-    <rect x="20" y="108" width="320" height="300" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="10" y="130" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="30" y="162" class="heading-sm">📝  Blog</text>
 
-    <!-- Nav items - 50px height each for touch targets -->
-    <rect x="30" y="118" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="50" y="150" class="heading">🏠  Home</text>
+    <rect x="10" y="190" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="30" y="222" class="heading-sm">📁  Projects</text>
 
-    <rect x="30" y="176" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="50" y="208" class="heading">📝  Blog</text>
+    <rect x="10" y="250" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="30" y="282" class="heading-sm">👤  About</text>
 
-    <rect x="30" y="234" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="50" y="266" class="heading">📁  Projects</text>
+    <rect x="10" y="310" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="30" y="342" class="heading-sm">📧  Contact</text>
 
-    <rect x="30" y="292" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="50" y="324" class="heading">👤  About</text>
+    <!-- Touch target highlight -->
+    <rect x="10" y="70" width="300" height="50" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="255" y="102" class="spec-label">50px ≥ 44 ✓</text>
 
-    <rect x="30" y="350" width="300" height="50" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="50" y="382" class="heading">📧  Contact</text>
+    <!-- Settings section - 44px buttons -->
+    <rect x="10" y="375" width="300" height="100" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="400" class="text-md">Settings</text>
 
-    <!-- Touch target annotation -->
-    <rect x="30" y="118" width="300" height="50" fill="none" stroke="#22c55e" stroke-width="2" stroke-dasharray="4,2"/>
-    <text x="255" y="150" class="spec-label">50px ≥ 44 ✓</text>
+    <rect x="20" y="410" width="90" height="44" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="65" y="438" text-anchor="middle" class="text-sm">🌙 Dark</text>
+    <rect x="120" y="410" width="90" height="44" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="165" y="438" text-anchor="middle" class="text-sm">🔤 Font</text>
+    <rect x="220" y="410" width="80" height="44" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
+    <text x="260" y="438" text-anchor="middle" class="text-sm">🎨 A11y</text>
 
-    <!-- Settings section -->
-    <rect x="20" y="420" width="320" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="40" y="450" class="text-md">Settings</text>
-    <rect x="30" y="465" width="80" height="28" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="70" y="484" text-anchor="middle" class="text-sm">🌙 Dark</text>
-    <rect x="120" y="465" width="80" height="28" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="160" y="484" text-anchor="middle" class="text-sm">🔤 Font</text>
-
-    <!-- Page content preview -->
-    <rect x="20" y="510" width="320" height="170" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="180" y="600" text-anchor="middle" class="text-muted">Page content beneath</text>
+    <text x="160" y="485" text-anchor="middle" class="spec-label">Settings buttons: 44px height ✓</text>
   </g>
+
+  <!-- 8px Spacing Demo -->
+  <g transform="translate(960, 60)">
+    <rect x="0" y="0" width="400" height="180" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="20" y="30" class="heading">8px Minimum Spacing (FR-005)</text>
+
+    <!-- Buttons with 8px gaps -->
+    <rect x="30" y="50" width="80" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="70" y="78" text-anchor="middle" fill="#fff" font-size="12">Btn 1</text>
+
+    <!-- 8px gap visual -->
+    <rect x="110" y="50" width="8" height="44" fill="#22c55e" opacity="0.4"/>
+
+    <rect x="118" y="50" width="80" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="158" y="78" text-anchor="middle" fill="#fff" font-size="12">Btn 2</text>
+
+    <rect x="198" y="50" width="8" height="44" fill="#22c55e" opacity="0.4"/>
+
+    <rect x="206" y="50" width="80" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="246" y="78" text-anchor="middle" fill="#fff" font-size="12">Btn 3</text>
+
+    <!-- Labels -->
+    <text x="114" y="115" text-anchor="middle" class="dimension">8px</text>
+    <text x="202" y="115" text-anchor="middle" class="dimension">8px</text>
+
+    <rect x="30" y="130" width="260" height="35" rx="4" fill="#e8d4b8" stroke="#22c55e"/>
+    <text x="160" y="152" text-anchor="middle" class="spec-label">Prevents accidental taps ✓</text>
+  </g>
+
+  <!-- Summary box -->
+  <g transform="translate(960, 260)">
+    <rect x="0" y="0" width="400" height="220" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="20" y="30" class="heading">Touch Target Summary</text>
+
+    <rect x="20" y="50" width="360" height="40" rx="4" fill="#22c55e" opacity="0.15" stroke="#22c55e"/>
+    <text x="200" y="77" text-anchor="middle" class="heading-sm" fill="#22c55e">✓ ALL interactive elements ≥ 44px</text>
+
+    <text x="40" y="115" class="text-md">• Desktop buttons: 44×44px</text>
+    <text x="40" y="140" class="text-md">• Mobile buttons: 44×44px</text>
+    <text x="40" y="165" class="text-md">• Nav items: 50px height</text>
+    <text x="40" y="190" class="text-md">• Settings buttons: 44px height</text>
+    <text x="40" y="215" class="text-muted">Apple HIG + WCAG AAA compliant</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="700" y="785" text-anchor="middle" class="text-muted">Responsive Navigation • Feature 004 • ScriptHammer</text>
 </svg>

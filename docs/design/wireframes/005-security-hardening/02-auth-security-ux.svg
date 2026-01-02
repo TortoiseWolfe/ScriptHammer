@@ -4,6 +4,7 @@
        SOURCE: features/foundation/005-security-hardening/spec.md
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
+       REGENERATED WITH FEEDBACK: features/foundation/005-security-hardening/WIREFRAME_ISSUES.md
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -50,34 +51,35 @@
 
   <g id="desktop-view">
     <!-- ========== CARD 1: PASSWORD STRENGTH ========== -->
-    <rect x="40" y="60" width="290" height="340" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <rect x="40" y="60" width="290" height="360" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <text x="185" y="90" text-anchor="middle" class="heading">Password Strength</text>
 
-    <!-- Password input -->
+    <!-- Password input - 44px height for WCAG AAA -->
     <text x="60" y="120" class="text-sm">Create Password</text>
-    <rect x="60" y="130" width="250" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="75" y="155" class="text-md">••••••••••</text>
-    <text x="290" y="155" text-anchor="end" class="text-muted">👁</text>
+    <rect x="60" y="130" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="75" y="158" class="text-md">••••••••••</text>
+    <text x="290" y="158" text-anchor="end" class="text-muted">👁</text>
 
     <!-- Strength indicator - WEAK -->
-    <rect x="60" y="180" width="250" height="8" rx="4" fill="#dcc8a8"/>
-    <rect x="60" y="180" width="70" height="8" rx="4" fill="#ef4444"/>
-    <text x="60" y="205" class="text-sm" fill="#ef4444">Weak</text>
+    <rect x="60" y="184" width="250" height="8" rx="4" fill="#dcc8a8"/>
+    <rect x="60" y="184" width="70" height="8" rx="4" fill="#ef4444"/>
+    <text x="60" y="210" class="text-sm" fill="#ef4444">Weak</text>
 
     <!-- Requirements checklist -->
-    <text x="60" y="235" class="heading-sm">Requirements</text>
-    <text x="75" y="258" class="text-sm" fill="#ef4444">✗ At least 8 characters</text>
-    <text x="75" y="278" class="text-sm" fill="#22c55e">✓ Contains uppercase</text>
-    <text x="75" y="298" class="text-sm" fill="#22c55e">✓ Contains lowercase</text>
-    <text x="75" y="318" class="text-sm" fill="#ef4444">✗ Contains number</text>
-    <text x="75" y="338" class="text-sm" fill="#ef4444">✗ Contains symbol</text>
+    <text x="60" y="240" class="heading-sm">Requirements</text>
+    <text x="75" y="263" class="text-sm" fill="#ef4444">✗ At least 8 characters</text>
+    <text x="75" y="283" class="text-sm" fill="#22c55e">✓ Contains uppercase</text>
+    <text x="75" y="303" class="text-sm" fill="#22c55e">✓ Contains lowercase</text>
+    <text x="75" y="323" class="text-sm" fill="#ef4444">✗ Contains number</text>
+    <text x="75" y="343" class="text-sm" fill="#ef4444">✗ Contains symbol</text>
 
     <!-- Strength levels legend -->
-    <text x="60" y="370" class="text-muted">Strength levels: Weak → Medium → Strong</text>
-    <text x="60" y="388" class="annotation">FR-034, FR-035: Real-time feedback</text>
+    <text x="60" y="375" class="text-muted">Strength levels: Weak → Medium → Strong</text>
+    <text x="60" y="393" class="annotation">FR-034, FR-035: Real-time feedback</text>
+    <text x="60" y="410" class="annotation">SC-007: &lt;100ms feedback</text>
 
     <!-- ========== CARD 2: LOCKOUT NOTIFICATION ========== -->
-    <rect x="345" y="60" width="290" height="340" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <rect x="345" y="60" width="290" height="360" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <text x="490" y="90" text-anchor="middle" class="heading">Account Lockout</text>
 
     <!-- Lockout alert -->
@@ -89,108 +91,109 @@
 
     <!-- Attempt counter -->
     <text x="365" y="260" class="heading-sm">Failed Attempts</text>
-    <rect x="365" y="275" width="250" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="380" y="300" class="text-sm">Attempts: 5 / 5</text>
-    <rect x="500" y="285" width="100" height="20" rx="10" fill="#ef4444"/>
-    <text x="550" y="299" text-anchor="middle" fill="#fff" font-size="10">Maximum reached</text>
+    <rect x="365" y="275" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="380" y="302" class="text-sm">Attempts: 5 / 5</text>
+    <rect x="505" y="285" width="95" height="24" rx="12" fill="#ef4444"/>
+    <text x="553" y="301" text-anchor="middle" fill="#fff" font-size="10">Max reached</text>
 
-    <!-- Recovery options -->
-    <text x="365" y="340" class="heading-sm">Recovery Options</text>
-    <rect x="365" y="355" width="250" height="36" rx="6" fill="#8b5cf6"/>
-    <text x="490" y="378" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Reset Password via Email</text>
+    <!-- Recovery button - 44px height -->
+    <text x="365" y="345" class="heading-sm">Recovery Options</text>
+    <rect x="365" y="358" width="250" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="490" y="386" text-anchor="middle" fill="#fff" font-size="13" font-weight="600">Reset Password via Email</text>
+
+    <text x="365" y="420" class="annotation">FR-012, SC-009: Clear lockout messaging</text>
 
     <!-- ========== CARD 3: SESSION TIMEOUT ========== -->
-    <rect x="650" y="60" width="290" height="340" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <rect x="650" y="60" width="290" height="360" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
     <text x="795" y="90" text-anchor="middle" class="heading">Session Timeout</text>
 
     <!-- Timeout warning modal -->
-    <rect x="670" y="110" width="250" height="160" rx="8" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
+    <rect x="670" y="110" width="250" height="140" rx="8" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
     <text x="795" y="138" text-anchor="middle" class="heading" fill="#92400e">⚠️ Session Expiring</text>
     <text x="795" y="165" text-anchor="middle" class="text-md">Your session will expire in</text>
     <text x="795" y="200" text-anchor="middle" font-family="system-ui" font-size="32" font-weight="700" fill="#92400e">0:59</text>
 
-    <!-- Action buttons -->
-    <rect x="690" y="225" width="100" height="32" rx="6" fill="#22c55e"/>
-    <text x="740" y="246" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Stay Signed In</text>
-    <rect x="800" y="225" width="100" height="32" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="850" y="246" text-anchor="middle" class="text-sm">Sign Out</text>
+    <!-- Action buttons - 44px height each -->
+    <rect x="678" y="218" width="115" height="44" rx="6" fill="#22c55e"/>
+    <text x="736" y="246" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Stay Signed In</text>
+    <rect x="798" y="218" width="115" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="856" y="246" text-anchor="middle" class="text-sm">Sign Out</text>
 
-    <!-- Session info -->
-    <text x="670" y="300" class="heading-sm">Session Type</text>
-    <rect x="670" y="315" width="120" height="30" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
-    <text x="730" y="335" text-anchor="middle" class="text-sm">Standard</text>
-    <rect x="800" y="315" width="120" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="860" y="335" text-anchor="middle" class="text-sm">Remember Me</text>
+    <!-- Session info - display only, not buttons -->
+    <text x="670" y="290" class="heading-sm">Session Type (display only)</text>
+    <rect x="670" y="305" width="120" height="30" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="730" y="325" text-anchor="middle" class="text-sm">Standard</text>
+    <rect x="800" y="305" width="120" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="860" y="325" text-anchor="middle" class="text-sm">Remember Me</text>
 
-    <text x="670" y="365" class="text-muted">Standard: 24h • Remember: 7d inactivity</text>
-    <text x="670" y="383" class="annotation">FR-029, FR-030, FR-031</text>
+    <text x="670" y="360" class="text-muted">Standard: 24h • Remember: 7d inactivity</text>
+    <text x="670" y="380" class="annotation">FR-029, FR-030, FR-031, SC-010</text>
 
     <!-- ========== CARD 4: EMAIL VALIDATION ========== -->
-    <rect x="40" y="420" width="290" height="290" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
-    <text x="185" y="450" text-anchor="middle" class="heading">Email Validation</text>
+    <rect x="40" y="435" width="290" height="280" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <text x="185" y="465" text-anchor="middle" class="heading">Email Validation</text>
 
     <!-- Valid email -->
-    <rect x="60" y="470" width="250" height="50" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
-    <text x="75" y="492" class="text-sm" font-weight="600">user@company.com</text>
-    <text x="75" y="510" class="text-muted" fill="#22c55e">✓ Valid email format</text>
+    <rect x="60" y="485" width="250" height="50" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="75" y="507" class="text-sm" font-weight="600">user@company.com</text>
+    <text x="75" y="525" class="text-muted" fill="#22c55e">✓ Valid email format</text>
 
     <!-- Warning email -->
-    <rect x="60" y="530" width="250" height="50" rx="6" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
-    <text x="75" y="552" class="text-sm" font-weight="600">test@tempmail.io</text>
-    <text x="75" y="570" class="text-muted" fill="#92400e">⚠ Disposable email detected</text>
+    <rect x="60" y="545" width="250" height="50" rx="6" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
+    <text x="75" y="567" class="text-sm" font-weight="600">test@tempmail.io</text>
+    <text x="75" y="585" class="text-muted" fill="#92400e">⚠ Disposable email detected</text>
 
     <!-- Invalid email -->
-    <rect x="60" y="590" width="250" height="50" rx="6" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
-    <text x="75" y="612" class="text-sm" font-weight="600">user..invalid@</text>
-    <text x="75" y="630" class="text-muted" fill="#ef4444">✗ Invalid email format</text>
+    <rect x="60" y="605" width="250" height="50" rx="6" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+    <text x="75" y="627" class="text-sm" font-weight="600">user..invalid@</text>
+    <text x="75" y="645" class="text-muted" fill="#ef4444">✗ Invalid email format</text>
 
     <!-- Normalization note -->
-    <rect x="60" y="655" width="250" height="40" rx="6" fill="#dcc8a8"/>
-    <text x="185" y="680" text-anchor="middle" class="text-muted">Emails normalized to lowercase</text>
+    <rect x="60" y="665" width="250" height="35" rx="6" fill="#dcc8a8"/>
+    <text x="185" y="687" text-anchor="middle" class="text-muted">Emails normalized to lowercase</text>
 
     <!-- ========== CARD 5: ERROR RECOVERY ========== -->
-    <rect x="345" y="420" width="290" height="290" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
-    <text x="490" y="450" text-anchor="middle" class="heading">Error Recovery</text>
+    <rect x="345" y="435" width="290" height="280" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <text x="490" y="465" text-anchor="middle" class="heading">Error Recovery</text>
 
     <!-- OAuth error -->
-    <rect x="365" y="470" width="250" height="90" rx="6" fill="#fee2e2" stroke="#ef4444"/>
-    <text x="380" y="495" class="heading-sm" fill="#ef4444">OAuth Provider Error</text>
-    <text x="380" y="515" class="text-sm">Could not connect to Google</text>
-    <rect x="380" y="530" width="80" height="24" rx="4" fill="#8b5cf6"/>
-    <text x="420" y="546" text-anchor="middle" fill="#fff" font-size="10">Retry</text>
-    <rect x="470" y="530" width="120" height="24" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="530" y="546" text-anchor="middle" class="text-muted">Use Email Login</text>
+    <rect x="365" y="485" width="250" height="100" rx="6" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="380" y="510" class="heading-sm" fill="#ef4444">OAuth Provider Error</text>
+    <text x="380" y="530" class="text-sm">Could not connect to Google</text>
+    <!-- Buttons - 44px height -->
+    <rect x="380" y="540" width="100" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="430" y="568" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Retry</text>
+    <rect x="490" y="540" width="120" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="550" y="568" text-anchor="middle" class="text-sm">Email Login</text>
 
     <!-- Email delivery error -->
-    <rect x="365" y="570" width="250" height="70" rx="6" fill="#fef3c7" stroke="#eab308"/>
-    <text x="380" y="595" class="heading-sm" fill="#92400e">Email Not Received?</text>
-    <text x="380" y="615" class="text-sm">Check spam folder</text>
-    <rect x="380" y="625" width="120" height="24" rx="4" fill="#8b5cf6"/>
-    <text x="440" y="641" text-anchor="middle" fill="#fff" font-size="10">Resend Email</text>
+    <rect x="365" y="595" width="250" height="80" rx="6" fill="#fef3c7" stroke="#eab308"/>
+    <text x="380" y="620" class="heading-sm" fill="#92400e">Email Not Received?</text>
+    <text x="380" y="640" class="text-sm">Check spam folder</text>
+    <!-- Button - 44px height -->
+    <rect x="380" y="648" width="130" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="445" y="676" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Resend Email</text>
 
-    <!-- General guidance -->
-    <rect x="365" y="650" width="250" height="45" rx="6" fill="#dcc8a8"/>
-    <text x="490" y="672" text-anchor="middle" class="text-sm">Clear error messages</text>
-    <text x="490" y="688" text-anchor="middle" class="text-muted">FR-036, FR-037</text>
+    <text x="365" y="705" class="annotation">FR-036, FR-037: Clear error recovery</text>
 
     <!-- ========== CARD 6: CSRF TOKEN ========== -->
-    <rect x="650" y="420" width="290" height="290" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
-    <text x="795" y="450" text-anchor="middle" class="heading">Form Protection</text>
+    <rect x="650" y="435" width="290" height="280" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <text x="795" y="465" text-anchor="middle" class="heading">Form Protection</text>
 
     <!-- Hidden token indicator -->
-    <rect x="670" y="470" width="250" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="685" y="495" class="text-muted">Form contains:</text>
-    <rect x="685" y="505" width="220" height="30" rx="4" fill="#1e293b"/>
-    <text x="695" y="525" fill="#22c55e" font-family="monospace" font-size="10">&lt;input type="hidden" name="_csrf"</text>
+    <rect x="670" y="485" width="250" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="685" y="510" class="text-muted">Form contains:</text>
+    <rect x="685" y="520" width="220" height="30" rx="4" fill="#1e293b"/>
+    <text x="695" y="540" fill="#22c55e" font-family="monospace" font-size="10">&lt;input type="hidden" name="_csrf"</text>
 
     <!-- Protected actions -->
-    <text x="670" y="580" class="heading-sm">Protected Actions</text>
-    <text x="685" y="605" class="text-sm">✓ Sign up form</text>
-    <text x="685" y="625" class="text-sm">✓ Profile updates</text>
-    <text x="685" y="645" class="text-sm">✓ Payment submissions</text>
-    <text x="685" y="665" class="text-sm">✓ Password changes</text>
+    <text x="670" y="595" class="heading-sm">Protected Actions</text>
+    <text x="685" y="618" class="text-sm">✓ Sign up form</text>
+    <text x="685" y="638" class="text-sm">✓ Profile updates</text>
+    <text x="685" y="658" class="text-sm">✓ Payment submissions</text>
+    <text x="685" y="678" class="text-sm">✓ Password changes</text>
 
-    <text x="670" y="695" class="annotation">FR-013, FR-014: CSRF protection</text>
+    <text x="670" y="705" class="annotation">FR-013, FR-014, SC-004: 100% CSRF coverage</text>
   </g>
 
   <!-- MOBILE SECTION -->
@@ -211,11 +214,11 @@
     <text x="25" y="55" fill="rgba(255,255,255,0.8)" font-size="12">←</text>
     <text x="60" y="68" fill="#fff" font-family="system-ui" font-size="16" font-weight="700">Create Password</text>
 
-    <!-- Password input -->
+    <!-- Password input - 44px height -->
     <text x="25" y="115" class="text-sm">New Password</text>
     <rect x="25" y="125" width="310" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="152" class="text-md">••••••••••</text>
-    <text x="310" y="152" text-anchor="end" class="text-muted">👁</text>
+    <text x="40" y="153" class="text-md">••••••••••</text>
+    <text x="310" y="153" text-anchor="end" class="text-muted">👁</text>
 
     <!-- Strength bar - Medium -->
     <rect x="25" y="180" width="310" height="8" rx="4" fill="#dcc8a8"/>
@@ -230,26 +233,27 @@
     <text x="55" y="310" class="text-sm" fill="#22c55e">✓ Lowercase letter</text>
     <text x="55" y="330" class="text-sm" fill="#ef4444">✗ Number</text>
 
-    <!-- Confirm password -->
+    <!-- Confirm password - 44px height -->
     <text x="25" y="375" class="text-sm">Confirm Password</text>
     <rect x="25" y="385" width="310" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="412" class="text-md">••••••••••</text>
+    <text x="40" y="413" class="text-md">••••••••••</text>
 
-    <!-- Submit button -->
+    <!-- Submit button - 48px height (exceeds 44px min) -->
     <rect x="25" y="450" width="310" height="48" rx="6" fill="#8b5cf6"/>
     <text x="180" y="480" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Set Password</text>
 
     <!-- Session timeout warning (overlay) -->
-    <rect x="30" y="520" width="300" height="120" rx="12" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
+    <rect x="30" y="520" width="300" height="130" rx="12" fill="#fef3c7" stroke="#eab308" stroke-width="2"/>
     <text x="180" y="550" text-anchor="middle" class="heading-sm" fill="#92400e">⚠️ Session Expiring</text>
     <text x="180" y="580" text-anchor="middle" font-family="system-ui" font-size="24" font-weight="700" fill="#92400e">0:45</text>
-    <rect x="50" y="595" width="110" height="32" rx="6" fill="#22c55e"/>
-    <text x="105" y="616" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Stay In</text>
-    <rect x="170" y="595" width="110" height="32" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="225" y="616" text-anchor="middle" class="text-sm">Sign Out</text>
+    <!-- Session buttons - 44px height each -->
+    <rect x="45" y="595" width="120" height="44" rx="6" fill="#22c55e"/>
+    <text x="105" y="623" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Stay In</text>
+    <rect x="175" y="595" width="120" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="235" y="623" text-anchor="middle" class="text-sm">Sign Out</text>
 
     <!-- Footer info -->
-    <text x="180" y="670" text-anchor="middle" class="text-muted">Password tips and session management</text>
+    <text x="180" y="675" text-anchor="middle" class="text-muted">Password tips and session management</text>
   </g>
 
   <!-- Footer -->
