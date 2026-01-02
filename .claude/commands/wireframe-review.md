@@ -111,23 +111,13 @@ $ARGUMENTS
 
 ### Page Filter (Per-Page Mode Only)
 
-**If `:PAGE` was provided in arguments:**
+**If `:PAGE` provided:**
+1. List SVGs in `docs/design/wireframes/[feature-folder]/`
+2. Filter: Numeric (`:01`) → `01-*.svg` | Text (`:responsive`) → `*responsive*.svg`
+3. **0 matches** → Error with available list | **2+ matches** → Ask user
+4. **1 match** → Extract spec from `grep "SOURCE:" [target].svg`
 
-1. List all SVG files in `docs/design/wireframes/[feature-folder]/`
-2. Apply filter:
-   - Numeric (`:01`, `:3`) → Match files starting with zero-padded number (`01-*.svg`)
-   - Text (`:responsive`) → Match files containing the text (case-insensitive)
-3. **If 0 matches**: Error with list of available SVGs
-4. **If 1 match**: Extract spec path from SVG watermark:
-   ```
-   grep "SOURCE:" [target].svg | Extract path after "SOURCE: "
-   ```
-5. **If 2+ matches**: Ask user to clarify
-
-**Per-page mode uses SVG watermark for context:**
-- The SVG header contains `SOURCE: features/[category]/[feature]/spec.md`
-- No need for user to specify spec path - extract from existing SVG
-- Still read FULL spec for review context
+Spec path comes from SVG watermark. Still read FULL spec for context.
 
 ---
 
@@ -156,43 +146,15 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 
 ### Per-Page Mode: Incremental Issue Tracking
 
-**If per-page mode (`:PAGE` argument provided) AND existing WIREFRAME_ISSUES.md:**
+**If `:PAGE` provided AND existing WIREFRAME_ISSUES.md:**
 
-1. Read existing WIREFRAME_ISSUES.md
-2. Review ONLY the target SVG file (not all files)
-3. **PRESERVE** sections for other files exactly as-is:
-   - Keep their issue tables unchanged
-   - Keep their Visual Descriptions unchanged
-   - Keep their Overlap Matrices unchanged
-4. **UPDATE** only the target file's section:
-   - Replace its issue table with current findings
-   - Update its Visual Description
-   - Update its Overlap Matrix
-5. **UPDATE** Summary section:
-   - Recalculate totals from all file sections
-   - Increment pass counter only for reviewed file
+| Action | Scope |
+|--------|-------|
+| PRESERVE | Other files' issue tables, Visual Descriptions, Overlap Matrices |
+| UPDATE | Target file's section only |
+| RECALCULATE | Summary totals, increment pass counter for reviewed file |
 
-**Example**: Reviewing `004:02` when WIREFRAME_ISSUES.md already has entries for 01, 02, 03, 04:
-```markdown
-## Summary
-- Files in feature: 4 SVGs
-- Files reviewed this pass: 1 (02-content-typography.svg)
-- Pass 3 for: 02-content-typography.svg
-
-## 01-responsive-navigation.svg
-[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
-
-## 02-content-typography.svg ← UPDATED
-[NEW REVIEW RESULTS]
-
-## 03-touch-targets.svg
-[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
-
-## 04-breakpoint-system.svg
-[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
-```
-
-**Why this matters**: Per-page mode saves tokens by reviewing one file at a time. Preserving other sections maintains complete review history.
+Per-page mode saves tokens. Preserving other sections maintains history.
 
 ⚠️ **CRITICAL: "RESOLVED" does NOT mean "skip review"**
 
@@ -206,48 +168,29 @@ Files marked "✅ RESOLVED" or "✅ PASS" need EXTRA scrutiny, not less:
 
 ### Comparison Logic (after full review):
 
-For each issue found in current pass:
-1. **Check if it matches a previous issue** (same category, location, description)
-   - If match found and issue still exists → Status: `Pass N` (where N = when first found)
-   - If match found but issue resolved → Status: `✅ RESOLVED`
-2. **If no match** → Status: `NEW Pass N` (current pass number)
-
-For each previous issue NOT found in current pass:
-- Mark as `✅ RESOLVED` (the fix worked!)
-
-### Pass Completion Summary:
-
-```
-Pass 2 Complete:
-- Issues from Pass 1: 12
-- Resolved this pass: 6
-- Still remaining: 4
-- NEW issues found: 2
-- Total remaining: 6
-
-Next: /wireframe [feature] to fix remaining issues
-```
+| Current Finding | Status |
+|-----------------|--------|
+| Matches previous issue, still exists | `Pass N` (when first found) |
+| No match | `NEW Pass N` |
+| Previous issue NOT found | `✅ RESOLVED` |
 
 ### All Issues Resolved? ⚠️ FINAL VERIFICATION REQUIRED
 
-**If remaining issues = 0, DO NOT immediately celebrate. Verify first:**
-
-1. Did you complete the Devil's Advocate Checkpoint (Step 7)?
-2. Did you write Visual Descriptions for EVERY file (Step 3)?
-3. Did you actually VIEW the rendered wireframes, not just read SVG code?
-4. Did you create an Overlap Matrix for EVERY file (Step 3b)?
+**If remaining issues = 0, verify before declaring PASS:**
 
 ### ⛔ File CANNOT pass if ANY of these are true:
 
-- [ ] Overlap Matrix not created for this file
-- [ ] Overlap Matrix has ANY ❌ entries (overlap detected)
-- [ ] Visual Description not written for this file
-- [ ] Devil's Advocate checkpoint not completed
-- [ ] Any text is visibly truncated in screenshot (FR codes cut off, labels ending in "...")
-- [ ] Any annotation label is not fully readable character-by-character
-- [ ] Footer signature line missing or wrong format (must be `x="60" y="780"` with `[NNN:PP] | Title | ScriptHammer`)
+| Blocker | Check |
+|---------|-------|
+| No Overlap Matrix | Must be created for every file |
+| Overlap Matrix has ❌ | Any overlap detected = fail |
+| No Visual Description | Must describe what you see |
+| Devil's Advocate skipped | Must complete checkpoint |
+| Truncated text | FR codes cut off, labels ending in "..." |
+| Unreadable labels | Every annotation must be readable character-by-character |
+| Footer wrong/missing | Must be `x="60" y="780"` with `[NNN:PP] | Title | ScriptHammer` |
 
-**If ANY box above is checked, the file is 🔴 REGENERATE. No exceptions.**
+**Any blocker = 🔴 REGENERATE. No exceptions.**
 
 **Only after verification AND all boxes unchecked, output:**
 ```
@@ -277,24 +220,15 @@ Wireframes verified. Proceed to:
 
 ## Step 1: Viewer Setup (MANDATORY) ⚠️ DO THIS FIRST
 
-**Before reviewing ANY wireframe, set up the viewer with the optimal viewing configuration.**
-
-This eliminates the trial-and-error zoom/focus cycle. Do this ONCE at the start of every review session.
+**Set up viewer ONCE at session start. Eliminates trial-and-error zoom/focus cycle.**
 
 ### 1a. Ensure Viewer is Running
-
 ```bash
-# Check if viewer is already running
-curl -s http://localhost:3000 | head -5
-
-# If not running, start it:
-cd docs/design/wireframes && npm run dev &
-sleep 3
+curl -s http://localhost:3000 | head -5  # Check if running
+cd docs/design/wireframes && npm run dev &  # Start if not
 ```
 
-### 1b. Navigate and Configure Browser (Optimal Sequence)
-
-Use MCP browser tools in this EXACT order:
+### 1b. Navigate and Configure Browser
 
 ```javascript
 // 1. Navigate to viewer
@@ -329,44 +263,23 @@ mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 40% (for architecture diagr
 | 1600×800 (wide) | 55% | `0`, `-`, `-` |
 | 1600×1000 (architecture) | 40% | `0`, `-`, `-`, `-` |
 
-### 1d. Take Screenshots with Persistent Output
-
-**Screenshots are saved for reuse in tutorials and marketing.**
-
+### 1d. Take Screenshots
 ```javascript
-// Screenshot naming convention: [FEATURE]-[PAGE]-[DESCRIPTION].png
-mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "003-01-login-signup.png"
-})
+// [FEATURE]-[PAGE]-[NAME].png
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
 ```
+Output: `/tmp/playwright-output/` (MCP container)
 
-**Output location**: `/tmp/playwright-output/` (inside MCP Docker container)
-
-### 1e. Copy Screenshots to Persistent Location (After Review)
-
-After completing a feature's review, copy screenshots to the repo:
-
+### 1e. Copy Screenshots (After Review)
 ```bash
-# Create feature PNG directory
 mkdir -p docs/design/wireframes/png/[FEATURE]/
-
-# Copy from MCP container (find container name first)
-docker ps | grep playwright
 docker cp [CONTAINER]:/tmp/playwright-output/[FEATURE]-*.png docs/design/wireframes/png/[FEATURE]/
 ```
 
 ### 1f. Navigate Between Wireframes
-
-Once in focus mode at correct zoom:
-
 ```javascript
-// Next wireframe (maintains focus mode and zoom)
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" })
-
-// Previous wireframe
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowLeft" })
-
-// Take screenshot after each navigation
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" })  // Next
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowLeft" })   // Previous
 mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
 ```
 
@@ -376,22 +289,7 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 
 ## Step 2: Quadrant Deep Inspection (MANDATORY)
 
-After saving the full-page screenshot, zoom into each quadrant for detailed inspection.
-
-### Why Quadrants
-- Catches detail issues missed in overview (truncation, overlap, small text)
-- Desktop content is left (~60%), mobile is right (~40%)
-- Top areas have headers/nav, bottom has footers/legends
-- No hardcoded coordinates - zoom dynamically to fill viewport
-
-### Procedure
-1. **Save fullscreen**: Take screenshot at current zoom (only PNG we save)
-2. **Inspect top-left**: Zoom until left half fills viewport, inspect top area
-3. **Inspect bottom-left**: Pan down within left half, inspect bottom area
-4. **Inspect top-right**: Pan to right half, inspect top area
-5. **Inspect bottom-right**: Pan down within right half, inspect bottom area
-
-### What to Check per Quadrant
+Zoom into each quadrant to catch detail issues missed in overview (truncation, overlap, small text).
 
 | Quadrant | Focus Areas |
 |----------|-------------|
@@ -400,32 +298,19 @@ After saving the full-page screenshot, zoom into each quadrant for detailed insp
 | Top-right | MOBILE label, phone frame top, status bar |
 | Bottom-right | Mobile footer, touch targets, right-margin annotations |
 
-### Checkpoint
-Before proceeding to detailed categories:
-- [ ] Fullscreen PNG saved: `[feature]-[page].png`
-- [ ] All 4 quadrants visually inspected
-- [ ] Obvious issues noted from inspection
+**Checkpoint**: Fullscreen PNG saved, all 4 quadrants inspected, obvious issues noted.
 
 ---
 
 ## Critical Review Philosophy
 
-**DO NOT give participation trophies.** These wireframes need to be BEST-IN-CLASS. Every pixel matters.
-
-Your job is to find problems, not praise. Assume every wireframe has issues until proven otherwise. Be the harshest critic. If something looks "fine," look harder - there's always room for improvement.
-
-The goal is not to validate - it's to CHALLENGE these wireframes to be better.
+Find problems, not praise. Assume every wireframe has issues. If something looks "fine," look harder.
 
 ---
 
 ## Issue Categories - SCRUTINIZE EACH ONE
 
-⛔ **STOP: Do NOT use these checklists until you have:**
-1. **Viewed the rendered wireframes** (Review Process Step 2)
-2. **Written Visual Descriptions** for each file (Review Process Step 3)
-
-Reading these categories first will bias you toward "checking boxes" instead of actually seeing.
-**Look first. Then use these as a second-pass verification.**
+⛔ **STOP**: View rendered wireframes and write Visual Descriptions BEFORE using these checklists. Look first, then use as second-pass verification.
 
 ---
 
@@ -433,213 +318,147 @@ Reading these categories first will bias you toward "checking boxes" instead of 
 
 **Check these first - they require 🔴 REGENERATE if found.**
 
-### 1. OVERLAP & COLLISION ISSUES (Look at EVERY row/section boundary)
+### 1. OVERLAP & COLLISION ISSUES
 
-- **Row collisions** - Does Row 1 content bleed into Row 2? Are sections fighting for the same space?
-- **Label collisions** - Do annotation labels overlap with content?
-- **Panel boundary violations** - Does content extend beyond its containing panel?
-- **Mobile/Desktop overlap** - Does the mobile preview area collide with desktop content?
-- **Z-index conflicts** - Are elements stacking incorrectly?
-- **Indicator/badge overlay on text** - Do circular badges, score indicators, or status icons sit ON TOP of text, obscuring readability?
-- **Decorative element layering** - Do decorative elements (rings, backgrounds, shapes) overlap and clip text content behind them?
-- **Visual hierarchy violations** - Are informational elements (text, labels) being hidden by decorative elements (rings, backgrounds)?
+| Check | Question |
+|-------|----------|
+| Row collisions | Does Row 1 bleed into Row 2? |
+| Label collisions | Do annotations overlap content? |
+| Panel boundary | Does content extend beyond container? |
+| Mobile/Desktop | Does mobile collide with desktop? |
+| Z-index | Are elements stacking correctly? |
+| Badge/indicator overlay | Do badges obscure text? |
+| Decorative layering | Do rings/backgrounds clip text? |
 
-### 2. CLIPPING & TRUNCATION (Check EVERY text element)
+### 2. CLIPPING & TRUNCATION
 
-- **Text cut-off** - Is ANY text being clipped by its container?
-- **Button label truncation** - Do button labels fit or get cut?
-- **Long content handling** - What happens with longer strings?
-- **Icon clipping** - Are icons fully visible?
-- **Panel edge clipping** - Does content get too close to panel edges?
-- **Text obscured by overlays** - Is text hidden behind circular indicators, badge elements, or other layered graphics?
-- **Heading visibility under decorations** - Are section headings fully readable, not covered by decorative rings or score circles?
-- **Container overflow** - Does content extend BELOW or OUTSIDE its containing panel? If rows/items don't fit, the container must be sized larger - content should never escape its bounds.
+| Check | Question |
+|-------|----------|
+| Text cut-off | Is ANY text clipped by container? |
+| Button labels | Do labels fit or get cut? |
+| Long content | What happens with longer strings? |
+| Icon clipping | Are icons fully visible? |
+| Panel edges | Content too close to edges? |
+| Text under overlays | Hidden behind badges/indicators? |
+| Heading visibility | Covered by decorative rings? |
+| Container overflow | Content escaping below/outside panel? |
 
 ### 2b. ⛔ CONTAINER BOUNDARY MATH VALIDATION (MANDATORY)
 
-**For every element inside a container, verify the math:**
-
 ```
-element_x + element_width ≤ container_x + container_width   (right edge)
-element_y + element_height ≤ container_y + container_height (bottom edge)
+element_x + element_width ≤ container_x + container_width
+element_y + element_height ≤ container_y + container_height
 ```
 
-**Common overflow patterns to catch:**
+| Pattern | Check |
+|---------|-------|
+| Button row | Sum widths + gaps ≤ header width |
+| Annotation text | chars × ~7px ≤ box width |
+| Stacked items | items × height ≤ container height |
+| Right-aligned | x + width < container right edge |
 
-| Pattern | How to check |
-|---------|-------------|
-| Button row in header | Find all buttons, sum their widths + gaps, compare to header width |
-| Text in annotation box | Estimate text width (chars × ~7px), verify < box width |
-| Stacked list items | Count items × item_height, verify < container height |
-| Right-aligned controls | Find rightmost element, verify x + width < container right edge |
-
-**Example validation (desktop header):**
-```
-Header: x=0, width=900 → ends at x=900
-Buttons at x=760(w=44), x=812(w=44), x=864(w=44)
-Rightmost: 864 + 44 = 908 > 900 ❌ OVERFLOW BY 8px
-```
-
-**Text width estimation:**
-- Monospace 10px: ~6px/char
-- System font 12px: ~7px/char
-- System font 14px: ~8px/char
-
-**DO NOT EYEBALL. Do the math. Log any violation as 🔴 REGENERATE.**
+Text width: ~6px/char (mono 10px), ~7px/char (12px), ~8px/char (14px).
+**DO NOT EYEBALL. Do the math. Violation = 🔴 REGENERATE.**
 
 ### 2c. ⛔ TRUNCATION SCAN (MANDATORY)
 
-**For EVERY text element that contains dynamic content (FR codes, descriptions, labels):**
+For every dynamic text (FR codes, labels): `text_width < container_width - padding`
 
-1. Find the text element in SVG
-2. Estimate text width: chars × ~7px (monospace ~6px)
-3. Find the containing element's width
-4. Verify: text_width < container_width - padding
+**FR/SC check**: If annotation shows "FR-024, FR-0" → TRUNCATED. Full text must be visible.
+**Visual check**: Can you read EVERY character of EVERY label? If not → 🔴 REGENERATE.
 
-**Specifically check FR/SC annotation labels:**
-- If annotation shows "FR-024, FR-0" → IT'S TRUNCATED
-- Full text should be visible: "FR-024, FR-025, FR-026, FR-027"
-- If any "..." or cut-off text → 🔴 REGENERATE
+Common locations: cramped corners, small panels, narrow containers, canvas edges.
 
-**Visual check in screenshot:** Can you read EVERY character of EVERY label? If not, it's truncated.
+### 3. SPACING & DENSITY ISSUES
 
-**Common truncation locations:**
-- Annotation labels in cramped corners
-- FR codes next to small panels
-- Long text in narrow containers
-- Labels near canvas edges
-
-**DO NOT assume labels are complete. VERIFY by reading each one character by character.**
-
-### 3. SPACING & DENSITY ISSUES (Measure with your eyes)
-
-- **Cramped areas** - Where are things squeezed together that shouldn't be?
-- **Inconsistent margins** - Are margins consistent between similar elements?
-- **Inconsistent padding** - Is padding uniform within containers?
-- **Gutter problems** - Are gaps between columns/rows consistent?
-- **Touch target spacing** - Is there 8px minimum between tappable elements?
+| Check | Question |
+|-------|----------|
+| Cramped areas | Where are things squeezed? |
+| Inconsistent margins | Similar elements match? |
+| Inconsistent padding | Uniform within containers? |
+| Gutter problems | Column/row gaps consistent? |
+| Touch target spacing | 8px minimum between tappables? |
 
 ### 3b. ⛔ WASTED SPACE = MISSED OPPORTUNITY (MANDATORY CHECK)
 
-**Wasted space is NOT acceptable. It's a 🔴 REGENERATE issue.**
+**Wasted space = 🔴 REGENERATE.** If utilization < 70%, it's wasted.
 
-If content is cramped OR arrows are routed around obstacles WHILE large empty areas exist, the solution is NOT "route around" - it's **MOVE THE CONTENT to use the space**.
+| Pattern | Wrong | Right |
+|---------|-------|-------|
+| Content top, empty bottom | Route arrows around | Move content down |
+| Content left, empty right | Squeeze tighter | Spread to use width |
+| Cramped + empty space | Route below | Move into empty space |
 
-**Canvas utilization check:**
-1. Identify the bounding box of all content (leftmost to rightmost, topmost to bottommost)
-2. Calculate: `used_area / canvas_area × 100 = utilization%`
-3. If utilization < 70%, flag as 🔴 WASTED SPACE
+**Ask**: >100px unused while cramped? → 🔴 REGENERATE with feedback: "Move [elements] to use wasted space"
 
-**Common wasted space patterns (ALL are 🔴 REGENERATE):**
+### 4. SIZE & PROPORTION ISSUES
 
-| Pattern | Wrong Fix | Right Fix |
-|---------|-----------|-----------|
-| Content at top, empty bottom | Route arrows around content | Move content down to center vertically |
-| Content at left, empty right | Squeeze content tighter | Spread content to use full width |
-| Cramped tables + empty space below | Route arrows below tables | Move tables down into the empty space |
-| Dense header + empty body | Smaller header elements | Expand content to fill the space |
-
-**Wasted space is a DESIGN FAILURE, not a feature.**
-
-```
-❌ WRONG: "Route arrows through empty space to avoid collision"
-   This treats the symptom (collision) not the disease (bad layout)
-
-✅ RIGHT: "Move tables down 150px to center content and eliminate collision"
-   This uses available space AND fixes the collision
-```
-
-**When reviewing, ask:**
-- Is there >100px of unused vertical space? → Move content down
-- Is there >100px of unused horizontal space? → Spread content out
-- Did the designer route AROUND something when they could have MOVED it?
-
-**If the answer to any is YES → 🔴 REGENERATE with feedback: "Move [elements] to use wasted space at [location]"**
-
-### 4. SIZE & PROPORTION ISSUES (Question every element's size)
-
-- **Too small to read** - Is any text below 10px? Can annotations be read?
-- **Too large/dominant** - Does any element visually overpower its importance?
-- **Inconsistent sizing** - Are similar elements sized differently?
-- **Aspect ratio issues** - Do avatars, icons maintain proper ratios?
-- **Phone frame proportions** - Is the mobile frame realistically sized?
+| Check | Question |
+|-------|----------|
+| Too small | Any text <10px? Annotations readable? |
+| Too dominant | Element overpowering its importance? |
+| Inconsistent sizing | Similar elements differ? |
+| Aspect ratios | Avatars, icons proper? |
+| Phone frame | Mobile realistically sized? |
 
 ---
 
 ## Phase B: Alignment & Accessibility
 
-**Visual polish and WCAG compliance checks.**
+### 5. ALIGNMENT ISSUES
 
-### 5. ALIGNMENT ISSUES (Check EVERY horizontal and vertical line)
+| Check | Question |
+|-------|----------|
+| Horizontal | Elements aligned that should be? |
+| Vertical | Columns properly aligned? |
+| Baseline | Text baseline-aligned? |
+| Center | "Centered" actually centered? |
+| Grid | Layout follows consistent grid? |
 
-- **Horizontal misalignment** - Are elements that should align horizontally actually aligned?
-- **Vertical misalignment** - Are elements in columns properly aligned?
-- **Baseline alignment** - Is text baseline-aligned where appropriate?
-- **Center alignment** - Are "centered" elements actually centered?
-- **Grid violations** - Does the layout follow a consistent grid?
+### 6. CONTRAST & ACCESSIBILITY (WCAG AAA = 7:1)
 
-### 6. CONTRAST & ACCESSIBILITY (WCAG AAA = 7:1 ratio minimum)
-
-For AAA compliance, check these color combinations:
-- **Light theme text** - Is `#4a5568` on `#e8d4b8` achieving 7:1? (Hint: it's not)
-- **Dark theme muted text** - Is `#94a3b8` on `#1e293b` readable?
-- **Annotation text** - Is `#8b5cf6` visible against both themes?
-- **Button text contrast** - White text on `#8b5cf6` - sufficient?
-- **Status indicators** - Are green/red status colors distinguishable without color?
+| Combo | Check |
+|-------|-------|
+| Light theme | `#4a5568` on `#e8d4b8` = 7:1? |
+| Dark muted | `#94a3b8` on `#1e293b` readable? |
+| Annotations | `#8b5cf6` visible both themes? |
+| Buttons | White on `#8b5cf6` sufficient? |
+| Status | Green/red distinguishable without color? |
 
 ---
 
 ## Phase C: Layout & Architecture
 
-**Layout efficiency and architecture diagram validation.**
+### 7. LAYOUT EFFICIENCY
 
-### 7. LAYOUT EFFICIENCY (Challenge the arrangement)
-
-- **Could rows be rearranged?** - Would swapping sections reduce overlap?
-- **Better use of whitespace?** - Could content spread into empty areas?
-- **Horizontal vs vertical** - Should side-by-side elements stack instead?
-- **Panel sizing** - Are panels appropriately sized for their content?
-- **Information density** - Too sparse? Too dense?
+| Check | Question |
+|-------|----------|
+| Row arrangement | Swap sections to reduce overlap? |
+| Whitespace use | Spread into empty areas? |
+| H vs V | Side-by-side should stack? |
+| Panel sizing | Appropriate for content? |
+| Density | Too sparse or dense? |
 
 ### 8. ARCHITECTURE DIAGRAM SPECIFIC
 
-- **Arrow endpoints** - Do ALL arrows connect to their targets?
-- **Arrow occlusion** - Are arrows hidden behind elements?
-- **Flow direction clarity** - Is the flow direction obvious?
-- **Label positioning** - Are labels close to what they describe?
-- **Connector gaps** - Are there suspicious gaps in connection lines?
-- **Arrow-through-text collision** - Do ANY arrows pass through text/labels? (🔴 REGENERATE)
+| Check | Question |
+|-------|----------|
+| Arrow endpoints | All arrows connect? |
+| Arrow occlusion | Hidden behind elements? |
+| Flow direction | Direction obvious? |
+| Label positioning | Close to what they describe? |
+| Connector gaps | Suspicious gaps? |
+| Arrow-through-text | Arrows cross text? → 🔴 REGENERATE |
 
-### 8b. ⛔ ARROW-THROUGH-TEXT DETECTION (MANDATORY for Architecture Diagrams)
+### 8b. ⛔ ARROW-THROUGH-TEXT DETECTION (Architecture Diagrams)
 
-**Flow arrows MUST NEVER cross through text, labels, or content. This is a 🔴 REGENERATE issue.**
+**Arrows crossing text = 🔴 REGENERATE.** Trace each arrow - if it obscures any character, fail.
 
-**Detection method:**
-1. Find ALL flow arrows (lines with arrow markers, path elements connecting components)
-2. Find ALL text elements (headings, labels, annotations, section titles)
-3. For each arrow, trace its path - does it visually cross any text?
-
-**Common failure patterns:**
-
-| Pattern | How to Detect |
-|---------|---------------|
-| Decision diamond arrow through section label | Arrow from diamond at y=X crosses label at y=Y where X < Y < target |
-| Horizontal arrow through vertical label | Arrow path intersects label's bounding box |
-| Bypass arrow cutting through panel title | Arrow routed "around" a panel but crosses its heading text |
-
-**Visual check:**
-- In the rendered wireframe, can you trace each arrow WITHOUT your eye crossing any text?
-- If an arrow obscures even ONE character of text → 🔴 REGENERATE
-
-**The fix is NEVER to move the text. The fix is to:**
-1. Route the arrow around the text (orthogonal path with 90° turns)
-2. Use available empty space for arrow channels
-3. If no clear path exists, reorganize the layout to create flow channels
-
-**If wasted space exists AND arrows cross text, the feedback should be:**
-```
-"Move [content] to use the wasted space at [location], creating a clear flow channel for arrows"
-```
+| Fix | Method |
+|-----|--------|
+| Route around | Orthogonal path with 90° turns |
+| Use empty space | Create arrow channels |
+| Reorganize layout | If no clear path exists |
 
 **Arrow-through-text + wasted space = DOUBLE DESIGN FAILURE**
 
@@ -647,503 +466,203 @@ For AAA compliance, check these color combinations:
 
 ## Phase D: Compliance Checks
 
-**Touch targets, mobile, content, semantic, consistency, spec, legend, footer, and annotations.**
+### 9. TOUCH TARGET COMPLIANCE (44×44px minimum) ⚠️ CRITICAL
 
-### 9. TOUCH TARGET COMPLIANCE (WCAG AAA = 44×44px minimum) ⚠️ CRITICAL
+**Both desktop AND mobile. Every interactive element ≥ 44px height.**
 
-**This applies to BOTH desktop AND mobile. Check EVERY interactive element.**
+| Element | Check |
+|---------|-------|
+| Buttons, inputs, nav items | `height` attribute ≥ 44 |
+| OAuth buttons, form controls | Tap target area ≥ 44 |
+| Action links | Must have invisible tap target rect |
 
-For EACH of these element types, verify height ≥ 44px:
-- **Buttons** (primary, secondary, icon) - Check `height` attribute
-- **Input fields** (text, email, password, search) - Check `height` attribute
-- **Navigation items** (sidebar links, tab items) - Check `height` attribute
-- **List items** (if tappable/clickable) - Check `height` attribute
-- **OAuth buttons** - Check `height` attribute
-- **Form controls** (checkboxes, radios, toggles) - Check tap target area
-- **Action links** (Revoke, Delete, Edit) - Must have invisible tap target rect
+Common failures: `height="40"`, `height="36"`, `height="32"`, text links without tap rect. All = 🔴 REGENERATE.
 
-**How to verify**: Search SVG for `height="` and check values. Any value <44 on an interactive element is a 🔴 REGENERATE issue.
+**Visual layering/overflow failures** (⚠️ MUST view rendered wireframe):
 
-**Common failures**:
-- `height="40"` - Close but fails (often buttons/inputs)
-- `height="36"` - Fails (old template default)
-- `height="32"` - Fails significantly
-- Text links without tap target rect - Fails
-
-**Common visual layering failures** (indicators overlapping text):
-
-⚠️ **You MUST view the rendered wireframe to catch these. Reading SVG code alone will miss them.**
-
-```
-WRONG: Circle indicator (r=60) centered over heading text
-- "Overall Score" heading at y=122
-- Circle ring at cy=180, r=60 → top edge at y=120
-- Result: Ring overlaps heading by 2px, clipping text
-
-FIX options:
-- Move heading above circle (y < 110)
-- Use smaller circle (r=50 → top at y=130, no overlap)
-- Reposition circle lower (cy=200)
-- Add solid background behind heading text
-```
-
-**Common container overflow failures** (content escaping bounds):
-
-⚠️ **You MUST view the rendered wireframe to catch these. Reading SVG code alone will miss them.**
-
-```
-WRONG: Table rows overflow below panel
-- Panel height: 200px (y=100 to y=300)
-- 4 rows at 40px each = 160px content + 20px header = 180px
-- But padding/margins push last row to y=310
-- Result: "Analytics" row escapes below panel boundary
-
-FIX: Calculate actual content height including ALL rows, padding, and margins:
-- Content height = header + (rows × row_height) + internal_padding
-- Container height = content height + container_padding
-- Never hardcode container sizes without counting content
-```
+| Failure | Example | Fix |
+|---------|---------|-----|
+| Circle over heading | Ring at cy=180, r=60 overlaps heading at y=122 | Move heading above, smaller circle, or reposition |
+| Container overflow | 4 rows × 40px + padding > panel height | Calculate: header + (rows × height) + padding |
 
 ### 10. MOBILE-SPECIFIC ISSUES
 
-- **Safe area violations** - Does content intrude on notch/home indicator areas?
-- **Touch target size** - Verify 44px (covered in section 9, double-check here)
-- **Thumb zone** - Are important actions in the thumb-reachable zone?
-- **Status bar overlap** - Does any content go behind the status bar?
-- **Keyboard avoidance** - Would the keyboard cover input fields?
+| Check | Question |
+|-------|----------|
+| Safe area | Content in notch/home indicator areas? |
+| Thumb zone | Important actions reachable? |
+| Status bar | Content behind status bar? |
+| Keyboard | Would it cover inputs? |
 
 ### 11. CONTENT & TYPOGRAPHY
 
-- **Typos** - Spell-check EVERYTHING
-- **Orphaned words** - Single words on their own line?
-- **Widow lines** - Very short final lines in paragraphs?
-- **Line length** - Are any lines too long (>75 characters)?
-- **Placeholder vs real content** - Is there lazy "Lorem ipsum" anywhere?
+| Check | Question |
+|-------|----------|
+| Typos | Spell-check everything |
+| Orphans/widows | Single words alone? Short final lines? |
+| Line length | Any >75 characters? |
+| Placeholder | "Lorem ipsum" anywhere? |
 
-### 12. ⛔ SEMANTIC POSITIONING VALIDATION (Data Visualizations)
+### 12. ⛔ SEMANTIC POSITIONING (Data Visualizations)
 
-**When a wireframe shows a spectrum, timeline, scale, or any proportional visualization:**
-
-1. **Verify the origin is at the logical zero** - NOT at the minimum data value
-2. **Verify positions are proportionally scaled**
-
-**Breakpoint Spectrum Example (COMMON FAILURE):**
-
-```
-❌ WRONG: Mobile section at x=0 labeled "320px"
-   - This treats 320px as the origin
-   - The spectrum shows breakpoints, not viewport widths
-   - 0px should be at the left edge, 320px should be positioned proportionally
-
-✅ CORRECT: Origin at x=0 labeled "0px", mobile section starts at proportional position
-   - Scale: 0 to 1440px mapped to canvas width
-   - 320px position = (320/1440) × canvas_width
-```
-
-**Validation checklist for data visualizations:**
+**Origin must be at logical zero, NOT minimum data value.**
 
 | Visualization | Check |
 |--------------|-------|
-| Breakpoint spectrum | Does 0px appear at origin? Is 320px positioned at ~22% of the width? |
-| Timeline | Does the start date appear at left edge? Are events proportionally spaced? |
-| Progress indicator | Does 0% appear at the start? Is 100% at the end? |
-| Scale/axis | Is the zero point at the origin, not at the minimum value? |
+| Breakpoint spectrum | 0px at origin? 320px at ~22%? |
+| Timeline | Start date at left? Events proportionally spaced? |
+| Progress | 0% at start, 100% at end? |
 
-**If the minimum data value is at the origin, log as 🔴 REGENERATE with feedback explaining the semantic error.**
+If minimum value at origin → 🔴 REGENERATE with semantic error feedback.
 
 ---
 
-### 13. ⛔ CROSS-WIREFRAME CONSISTENCY (MANDATORY for multi-file features)
+### 13. ⛔ CROSS-WIREFRAME CONSISTENCY (multi-file features)
 
-**ALL wireframes in a single feature MUST have identical layout foundations.**
+**All wireframes in feature MUST have identical layout foundations.**
 
-#### Consistency Check (MANDATORY before declaring ANY file as PASS)
-
-For features with 2+ SVG files, you MUST verify:
-
-| Dimension | Expected Value | How to Check |
-|-----------|---------------|--------------|
-| Mobile position | x=980, y=60 | `grep "transform=\"translate" *.svg` |
+| Dimension | Expected | Detection |
+|-----------|----------|-----------|
+| Mobile position | x=980, y=60 | `grep "translate" *.svg` |
 | MOBILE label | x=980 | `grep "MOBILE" *.svg` |
-| Canvas size | 1400×800 (or consistent alternate) | Check `viewBox` in each file |
-| Desktop start | x=40 | Verify first desktop element |
+| Canvas size | 1400×800 | Check `viewBox` |
+| Desktop start | x=40 | First desktop element |
 
-#### Detection Method
-
-```bash
-# Run this for every feature with 2+ wireframes:
-grep -n "translate(.*," docs/design/wireframes/[feature]/*.svg
-```
-
-**Expected output (all positions identical):**
-```
-01-consent-modal.svg:150:  <g id="mobile-view" transform="translate(980, 60)">
-02-privacy-settings.svg:175:  <g id="mobile-view" transform="translate(980, 60)">
-```
-
-**Failure (positions differ = 🔴 REGENERATE):**
-```
-01-consent-modal.svg:150:  <g id="mobile-view" transform="translate(980, 60)">
-02-privacy-settings.svg:175:  <g id="mobile-view" transform="translate(770, 60)">  ❌ INCONSISTENT
-```
-
-#### Required Output in WIREFRAME_ISSUES.md
-
-```markdown
-## Cross-Wireframe Consistency Check
-
-| File | Mobile Position | MOBILE Label | Status |
-|------|-----------------|--------------|--------|
-| 01-consent-modal.svg | x=980 | x=980 | ✅ |
-| 02-privacy-settings.svg | x=980 | x=980 | ✅ |
-
-**Consistency:** ✅ All files match
-```
-
-OR if issues found:
-
-```markdown
-## Cross-Wireframe Consistency Check
-
-| File | Mobile Position | MOBILE Label | Status |
-|------|-----------------|--------------|--------|
-| 01-consent-modal.svg | x=980 | x=980 | ✅ |
-| 02-privacy-settings.svg | x=770 | x=770 | ❌ INCONSISTENT |
-
-**Consistency:** ❌ FAIL - 02-privacy-settings.svg deviates from standard
-**Root Cause:** Mobile moved to fill empty space (ad-hoc layout decision)
-**Fix:** 🔴 REGENERATE 02-privacy-settings.svg with mobile at x=980
-```
-
-#### Why This Matters
-
-Users view wireframes in sequence. If mobile phones jump between x=770 and x=980:
-- Creates visual jarring when navigating
-- Suggests sloppy design process
-- Makes side-by-side comparison impossible
-
-**Inconsistency is a 🔴 REGENERATE issue, not 🟢 PATCH.**
-Moving mobile position requires regenerating the entire layout.
+**Inconsistency = 🔴 REGENERATE.** Moving mobile position requires full regeneration.
 
 ---
 
 ### 14. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
 
-**Before reviewing ANY wireframe, READ THE SPEC FIRST.**
+**Read spec FIRST.** Location: `features/[category]/[feature-folder]/spec.md`
 
-Location: `features/[category]/[feature-folder]/spec.md`
+For each FR/SC/NFR: Is it visualized? Labeled? Accurate?
 
-#### Extraction Checklist
-- [ ] List ALL functional requirements (FR-XXX)
-- [ ] List ALL success criteria (SC-XXX)
-- [ ] List ALL non-functional requirements (NFR-XXX)
-- [ ] Note any user stories that imply specific UI elements
+| Gap Type | Example |
+|----------|---------|
+| Missing states | Only happy path, no error/loading/empty |
+| Missing roles | Only one view, spec has admin vs member |
+| Missing flows | Only step 1, spec has multi-step |
+| Phantom reqs | FR-XXX label but FR doesn't exist in spec |
 
-#### Coverage Verification
-For EACH requirement, ask:
-- **Is it visualized?** - Does ANY wireframe show this requirement?
-- **Is it labeled?** - Is there an annotation pointing to where it's demonstrated?
-- **Is it accurate?** - Does the wireframe match what the spec describes?
-
-#### Common Gaps to Catch
-- **Missing states** - Spec mentions error/loading/empty states, wireframe only shows happy path
-- **Missing user roles** - Spec has admin vs member views, wireframe only shows one
-- **Missing flows** - Spec describes multi-step process, wireframe only shows step 1
-- **Missing edge cases** - Spec mentions "if X then Y", wireframe doesn't show Y
-- **Phantom requirements** - Wireframe shows FR-XXX label but that FR doesn't exist in spec
-
-#### Severity for Spec Issues
-- **CRITICAL**: Entire FR/SC not visualized anywhere
-- **MAJOR**: FR partially shown but missing key aspect
-- **MINOR**: FR shown but not annotated/labeled
+Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 
 ---
 
 ### 14b. REQUIREMENTS LEGEND PANEL VERIFICATION (MANDATORY)
 
-**Every wireframe with FR or SC annotations MUST have a REQUIREMENTS KEY panel.**
+**Every wireframe with FR/SC annotations MUST have REQUIREMENTS KEY panel at y>=700.**
 
-#### Checklist
-- [ ] **Legend exists**: REQUIREMENTS KEY panel present at y>=700
-- [ ] **Legend complete**: Every FR and SC code in annotations appears in legend
-- [ ] **No phantom entries**: Legend doesn't list FR/SC not on this page
-- [ ] **Short statements present**: Each entry has descriptive text
-- [ ] **MUST/SHOULD preserved**: Requirement keywords visible in FR statements
-- [ ] **Metrics preserved**: SC statements include measurable values
-- [ ] **Inline context**: ALL annotations show `XX-XXX: [context]`, not just codes
-- [ ] **US inline-only**: US codes have inline context but NO legend entry
+| Check | Requirement |
+|-------|-------------|
+| Legend exists | Panel present at y>=700 |
+| Complete | Every annotation FR/SC in legend |
+| No phantoms | Legend matches page only |
+| US codes | Inline context only, NO legend entry |
 
-#### Detection Method
-```bash
-# Extract all FR/SC codes from annotations
-grep -oE "(FR|SC)-[0-9]{3}" [file].svg | sort -u > page_reqs.txt
-
-# Extract all FR/SC codes from legend
-grep "requirements-legend" -A 50 [file].svg | grep -oE "(FR|SC)-[0-9]{3}" | sort -u > legend_reqs.txt
-
-# Compare (should be identical)
-diff page_reqs.txt legend_reqs.txt
-
-# Check for US codes in legend (should be empty)
-grep "requirements-legend" -A 50 [file].svg | grep -oE "US-[0-9]{3}"
-```
-
-#### Issue Classifications
 | Issue | Classification |
 |-------|----------------|
-| Missing REQUIREMENTS KEY panel | 🔴 REGENERATE |
-| Legend missing some page FR/SC | 🔴 REGENERATE |
-| Legend has extra FR/SC not on page | 🔴 REGENERATE |
-| US code appears in legend | 🔴 REGENERATE |
-| FR/SC annotation missing inline context | 🟢 PATCH |
-| US annotation missing inline context | 🟢 PATCH |
-| Short statement too long (>45 chars) | 🟢 PATCH |
+| Missing/incomplete legend | 🔴 REGENERATE |
+| Extra FR/SC not on page | 🔴 REGENERATE |
+| US in legend | 🔴 REGENERATE |
+| Missing inline context | 🟢 PATCH |
 
 ---
 
-### 15. ⛔ FOOTER SIGNATURE LINE (Template Compliance - MANDATORY)
+### 15. ⛔ FOOTER SIGNATURE LINE (MANDATORY)
 
-**Every SVG wireframe MUST have the standardized footer signature line.**
+**Required**: `x="60" y="780" text-anchor="start"` with `[NNN:PP] | [Title] | ScriptHammer`
 
-#### Required Format
-```svg
-<!-- Footer (MUST be at y=780, LEFT-ALIGNED at x=60) -->
-<text x="60" y="780" text-anchor="start" class="text-muted">[feature:page] | [Page Title] | ScriptHammer</text>
-```
-
-#### Validation Checklist
-- [ ] **Position**: `x="60"` (left-aligned, NOT centered at x=700)
-- [ ] **Position**: `y="780"` (NOT y=790 or other values)
-- [ ] **Anchor**: `text-anchor="start"` (NOT "middle")
-- [ ] **Format**: `[NNN:PP] | [Title] | ScriptHammer` where NNN=feature number, PP=page number
-- [ ] **Class**: `class="text-muted"`
-
-#### Detection Method
-```bash
-# Check footer format in all SVGs for a feature:
-grep -n "y=\"78[0-9]\".*text-anchor" docs/design/wireframes/[feature]/*.svg
-grep -n "y=\"79[0-9]\".*ScriptHammer" docs/design/wireframes/[feature]/*.svg
-```
-
-#### Common Failures
-
-| Found | Problem | Classification |
-|-------|---------|----------------|
-| `x="700" y="790" text-anchor="middle"` | Old centered format | 🔴 REGENERATE |
-| No footer at all | Missing signature | 🔴 REGENERATE |
-| `y="780"` with wrong content | Content text at footer position | 🔴 REGENERATE |
-| Wrong page numbering format | e.g., "Feature 001" instead of "001:01" | 🔴 REGENERATE |
-
-#### Reference (Correct Format)
-From `000-rls-implementation/02-policy-patterns.svg`:
-```svg
-<text x="60" y="780" text-anchor="start" class="text-muted">000:02 | RLS Policy Patterns | ScriptHammer</text>
-```
-
-**Footer signature issues are ALWAYS 🔴 REGENERATE** - position changes are structural, not patchable.
+| Failure | Classification |
+|---------|----------------|
+| Wrong position (x/y/anchor) | 🟢 PATCH |
+| Wrong numbering format | 🟢 PATCH |
+| Missing footer entirely | 🔴 REGENERATE |
 
 ---
 
-### 16. ⛔ ANNOTATION CLARITY (Self-Explanatory Labels - MANDATORY)
+### 16. ⛔ ANNOTATION CLARITY (MANDATORY)
 
-**All annotations and labels MUST be self-explanatory WITHOUT reading spec.md.**
+**Labels MUST be self-explanatory WITHOUT reading spec.md.**
 
-#### Success Criteria Labels Check
-- [ ] **SC codes have context**: Not "SC-001: <3 min" but "SC-001: Signup <3 min"
-- [ ] **Metrics specify WHAT**: Not "<2 sec" but "Login response <2 sec"
-- [ ] **No cryptic abbreviations**: Reader can understand without external docs
+| Bad | Good |
+|-----|------|
+| `SC-001: <3 min` | `SC-001: Signup flow <3 min` |
+| `<2 sec` | `Login response <2 sec` |
+| `1K users` | `Handle 1K concurrent logins` |
 
-**Examples of FAILURES:**
-| Found | Problem | Should Be |
-|-------|---------|-----------|
-| `SC-001: <3 min` | What takes 3 min? | `SC-001: Signup flow <3 min` |
-| `SC-002: <2 sec` | 2 sec for what? | `SC-002: Login response <2 sec` |
-| `SC-004: 0 breach` | Zero breach of what? | `SC-004: Zero security breaches` |
-| `1K users` | 1K users doing what? | `SC-003: Handle 1K concurrent logins` |
-
-#### Color Legend Check
-- [ ] **If semantic colors are used, is there a legend?**
-- [ ] **Does the legend explain what each color means?**
-
-**Common Color Issues:**
 | Issue | Classification |
 |-------|----------------|
-| Green/yellow/purple borders with no legend | 🔴 REGENERATE - add legend |
-| Success criteria codes without descriptions | 🔴 REGENERATE - add context |
-| Metrics without specifying what's measured | 🔴 REGENERATE - add clarity |
-
-#### Severity for Annotation Clarity
-- **MAJOR**: Success criteria codes without descriptions
-- **MAJOR**: Semantic colors without legend
-- **MINOR**: Abbreviations not expanded (FR, SC, NFR)
-
-**Note**: Cryptic labels waste space and communicate nothing. Every label should be instantly understandable to someone who hasn't read the spec.
+| SC codes without context | 🔴 REGENERATE |
+| Semantic colors without legend | 🔴 REGENERATE |
+| Unexpanded abbreviations | 🟢 PATCH |
 
 ---
 
 ## Severity Ratings
 
-### CRITICAL (Must fix before implementation)
-- Content completely unreadable
-- Major layout collision/overlap
-- Text obscured by decorative elements (badges, indicators, rings)
-- Content overflowing outside container bounds (rows escaping panels)
-- Missing functional requirements
-- Accessibility failure (contrast below 4.5:1)
-- Elements clipped to invisibility
-
-### MAJOR (Should fix, impacts quality)
-- Partial text truncation
-- Significant spacing inconsistency
-- Panel boundary violations
-- Touch target too small
-- AAA contrast failure (below 7:1)
-
-### MINOR (Nice to fix, polish)
-- Slight misalignment (1-2px)
-- Minor spacing inconsistency
-- Suboptimal arrangement
-- Cosmetic imperfections
+| Level | Examples |
+|-------|----------|
+| CRITICAL | Unreadable content, major overlap, text obscured, missing FR, a11y failure (<4.5:1) |
+| MAJOR | Partial truncation, spacing inconsistency, touch target <44px, AAA failure (<7:1) |
+| MINOR | 1-2px misalignment, cosmetic imperfections |
 
 ---
 
 ## Issue Classification (🟢 vs 🔴) - BINARY ONLY
 
-**CRITICAL**: Every issue must be classified as EITHER patchable OR regeneration-required. There is NO third option.
+| 🟢 PATCHABLE | 🔴 REGENERATE |
+|--------------|---------------|
+| CSS class, color hex, font size, typo | Layout overlap, positioning, spacing |
+| Footer position/format | Canvas size, row arrangement |
+| Missing inline context | Touch target sizing (needs reflow) |
+| | Missing content, structural changes |
+| | Arrow-through-text, wasted space |
 
-### 🟢 PATCHABLE (safe to auto-fix)
-- Missing CSS class definition
-- Wrong color hex value
-- Font size too small
-- Typo in visible text
-
-### 🔴 REGENERATE (do NOT attempt to patch)
-- Layout overlap/collision
-- Element positioning (x, y, transform)
-- Spacing issues (cramped, gaps, wasted space)
-- Canvas size problems
-- Row/section arrangement
-- Touch target sizing (may need layout reflow)
-- **Missing content/rows** (e.g., "missing sessions row")
-- **Any structural addition or removal**
-- **Arrow-through-text collision** (flow arrows crossing labels/content)
-- **Wasted space** (>100px unused while content is cramped or arrows detour)
-
-### ❌ NO EXCEPTIONS - EVERY ISSUE GETS FIXED
-
-If you find a problem, log it. If you log it, it gets fixed. No exceptions.
-
-- 🟢 → will be patched in place by `/wireframe` (preserves layout)
-- 🔴 → will be regenerated by `/wireframe` (uses feedback)
-
-**There is no "acceptable as-is."** The review's job is to be rigorous. If something is wrong, it's wrong. Log it, classify it, and it will be fixed.
-
-**Rule**: If ANY issue in a file is 🔴, the ENTIRE file needs regeneration. Do NOT patch other issues in that file - they'll be overwritten anyway.
+**Rule**: If ANY 🔴 in file → ENTIRE file regenerates. Don't patch 🟢 issues in that file.
 
 ---
 
 ## ⛔ AUTOMATIC 🔴 REGENERATE CONDITIONS (STOP REVIEW)
 
-**These issues are SO FUNDAMENTAL that finding them means the file needs complete regeneration. Do NOT continue listing individual issues - just mark 🔴 REGENERATE and provide feedback.**
+**Finding these = stop listing issues, just mark 🔴 REGENERATE with feedback.**
 
-### Instant REGENERATE Triggers (Cannot Be Patched)
+| Instant Trigger | Detection |
+|-----------------|-----------|
+| Wrong theme | Architecture using light (#c7ddf5) |
+| Unreadable fonts | Text too small at intended zoom |
+| Arrows through content | Arrow crossing text/labels |
+| Low contrast | Dark on dark, muted on purple |
+| Massive wasted space | >100px unused while cramped |
+| Missing footer | No signature at y=780 |
+| Mobile position wrong | Not at `translate(980, 60)` |
 
-| Condition | How to Detect | Why It's Unfixable |
-|-----------|---------------|-------------------|
-| **Wrong theme** | Architecture diagram using light (#c7ddf5) background | Theme is baked into every color, gradient, and style |
-| **Unreadable fonts** | Any text too small to read at intended zoom | Font sizes require layout reflow to avoid overflow |
-| **Arrows through content** | Any arrow crossing text, labels, or panels | Arrow paths are structural - moving requires reorganizing |
-| **Low contrast text** | Dark text on dark backgrounds, muted on purple | Contrast fixes may cascade to require layout changes |
-| **Massive wasted space** | >100px unused while content is cramped | Layout is fundamentally wrong - needs redistribution |
-| **Missing footer** | No `NNN:PP | Title | ScriptHammer` at y=780 | Footer positioning is template-level |
-| **Wrong footer position** | Footer not at `x="60" y="780" text-anchor="start"` | Requires regeneration to fix consistently |
-| **Mobile position wrong** | Mobile group not at `translate(980, 60)` | All wireframes in feature must match - structural |
-
-### When You Find an Instant Trigger
-
-**STOP the detailed review immediately. Output:**
-
-```markdown
-## ⛔ INSTANT REGENERATE: [filename.svg]
-
-**Trigger:** [which condition from table above]
-**Evidence:** [specific observation, e.g., "Light theme gradient #c7ddf5 in bgGrad"]
-**Action:** 🔴 REGENERATE
-
-### Feedback for Regeneration
-- **Required theme:** [Dark/Light]
-- **Required canvas:** [1400×800 / 1600×1000]
-- **Key fix:** [e.g., "Use dark theme template, expand fonts to readable sizes"]
-```
-
-**Do NOT list individual issues for instant-trigger files. They're all irrelevant once you're regenerating.**
-
-### Files That Just Need ✅ PASS Verification
-
-If a file has no instant triggers and no 🔴 structural issues:
-1. Still complete Visual Description
-2. Still complete Overlap Matrix
-3. Still verify Devil's Advocate checkpoint
-4. Only then declare ✅ PASS
-
-**A file without issues still requires full verification - don't assume correctness.**
+**No instant triggers?** Still complete Visual Description + Overlap Matrix + Devil's Advocate before ✅ PASS.
 
 ---
 
 ## 🔴 Regeneration Feedback (REQUIRED)
 
-When flagging a file for regeneration, you MUST provide constructive feedback - not just "regenerate":
-
-### Template for Regeneration Cases
+**Provide constructive feedback, not just "regenerate":**
 
 ```markdown
 ## 🔴 REGENERATION REQUIRED: [filename.svg]
 
 ### Diagnosis
-What's visually broken (be specific: coordinates, element names, overlap areas)
+[Specific: coordinates, element names, overlap areas]
 
 ### Root Cause
-WHY the layout doesn't work (not just "it overlaps" - explain the structural problem)
+[WHY layout doesn't work - structural problem]
 
 ### Suggested Layout
-Concrete alternative arrangement:
-- Row 1: [what should be here]
-- Row 2: [what should be here]
-- Consider: [specific layout approach]
+- Row 1: [what]
+- Row 2: [what]
 
 ### Spec Requirements to Preserve
-FR/SC items the regenerated version must still demonstrate
+[FR/SC items to keep]
 ```
 
-### Example Feedback (from 004 failure)
-
-```markdown
-## 🔴 REGENERATION REQUIRED: 01-responsive-navigation.svg
-
-### Diagnosis
-Mobile breakpoints row (4 devices horizontal at y=240) collides with Mobile Expanded Nav
-phone frame. The 320px device extends to x=1090, but expanded nav starts at x=980.
-They overlap by 110px.
-
-### Root Cause
-Trying to fit 4 mobile device previews + 1 full-height phone frame in a single row.
-Too much horizontal content for 1400px canvas.
-
-### Suggested Layout
-- Row 1: Desktop + Tablet headers (1024px and 768px views)
-- Row 2: Mobile breakpoints 2x2 grid (LEFT) + Expanded Nav phone (RIGHT)
-- Row 3: Requirements panel (full width, below both)
-
-This separates dense mobile content from the full-height phone, eliminating collision.
-
-### Spec Requirements to Preserve
-- FR-001: Viewport fit (320-428px, no h-scroll)
-- FR-002: Proportional shrinking
-- FR-004: 44x44px touch targets (show actual measurements)
-- FR-005: 8px spacing minimum
-```
-
-**Why this matters**: This feedback passes to `/wireframe` so the regeneration attempt has guidance, not just "try again and hope for better."
+This feedback passes to `/wireframe` for guided regeneration.
 
 ---
 
@@ -1163,197 +682,33 @@ This separates dense mobile content from the full-height phone, eliminating coll
 
 ## Review Process
 
-### 1. Read the Spec FIRST (MANDATORY)
+1. **Read spec FIRST** (see Category 14)
+2. **View rendered wireframes** (complete Step 1 Viewer Setup)
+3. **Write Visual Description** for each file BEFORE listing issues
+4. **Create Overlap Matrix** for each file (all adjacent element pairs)
+5. **Work through ALL 16 categories** - don't rush
+6. **Document EVERY issue** with Suggested Fix
+7. **Devil's Advocate Checkpoint** before ✅ PASS:
+   - What did I overlook? Where would ONE more issue be?
+   - Overlap Matrix created with no ❌ entries?
+   - Longest label verified character-by-character?
+8. **Update Progress Tracker**: `docs/design/WIREFRAME_REVIEW_PLAN.md`
 
-**See Category 14 (Spec Compliance) for the extraction checklist.**
-
-### 2. MANDATORY: View Rendered Wireframes Visually ⚠️ CRITICAL
-
-**Complete Step 1 (Viewer Setup) - you must view rendered wireframes, not just read SVG code.**
-
-### 3. MANDATORY: Visual Description for Each Wireframe ⚠️ REQUIRED OUTPUT
-
-**For EACH SVG file, you MUST write a visual description BEFORE listing issues.**
-
-This forces you to actually observe the rendered image rather than pattern-match against code.
-
-**Required format in WIREFRAME_ISSUES.md:**
-
-```markdown
-### [filename.svg]
-
-**Visual Description** (what I see in the rendered image):
-- Layout: [describe the major sections/panels and their arrangement]
-- Score/indicator elements: [describe any circular indicators, badges, progress rings]
-- Text readability: [can all text be read clearly? any clipping?]
-- Mobile section: [describe the phone frame area]
-- Overall impression: [does anything look "off" at first glance?]
-
-**Issues Found:**
-| # | Category | Severity | ... |
-```
-
-**If you cannot write a visual description, you did not look at the rendered image.**
-**Skipping this section = automatic review failure.**
-
-### 3b. MANDATORY: Overlap Matrix for Each Wireframe ⚠️ REQUIRED OUTPUT
-
-**For EACH SVG file, you MUST create an overlap matrix showing every pair of adjacent regions.**
-
-This forces you to explicitly verify that no regions collide. You cannot "glance and pass."
-
-**Required format in WIREFRAME_ISSUES.md:**
-
-```markdown
-### [filename.svg] - Boundary Verification
-
-| Region A | A-bounds | Region B | B-bounds | Gap/Overlap |
-|----------|----------|----------|----------|-------------|
-| Row 1 Test Suite | y=80-200 | Row 2 Test Criteria | y=220-375 | ✅ 20px gap |
-| Time & Cognitive | x=890-1080, y=220-360 | BUILD FAILED | x=970-1110, y=260-360 | ❌ OVERLAP x=970-1080 |
-| Desktop area | x=40-940 | Mobile area | x=980-1340 | ✅ 40px gap |
-
-**Overlap detected: 1** → File cannot pass
-```
-
-**Rules:**
-1. List EVERY pair of adjacent elements (horizontally or vertically adjacent)
-2. Calculate actual pixel boundaries from SVG coordinates
-3. If Gap/Overlap shows negative number or "OVERLAP" → File is 🔴 REGENERATE
-4. You CANNOT declare ✅ PASS if the overlap matrix has ANY ❌ entries
-
-**Minimum checks per wireframe:**
-- Desktop section vs Mobile section (horizontal)
-- Each row vs the row below it (vertical)
-- Annotation labels vs their adjacent panels
-- Any elements that appear "close" in the screenshot
-
-**If you skip this section, the review is invalid.**
-**No overlap matrix = No pass. Period.**
-
-### 4. For EACH wireframe, work through ALL 16 category checklists above
-
-Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
-
-### 5. Document EVERY issue found
-
-```markdown
-# Wireframe Issues: [Feature Name]
-
-## Summary
-- **Files reviewed**: X SVGs
-- **Issues found**: X total (X critical, X major, X minor)
-- **Pass**: N
-- **Reviewed on**: YYYY-MM-DD
-
-## Review History
-| Pass | Date | Found | Resolved | New | Remaining |
-|------|------|-------|----------|-----|-----------|
-| 1 | 2026-01-01 | 12 | - | 12 | 12 |
-| 2 | 2026-01-01 | 8 | 6 | 2 | 8 |
-
-## Issues by File
-
-### [filename.svg]
-
-| # | Category | Severity | Classification | Status | Location | Description | Suggested Fix |
-|---|----------|----------|----------------|--------|----------|-------------|---------------|
-| 1 | Row collision | Major | 🔴 | Pass 1 | y=240-280 | Mobile device row overlaps with "MOBILE EXPANDED NAV" section | Move expanded nav to right side or increase vertical spacing by 60px |
-| 2 | Contrast | Major | 🟢 | ✅ RESOLVED | FR cards | #8b5cf6 text on #e8d4b8 = 3.2:1, fails AAA | Use #6d28d9 for 7:1 ratio |
-| 3 | Cramped | Minor | 🔴 | NEW Pass 2 | 320px device | Logo and icons too close, no breathing room | Reduce logo width or stack icons |
-```
-
-**Status values:**
-- `Pass N` - Issue first found in Pass N, still exists
-- `NEW Pass N` - Issue newly discovered in Pass N
-- `✅ RESOLVED` - Issue was fixed (keep for history)
-
-### 6. Include "Suggested Fix" for every issue
-
-Don't just identify problems - propose solutions.
-
-### 7. Devil's Advocate Checkpoint ⚠️ REQUIRED BEFORE DECLARING "RESOLVED"
-
-**Before marking ANY file as "✅ PASS" or declaring "All Issues Resolved", you MUST ask yourself:**
-
-1. **What's the most likely issue I overlooked?**
-   - Did I actually look at circular indicators overlapping text?
-   - Did I check ALL text for clipping, not just headings?
-   - Did I verify the mobile section separately from desktop?
-
-2. **If I had to find ONE more issue, where would it be?**
-   - Look there. Actually look.
-
-3. **What would a fresh reviewer catch that I missed?**
-   - You've been staring at this. You're blind to it now.
-   - Assume you missed something. Find it.
-
-4. **Did I create the Overlap Matrix?**
-   - If no matrix exists for this file → review is INVALID
-   - If matrix exists but has ANY ❌ entries → file CANNOT pass
-   - Look at the screenshot again. Trace each region boundary with your eyes.
-
-5. **The Overlap Blindness Test:**
-   - Find TWO elements that are close together in this wireframe
-   - State their exact boundaries: Region A at (x, y, width, height), Region B at (x, y, width, height)
-   - Calculate the gap: `Region_B_start - Region_A_end = gap`
-   - If you can't do this math for the closest pair of elements, **you didn't look carefully enough**
-
-6. **The Truncation Blindness Test:**
-   - Find the longest annotation label in the wireframe
-   - Read it out loud, character by character
-   - Does it end abruptly? Does it say "FR-024, FR-0" instead of "FR-024, FR-025, FR-026, FR-027"?
-   - If you can't read the COMPLETE text of EVERY label, **it's truncated**
-
-**Document your devil's advocate check:**
-```markdown
-## Devil's Advocate Check
-- Most likely overlooked area: [where]
-- I re-examined and found: [nothing new / new issue X]
-- Fresh reviewer would catch: [what]
-- Overlap Matrix created: [yes/no] - if no, STOP and create it
-- Closest element pair: [Region A] at [bounds] vs [Region B] at [bounds] = [gap]px
-- Longest label verified: "[full text of label]" - complete? [yes/no]
-```
-
-**Skipping this step = you WILL miss issues. This is not optional.**
-
-### 8. Update Progress Tracker
-
-File: `docs/design/WIREFRAME_REVIEW_PLAN.md`
+**Status values**: `Pass N` (still exists), `NEW Pass N` (just found), `✅ RESOLVED`
 
 ---
 
 ## Report Format
 
 ```markdown
-## Batch X Critical Review Complete
+## Batch X Complete
+- Features: X | SVGs: X
+- Critical: X | Major: X | Minor: X
 
-### Numbers
-- Features: X
-- SVGs: X
-- **Critical issues**: X (MUST FIX)
-- **Major issues**: X (SHOULD FIX)
-- **Minor issues**: X (NICE TO FIX)
-
-### Most Problematic Files
-1. [filename.svg] - X issues (X critical)
-2. [filename.svg] - X issues
-
-### Issue Breakdown by Category
-| Category | Count | Examples |
-|----------|-------|----------|
-| Overlap/Collision | X | Row 1/2 collision in 004-mobile-first |
-| Spacing | X | Cramped device previews |
-| Contrast | X | Muted text fails AAA |
-| ... | | |
-
-### Immediate Action Items
-1. **CRITICAL**: [specific issue and file]
-2. **CRITICAL**: [specific issue and file]
+### Most Problematic
+1. [file] - X issues (X critical)
 
 ### Regeneration Candidates
-These wireframes have enough issues to warrant regeneration rather than patching:
 - [feature]: X issues, structural problems
 ```
 
@@ -1361,57 +716,27 @@ These wireframes have enough issues to warrant regeneration rather than patching
 
 ## Arguments
 
-- `batch 1-10` - Review specific batch
-- `all` - Review everything
-- `[feature-number]` - Single feature (e.g., `004`)
-- `re-review [feature]` - Re-review after fixes
-
----
-
-## Remember
-
-**Your job is to make these wireframes BETTER, not to make the creator feel good.**
-
-Find the flaws. Document them clearly. Propose fixes. Be relentless.
+| Arg | Action |
+|-----|--------|
+| `batch 1-10` | Review specific batch |
+| `all` | Review everything |
+| `[feature]` | Single feature (e.g., `004`) |
+| `re-review [feature]` | Re-review after fixes |
 
 ---
 
 ## After Review
 
-### Single Command: `/wireframe [feature]`
-
-The `/wireframe` command now handles everything intelligently:
-
 ```bash
-/wireframe 004    # Smart: patches 🟢, regenerates 🔴, skips ✅
+/wireframe [feature]    # Smart: patches 🟢, regenerates 🔴, skips ✅
 ```
-
-**What it does:**
 
 | File has... | Action |
 |-------------|--------|
-| No issues | ✅ SKIP - already good |
-| Only 🟢 issues | 🟢 PATCH in place (color, font, typo, CSS) |
-| Any 🔴 issues | 🔴 REGENERATE with feedback |
+| No issues | ✅ SKIP |
+| Only 🟢 | 🟢 PATCH in place |
+| Any 🔴 | 🔴 REGENERATE with feedback |
 
-The command will:
-- Read WIREFRAME_ISSUES.md and triage each file
-- Patch 🟢 files directly (preserves existing layout)
-- Regenerate 🔴 files using the feedback (Diagnosis, Suggested Layout, etc.)
-- Update WIREFRAME_ISSUES.md with completion status
+**Workflow**: `/wireframe-review` → `/wireframe` → repeat until resolved.
 
-### Simplified Workflow
-
-```
-/wireframe-review [feature]     # Review → classify 🟢/🔴 → create WIREFRAME_ISSUES.md
-    ↓
-/wireframe [feature]            # Smart: patches 🟢, regenerates 🔴, skips ✅
-    ↓
-(repeat until all issues resolved)
-```
-
-**Note**: `/wireframe-fix` is deprecated - `/wireframe` now handles both.
-
-### Lesson Learned (004 Failure)
-
-**DO NOT** try to patch structural issues. The 004-mobile-first-design attempt to "fix" overlap by extending canvas and moving elements made things WORSE - creating new overlaps and wasted space. When layout is broken, regenerate fresh.
+**Lesson**: DO NOT patch structural issues. When layout is broken, regenerate fresh.
