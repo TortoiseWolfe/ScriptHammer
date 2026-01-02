@@ -66,6 +66,26 @@ ls specs/*.md
 
 Ask the user which spec to use if multiple exist, or use the only one if there's just one.
 
+### 1b. Page Filter (Per-Page Mode Only)
+
+**If `:PAGE` was provided in arguments:**
+
+1. List all SVG files in `docs/design/wireframes/[feature-folder]/`
+2. Apply filter:
+   - Numeric (`:01`, `:3`) → Match files starting with zero-padded number (`01-*.svg`)
+   - Text (`:responsive`) → Match files containing the text (case-insensitive)
+3. **If 0 matches**: Error with list of available SVGs
+4. **If 1 match**: Extract spec path from SVG watermark:
+   ```
+   grep "SOURCE:" [target].svg | Extract path after "SOURCE: "
+   ```
+5. **If 2+ matches**: Ask user to clarify
+
+**Per-page mode uses SVG watermark for context:**
+- The SVG header contains `SOURCE: features/[category]/[feature]/spec.md`
+- No need for user to specify spec path - extract from existing SVG
+- Still read FULL spec for regeneration context
+
 ### 2. Read the Spec
 
 **Use the Read tool** to read the full spec file. Extract and note:
@@ -92,9 +112,21 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 
 ---
 
+#### Per-Page Mode File Selection
+
+**If per-page mode (`:PAGE` argument provided):**
+- Filter WIREFRAME_ISSUES.md entries to TARGET page only
+- Process ONLY that single file
+- Ignore other files in the issues list
+
+**If full-feature mode (no `:PAGE`):**
+- Process ALL files listed in issues (current batch behavior)
+
+---
+
 #### Triage Logic: 🟢 Patch vs 🔴 Regenerate
 
-**For each SVG file listed in the issues:**
+**For each SVG file being processed:**
 
 **Step 1: Classify each issue**
 
@@ -1255,6 +1287,22 @@ Place all leader lines in a dedicated group at the END of the SVG, just before `
 ---
 
 ### 6. Update the Wireframe Viewer
+
+#### Per-Page Mode: Skip if file already registered
+
+**If per-page mode AND file already in `index.html`:**
+- Skip index.html update (file already registered, viewer works)
+- Log: "Skipping index.html update - file already registered"
+
+**If per-page mode AND NEW file:**
+- Add single entry to wireframes array
+- Add single nav link to existing feature section
+- Log: "Added new file to index.html"
+
+**If full-feature mode:**
+- Update all entries (current batch behavior below)
+
+---
 
 After creating the SVG files, update `docs/design/wireframes/index.html`:
 

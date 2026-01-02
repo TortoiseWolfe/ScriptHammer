@@ -21,6 +21,11 @@
 - 🟢 **PATCHABLE** (color, typo, font, missing class) → `/wireframe-fix`
 - 🔴 **REGENERATE** (layout, spacing, overlap) → `/wireframe` with feedback
 
+**Per-Page Syntax** (saves tokens by processing single SVGs):
+- `/wireframe-review 004:01` → Review only `01-responsive-navigation.svg`
+- `/wireframe 004:02` → Regenerate only `02-content-typography.svg`
+- Text matching: `/wireframe-review 004:touch` → `03-touch-targets.svg`
+
 <details>
 <summary><strong>Foundation</strong> (7 features)</summary>
 
@@ -56,6 +61,51 @@
 /wireframe-review 003-user-authentication
 ```
 
+<details>
+<summary>Per-page commands (5 SVGs)</summary>
+
+**01** login-signup
+```
+/wireframe-review 003:01
+```
+```
+/wireframe 003:01
+```
+
+**02** password-reset
+```
+/wireframe-review 003:02
+```
+```
+/wireframe 003:02
+```
+
+**03** email-verification
+```
+/wireframe-review 003:03
+```
+```
+/wireframe 003:03
+```
+
+**04** profile-settings
+```
+/wireframe-review 003:04
+```
+```
+/wireframe 003:04
+```
+
+**05** auth-flow-architecture
+```
+/wireframe-review 003:05
+```
+```
+/wireframe 003:05
+```
+
+</details>
+
 **004-mobile-first-design** — 🔍 Pending
 ```
 /wireframe 004-mobile-first-design
@@ -63,6 +113,43 @@
 ```
 /wireframe-review 004-mobile-first-design
 ```
+
+<details>
+<summary>Per-page commands (4 SVGs)</summary>
+
+**01** responsive-navigation
+```
+/wireframe-review 004:01
+```
+```
+/wireframe 004:01
+```
+
+**02** content-typography
+```
+/wireframe-review 004:02
+```
+```
+/wireframe 004:02
+```
+
+**03** touch-targets
+```
+/wireframe-review 004:03
+```
+```
+/wireframe 004:03
+```
+
+**04** breakpoint-system
+```
+/wireframe-review 004:04
+```
+```
+/wireframe 004:04
+```
+
+</details>
 
 **005-security-hardening** — 🔍 Pending
 ```

@@ -463,6 +463,13 @@ When using different border colors for badges/pills:
 </g>
 ```
 
+**Page title**: Must be at y=780, LEFT-ALIGNED at x=60 (to avoid overlapping with the viewer's focus mode hint).
+
+```xml
+<!-- ✅ CORRECT: Left-aligned page title -->
+<text x="60" y="780" text-anchor="start" class="text-muted">feature-name | Wireframe Title | ScriptHammer</text>
+```
+
 ### Self-Documentation Checklist
 
 **Before writing the SVG, verify each annotation passes:**

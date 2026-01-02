@@ -8,6 +8,45 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 $ARGUMENTS
 ```
 
+### Arguments Format
+
+- `FEATURE` - Review ALL SVGs in feature (batch mode)
+- `FEATURE:PAGE` - Review SINGLE SVG only (per-page mode)
+
+**Parsing Logic**:
+1. Split input by `:` delimiter
+2. If no `:` → full-feature mode (review all SVGs)
+3. If `:` → per-page mode, extract page filter:
+   - Numeric (`:01`, `:3`) → match `01-*.svg`, `03-*.svg`
+   - Text (`:responsive`) → match `*responsive*.svg`
+
+**Examples**:
+- `/wireframe-review 004` → Review all SVGs in 004-mobile-first-design
+- `/wireframe-review 004:01` → Only review `01-responsive-navigation.svg`
+- `/wireframe-review 004:touch` → Only review `03-touch-targets.svg`
+
+---
+
+### Page Filter (Per-Page Mode Only)
+
+**If `:PAGE` was provided in arguments:**
+
+1. List all SVG files in `docs/design/wireframes/[feature-folder]/`
+2. Apply filter:
+   - Numeric (`:01`, `:3`) → Match files starting with zero-padded number (`01-*.svg`)
+   - Text (`:responsive`) → Match files containing the text (case-insensitive)
+3. **If 0 matches**: Error with list of available SVGs
+4. **If 1 match**: Extract spec path from SVG watermark:
+   ```
+   grep "SOURCE:" [target].svg | Extract path after "SOURCE: "
+   ```
+5. **If 2+ matches**: Ask user to clarify
+
+**Per-page mode uses SVG watermark for context:**
+- The SVG header contains `SOURCE: features/[category]/[feature]/spec.md`
+- No need for user to specify spec path - extract from existing SVG
+- Still read FULL spec for review context
+
 ---
 
 ## Step 0: Check for Previous Review (Iterative Mode)
@@ -32,6 +71,46 @@ features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
 - Increment pass number
 - Proceed with **FULL review of ALL files** (don't skip any - might catch overlooked issues)
 - After review, compare findings against previous pass
+
+### Per-Page Mode: Incremental Issue Tracking
+
+**If per-page mode (`:PAGE` argument provided) AND existing WIREFRAME_ISSUES.md:**
+
+1. Read existing WIREFRAME_ISSUES.md
+2. Review ONLY the target SVG file (not all files)
+3. **PRESERVE** sections for other files exactly as-is:
+   - Keep their issue tables unchanged
+   - Keep their Visual Descriptions unchanged
+   - Keep their Overlap Matrices unchanged
+4. **UPDATE** only the target file's section:
+   - Replace its issue table with current findings
+   - Update its Visual Description
+   - Update its Overlap Matrix
+5. **UPDATE** Summary section:
+   - Recalculate totals from all file sections
+   - Increment pass counter only for reviewed file
+
+**Example**: Reviewing `004:02` when WIREFRAME_ISSUES.md already has entries for 01, 02, 03, 04:
+```markdown
+## Summary
+- Files in feature: 4 SVGs
+- Files reviewed this pass: 1 (02-content-typography.svg)
+- Pass 3 for: 02-content-typography.svg
+
+## 01-responsive-navigation.svg
+[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
+
+## 02-content-typography.svg ← UPDATED
+[NEW REVIEW RESULTS]
+
+## 03-touch-targets.svg
+[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
+
+## 04-breakpoint-system.svg
+[PRESERVED FROM PREVIOUS PASS - NOT REVIEWED]
+```
+
+**Why this matters**: Per-page mode saves tokens by reviewing one file at a time. Preserving other sections maintains complete review history.
 
 ⚠️ **CRITICAL: "RESOLVED" does NOT mean "skip review"**
 
