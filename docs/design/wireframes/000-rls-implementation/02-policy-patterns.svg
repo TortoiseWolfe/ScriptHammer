@@ -32,20 +32,17 @@
       <stop offset="0%" style="stop-color:#ef4444"/>
       <stop offset="100%" style="stop-color:#dc2626"/>
     </linearGradient>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
-    </marker>
     <style>
-      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 20px; font-weight: bold; }
-      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
-      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
-      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
-      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .code { fill: #e2e8f0; font-family: monospace; font-size: 10px; }
-      .code-sm { fill: #cbd5e1; font-family: monospace; font-size: 10px; }
-      .pattern-title { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-      .pattern-id { fill: #8494a8; font-family: monospace; font-size: 11px; }
+      /* Typography - MANDATORY SIZES - DO NOT REDUCE */
+      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 24px; font-weight: bold; }
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
+      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 14px; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
+      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 12px; }
+      .code { fill: #e2e8f0; font-family: monospace; font-size: 13px; }
+      .annotation { fill: #c4b5fd; font-family: monospace; font-size: 12px; font-weight: bold; }
+      .pattern-title { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
     </style>
   </defs>
 
@@ -64,154 +61,139 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8494a8" letter-spacing="1">RLS STANDARD PATTERNS - REUSABLE TEMPLATES</text>
+  <text x="700" y="32" text-anchor="middle" class="heading-lg">RLS STANDARD PATTERNS</text>
+  <text x="700" y="54" text-anchor="middle" class="text-muted">Reusable Policy Templates for Future Features</text>
 
-  <!-- ==================== PATTERN 1: Owner Isolation (height=280) ==================== -->
-  <g transform="translate(40, 50)">
+  <!-- ==================== PATTERN 1: Owner Isolation (y=80-370) ==================== -->
+  <g transform="translate(40, 80)">
     <!-- Header -->
-    <rect x="0" y="0" width="640" height="40" rx="8" fill="url(#patternGrad1)"/>
-    <text x="20" y="26" class="pattern-title">PATTERN 1: Owner Isolation</text>
-    <text x="620" y="26" text-anchor="end" class="pattern-id">FR-022</text>
+    <rect x="0" y="0" width="650" height="50" rx="8" fill="url(#patternGrad1)"/>
+    <text x="25" y="32" class="pattern-title">PATTERN 1: Owner Isolation</text>
+    <text x="625" y="32" text-anchor="end" class="annotation" fill="#dcfce7">FR-022</text>
 
-    <!-- Content box (reduced height from 300 to 280) -->
-    <rect x="0" y="45" width="640" height="280" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
+    <!-- Content box -->
+    <rect x="0" y="60" width="650" height="230" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
 
     <!-- Description -->
-    <text x="20" y="75" class="text-md">Purpose: Ensure users can only access their own data</text>
-    <text x="20" y="95" class="text-md">Use when: Any table with user-owned records (profiles, settings)</text>
+    <text x="25" y="95" class="text-md">Purpose: Ensure users can only access their own data</text>
+    <text x="25" y="120" class="text-md">Use when: Any table with user-owned records (profiles, settings)</text>
 
     <!-- SQL Template -->
-    <rect x="20" y="110" width="600" height="110" rx="4" fill="#0f172a"/>
-    <text x="30" y="130" class="code" fill="#22c55e">-- Enable RLS on table</text>
-    <text x="30" y="145" class="code">ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;</text>
-    <text x="30" y="163" class="code" fill="#22c55e">-- Owner can SELECT their own rows</text>
-    <text x="30" y="178" class="code">CREATE POLICY "owner_select" ON table_name</text>
-    <text x="30" y="193" class="code">  FOR SELECT USING (auth.uid() = user_id);</text>
-    <text x="30" y="211" class="code" fill="#22c55e">-- Owner can UPDATE their own rows</text>
+    <rect x="25" y="140" width="600" height="100" rx="6" fill="#0f172a"/>
+    <text x="40" y="165" class="code" fill="#22c55e">-- Enable RLS on table</text>
+    <text x="40" y="185" class="code">ALTER TABLE table_name ENABLE ROW LEVEL SECURITY;</text>
+    <text x="40" y="210" class="code" fill="#22c55e">-- Owner can SELECT their own rows</text>
+    <text x="40" y="230" class="code">CREATE POLICY "owner_select" ON table_name</text>
+    <text x="40" y="250" class="code">  FOR SELECT USING (auth.uid() = user_id);</text>
 
     <!-- Applied to -->
-    <text x="20" y="240" class="text-md" fill="#22c55e">Applied to:</text>
-    <rect x="20" y="250" width="70" height="22" rx="4" fill="#334155"/>
-    <text x="55" y="265" text-anchor="middle" class="code-sm">users</text>
-    <rect x="100" y="250" width="70" height="22" rx="4" fill="#334155"/>
-    <text x="135" y="265" text-anchor="middle" class="code-sm">profiles</text>
-    <rect x="180" y="250" width="70" height="22" rx="4" fill="#334155"/>
-    <text x="215" y="265" text-anchor="middle" class="code-sm">sessions</text>
-
-    <!-- Behavior -->
-    <text x="280" y="240" class="text-md" fill="#22c55e">Behavior on violation:</text>
-    <text x="280" y="258" class="text-sm">Returns empty result set (not error)</text>
-    <text x="280" y="275" class="text-muted">Per FR-010 requirement</text>
+    <text x="25" y="265" class="text-md" fill="#22c55e">Applied to:</text>
+    <rect x="25" y="275" width="80" height="28" rx="4" fill="#334155"/>
+    <text x="65" y="295" text-anchor="middle" class="code">users</text>
+    <rect x="115" y="275" width="90" height="28" rx="4" fill="#334155"/>
+    <text x="160" y="295" text-anchor="middle" class="code">profiles</text>
+    <rect x="215" y="275" width="95" height="28" rx="4" fill="#334155"/>
+    <text x="262" y="295" text-anchor="middle" class="code">sessions</text>
   </g>
 
-  <!-- ==================== PATTERN 2: Service Bypass (height=280) ==================== -->
-  <g transform="translate(720, 50)">
+  <!-- ==================== PATTERN 2: Service Bypass (y=80-370) ==================== -->
+  <g transform="translate(710, 80)">
     <!-- Header -->
-    <rect x="0" y="0" width="640" height="40" rx="8" fill="url(#patternGrad2)"/>
-    <text x="20" y="26" class="pattern-title">PATTERN 2: Service Role Bypass</text>
-    <text x="620" y="26" text-anchor="end" class="pattern-id">FR-023</text>
+    <rect x="0" y="0" width="650" height="50" rx="8" fill="url(#patternGrad2)"/>
+    <text x="25" y="32" class="pattern-title">PATTERN 2: Service Role Bypass</text>
+    <text x="625" y="32" text-anchor="end" class="annotation" fill="#e9d5ff">FR-023</text>
 
-    <!-- Content box (reduced height from 300 to 280) -->
-    <rect x="0" y="45" width="640" height="280" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+    <!-- Content box -->
+    <rect x="0" y="60" width="650" height="230" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
 
     <!-- Description -->
-    <text x="20" y="75" class="text-md">Purpose: Allow backend services to access any row</text>
-    <text x="20" y="95" class="text-md">Use when: Webhooks, notifications, admin operations</text>
+    <text x="25" y="95" class="text-md">Purpose: Allow backend services to access any row</text>
+    <text x="25" y="120" class="text-md">Use when: Webhooks, notifications, admin operations</text>
 
     <!-- SQL Template -->
-    <rect x="20" y="110" width="600" height="100" rx="4" fill="#0f172a"/>
-    <text x="30" y="130" class="code" fill="#8b5cf6">-- Combined owner + service access</text>
-    <text x="30" y="145" class="code">CREATE POLICY "owner_or_service_select" ON table_name</text>
-    <text x="30" y="160" class="code">  FOR SELECT USING (</text>
-    <text x="30" y="175" class="code">    auth.uid() = user_id OR</text>
-    <text x="30" y="190" class="code">    auth.role() = 'service_role'</text>
-    <text x="30" y="205" class="code">  );</text>
-
-    <!-- Requirements -->
-    <text x="20" y="230" class="text-md" fill="#8b5cf6">Requirements:</text>
-    <rect x="20" y="240" width="180" height="26" rx="4" fill="#334155"/>
-    <text x="30" y="258" class="text-sm">Log all service_role usage</text>
-    <rect x="210" y="240" width="180" height="26" rx="4" fill="#334155"/>
-    <text x="220" y="258" class="text-sm">Never expose to client</text>
+    <rect x="25" y="140" width="600" height="100" rx="6" fill="#0f172a"/>
+    <text x="40" y="165" class="code" fill="#8b5cf6">-- Combined owner + service access</text>
+    <text x="40" y="185" class="code">CREATE POLICY "owner_or_service_select" ON table_name</text>
+    <text x="40" y="205" class="code">  FOR SELECT USING (</text>
+    <text x="40" y="225" class="code">    auth.uid() = user_id OR auth.role() = 'service_role'</text>
+    <text x="40" y="245" class="code">  );</text>
 
     <!-- Warning -->
-    <rect x="20" y="275" width="600" height="22" rx="4" fill="#7c3aed" opacity="0.3"/>
-    <text x="30" y="290" class="text-sm" fill="#e9d5ff">WARNING: Service credentials in .env only (FR-014)</text>
+    <rect x="25" y="258" width="600" height="28" rx="4" fill="#7c3aed" opacity="0.3"/>
+    <text x="40" y="278" class="text-sm" fill="#e9d5ff">WARNING: Service credentials in .env only - never expose to client (FR-014)</text>
   </g>
 
-  <!-- ==================== PATTERN 3: Soft Delete (y=380, height=280) ==================== -->
-  <g transform="translate(40, 380)">
+  <!-- ==================== PATTERN 3: Soft Delete (y=390-680) ==================== -->
+  <g transform="translate(40, 390)">
     <!-- Header -->
-    <rect x="0" y="0" width="640" height="40" rx="8" fill="url(#patternGrad3)"/>
-    <text x="20" y="26" class="pattern-title">PATTERN 3: Soft Delete</text>
-    <text x="620" y="26" text-anchor="end" class="pattern-id">FR-024</text>
+    <rect x="0" y="0" width="650" height="50" rx="8" fill="url(#patternGrad3)"/>
+    <text x="25" y="32" class="pattern-title">PATTERN 3: Soft Delete</text>
+    <text x="625" y="32" text-anchor="end" class="annotation" fill="#fef3c7">FR-024</text>
 
-    <!-- Content box (reduced height from 300 to 280) -->
-    <rect x="0" y="45" width="640" height="280" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+    <!-- Content box -->
+    <rect x="0" y="60" width="650" height="290" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
 
     <!-- Description -->
-    <text x="20" y="75" class="text-md">Purpose: Prevent permanent deletion, use status flags</text>
-    <text x="20" y="95" class="text-md">Use when: User data, content, any recoverable records</text>
+    <text x="25" y="95" class="text-md">Purpose: Prevent permanent deletion, use status flags</text>
+    <text x="25" y="120" class="text-md">Use when: User data, content, any recoverable records</text>
 
     <!-- SQL Template -->
-    <rect x="20" y="110" width="600" height="115" rx="4" fill="#0f172a"/>
-    <text x="30" y="130" class="code" fill="#f59e0b">-- Deny all DELETE operations</text>
-    <text x="30" y="145" class="code">CREATE POLICY "no_delete" ON table_name</text>
-    <text x="30" y="160" class="code">  FOR DELETE USING (false);</text>
-    <text x="30" y="180" class="code" fill="#f59e0b">-- Table schema includes status column</text>
-    <text x="30" y="195" class="code">ALTER TABLE table_name ADD COLUMN</text>
-    <text x="30" y="210" class="code">  deleted_at TIMESTAMP DEFAULT NULL;</text>
+    <rect x="25" y="140" width="600" height="120" rx="6" fill="#0f172a"/>
+    <text x="40" y="165" class="code" fill="#f59e0b">-- Deny all DELETE operations</text>
+    <text x="40" y="185" class="code">CREATE POLICY "no_delete" ON table_name</text>
+    <text x="40" y="205" class="code">  FOR DELETE USING (false);</text>
+    <text x="40" y="230" class="code" fill="#f59e0b">-- Table schema includes status column</text>
+    <text x="40" y="250" class="code">ALTER TABLE table_name ADD COLUMN deleted_at TIMESTAMP;</text>
 
     <!-- Filter pattern -->
-    <text x="20" y="245" class="text-md" fill="#f59e0b">Active records filter:</text>
-    <rect x="20" y="255" width="260" height="45" rx="4" fill="#334155"/>
-    <text x="30" y="275" class="code-sm">SELECT * FROM table_name</text>
-    <text x="30" y="290" class="code-sm">WHERE deleted_at IS NULL;</text>
+    <text x="25" y="280" class="text-md" fill="#f59e0b">Active records filter:</text>
+    <rect x="25" y="290" width="280" height="50" rx="4" fill="#334155"/>
+    <text x="40" y="315" class="code">SELECT * FROM table_name</text>
+    <text x="40" y="335" class="code">WHERE deleted_at IS NULL;</text>
 
     <!-- Benefits -->
-    <text x="300" y="245" class="text-md" fill="#f59e0b">Benefits:</text>
-    <text x="300" y="265" class="text-sm">Data recovery possible</text>
-    <text x="300" y="282" class="text-sm">Audit trail preserved</text>
-    <text x="300" y="299" class="text-sm">GDPR: actual deletion via service_role</text>
+    <text x="330" y="280" class="text-md" fill="#f59e0b">Benefits:</text>
+    <text x="330" y="305" class="text-md">Data recovery possible</text>
+    <text x="330" y="328" class="text-md">Audit trail preserved</text>
+    <text x="330" y="351" class="text-sm">GDPR: actual deletion via service_role</text>
   </g>
 
-  <!-- ==================== PATTERN 4: Immutable Audit (y=380, height=280) ==================== -->
-  <g transform="translate(720, 380)">
+  <!-- ==================== PATTERN 4: Immutable Audit (y=390-680) ==================== -->
+  <g transform="translate(710, 390)">
     <!-- Header -->
-    <rect x="0" y="0" width="640" height="40" rx="8" fill="url(#patternGrad4)"/>
-    <text x="20" y="26" class="pattern-title">PATTERN 4: Immutable Audit Trail</text>
-    <text x="620" y="26" text-anchor="end" class="pattern-id">FR-025</text>
+    <rect x="0" y="0" width="650" height="50" rx="8" fill="url(#patternGrad4)"/>
+    <text x="25" y="32" class="pattern-title">PATTERN 4: Immutable Audit Trail</text>
+    <text x="625" y="32" text-anchor="end" class="annotation" fill="#fecaca">FR-025</text>
 
-    <!-- Content box (reduced height from 300 to 280) -->
-    <rect x="0" y="45" width="640" height="280" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1"/>
+    <!-- Content box -->
+    <rect x="0" y="60" width="650" height="290" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="1"/>
 
     <!-- Description -->
-    <text x="20" y="75" class="text-md">Purpose: Create tamper-proof audit logs</text>
-    <text x="20" y="95" class="text-md">Use when: Security events, compliance logs, transactions</text>
+    <text x="25" y="95" class="text-md">Purpose: Create tamper-proof audit logs</text>
+    <text x="25" y="120" class="text-md">Use when: Security events, compliance logs, transactions</text>
 
     <!-- SQL Template -->
-    <rect x="20" y="110" width="600" height="115" rx="4" fill="#0f172a"/>
-    <text x="30" y="130" class="code" fill="#ef4444">-- Only service_role can INSERT</text>
-    <text x="30" y="145" class="code">CREATE POLICY "service_insert_only" ON audit_logs</text>
-    <text x="30" y="160" class="code">  FOR INSERT WITH CHECK (auth.role() = 'service_role');</text>
-    <text x="30" y="180" class="code" fill="#ef4444">-- NO ONE can UPDATE or DELETE</text>
-    <text x="30" y="195" class="code">CREATE POLICY "no_update" ON audit_logs FOR UPDATE USING (false);</text>
-    <text x="30" y="210" class="code">CREATE POLICY "no_delete" ON audit_logs FOR DELETE USING (false);</text>
+    <rect x="25" y="140" width="600" height="120" rx="6" fill="#0f172a"/>
+    <text x="40" y="165" class="code" fill="#ef4444">-- Only service_role can INSERT</text>
+    <text x="40" y="185" class="code">CREATE POLICY "service_insert_only" ON audit_logs</text>
+    <text x="40" y="205" class="code">  FOR INSERT WITH CHECK (auth.role() = 'service_role');</text>
+    <text x="40" y="230" class="code" fill="#ef4444">-- NO ONE can UPDATE or DELETE</text>
+    <text x="40" y="250" class="code">CREATE POLICY "no_modify" FOR UPDATE/DELETE USING (false);</text>
 
     <!-- Applied to -->
-    <text x="20" y="245" class="text-md" fill="#ef4444">Applied to:</text>
-    <rect x="20" y="255" width="90" height="22" rx="4" fill="#334155"/>
-    <text x="65" y="270" text-anchor="middle" class="code-sm">audit_logs</text>
-    <rect x="120" y="255" width="110" height="22" rx="4" fill="#334155"/>
-    <text x="175" y="270" text-anchor="middle" class="code-sm">security_events</text>
-    <rect x="240" y="255" width="120" height="22" rx="4" fill="#334155"/>
-    <text x="300" y="270" text-anchor="middle" class="code-sm">payment_history</text>
+    <text x="25" y="280" class="text-md" fill="#ef4444">Applied to:</text>
+    <rect x="25" y="290" width="110" height="28" rx="4" fill="#334155"/>
+    <text x="80" y="310" text-anchor="middle" class="code">audit_logs</text>
+    <rect x="145" y="290" width="140" height="28" rx="4" fill="#334155"/>
+    <text x="215" y="310" text-anchor="middle" class="code">security_events</text>
+    <rect x="295" y="290" width="150" height="28" rx="4" fill="#334155"/>
+    <text x="370" y="310" text-anchor="middle" class="code">payment_history</text>
 
     <!-- Compliance note -->
-    <rect x="20" y="290" width="600" height="22" rx="4" fill="#dc2626" opacity="0.2"/>
-    <text x="30" y="305" class="text-sm" fill="#fca5a5">COMPLIANCE: Immutability required for SOC 2 and GDPR audit</text>
+    <rect x="25" y="330" width="600" height="28" rx="4" fill="#dc2626" opacity="0.2"/>
+    <text x="40" y="350" class="text-sm" fill="#fca5a5">COMPLIANCE: Immutability required for SOC 2 and GDPR audit (FR-015-018)</text>
   </g>
 
-  <!-- ==================== FOOTER (y=720, 80px gap from content) ==================== -->
-  <text x="700" y="720" text-anchor="middle" class="text-muted">000-rls-implementation | RLS Policy Patterns | ScriptHammer</text>
+  <!-- Footer (MUST be at y=780) -->
+  <text x="700" y="780" text-anchor="middle" class="text-muted">000-rls-implementation | RLS Policy Patterns | ScriptHammer</text>
 </svg>

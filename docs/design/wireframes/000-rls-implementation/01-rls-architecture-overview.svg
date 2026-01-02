@@ -4,8 +4,7 @@
        SOURCE: features/foundation/000-rls-implementation/spec.md
        DATE: 2026-01-01
        THEME: Dark (Backend/Architecture)
-       REGENERATED WITH FEEDBACK: Content moved down to use vertical space
-       FIX: Tables centered vertically - eliminated wasted space
+       REGENERATED WITH FEEDBACK: features/foundation/000-rls-implementation/WIREFRAME_ISSUES.md
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -17,44 +16,25 @@
       <stop offset="0%" style="stop-color:#8b5cf6"/>
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
-    <linearGradient id="tableGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#334155"/>
-      <stop offset="100%" style="stop-color:#1e293b"/>
-    </linearGradient>
-    <linearGradient id="roleAuthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#22c55e"/>
-      <stop offset="100%" style="stop-color:#16a34a"/>
-    </linearGradient>
-    <linearGradient id="roleServiceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#8b5cf6"/>
-      <stop offset="100%" style="stop-color:#7c3aed"/>
-    </linearGradient>
-    <linearGradient id="roleAnonGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#64748b"/>
-      <stop offset="100%" style="stop-color:#475569"/>
-    </linearGradient>
     <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
-    </marker>
-    <marker id="arrowheadGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
     </marker>
-    <marker id="arrowheadRed" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+    <marker id="arrowhead-purple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrowhead-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>
     </marker>
     <style>
+      /* Typography - MANDATORY SIZES - DO NOT REDUCE */
       .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 24px; font-weight: bold; }
       .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
       .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 14px; }
       .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
       .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 12px; }
+      .code { fill: #e2e8f0; font-family: monospace; font-size: 13px; }
       .annotation { fill: #c4b5fd; font-family: monospace; font-size: 12px; font-weight: bold; }
-      .table-name { fill: #ffffff; font-family: monospace; font-size: 15px; font-weight: bold; }
-      .column-name { fill: #cbd5e1; font-family: monospace; font-size: 12px; }
-      .role-label { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
-      .policy-text { fill: #94a3b8; font-family: monospace; font-size: 11px; }
-      .fr-label { fill: #c4b5fd; font-family: monospace; font-size: 11px; font-weight: bold; }
     </style>
   </defs>
 
@@ -73,228 +53,155 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8494a8" letter-spacing="1">ROW LEVEL SECURITY - ARCHITECTURE OVERVIEW</text>
+  <text x="700" y="32" text-anchor="middle" class="heading-lg">RLS ARCHITECTURE OVERVIEW</text>
+  <text x="700" y="54" text-anchor="middle" class="text-muted">Row Level Security Foundation - Data Access Control Flow</text>
 
-  <!-- ==================== SECURITY ROLES (Left Side) - MOVED DOWN 80px ==================== -->
-  <text x="60" y="150" class="heading-lg">Security Roles</text>
+  <!-- ==================== SECTION 1: SECURITY ROLES (y=90-280) ==================== -->
+  <text x="40" y="90" class="heading">SECURITY ROLES</text>
+  <text x="40" y="110" class="annotation">FR-006 to FR-021</text>
 
-  <!-- Authenticated Role (was y=90, now y=170) -->
-  <g transform="translate(40, 170)">
-    <rect x="0" y="0" width="180" height="100" rx="8" fill="url(#roleAuthGrad)" opacity="0.9"/>
-    <text x="90" y="25" text-anchor="middle" class="role-label">AUTHENTICATED</text>
-    <line x1="20" y1="35" x2="160" y2="35" stroke="#ffffff" stroke-opacity="0.3"/>
-    <text x="20" y="52" class="text-sm" fill="#ffffff">Valid JWT Token</text>
-    <text x="20" y="67" class="text-sm" fill="#ffffff">User ID in auth.uid()</text>
-    <text x="20" y="82" class="text-sm" fill="#ffffff">Own data access only</text>
-  </g>
+  <!-- Role 1: Authenticated -->
+  <rect x="40" y="130" width="200" height="110" rx="8" fill="#22c55e"/>
+  <text x="140" y="160" text-anchor="middle" class="heading" fill="#ffffff">AUTHENTICATED</text>
+  <text x="140" y="185" text-anchor="middle" class="text-md" fill="#ffffff">Logged-in users</text>
+  <text x="140" y="207" text-anchor="middle" class="text-sm" fill="#dcfce7">Access: Own data only</text>
+  <text x="140" y="227" text-anchor="middle" class="text-sm" fill="#dcfce7">auth.uid() = user_id</text>
 
-  <!-- Service Role (was y=210, now y=290) -->
-  <g transform="translate(40, 290)">
-    <rect x="0" y="0" width="180" height="100" rx="8" fill="url(#roleServiceGrad)" opacity="0.9"/>
-    <text x="90" y="25" text-anchor="middle" class="role-label">SERVICE_ROLE</text>
-    <line x1="20" y1="35" x2="160" y2="35" stroke="#ffffff" stroke-opacity="0.3"/>
-    <text x="20" y="52" class="text-sm" fill="#ffffff">Backend operations</text>
-    <text x="20" y="67" class="text-sm" fill="#ffffff">Bypasses RLS policies</text>
-    <text x="20" y="82" class="text-sm" fill="#ffffff">Audit log required</text>
-  </g>
+  <!-- Role 2: Service Role -->
+  <rect x="40" y="260" width="200" height="110" rx="8" fill="#8b5cf6"/>
+  <text x="140" y="290" text-anchor="middle" class="heading" fill="#ffffff">SERVICE_ROLE</text>
+  <text x="140" y="315" text-anchor="middle" class="text-md" fill="#ffffff">Backend services</text>
+  <text x="140" y="337" text-anchor="middle" class="text-sm" fill="#e9d5ff">Access: All data</text>
+  <text x="140" y="357" text-anchor="middle" class="text-sm" fill="#e9d5ff">Bypass for operations</text>
 
-  <!-- Anonymous Role (was y=330, now y=410) -->
-  <g transform="translate(40, 410)">
-    <rect x="0" y="0" width="180" height="100" rx="8" fill="url(#roleAnonGrad)" opacity="0.9"/>
-    <text x="90" y="25" text-anchor="middle" class="role-label">ANON</text>
-    <line x1="20" y1="35" x2="160" y2="35" stroke="#ffffff" stroke-opacity="0.3"/>
-    <text x="20" y="52" class="text-sm" fill="#ffffff">No authentication</text>
-    <text x="20" y="67" class="text-sm" fill="#ffffff">Public read only</text>
-    <text x="20" y="82" class="text-sm" fill="#ffffff">No write access</text>
-  </g>
+  <!-- Role 3: Anonymous -->
+  <rect x="40" y="390" width="200" height="110" rx="8" fill="#64748b"/>
+  <text x="140" y="420" text-anchor="middle" class="heading" fill="#ffffff">ANON</text>
+  <text x="140" y="445" text-anchor="middle" class="text-md" fill="#ffffff">Unauthenticated</text>
+  <text x="140" y="467" text-anchor="middle" class="text-sm" fill="#cbd5e1">Access: Public only</text>
+  <text x="140" y="487" text-anchor="middle" class="text-sm" fill="#cbd5e1">No write access</text>
 
-  <!-- ==================== RLS POLICY LAYER (Center) - MOVED DOWN 80px ==================== -->
-  <g transform="translate(280, 140)">
-    <rect x="0" y="0" width="200" height="400" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,3"/>
-    <text x="100" y="25" text-anchor="middle" class="heading">RLS POLICY LAYER</text>
-    <line x1="20" y1="35" x2="180" y2="35" stroke="#475569"/>
+  <!-- ==================== SECTION 2: RLS POLICY LAYER (y=130-500) ==================== -->
+  <rect x="280" y="130" width="260" height="370" rx="8" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="410" y="160" text-anchor="middle" class="heading">RLS POLICY LAYER</text>
 
-    <!-- Policy checks -->
-    <text x="20" y="60" class="text-md" fill="#cbd5e1">Policy Evaluation:</text>
+  <!-- Policy checks -->
+  <rect x="300" y="185" width="220" height="50" rx="6" fill="#334155"/>
+  <text x="410" y="215" text-anchor="middle" class="text-md">1. Validate JWT Token</text>
 
-    <rect x="20" y="75" width="160" height="50" rx="4" fill="#334155"/>
-    <text x="30" y="95" class="policy-text">auth.uid() = user_id</text>
-    <text x="30" y="110" class="text-muted">Owner isolation check</text>
+  <rect x="300" y="250" width="220" height="50" rx="6" fill="#334155"/>
+  <text x="410" y="280" text-anchor="middle" class="text-md">2. Extract auth.uid()</text>
 
-    <rect x="20" y="135" width="160" height="50" rx="4" fill="#334155"/>
-    <text x="30" y="155" class="policy-text">auth.role() = 'service'</text>
-    <text x="30" y="170" class="text-muted">Service bypass check</text>
+  <rect x="300" y="315" width="220" height="50" rx="6" fill="#334155"/>
+  <text x="410" y="345" text-anchor="middle" class="text-md">3. Check auth.role()</text>
 
-    <rect x="20" y="195" width="160" height="50" rx="4" fill="#334155"/>
-    <text x="30" y="215" class="policy-text">is_public = true</text>
-    <text x="30" y="230" class="text-muted">Public access check</text>
+  <rect x="300" y="380" width="220" height="50" rx="6" fill="#334155"/>
+  <text x="410" y="410" text-anchor="middle" class="text-md">4. Evaluate Policy</text>
 
-    <rect x="20" y="255" width="160" height="50" rx="4" fill="#334155"/>
-    <text x="30" y="275" class="policy-text">operation = 'INSERT'</text>
-    <text x="30" y="290" class="text-muted">Audit immutability</text>
+  <rect x="300" y="445" width="220" height="40" rx="6" fill="#1e293b" stroke="#22c55e"/>
+  <text x="410" y="472" text-anchor="middle" class="text-md" fill="#22c55e">ALLOW or DENY</text>
 
-    <!-- Evaluation result -->
-    <text x="100" y="340" text-anchor="middle" class="text-md" fill="#cbd5e1">Result:</text>
-    <rect x="30" y="350" width="60" height="28" rx="4" fill="#22c55e"/>
-    <text x="60" y="369" text-anchor="middle" class="text-sm" fill="#ffffff">ALLOW</text>
-    <rect x="110" y="350" width="60" height="28" rx="4" fill="#ef4444"/>
-    <text x="140" y="369" text-anchor="middle" class="text-sm" fill="#ffffff">DENY</text>
-  </g>
+  <!-- Flow arrows from roles to RLS layer -->
+  <line x1="240" y1="185" x2="280" y2="210" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="240" y1="315" x2="280" y2="315" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrowhead-purple)"/>
+  <line x1="240" y1="445" x2="280" y2="410" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead-red)"/>
 
-  <!-- ==================== DATABASE TABLES (Right of Center) - MOVED DOWN 80px ==================== -->
-  <text x="560" y="150" class="heading-lg">Protected Tables</text>
+  <!-- ==================== SECTION 3: PROTECTED TABLES (y=130-500) ==================== -->
+  <text x="580" y="90" class="heading">PROTECTED TABLES</text>
+  <text x="580" y="110" class="annotation">FR-001 to FR-005</text>
 
-  <!-- Users Table (was y=90, now y=170) -->
-  <g transform="translate(540, 170)">
-    <rect x="0" y="0" width="180" height="120" rx="6" fill="url(#tableGrad)" stroke="#475569"/>
-    <rect x="0" y="0" width="180" height="28" rx="6" fill="#475569"/>
-    <rect x="0" y="22" width="180" height="6" fill="#475569"/>
-    <text x="15" y="19" class="table-name">users</text>
-    <circle cx="165" cy="14" r="6" fill="#22c55e"/>
-    <text x="15" y="48" class="column-name">id: uuid (PK)</text>
-    <text x="15" y="63" class="column-name">email: text</text>
-    <text x="15" y="78" class="column-name">created_at: timestamp</text>
-    <line x1="10" y1="88" x2="170" y2="88" stroke="#475569"/>
-    <text x="15" y="103" class="text-muted">RLS: Owner SELECT only</text>
-    <text x="15" y="115" class="fr-label">FR-001</text>
-  </g>
+  <!-- Table 1: users -->
+  <rect x="580" y="130" width="240" height="80" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+  <circle cx="800" cy="150" r="10" fill="#22c55e"/>
+  <text x="600" y="160" class="heading-sm">users</text>
+  <text x="600" y="182" class="code">id, email, created_at</text>
+  <text x="600" y="200" class="text-sm">RLS: Owner SELECT only</text>
 
-  <!-- Profiles Table (was y=90, now y=170) -->
-  <g transform="translate(740, 170)">
-    <rect x="0" y="0" width="180" height="120" rx="6" fill="url(#tableGrad)" stroke="#475569"/>
-    <rect x="0" y="0" width="180" height="28" rx="6" fill="#475569"/>
-    <rect x="0" y="22" width="180" height="6" fill="#475569"/>
-    <text x="15" y="19" class="table-name">profiles</text>
-    <circle cx="165" cy="14" r="6" fill="#22c55e"/>
-    <text x="15" y="48" class="column-name">id: uuid (PK, FK→users)</text>
-    <text x="15" y="63" class="column-name">display_name: text</text>
-    <text x="15" y="78" class="column-name">avatar_url: text</text>
-    <line x1="10" y1="88" x2="170" y2="88" stroke="#475569"/>
-    <text x="15" y="103" class="text-muted">RLS: Owner SELECT/UPDATE</text>
-    <text x="15" y="115" class="fr-label">FR-002</text>
-  </g>
+  <!-- Table 2: profiles -->
+  <rect x="580" y="225" width="240" height="80" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+  <circle cx="800" cy="245" r="10" fill="#22c55e"/>
+  <text x="600" y="255" class="heading-sm">profiles</text>
+  <text x="600" y="277" class="code">user_id, display_name, bio</text>
+  <text x="600" y="295" class="text-sm">RLS: Owner SELECT/UPDATE</text>
 
-  <!-- Sessions Table (was y=230, now y=310) -->
-  <g transform="translate(540, 310)">
-    <rect x="0" y="0" width="180" height="120" rx="6" fill="url(#tableGrad)" stroke="#475569"/>
-    <rect x="0" y="0" width="180" height="28" rx="6" fill="#475569"/>
-    <rect x="0" y="22" width="180" height="6" fill="#475569"/>
-    <text x="15" y="19" class="table-name">sessions</text>
-    <circle cx="165" cy="14" r="6" fill="#22c55e"/>
-    <text x="15" y="48" class="column-name">id: uuid (PK)</text>
-    <text x="15" y="63" class="column-name">user_id: uuid (FK)</text>
-    <text x="15" y="78" class="column-name">expires_at: timestamp</text>
-    <line x1="10" y1="88" x2="170" y2="88" stroke="#475569"/>
-    <text x="15" y="103" class="text-muted">RLS: Owner SELECT</text>
-    <text x="15" y="115" class="fr-label">FR-003</text>
-  </g>
+  <!-- Table 3: sessions -->
+  <rect x="580" y="320" width="240" height="80" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+  <circle cx="800" cy="340" r="10" fill="#22c55e"/>
+  <text x="600" y="350" class="heading-sm">sessions</text>
+  <text x="600" y="372" class="code">user_id, token, expires_at</text>
+  <text x="600" y="390" class="text-sm">RLS: Owner SELECT only</text>
 
-  <!-- Audit Logs Table (was y=230, now y=310) -->
-  <g transform="translate(740, 310)">
-    <rect x="0" y="0" width="180" height="120" rx="6" fill="url(#tableGrad)" stroke="#475569"/>
-    <rect x="0" y="0" width="180" height="28" rx="6" fill="#eab308"/>
-    <rect x="0" y="22" width="180" height="6" fill="#eab308"/>
-    <text x="15" y="19" class="table-name" fill="#1e293b">audit_logs</text>
-    <circle cx="165" cy="14" r="6" fill="#ef4444"/>
-    <text x="15" y="48" class="column-name">id: uuid (PK)</text>
-    <text x="15" y="63" class="column-name">user_id: uuid (FK)</text>
-    <text x="15" y="78" class="column-name">event_type: text</text>
-    <line x1="10" y1="88" x2="170" y2="88" stroke="#475569"/>
-    <text x="15" y="103" class="text-muted">RLS: IMMUTABLE (no U/D)</text>
-    <text x="15" y="115" class="fr-label">FR-004</text>
-  </g>
+  <!-- Table 4: audit_logs (special protection) -->
+  <rect x="580" y="415" width="240" height="85" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+  <circle cx="800" cy="435" r="10" fill="#ef4444"/>
+  <text x="600" y="445" class="heading-sm" fill="#fca5a5">audit_logs</text>
+  <text x="600" y="467" class="code">user_id, event, timestamp</text>
+  <text x="600" y="485" class="text-sm" fill="#fca5a5">IMMUTABLE: No UPDATE/DELETE</text>
 
-  <!-- ==================== ACCESS FLOW ARROWS (SIMPLE STRAIGHT LINES - no routing needed) ==================== -->
+  <!-- Flow arrows from RLS to tables -->
+  <line x1="540" y1="300" x2="570" y2="170" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="540" y1="330" x2="570" y2="265" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="540" y1="360" x2="570" y2="360" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="540" y1="390" x2="570" y2="458" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowhead-red)"/>
 
-  <!-- Authenticated → RLS (direct horizontal) -->
-  <path d="M 220 220 L 280 220" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowheadGreen)" fill="none"/>
+  <!-- ==================== SECTION 4: LEGEND & PRINCIPLES (y=90-500) ==================== -->
+  <!-- Legend Panel -->
+  <rect x="860" y="90" width="240" height="160" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="880" y="120" class="heading">LEGEND</text>
 
-  <!-- RLS → users table (direct line to left table column) -->
-  <path d="M 480 200 L 530 230" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowheadGreen)" fill="none"/>
+  <line x1="880" y1="145" x2="920" y2="145" stroke="#22c55e" stroke-width="3"/>
+  <text x="930" y="150" class="text-md">Authenticated access</text>
 
-  <!-- RLS → sessions table (direct line to left table column) -->
-  <path d="M 480 360 L 530 370" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowheadGreen)" fill="none"/>
+  <line x1="880" y1="175" x2="920" y2="175" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="6,3"/>
+  <text x="930" y="180" class="text-md">Service bypass</text>
 
-  <!-- Service → RLS (direct horizontal) -->
-  <path d="M 220 340 L 280 340" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+  <line x1="880" y1="205" x2="920" y2="205" stroke="#ef4444" stroke-width="3"/>
+  <text x="930" y="210" class="text-md">Denied/Protected</text>
 
-  <!-- Service bypass → profiles table: Route ABOVE tables (y=140) to avoid crossing users table -->
-  <!-- Path: RLS(480,200) → up to (500,140) → right to (830,140) → down to profiles(830,170) -->
-  <path d="M 480 200 L 500 140 L 830 140 L 830 170"
-        stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowhead)" fill="none"/>
+  <circle cx="890" cy="235" r="8" fill="#22c55e"/>
+  <text x="910" y="240" class="text-md">RLS Enabled</text>
 
-  <!-- Service bypass → audit_logs table: Route BELOW tables (y=460) to avoid crossing sessions table -->
-  <!-- Path: RLS(480,420) → down to (500,460) → right to (830,460) → up to audit_logs(830,430) -->
-  <path d="M 480 420 L 500 460 L 830 460 L 830 430"
-        stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,3" marker-end="url(#arrowhead)" fill="none"/>
+  <!-- Key Principles Panel -->
+  <rect x="860" y="270" width="500" height="170" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="880" y="300" class="heading">KEY SECURITY PRINCIPLES</text>
 
-  <!-- Labels for service bypass routes -->
-  <text x="665" y="130" text-anchor="middle" class="text-sm" fill="#8b5cf6">service bypass (FR-011)</text>
-  <text x="665" y="475" text-anchor="middle" class="text-sm" fill="#8b5cf6">service bypass (FR-012)</text>
+  <text x="880" y="330" class="text-md">1. Default Deny - No access without explicit policy (FR-005)</text>
+  <text x="880" y="355" class="text-md">2. Owner Isolation - Users see only their own data (FR-006-010)</text>
+  <text x="880" y="380" class="text-md">3. Service Bypass - Backend ops via service_role (FR-011-014)</text>
+  <text x="880" y="405" class="text-md">4. Audit Immutability - Logs cannot be modified (FR-015-018)</text>
+  <text x="880" y="430" class="text-md">5. Anonymous Restriction - Minimal public access (FR-019-021)</text>
 
-  <!-- Anonymous → RLS (blocked, direct horizontal) -->
-  <path d="M 220 460 L 280 460" stroke="#ef4444" stroke-width="2" marker-end="url(#arrowheadRed)" fill="none"/>
+  <!-- Compliance Panel -->
+  <rect x="860" y="460" width="500" height="80" rx="8" fill="#1e293b" stroke="#8b5cf6"/>
+  <text x="880" y="490" class="heading" fill="#c4b5fd">COMPLIANCE</text>
+  <text x="880" y="515" class="text-md">GDPR + SOC 2 | 99.9% Uptime | &lt;10ms Policy Overhead</text>
+  <text x="880" y="535" class="text-sm">SC-001 to SC-008: All tables protected, zero cross-user access</text>
 
-  <!-- ==================== LEGEND (moved to y=60 - top right) ==================== -->
-  <g transform="translate(960, 50)">
-    <rect x="0" y="0" width="400" height="170" rx="8" fill="#1e293b" stroke="#475569"/>
-    <text x="200" y="25" text-anchor="middle" class="heading">Legend</text>
-    <line x1="20" y1="35" x2="380" y2="35" stroke="#475569"/>
+  <!-- ==================== SECTION 5: PATTERNS REFERENCE (y=520-740) ==================== -->
+  <rect x="40" y="560" width="1320" height="160" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="60" y="595" class="heading">STANDARD PATTERNS (Templates for Future Features)</text>
 
-    <!-- Access types -->
-    <circle cx="30" cy="55" r="8" fill="#22c55e"/>
-    <text x="50" y="60" class="text-md">Allowed access (auth.uid() match)</text>
+  <!-- Pattern cards -->
+  <rect x="60" y="615" width="300" height="90" rx="6" fill="#334155"/>
+  <text x="80" y="645" class="heading-sm" fill="#22c55e">Pattern 1: Owner Isolation</text>
+  <text x="80" y="670" class="code">WHERE auth.uid() = user_id</text>
+  <text x="80" y="692" class="annotation">FR-022</text>
 
-    <circle cx="30" cy="85" r="8" fill="#8b5cf6"/>
-    <text x="50" y="90" class="text-md">Service bypass (service_role)</text>
+  <rect x="380" y="615" width="300" height="90" rx="6" fill="#334155"/>
+  <text x="400" y="645" class="heading-sm" fill="#8b5cf6">Pattern 2: Service Bypass</text>
+  <text x="400" y="670" class="code">OR auth.role() = 'service_role'</text>
+  <text x="400" y="692" class="annotation">FR-023</text>
 
-    <circle cx="30" cy="115" r="8" fill="#ef4444"/>
-    <text x="50" y="120" class="text-md">Denied access (no permission)</text>
+  <rect x="700" y="615" width="300" height="90" rx="6" fill="#334155"/>
+  <text x="720" y="645" class="heading-sm" fill="#f59e0b">Pattern 3: Soft Delete</text>
+  <text x="720" y="670" class="code">FOR DELETE USING (false)</text>
+  <text x="720" y="692" class="annotation">FR-024</text>
 
-    <line x1="20" y1="140" x2="80" y2="140" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="5,3"/>
-    <text x="90" y="145" class="text-md">RLS bypass (dashed line)</text>
+  <rect x="1020" y="615" width="320" height="90" rx="6" fill="#334155"/>
+  <text x="1040" y="645" class="heading-sm" fill="#ef4444">Pattern 4: Immutable Audit</text>
+  <text x="1040" y="670" class="code">INSERT only via service_role</text>
+  <text x="1040" y="692" class="annotation">FR-025</text>
 
-    <circle cx="30" cy="160" r="6" fill="#eab308"/>
-    <text x="50" y="165" class="text-md">Special protection (immutable)</text>
-  </g>
-
-  <!-- ==================== KEY PRINCIPLES (y=240 - vertically centered) ==================== -->
-  <g transform="translate(960, 240)">
-    <rect x="0" y="0" width="400" height="200" rx="8" fill="#1e293b" stroke="#475569"/>
-    <text x="200" y="25" text-anchor="middle" class="heading">Key Security Principles</text>
-    <line x1="20" y1="35" x2="380" y2="35" stroke="#475569"/>
-
-    <text x="20" y="58" class="text-md" fill="#22c55e">1. Data Isolation (FR-006 to FR-010)</text>
-    <text x="30" y="75" class="text-sm">Users can only access their own records</text>
-
-    <text x="20" y="100" class="text-md" fill="#8b5cf6">2. Service Bypass (FR-011 to FR-014)</text>
-    <text x="30" y="117" class="text-sm">Backend ops use service_role with audit trail</text>
-
-    <text x="20" y="142" class="text-md" fill="#eab308">3. Audit Immutability (FR-015 to FR-018)</text>
-    <text x="30" y="159" class="text-sm">Audit logs: INSERT only, no UPDATE/DELETE</text>
-
-    <text x="20" y="184" class="text-md" fill="#ef4444">4. Anonymous Restrictions (FR-019 to FR-021)</text>
-    <text x="30" y="201" class="text-sm">Anon users: public read only, no writes</text>
-  </g>
-
-  <!-- ==================== COMPLIANCE BADGES (y=460 - balanced bottom) ==================== -->
-  <g transform="translate(960, 460)">
-    <rect x="0" y="0" width="400" height="120" rx="8" fill="#1e293b" stroke="#475569"/>
-    <text x="200" y="25" text-anchor="middle" class="heading">Compliance &amp; Success Criteria</text>
-    <line x1="20" y1="35" x2="380" y2="35" stroke="#475569"/>
-
-    <rect x="20" y="48" width="110" height="28" rx="4" fill="#334155" stroke="#22c55e"/>
-    <text x="75" y="67" text-anchor="middle" class="text-sm" fill="#22c55e">GDPR Ready</text>
-
-    <rect x="145" y="48" width="110" height="28" rx="4" fill="#334155" stroke="#22c55e"/>
-    <text x="200" y="67" text-anchor="middle" class="text-sm" fill="#22c55e">SOC 2 Ready</text>
-
-    <rect x="270" y="48" width="110" height="28" rx="4" fill="#334155" stroke="#22c55e"/>
-    <text x="325" y="67" text-anchor="middle" class="text-sm" fill="#22c55e">99.9% SLA</text>
-
-    <text x="20" y="98" class="text-muted">SC-001: All tables protected | SC-002: 100% isolation | SC-004: &lt;10ms overhead</text>
-  </g>
-
-  <!-- ==================== FOOTER ==================== -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">000-rls-implementation | Row Level Security Foundation | ScriptHammer</text>
+  <!-- Footer (MUST be at y=780) -->
+  <text x="700" y="780" text-anchor="middle" class="text-muted">000-rls-implementation | RLS Architecture Overview | ScriptHammer</text>
 </svg>
