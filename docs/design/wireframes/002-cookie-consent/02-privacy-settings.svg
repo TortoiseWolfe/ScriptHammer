@@ -44,171 +44,135 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151" letter-spacing="1">PRIVACY SETTINGS PAGE - PREFERENCE MANAGEMENT</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151" letter-spacing="1">PRIVACY SETTINGS PAGE - GDPR RIGHTS MANAGEMENT</text>
 
   <!-- DESKTOP SECTION -->
   <text x="40" y="52" class="label-desktop">DESKTOP</text>
 
   <g id="desktop-view">
-    <!-- Sidebar -->
-    <rect x="40" y="60" width="200" height="680" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+    <!-- Page background -->
+    <rect x="40" y="60" width="560" height="700" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
 
-    <!-- Logo -->
-    <rect x="55" y="75" width="170" height="40" rx="6" fill="#dcc8a8"/>
-    <text x="140" y="100" text-anchor="middle" class="heading-sm">ScriptHammer</text>
+    <!-- Header with back link -->
+    <rect x="40" y="60" width="560" height="50" rx="8" fill="#dcc8a8"/>
+    <rect x="40" y="98" width="560" height="12" fill="#dcc8a8"/>
+    <text x="60" y="92" class="text-md" fill="#8b5cf6">← Back to App</text>
+    <text x="320" y="92" text-anchor="middle" class="heading">Privacy Settings</text>
 
-    <!-- Nav items - normalized 35px spacing -->
-    <text x="70" y="145" class="text-sm">Dashboard</text>
-    <text x="70" y="180" class="text-sm">Profile</text>
-    <text x="70" y="215" class="text-sm">Settings</text>
+    <!-- Current Consent Status Section -->
+    <text x="60" y="140" class="heading-sm">Your Cookie Preferences</text>
+    <text x="60" y="160" class="text-muted">Last updated: January 1, 2026 at 9:41 AM</text>
 
-    <rect x="55" y="240" width="170" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="140" y="268" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="13" font-weight="600">Privacy</text>
+    <!-- Category Status Cards (compact) -->
+    <g id="consent-status">
+      <!-- Necessary - ON -->
+      <rect x="60" y="175" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+      <text x="80" y="202" class="text-md">Necessary</text>
+      <rect x="260" y="187" width="40" height="20" rx="10" fill="#22c55e"/>
+      <circle cx="290" cy="197" r="7" fill="#fff"/>
 
-    <text x="70" y="315" class="text-sm">Notifications</text>
-    <text x="70" y="350" class="text-sm">Account</text>
+      <!-- Functional - OFF -->
+      <rect x="320" y="175" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="340" y="202" class="text-md">Functional</text>
+      <rect x="520" y="187" width="40" height="20" rx="10" fill="#dcc8a8" stroke="#b8a080"/>
+      <circle cx="530" cy="197" r="7" fill="#fff"/>
 
-    <!-- Footer link annotation -->
-    <rect x="55" y="680" width="170" height="45" rx="6" fill="#dcc8a8"/>
-    <text x="140" y="700" text-anchor="middle" class="text-muted">Privacy Settings</text>
-    <text x="140" y="715" text-anchor="middle" class="text-muted">(Footer link FR-011)</text>
+      <!-- Analytics - OFF -->
+      <rect x="60" y="229" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="80" y="256" class="text-md">Analytics</text>
+      <rect x="260" y="241" width="40" height="20" rx="10" fill="#dcc8a8" stroke="#b8a080"/>
+      <circle cx="270" cy="251" r="7" fill="#fff"/>
 
-    <!-- Main Content Area -->
-    <rect x="250" y="60" width="440" height="680" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
+      <!-- Marketing - OFF -->
+      <rect x="320" y="229" width="250" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="340" y="256" class="text-md">Marketing</text>
+      <rect x="520" y="241" width="40" height="20" rx="10" fill="#dcc8a8" stroke="#b8a080"/>
+      <circle cx="530" cy="251" r="7" fill="#fff"/>
+    </g>
 
-    <!-- Page Header -->
-    <text x="270" y="95" class="heading-lg">Privacy Settings</text>
-    <text x="270" y="120" class="text-md">Manage your cookie preferences and data rights</text>
-
-    <!-- Current Consent Status -->
-    <text x="270" y="155" class="heading-sm">Current Consent Status</text>
-
-    <rect x="270" y="170" width="400" height="130" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-
-    <!-- Status Table Header -->
-    <rect x="270" y="170" width="400" height="28" rx="6" fill="#dcc8a8"/>
-    <text x="290" y="189" class="text-muted">CATEGORY</text>
-    <text x="480" y="189" class="text-muted">STATUS</text>
-    <text x="580" y="189" class="text-muted">ACTION</text>
-
-    <!-- Necessary -->
-    <text x="290" y="220" class="text-sm">Necessary</text>
-    <rect x="470" y="205" width="60" height="22" rx="4" fill="#22c55e"/>
-    <text x="500" y="220" text-anchor="middle" fill="#fff" font-size="10">Enabled</text>
-    <text x="590" y="220" class="text-muted">Required</text>
-
-    <!-- Functional -->
-    <text x="290" y="250" class="text-sm">Functional</text>
-    <rect x="470" y="235" width="60" height="22" rx="4" fill="#22c55e"/>
-    <text x="500" y="250" text-anchor="middle" fill="#fff" font-size="10">Enabled</text>
-    <rect x="565" y="238" width="40" height="20" rx="10" fill="#22c55e"/>
-    <circle cx="595" cy="248" r="7" fill="#fff"/>
-
-    <!-- Analytics -->
-    <text x="290" y="280" class="text-sm">Analytics</text>
-    <rect x="470" y="265" width="60" height="22" rx="4" fill="#ef4444"/>
-    <text x="500" y="280" text-anchor="middle" fill="#fff" font-size="10">Disabled</text>
-    <rect x="565" y="268" width="40" height="20" rx="10" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="575" cy="278" r="7" fill="#fff"/>
-
-    <!-- Marketing -->
-    <text x="290" y="310" class="text-sm">Marketing</text>
-    <rect x="470" y="295" width="60" height="22" rx="4" fill="#ef4444"/>
-    <text x="500" y="310" text-anchor="middle" fill="#fff" font-size="10">Disabled</text>
-    <rect x="565" y="298" width="40" height="20" rx="10" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="575" cy="308" r="7" fill="#fff"/>
-
-    <!-- Save Button - 44px -->
-    <rect x="510" y="340" width="140" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="580" y="368" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Save Changes</text>
-
-    <!-- Consent History -->
-    <text x="270" y="415" class="heading-sm">Consent History</text>
-
-    <rect x="270" y="430" width="400" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="290" y="455" class="text-sm">Last updated: January 1, 2026 at 10:30 AM</text>
-    <text x="290" y="475" class="text-sm">Consent version: 1.0.0</text>
-    <text x="290" y="492" class="text-muted">You will be re-prompted if the privacy policy changes.</text>
-
-    <!-- GDPR Data Rights Section -->
-    <text x="270" y="530" class="heading-sm">Your Data Rights (GDPR)</text>
-
-    <!-- Data Export - 44px button height -->
-    <rect x="270" y="545" width="195" height="100" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="290" y="570" class="heading-sm">Data Export</text>
-    <text x="290" y="588" class="text-muted">Download all your data</text>
-    <rect x="285" y="598" width="165" height="44" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="367" y="626" text-anchor="middle" class="text-sm">Export Data</text>
-
-    <!-- Data Deletion - 44px button height -->
-    <rect x="475" y="545" width="195" height="100" rx="6" fill="#f5f0e6" stroke="#ef4444"/>
-    <text x="495" y="570" class="heading-sm">Data Deletion</text>
-    <text x="495" y="588" class="text-muted">Request data removal</text>
-    <rect x="490" y="598" width="165" height="44" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-    <text x="572" y="626" text-anchor="middle" class="text-sm" fill="#ef4444">Delete Data</text>
-
-    <!-- Info box -->
-    <rect x="270" y="660" width="400" height="65" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="290" y="682" class="text-sm">Data export includes: consent history, preferences,</text>
-    <text x="290" y="700" class="text-sm">and any locally stored information. Completes in &lt;5s.</text>
-    <text x="290" y="717" class="text-muted">FR-016, FR-017, FR-018 | SC-005</text>
-
-    <!-- Detail Panel -->
-    <rect x="700" y="60" width="240" height="680" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="1"/>
-
-    <text x="720" y="95" class="heading-sm">Quick Actions</text>
-
-    <!-- Reset to Defaults - 44px -->
-    <rect x="715" y="110" width="210" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="820" y="138" text-anchor="middle" class="text-sm">Reset to Defaults</text>
-
-    <!-- Accept All - 44px -->
-    <rect x="715" y="165" width="210" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="820" y="193" text-anchor="middle" class="text-sm">Accept All Cookies</text>
-
-    <!-- Reject All - 44px -->
-    <rect x="715" y="220" width="210" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="820" y="248" text-anchor="middle" class="text-sm">Reject All Optional</text>
+    <!-- Edit Preferences Button - 44px -->
+    <rect x="60" y="290" width="200" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="160" y="318" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="600">Edit Preferences</text>
 
     <!-- Divider -->
-    <line x1="715" y1="285" x2="925" y2="285" stroke="#b8a080" stroke-width="1"/>
+    <line x1="60" y1="355" x2="580" y2="355" stroke="#b8a080" stroke-width="1"/>
 
-    <!-- FR Annotations for Consent History -->
-    <text x="720" y="315" class="heading-sm">Consent Management</text>
+    <!-- Your Data Section (GDPR Rights) -->
+    <text x="60" y="385" class="heading-sm">Your Data Rights (GDPR)</text>
 
-    <rect x="715" y="330" width="210" height="80" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
-    <text x="820" y="355" text-anchor="middle" class="annotation">Persistence</text>
-    <text x="820" y="375" text-anchor="middle" class="text-muted">FR-009: Cross-session</text>
-    <text x="820" y="392" text-anchor="middle" class="text-muted">FR-012: Immediate effect</text>
-    <text x="820" y="406" text-anchor="middle" class="text-muted">FR-013-015: Versioning</text>
+    <!-- Data Export Card -->
+    <rect x="60" y="400" width="510" height="90" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="80" y="425" class="text-md" font-weight="600">Export My Data</text>
+    <text x="80" y="445" class="text-sm">Download all data we have stored about you (consent history,</text>
+    <text x="80" y="460" class="text-sm">preferences, locally persisted information) as a JSON file.</text>
+    <rect x="420" y="415" width="130" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="485" y="443" text-anchor="middle" class="text-md">Download</text>
 
-    <!-- Legal Links -->
-    <text x="720" y="445" class="heading-sm">Legal</text>
-
-    <text x="720" y="475" class="annotation">Privacy Policy</text>
-    <text x="720" y="500" class="annotation">Cookie Policy</text>
-    <text x="720" y="525" class="annotation">Terms of Service</text>
+    <!-- Data Deletion Card -->
+    <rect x="60" y="505" width="510" height="90" rx="6" fill="#f5f0e6" stroke="#ef4444" stroke-width="1"/>
+    <text x="80" y="530" class="text-md" font-weight="600">Request Data Deletion</text>
+    <text x="80" y="550" class="text-sm">Permanently delete all your data. This action cannot be undone.</text>
+    <text x="80" y="565" class="text-sm">You will be treated as a first-time visitor after deletion.</text>
+    <rect x="420" y="520" width="130" height="44" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="485" y="548" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="14" font-weight="600">Delete All</text>
 
     <!-- Divider -->
-    <line x1="715" y1="550" x2="925" y2="550" stroke="#b8a080" stroke-width="1"/>
+    <line x1="60" y1="615" x2="580" y2="615" stroke="#b8a080" stroke-width="1"/>
 
-    <!-- About Cookies -->
-    <text x="720" y="580" class="heading-sm">About Cookies</text>
+    <!-- Consent History Section -->
+    <text x="60" y="645" class="heading-sm">Consent History</text>
 
-    <text x="720" y="610" class="text-sm">Necessary: Required for</text>
-    <text x="720" y="625" class="text-sm">the site to function.</text>
+    <rect x="60" y="660" width="510" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="80" y="685" class="text-sm">v1.0.0 - Initial consent given</text>
+    <text x="460" y="685" text-anchor="end" class="text-muted">Jan 1, 2026 9:41 AM</text>
+    <line x1="80" y1="700" x2="550" y2="700" stroke="#b8a080" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="80" y="720" class="text-muted">Only necessary cookies accepted</text>
+  </g>
 
-    <text x="720" y="655" class="text-sm">Functional: Remember</text>
-    <text x="720" y="670" class="text-sm">your preferences.</text>
+  <!-- ANNOTATIONS -->
+  <g id="annotations">
+    <!-- FR-010 annotation -->
+    <rect x="615" y="60" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="82" text-anchor="middle" class="annotation">Privacy Page</text>
+    <text x="680" y="98" text-anchor="middle" class="text-muted">FR-010: Settings</text>
+    <text x="680" y="110" text-anchor="middle" class="text-muted">accessible anytime</text>
 
-    <text x="720" y="700" class="text-sm">Questions? Contact our</text>
-    <text x="720" y="715" class="text-sm">Data Protection Officer</text>
+    <!-- FR-011 annotation -->
+    <rect x="615" y="130" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="152" text-anchor="middle" class="annotation">Footer Link</text>
+    <text x="680" y="168" text-anchor="middle" class="text-muted">FR-011: Persistent</text>
+    <text x="680" y="180" text-anchor="middle" class="text-muted">privacy link</text>
+
+    <!-- FR-012 annotation -->
+    <rect x="615" y="200" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="222" text-anchor="middle" class="annotation">Edit Anytime</text>
+    <text x="680" y="238" text-anchor="middle" class="text-muted">FR-012: Immediate</text>
+    <text x="680" y="250" text-anchor="middle" class="text-muted">effect on change</text>
+
+    <!-- FR-016/018 annotation -->
+    <rect x="615" y="400" width="130" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="422" text-anchor="middle" class="annotation">Data Export</text>
+    <text x="680" y="438" text-anchor="middle" class="text-muted">FR-016: Right of</text>
+    <text x="680" y="453" text-anchor="middle" class="text-muted">Access (download)</text>
+    <text x="680" y="465" text-anchor="middle" class="text-muted">FR-018: All data</text>
+
+    <!-- FR-017 annotation -->
+    <rect x="615" y="505" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="527" text-anchor="middle" class="annotation">Data Deletion</text>
+    <text x="680" y="543" text-anchor="middle" class="text-muted">FR-017: Right to</text>
+    <text x="680" y="555" text-anchor="middle" class="text-muted">be Forgotten</text>
+
+    <!-- FR-013-015 annotation -->
+    <rect x="615" y="645" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="680" y="667" text-anchor="middle" class="annotation">Consent Audit</text>
+    <text x="680" y="683" text-anchor="middle" class="text-muted">FR-013-015:</text>
+    <text x="680" y="695" text-anchor="middle" class="text-muted">Version tracking</text>
   </g>
 
   <!-- MOBILE SECTION -->
-  <text x="980" y="52" class="label-mobile">MOBILE</text>
+  <text x="770" y="52" class="label-mobile">MOBILE</text>
 
-  <g id="mobile-view" transform="translate(980, 60)">
+  <g id="mobile-view" transform="translate(770, 60)">
     <!-- Phone frame -->
     <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
     <rect x="10" y="10" width="340" height="680" rx="16" fill="#e8d4b8"/>
@@ -219,73 +183,78 @@
     <text x="310" y="28" text-anchor="end" class="text-sm">100%</text>
 
     <!-- Header -->
-    <rect x="10" y="38" width="340" height="50" fill="#8b5cf6"/>
-    <text x="30" y="58" fill="rgba(255,255,255,0.8)" font-size="16">←</text>
-    <text x="60" y="68" fill="#fff" font-family="system-ui" font-size="16" font-weight="700">Privacy Settings</text>
+    <rect x="10" y="38" width="340" height="44" fill="#dcc8a8"/>
+    <text x="30" y="66" class="text-md" fill="#8b5cf6">← Back</text>
+    <text x="180" y="66" text-anchor="middle" class="heading-sm">Privacy Settings</text>
 
-    <!-- Content -->
-    <text x="25" y="110" class="heading-sm">Cookie Preferences</text>
+    <!-- Content area -->
+    <rect x="10" y="82" width="340" height="608" rx="8" fill="#e8d4b8"/>
 
-    <!-- Necessary -->
-    <rect x="25" y="125" width="310" height="50" rx="6" fill="#f5f0e6" stroke="#22c55e"/>
-    <text x="40" y="147" class="text-sm" font-weight="600">Necessary</text>
-    <text x="40" y="165" class="text-muted">Required</text>
-    <rect x="275" y="138" width="44" height="24" rx="12" fill="#22c55e"/>
-    <circle cx="307" cy="150" r="9" fill="#fff"/>
+    <!-- Consent Status Section -->
+    <text x="25" y="108" class="heading-sm">Your Preferences</text>
 
-    <!-- Functional -->
-    <rect x="25" y="185" width="310" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="207" class="text-sm" font-weight="600">Functional</text>
-    <text x="40" y="225" class="text-muted">Preferences</text>
-    <rect x="275" y="198" width="44" height="24" rx="12" fill="#22c55e"/>
-    <circle cx="307" cy="210" r="9" fill="#fff"/>
+    <!-- Compact category toggles (stacked, 44px each) -->
+    <rect x="25" y="118" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="45" y="145" class="text-md">Necessary</text>
+    <rect x="275" y="130" width="36" height="18" rx="9" fill="#22c55e"/>
+    <circle cx="302" cy="139" r="6" fill="#fff"/>
 
-    <!-- Analytics -->
-    <rect x="25" y="245" width="310" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="267" class="text-sm" font-weight="600">Analytics</text>
-    <text x="40" y="285" class="text-muted">Usage data</text>
-    <rect x="275" y="258" width="44" height="24" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="287" cy="270" r="9" fill="#fff"/>
+    <rect x="25" y="170" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="197" class="text-md">Functional</text>
+    <rect x="275" y="182" width="36" height="18" rx="9" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="284" cy="191" r="6" fill="#fff"/>
 
-    <!-- Marketing -->
-    <rect x="25" y="305" width="310" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="40" y="327" class="text-sm" font-weight="600">Marketing</text>
-    <text x="40" y="345" class="text-muted">Advertising</text>
-    <rect x="275" y="318" width="44" height="24" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
-    <circle cx="287" cy="330" r="9" fill="#fff"/>
+    <rect x="25" y="222" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="249" class="text-md">Analytics</text>
+    <rect x="275" y="234" width="36" height="18" rx="9" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="284" cy="243" r="6" fill="#fff"/>
 
-    <!-- Save Button - 44px -->
-    <rect x="25" y="370" width="310" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="180" y="398" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Save Preferences</text>
+    <rect x="25" y="274" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="301" class="text-md">Marketing</text>
+    <rect x="275" y="286" width="36" height="18" rx="9" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="284" cy="295" r="6" fill="#fff"/>
+
+    <!-- Edit button - 44px -->
+    <rect x="25" y="330" width="300" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="175" y="358" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="14" font-weight="600">Edit Preferences</text>
 
     <!-- Divider -->
-    <line x1="25" y1="430" x2="335" y2="430" stroke="#b8a080" stroke-width="1"/>
+    <line x1="25" y1="390" x2="325" y2="390" stroke="#b8a080" stroke-width="1"/>
 
-    <!-- Data Rights -->
-    <text x="25" y="455" class="heading-sm">Your Data Rights</text>
+    <!-- Your Data Section -->
+    <text x="25" y="415" class="heading-sm">Your Data Rights</text>
 
-    <!-- Export - 44px button -->
-    <rect x="25" y="470" width="150" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="100" y="495" text-anchor="middle" class="text-sm" font-weight="600">Export</text>
-    <rect x="35" y="505" width="130" height="44" rx="4" fill="#e8d4b8" stroke="#b8a080"/>
-    <text x="100" y="533" text-anchor="middle" class="text-muted">Download</text>
+    <!-- Export Button - 44px -->
+    <rect x="25" y="430" width="300" height="44" rx="6" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="175" y="458" text-anchor="middle" class="text-md">Export My Data</text>
 
-    <!-- Delete - 44px button -->
-    <rect x="185" y="470" width="150" height="80" rx="6" fill="#f5f0e6" stroke="#ef4444"/>
-    <text x="260" y="495" text-anchor="middle" class="text-sm" font-weight="600">Delete</text>
-    <rect x="195" y="505" width="130" height="44" rx="4" fill="#fee2e2" stroke="#ef4444"/>
-    <text x="260" y="533" text-anchor="middle" class="text-muted" fill="#ef4444">Request</text>
+    <!-- Delete Button - 44px -->
+    <rect x="25" y="486" width="300" height="44" rx="6" fill="#fef2f2" stroke="#ef4444" stroke-width="2"/>
+    <text x="175" y="514" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="14" font-weight="600">Request Deletion</text>
 
-    <!-- Consent Info -->
-    <rect x="25" y="565" width="310" height="55" rx="6" fill="#dcc8a8"/>
-    <text x="40" y="588" class="text-muted">Consent v1.0.0 • Updated Jan 1, 2026</text>
-    <text x="40" y="608" class="text-muted">FR-009, FR-012-015 | SC-004</text>
+    <!-- Divider -->
+    <line x1="25" y1="550" x2="325" y2="550" stroke="#b8a080" stroke-width="1"/>
 
-    <!-- Footer Links -->
-    <text x="180" y="645" text-anchor="middle" class="annotation">Privacy Policy</text>
-    <text x="180" y="665" text-anchor="middle" class="text-muted">Cookie Policy • Terms</text>
+    <!-- Consent History -->
+    <text x="25" y="575" class="heading-sm">Consent History</text>
+
+    <rect x="25" y="588" width="300" height="55" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="40" y="608" class="text-sm">v1.0.0 - Initial consent</text>
+    <text x="40" y="625" class="text-muted">Jan 1, 2026 • Necessary only</text>
+
+    <!-- Footer info -->
+    <text x="175" y="665" text-anchor="middle" class="text-muted">Consent v1.0.0 • FR-010-018</text>
   </g>
 
   <!-- Footer -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">Privacy Settings Page • Feature 002 • ScriptHammer</text>
+  <text x="700" y="780" text-anchor="middle" class="text-muted">Privacy Settings • Feature 002 • ScriptHammer</text>
+
+  <!-- Leader lines -->
+  <g id="leader-lines">
+    <line x1="600" y1="85" x2="615" y2="85" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="270" y1="310" x2="615" y2="225" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="450" x2="615" y2="435" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="545" x2="615" y2="530" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="700" x2="615" y2="670" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+  </g>
 </svg>
