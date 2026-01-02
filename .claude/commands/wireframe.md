@@ -2,6 +2,59 @@
 description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerates 🔴 and ✅ PASS - never skips files)
 ---
 
+## ⛔ MANDATORY PRE-FLIGHT CHECK (DO THIS FIRST)
+
+**Before generating ANY wireframe, answer these questions. This is BLOCKING - you cannot proceed without completing this check.**
+
+### Theme Decision (BLOCKING)
+
+**Question 1**: Does the feature name or wireframe title contain ANY of these keywords?
+- `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`
+
+| Answer | Action |
+|--------|--------|
+| **YES** | ⛔ **MUST use DARK THEME** - Do not proceed with light theme |
+| **NO** | Continue to Question 2 |
+
+**Question 2**: Would a non-technical end user view this screen in the actual application?
+
+| Answer | Theme | Examples |
+|--------|-------|----------|
+| **YES** - users see this | **Light theme** | Settings page, profile, dashboard with user data |
+| **NO** - only developers/admins | **DARK theme** | CI/CD, RLS policies, API flow, test runner |
+
+### ⛔ STOP CHECK
+
+**If you answered "architecture" or "backend" keywords in Q1 AND are about to use light theme → YOU ARE WRONG.**
+
+Architecture diagrams, auth flows, RLS diagrams, test pipelines = **ALWAYS DARK THEME**. No exceptions.
+
+### Canvas Size Check
+
+| Content Type | Canvas Size | viewBox |
+|--------------|-------------|---------|
+| Standard UI screens | 1400×800 | `0 0 1400 800` |
+| Architecture with many components | 1600×1000 | `0 0 1600 1000` |
+| Complex flows with arrows | 1600×1200 | `0 0 1600 1200` |
+
+**⛔ NEVER shrink fonts to fit content. ALWAYS expand canvas instead.**
+
+### Pre-Flight Verification Statement (MANDATORY)
+
+Before generating, you MUST write:
+
+```
+PRE-FLIGHT CHECK COMPLETE:
+- Feature type: [UI/Architecture/Backend]
+- Theme selected: [Light/Dark]
+- Reason: [e.g., "Architecture diagram - developers only" or "User-facing settings page"]
+- Canvas size: [e.g., 1400×800 or 1600×1000]
+```
+
+**If you cannot write this statement with confidence, re-read the spec and feature name.**
+
+---
+
 ## User Input
 
 ```text
@@ -96,6 +149,39 @@ Ask the user which spec to use if multiple exist, or use the only one if there's
 - Error states or edge cases mentioned
 
 This is critical - wireframes must accurately reflect the spec requirements.
+
+### 2c. Extract Requirements for Legend (MANDATORY)
+
+Build lookup tables for FR, SC, and US during spec reading:
+
+#### FR Extraction (Functional Requirements)
+1. Locate `### Functional Requirements` section in spec.md
+2. For each line matching `**FR-XXX**: [statement]`:
+   - Extract code (FR-001, FR-002, etc.)
+   - Extract full statement
+   - Generate short title (<=30 chars): Remove "System", keep MUST/SHOULD
+
+#### SC Extraction (Success Criteria)
+1. Locate `### Success Criteria` section
+2. For each `**SC-XXX**: [measurable outcome]`:
+   - Extract code, full statement
+   - Generate short title (<=30 chars): Keep metric, remove fluff
+
+#### US Extraction (User Stories) - INLINE ONLY
+1. Locate `### User Stories` section
+2. For each `**US-XXX**: As a [role]...`:
+   - Extract code and role
+   - Generate short title: `US-XXX: As [role]...`
+   - **NO legend entry** (too verbose for legend panel)
+
+**REQUIREMENTS LOOKUP TABLE format:**
+| Type | Code | Short Title | Full Statement |
+|------|------|-------------|----------------|
+| FR | FR-001 | MUST enable RLS on users | System MUST enable security policies on users table |
+| SC | SC-001 | Auth response <2sec | Authentication response time MUST be under 2 seconds |
+| US | US-001 | As admin, manage users | *(inline only, no legend)* |
+
+---
 
 ### 2b. Check for Review Feedback & Triage (CRITICAL)
 
@@ -455,6 +541,81 @@ grep -r "REGENERATED WITH FEEDBACK" docs/design/wireframes/
 
 **File location**: `docs/design/wireframes/[feature-folder]/`
 
+### 5b. Track Page-Specific Requirements
+
+As you create each SVG, maintain separate sets for FR, SC, and US:
+
+1. Each annotation with FR/SC/US code → add to page's requirement sets
+2. Before footer, sort each set numerically
+3. Generate legend panel with FR + SC entries (US excluded from legend)
+
+**Example tracking for a page:**
+```
+PAGE: 01-rls-architecture-overview.svg
+REFERENCED FRs: FR-001, FR-002, FR-003, FR-004, FR-005
+REFERENCED SCs: SC-001, SC-002
+REFERENCED USs: US-001, US-003 (inline only, no legend)
+LEGEND ENTRIES: 7 (5 FR + 2 SC) → 2 rows needed
+```
+
+### 5c. Generate Requirements Legend Panel (MANDATORY)
+
+**Every wireframe with FR or SC annotations MUST include a unified REQUIREMENTS KEY panel.**
+
+#### Panel Sizing
+| Entry Count (FR+SC) | Panel Height | Content End Y |
+|---------------------|--------------|---------------|
+| 1-4 entries | 60px | y=690 |
+| 5-8 entries | 80px | y=670 |
+| 9-12 entries | 100px | y=650 |
+
+#### Template (Dark Theme)
+```xml
+<!-- REQUIREMENTS KEY (FR + SC only, US excluded) -->
+<g id="requirements-legend" transform="translate(40, 700)">
+  <rect width="1320" height="60" rx="6" fill="#1e293b" stroke="#475569"/>
+  <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
+
+  <!-- FRs first, then SCs - 4 entries per row, ~320px each -->
+  <g transform="translate(20, 38)">
+    <text x="0" class="legend-code">FR-001:</text>
+    <text x="55" class="legend-text">MUST enable RLS on users table</text>
+  </g>
+  <g transform="translate(340, 38)">
+    <text x="0" class="legend-code">SC-001:</text>
+    <text x="55" class="legend-text">Auth response &lt;2 seconds</text>
+  </g>
+</g>
+```
+
+#### Template (Light Theme)
+```xml
+<!-- REQUIREMENTS KEY (FR + SC only, US excluded) -->
+<g id="requirements-legend" transform="translate(40, 700)">
+  <rect width="1320" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+  <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
+
+  <!-- FRs first, then SCs - 4 entries per row, ~320px each -->
+  <g transform="translate(20, 38)">
+    <text x="0" class="legend-code">FR-001:</text>
+    <text x="55" class="legend-text">MUST enable RLS on users table</text>
+  </g>
+  <g transform="translate(340, 38)">
+    <text x="0" class="legend-code">SC-001:</text>
+    <text x="55" class="legend-text">Auth response &lt;2 seconds</text>
+  </g>
+</g>
+```
+
+#### Short Statement Rules
+| Type | Rule | Example |
+|------|------|---------|
+| FR | Remove "System", keep MUST/SHOULD | "MUST enable RLS on users" |
+| SC | Keep metric, remove fluff | "Auth response <2sec" |
+| US | N/A (inline only) | "As admin, manage users" |
+
+Max 45 characters per statement.
+
 ---
 
 ## Light Theme Template (UX/Frontend Wireframes)
@@ -491,6 +652,10 @@ Use this template for user-facing screens, forms, and interactive UI.
       /* Layout labels */
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
+      /* Requirements Legend styles (light theme) */
+      .legend-header { fill: #6d28d9; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .legend-code { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
+      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 11px; }
     </style>
   </defs>
 
@@ -584,6 +749,10 @@ Use this template for architecture diagrams, data flows, and system visualizatio
       /* Layout labels */
       .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
+      /* Requirements Legend styles (dark theme) */
+      .legend-header { fill: #c4b5fd; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .legend-code { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
+      .legend-text { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
     </style>
   </defs>
 
@@ -1286,6 +1455,31 @@ When using different border colors for badges/pills:
   <text x="70" y="148" text-anchor="middle" class="annotation">onClick</text>
   <text x="70" y="165" text-anchor="middle" class="text-muted">→ /api/submit</text>
 </g>
+```
+
+#### Requirement Annotation Format (MANDATORY)
+
+**ALL requirement codes (FR, SC, US) MUST include short inline context:**
+
+| Type | Wrong | Correct |
+|------|-------|---------|
+| FR | `FR-001` | `FR-001: RLS on users` |
+| FR range | `FR-001 to FR-005` | `FR-001-005: Core table security` |
+| SC | `SC-001` | `SC-001: Auth <2sec` |
+| US | `US-001` | `US-001: As admin...` |
+
+**Rules:**
+- Max 30 characters for inline context
+- FR + SC codes MUST appear in REQUIREMENTS KEY legend panel
+- US codes are inline-only (no legend entry - too verbose)
+
+**Example annotation with context:**
+```xml
+<!-- Good: Context included -->
+<text class="annotation">FR-001: RLS on users table</text>
+
+<!-- Bad: Code only, no context -->
+<text class="annotation">FR-001</text>
 ```
 
 #### Leader Lines Group Template
