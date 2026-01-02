@@ -16,6 +16,9 @@
 .claude/credentials*
 .claude/*.key
 
+# Wireframe backup files (created during regeneration)
+*.reference.svg
+
 # Wireframe viewer test artifacts
 docs/design/wireframes/node_modules/
 docs/design/wireframes/package-lock.json
