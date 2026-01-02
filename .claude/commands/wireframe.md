@@ -8,6 +8,23 @@ description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerate
 $ARGUMENTS
 ```
 
+### Arguments Format
+
+- `FEATURE` - Process ALL SVGs in feature (batch mode)
+- `FEATURE:PAGE` - Process SINGLE SVG only (per-page mode)
+
+**Parsing Logic**:
+1. Split input by `:` delimiter
+2. If no `:` → full-feature mode (process all SVGs)
+3. If `:` → per-page mode, extract page filter:
+   - Numeric (`:01`, `:3`) → match `01-*.svg`, `03-*.svg`
+   - Text (`:responsive`) → match `*responsive*.svg`
+
+**Examples**:
+- `/wireframe 004` → All SVGs in 004-mobile-first-design
+- `/wireframe 004:01` → Only `01-responsive-navigation.svg`
+- `/wireframe 004:touch` → Only `03-touch-targets.svg`
+
 ## Outline
 
 **Comprehensive wireframe command** that handles the full lifecycle:
@@ -279,7 +296,18 @@ Update WIREFRAME_ISSUES.md:
 
 **CRITICAL**: Select theme PER WIREFRAME, not per feature. Mixed features need both themes.
 
-#### ⛔ DISAMBIGUATION TEST (MANDATORY)
+#### 🚨 MANDATORY RULE (CHECK FIRST)
+
+**If the wireframe will include a mobile phone frame → USE LIGHT THEME. NO EXCEPTIONS.**
+
+Mobile phone mockups are ALWAYS front-end UX elements that end users interact with. Even if the content shows developer tools (console output, IDE panels), the presence of a phone frame means it's demonstrating a mobile UX and MUST use light theme.
+
+| Contains Mobile Frame? | Theme Decision |
+|------------------------|----------------|
+| **YES** | **Light theme ONLY** - Skip disambiguation test |
+| **NO** | Continue to disambiguation test below |
+
+#### ⛔ DISAMBIGUATION TEST (for wireframes WITHOUT mobile frames)
 
 Before selecting a theme, ask this question:
 
@@ -550,6 +578,20 @@ Use this template for architecture diagrams, data flows, and system visualizatio
     <!-- Borders use stroke="#475569" -->
     <!-- Use boxes, arrows, and labels to show system components -->
   </g>
+
+  <!-- Color Legend (REQUIRED if semantic colors are used) -->
+  <g id="color-legend" transform="translate(40, 770)">
+    <!-- Add legend items when diagram uses colors to encode meaning -->
+    <!-- Example format:
+    <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
+    <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <text x="80" y="0" class="text-sm">Target met</text>
+    <rect x="180" y="-10" width="12" height="12" rx="2" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="200" y="0" class="text-sm">Constraint</text>
+    <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <text x="320" y="0" class="text-sm">External dependency</text>
+    -->
+  </g>
 </svg>
 ```
 
@@ -586,6 +628,37 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 <!-- ✅ CORRECT: White on green - readable -->
 <rect fill="#22c55e"/>
 <text fill="#ffffff">Valid JWT Token</text>
+```
+
+---
+
+## ⛔ FONT SIZE RULES (MANDATORY - DO NOT REDUCE)
+
+**Font sizes in the template are MINIMUM sizes. NEVER shrink them to fit more content.**
+
+| Class | Required Size | Common Mistake |
+|-------|---------------|----------------|
+| `.heading-lg` | **24px** | ❌ 20px, 18px |
+| `.heading` | **16px** | ❌ 14px, 12px |
+| `.heading-sm` | **14px** | ❌ 12px |
+| `.text-md` | **14px** | ❌ 12px, 11px |
+| `.text-sm` | **13px** | ❌ 10px, 9px |
+| `.text-muted` | **12px** | ❌ 10px, 8px |
+
+**If content doesn't fit at these sizes:**
+1. **EXPAND the canvas** (1400→1600 wide, 800→1000 tall)
+2. **REDUCE content** (fewer items, shorter text)
+3. **NEVER shrink fonts** - readability is non-negotiable
+
+```xml
+<!-- ❌ WRONG: Shrinking fonts to fit more content -->
+.heading-lg { font-size: 20px; }  /* Template says 24px! */
+.text-md { font-size: 12px; }     /* Template says 14px! */
+
+<!-- ✅ CORRECT: Use template sizes, expand canvas if needed -->
+.heading-lg { font-size: 24px; }
+.text-md { font-size: 14px; }
+<!-- viewBox="0 0 1600 1000" if content needs more space -->
 ```
 
 ---
@@ -727,6 +800,8 @@ To prevent overlap/clipping in generated wireframes:
 6. **Never overlap**: Text and elements must not overlap adjacent sections
 7. **Verify fit**: Before finalizing, verify all content fits within its container
 8. **Text containment**: ALL text MUST stay inside its containing box - if text would overflow, either enlarge the box or shorten the text
+9. **Footer positioning**: Page title MUST be at y=780 (canvas height - 20px), LEFT-ALIGNED at x=60 with `text-anchor="start"`. This avoids overlap with the viewer's focus mode hint which is centered at the bottom. Inconsistent footer positions across pages = failed review.
+10. **Vertical content distribution**: Content should use available vertical space. If main content ends before y=600 with footer at y=780, spread content vertically to fill space. Wasted empty space = failed review.
 
 ---
 
@@ -797,6 +872,62 @@ Before drawing arrows, verify:
 | - Gaps | | 10px | Between columns |
 | Mobile area | x=980, y=60 | 360×700 | Phone frame |
 | - Content | x=990, y=70 | 340×660 | 10px padding |
+
+---
+
+## ⛔ NON-NEGOTIABLE LAYOUT DIMENSIONS (MANDATORY)
+
+**These positions are FIXED across ALL wireframes in a feature. NO EXCEPTIONS.**
+
+### Mobile Position Rule
+
+```
+Mobile phone frame MUST be at x=980, y=60 for ALL wireframes.
+```
+
+**Why x=980?**
+- Canvas width: 1400px
+- Mobile frame width: 360px
+- Mobile ends at: 980 + 360 = 1340px (60px margin from edge)
+- This is the ONLY correct position
+
+**❌ NEVER DO THIS:**
+```xml
+<!-- WRONG: Moving mobile closer to fill empty space -->
+<g id="mobile-view" transform="translate(770, 60)">  <!-- ❌ x=770 -->
+```
+
+**✅ ALWAYS DO THIS:**
+```xml
+<!-- CORRECT: Mobile at standard position -->
+<g id="mobile-view" transform="translate(980, 60)">  <!-- ✅ x=980 -->
+```
+
+### Desktop Content Rule
+
+**If desktop content is narrower than 900px:**
+- Keep desktop at x=40
+- Keep mobile at x=980
+- The empty space between is INTENTIONAL (annotations, breathing room)
+- Do NOT move mobile closer to "fill the gap"
+
+### Cross-Wireframe Consistency
+
+**ALL wireframes in a single feature MUST have:**
+- Mobile at x=980 (identical)
+- MOBILE label at x=980 (identical)
+- Consistent desktop width (900px recommended, smaller OK if needed)
+
+**Before writing ANY SVG, verify:**
+```
+□ Mobile group: transform="translate(980, 60)"
+□ MOBILE label: x="980"
+□ Matches other wireframes in this feature
+```
+
+**If you deviate from x=980, you are WRONG. There is no exception.**
+
+---
 
 **Component Sizing Standards** (WCAG AAA touch targets = 44px minimum):
 | Component | Desktop | Mobile | rx | Notes |
@@ -958,14 +1089,19 @@ Annotations must never overlap with content. Follow these rules:
 
 ```
 Canvas height: 800px
-Footer text: y=780
+Page title: y=780, x=60, text-anchor="start" (LEFT-ALIGNED)
 Safety margin: 30px above footer
 
 ANNOTATION SAFE ZONE: y ≤ 750
 
 Content should end at: y ≤ 740 (10px gap to annotations)
 Annotations start at: y = 750
-Footer at: y = 780
+Page title at: y = 780, x = 60 (left-aligned to avoid focus hint overlap)
+```
+
+**Page title format:**
+```xml
+<text x="60" y="780" text-anchor="start" class="text-muted">feature-name | Wireframe Title | ScriptHammer</text>
 ```
 
 ### Calculation Before Placing Annotations
@@ -990,6 +1126,84 @@ If content extends past y=720, you have options:
 3. **Move annotations to side margins** - place at x < 40 or x > 1360
 
 **NEVER** place annotations that overlap content or crowd the footer.
+
+---
+
+## ⛔ ANNOTATION CLARITY RULES (MANDATORY)
+
+**All annotations and labels MUST be self-explanatory. A reader should understand them WITHOUT reading spec.md.**
+
+### Success Criteria Labels
+
+**NEVER** use abbreviated SC codes without context:
+- ❌ `SC-001: <3 min` (cryptic - what takes 3 min?)
+- ❌ `SC-002: <2 sec` (meaningless without context)
+- ❌ `SC-004: 0 breach` (zero breach of what?)
+- ✅ `SC-001: Signup flow <3 min`
+- ✅ `SC-002: Login response <2 sec`
+- ✅ `SC-004: Zero security breaches`
+- ✅ `Registration: <3 min (SC-001)`
+
+**Format options** (be consistent per wireframe):
+| Format | Example |
+|--------|---------|
+| **Metric first** | `Login response: <2 sec` |
+| **Code + context** | `SC-002: Auth response <2 sec` |
+| **Full description** | `Users complete registration in under 3 minutes` |
+
+### Color Legend Requirements
+
+**If colors encode meaning, a legend panel is MANDATORY.**
+
+When using different border colors for badges/pills:
+
+| Border Color | Meaning |
+|--------------|---------|
+| `#22c55e` (green) | Compliance achieved / Target met |
+| `#eab308` (yellow) | External dependency / Caution |
+| `#8b5cf6` (purple) | Technical constraint / Architecture limitation |
+| `#475569` (gray) | Informational / Not yet verified |
+
+**Legend placement**: Footer area (y ≤ 750) or dedicated "Legend" panel.
+
+```xml
+<!-- ✅ CORRECT: Legend explaining color coding -->
+<g id="legend" transform="translate(40, 720)">
+  <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
+  <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#22c55e" stroke-width="2"/>
+  <text x="80" y="0" class="text-sm">Target met</text>
+  <rect x="160" y="-10" width="12" height="12" rx="2" fill="none" stroke="#eab308" stroke-width="2"/>
+  <text x="180" y="0" class="text-sm">External dependency</text>
+  <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="320" y="0" class="text-sm">Constraint</text>
+</g>
+```
+
+### Abbreviation Rule (MANDATORY)
+
+**Define ALL abbreviations on first use.** Never assume readers know tech jargon.
+
+| Wrong | Correct |
+|-------|---------|
+| `PCI Ready` | `PCI (Payment Card Industry) Ready` |
+| `GDPR Compliant` | `GDPR (Data Protection) Compliant` |
+| `Guard HOC` | `Guard HOC (Higher-Order Component)` |
+| `JWT Token` | `JWT (JSON Web Token)` |
+| `RLS` | `RLS (Row Level Security)` |
+
+**Space-constrained?** Use the shorter form but still define it:
+- `GDPR (Data Protection)` instead of `GDPR (General Data Protection Regulation)`
+- `PCI (Payment Card)` instead of `PCI (Payment Card Industry Data Security Standard)`
+
+### Self-Documentation Checklist
+
+**Before writing the SVG, verify each annotation passes:**
+- [ ] Can a reader understand what SC-XXX measures without reading spec.md?
+- [ ] If colors vary semantically, is there a legend explaining them?
+- [ ] Are ALL abbreviations defined in parentheses on first use?
+- [ ] Do metric labels specify WHAT is being measured?
+
+**If ANY annotation requires external context to understand, REWRITE IT.**
 
 ---
 

@@ -4,7 +4,6 @@
        SOURCE: features/foundation/001-wcag-aa-compliance/spec.md
        DATE: 2026-01-01
        THEME: Dark (Backend/Architecture)
-       REGENERATED WITH FEEDBACK: features/foundation/001-wcag-aa-compliance/WIREFRAME_ISSUES.md
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -16,20 +15,21 @@
       <stop offset="0%" style="stop-color:#8b5cf6"/>
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrowhead-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#22c55e"/>
+    </marker>
     <style>
-      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 20px; font-weight: bold; }
+      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 18px; font-weight: bold; }
       .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 12px; font-weight: bold; }
       .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
-      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .annotation { fill: #c4b5fd; font-family: monospace; font-size: 10px; }
-      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
-      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 11px; font-weight: bold; }
-      .code { fill: #e2e8f0; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
-      .code-comment { fill: #64748b; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
-      .warning-text { fill: #eab308; font-family: system-ui, sans-serif; font-size: 11px; }
-      .error-text { fill: #ef4444; font-family: system-ui, sans-serif; font-size: 11px; }
-      .success-text { fill: #22c55e; font-family: system-ui, sans-serif; font-size: 11px; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #c4b5fd; font-family: monospace; font-size: 11px; font-weight: bold; }
+      .code { fill: #e2e8f0; font-family: monospace; font-size: 10px; }
     </style>
   </defs>
 
@@ -48,168 +48,186 @@
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8494a8" letter-spacing="1">DEVELOPMENT FEEDBACK TOOLING</text>
+  <text x="700" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#8494a8" letter-spacing="1">DEVELOPER FEEDBACK TOOLING ARCHITECTURE</text>
 
-  <!-- DESKTOP SECTION -->
-  <text x="40" y="52" class="label-desktop">DESKTOP</text>
+  <!-- ========== ROW 1: Development Environment (y=60-220) ========== -->
 
-  <!-- Desktop container: x=40, y=60, width=900, height=700 → RIGHT=940, BOTTOM=760 -->
-  <rect x="40" y="60" width="900" height="700" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <!-- Dev Environment Box -->
+  <rect x="40" y="60" width="1320" height="160" rx="8" fill="#1e293b" stroke="#475569" stroke-dasharray="4,4"/>
+  <text x="60" y="85" class="heading-lg">Development Environment</text>
+  <text x="1280" y="85" class="annotation" text-anchor="end">FR-028, FR-029, FR-030</text>
 
-  <!-- Header bar: x=50, y=70, w=880, h=50 → RIGHT=930, BOTTOM=120 -->
-  <rect x="50" y="70" width="880" height="50" rx="6" fill="#334155"/>
-  <text x="70" y="102" class="heading-lg">Real-Time A11y Feedback</text>
-  <text x="720" y="102" class="annotation">FR-028, FR-029, FR-030</text>
+  <!-- IDE/Editor -->
+  <rect x="60" y="105" width="200" height="100" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="160" y="130" text-anchor="middle" class="heading">IDE / Editor</text>
+  <text x="160" y="150" text-anchor="middle" class="text-sm">Code editing</text>
+  <text x="160" y="168" text-anchor="middle" class="text-sm">File saves trigger</text>
+  <text x="160" y="186" text-anchor="middle" class="text-sm">a11y checks</text>
 
-  <!-- ========== Row 1: Console Warnings (y=130-310) ========== -->
+  <!-- File Watcher -->
+  <rect x="320" y="105" width="200" height="100" rx="6" fill="#334155" stroke="#eab308" stroke-width="2"/>
+  <text x="420" y="130" text-anchor="middle" class="heading">File Watcher</text>
+  <text x="420" y="150" text-anchor="middle" class="annotation">FR-030</text>
+  <text x="420" y="170" text-anchor="middle" class="text-sm">Monitors .tsx/.css</text>
+  <text x="420" y="188" text-anchor="middle" class="text-sm">&lt; 2s response</text>
 
-  <!-- Console Warnings Panel: x=50, y=130, w=880, h=180 → RIGHT=930, BOTTOM=310 -->
-  <rect x="50" y="130" width="880" height="180" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="70" y="158" class="heading">Console Warnings</text>
-  <text x="860" y="158" class="annotation">FR-028</text>
+  <!-- Console Output -->
+  <rect x="580" y="105" width="200" height="100" rx="6" fill="#334155" stroke="#ef4444" stroke-width="2"/>
+  <text x="680" y="130" text-anchor="middle" class="heading">Console Warnings</text>
+  <text x="680" y="150" text-anchor="middle" class="annotation">FR-028</text>
+  <text x="680" y="170" text-anchor="middle" class="text-sm">Real-time violations</text>
+  <text x="680" y="188" text-anchor="middle" class="text-sm">Element + remediation</text>
 
-  <!-- Console output area: x=60, y=170, w=860, h=130 → RIGHT=920, BOTTOM=300 -->
-  <rect x="60" y="170" width="860" height="130" rx="4" fill="#0f172a"/>
+  <!-- Storybook -->
+  <rect x="840" y="105" width="200" height="100" rx="6" fill="#334155" stroke="#d946ef" stroke-width="2"/>
+  <text x="940" y="130" text-anchor="middle" class="heading">Storybook Panel</text>
+  <text x="940" y="150" text-anchor="middle" class="annotation">FR-029</text>
+  <text x="940" y="170" text-anchor="middle" class="text-sm">Component audit</text>
+  <text x="940" y="188" text-anchor="middle" class="text-sm">axe-core integration</text>
 
-  <!-- Warning entries -->
-  <g transform="translate(75, 188)">
-    <text class="warning-text">[a11y] Warning: Contrast ratio 4.2:1 on .sidebar-text</text>
-    <text y="18" class="code-comment">         Expected: 7:1 (WCAG AAA) | Element: div.sidebar &gt; span</text>
-    <text y="40" class="warning-text">[a11y] Warning: Touch target 32×32px on .edit-btn</text>
-    <text y="58" class="code-comment">         Expected: 44×44px minimum | Element: button.edit-btn</text>
-    <text y="80" class="error-text">[a11y] Error: Missing alt text on img.team-photo</text>
-    <text y="98" class="code-comment">         Fix: Add alt="Team photo description" | /about/page.tsx:42</text>
-  </g>
+  <!-- Test Helpers -->
+  <rect x="1100" y="105" width="240" height="100" rx="6" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+  <text x="1220" y="130" text-anchor="middle" class="heading">Test Helpers</text>
+  <text x="1220" y="150" text-anchor="middle" class="annotation">FR-031</text>
+  <text x="1220" y="170" text-anchor="middle" class="text-sm">jest-axe matchers</text>
+  <text x="1220" y="188" text-anchor="middle" class="text-sm">toHaveNoViolations()</text>
 
-  <!-- ========== Row 2: Storybook + File Watcher (y=320-520) ========== -->
+  <!-- Arrows Row 1 -->
+  <path d="M 260 155 L 310 155" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 520 155 L 570 155" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 780 155 L 830 155" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 1040 155 L 1090 155" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
 
-  <!-- Storybook Audit Panel: x=50, y=320, w=540, h=200 → RIGHT=590, BOTTOM=520 -->
-  <rect x="50" y="320" width="540" height="200" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="70" y="348" class="heading">Storybook Accessibility Panel</text>
-  <text x="520" y="348" class="annotation">FR-029</text>
+  <!-- ========== ROW 2: A11y Analysis Engine (y=240-400) ========== -->
 
-  <!-- Storybook mockup: x=60, y=360, w=520, h=150 → RIGHT=580, BOTTOM=510 -->
-  <rect x="60" y="360" width="520" height="150" rx="4" fill="#1e293b"/>
+  <rect x="40" y="250" width="1320" height="150" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="60" y="280" class="heading-lg">Accessibility Analysis Engine</text>
 
-  <!-- Story selector -->
-  <rect x="70" y="370" width="150" height="28" rx="4" fill="#334155"/>
-  <text x="85" y="389" class="text-sm">Button/Primary</text>
+  <!-- axe-core -->
+  <rect x="100" y="300" width="180" height="80" rx="6" fill="#0f172a" stroke="#8b5cf6"/>
+  <text x="190" y="328" text-anchor="middle" class="heading">axe-core</text>
+  <text x="190" y="348" text-anchor="middle" class="text-sm">WCAG 2.1 AAA rules</text>
+  <text x="190" y="366" text-anchor="middle" class="text-muted">Automated scanning</text>
 
-  <!-- Violations panel: x=230, y=370, w=340, h=130 → RIGHT=570, BOTTOM=500 -->
-  <rect x="230" y="370" width="340" height="130" rx="4" fill="#0f172a"/>
-  <text x="245" y="392" class="heading">Violations (2)</text>
+  <!-- Pa11y -->
+  <rect x="320" y="300" width="180" height="80" rx="6" fill="#0f172a" stroke="#8b5cf6"/>
+  <text x="410" y="328" text-anchor="middle" class="heading">Pa11y</text>
+  <text x="410" y="348" text-anchor="middle" class="text-sm">CLI integration</text>
+  <text x="410" y="366" text-anchor="middle" class="text-muted">CI/CD compatible</text>
 
-  <!-- Violation items -->
-  <rect x="240" y="402" width="320" height="44" rx="4" fill="#334155" stroke="#eab308" stroke-width="1"/>
-  <circle cx="258" cy="424" r="6" fill="#eab308"/>
-  <text x="275" y="420" class="text-sm">color-contrast</text>
-  <text x="275" y="436" class="text-muted">Foreground: #6b7280 on #1e293b</text>
+  <!-- Lighthouse -->
+  <rect x="540" y="300" width="180" height="80" rx="6" fill="#0f172a" stroke="#8b5cf6"/>
+  <text x="630" y="328" text-anchor="middle" class="heading">Lighthouse</text>
+  <text x="630" y="348" text-anchor="middle" class="text-sm">Performance + A11y</text>
+  <text x="630" y="366" text-anchor="middle" class="text-muted">Score aggregation</text>
 
-  <rect x="240" y="454" width="320" height="44" rx="4" fill="#334155" stroke="#ef4444" stroke-width="1"/>
-  <circle cx="258" cy="476" r="6" fill="#ef4444"/>
-  <text x="275" y="472" class="text-sm">button-name</text>
-  <text x="275" y="488" class="text-muted">Missing accessible name</text>
+  <!-- Rule Engine -->
+  <rect x="760" y="300" width="260" height="80" rx="6" fill="#334155" stroke="#d946ef" stroke-width="2"/>
+  <text x="890" y="325" text-anchor="middle" class="heading">WCAG AAA Rule Engine</text>
+  <text x="890" y="348" text-anchor="middle" class="text-sm">7:1 contrast • 44×44 touch</text>
+  <text x="890" y="366" text-anchor="middle" class="text-sm">Keyboard nav • Screen reader</text>
 
-  <!-- File Watcher: x=600, y=320, w=330, h=200 → RIGHT=930, BOTTOM=520 -->
-  <!-- Gap from Storybook: 600 - 590 = 10px ✓ -->
-  <rect x="600" y="320" width="330" height="200" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="620" y="348" class="heading">File Watcher Status</text>
-  <text x="860" y="348" class="annotation">FR-030</text>
+  <!-- Output Formatter -->
+  <rect x="1060" y="300" width="260" height="80" rx="6" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+  <text x="1190" y="325" text-anchor="middle" class="heading">Output Formatter</text>
+  <text x="1190" y="348" text-anchor="middle" class="text-sm">Element selector</text>
+  <text x="1190" y="366" text-anchor="middle" class="text-sm">Remediation guidance</text>
 
-  <!-- Terminal mockup: x=610, y=360, w=310, h=150 → RIGHT=920, BOTTOM=510 -->
-  <rect x="610" y="360" width="310" height="150" rx="4" fill="#0f172a"/>
+  <!-- Arrows Row 2 -->
+  <path d="M 280 340 L 310 340" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 500 340 L 530 340" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 720 340 L 750 340" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 1020 340 L 1050 340" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
 
-  <g transform="translate(625, 385)">
-    <text class="text-muted">$ npm run dev:a11y</text>
-    <text y="20" class="success-text">Watching for changes...</text>
-    <text y="45" class="text-md">[15:42:31] File saved: Button.tsx</text>
-    <text y="65" class="warning-text">[15:42:32] 2 violations found</text>
-    <text y="85" class="text-md">[15:42:45] File saved: Button.tsx</text>
-    <text y="105" class="success-text">[15:42:46] All checks passed!</text>
-  </g>
+  <!-- ========== ROW 3: Violation Types (y=420-560) ========== -->
 
-  <!-- ========== Row 3: Test Helpers (y=530-700) ========== -->
+  <text x="60" y="440" class="heading-lg">Violation Categories &amp; Severity</text>
 
-  <!-- Test Helpers Panel: x=50, y=530, w=880, h=170 → RIGHT=930, BOTTOM=700 -->
-  <rect x="50" y="530" width="880" height="170" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="70" y="558" class="heading">Test Helpers (Component-Level A11y Testing)</text>
-  <text x="860" y="558" class="annotation">FR-031</text>
+  <!-- Error -->
+  <rect x="60" y="460" width="300" height="90" rx="6" fill="#334155" stroke="#ef4444" stroke-width="2"/>
+  <circle cx="85" cy="485" r="10" fill="#ef4444"/>
+  <text x="105" y="490" class="heading">ERROR - Critical</text>
+  <text x="80" y="515" class="text-sm">• Missing alt text on images</text>
+  <text x="80" y="533" class="text-sm">• Form fields without labels</text>
 
-  <!-- Code block: x=60, y=570, w=860, h=120 → RIGHT=920, BOTTOM=690 -->
-  <rect x="60" y="570" width="860" height="120" rx="4" fill="#0f172a"/>
+  <!-- Warning -->
+  <rect x="400" y="460" width="300" height="90" rx="6" fill="#334155" stroke="#eab308" stroke-width="2"/>
+  <circle cx="425" cy="485" r="10" fill="#eab308"/>
+  <text x="445" y="490" class="heading">WARNING - Major</text>
+  <text x="420" y="515" class="text-sm">• Contrast ratio below 7:1</text>
+  <text x="420" y="533" class="text-sm">• Touch targets below 44×44px</text>
 
-  <!-- Code content - verified to fit within container (ends at y=690) -->
-  <g transform="translate(75, 590)">
-    <text class="code-comment">// Vitest + @testing-library/react accessibility matchers</text>
-    <text y="17" class="code">import { axe, toHaveNoViolations } from 'jest-axe';</text>
-    <text y="34" class="code">expect.extend(toHaveNoViolations);</text>
-    <text y="54" class="code">it('should have no accessibility violations', async () =&gt; {</text>
-    <text y="71" class="code">  const { container } = render(&lt;Button&gt;Click me&lt;/Button&gt;);</text>
-    <text y="88" class="code">  expect(await axe(container)).toHaveNoViolations();</text>
-  </g>
+  <!-- Notice -->
+  <rect x="740" y="460" width="300" height="90" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+  <circle cx="765" cy="485" r="10" fill="#8b5cf6"/>
+  <text x="785" y="490" class="heading">NOTICE - Minor</text>
+  <text x="760" y="515" class="text-sm">• Missing skip links</text>
+  <text x="760" y="533" class="text-sm">• Redundant ARIA attributes</text>
 
-  <!-- Copy button - 44px height ✓, positioned inside code block area -->
-  <rect x="820" y="580" width="90" height="44" rx="6" fill="#8b5cf6"/>
-  <text x="865" y="608" text-anchor="middle" fill="#fff" font-family="system-ui" font-size="12" font-weight="600">Copy</text>
+  <!-- Pass -->
+  <rect x="1080" y="460" width="260" height="90" rx="6" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+  <circle cx="1105" cy="485" r="10" fill="#22c55e"/>
+  <text x="1125" y="490" class="heading">PASS - Compliant</text>
+  <text x="1100" y="515" class="text-sm">• All checks passed</text>
+  <text x="1100" y="533" class="text-sm">• Ready for commit</text>
 
-  <!-- Response time note -->
-  <text x="70" y="720" class="text-muted">Response time: &lt; 2 seconds (SC-009)</text>
+  <!-- ========== ROW 4: Developer Feedback Loop (y=580-760) ========== -->
 
-  <!-- MOBILE SECTION -->
-  <text x="980" y="52" class="label-mobile">MOBILE</text>
+  <rect x="40" y="580" width="1320" height="180" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="60" y="610" class="heading-lg">Real-Time Feedback Loop</text>
+  <text x="1280" y="610" class="annotation" text-anchor="end">SC-009: &lt; 2 seconds</text>
 
-  <!-- Phone frame: x=980, y=60, w=360, h=700 → RIGHT=1340, BOTTOM=760 -->
-  <!-- Gap from Desktop: 980 - 940 = 40px ✓ -->
-  <rect x="980" y="60" width="360" height="700" rx="24" fill="#334155" stroke="#475569" stroke-width="2"/>
-  <rect x="990" y="70" width="340" height="680" rx="16" fill="#1e293b"/>
+  <!-- Step 1: Code Change -->
+  <rect x="60" y="630" width="160" height="110" rx="6" fill="#0f172a" stroke="#8b5cf6"/>
+  <text x="140" y="660" text-anchor="middle" class="heading-sm">1. Code Change</text>
+  <text x="140" y="685" text-anchor="middle" class="code">Button.tsx</text>
+  <text x="140" y="705" text-anchor="middle" class="text-muted">Developer saves file</text>
+  <text x="140" y="722" text-anchor="middle" class="text-muted">15:42:31</text>
 
-  <!-- Status bar -->
-  <rect x="990" y="70" width="340" height="28" rx="16" fill="#334155"/>
-  <text x="1010" y="88" class="text-sm" fill="#fff">9:41</text>
+  <!-- Step 2: Watcher Detects -->
+  <rect x="270" y="630" width="160" height="110" rx="6" fill="#0f172a" stroke="#eab308"/>
+  <text x="350" y="660" text-anchor="middle" class="heading-sm">2. Watcher</text>
+  <text x="350" y="685" text-anchor="middle" class="text-sm">File change detected</text>
+  <text x="350" y="705" text-anchor="middle" class="text-sm">Trigger analysis</text>
+  <text x="350" y="722" text-anchor="middle" class="text-muted">+0.1s</text>
 
-  <!-- Mobile header - 44px ✓ -->
-  <rect x="1000" y="108" width="320" height="44" rx="6" fill="#334155"/>
-  <text x="1020" y="136" class="heading">Dev Tools</text>
+  <!-- Step 3: Analysis -->
+  <rect x="480" y="630" width="160" height="110" rx="6" fill="#0f172a" stroke="#d946ef"/>
+  <text x="560" y="660" text-anchor="middle" class="heading-sm">3. Analysis</text>
+  <text x="560" y="685" text-anchor="middle" class="text-sm">axe-core scan</text>
+  <text x="560" y="705" text-anchor="middle" class="text-sm">WCAG AAA check</text>
+  <text x="560" y="722" text-anchor="middle" class="text-muted">+0.8s</text>
 
-  <!-- Mobile console section: x=1000, y=162, w=320, h=180 → RIGHT=1320, BOTTOM=342 -->
-  <rect x="1000" y="162" width="320" height="180" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="1020" y="188" class="text-sm">Console Output</text>
-  <rect x="1010" y="200" width="300" height="130" rx="4" fill="#0f172a"/>
+  <!-- Step 4: Violations Found -->
+  <rect x="690" y="630" width="160" height="110" rx="6" fill="#0f172a" stroke="#ef4444"/>
+  <text x="770" y="660" text-anchor="middle" class="heading-sm">4. Result</text>
+  <text x="770" y="685" text-anchor="middle" fill="#eab308" font-family="system-ui" font-size="11">2 violations found</text>
+  <text x="770" y="705" text-anchor="middle" class="text-sm">color-contrast</text>
+  <text x="770" y="722" text-anchor="middle" class="text-muted">+1.0s</text>
 
-  <g transform="translate(1020, 220)">
-    <text class="warning-text" font-size="9">[a11y] Contrast: 4.2:1</text>
-    <text y="18" class="text-muted" font-size="8">.sidebar-text</text>
-    <text y="40" class="warning-text" font-size="9">[a11y] Touch: 32×32px</text>
-    <text y="58" class="text-muted" font-size="8">.edit-btn</text>
-    <text y="80" class="error-text" font-size="9">[a11y] Missing alt</text>
-    <text y="98" class="text-muted" font-size="8">img.team-photo</text>
-  </g>
+  <!-- Step 5: Console Output -->
+  <rect x="900" y="630" width="180" height="110" rx="6" fill="#0f172a" stroke="#ef4444"/>
+  <text x="990" y="660" text-anchor="middle" class="heading-sm">5. Console</text>
+  <text x="990" y="685" text-anchor="middle" fill="#ef4444" font-family="monospace" font-size="10">[a11y] Error:</text>
+  <text x="990" y="702" text-anchor="middle" class="code">.btn contrast 4.2:1</text>
+  <text x="990" y="722" text-anchor="middle" class="text-muted">+1.2s total</text>
 
-  <!-- Mobile watcher status: x=1000, y=352, w=320, h=120 → RIGHT=1320, BOTTOM=472 -->
-  <rect x="1000" y="352" width="320" height="120" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="1020" y="378" class="text-sm">File Watcher</text>
-  <rect x="1010" y="390" width="300" height="70" rx="4" fill="#0f172a"/>
+  <!-- Step 6: Fix & Retest -->
+  <rect x="1130" y="630" width="180" height="110" rx="6" fill="#0f172a" stroke="#22c55e" stroke-width="2"/>
+  <text x="1220" y="660" text-anchor="middle" class="heading-sm">6. Fix &amp; Pass</text>
+  <text x="1220" y="685" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="11">All checks passed!</text>
+  <text x="1220" y="705" text-anchor="middle" class="text-sm">Ready to commit</text>
+  <text x="1220" y="722" text-anchor="middle" class="text-muted">15:42:46</text>
 
-  <g transform="translate(1020, 410)">
-    <text class="success-text" font-size="9">Watching...</text>
-    <text y="18" class="text-md" font-size="9">Button.tsx saved</text>
-    <text y="36" class="success-text" font-size="9">All checks passed!</text>
-  </g>
+  <!-- Flow arrows -->
+  <path d="M 220 685 L 260 685" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 430 685 L 470 685" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 640 685 L 680 685" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 850 685 L 890 685" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <path d="M 1080 685 L 1120 685" stroke="#22c55e" stroke-width="2" marker-end="url(#arrowhead-green)"/>
 
-  <!-- Mobile quick actions: x=1000, y=482, w=320, h=150 → RIGHT=1320, BOTTOM=632 -->
-  <rect x="1000" y="482" width="320" height="150" rx="6" fill="#334155" stroke="#475569"/>
-  <text x="1020" y="508" class="text-sm">Quick Actions</text>
+  <!-- Feedback loop arrow -->
+  <path d="M 1220 740 L 1220 765 L 140 765 L 140 740" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3" fill="none" marker-end="url(#arrowhead-green)"/>
+  <text x="680" y="780" text-anchor="middle" class="text-muted">Developer iterates until all checks pass</text>
 
-  <!-- Action buttons - 44px height each ✓ -->
-  <rect x="1010" y="520" width="300" height="44" rx="6" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
-  <text x="1160" y="548" text-anchor="middle" class="text-md">Run Full Audit</text>
-
-  <rect x="1010" y="574" width="300" height="44" rx="6" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
-  <text x="1160" y="602" text-anchor="middle" class="text-md">Export Report</text>
-
-  <!-- Mobile bottom navigation - 44px ✓ -->
-  <rect x="1000" y="696" width="320" height="44" rx="6" fill="#334155"/>
-  <text x="1060" y="724" text-anchor="middle" class="text-sm">Console</text>
-  <text x="1160" y="724" text-anchor="middle" class="text-sm">Watcher</text>
-  <text x="1260" y="724" text-anchor="middle" class="text-sm">Actions</text>
 </svg>

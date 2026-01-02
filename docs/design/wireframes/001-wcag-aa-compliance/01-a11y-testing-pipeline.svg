@@ -198,10 +198,10 @@
       <text x="115" y="90" text-anchor="middle" class="annotation">FR-019, FR-020, FR-021, FR-022, FR-023</text>
     </g>
 
-    <!-- Time & Cognitive: x=1050, y=35, w=210, h=100 → RIGHT=1260, BOTTOM=135 -->
+    <!-- Time &amp; Cognitive: x=1050, y=35, w=210, h=100 → RIGHT=1260, BOTTOM=135 -->
     <g transform="translate(1050, 35)">
       <rect x="0" y="0" width="210" height="100" rx="6" fill="#334155" stroke="#eab308" stroke-width="1"/>
-      <text x="105" y="20" text-anchor="middle" class="heading" fill="#eab308">Time & Cognitive</text>
+      <text x="105" y="20" text-anchor="middle" class="heading" fill="#eab308">Time &amp; Cognitive</text>
       <text x="105" y="40" text-anchor="middle" class="text-sm">No time limits</text>
       <text x="105" y="56" text-anchor="middle" class="text-sm">Pausable auto-update</text>
       <text x="105" y="72" text-anchor="middle" class="text-muted">Grade 9 reading level</text>

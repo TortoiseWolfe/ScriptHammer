@@ -5,6 +5,7 @@
        DATE: 2026-01-01
        THEME: Light (UX/Frontend) - v3 True Parchment
        REGENERATED WITH FEEDBACK: features/foundation/002-cookie-consent/WIREFRAME_ISSUES.md
+       FIX: Mobile position corrected to x=980 (was x=770)
        DO NOT MANUALLY EDIT - Regenerate with /wireframe command
        ============================================================ -->
   <defs>
@@ -129,50 +130,50 @@
     <text x="80" y="720" class="text-muted">Only necessary cookies accepted</text>
   </g>
 
-  <!-- ANNOTATIONS -->
+  <!-- ANNOTATIONS (in the gap between desktop and mobile) -->
   <g id="annotations">
     <!-- FR-010 annotation -->
-    <rect x="615" y="60" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="82" text-anchor="middle" class="annotation">Privacy Page</text>
-    <text x="680" y="98" text-anchor="middle" class="text-muted">FR-010: Settings</text>
-    <text x="680" y="110" text-anchor="middle" class="text-muted">accessible anytime</text>
+    <rect x="620" y="60" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="82" text-anchor="middle" class="annotation">Privacy Page</text>
+    <text x="685" y="98" text-anchor="middle" class="text-muted">FR-010: Settings</text>
+    <text x="685" y="110" text-anchor="middle" class="text-muted">accessible anytime</text>
 
     <!-- FR-011 annotation -->
-    <rect x="615" y="130" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="152" text-anchor="middle" class="annotation">Footer Link</text>
-    <text x="680" y="168" text-anchor="middle" class="text-muted">FR-011: Persistent</text>
-    <text x="680" y="180" text-anchor="middle" class="text-muted">privacy link</text>
+    <rect x="620" y="130" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="152" text-anchor="middle" class="annotation">Footer Link</text>
+    <text x="685" y="168" text-anchor="middle" class="text-muted">FR-011: Persistent</text>
+    <text x="685" y="180" text-anchor="middle" class="text-muted">privacy link</text>
 
     <!-- FR-012 annotation -->
-    <rect x="615" y="200" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="222" text-anchor="middle" class="annotation">Edit Anytime</text>
-    <text x="680" y="238" text-anchor="middle" class="text-muted">FR-012: Immediate</text>
-    <text x="680" y="250" text-anchor="middle" class="text-muted">effect on change</text>
+    <rect x="620" y="200" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="222" text-anchor="middle" class="annotation">Edit Anytime</text>
+    <text x="685" y="238" text-anchor="middle" class="text-muted">FR-012: Immediate</text>
+    <text x="685" y="250" text-anchor="middle" class="text-muted">effect on change</text>
 
     <!-- FR-016/018 annotation -->
-    <rect x="615" y="400" width="130" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="422" text-anchor="middle" class="annotation">Data Export</text>
-    <text x="680" y="438" text-anchor="middle" class="text-muted">FR-016: Right of</text>
-    <text x="680" y="453" text-anchor="middle" class="text-muted">Access (download)</text>
-    <text x="680" y="465" text-anchor="middle" class="text-muted">FR-018: All data</text>
+    <rect x="620" y="400" width="130" height="70" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="422" text-anchor="middle" class="annotation">Data Export</text>
+    <text x="685" y="438" text-anchor="middle" class="text-muted">FR-016: Right of</text>
+    <text x="685" y="453" text-anchor="middle" class="text-muted">Access (download)</text>
+    <text x="685" y="465" text-anchor="middle" class="text-muted">FR-018: All data</text>
 
     <!-- FR-017 annotation -->
-    <rect x="615" y="505" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="527" text-anchor="middle" class="annotation">Data Deletion</text>
-    <text x="680" y="543" text-anchor="middle" class="text-muted">FR-017: Right to</text>
-    <text x="680" y="555" text-anchor="middle" class="text-muted">be Forgotten</text>
+    <rect x="620" y="505" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="527" text-anchor="middle" class="annotation">Data Deletion</text>
+    <text x="685" y="543" text-anchor="middle" class="text-muted">FR-017: Right to</text>
+    <text x="685" y="555" text-anchor="middle" class="text-muted">be Forgotten</text>
 
     <!-- FR-013-015 annotation -->
-    <rect x="615" y="645" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
-    <text x="680" y="667" text-anchor="middle" class="annotation">Consent Audit</text>
-    <text x="680" y="683" text-anchor="middle" class="text-muted">FR-013-015:</text>
-    <text x="680" y="695" text-anchor="middle" class="text-muted">Version tracking</text>
+    <rect x="620" y="645" width="130" height="55" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="685" y="667" text-anchor="middle" class="annotation">Consent Audit</text>
+    <text x="685" y="683" text-anchor="middle" class="text-muted">FR-013-015:</text>
+    <text x="685" y="695" text-anchor="middle" class="text-muted">Version tracking</text>
   </g>
 
-  <!-- MOBILE SECTION -->
-  <text x="770" y="52" class="label-mobile">MOBILE</text>
+  <!-- MOBILE SECTION - FIXED: x=980 to match 01-consent-modal.svg -->
+  <text x="980" y="52" class="label-mobile">MOBILE</text>
 
-  <g id="mobile-view" transform="translate(770, 60)">
+  <g id="mobile-view" transform="translate(980, 60)">
     <!-- Phone frame -->
     <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
     <rect x="10" y="10" width="340" height="680" rx="16" fill="#e8d4b8"/>
@@ -251,10 +252,10 @@
 
   <!-- Leader lines -->
   <g id="leader-lines">
-    <line x1="600" y1="85" x2="615" y2="85" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="270" y1="310" x2="615" y2="225" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="550" y1="450" x2="615" y2="435" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="550" y1="545" x2="615" y2="530" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
-    <line x1="550" y1="700" x2="615" y2="670" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="600" y1="85" x2="620" y2="85" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="270" y1="310" x2="620" y2="225" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="450" x2="620" y2="435" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="545" x2="620" y2="530" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <line x1="550" y1="700" x2="620" y2="670" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
   </g>
 </svg>

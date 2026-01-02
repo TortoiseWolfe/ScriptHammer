@@ -435,7 +435,81 @@ FIX: Calculate actual content height including ALL rows, padding, and margins:
 
 ---
 
-### 13. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
+### 13. ⛔ CROSS-WIREFRAME CONSISTENCY (MANDATORY for multi-file features)
+
+**ALL wireframes in a single feature MUST have identical layout foundations.**
+
+#### Consistency Check (MANDATORY before declaring ANY file as PASS)
+
+For features with 2+ SVG files, you MUST verify:
+
+| Dimension | Expected Value | How to Check |
+|-----------|---------------|--------------|
+| Mobile position | x=980, y=60 | `grep "transform=\"translate" *.svg` |
+| MOBILE label | x=980 | `grep "MOBILE" *.svg` |
+| Canvas size | 1400×800 (or consistent alternate) | Check `viewBox` in each file |
+| Desktop start | x=40 | Verify first desktop element |
+
+#### Detection Method
+
+```bash
+# Run this for every feature with 2+ wireframes:
+grep -n "translate(.*," docs/design/wireframes/[feature]/*.svg
+```
+
+**Expected output (all positions identical):**
+```
+01-consent-modal.svg:150:  <g id="mobile-view" transform="translate(980, 60)">
+02-privacy-settings.svg:175:  <g id="mobile-view" transform="translate(980, 60)">
+```
+
+**Failure (positions differ = 🔴 REGENERATE):**
+```
+01-consent-modal.svg:150:  <g id="mobile-view" transform="translate(980, 60)">
+02-privacy-settings.svg:175:  <g id="mobile-view" transform="translate(770, 60)">  ❌ INCONSISTENT
+```
+
+#### Required Output in WIREFRAME_ISSUES.md
+
+```markdown
+## Cross-Wireframe Consistency Check
+
+| File | Mobile Position | MOBILE Label | Status |
+|------|-----------------|--------------|--------|
+| 01-consent-modal.svg | x=980 | x=980 | ✅ |
+| 02-privacy-settings.svg | x=980 | x=980 | ✅ |
+
+**Consistency:** ✅ All files match
+```
+
+OR if issues found:
+
+```markdown
+## Cross-Wireframe Consistency Check
+
+| File | Mobile Position | MOBILE Label | Status |
+|------|-----------------|--------------|--------|
+| 01-consent-modal.svg | x=980 | x=980 | ✅ |
+| 02-privacy-settings.svg | x=770 | x=770 | ❌ INCONSISTENT |
+
+**Consistency:** ❌ FAIL - 02-privacy-settings.svg deviates from standard
+**Root Cause:** Mobile moved to fill empty space (ad-hoc layout decision)
+**Fix:** 🔴 REGENERATE 02-privacy-settings.svg with mobile at x=980
+```
+
+#### Why This Matters
+
+Users view wireframes in sequence. If mobile phones jump between x=770 and x=980:
+- Creates visual jarring when navigating
+- Suggests sloppy design process
+- Makes side-by-side comparison impossible
+
+**Inconsistency is a 🔴 REGENERATE issue, not 🟢 PATCH.**
+Moving mobile position requires regenerating the entire layout.
+
+---
+
+### 14. SPEC COMPLIANCE (Cross-reference spec.md - MANDATORY)
 
 **Before reviewing ANY wireframe, READ THE SPEC FIRST.**
 
@@ -464,6 +538,43 @@ For EACH requirement, ask:
 - **CRITICAL**: Entire FR/SC not visualized anywhere
 - **MAJOR**: FR partially shown but missing key aspect
 - **MINOR**: FR shown but not annotated/labeled
+
+---
+
+### 15. ⛔ ANNOTATION CLARITY (Self-Explanatory Labels - MANDATORY)
+
+**All annotations and labels MUST be self-explanatory WITHOUT reading spec.md.**
+
+#### Success Criteria Labels Check
+- [ ] **SC codes have context**: Not "SC-001: <3 min" but "SC-001: Signup <3 min"
+- [ ] **Metrics specify WHAT**: Not "<2 sec" but "Login response <2 sec"
+- [ ] **No cryptic abbreviations**: Reader can understand without external docs
+
+**Examples of FAILURES:**
+| Found | Problem | Should Be |
+|-------|---------|-----------|
+| `SC-001: <3 min` | What takes 3 min? | `SC-001: Signup flow <3 min` |
+| `SC-002: <2 sec` | 2 sec for what? | `SC-002: Login response <2 sec` |
+| `SC-004: 0 breach` | Zero breach of what? | `SC-004: Zero security breaches` |
+| `1K users` | 1K users doing what? | `SC-003: Handle 1K concurrent logins` |
+
+#### Color Legend Check
+- [ ] **If semantic colors are used, is there a legend?**
+- [ ] **Does the legend explain what each color means?**
+
+**Common Color Issues:**
+| Issue | Classification |
+|-------|----------------|
+| Green/yellow/purple borders with no legend | 🔴 REGENERATE - add legend |
+| Success criteria codes without descriptions | 🔴 REGENERATE - add context |
+| Metrics without specifying what's measured | 🔴 REGENERATE - add clarity |
+
+#### Severity for Annotation Clarity
+- **MAJOR**: Success criteria codes without descriptions
+- **MAJOR**: Semantic colors without legend
+- **MINOR**: Abbreviations not expanded (FR, SC, NFR)
+
+**Note**: Cryptic labels waste space and communicate nothing. Every label should be instantly understandable to someone who hasn't read the spec.
 
 ---
 
@@ -694,7 +805,7 @@ This forces you to explicitly verify that no regions collide. You cannot "glance
 **If you skip this section, the review is invalid.**
 **No overlap matrix = No pass. Period.**
 
-### 4. For EACH wireframe, work through ALL 12 category checklists above
+### 4. For EACH wireframe, work through ALL 15 category checklists above
 
 Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 

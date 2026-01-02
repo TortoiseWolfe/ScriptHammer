@@ -431,6 +431,70 @@ The path draws a quarter arc. For a half-arc spinner, use:
 <path d="M 0 -12 A 12 12 0 1 1 0 12" .../>
 ```
 
+---
+
+## ⛔ ANNOTATION CLARITY RULES (MANDATORY)
+
+**All annotations and labels MUST be self-explanatory. A reader should understand them WITHOUT reading spec.md.**
+
+### Success Criteria Labels
+
+**NEVER** use abbreviated SC codes without context:
+- ❌ `SC-001: <3 min` (cryptic - what takes 3 min?)
+- ❌ `SC-002: <2 sec` (meaningless without context)
+- ❌ `SC-004: 0 breach` (zero breach of what?)
+- ✅ `SC-001: Signup flow <3 min`
+- ✅ `SC-002: Login response <2 sec`
+- ✅ `SC-004: Zero security breaches`
+- ✅ `Registration: <3 min (SC-001)`
+
+**Format options** (be consistent per wireframe):
+| Format | Example |
+|--------|---------|
+| **Metric first** | `Login response: <2 sec` |
+| **Code + context** | `SC-002: Auth response <2 sec` |
+| **Full description** | `Users complete registration in under 3 minutes` |
+
+### Color Legend Requirements
+
+**If colors encode meaning, a legend panel is MANDATORY.**
+
+When using different border colors for badges/pills:
+
+| Border Color | Meaning |
+|--------------|---------|
+| `#22c55e` (green) | Compliance achieved / Target met |
+| `#eab308` (yellow) | External dependency / Caution |
+| `#8b5cf6` (purple) | Technical constraint / Architecture limitation |
+| `#475569` (gray) | Informational / Not yet verified |
+
+**Legend placement**: Footer area (y ≤ 750) or dedicated "Legend" panel.
+
+```xml
+<!-- ✅ CORRECT: Legend explaining color coding (light theme colors) -->
+<g id="legend" transform="translate(40, 720)">
+  <text x="0" y="0" class="text-sm" fill="#4b5563">Legend:</text>
+  <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#22c55e" stroke-width="2"/>
+  <text x="80" y="0" class="text-sm">Target met</text>
+  <rect x="160" y="-10" width="12" height="12" rx="2" fill="none" stroke="#eab308" stroke-width="2"/>
+  <text x="180" y="0" class="text-sm">External dependency</text>
+  <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="320" y="0" class="text-sm">Constraint</text>
+</g>
+```
+
+### Self-Documentation Checklist
+
+**Before writing the SVG, verify each annotation passes:**
+- [ ] Can a reader understand what SC-XXX measures without reading spec.md?
+- [ ] If colors vary semantically, is there a legend explaining them?
+- [ ] Are abbreviated terms (FR, SC, NFR) explained on first use or avoided?
+- [ ] Do metric labels specify WHAT is being measured?
+
+**If ANY annotation requires external context to understand, REWRITE IT.**
+
+---
+
 ### 5. Update the Wireframe Viewer
 
 After creating the SVG files, update `docs/design/wireframes/index.html`:
