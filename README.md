@@ -29,495 +29,708 @@
 <details>
 <summary><strong>Foundation</strong> (7 features)</summary>
 
-**~~000-rls-implementation~~** — 🟢 *Pass*
-```
-/wireframe 000-rls-implementation
-```
-```
-/wireframe-review 000-rls-implementation
-```
-
-**~~001-wcag-aa-compliance~~** — 🟢 *Pass*
-```
-/wireframe 001-wcag-aa-compliance
-```
-```
-/wireframe-review 001-wcag-aa-compliance
-```
-
-**002-cookie-consent** — 🔍 Pending
-```
-/wireframe 002-cookie-consent
-```
-```
-/wireframe-review 002-cookie-consent
-```
-
-**003-user-authentication** — 🔍 Pending
-```
-/wireframe 003-user-authentication
-```
-```
-/wireframe-review 003-user-authentication
-```
-
 <details>
-<summary>Per-page commands (5 SVGs)</summary>
+<summary>🟢 <code>000</code> rls-implementation — 3 SVGs</summary>
 
-**01** login-signup
-```
-/wireframe-review 003:01
-```
-```
-/wireframe 003:01
-```
-
-**02** password-reset
-```
-/wireframe-review 003:02
-```
-```
-/wireframe 003:02
-```
-
-**03** email-verification
-```
-/wireframe-review 003:03
-```
-```
-/wireframe 003:03
-```
-
-**04** profile-settings
-```
-/wireframe-review 003:04
-```
-```
-/wireframe 003:04
-```
-
-**05** auth-flow-architecture
-```
-/wireframe-review 003:05
-```
-```
-/wireframe 003:05
-```
+- **01** rls-architecture-overview
+  - 🔍 `/wireframe-review 000:01`
+  - 🔄 `/wireframe 000:01`
+- **02** policy-patterns
+  - 🔍 `/wireframe-review 000:02`
+  - 🔄 `/wireframe 000:02`
+- **03** access-control-matrix
+  - 🔍 `/wireframe-review 000:03`
+  - 🔄 `/wireframe 000:03`
 
 </details>
 
-**004-mobile-first-design** — 🔍 Pending
-```
-/wireframe 004-mobile-first-design
-```
-```
-/wireframe-review 004-mobile-first-design
-```
-
 <details>
-<summary>Per-page commands (4 SVGs)</summary>
+<summary>🟢 <code>001</code> wcag-aa-compliance — 3 SVGs</summary>
 
-**01** responsive-navigation
-```
-/wireframe-review 004:01
-```
-```
-/wireframe 004:01
-```
-
-**02** content-typography
-```
-/wireframe-review 004:02
-```
-```
-/wireframe 004:02
-```
-
-**03** touch-targets
-```
-/wireframe-review 004:03
-```
-```
-/wireframe 004:03
-```
-
-**04** breakpoint-system
-```
-/wireframe-review 004:04
-```
-```
-/wireframe 004:04
-```
+- **01** a11y-testing-pipeline
+  - 🔍 `/wireframe-review 001:01`
+  - 🔄 `/wireframe 001:01`
+- **02** a11y-dashboard
+  - 🔍 `/wireframe-review 001:02`
+  - 🔄 `/wireframe 001:02`
+- **03** dev-feedback-tooling
+  - 🔍 `/wireframe-review 001:03`
+  - 🔄 `/wireframe 001:03`
 
 </details>
 
-**005-security-hardening** — 🔍 Pending
-```
-/wireframe 005-security-hardening
-```
-```
-/wireframe-review 005-security-hardening
-```
+<details>
+<summary>🔍 <code>002</code> cookie-consent — 2 SVGs</summary>
 
-**006-template-fork-experience** — 🔍 Pending
-```
-/wireframe 006-template-fork-experience
-```
-```
-/wireframe-review 006-template-fork-experience
-```
+- **01** consent-modal
+  - 🔍 `/wireframe-review 002:01`
+  - 🔄 `/wireframe 002:01`
+- **02** privacy-settings
+  - 🔍 `/wireframe-review 002:02`
+  - 🔄 `/wireframe 002:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>003</code> user-authentication — 5 SVGs</summary>
+
+- **01** login-signup
+  - 🔍 `/wireframe-review 003:01`
+  - 🔄 `/wireframe 003:01`
+- **02** password-reset
+  - 🔍 `/wireframe-review 003:02`
+  - 🔄 `/wireframe 003:02`
+- **03** email-verification
+  - 🔍 `/wireframe-review 003:03`
+  - 🔄 `/wireframe 003:03`
+- **04** profile-settings
+  - 🔍 `/wireframe-review 003:04`
+  - 🔄 `/wireframe 003:04`
+- **05** auth-flow-architecture
+  - 🔍 `/wireframe-review 003:05`
+  - 🔄 `/wireframe 003:05`
+
+</details>
+
+<details>
+<summary>🔍 <code>004</code> mobile-first-design — 4 SVGs</summary>
+
+- **01** responsive-navigation
+  - 🔍 `/wireframe-review 004:01`
+  - 🔄 `/wireframe 004:01`
+- **02** content-typography
+  - 🔍 `/wireframe-review 004:02`
+  - 🔄 `/wireframe 004:02`
+- **03** touch-targets
+  - 🔍 `/wireframe-review 004:03`
+  - 🔄 `/wireframe 004:03`
+- **04** breakpoint-system
+  - 🔍 `/wireframe-review 004:04`
+  - 🔄 `/wireframe 004:04`
+
+</details>
+
+<details>
+<summary>🔍 <code>005</code> security-hardening — 2 SVGs</summary>
+
+- **01** security-architecture
+  - 🔍 `/wireframe-review 005:01`
+  - 🔄 `/wireframe 005:01`
+- **02** auth-security-ux
+  - 🔍 `/wireframe-review 005:02`
+  - 🔄 `/wireframe 005:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>006</code> template-fork-experience — 3 SVGs</summary>
+
+- **01** rebrand-automation-flow
+  - 🔍 `/wireframe-review 006:01`
+  - 🔄 `/wireframe 006:01`
+- **02** fork-workflow-architecture
+  - 🔍 `/wireframe-review 006:02`
+  - 🔄 `/wireframe 006:02`
+- **03** guidance-banner-ui
+  - 🔍 `/wireframe-review 006:03`
+  - 🔄 `/wireframe 006:03`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Core Features</strong> (6 features)</summary>
 
-**007-e2e-testing-framework** — 🔍 Pending
-```
-/wireframe 007-e2e-testing-framework
-```
-```
-/wireframe-review 007-e2e-testing-framework
-```
+<details>
+<summary>🔍 <code>007</code> e2e-testing-framework — 2 SVGs</summary>
 
-**008-on-the-account** — 🔍 Pending
-```
-/wireframe 008-on-the-account
-```
-```
-/wireframe-review 008-on-the-account
-```
+- **01** e2e-architecture
+  - 🔍 `/wireframe-review 007:01`
+  - 🔄 `/wireframe 007:01`
+- **02** test-execution-flow
+  - 🔍 `/wireframe-review 007:02`
+  - 🔄 `/wireframe 007:02`
 
-**009-user-messaging-system** — 🔍 Pending
-```
-/wireframe 009-user-messaging-system
-```
-```
-/wireframe-review 009-user-messaging-system
-```
+</details>
 
-**010-unified-blog-content** — 🔍 Pending
-```
-/wireframe 010-unified-blog-content
-```
-```
-/wireframe-review 010-unified-blog-content
-```
+<details>
+<summary>🔍 <code>008</code> on-the-account — 3 SVGs</summary>
 
-**011-group-chats** — 🔍 Pending
-```
-/wireframe 011-group-chats
-```
-```
-/wireframe-review 011-group-chats
-```
+- **01** account-settings-avatar
+  - 🔍 `/wireframe-review 008:01`
+  - 🔄 `/wireframe 008:01`
+- **02** crop-interface
+  - 🔍 `/wireframe-review 008:02`
+  - 🔄 `/wireframe 008:02`
+- **03** upload-states
+  - 🔍 `/wireframe-review 008:03`
+  - 🔄 `/wireframe 008:03`
 
-**012-welcome-message-architecture** — 🔍 Pending
-```
-/wireframe 012-welcome-message-architecture
-```
-```
-/wireframe-review 012-welcome-message-architecture
-```
+</details>
+
+<details>
+<summary>🔍 <code>009</code> user-messaging-system — 4 SVGs</summary>
+
+- **01** conversation-list
+  - 🔍 `/wireframe-review 009:01`
+  - 🔄 `/wireframe 009:01`
+- **02** chat-interface
+  - 🔍 `/wireframe-review 009:02`
+  - 🔄 `/wireframe 009:02`
+- **03** friend-requests
+  - 🔍 `/wireframe-review 009:03`
+  - 🔄 `/wireframe 009:03`
+- **04** encryption-architecture
+  - 🔍 `/wireframe-review 009:04`
+  - 🔄 `/wireframe 009:04`
+
+</details>
+
+<details>
+<summary>🔍 <code>010</code> unified-blog-content — 5 SVGs</summary>
+
+- **01** blog-list-post
+  - 🔍 `/wireframe-review 010:01`
+  - 🔄 `/wireframe 010:01`
+- **02** offline-editor
+  - 🔍 `/wireframe-review 010:02`
+  - 🔄 `/wireframe 010:02`
+- **03** conflict-resolution
+  - 🔍 `/wireframe-review 010:03`
+  - 🔄 `/wireframe 010:03`
+- **04** migration-dashboard
+  - 🔍 `/wireframe-review 010:04`
+  - 🔄 `/wireframe 010:04`
+- **05** content-sync-architecture
+  - 🔍 `/wireframe-review 010:05`
+  - 🔄 `/wireframe 010:05`
+
+</details>
+
+<details>
+<summary>🔍 <code>011</code> group-chats — 4 SVGs</summary>
+
+- **01** create-group
+  - 🔍 `/wireframe-review 011:01`
+  - 🔄 `/wireframe 011:01`
+- **02** group-chat-interface
+  - 🔍 `/wireframe-review 011:02`
+  - 🔄 `/wireframe 011:02`
+- **03** group-management
+  - 🔍 `/wireframe-review 011:03`
+  - 🔄 `/wireframe 011:03`
+- **04** group-key-rotation
+  - 🔍 `/wireframe-review 011:04`
+  - 🔄 `/wireframe 011:04`
+
+</details>
+
+<details>
+<summary>🔍 <code>012</code> welcome-message-architecture — 3 SVGs</summary>
+
+- **01** welcome-message-flow
+  - 🔍 `/wireframe-review 012:01`
+  - 🔄 `/wireframe 012:01`
+- **02** idempotency-state-machine
+  - 🔍 `/wireframe-review 012:02`
+  - 🔄 `/wireframe 012:02`
+- **03** error-handling-architecture
+  - 🔍 `/wireframe-review 012:03`
+  - 🔄 `/wireframe 012:03`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Auth OAuth</strong> (4 features)</summary>
 
-**013-oauth-messaging-password** — 🔍 Pending
-```
-/wireframe 013-oauth-messaging-password
-```
-```
-/wireframe-review 013-oauth-messaging-password
-```
+<details>
+<summary>🔍 <code>013</code> oauth-messaging-password — 2 SVGs</summary>
 
-**014-admin-welcome-email-gate** — 🔍 Pending
-```
-/wireframe 014-admin-welcome-email-gate
-```
-```
-/wireframe-review 014-admin-welcome-email-gate
-```
+- **01** oauth-password-setup
+  - 🔍 `/wireframe-review 013:01`
+  - 🔄 `/wireframe 013:01`
+- **02** oauth-password-unlock
+  - 🔍 `/wireframe-review 013:02`
+  - 🔄 `/wireframe 013:02`
 
-**015-oauth-display-name** — 🔍 Pending
-```
-/wireframe 015-oauth-display-name
-```
-```
-/wireframe-review 015-oauth-display-name
-```
+</details>
 
-**016-messaging-critical-fixes** — 🔍 Pending
-```
-/wireframe 016-messaging-critical-fixes
-```
-```
-/wireframe-review 016-messaging-critical-fixes
-```
+<details>
+<summary>🔍 <code>014</code> admin-welcome-email-gate — 2 SVGs</summary>
+
+- **01** email-verification-gate
+  - 🔍 `/wireframe-review 014:01`
+  - 🔄 `/wireframe 014:01`
+- **02** admin-setup-architecture
+  - 🔍 `/wireframe-review 014:02`
+  - 🔄 `/wireframe 014:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>015</code> oauth-display-name — 2 SVGs</summary>
+
+- **01** oauth-profile-population
+  - 🔍 `/wireframe-review 015:01`
+  - 🔄 `/wireframe 015:01`
+- **02** migration-dashboard
+  - 🔍 `/wireframe-review 015:02`
+  - 🔄 `/wireframe 015:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>016</code> messaging-critical-fixes — 3 SVGs</summary>
+
+- **01** input-visibility-layouts
+  - 🔍 `/wireframe-review 016:01`
+  - 🔄 `/wireframe 016:01`
+- **02** oauth-setup-flow
+  - 🔍 `/wireframe-review 016:02`
+  - 🔄 `/wireframe 016:02`
+- **03** error-states-resolution
+  - 🔍 `/wireframe-review 016:03`
+  - 🔄 `/wireframe 016:03`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Enhancements</strong> (5 features)</summary>
 
-**017-colorblind-mode** — 🔍 Pending
-```
-/wireframe 017-colorblind-mode
-```
-```
-/wireframe-review 017-colorblind-mode
-```
+<details>
+<summary>🔍 <code>017</code> colorblind-mode — 2 SVGs</summary>
 
-**018-font-switcher** — 🔍 Pending
-```
-/wireframe 018-font-switcher
-```
-```
-/wireframe-review 018-font-switcher
-```
+- **01** colorblind-settings
+  - 🔍 `/wireframe-review 017:01`
+  - 🔄 `/wireframe 017:01`
+- **02** status-indicator-comparison
+  - 🔍 `/wireframe-review 017:02`
+  - 🔄 `/wireframe 017:02`
 
-**019-google-analytics** — 🔍 Pending
-```
-/wireframe 019-google-analytics
-```
-```
-/wireframe-review 019-google-analytics
-```
+</details>
 
-**020-pwa-background-sync** — 🔍 Pending
-```
-/wireframe 020-pwa-background-sync
-```
-```
-/wireframe-review 020-pwa-background-sync
-```
+<details>
+<summary>🔍 <code>018</code> font-switcher — 2 SVGs</summary>
 
-**021-geolocation-map** — 🔍 Pending
-```
-/wireframe 021-geolocation-map
-```
-```
-/wireframe-review 021-geolocation-map
-```
+- **01** font-selection-ui
+  - 🔍 `/wireframe-review 018:01`
+  - 🔄 `/wireframe 018:01`
+- **02** font-comparison-preview
+  - 🔍 `/wireframe-review 018:02`
+  - 🔄 `/wireframe 018:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>019</code> google-analytics — 2 SVGs</summary>
+
+- **01** analytics-architecture
+  - 🔍 `/wireframe-review 019:01`
+  - 🔄 `/wireframe 019:01`
+- **02** analytics-events-flow
+  - 🔍 `/wireframe-review 019:02`
+  - 🔄 `/wireframe 019:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>020</code> pwa-background-sync — 3 SVGs</summary>
+
+- **01** offline-status-ui
+  - 🔍 `/wireframe-review 020:01`
+  - 🔄 `/wireframe 020:01`
+- **02** sync-queue-states
+  - 🔍 `/wireframe-review 020:02`
+  - 🔄 `/wireframe 020:02`
+- **03** sync-architecture
+  - 🔍 `/wireframe-review 020:03`
+  - 🔄 `/wireframe 020:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>021</code> geolocation-map — 3 SVGs</summary>
+
+- **01** map-interface
+  - 🔍 `/wireframe-review 021:01`
+  - 🔄 `/wireframe 021:01`
+- **02** permission-states
+  - 🔍 `/wireframe-review 021:02`
+  - 🔄 `/wireframe 021:02`
+- **03** map-states
+  - 🔍 `/wireframe-review 021:03`
+  - 🔄 `/wireframe 021:03`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Integrations</strong> (5 features)</summary>
 
-**022-web3forms-integration** — 🔍 Pending
-```
-/wireframe 022-web3forms-integration
-```
-```
-/wireframe-review 022-web3forms-integration
-```
+<details>
+<summary>🔍 <code>022</code> web3forms-integration — 3 SVGs</summary>
 
-**023-emailjs-integration** — 🔍 Pending
-```
-/wireframe 023-emailjs-integration
-```
-```
-/wireframe-review 023-emailjs-integration
-```
+- **01** contact-form-ui
+  - 🔍 `/wireframe-review 022:01`
+  - 🔄 `/wireframe 022:01`
+- **02** submission-states
+  - 🔍 `/wireframe-review 022:02`
+  - 🔄 `/wireframe 022:02`
+- **03** integration-architecture
+  - 🔍 `/wireframe-review 022:03`
+  - 🔄 `/wireframe 022:03`
 
-**024-payment-integration** — 🔍 Pending
-```
-/wireframe 024-payment-integration
-```
-```
-/wireframe-review 024-payment-integration
-```
+</details>
 
-**025-blog-social-features** — 🔍 Pending
-```
-/wireframe 025-blog-social-features
-```
-```
-/wireframe-review 025-blog-social-features
-```
+<details>
+<summary>🔍 <code>023</code> emailjs-integration — 2 SVGs</summary>
 
-**026-unified-messaging-sidebar** — 🔍 Pending
-```
-/wireframe 026-unified-messaging-sidebar
-```
-```
-/wireframe-review 026-unified-messaging-sidebar
-```
+- **01** failover-architecture
+  - 🔍 `/wireframe-review 023:01`
+  - 🔄 `/wireframe 023:01`
+- **02** provider-health-dashboard
+  - 🔍 `/wireframe-review 023:02`
+  - 🔄 `/wireframe 023:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>024</code> payment-integration — 4 SVGs</summary>
+
+- **01** payment-checkout-flow
+  - 🔍 `/wireframe-review 024:01`
+  - 🔄 `/wireframe 024:01`
+- **02** subscription-management
+  - 🔍 `/wireframe-review 024:02`
+  - 🔄 `/wireframe 024:02`
+- **03** payment-states
+  - 🔍 `/wireframe-review 024:03`
+  - 🔄 `/wireframe 024:03`
+- **04** payment-architecture
+  - 🔍 `/wireframe-review 024:04`
+  - 🔄 `/wireframe 024:04`
+
+</details>
+
+<details>
+<summary>🔍 <code>025</code> blog-social-features — 3 SVGs</summary>
+
+- **01** share-buttons-ui
+  - 🔍 `/wireframe-review 025:01`
+  - 🔄 `/wireframe 025:01`
+- **02** author-profile
+  - 🔍 `/wireframe-review 025:02`
+  - 🔄 `/wireframe 025:02`
+- **03** social-metadata
+  - 🔍 `/wireframe-review 025:03`
+  - 🔄 `/wireframe 025:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>026</code> unified-messaging-sidebar — 4 SVGs</summary>
+
+- **01** chats-tab
+  - 🔍 `/wireframe-review 026:01`
+  - 🔄 `/wireframe 026:01`
+- **02** connections-tab
+  - 🔍 `/wireframe-review 026:02`
+  - 🔄 `/wireframe 026:02`
+- **03** find-people-tab
+  - 🔍 `/wireframe-review 026:03`
+  - 🔄 `/wireframe 026:03`
+- **04** mobile-drawer
+  - 🔍 `/wireframe-review 026:04`
+  - 🔄 `/wireframe 026:04`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Polish</strong> (4 features)</summary>
 
-**027-ux-polish** — 🔍 Pending
-```
-/wireframe 027-ux-polish
-```
-```
-/wireframe-review 027-ux-polish
-```
+<details>
+<summary>🔍 <code>027</code> ux-polish — 2 SVGs</summary>
 
-**028-enhanced-geolocation** — 🔍 Pending
-```
-/wireframe 028-enhanced-geolocation
-```
-```
-/wireframe-review 028-enhanced-geolocation
-```
+- **01** character-count-states
+  - 🔍 `/wireframe-review 027:01`
+  - 🔄 `/wireframe 027:01`
+- **02** markdown-rendering
+  - 🔍 `/wireframe-review 027:02`
+  - 🔄 `/wireframe 027:02`
 
-**029-seo-editorial-assistant** — 🔍 Pending
-```
-/wireframe 029-seo-editorial-assistant
-```
-```
-/wireframe-review 029-seo-editorial-assistant
-```
+</details>
 
-**030-calendar-integration** — 🔍 Pending
-```
-/wireframe 030-calendar-integration
-```
-```
-/wireframe-review 030-calendar-integration
-```
+<details>
+<summary>🔍 <code>028</code> enhanced-geolocation — 2 SVGs</summary>
+
+- **01** desktop-interface
+  - 🔍 `/wireframe-review 028:01`
+  - 🔄 `/wireframe 028:01`
+- **02** mobile-interface
+  - 🔍 `/wireframe-review 028:02`
+  - 🔄 `/wireframe 028:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>029</code> seo-editorial-assistant — 4 SVGs</summary>
+
+- **01** editor-with-seo-panel
+  - 🔍 `/wireframe-review 029:01`
+  - 🔄 `/wireframe 029:01`
+- **02** seo-suggestions-detail
+  - 🔍 `/wireframe-review 029:02`
+  - 🔄 `/wireframe 029:02`
+- **03** export-import-flow
+  - 🔍 `/wireframe-review 029:03`
+  - 🔄 `/wireframe 029:03`
+- **04** terminal-output
+  - 🔍 `/wireframe-review 029:04`
+  - 🔄 `/wireframe 029:04`
+
+</details>
+
+<details>
+<summary>🔍 <code>030</code> calendar-integration — 4 SVGs</summary>
+
+- **01** calendar-booking-flow
+  - 🔍 `/wireframe-review 030:01`
+  - 🔄 `/wireframe 030:01`
+- **02** consent-and-states
+  - 🔍 `/wireframe-review 030:02`
+  - 🔄 `/wireframe 030:02`
+- **03** theme-adaptation
+  - 🔍 `/wireframe-review 030:03`
+  - 🔄 `/wireframe 030:03`
+- **04** provider-architecture
+  - 🔍 `/wireframe-review 030:04`
+  - 🔄 `/wireframe 030:04`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Testing</strong> (7 features)</summary>
 
-**031-standardize-test-users** — 🔍 Pending
-```
-/wireframe 031-standardize-test-users
-```
-```
-/wireframe-review 031-standardize-test-users
-```
+<details>
+<summary>🔍 <code>031</code> standardize-test-users — 2 SVGs</summary>
 
-**032-signup-e2e-tests** — 🔍 Pending
-```
-/wireframe 032-signup-e2e-tests
-```
-```
-/wireframe-review 032-signup-e2e-tests
-```
+- **01** test-user-architecture
+  - 🔍 `/wireframe-review 031:01`
+  - 🔄 `/wireframe 031:01`
+- **02** test-execution-flow
+  - 🔍 `/wireframe-review 031:02`
+  - 🔄 `/wireframe 031:02`
 
-**033-seo-library-tests** — 🔍 Pending
-```
-/wireframe 033-seo-library-tests
-```
-```
-/wireframe-review 033-seo-library-tests
-```
+</details>
 
-**034-blog-library-tests** — 🔍 Pending
-```
-/wireframe 034-blog-library-tests
-```
-```
-/wireframe-review 034-blog-library-tests
-```
+<details>
+<summary>🔍 <code>032</code> signup-e2e-tests — 2 SVGs</summary>
 
-**035-messaging-service-tests** — 🔍 Pending
-```
-/wireframe 035-messaging-service-tests
-```
-```
-/wireframe-review 035-messaging-service-tests
-```
+- **01** test-factory-architecture
+  - 🔍 `/wireframe-review 032:01`
+  - 🔄 `/wireframe 032:01`
+- **02** test-suite-coverage
+  - 🔍 `/wireframe-review 032:02`
+  - 🔄 `/wireframe 032:02`
 
-**036-auth-component-tests** — 🔍 Pending
-```
-/wireframe 036-auth-component-tests
-```
-```
-/wireframe-review 036-auth-component-tests
-```
+</details>
 
-**037-game-a11y-tests** — 🔍 Pending
-```
-/wireframe 037-game-a11y-tests
-```
-```
-/wireframe-review 037-game-a11y-tests
-```
+<details>
+<summary>🔍 <code>033</code> seo-library-tests — 2 SVGs</summary>
+
+- **01** test-suite-architecture
+  - 🔍 `/wireframe-review 033:01`
+  - 🔄 `/wireframe 033:01`
+- **02** test-coverage-flow
+  - 🔍 `/wireframe-review 033:02`
+  - 🔄 `/wireframe 033:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>034</code> blog-library-tests — 2 SVGs</summary>
+
+- **01** test-architecture
+  - 🔍 `/wireframe-review 034:01`
+  - 🔄 `/wireframe 034:01`
+- **02** coverage-dashboard
+  - 🔍 `/wireframe-review 034:02`
+  - 🔄 `/wireframe 034:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>035</code> messaging-service-tests — 2 SVGs</summary>
+
+- **01** test-suite-architecture
+  - 🔍 `/wireframe-review 035:01`
+  - 🔄 `/wireframe 035:01`
+- **02** crypto-test-flows
+  - 🔍 `/wireframe-review 035:02`
+  - 🔄 `/wireframe 035:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>036</code> auth-component-tests — 2 SVGs</summary>
+
+- **01** component-test-architecture
+  - 🔍 `/wireframe-review 036:01`
+  - 🔄 `/wireframe 036:01`
+- **02** test-coverage-matrix
+  - 🔍 `/wireframe-review 036:02`
+  - 🔄 `/wireframe 036:02`
+
+</details>
+
+<details>
+<summary>🔍 <code>037</code> game-a11y-tests — 2 SVGs</summary>
+
+- **01** test-suite-architecture
+  - 🔍 `/wireframe-review 037:01`
+  - 🔄 `/wireframe 037:01`
+- **02** component-a11y-matrix
+  - 🔍 `/wireframe-review 037:02`
+  - 🔄 `/wireframe 037:02`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Payments</strong> (6 features)</summary>
 
-**038-payment-dashboard** — 🔍 Pending
-```
-/wireframe 038-payment-dashboard
-```
-```
-/wireframe-review 038-payment-dashboard
-```
+<details>
+<summary>🔍 <code>038</code> payment-dashboard — 3 SVGs</summary>
 
-**039-payment-offline-queue** — 🔍 Pending
-```
-/wireframe 039-payment-offline-queue
-```
-```
-/wireframe-review 039-payment-offline-queue
-```
+- **01** dashboard-main
+  - 🔍 `/wireframe-review 038:01`
+  - 🔄 `/wireframe 038:01`
+- **02** transaction-detail
+  - 🔍 `/wireframe-review 038:02`
+  - 🔄 `/wireframe 038:02`
+- **03** dashboard-states
+  - 🔍 `/wireframe-review 038:03`
+  - 🔄 `/wireframe 038:03`
 
-**040-payment-retry-ui** — 🔍 Pending
-```
-/wireframe 040-payment-retry-ui
-```
-```
-/wireframe-review 040-payment-retry-ui
-```
+</details>
 
-**041-paypal-subscriptions** — 🔍 Pending
-```
-/wireframe 041-paypal-subscriptions
-```
-```
-/wireframe-review 041-paypal-subscriptions
-```
+<details>
+<summary>🔍 <code>039</code> payment-offline-queue — 3 SVGs</summary>
 
-**042-payment-rls-policies** — 🔍 Pending
-```
-/wireframe 042-payment-rls-policies
-```
-```
-/wireframe-review 042-payment-rls-policies
-```
+- **01** queue-status-indicator
+  - 🔍 `/wireframe-review 039:01`
+  - 🔄 `/wireframe 039:01`
+- **02** pending-payment-list
+  - 🔍 `/wireframe-review 039:02`
+  - 🔄 `/wireframe 039:02`
+- **03** queue-states
+  - 🔍 `/wireframe-review 039:03`
+  - 🔄 `/wireframe 039:03`
 
-**043-group-service** — 🔍 Pending
-```
-/wireframe 043-group-service
-```
-```
-/wireframe-review 043-group-service
-```
+</details>
+
+<details>
+<summary>🔍 <code>040</code> payment-retry-ui — 3 SVGs</summary>
+
+- **01** error-display
+  - 🔍 `/wireframe-review 040:01`
+  - 🔄 `/wireframe 040:01`
+- **02** retry-and-update
+  - 🔍 `/wireframe-review 040:02`
+  - 🔄 `/wireframe 040:02`
+- **03** recovery-wizard
+  - 🔍 `/wireframe-review 040:03`
+  - 🔄 `/wireframe 040:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>041</code> paypal-subscriptions — 3 SVGs</summary>
+
+- **01** subscription-list-empty
+  - 🔍 `/wireframe-review 041:01`
+  - 🔄 `/wireframe 041:01`
+- **02** subscription-actions
+  - 🔍 `/wireframe-review 041:02`
+  - 🔄 `/wireframe 041:02`
+- **03** subscription-architecture
+  - 🔍 `/wireframe-review 041:03`
+  - 🔄 `/wireframe 041:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>042</code> payment-rls-policies — 3 SVGs</summary>
+
+- **01** rls-policy-architecture
+  - 🔍 `/wireframe-review 042:01`
+  - 🔄 `/wireframe 042:01`
+- **02** access-control-matrix
+  - 🔍 `/wireframe-review 042:02`
+  - 🔄 `/wireframe 042:02`
+- **03** policy-evaluation-flow
+  - 🔍 `/wireframe-review 042:03`
+  - 🔄 `/wireframe 042:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>043</code> group-service — 2 SVGs</summary>
+
+- **01** group-service-architecture
+  - 🔍 `/wireframe-review 043:01`
+  - 🔄 `/wireframe 043:01`
+- **02** member-lifecycle-flow
+  - 🔍 `/wireframe-review 043:02`
+  - 🔄 `/wireframe 043:02`
+
+</details>
 
 </details>
 
 <details>
 <summary><strong>Code Quality</strong> (2 features)</summary>
 
-**044-error-handler-integrations** — 🔍 Pending
-```
-/wireframe 044-error-handler-integrations
-```
-```
-/wireframe-review 044-error-handler-integrations
-```
+<details>
+<summary>🔍 <code>044</code> error-handler-integrations — 3 SVGs</summary>
 
-**045-disqus-theme** — 🔍 Pending
-```
-/wireframe 045-disqus-theme
-```
-```
-/wireframe-review 045-disqus-theme
-```
+- **01** error-architecture
+  - 🔍 `/wireframe-review 044:01`
+  - 🔄 `/wireframe 044:01`
+- **02** toast-notifications
+  - 🔍 `/wireframe-review 044:02`
+  - 🔄 `/wireframe 044:02`
+- **03** error-boundaries
+  - 🔍 `/wireframe-review 044:03`
+  - 🔄 `/wireframe 044:03`
+
+</details>
+
+<details>
+<summary>🔍 <code>045</code> disqus-theme — 3 SVGs</summary>
+
+- **01** theme-mapping-preview
+  - 🔍 `/wireframe-review 045:01`
+  - 🔄 `/wireframe 045:01`
+- **02** consent-placeholder-states
+  - 🔍 `/wireframe-review 045:02`
+  - 🔄 `/wireframe 045:02`
+- **03** integration-architecture
+  - 🔍 `/wireframe-review 045:03`
+  - 🔄 `/wireframe 045:03`
+
+</details>
 
 </details>
 
