@@ -24,15 +24,7 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 
 ### Check 2: Viewer Setup (BLOCKING)
 
-**You MUST set up the viewer before reviewing. This is not optional.**
-
-1. Navigate to wireframe viewer: `http://host.docker.internal:3000`
-2. Click on the target wireframe
-3. Press `F` for focus mode (hide sidebar/footer)
-4. Press `0` to reset zoom to 85%
-5. For architecture diagrams (1600×1000): Press `-` three times to reach 40% zoom
-6. For standard wireframes (1400×800): Press `-` twice to reach 55% zoom
-7. Take a screenshot
+**Complete Step 1 (Viewer Setup) before proceeding.**
 
 **⛔ If you cannot see the ENTIRE wireframe in the screenshot → adjust zoom before continuing.**
 
@@ -378,73 +370,41 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowLeft" })
 mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
 ```
 
-### 1g. Complete Viewer Setup Sequence (Copy-Paste Ready)
-
-For feature `003-user-authentication` with 5 wireframes:
-
-```javascript
-// Setup (do once)
-await mcp__MCP_DOCKER__browser_navigate({ url: "http://host.docker.internal:3000" });
-await mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => document.querySelector('[data-svg="003-user-authentication/01-login-signup.svg"]').click()`
-});
-await mcp__MCP_DOCKER__browser_press_key({ key: "f" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "0" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "-" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "-" });
-
-// Capture all 5 wireframes
-await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-01-login-signup.png" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
-await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-02-password-reset.png" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
-await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-03-email-verification.png" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
-await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-04-profile-settings.png" });
-await mcp__MCP_DOCKER__browser_press_key({ key: "ArrowRight" });
-await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-05-auth-architecture.png" });
-```
-
-**DO NOT skip this setup. DO NOT discover zoom/focus mid-review.**
+**DO NOT skip viewer setup. DO NOT discover zoom/focus mid-review.**
 
 ---
 
-## Step 2: Half-View Deep Inspection (MANDATORY)
+## Step 2: Quadrant Deep Inspection (MANDATORY)
 
-After full-page screenshot, zoom in to inspect each half separately.
+After saving the full-page screenshot, zoom into each quadrant for detailed inspection.
 
-### Why Halves (Not Quadrants)
-- Desktop content is always left (~60% of canvas)
-- Mobile content is always right (~40% of canvas)
-- Adapts to any canvas size without hardcoded coordinates
-- Catches detail issues missed in overview
+### Why Quadrants
+- Catches detail issues missed in overview (truncation, overlap, small text)
+- Desktop content is left (~60%), mobile is right (~40%)
+- Top areas have headers/nav, bottom has footers/legends
+- No hardcoded coordinates - zoom dynamically to fill viewport
 
 ### Procedure
-1. From full-page view, press `+` until left half fills viewport
-2. Screenshot: `[feature]-[page]-left.png`
-3. Pan right (click-drag or arrow keys)
-4. Screenshot: `[feature]-[page]-right.png`
+1. **Save fullscreen**: Take screenshot at current zoom (only PNG we save)
+2. **Inspect top-left**: Zoom until left half fills viewport, inspect top area
+3. **Inspect bottom-left**: Pan down within left half, inspect bottom area
+4. **Inspect top-right**: Pan to right half, inspect top area
+5. **Inspect bottom-right**: Pan down within right half, inspect bottom area
 
-### What to Check in Each Half
+### What to Check per Quadrant
 
-**Left Half (Desktop area):**
-- Header button overflow
-- Sidebar text truncation
-- Main content spacing
-- Annotation label completeness
-
-**Right Half (Mobile + annotations):**
-- Phone frame positioning
-- Touch target sizes (44x44)
-- Footer signature (x=60, y=780)
-- Right-margin annotations
+| Quadrant | Focus Areas |
+|----------|-------------|
+| Top-left | Header buttons, sidebar top, desktop nav overflow |
+| Bottom-left | Footer signature (x=60, y=780), REQUIREMENTS KEY panel |
+| Top-right | MOBILE label, phone frame top, status bar |
+| Bottom-right | Mobile footer, touch targets, right-margin annotations |
 
 ### Checkpoint
 Before proceeding to detailed categories:
-- [ ] Full-page screenshot captured
-- [ ] Left-half screenshot captured
-- [ ] Right-half screenshot captured
-- [ ] Obvious issues noted from visual inspection
+- [ ] Fullscreen PNG saved: `[feature]-[page].png`
+- [ ] All 4 quadrants visually inspected
+- [ ] Obvious issues noted from inspection
 
 ---
 
@@ -1205,36 +1165,11 @@ This separates dense mobile content from the full-height phone, eliminating coll
 
 ### 1. Read the Spec FIRST (MANDATORY)
 
-```bash
-# Location pattern
-features/[category]/[feature-folder]/spec.md
-```
-
-Extract and document:
-- All FR-XXX (Functional Requirements)
-- All SC-XXX (Success Criteria)
-- All NFR-XXX (Non-Functional Requirements)
-- Key user stories and flows
-
-**Do NOT proceed to SVG review until you have the requirements list.**
+**See Category 14 (Spec Compliance) for the extraction checklist.**
 
 ### 2. MANDATORY: View Rendered Wireframes Visually ⚠️ CRITICAL
 
-**Reading SVG code is NOT enough. You MUST view the actual rendered images.**
-
-Options for visual inspection:
-1. **Hot-reload viewer**: `npm run dev` in `docs/design/wireframes/` → browse localhost:3000
-2. **Browser MCP tools**: Use `mcp__MCP_DOCKER__browser_navigate` to view wireframes
-3. **Screenshot comparison**: Take screenshots and examine them visually
-
-**Why this matters**: SVG source code doesn't reveal visual issues like:
-- Text obscured by overlapping elements (z-order problems)
-- Clipping that only appears when rendered
-- Color/contrast issues that look different when rendered
-- Spacing that "looks fine" in code but is visually wrong
-
-**DO NOT mark a review complete if you only read the SVG source.**
-**DO NOT trust "the math checks out" - LOOK AT IT.**
+**Complete Step 1 (Viewer Setup) - you must view rendered wireframes, not just read SVG code.**
 
 ### 3. MANDATORY: Visual Description for Each Wireframe ⚠️ REQUIRED OUTPUT
 
