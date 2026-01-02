@@ -36,6 +36,34 @@
 ```
 /wireframe-review 000-rls-implementation
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** rls-architecture-overview
+> ```
+> /wireframe-review 000:01
+> ```
+> ```
+> /wireframe 000:01
+> ```
+
+> **02** policy-patterns
+> ```
+> /wireframe-review 000:02
+> ```
+> ```
+> /wireframe 000:02
+> ```
+
+> **03** access-control-matrix
+> ```
+> /wireframe-review 000:03
+> ```
+> ```
+> /wireframe 000:03
+> ```
+
+</details>
 
 **~~001-wcag-aa-compliance~~** — 🟢 *Pass*
 ```
@@ -44,6 +72,34 @@
 ```
 /wireframe-review 001-wcag-aa-compliance
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** a11y-testing-pipeline
+> ```
+> /wireframe-review 001:01
+> ```
+> ```
+> /wireframe 001:01
+> ```
+
+> **02** a11y-dashboard
+> ```
+> /wireframe-review 001:02
+> ```
+> ```
+> /wireframe 001:02
+> ```
+
+> **03** dev-feedback-tooling
+> ```
+> /wireframe-review 001:03
+> ```
+> ```
+> /wireframe 001:03
+> ```
+
+</details>
 
 **002-cookie-consent** — 🔍 Pending
 ```
@@ -52,6 +108,26 @@
 ```
 /wireframe-review 002-cookie-consent
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** consent-modal
+> ```
+> /wireframe-review 002:01
+> ```
+> ```
+> /wireframe 002:01
+> ```
+
+> **02** privacy-settings
+> ```
+> /wireframe-review 002:02
+> ```
+> ```
+> /wireframe 002:02
+> ```
+
+</details>
 
 **003-user-authentication** — 🔍 Pending
 ```
@@ -62,47 +138,47 @@
 ```
 
 <details>
-<summary>Per-page commands (5 SVGs)</summary>
+<summary>📄 Per-page (5 SVGs)</summary>
 
-**01** login-signup
-```
-/wireframe-review 003:01
-```
-```
-/wireframe 003:01
-```
+> **01** login-signup
+> ```
+> /wireframe-review 003:01
+> ```
+> ```
+> /wireframe 003:01
+> ```
 
-**02** password-reset
-```
-/wireframe-review 003:02
-```
-```
-/wireframe 003:02
-```
+> **02** password-reset
+> ```
+> /wireframe-review 003:02
+> ```
+> ```
+> /wireframe 003:02
+> ```
 
-**03** email-verification
-```
-/wireframe-review 003:03
-```
-```
-/wireframe 003:03
-```
+> **03** email-verification
+> ```
+> /wireframe-review 003:03
+> ```
+> ```
+> /wireframe 003:03
+> ```
 
-**04** profile-settings
-```
-/wireframe-review 003:04
-```
-```
-/wireframe 003:04
-```
+> **04** profile-settings
+> ```
+> /wireframe-review 003:04
+> ```
+> ```
+> /wireframe 003:04
+> ```
 
-**05** auth-flow-architecture
-```
-/wireframe-review 003:05
-```
-```
-/wireframe 003:05
-```
+> **05** auth-flow-architecture
+> ```
+> /wireframe-review 003:05
+> ```
+> ```
+> /wireframe 003:05
+> ```
 
 </details>
 
@@ -115,39 +191,39 @@
 ```
 
 <details>
-<summary>Per-page commands (4 SVGs)</summary>
+<summary>📄 Per-page (4 SVGs)</summary>
 
-**01** responsive-navigation
-```
-/wireframe-review 004:01
-```
-```
-/wireframe 004:01
-```
+> **01** responsive-navigation
+> ```
+> /wireframe-review 004:01
+> ```
+> ```
+> /wireframe 004:01
+> ```
 
-**02** content-typography
-```
-/wireframe-review 004:02
-```
-```
-/wireframe 004:02
-```
+> **02** content-typography
+> ```
+> /wireframe-review 004:02
+> ```
+> ```
+> /wireframe 004:02
+> ```
 
-**03** touch-targets
-```
-/wireframe-review 004:03
-```
-```
-/wireframe 004:03
-```
+> **03** touch-targets
+> ```
+> /wireframe-review 004:03
+> ```
+> ```
+> /wireframe 004:03
+> ```
 
-**04** breakpoint-system
-```
-/wireframe-review 004:04
-```
-```
-/wireframe 004:04
-```
+> **04** breakpoint-system
+> ```
+> /wireframe-review 004:04
+> ```
+> ```
+> /wireframe 004:04
+> ```
 
 </details>
 
@@ -158,6 +234,26 @@
 ```
 /wireframe-review 005-security-hardening
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** security-architecture
+> ```
+> /wireframe-review 005:01
+> ```
+> ```
+> /wireframe 005:01
+> ```
+
+> **02** auth-security-ux
+> ```
+> /wireframe-review 005:02
+> ```
+> ```
+> /wireframe 005:02
+> ```
+
+</details>
 
 **006-template-fork-experience** — 🔍 Pending
 ```
@@ -166,6 +262,34 @@
 ```
 /wireframe-review 006-template-fork-experience
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** rebrand-automation-flow
+> ```
+> /wireframe-review 006:01
+> ```
+> ```
+> /wireframe 006:01
+> ```
+
+> **02** fork-workflow-architecture
+> ```
+> /wireframe-review 006:02
+> ```
+> ```
+> /wireframe 006:02
+> ```
+
+> **03** guidance-banner-ui
+> ```
+> /wireframe-review 006:03
+> ```
+> ```
+> /wireframe 006:03
+> ```
+
+</details>
 
 </details>
 
@@ -179,6 +303,26 @@
 ```
 /wireframe-review 007-e2e-testing-framework
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** e2e-architecture
+> ```
+> /wireframe-review 007:01
+> ```
+> ```
+> /wireframe 007:01
+> ```
+
+> **02** test-execution-flow
+> ```
+> /wireframe-review 007:02
+> ```
+> ```
+> /wireframe 007:02
+> ```
+
+</details>
 
 **008-on-the-account** — 🔍 Pending
 ```
@@ -187,6 +331,34 @@
 ```
 /wireframe-review 008-on-the-account
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** account-settings-avatar
+> ```
+> /wireframe-review 008:01
+> ```
+> ```
+> /wireframe 008:01
+> ```
+
+> **02** crop-interface
+> ```
+> /wireframe-review 008:02
+> ```
+> ```
+> /wireframe 008:02
+> ```
+
+> **03** upload-states
+> ```
+> /wireframe-review 008:03
+> ```
+> ```
+> /wireframe 008:03
+> ```
+
+</details>
 
 **009-user-messaging-system** — 🔍 Pending
 ```
@@ -195,6 +367,42 @@
 ```
 /wireframe-review 009-user-messaging-system
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** conversation-list
+> ```
+> /wireframe-review 009:01
+> ```
+> ```
+> /wireframe 009:01
+> ```
+
+> **02** chat-interface
+> ```
+> /wireframe-review 009:02
+> ```
+> ```
+> /wireframe 009:02
+> ```
+
+> **03** friend-requests
+> ```
+> /wireframe-review 009:03
+> ```
+> ```
+> /wireframe 009:03
+> ```
+
+> **04** encryption-architecture
+> ```
+> /wireframe-review 009:04
+> ```
+> ```
+> /wireframe 009:04
+> ```
+
+</details>
 
 **010-unified-blog-content** — 🔍 Pending
 ```
@@ -203,6 +411,50 @@
 ```
 /wireframe-review 010-unified-blog-content
 ```
+<details>
+<summary>📄 Per-page (5 SVGs)</summary>
+
+> **01** blog-list-post
+> ```
+> /wireframe-review 010:01
+> ```
+> ```
+> /wireframe 010:01
+> ```
+
+> **02** offline-editor
+> ```
+> /wireframe-review 010:02
+> ```
+> ```
+> /wireframe 010:02
+> ```
+
+> **03** conflict-resolution
+> ```
+> /wireframe-review 010:03
+> ```
+> ```
+> /wireframe 010:03
+> ```
+
+> **04** migration-dashboard
+> ```
+> /wireframe-review 010:04
+> ```
+> ```
+> /wireframe 010:04
+> ```
+
+> **05** content-sync-architecture
+> ```
+> /wireframe-review 010:05
+> ```
+> ```
+> /wireframe 010:05
+> ```
+
+</details>
 
 **011-group-chats** — 🔍 Pending
 ```
@@ -211,6 +463,42 @@
 ```
 /wireframe-review 011-group-chats
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** create-group
+> ```
+> /wireframe-review 011:01
+> ```
+> ```
+> /wireframe 011:01
+> ```
+
+> **02** group-chat-interface
+> ```
+> /wireframe-review 011:02
+> ```
+> ```
+> /wireframe 011:02
+> ```
+
+> **03** group-management
+> ```
+> /wireframe-review 011:03
+> ```
+> ```
+> /wireframe 011:03
+> ```
+
+> **04** group-key-rotation
+> ```
+> /wireframe-review 011:04
+> ```
+> ```
+> /wireframe 011:04
+> ```
+
+</details>
 
 **012-welcome-message-architecture** — 🔍 Pending
 ```
@@ -219,6 +507,34 @@
 ```
 /wireframe-review 012-welcome-message-architecture
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** welcome-message-flow
+> ```
+> /wireframe-review 012:01
+> ```
+> ```
+> /wireframe 012:01
+> ```
+
+> **02** idempotency-state-machine
+> ```
+> /wireframe-review 012:02
+> ```
+> ```
+> /wireframe 012:02
+> ```
+
+> **03** error-handling-architecture
+> ```
+> /wireframe-review 012:03
+> ```
+> ```
+> /wireframe 012:03
+> ```
+
+</details>
 
 </details>
 
@@ -232,6 +548,26 @@
 ```
 /wireframe-review 013-oauth-messaging-password
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** oauth-password-setup
+> ```
+> /wireframe-review 013:01
+> ```
+> ```
+> /wireframe 013:01
+> ```
+
+> **02** oauth-password-unlock
+> ```
+> /wireframe-review 013:02
+> ```
+> ```
+> /wireframe 013:02
+> ```
+
+</details>
 
 **014-admin-welcome-email-gate** — 🔍 Pending
 ```
@@ -240,6 +576,26 @@
 ```
 /wireframe-review 014-admin-welcome-email-gate
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** email-verification-gate
+> ```
+> /wireframe-review 014:01
+> ```
+> ```
+> /wireframe 014:01
+> ```
+
+> **02** admin-setup-architecture
+> ```
+> /wireframe-review 014:02
+> ```
+> ```
+> /wireframe 014:02
+> ```
+
+</details>
 
 **015-oauth-display-name** — 🔍 Pending
 ```
@@ -248,6 +604,26 @@
 ```
 /wireframe-review 015-oauth-display-name
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** oauth-profile-population
+> ```
+> /wireframe-review 015:01
+> ```
+> ```
+> /wireframe 015:01
+> ```
+
+> **02** migration-dashboard
+> ```
+> /wireframe-review 015:02
+> ```
+> ```
+> /wireframe 015:02
+> ```
+
+</details>
 
 **016-messaging-critical-fixes** — 🔍 Pending
 ```
@@ -256,6 +632,34 @@
 ```
 /wireframe-review 016-messaging-critical-fixes
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** input-visibility-layouts
+> ```
+> /wireframe-review 016:01
+> ```
+> ```
+> /wireframe 016:01
+> ```
+
+> **02** oauth-setup-flow
+> ```
+> /wireframe-review 016:02
+> ```
+> ```
+> /wireframe 016:02
+> ```
+
+> **03** error-states-resolution
+> ```
+> /wireframe-review 016:03
+> ```
+> ```
+> /wireframe 016:03
+> ```
+
+</details>
 
 </details>
 
@@ -269,6 +673,26 @@
 ```
 /wireframe-review 017-colorblind-mode
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** colorblind-settings
+> ```
+> /wireframe-review 017:01
+> ```
+> ```
+> /wireframe 017:01
+> ```
+
+> **02** status-indicator-comparison
+> ```
+> /wireframe-review 017:02
+> ```
+> ```
+> /wireframe 017:02
+> ```
+
+</details>
 
 **018-font-switcher** — 🔍 Pending
 ```
@@ -277,6 +701,26 @@
 ```
 /wireframe-review 018-font-switcher
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** font-selection-ui
+> ```
+> /wireframe-review 018:01
+> ```
+> ```
+> /wireframe 018:01
+> ```
+
+> **02** font-comparison-preview
+> ```
+> /wireframe-review 018:02
+> ```
+> ```
+> /wireframe 018:02
+> ```
+
+</details>
 
 **019-google-analytics** — 🔍 Pending
 ```
@@ -285,6 +729,26 @@
 ```
 /wireframe-review 019-google-analytics
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** analytics-architecture
+> ```
+> /wireframe-review 019:01
+> ```
+> ```
+> /wireframe 019:01
+> ```
+
+> **02** analytics-events-flow
+> ```
+> /wireframe-review 019:02
+> ```
+> ```
+> /wireframe 019:02
+> ```
+
+</details>
 
 **020-pwa-background-sync** — 🔍 Pending
 ```
@@ -293,6 +757,34 @@
 ```
 /wireframe-review 020-pwa-background-sync
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** offline-status-ui
+> ```
+> /wireframe-review 020:01
+> ```
+> ```
+> /wireframe 020:01
+> ```
+
+> **02** sync-queue-states
+> ```
+> /wireframe-review 020:02
+> ```
+> ```
+> /wireframe 020:02
+> ```
+
+> **03** sync-architecture
+> ```
+> /wireframe-review 020:03
+> ```
+> ```
+> /wireframe 020:03
+> ```
+
+</details>
 
 **021-geolocation-map** — 🔍 Pending
 ```
@@ -301,6 +793,34 @@
 ```
 /wireframe-review 021-geolocation-map
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** map-interface
+> ```
+> /wireframe-review 021:01
+> ```
+> ```
+> /wireframe 021:01
+> ```
+
+> **02** permission-states
+> ```
+> /wireframe-review 021:02
+> ```
+> ```
+> /wireframe 021:02
+> ```
+
+> **03** map-states
+> ```
+> /wireframe-review 021:03
+> ```
+> ```
+> /wireframe 021:03
+> ```
+
+</details>
 
 </details>
 
@@ -314,6 +834,34 @@
 ```
 /wireframe-review 022-web3forms-integration
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** contact-form-ui
+> ```
+> /wireframe-review 022:01
+> ```
+> ```
+> /wireframe 022:01
+> ```
+
+> **02** submission-states
+> ```
+> /wireframe-review 022:02
+> ```
+> ```
+> /wireframe 022:02
+> ```
+
+> **03** integration-architecture
+> ```
+> /wireframe-review 022:03
+> ```
+> ```
+> /wireframe 022:03
+> ```
+
+</details>
 
 **023-emailjs-integration** — 🔍 Pending
 ```
@@ -322,6 +870,26 @@
 ```
 /wireframe-review 023-emailjs-integration
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** failover-architecture
+> ```
+> /wireframe-review 023:01
+> ```
+> ```
+> /wireframe 023:01
+> ```
+
+> **02** provider-health-dashboard
+> ```
+> /wireframe-review 023:02
+> ```
+> ```
+> /wireframe 023:02
+> ```
+
+</details>
 
 **024-payment-integration** — 🔍 Pending
 ```
@@ -330,6 +898,42 @@
 ```
 /wireframe-review 024-payment-integration
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** payment-checkout-flow
+> ```
+> /wireframe-review 024:01
+> ```
+> ```
+> /wireframe 024:01
+> ```
+
+> **02** subscription-management
+> ```
+> /wireframe-review 024:02
+> ```
+> ```
+> /wireframe 024:02
+> ```
+
+> **03** payment-states
+> ```
+> /wireframe-review 024:03
+> ```
+> ```
+> /wireframe 024:03
+> ```
+
+> **04** payment-architecture
+> ```
+> /wireframe-review 024:04
+> ```
+> ```
+> /wireframe 024:04
+> ```
+
+</details>
 
 **025-blog-social-features** — 🔍 Pending
 ```
@@ -338,6 +942,34 @@
 ```
 /wireframe-review 025-blog-social-features
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** share-buttons-ui
+> ```
+> /wireframe-review 025:01
+> ```
+> ```
+> /wireframe 025:01
+> ```
+
+> **02** author-profile
+> ```
+> /wireframe-review 025:02
+> ```
+> ```
+> /wireframe 025:02
+> ```
+
+> **03** social-metadata
+> ```
+> /wireframe-review 025:03
+> ```
+> ```
+> /wireframe 025:03
+> ```
+
+</details>
 
 **026-unified-messaging-sidebar** — 🔍 Pending
 ```
@@ -346,6 +978,42 @@
 ```
 /wireframe-review 026-unified-messaging-sidebar
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** chats-tab
+> ```
+> /wireframe-review 026:01
+> ```
+> ```
+> /wireframe 026:01
+> ```
+
+> **02** connections-tab
+> ```
+> /wireframe-review 026:02
+> ```
+> ```
+> /wireframe 026:02
+> ```
+
+> **03** find-people-tab
+> ```
+> /wireframe-review 026:03
+> ```
+> ```
+> /wireframe 026:03
+> ```
+
+> **04** mobile-drawer
+> ```
+> /wireframe-review 026:04
+> ```
+> ```
+> /wireframe 026:04
+> ```
+
+</details>
 
 </details>
 
@@ -359,6 +1027,26 @@
 ```
 /wireframe-review 027-ux-polish
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** character-count-states
+> ```
+> /wireframe-review 027:01
+> ```
+> ```
+> /wireframe 027:01
+> ```
+
+> **02** markdown-rendering
+> ```
+> /wireframe-review 027:02
+> ```
+> ```
+> /wireframe 027:02
+> ```
+
+</details>
 
 **028-enhanced-geolocation** — 🔍 Pending
 ```
@@ -367,6 +1055,26 @@
 ```
 /wireframe-review 028-enhanced-geolocation
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** desktop-interface
+> ```
+> /wireframe-review 028:01
+> ```
+> ```
+> /wireframe 028:01
+> ```
+
+> **02** mobile-interface
+> ```
+> /wireframe-review 028:02
+> ```
+> ```
+> /wireframe 028:02
+> ```
+
+</details>
 
 **029-seo-editorial-assistant** — 🔍 Pending
 ```
@@ -375,6 +1083,42 @@
 ```
 /wireframe-review 029-seo-editorial-assistant
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** editor-with-seo-panel
+> ```
+> /wireframe-review 029:01
+> ```
+> ```
+> /wireframe 029:01
+> ```
+
+> **02** seo-suggestions-detail
+> ```
+> /wireframe-review 029:02
+> ```
+> ```
+> /wireframe 029:02
+> ```
+
+> **03** export-import-flow
+> ```
+> /wireframe-review 029:03
+> ```
+> ```
+> /wireframe 029:03
+> ```
+
+> **04** terminal-output
+> ```
+> /wireframe-review 029:04
+> ```
+> ```
+> /wireframe 029:04
+> ```
+
+</details>
 
 **030-calendar-integration** — 🔍 Pending
 ```
@@ -383,6 +1127,42 @@
 ```
 /wireframe-review 030-calendar-integration
 ```
+<details>
+<summary>📄 Per-page (4 SVGs)</summary>
+
+> **01** calendar-booking-flow
+> ```
+> /wireframe-review 030:01
+> ```
+> ```
+> /wireframe 030:01
+> ```
+
+> **02** consent-and-states
+> ```
+> /wireframe-review 030:02
+> ```
+> ```
+> /wireframe 030:02
+> ```
+
+> **03** theme-adaptation
+> ```
+> /wireframe-review 030:03
+> ```
+> ```
+> /wireframe 030:03
+> ```
+
+> **04** provider-architecture
+> ```
+> /wireframe-review 030:04
+> ```
+> ```
+> /wireframe 030:04
+> ```
+
+</details>
 
 </details>
 
@@ -396,6 +1176,26 @@
 ```
 /wireframe-review 031-standardize-test-users
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-user-architecture
+> ```
+> /wireframe-review 031:01
+> ```
+> ```
+> /wireframe 031:01
+> ```
+
+> **02** test-execution-flow
+> ```
+> /wireframe-review 031:02
+> ```
+> ```
+> /wireframe 031:02
+> ```
+
+</details>
 
 **032-signup-e2e-tests** — 🔍 Pending
 ```
@@ -404,6 +1204,26 @@
 ```
 /wireframe-review 032-signup-e2e-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-factory-architecture
+> ```
+> /wireframe-review 032:01
+> ```
+> ```
+> /wireframe 032:01
+> ```
+
+> **02** test-suite-coverage
+> ```
+> /wireframe-review 032:02
+> ```
+> ```
+> /wireframe 032:02
+> ```
+
+</details>
 
 **033-seo-library-tests** — 🔍 Pending
 ```
@@ -412,6 +1232,26 @@
 ```
 /wireframe-review 033-seo-library-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-suite-architecture
+> ```
+> /wireframe-review 033:01
+> ```
+> ```
+> /wireframe 033:01
+> ```
+
+> **02** test-coverage-flow
+> ```
+> /wireframe-review 033:02
+> ```
+> ```
+> /wireframe 033:02
+> ```
+
+</details>
 
 **034-blog-library-tests** — 🔍 Pending
 ```
@@ -420,6 +1260,26 @@
 ```
 /wireframe-review 034-blog-library-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-architecture
+> ```
+> /wireframe-review 034:01
+> ```
+> ```
+> /wireframe 034:01
+> ```
+
+> **02** coverage-dashboard
+> ```
+> /wireframe-review 034:02
+> ```
+> ```
+> /wireframe 034:02
+> ```
+
+</details>
 
 **035-messaging-service-tests** — 🔍 Pending
 ```
@@ -428,6 +1288,26 @@
 ```
 /wireframe-review 035-messaging-service-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-suite-architecture
+> ```
+> /wireframe-review 035:01
+> ```
+> ```
+> /wireframe 035:01
+> ```
+
+> **02** crypto-test-flows
+> ```
+> /wireframe-review 035:02
+> ```
+> ```
+> /wireframe 035:02
+> ```
+
+</details>
 
 **036-auth-component-tests** — 🔍 Pending
 ```
@@ -436,6 +1316,26 @@
 ```
 /wireframe-review 036-auth-component-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** component-test-architecture
+> ```
+> /wireframe-review 036:01
+> ```
+> ```
+> /wireframe 036:01
+> ```
+
+> **02** test-coverage-matrix
+> ```
+> /wireframe-review 036:02
+> ```
+> ```
+> /wireframe 036:02
+> ```
+
+</details>
 
 **037-game-a11y-tests** — 🔍 Pending
 ```
@@ -444,6 +1344,26 @@
 ```
 /wireframe-review 037-game-a11y-tests
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** test-suite-architecture
+> ```
+> /wireframe-review 037:01
+> ```
+> ```
+> /wireframe 037:01
+> ```
+
+> **02** component-a11y-matrix
+> ```
+> /wireframe-review 037:02
+> ```
+> ```
+> /wireframe 037:02
+> ```
+
+</details>
 
 </details>
 
@@ -457,6 +1377,34 @@
 ```
 /wireframe-review 038-payment-dashboard
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** dashboard-main
+> ```
+> /wireframe-review 038:01
+> ```
+> ```
+> /wireframe 038:01
+> ```
+
+> **02** transaction-detail
+> ```
+> /wireframe-review 038:02
+> ```
+> ```
+> /wireframe 038:02
+> ```
+
+> **03** dashboard-states
+> ```
+> /wireframe-review 038:03
+> ```
+> ```
+> /wireframe 038:03
+> ```
+
+</details>
 
 **039-payment-offline-queue** — 🔍 Pending
 ```
@@ -465,6 +1413,34 @@
 ```
 /wireframe-review 039-payment-offline-queue
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** queue-status-indicator
+> ```
+> /wireframe-review 039:01
+> ```
+> ```
+> /wireframe 039:01
+> ```
+
+> **02** pending-payment-list
+> ```
+> /wireframe-review 039:02
+> ```
+> ```
+> /wireframe 039:02
+> ```
+
+> **03** queue-states
+> ```
+> /wireframe-review 039:03
+> ```
+> ```
+> /wireframe 039:03
+> ```
+
+</details>
 
 **040-payment-retry-ui** — 🔍 Pending
 ```
@@ -473,6 +1449,34 @@
 ```
 /wireframe-review 040-payment-retry-ui
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** error-display
+> ```
+> /wireframe-review 040:01
+> ```
+> ```
+> /wireframe 040:01
+> ```
+
+> **02** retry-and-update
+> ```
+> /wireframe-review 040:02
+> ```
+> ```
+> /wireframe 040:02
+> ```
+
+> **03** recovery-wizard
+> ```
+> /wireframe-review 040:03
+> ```
+> ```
+> /wireframe 040:03
+> ```
+
+</details>
 
 **041-paypal-subscriptions** — 🔍 Pending
 ```
@@ -481,6 +1485,34 @@
 ```
 /wireframe-review 041-paypal-subscriptions
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** subscription-list-empty
+> ```
+> /wireframe-review 041:01
+> ```
+> ```
+> /wireframe 041:01
+> ```
+
+> **02** subscription-actions
+> ```
+> /wireframe-review 041:02
+> ```
+> ```
+> /wireframe 041:02
+> ```
+
+> **03** subscription-architecture
+> ```
+> /wireframe-review 041:03
+> ```
+> ```
+> /wireframe 041:03
+> ```
+
+</details>
 
 **042-payment-rls-policies** — 🔍 Pending
 ```
@@ -489,6 +1521,34 @@
 ```
 /wireframe-review 042-payment-rls-policies
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** rls-policy-architecture
+> ```
+> /wireframe-review 042:01
+> ```
+> ```
+> /wireframe 042:01
+> ```
+
+> **02** access-control-matrix
+> ```
+> /wireframe-review 042:02
+> ```
+> ```
+> /wireframe 042:02
+> ```
+
+> **03** policy-evaluation-flow
+> ```
+> /wireframe-review 042:03
+> ```
+> ```
+> /wireframe 042:03
+> ```
+
+</details>
 
 **043-group-service** — 🔍 Pending
 ```
@@ -497,6 +1557,26 @@
 ```
 /wireframe-review 043-group-service
 ```
+<details>
+<summary>📄 Per-page (2 SVGs)</summary>
+
+> **01** group-service-architecture
+> ```
+> /wireframe-review 043:01
+> ```
+> ```
+> /wireframe 043:01
+> ```
+
+> **02** member-lifecycle-flow
+> ```
+> /wireframe-review 043:02
+> ```
+> ```
+> /wireframe 043:02
+> ```
+
+</details>
 
 </details>
 
@@ -510,6 +1590,34 @@
 ```
 /wireframe-review 044-error-handler-integrations
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** error-architecture
+> ```
+> /wireframe-review 044:01
+> ```
+> ```
+> /wireframe 044:01
+> ```
+
+> **02** toast-notifications
+> ```
+> /wireframe-review 044:02
+> ```
+> ```
+> /wireframe 044:02
+> ```
+
+> **03** error-boundaries
+> ```
+> /wireframe-review 044:03
+> ```
+> ```
+> /wireframe 044:03
+> ```
+
+</details>
 
 **045-disqus-theme** — 🔍 Pending
 ```
@@ -518,6 +1626,34 @@
 ```
 /wireframe-review 045-disqus-theme
 ```
+<details>
+<summary>📄 Per-page (3 SVGs)</summary>
+
+> **01** theme-mapping-preview
+> ```
+> /wireframe-review 045:01
+> ```
+> ```
+> /wireframe 045:01
+> ```
+
+> **02** consent-placeholder-states
+> ```
+> /wireframe-review 045:02
+> ```
+> ```
+> /wireframe 045:02
+> ```
+
+> **03** integration-architecture
+> ```
+> /wireframe-review 045:03
+> ```
+> ```
+> /wireframe 045:03
+> ```
+
+</details>
 
 </details>
 
