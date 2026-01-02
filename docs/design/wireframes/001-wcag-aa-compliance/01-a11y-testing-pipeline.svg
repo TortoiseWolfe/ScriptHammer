@@ -383,5 +383,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="700" y="790" text-anchor="middle" class="text-muted">WCAG 2.1 AAA Compliance • Feature 001 • ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">001:01 | WCAG Automated Testing Pipeline | ScriptHammer</text>
 </svg>

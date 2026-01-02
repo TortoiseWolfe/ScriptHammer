@@ -228,6 +228,6 @@
 
   <!-- Feedback loop arrow -->
   <path d="M 1220 740 L 1220 765 L 140 765 L 140 740" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3" fill="none" marker-end="url(#arrowhead-green)"/>
-  <text x="60" y="780" text-anchor="start" class="text-muted">Developer iterates until all checks pass</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">001:03 | WCAG Developer Feedback Tooling | ScriptHammer</text>
 
 </svg>

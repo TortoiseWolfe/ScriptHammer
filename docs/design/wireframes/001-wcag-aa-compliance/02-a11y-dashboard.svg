@@ -241,4 +241,7 @@
   <text x="1060" y="724" text-anchor="middle" class="text-sm">Overview</text>
   <text x="1160" y="724" text-anchor="middle" class="text-sm">Issues</text>
   <text x="1260" y="724" text-anchor="middle" class="text-sm">History</text>
+
+  <!-- Footer Signature -->
+  <text x="60" y="780" text-anchor="start" class="text-muted">001:02 | WCAG Accessibility Dashboard | ScriptHammer</text>
 </svg>
