@@ -26,8 +26,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 
 **Classification System**:
-- 🟢 **PATCHABLE** (color, typo, font size, missing CSS class) → `/wireframe-fix`
-- 🔴 **REGENERATE** (layout, spacing, positioning, overlap) → `/wireframe` with constructive feedback
+- 🟢 **PATCHABLE** (color, typo, font size, missing CSS class) → `/wireframe` patches in place
+- 🔴 **REGENERATE** (layout, spacing, positioning, overlap) → `/wireframe` regenerates with feedback
 
 **Key Insight**: Patching structural issues makes things WORSE. Only patch minor cosmetic issues.
 
@@ -212,9 +212,8 @@ npx playwright install chromium  # Install browser (first time)
 /wireframe              # Generate SVG wireframes (1400x800)
 
 # Phase 2: Wireframe Review (CURRENT)
-/wireframe-review       # Review SVGs with 🟢/🔴 classification
-/wireframe-fix          # Patch ONLY: color, typo, font, missing class
-/wireframe              # Regenerate for structural issues (with feedback)
+/wireframe-review       # Review SVGs with 🟢/🔴 classification (4 phases + half-view inspection)
+/wireframe              # Smart: patches 🟢, regenerates 🔴, skips ✅
 
 # Phase 3: Implementation (BLOCKED until review complete)
 /speckit.plan           # Design implementation
@@ -257,7 +256,7 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 
 ## Generating Wireframes
 
-Use `/wireframe` (dark theme) or `/wireframe-light` (light theme) to generate SVGs from specs.
+Use `/wireframe` to generate SVGs from specs. Theme auto-detects based on feature type, or use `--theme=dark|light` to override.
 
 **CRITICAL RULES**:
 1. **Every feature gets wireframes** - no exceptions

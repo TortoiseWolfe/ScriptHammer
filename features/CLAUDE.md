@@ -37,9 +37,8 @@ Execute these commands **in order** - do not skip steps:
 /wireframe              # 3. Generate SVG wireframes (1400x800)
 
 # Phase 2: Wireframe Review (MANDATORY GATE)
-/wireframe-review       # 4. Review SVGs with 🟢/🔴 classification
-# → 🟢 PATCHABLE issues: /wireframe-fix (color, typo, font, missing class)
-# → 🔴 STRUCTURAL issues: /wireframe with constructive feedback
+/wireframe-review       # 4. Review SVGs with 🟢/🔴 classification (4 phases + half-view)
+/wireframe              # 5. Smart: patches 🟢, regenerates 🔴, skips ✅
 # REPEAT until all wireframes pass review
 
 # Phase 3: Implementation (BLOCKED until Phase 2 complete)
@@ -58,14 +57,14 @@ Execute these commands **in order** - do not skip steps:
 
 | Issue Type | Classification | Action |
 |------------|----------------|--------|
-| Wrong color value | 🟢 PATCHABLE | `/wireframe-fix` |
-| Typo in text | 🟢 PATCHABLE | `/wireframe-fix` |
-| Font size wrong | 🟢 PATCHABLE | `/wireframe-fix` |
-| Missing CSS class | 🟢 PATCHABLE | `/wireframe-fix` |
-| Layout problems | 🔴 REGENERATE | `/wireframe` with feedback |
-| Spacing issues | 🔴 REGENERATE | `/wireframe` with feedback |
-| Overlapping elements | 🔴 REGENERATE | `/wireframe` with feedback |
-| Positioning errors | 🔴 REGENERATE | `/wireframe` with feedback |
+| Wrong color value | 🟢 PATCHABLE | `/wireframe` patches in place |
+| Typo in text | 🟢 PATCHABLE | `/wireframe` patches in place |
+| Font size wrong | 🟢 PATCHABLE | `/wireframe` patches in place |
+| Missing CSS class | 🟢 PATCHABLE | `/wireframe` patches in place |
+| Layout problems | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
+| Spacing issues | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
+| Overlapping elements | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
+| Positioning errors | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
 
 ## Feature File Format (PRP Structure)
 

@@ -2,6 +2,96 @@
 description: Critically review SVG wireframes with ruthless attention to detail. Find EVERY flaw.
 ---
 
+## ⛔ MANDATORY FIRST CHECKS (BLOCKING - DO BEFORE ANYTHING ELSE)
+
+**These checks are BLOCKING. You cannot proceed with the review until all pass. Do NOT skip to issue categories.**
+
+### Check 1: Theme Verification (BLOCKING)
+
+**Before reviewing ANY file, verify the theme is correct for the content type.**
+
+1. Read the feature name and wireframe title
+2. Does it contain: `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`?
+
+| Feature Type | Required Theme | Background Check |
+|--------------|----------------|------------------|
+| Architecture/Backend | **DARK** | Look for `#0f172a` or `#1e293b` gradient |
+| UI/UX screens | Light | Look for `#c7ddf5` or `#e8d4b8` parchment |
+
+**How to verify:** Check SVG `<linearGradient id="bgGrad">` for background colors.
+
+**⛔ If architecture/backend diagram uses LIGHT theme → 🔴 REGENERATE immediately. Do not continue review.**
+
+### Check 2: Viewer Setup (BLOCKING)
+
+**You MUST set up the viewer before reviewing. This is not optional.**
+
+1. Navigate to wireframe viewer: `http://host.docker.internal:3000`
+2. Click on the target wireframe
+3. Press `F` for focus mode (hide sidebar/footer)
+4. Press `0` to reset zoom to 85%
+5. For architecture diagrams (1600×1000): Press `-` three times to reach 40% zoom
+6. For standard wireframes (1400×800): Press `-` twice to reach 55% zoom
+7. Take a screenshot
+
+**⛔ If you cannot see the ENTIRE wireframe in the screenshot → adjust zoom before continuing.**
+
+### Check 3: Text Readability (BLOCKING)
+
+**Look at your screenshot. Can you read ALL text?**
+
+For EVERY text element:
+- [ ] Can you read every heading character-by-character?
+- [ ] Can you read every label character-by-character?
+- [ ] Can you read every annotation (FR-XXX codes)?
+- [ ] Can you read every muted text element?
+
+**⛔ If ANY text is too small to read → 🔴 REGENERATE immediately. Do not continue review.**
+
+### Check 4: Arrow Path Trace (BLOCKING for Architecture Diagrams)
+
+**For EVERY arrow in the diagram, trace its path:**
+
+- Does it pass through ANY text? → 🔴 REGENERATE
+- Does it pass through ANY container/panel? → 🔴 REGENERATE
+- Does it overlap ANY label? → 🔴 REGENERATE
+
+**⛔ Arrow-through-content = DESIGN FAILURE. Do not list as an issue - just mark 🔴 REGENERATE.**
+
+### Check 5: Wasted Space (BLOCKING)
+
+**Look at your screenshot:**
+
+- Is there >100px of unused vertical space while content is cramped? → 🔴 REGENERATE
+- Is there >100px of unused horizontal space while content is cramped? → 🔴 REGENERATE
+- Are arrows routed around obstacles when empty space could be used? → 🔴 REGENERATE
+
+**⛔ Wasted space + cramped content + arrows through text = TRIPLE DESIGN FAILURE.**
+
+### First Checks Statement (MANDATORY)
+
+**Before proceeding to detailed review, you MUST write:**
+
+```
+FIRST CHECKS COMPLETE:
+- Theme: [Dark/Light] - [Correct/WRONG for feature type]
+- Viewer: Screenshot captured at [X]% zoom
+- Text readability: [All readable / Issues at: ...]
+- Arrow paths: [Clear / Through content at: ...]
+- Space utilization: [Good / Wasted space at: ...]
+- BLOCKING ISSUES: [None / List any that require immediate REGENERATE]
+```
+
+**If ANY blocking issue exists, output:**
+```
+⛔ BLOCKING FAILURE: [issue description]
+Action: 🔴 REGENERATE with feedback: "[specific guidance]"
+```
+
+**Do NOT proceed to detailed issue categories if blocking failures exist.**
+
+---
+
 ## User Input
 
 ```text
@@ -319,6 +409,45 @@ await mcp__MCP_DOCKER__browser_take_screenshot({ filename: "003-05-auth-architec
 
 ---
 
+## Step 2: Half-View Deep Inspection (MANDATORY)
+
+After full-page screenshot, zoom in to inspect each half separately.
+
+### Why Halves (Not Quadrants)
+- Desktop content is always left (~60% of canvas)
+- Mobile content is always right (~40% of canvas)
+- Adapts to any canvas size without hardcoded coordinates
+- Catches detail issues missed in overview
+
+### Procedure
+1. From full-page view, press `+` until left half fills viewport
+2. Screenshot: `[feature]-[page]-left.png`
+3. Pan right (click-drag or arrow keys)
+4. Screenshot: `[feature]-[page]-right.png`
+
+### What to Check in Each Half
+
+**Left Half (Desktop area):**
+- Header button overflow
+- Sidebar text truncation
+- Main content spacing
+- Annotation label completeness
+
+**Right Half (Mobile + annotations):**
+- Phone frame positioning
+- Touch target sizes (44x44)
+- Footer signature (x=60, y=780)
+- Right-margin annotations
+
+### Checkpoint
+Before proceeding to detailed categories:
+- [ ] Full-page screenshot captured
+- [ ] Left-half screenshot captured
+- [ ] Right-half screenshot captured
+- [ ] Obvious issues noted from visual inspection
+
+---
+
 ## Critical Review Philosophy
 
 **DO NOT give participation trophies.** These wireframes need to be BEST-IN-CLASS. Every pixel matters.
@@ -339,6 +468,10 @@ Reading these categories first will bias you toward "checking boxes" instead of 
 **Look first. Then use these as a second-pass verification.**
 
 ---
+
+## Phase A: Structural Issues (from screenshots)
+
+**Check these first - they require 🔴 REGENERATE if found.**
 
 ### 1. OVERLAP & COLLISION ISSUES (Look at EVERY row/section boundary)
 
@@ -471,6 +604,12 @@ If content is cramped OR arrows are routed around obstacles WHILE large empty ar
 - **Aspect ratio issues** - Do avatars, icons maintain proper ratios?
 - **Phone frame proportions** - Is the mobile frame realistically sized?
 
+---
+
+## Phase B: Alignment & Accessibility
+
+**Visual polish and WCAG compliance checks.**
+
 ### 5. ALIGNMENT ISSUES (Check EVERY horizontal and vertical line)
 
 - **Horizontal misalignment** - Are elements that should align horizontally actually aligned?
@@ -487,6 +626,12 @@ For AAA compliance, check these color combinations:
 - **Annotation text** - Is `#8b5cf6` visible against both themes?
 - **Button text contrast** - White text on `#8b5cf6` - sufficient?
 - **Status indicators** - Are green/red status colors distinguishable without color?
+
+---
+
+## Phase C: Layout & Architecture
+
+**Layout efficiency and architecture diagram validation.**
 
 ### 7. LAYOUT EFFICIENCY (Challenge the arrangement)
 
@@ -537,6 +682,12 @@ For AAA compliance, check these color combinations:
 ```
 
 **Arrow-through-text + wasted space = DOUBLE DESIGN FAILURE**
+
+---
+
+## Phase D: Compliance Checks
+
+**Touch targets, mobile, content, semantic, consistency, spec, legend, footer, and annotations.**
 
 ### 9. TOUCH TARGET COMPLIANCE (WCAG AAA = 44×44px minimum) ⚠️ CRITICAL
 
@@ -928,6 +1079,54 @@ If you find a problem, log it. If you log it, it gets fixed. No exceptions.
 **There is no "acceptable as-is."** The review's job is to be rigorous. If something is wrong, it's wrong. Log it, classify it, and it will be fixed.
 
 **Rule**: If ANY issue in a file is 🔴, the ENTIRE file needs regeneration. Do NOT patch other issues in that file - they'll be overwritten anyway.
+
+---
+
+## ⛔ AUTOMATIC 🔴 REGENERATE CONDITIONS (STOP REVIEW)
+
+**These issues are SO FUNDAMENTAL that finding them means the file needs complete regeneration. Do NOT continue listing individual issues - just mark 🔴 REGENERATE and provide feedback.**
+
+### Instant REGENERATE Triggers (Cannot Be Patched)
+
+| Condition | How to Detect | Why It's Unfixable |
+|-----------|---------------|-------------------|
+| **Wrong theme** | Architecture diagram using light (#c7ddf5) background | Theme is baked into every color, gradient, and style |
+| **Unreadable fonts** | Any text too small to read at intended zoom | Font sizes require layout reflow to avoid overflow |
+| **Arrows through content** | Any arrow crossing text, labels, or panels | Arrow paths are structural - moving requires reorganizing |
+| **Low contrast text** | Dark text on dark backgrounds, muted on purple | Contrast fixes may cascade to require layout changes |
+| **Massive wasted space** | >100px unused while content is cramped | Layout is fundamentally wrong - needs redistribution |
+| **Missing footer** | No `NNN:PP | Title | ScriptHammer` at y=780 | Footer positioning is template-level |
+| **Wrong footer position** | Footer not at `x="60" y="780" text-anchor="start"` | Requires regeneration to fix consistently |
+| **Mobile position wrong** | Mobile group not at `translate(980, 60)` | All wireframes in feature must match - structural |
+
+### When You Find an Instant Trigger
+
+**STOP the detailed review immediately. Output:**
+
+```markdown
+## ⛔ INSTANT REGENERATE: [filename.svg]
+
+**Trigger:** [which condition from table above]
+**Evidence:** [specific observation, e.g., "Light theme gradient #c7ddf5 in bgGrad"]
+**Action:** 🔴 REGENERATE
+
+### Feedback for Regeneration
+- **Required theme:** [Dark/Light]
+- **Required canvas:** [1400×800 / 1600×1000]
+- **Key fix:** [e.g., "Use dark theme template, expand fonts to readable sizes"]
+```
+
+**Do NOT list individual issues for instant-trigger files. They're all irrelevant once you're regenerating.**
+
+### Files That Just Need ✅ PASS Verification
+
+If a file has no instant triggers and no 🔴 structural issues:
+1. Still complete Visual Description
+2. Still complete Overlap Matrix
+3. Still verify Devil's Advocate checkpoint
+4. Only then declare ✅ PASS
+
+**A file without issues still requires full verification - don't assume correctness.**
 
 ---
 
