@@ -248,7 +248,7 @@
   </g>
 
   <!-- Footer -->
-  <text x="60" y="780" text-anchor="start" class="text-muted">Privacy Settings • Feature 002 • ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">002:02 | Privacy Settings | ScriptHammer</text>
 
   <!-- Leader lines -->
   <g id="leader-lines">

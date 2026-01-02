@@ -163,6 +163,7 @@ Next: /wireframe [feature] to fix remaining issues
 - [ ] Devil's Advocate checkpoint not completed
 - [ ] Any text is visibly truncated in screenshot (FR codes cut off, labels ending in "...")
 - [ ] Any annotation label is not fully readable character-by-character
+- [ ] Footer signature line missing or wrong format (must be `x="60" y="780"` with `[NNN:PP] | Title | ScriptHammer`)
 
 **If ANY box above is checked, the file is 🔴 REGENERATE. No exceptions.**
 
@@ -177,6 +178,7 @@ Verification checklist:
 - [x] Rendered wireframes viewed (method: [browser/viewer/screenshot])
 - [x] Re-examined "most likely overlooked" areas
 - [x] All annotation labels verified character-by-character (no truncation)
+- [x] Footer signature line verified: x=60, y=780, format [NNN:PP] | Title | ScriptHammer
 
 Review History:
 - Pass 1: X issues found
@@ -620,7 +622,50 @@ For EACH requirement, ask:
 
 ---
 
-### 15. ⛔ ANNOTATION CLARITY (Self-Explanatory Labels - MANDATORY)
+### 15. ⛔ FOOTER SIGNATURE LINE (Template Compliance - MANDATORY)
+
+**Every SVG wireframe MUST have the standardized footer signature line.**
+
+#### Required Format
+```svg
+<!-- Footer (MUST be at y=780, LEFT-ALIGNED at x=60) -->
+<text x="60" y="780" text-anchor="start" class="text-muted">[feature:page] | [Page Title] | ScriptHammer</text>
+```
+
+#### Validation Checklist
+- [ ] **Position**: `x="60"` (left-aligned, NOT centered at x=700)
+- [ ] **Position**: `y="780"` (NOT y=790 or other values)
+- [ ] **Anchor**: `text-anchor="start"` (NOT "middle")
+- [ ] **Format**: `[NNN:PP] | [Title] | ScriptHammer` where NNN=feature number, PP=page number
+- [ ] **Class**: `class="text-muted"`
+
+#### Detection Method
+```bash
+# Check footer format in all SVGs for a feature:
+grep -n "y=\"78[0-9]\".*text-anchor" docs/design/wireframes/[feature]/*.svg
+grep -n "y=\"79[0-9]\".*ScriptHammer" docs/design/wireframes/[feature]/*.svg
+```
+
+#### Common Failures
+
+| Found | Problem | Classification |
+|-------|---------|----------------|
+| `x="700" y="790" text-anchor="middle"` | Old centered format | 🔴 REGENERATE |
+| No footer at all | Missing signature | 🔴 REGENERATE |
+| `y="780"` with wrong content | Content text at footer position | 🔴 REGENERATE |
+| Wrong page numbering format | e.g., "Feature 001" instead of "001:01" | 🔴 REGENERATE |
+
+#### Reference (Correct Format)
+From `000-rls-implementation/02-policy-patterns.svg`:
+```svg
+<text x="60" y="780" text-anchor="start" class="text-muted">000:02 | RLS Policy Patterns | ScriptHammer</text>
+```
+
+**Footer signature issues are ALWAYS 🔴 REGENERATE** - position changes are structural, not patchable.
+
+---
+
+### 16. ⛔ ANNOTATION CLARITY (Self-Explanatory Labels - MANDATORY)
 
 **All annotations and labels MUST be self-explanatory WITHOUT reading spec.md.**
 
@@ -884,7 +929,7 @@ This forces you to explicitly verify that no regions collide. You cannot "glance
 **If you skip this section, the review is invalid.**
 **No overlap matrix = No pass. Period.**
 
-### 4. For EACH wireframe, work through ALL 15 category checklists above
+### 4. For EACH wireframe, work through ALL 16 category checklists above
 
 Don't rush. Spend time on each SVG. Zoom in mentally on different regions.
 
