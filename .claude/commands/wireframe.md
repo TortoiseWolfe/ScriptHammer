@@ -22,16 +22,22 @@ Theme selection:
 ### Workflow (Simplified)
 
 ```
-/wireframe-review [feature]     # Creates WIREFRAME_ISSUES.md with feedback
+/wireframe [feature]            # Generate fresh wireframes from spec
     ↓
-/wireframe [feature]            # Regenerates ALL files (patches 🟢, regenerates 🔴 and ✅ PASS)
+/wireframe-review [feature]     # Review by READING actual SVG files
     ↓
-(repeat until all issues resolved)
+/wireframe [feature]            # Regenerate to fix issues (if any found)
+    ↓
+(repeat until review finds no issues)
 ```
 
-**Philosophy**: Never skip files. Fresh eyes on every file might catch issues that were overlooked.
+**Philosophy**:
+- Generate fresh from spec every time
+- Review means READING the SVG and doing boundary math
+- No tracker files - they enable false confidence
+- If issues exist, regenerate completely
 
-**Note**: `/wireframe-fix` is deprecated - this command now handles both patching and regeneration.
+**Note**: `/wireframe-fix` is deprecated. Always regenerate - patching creates more problems.
 
 ### 1. Identify the Spec
 
@@ -273,26 +279,41 @@ Update WIREFRAME_ISSUES.md:
 
 **CRITICAL**: Select theme PER WIREFRAME, not per feature. Mixed features need both themes.
 
-#### Light Theme Indicators (use Indigo palette)
+#### ⛔ DISAMBIGUATION TEST (MANDATORY)
+
+Before selecting a theme, ask this question:
+
+> **"Would a non-technical end user view this screen?"**
+
+| Answer | Theme | Examples |
+|--------|-------|----------|
+| **YES** - end users see this | **Light** | Compliance dashboard, settings page, user profile, any screen with scores/data ABOUT the user |
+| **NO** - only developers/admins see this | **Dark** | CI/CD pipeline, RLS architecture, database schema, API flow, test runner output |
+
+**Common Mistakes to Avoid:**
+- "Accessibility Dashboard" showing compliance scores → **Light** (users view their scores)
+- "Test Coverage Dashboard" in CI → **Dark** (developers view build results)
+- "Analytics Dashboard" for site owners → **Light** (business users view metrics)
+- "System Architecture" diagram → **Dark** (developers reference this)
+
+#### Light Theme Indicators (use Parchment palette)
 Use light theme when the wireframe:
+- Shows screens that END USERS will see and interact with
 - Contains form inputs, buttons, or interactive controls
-- Shows user-facing screens (login, settings, profiles)
 - Displays content layouts (blog posts, lists, cards)
 - Has mobile phone frame mockups
 - Shows state variations (loading, empty, error, success)
-- Contains user flows (checkout, onboarding)
-- Depicts dashboards with user data display
+- Depicts dashboards showing USER-FACING data (scores, progress, settings)
 
 #### Dark Theme Indicators (use Slate/Violet palette)
 Use dark theme when the wireframe:
+- Shows diagrams that ONLY DEVELOPERS will reference
 - Is an architecture or system diagram
 - Shows data flow visualizations
-- Depicts test suite structures
-- Illustrates CI/CD pipelines
+- Depicts CI/CD pipelines or test runner output
 - Contains security threat models
 - Shows database schemas or RLS policies
 - Depicts API integration diagrams
-- Shows service dependency graphs
 
 #### Mixed Feature Example
 Feature `010-unified-blog-content` needs BOTH themes:
@@ -492,16 +513,17 @@ Use this template for architecture diagrams, data flows, and system visualizatio
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
     <style>
-      /* Typography - Dark Theme - AAA compliant */
-      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 20px; font-weight: bold; }
-      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
-      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
-      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
-      .text-muted { fill: #8494a8; font-family: system-ui, sans-serif; font-size: 10px; } /* AAA fix: #64748b → #8494a8 */
-      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+      /* Typography - Dark Theme - AAA compliant, READABLE sizes */
+      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 24px; font-weight: bold; }
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
+      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 14px; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
+      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 12px; } /* AAA: lighter for readability */
+      .annotation { fill: #c4b5fd; font-family: monospace; font-size: 12px; font-weight: bold; }
       /* Layout labels */
-      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
-      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 11px; font-weight: bold; }
+      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
     </style>
   </defs>
 
@@ -537,8 +559,159 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 - Accent: `#d946ef` (fuchsia)
 - Panels: `#1e293b`, `#334155`
 - Borders: `#475569`
-- Text: `#fff` (headings), `#94a3b8`/`#cbd5e1` (body), `#8494a8` (muted - AAA fix)
+- Text: `#fff` (headings), `#94a3b8`/`#cbd5e1` (body), `#b4bcc8` (muted - AAA fix)
 - Success: `#22c55e`, Warning: `#eab308`, Error: `#ef4444`
+
+---
+
+## ⛔ TEXT CONTRAST RULES (MANDATORY)
+
+**Text ON colored backgrounds MUST use white (#ffffff) for readability.**
+
+| Background Color | Text Color | Example Use |
+|-----------------|------------|-------------|
+| `#22c55e` (green) | `#ffffff` | Success badges, role cards |
+| `#8b5cf6` (violet) | `#ffffff` | Service role badges |
+| `#64748b` (gray) | `#ffffff` | Anonymous role badges |
+| `#ef4444` (red) | `#ffffff` | Error badges, denied indicators |
+| `#eab308` (yellow) | `#1a1a2e` | Warning badges (dark text) |
+
+**NEVER use light gray text on colored backgrounds** - it disappears.
+
+```xml
+<!-- ❌ WRONG: Light gray on green - unreadable -->
+<rect fill="#22c55e"/>
+<text fill="#dcfce7">Valid JWT Token</text>
+
+<!-- ✅ CORRECT: White on green - readable -->
+<rect fill="#22c55e"/>
+<text fill="#ffffff">Valid JWT Token</text>
+```
+
+---
+
+## ⛔ CONTAINER BOUNDARY VALIDATION (MANDATORY GATE)
+
+**You CANNOT write the SVG until you complete this section.**
+
+### Step 1: List All Containers
+
+Before writing ANY SVG content, list every container with its boundaries:
+
+```
+CONTAINER INVENTORY:
+- Desktop panel: x=40, y=60, w=900, h=700 → RIGHT=940, BOTTOM=760
+- Header bar: x=50, y=70, w=880, h=50 → RIGHT=930, BOTTOM=120
+- Mobile frame: x=980, y=60, w=360, h=700 → RIGHT=1340, BOTTOM=760
+- Mobile screen: x=990, y=70, w=340, h=680 → RIGHT=1330, BOTTOM=750
+- [Panel 1]: x=?, y=?, w=?, h=? → RIGHT=?, BOTTOM=?
+```
+
+### Step 2: For EVERY Element, Calculate and Verify
+
+**Before placing ANY element, write this calculation:**
+
+```
+ELEMENT: [button/text/rect name]
+  Position: x=760, y=656
+  Size: w=160, h=44
+  RIGHT EDGE: 760 + 160 = 920
+  BOTTOM EDGE: 656 + 44 = 700
+  CONTAINER: Issue History panel (RIGHT=930, BOTTOM=750)
+  CHECK: 920 < 930 ✓, 700 < 750 ✓
+```
+
+### Step 3: Transform-Aware Calculations (CRITICAL)
+
+When using `<g transform="translate(x, y)">`, calculate ABSOLUTE positions:
+
+```
+TRANSFORM GROUP: translate(75, 585)
+  Text at y=88 → ABSOLUTE Y = 585 + 88 = 673
+  Container: Code block ends at y=690
+  CHECK: 673 < 690 ✓
+
+WRONG: "y=88 looks fine"
+RIGHT: "absolute y = 585 + 88 = 673, container ends at 690, fits ✓"
+```
+
+### Step 4: Text Width Verification
+
+**Estimate text width BEFORE placing:**
+
+| Font | Size | Width per char | Example |
+|------|------|----------------|---------|
+| Monospace | 10px | ~6px | "FR-032" (6 chars) = 36px |
+| System | 11px | ~6.5px | "Settings" (8 chars) = 52px |
+| System | 12px | ~7px | "Export Report" (13 chars) = 91px |
+| System | 14px | ~8px | "Dashboard" (9 chars) = 72px |
+
+```
+TEXT: "FR-032, FR-033, FR-034" (22 chars including spaces)
+  Font: monospace 12px → 22 × 7 = 154px estimated width
+  Position: x=720
+  RIGHT EDGE: 720 + 154 = 874
+  CONTAINER: Header bar ends at x=930
+  CHECK: 874 < 930 ✓
+```
+
+### Validation Failures = STOP
+
+If ANY calculation shows overflow:
+1. **STOP** - do not write the element
+2. **RECALCULATE** - adjust position or container size
+3. **RE-VERIFY** - confirm the fix works
+
+**DO NOT proceed with "it's probably fine" - do the math.**
+
+---
+
+## ⛔ SEMANTIC POSITIONING (MANDATORY for Data Visualizations)
+
+**When visualizing data on a spectrum, timeline, or scale:**
+
+1. **Origin goes at the logical zero point** - NOT at the minimum data value
+2. **Scale proportionally** - 320px should be positioned at 320/max of the axis width
+
+### Breakpoint Spectrum Example
+
+**❌ WRONG** (treats 320px as origin):
+```xml
+<!-- Mobile section starts at x=0 labeled "320px" - SEMANTICALLY INCORRECT -->
+<rect x="0" y="15" width="400" height="40"/>
+<text x="0" y="90">320px</text>  <!-- 320px at origin??? -->
+```
+
+**✅ CORRECT** (origin at 0px, positions scaled proportionally):
+```xml
+<!-- Full spectrum from 0 to 1440px, mapped to 0-1320px canvas width -->
+<!-- Scale factor: 1320 / 1440 = 0.917 -->
+<!-- Mobile section (320-767px) → x = 320 × 0.917 = 293, width = (767-320) × 0.917 = 410 -->
+<rect x="293" y="15" width="410" height="40"/>
+<line x1="0" y1="60" x2="0" y2="75"/>
+<text x="0" y="90">0px</text>  <!-- Origin at zero where it belongs -->
+<line x1="293" y1="60" x2="293" y2="75"/>
+<text x="293" y="90">320px</text>  <!-- 320px positioned proportionally -->
+```
+
+### Proportional Scale Formula
+
+```
+position_on_canvas = (data_value / max_data_value) × canvas_width
+section_width = ((end_value - start_value) / max_data_value) × canvas_width
+```
+
+### Other Semantic Visualizations
+
+| Visualization Type | Origin | Scale |
+|-------------------|--------|-------|
+| Viewport breakpoints | 0px | Proportional to max viewport |
+| Timeline | Start date or epoch | Proportional to duration |
+| Progress bar | 0% | Proportional to 100% |
+| Temperature scale | Absolute zero or 0° | Proportional to max |
+| File size | 0 bytes | Proportional to max size |
+
+**CRITICAL**: Data visualizations must be semantically correct, not just visually pleasing.
 
 ---
 
@@ -554,6 +727,62 @@ To prevent overlap/clipping in generated wireframes:
 6. **Never overlap**: Text and elements must not overlap adjacent sections
 7. **Verify fit**: Before finalizing, verify all content fits within its container
 8. **Text containment**: ALL text MUST stay inside its containing box - if text would overflow, either enlarge the box or shorten the text
+
+---
+
+## ⛔ FLOW ARROW ROUTING (MANDATORY - Architecture Diagrams)
+
+**Flow arrows MUST NEVER cross through text, labels, or content. This is non-negotiable.**
+
+### The Problem
+When decision diamonds or flow sources need to connect to targets, a naive path (straight line) may cross through section labels or panel content. This creates visual collisions where arrows obscure text.
+
+### ❌ WRONG: Arrow through text
+```
+Decision Diamond
+      |
+      ↓ (arrow cuts through "SECTION LABEL" below)
+  SECTION LABEL  ← arrow visually crosses this text
+      |
+   Target Box
+```
+
+### ✅ CORRECT: Route arrows around content
+```
+Decision Diamond
+      |
+      └───────────→ (arrow goes RIGHT, then DOWN)
+                  |
+   SECTION LABEL  | ← label is clear, arrow beside it
+                  ↓
+              Target Box
+```
+
+### Arrow Routing Rules
+
+1. **Use orthogonal paths**: Arrows should travel horizontally OR vertically, using 90° turns to route around obstacles
+2. **Route through empty space**: If there's empty canvas space, use it for arrow paths
+3. **If no clear path exists**: The layout is wrong - REORGANIZE CONTENT to create clear flow channels
+4. **Never route through content zones**: Arrows belong in gutters/margins, not over content
+
+### Layout Before Arrows
+
+**Design content layout FIRST, then add arrows that fit the layout.**
+
+If you find yourself needing to route an arrow through content:
+1. STOP - the layout is wrong
+2. Reorganize content to create clear flow channels
+3. Use the FULL canvas width/height - don't leave empty space while cramping content
+4. THEN draw arrows through the empty channels
+
+### Canvas Utilization Check
+
+Before drawing arrows, verify:
+- Is there >200px of unused space on any edge? → SPREAD CONTENT OUT
+- Are content sections cramped together? → USE THE EMPTY SPACE
+- Do arrows need to cross content? → MOVE CONTENT to create clear channels
+
+**Wasted space + arrows through text = DESIGN FAILURE. Use the space to fix the arrows.**
 
 ---
 
