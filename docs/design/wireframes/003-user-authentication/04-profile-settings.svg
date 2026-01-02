@@ -250,5 +250,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">003-user-authentication | Profile &amp; Settings | ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">003-user-authentication | Profile &amp; Settings | ScriptHammer</text>
 </svg>

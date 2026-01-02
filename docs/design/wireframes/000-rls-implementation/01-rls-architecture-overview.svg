@@ -203,5 +203,5 @@
   <text x="1040" y="692" class="annotation">FR-025</text>
 
   <!-- Footer (MUST be at y=780) -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">000-rls-implementation | RLS Architecture Overview | ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">000-rls-implementation | RLS Architecture Overview | ScriptHammer</text>
 </svg>

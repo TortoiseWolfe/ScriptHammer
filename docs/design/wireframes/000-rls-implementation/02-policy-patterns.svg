@@ -195,5 +195,5 @@
   </g>
 
   <!-- Footer (MUST be at y=780) -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">000-rls-implementation | RLS Policy Patterns | ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">000-rls-implementation | RLS Policy Patterns | ScriptHammer</text>
 </svg>

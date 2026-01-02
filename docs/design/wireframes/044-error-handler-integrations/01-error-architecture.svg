@@ -328,5 +328,5 @@
   <text x="1150" y="683" text-anchor="middle" class="text-muted">Sync on reconnect</text>
 
   <!-- Footer -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">Feature 044 - Error Handler Integrations Architecture</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">Feature 044 - Error Handler Integrations Architecture</text>
 </svg>

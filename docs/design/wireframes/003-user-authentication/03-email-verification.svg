@@ -252,5 +252,5 @@
   </g>
 
   <!-- Footer -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">003-user-authentication | Email Verification States | ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">003-user-authentication | Email Verification States | ScriptHammer</text>
 </svg>

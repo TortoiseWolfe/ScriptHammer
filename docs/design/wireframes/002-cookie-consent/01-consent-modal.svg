@@ -225,7 +225,7 @@
   </g>
 
   <!-- Footer -->
-  <text x="700" y="780" text-anchor="middle" class="text-muted">Cookie Consent Modal • Feature 002 • ScriptHammer</text>
+  <text x="60" y="780" text-anchor="start" class="text-muted">Cookie Consent Modal • Feature 002 • ScriptHammer</text>
 
   <!-- Leader lines -->
   <g id="leader-lines">
