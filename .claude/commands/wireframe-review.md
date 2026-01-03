@@ -240,9 +240,13 @@ curl -s http://localhost:3000 | head -5  # Check if running
 cd docs/design/wireframes && npm run dev &  # Start if not
 ```
 
-### 1b. Navigate and Configure Browser
+### 1b. Resize Browser and Navigate
 
 ```javascript
+// 0. FIRST: Resize browser to 1920x1080 for proper quadrant coverage
+// Default Playwright viewport (780x493) is too small - quadrant shots miss content
+mcp__MCP_DOCKER__browser_resize({ width: 1920, height: 1080 })
+
 // 1. Navigate to viewer
 mcp__MCP_DOCKER__browser_navigate({ url: "http://host.docker.internal:3000" })
 
