@@ -28,18 +28,18 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 
 **⛔ If you cannot see the ENTIRE wireframe in the screenshot → adjust zoom before continuing.**
 
-### Check 3: Detail Inspection at 280% (BLOCKING)
+### Check 3: Detail Inspection at 200% (BLOCKING)
 
-**Zoom to 280% and pan through each quadrant. Look for issues invisible at overview zoom.**
+**Zoom to 200% and pan through each quadrant. Look for issues invisible at overview zoom.**
 
-At 280%, issues become visible that you'd miss at 130%:
+At 200%, issues become visible that you'd miss at 100%:
 - Text truncation, clipping, overlap
 - Alignment problems, spacing inconsistencies
 - Small font readability issues
 - Arrow paths crossing content
 - Container boundary violations
 
-**⛔ If you find issues at 280% that require layout changes → 🔴 REGENERATE.**
+**⛔ If you find issues at detail zoom that require layout changes → 🔴 REGENERATE.**
 
 ### Check 4: Arrow Path Trace (BLOCKING for Architecture Diagrams)
 
@@ -78,7 +78,7 @@ At 280%, issues become visible that you'd miss at 130%:
 ```
 FIRST CHECKS COMPLETE:
 - Theme: [Dark/Light] - [Correct/WRONG for feature type]
-- Viewer: Overview screenshot at 130%, detail inspection at 280%
+- Viewer: Overview screenshot at 100%, detail inspection at 200%
 - Detail inspection: [All clear / Issues at: ...]
 - Arrow paths: [Clear / Through content at: ...]
 - Space utilization: [Good / Wasted space at: ...]
@@ -287,8 +287,8 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
-1. **Overview (130%)**: Structural check - layout, overlaps, theme (0, then ArrowUp x3)
-2. **Detail (160%)**: Per-quadrant inspection - text readability, truncation (ArrowUp x2 more)
+1. **Overview (100%)**: Structural check - layout, overlaps, theme (0, then ArrowUp x1)
+2. **Detail (200%)**: Per-quadrant inspection - text readability, truncation (0, then ArrowUp x8)
 
 ### 1d. Take Screenshots (Relative Paths)
 
@@ -301,7 +301,7 @@ mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-[description].png"
 })
 
-// Quadrant screenshots (at 280% zoom)
+// Quadrant screenshots (at 200% zoom)
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TL.png"
 })
@@ -313,14 +313,15 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 | Feature number | NNN | 002 |
 | Page number | PP | 01 |
 | Description | kebab-case | consent-modal-overview |
-| Quadrant | TL/TR/BL/BR | quadrant-TL |
+| Quadrant | CENTER/TL/TR/BL/BR | quadrant-CENTER |
 
 **Full example for 002-cookie-consent, page 01:**
-- `002-01-consent-modal-overview.png` (130% overview)
-- `002-01-quadrant-TL.png` (280% top-left)
-- `002-01-quadrant-TR.png` (280% top-right)
-- `002-01-quadrant-BL.png` (280% bottom-left)
-- `002-01-quadrant-BR.png` (280% bottom-right)
+- `002-01-consent-modal-overview.png` (100% overview)
+- `002-01-quadrant-CENTER.png` (200% center)
+- `002-01-quadrant-TL.png` (200% top-left)
+- `002-01-quadrant-TR.png` (200% top-right)
+- `002-01-quadrant-BL.png` (200% bottom-left)
+- `002-01-quadrant-BR.png` (200% bottom-right)
 
 ### 1e. Copy Screenshots to Host (REQUIRED)
 
@@ -350,15 +351,15 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 ### 1g. Verify Zoom Direction (MANDATORY)
 
 **After pressing zoom keys, verify you're at the RIGHT zoom level:**
-- **Overview = 130%** (0, then ArrowUp x3)
-- **Detail inspection = 160%** (ArrowUp x2 more, 4 quadrants cover full canvas)
-- If text appears SMALLER than at 130%, you pressed the WRONG key
+- **Overview = 100%** (0, then ArrowUp x1)
+- **Detail inspection = 200%** (0, then ArrowUp x8, 5 shots cover full canvas)
+- If text appears SMALLER than at 100%, you pressed the WRONG key
 
 | Symptom | Problem | Fix |
 |---------|---------|-----|
 | Text getting smaller | Used `ArrowDown` (zoom out) | Press `0` to reset, then use `ArrowUp` |
-| Can't see full canvas | At 160% detail zoom | Press `0` to return to 85%, then ArrowUp x3 for 130% |
-| Text blurry/unreadable | At <130% | Press `ArrowUp` repeatedly until clear |
+| Can't see full canvas | At 200% detail zoom | Press `0` to return to 85%, then ArrowUp x1 for 100% |
+| Text blurry/unreadable | At <100% | Press `ArrowUp` repeatedly until clear |
 
 **Rule: If you can't read every character clearly at detail zoom, you're zooming the WRONG direction.**
 
@@ -368,53 +369,70 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 
 ## Step 2: Quadrant Deep Inspection (MANDATORY)
 
-1. **Reset and zoom to 130%** for overview (press '0' then ArrowUp x3)
-2. **Take overview screenshot** at 130%
-3. **Zoom to 160%** for quadrant detail (press ArrowUp x2 more)
+1. **Reset and zoom to 100%** for overview (press '0' then ArrowUp x1)
+2. **Take overview screenshot** at 100%
+3. **Zoom to 200%** for quadrant detail (press '0' then ArrowUp x8)
 
 ```javascript
 // OVERVIEW SCREENSHOT
 // Step 1: Reset to center and fullscreen (85%)
 mcp__MCP_DOCKER__browser_press_key({ key: "0" })  // Reset: center + 85%
 
-// Step 2: Zoom to 130% with ArrowUp x3 (good for overview)
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~130% (overview zoom)
+// Step 2: Zoom to 100% with ArrowUp x1 (good for overview of 1600×1000)
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~100% (overview zoom)
 
-// Take overview screenshot at 130%
+// Take overview screenshot at 100%
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-overview.png"
 })
 
 // QUADRANT DETAIL INSPECTION
-// Step 3: Zoom 2 more ArrowUp to reach ~160%
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detail)
-// At 160%, ~1063×638 canvas pixels visible - 4 quadrants cover full 1600×1000
+// Step 3: Reset and zoom to 200% (0, then ArrowUp x8)
+mcp__MCP_DOCKER__browser_press_key({ key: "0" })  // Reset first
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x1
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x2
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x3
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x4
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x5
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x6
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in x7
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~200% (quadrant detail)
+// At 200%, ~960×540 canvas pixels visible - 5 shots (CENTER + 4 corners) cover full 1600×1000
 ```
 
-3. **Pan to each quadrant** using direct JavaScript (CLOCKWISE pattern: TL → TR → BR → BL):
+3. **Pan to each quadrant** using direct JavaScript (pattern: CENTER → TL → TR → BR → BL):
 
 ```javascript
-// Step 3: PAN to each quadrant at 160% zoom (CLOCKWISE pattern)
-// At 160%, ~1063×638 canvas pixels visible. 4 quadrants cover full canvas.
+// Step 3: PAN to each quadrant at 200% zoom
+// At 200%, ~960×540 canvas pixels visible. 5 shots (CENTER + 4 corners) cover full canvas.
 // Use DIRECT JAVASCRIPT to set absolute pan coordinates (bypasses viewport drag limits).
 //
-// Pan formula (CORRECTED): panX = (canvasWidth/2 - canvasX) * zoom
-//                          panY = (canvasHeight/2 - canvasY) * zoom
+// Pan formula: panX = (canvasWidth/2 - canvasX) * zoom
+//              panY = (canvasHeight/2 - canvasY) * zoom
 // Positive pan → reveals that side of canvas (e.g., +panX reveals LEFT)
 
-// Quadrant Coverage (1600×1000 canvas):
+// Screenshot Coverage (1600×1000 canvas):
 // ┌─────────┬─────────┐
 // │   TL    │   TR    │
-// │ center  │ center  │
-// │(400,250)│(1200,250)|
-// ├─────────┼─────────┤
+// │ (480,   │ (1120,  │
+// │  270)   │  270)   │
+// ├────┬────┼────┬────┤
+// │    │ CENTER │    │
+// │    │(800,500)│    │
+// ├────┴────┼────┴────┤
 // │   BL    │   BR    │
-// │ center  │ center  │
-// │(400,750)│(1200,750)|
+// │ (480,   │ (1120,  │
+// │  730)   │  730)   │
 // └─────────┴─────────┘
+
+// CENTER - shows middle of canvas where all quadrants overlap
+// At panX=0, panY=0, viewport is centered on canvas center (800, 500)
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => { panX = 0; panY = 0; updateTransform(); }`
+})
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "[NNN]-[PP]-quadrant-CENTER.png"
+})
 
 // TL - at 200% zoom, center (480, 270) → panX=+640, panY=+460
 mcp__MCP_DOCKER__browser_evaluate({
@@ -464,6 +482,12 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 
 #### LOCATION-SPECIFIC CHECKS
 
+**CENTER (Flow diagrams, central content)**
+- [ ] Flow diagram arrows clear and readable?
+- [ ] Central panels fully visible?
+- [ ] No content split awkwardly between corners?
+- [ ] Labels in center area complete?
+
 **TOP-LEFT (Desktop header/sidebar)**
 - [ ] Header buttons fit? (sum widths + gaps ≤ header width)
 - [ ] Nav items complete? (no truncation)
@@ -498,9 +522,9 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 - [ ] Touch targets ≥44px?
 - [ ] Issue found? → Note it with coordinates before moving on
 
-**At 160%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
+**At 200%, for each shot**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
 
-**Checkpoint**: Overview PNG saved at 130%, all 4 quadrants analyzed at 160%, issues noted.
+**Checkpoint**: Overview PNG saved at 100%, all 5 detail shots (CENTER + 4 corners) analyzed at 200%, issues noted.
 
 ---
 
@@ -956,9 +980,10 @@ This feedback passes to `/wireframe` for guided regeneration.
 
 | Arg | Action |
 |-----|--------|
-| `batch 1-10` | Review specific batch |
-| `all` | Review everything |
-| `[feature]` | Single feature (e.g., `004`) |
+| `[feature]` | Review all SVGs in feature (e.g., `004`) |
+| `[feature]:[page]` | Review single SVG (e.g., `004:01` or `004:touch`) |
+| `batch 1-7` | Review specific batch (see Batch Mapping) |
+| `all` | Review all features |
 | `re-review [feature]` | Re-review after fixes |
 
 ---
