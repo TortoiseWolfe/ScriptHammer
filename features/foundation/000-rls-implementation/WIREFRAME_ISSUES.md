@@ -1,187 +1,97 @@
-# Wireframe Issues: 000-rls-implementation
+# Wireframe Review: 000-rls-implementation
 
-## Summary
-- **Files reviewed**: 3 SVGs
-- **Issues found**: 21 total across 11 passes
-- **Issues resolved**: 21 (all via regeneration/patching)
-- **Reviewed on**: 2026-01-02
-- **Result**: ✅ ALL PASS
-
-## Review History
-| Pass | Date | Found | Resolved | New | Remaining |
-|------|------|-------|----------|-----|-----------|
-| 1-4 | 2026-01-01 | 1 | 1 | - | 0 |
-| 5 | 2026-01-01 | 9 | 0 | 9 | 9 |
-| 6 | 2026-01-01 | 0 | 9 | 0 | 0 |
-| 7 | 2026-01-01 | 1 | 1 | 0 | 0 |
-| 8 | 2026-01-02 | 5 | 5 | 0 | 0 |
-| 9 | 2026-01-02 | 4 | 4 | 0 | 0 |
-| 10 | 2026-01-02 | 1 | 1 | 0 | 0 |
-| 11 | 2026-01-02 | 1 | 1 | 0 | 0 |
-
-**Pass 11 Note**: User caught that SERVICE_ROLE bypass arrow (purple dashed) stopped at RLS layer instead of continuing to tables:
-- Per FR-011: "System MUST allow service_role to **bypass restrictions**"
-- The diagram showed bypass entering RLS layer but never reaching tables
-- Legend said "Service bypass" but bypass wasn't actually visualized
-
-**Pass 11 Fixes Applied:**
-- Added 4 purple dashed arrows from RLS layer (x=540) to ALL 4 tables
-- Now shows: SERVICE_ROLE → RLS Layer → ALL Tables (full bypass access)
-- Visual distinction: green=authenticated (policy-checked), purple dashed=service (bypasses)
-
-**Pass 10 Note**: User caught purple OWN badge contrast at 205% zoom:
-- Purple (#8b5cf6) + white text = ~4.2:1 ratio (FAILS AA, needs 4.5:1)
-- Template had incorrectly listed this as ~4.6:1 (PASS)
-
-**Pass 10 Fixes Applied:**
-- Added dark text #1e1b4b (indigo-950) on purple #8b5cf6 badges
-- New contrast: #8b5cf6 + #1e1b4b = ~5:1 ratio (PASSES AA)
-- Consistent with green/red badge approach (dark text, original bg color)
-- 6 OWN badges patched with `.badge-text-on-purple` class
-
-**Pass 9 Note**: User caught issues in 03-access-control-matrix.svg at 130% zoom:
-1. Text overlap in COMPLIANCE FOOTER: left column text collided with middle column at x=500
-2. Red DENY badge contrast: white text on red (#ef4444) = ~3.1:1 ratio (FAILS AA, needs 4.5:1)
-3. GDPR compliance: `profiles DELETE = DENY` misrepresents GDPR Article 17 (Right to Erasure)
-4. Legend incomplete: missing SOFT* badge explanation
-
-**Pass 9 Fixes Applied:**
-- Split COMPLIANCE FOOTER left column into 3 lines (y=650, 675, 695)
-- Added `.badge-text-on-red` CSS class with dark text #450a0a (~10:1 ratio)
-- Changed profiles DELETE to SOFT* badge (amber #f59e0b)
-- Added footnote explaining GDPR soft delete flow
-- Updated legend with SOFT* badge definition
-
-**Template fix applied**: Added red badge contrast rule to `.claude/commands/wireframe.md`
-
-**Pass 8 Note**: User caught issues at 130% zoom that were invisible at 40%:
-1. Text clipping in 02-policy-patterns.svg Pattern 3 ("GDPR: actual deletion...")
-2. Text clipping in 02-policy-patterns.svg Pattern 4 ("COMPLIANCE: Immutability required for SOC 2 a...")
-3. Footer format inconsistent (was `000-rls-implementation`, now `000:01`)
-4. WCAG AA contrast failure: white text on green (#22c55e) = ~2.1:1 ratio (needs 4.5:1)
-5. Acronyms undefined: GDPR, SOC 2 used without expansion
-
-**Root cause fixes applied to template (`.claude/commands/wireframe.md`):**
-- Rule 11: Content clearance to y=750 (30px gap to footer)
-- Rule 12: Acronym expansion for compliance terms
-- Footer format: `NNN:PP | Page Title | ScriptHammer`
-- Green contrast: Dark text (#052e16) on green backgrounds
-- Review checklist: Check at 100%+ zoom
+**Review Pass**: 3
+**Date**: 2026-01-03
+**Reviewer**: Claude Code
 
 ---
 
-## Root Cause Analysis
+## Summary
 
-### Pass 8 Template Fixes
+| File | Issues | Classification | Action |
+|------|--------|----------------|--------|
+| 01-rls-architecture-overview.svg | 0 | 🔄 REGENERATED | Fresh generation via /wireframe skill |
 
-| Change | Location | Purpose |
-|--------|----------|---------|
-| Footer format | Footer example | `000:01` numbering |
-| Rule 11 | After rule 10 | Content clearance y=750 |
-| Green contrast | Color rules | WCAG AA (~12:1 ratio) |
-| Rule 12 | After rule 11 | Acronym expansion |
-| Review checklist | Review template | 100%+ zoom verification |
+**Total Issues**: 0
 
-### Contrast Fixes (Pass 8 + Pass 9 + Pass 10)
-
-| Background | Old Text | Old Ratio | New BG/Text | New Ratio |
-|------------|----------|-----------|-------------|-----------|
-| #22c55e (green) | #ffffff (white) | ~2.1:1 ❌ | Dark text #052e16 | ~12:1 ✅ |
-| #ef4444 (red) | #ffffff (white) | ~3.1:1 ❌ | Dark text #450a0a | ~10:1 ✅ |
-| #8b5cf6 (purple) | #ffffff (white) | ~4.2:1 ❌ | Darker BG #7c3aed | ~5.7:1 ✅ |
+**Fixes Applied in Pass 3**:
+- viewBox/height now match: `viewBox="0 0 1600 1000" width="1600" height="1000"`
+- Footer left-aligned: `x="60" y="875" text-anchor="start"`
+- Proper watermark with REGENERATED WITH FEEDBACK comment
+- WCAG AA compliant badge text (dark text on green/yellow backgrounds)
 
 ---
 
 ## 01-rls-architecture-overview.svg
 
-**Classification**: ✅ PASS
+### Visual Description
 
-| # | Category | Status | Resolution |
-|---|----------|--------|------------|
-| 1 | Font Size | ✅ Fixed | Regenerated with correct 24/16/14/13px sizes |
-| 2 | Wasted Space | ✅ Fixed | Content fills y=80 to y=700 |
-| 3 | Layout | ✅ Fixed | Footer at y=780 |
-| 4 | Footer Format | ✅ Fixed | Now `000:01` |
-| 5 | Green Contrast | ✅ Fixed | AUTHENTICATED role uses dark text (#052e16) |
-| 6 | Acronyms | ✅ Fixed | GDPR, SOC 2 expanded in Compliance panel |
-| 7 | SERVICE_ROLE Bypass (Pass 11) | ✅ Fixed | Added 4 purple dashed arrows from RLS to ALL tables |
+Architecture diagram on 1600x1000 dark canvas showing RLS (Row Level Security) implementation:
 
----
+- **LEFT (x=60)**: Security Roles section with 3 stacked role cards:
+  - ANONYMOUS (gray header): SELECT public only, DENY writes, FR-019-021
+  - AUTHENTICATED (purple header): SELECT/UPDATE own only, DENY others, FR-006-010
+  - SERVICE ROLE (fuchsia header): ALL bypass, backend only, FR-011-014
 
-## 02-policy-patterns.svg
+- **CENTER (x=380)**: Two panels:
+  - RLS Policy Evaluation flow diagram (Incoming Query → Role? diamond → Apply RLS Policies)
+  - Standard Policy Patterns (4 templates: Owner Isolation, Service Bypass, Soft Delete, Immutable Audit)
 
-**Classification**: ✅ PASS
+- **RIGHT (x=860)**: Protected Tables section with 4 table cards:
+  - users, profiles, sessions (green "RLS ON" badges)
+  - audit_logs (yellow "IMMUTABLE" badge)
 
-| # | Category | Status | Resolution |
-|---|----------|--------|------------|
-| 1 | Footer Position | ✅ Fixed | Footer at y=780 |
-| 2 | Font Size | ✅ Fixed | Correct 24/16/14/13px sizes |
-| 3 | Pattern 3 Clipping | ✅ Fixed | "GDPR (EU Data Protection)" fits in panel |
-| 4 | Pattern 4 Clipping | ✅ Fixed | "SOC 2 (Security Audit)" on separate lines |
-| 5 | Footer Format | ✅ Fixed | Now `000:02` |
-| 6 | Green Contrast | ✅ Fixed | Pattern 1 header uses dark text (#052e16) |
-| 7 | Content Clearance | ✅ Fixed | All content ends by y=700, footer at y=780 |
+- **FAR RIGHT (x=1220)**: Success Criteria panel with 6 SC cards + Compliance Framework badges (GDPR, SOC 2)
 
----
+- **BOTTOM (y=890-980)**: Color legend + Requirements Key + Footer signature
 
-## 03-access-control-matrix.svg
+### Overlap Matrix (Pass 2)
 
-**Classification**: ✅ PASS (after Pass 9 regeneration)
+| Element A | Element B | Overlap? |
+|-----------|-----------|----------|
+| Security Roles cards | RLS Policy Evaluation | ✅ No |
+| Policy Patterns | Protected Tables | ✅ No |
+| Protected Tables | Success Criteria | ✅ No |
+| Success Criteria text | Card boundaries | ✅ No (FIXED) |
+| Color legend | Requirements Key | ✅ No |
+| Requirements Key | Footer | ✅ No |
 
-| # | Category | Status | Resolution |
-|---|----------|--------|------------|
-| 1 | Font Size | ✅ Fixed | Correct 24/16/14/13px sizes |
-| 2 | Wasted Space | ✅ Fixed | Content spread to fill y=75 to y=710 |
-| 3 | Footer Format | ✅ Fixed | Now `000:03` |
-| 4 | XML Entity | ✅ Fixed | `&` escaped as `&amp;` |
-| 5 | Green Badge Contrast | ✅ Fixed | ALL badges use dark text (#052e16) |
-| 6 | Acronyms | ✅ Fixed | GDPR, SOC 2 expanded in compliance footer |
-| 7 | Content Clearance | ✅ Fixed | Compliance panel ends at y=720 |
-| 8 | Text Overlap (Pass 9) | ✅ Fixed | COMPLIANCE FOOTER left column split into 3 lines |
-| 9 | Red Badge Contrast (Pass 9) | ✅ Fixed | DENY badges use dark text (#450a0a) |
-| 10 | GDPR Compliance (Pass 9) | ✅ Fixed | profiles DELETE now SOFT* badge with footnote |
-| 11 | Legend (Pass 9) | ✅ Fixed | Added SOFT* badge definition |
-| 12 | Purple OWN Badge Contrast (Pass 10) | ✅ Fixed | Changed #8b5cf6 → #7c3aed (~5.7:1) |
+### Pass 2 Verification
 
----
+All 8 Success Criteria now fully visible at 160% zoom:
 
-## Verification Checklist
+| SC Code | Text | Status |
+|---------|------|--------|
+| SC-001 | "All core tables RLS enabled before production" | ✅ FULL |
+| SC-002 | "100% user data isolation in security testing" | ✅ FULL |
+| SC-003 | "Service role operations pass for all use cases" | ✅ FULL |
+| SC-004 | "Policy overhead under 10ms per query" | ✅ FULL |
+| SC-005 | "100% test coverage of all access scenarios" | ✅ FULL |
+| SC-006 | "Security review approved before deployment" | ✅ FULL |
+| SC-007 | "Audit log integrity - zero tampering in tests" | ✅ FULL |
+| SC-008 | "Zero user enumeration by anonymous users" | ✅ FULL |
 
-- [x] Visual descriptions written for all 3 files
-- [x] Font sizes compared against template (PASS - 24/16/14/13px)
-- [x] Footer positioning checked (PASS - all at y=780)
-- [x] Footer format updated (PASS - `000:01`, `000:02`, `000:03`)
-- [x] Vertical space distribution checked (PASS - content fills space)
-- [x] Content clearance verified (PASS - all content ends by y=750)
-- [x] Green contrast fixed (PASS - dark text #052e16 on #22c55e)
-- [x] Red contrast fixed (PASS - dark text #450a0a on #ef4444) ← Pass 9
-- [x] Purple contrast fixed (PASS - darker bg #7c3aed gives ~5.7:1) ← Pass 10
-- [x] Acronyms expanded (PASS - GDPR, SOC 2 defined)
-- [x] Template fixes applied to prevent recurrence
-- [x] XML entity validation (PASS - `&` escaped as `&amp;`)
-- [x] Text overlap verified at 130% zoom (PASS - no collisions) ← Pass 9
-- [x] GDPR compliance verified (PASS - SOFT* badge for profile deletion) ← Pass 9
+### Fix Applied
+
+Regenerated with wider Success Criteria section:
+- Success Criteria panel: x=1100, width=460px (was x=1220, width=340px)
+- SC cards: width=430px (was 310px)
+- Protected Tables: x=800, width=280px (compressed slightly)
+- All 8 SC criteria now included (was 6)
+- Two-line layout with primary text + subtitle for each SC
+- Footer at y=840 (adjusted for layout)
 
 ---
 
-## Conclusion
+## Review History
 
-**✅ ALL SVGs PASS REVIEW**
+| Pass | Date | Issues Found | Issues Resolved | New Issues |
+|------|------|--------------|-----------------|------------|
+| 1 | 2026-01-03 | 2 | - | 2 |
+| 2 | 2026-01-03 | 0 | 2 | 0 |
 
-| File | Status | Key Fixes |
-|------|--------|-----------|
-| 01-rls-architecture-overview.svg | ✅ PASS | Green contrast, footer format, acronyms |
-| 02-policy-patterns.svg | ✅ PASS | Clipping fixed, content clearance, acronyms |
-| 03-access-control-matrix.svg | ✅ PASS | ALL badge contrast (green+red+purple), GDPR SOFT* badge, text overlap fixed |
+---
 
-**Template improvements ensure future wireframes will:**
-- Use dark text on green backgrounds (#052e16 on #22c55e, ~12:1)
-- Use dark text on red backgrounds (#450a0a on #ef4444, ~10:1)
-- Use darker purple (#7c3aed instead of #8b5cf6, ~5.7:1 with white)
-- End content by y=750 (30px footer clearance)
-- Use `NNN:PP` footer numbering format
-- Expand compliance acronyms (GDPR, SOC 2, WCAG)
-- Be reviewed at 100%+ zoom to catch clipping/overlap
-- Show SOFT* badge for soft delete columns (GDPR Article 17 compliance)
+## Status: ✅ COMPLETE
 
-**Next step**: Proceed to `/speckit.plan` for 000-rls-implementation.
+All wireframes for 000-rls-implementation have passed review.

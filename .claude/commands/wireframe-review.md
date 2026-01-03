@@ -290,18 +290,41 @@ mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 145% → 160%
 1. **Overview (85-100%)**: Structural check - layout, overlaps, theme
 2. **Detail (160%)**: Per-quadrant inspection - text readability, truncation
 
-### 1d. Take Screenshots
-```javascript
-// [FEATURE]-[PAGE]-[NAME].png
-mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
-```
-Output: `/tmp/playwright-output/` (MCP container)
+### 1d. Take Screenshots (With Persistent Storage)
 
-### 1e. Copy Screenshots (After Review)
-```bash
-mkdir -p docs/design/wireframes/png/[FEATURE]/
-docker cp [CONTAINER]:/tmp/playwright-output/[FEATURE]-*.png docs/design/wireframes/png/[FEATURE]/
+**Screenshots save to `docs/design/wireframes/png/[feature]/` automatically.**
+
+```javascript
+// REQUIRED: Create feature directory first (do once per feature)
+// Run this bash command before taking screenshots:
+// mkdir -p docs/design/wireframes/png/[FEATURE]/
+
+// Screenshot naming: [NNN]-[PP]-[description].png
+// Example: 002-01-consent-modal-overview.png
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-[description].png"
+})
+
+// Quadrant screenshots (at 160% zoom)
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TL.png"
+})
 ```
+
+**Naming Convention:**
+| Component | Format | Example |
+|-----------|--------|---------|
+| Feature number | NNN | 002 |
+| Page number | PP | 01 |
+| Description | kebab-case | consent-modal-overview |
+| Quadrant | TL/TR/BL/BR | quadrant-TL |
+
+**Full example for 002-cookie-consent, page 01:**
+- `002-01-consent-modal-overview.png` (85% overview)
+- `002-01-quadrant-TL.png` (160% top-left)
+- `002-01-quadrant-TR.png` (160% top-right)
+- `002-01-quadrant-BL.png` (160% bottom-left)
+- `002-01-quadrant-BR.png` (160% bottom-right)
 
 ### 1f. Navigate Between Wireframes
 ```javascript
@@ -361,7 +384,9 @@ mcp__MCP_DOCKER__browser_run_code({
          await page.mouse.move(800, 600, { steps: 10 });
          await page.mouse.up();`
 })
-mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-TL.png" })
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TL.png"
+})
 
 // Pan to TOP-RIGHT (drag left+down to expose top-right corner)
 mcp__MCP_DOCKER__browser_run_code({
@@ -370,7 +395,9 @@ mcp__MCP_DOCKER__browser_run_code({
          await page.mouse.move(0, 600, { steps: 10 });
          await page.mouse.up();`
 })
-mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-TR.png" })
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TR.png"
+})
 
 // Pan to BOTTOM-LEFT (drag right+up to expose bottom-left corner)
 mcp__MCP_DOCKER__browser_run_code({
@@ -379,7 +406,9 @@ mcp__MCP_DOCKER__browser_run_code({
          await page.mouse.move(800, 0, { steps: 10 });
          await page.mouse.up();`
 })
-mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BL.png" })
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-BL.png"
+})
 
 // Pan to BOTTOM-RIGHT (drag left+up to expose bottom-right corner)
 mcp__MCP_DOCKER__browser_run_code({
@@ -388,7 +417,9 @@ mcp__MCP_DOCKER__browser_run_code({
          await page.mouse.move(0, 0, { steps: 10 });
          await page.mouse.up();`
 })
-mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BR.png" })
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-BR.png"
+})
 ```
 
 ### Quadrant Inspection Protocol
