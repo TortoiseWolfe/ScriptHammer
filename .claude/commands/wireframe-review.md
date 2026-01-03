@@ -28,17 +28,18 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 
 **⛔ If you cannot see the ENTIRE wireframe in the screenshot → adjust zoom before continuing.**
 
-### Check 3: Text Readability (BLOCKING)
+### Check 3: Detail Inspection at 160% (BLOCKING)
 
-**Look at your screenshot. Can you read ALL text?**
+**Zoom to 160% and pan through each quadrant. Look for issues invisible at overview zoom.**
 
-For EVERY text element:
-- [ ] Can you read every heading character-by-character?
-- [ ] Can you read every label character-by-character?
-- [ ] Can you read every annotation (FR-XXX codes)?
-- [ ] Can you read every muted text element?
+At 160%, issues become visible that you'd miss at 85-100%:
+- Text truncation, clipping, overlap
+- Alignment problems, spacing inconsistencies
+- Small font readability issues
+- Arrow paths crossing content
+- Container boundary violations
 
-**⛔ If ANY text is too small to read → 🔴 REGENERATE immediately. Do not continue review.**
+**⛔ If you find issues at 160% that require layout changes → 🔴 REGENERATE.**
 
 ### Check 4: Arrow Path Trace (BLOCKING for Architecture Diagrams)
 
@@ -60,6 +61,16 @@ For EVERY text element:
 
 **⛔ Wasted space + cramped content + arrows through text = TRIPLE DESIGN FAILURE.**
 
+### Check 6: Requirements Legend (BLOCKING)
+
+**For EVERY wireframe with FR/SC/NFR annotations:**
+
+1. Look for REQUIREMENTS KEY panel at y>=700
+2. Verify EVERY annotation code has a description in the legend
+3. Verify NO extra codes in legend that aren't on the page
+
+**⛔ If FR/SC annotations exist but no REQUIREMENTS KEY panel → 🔴 REGENERATE immediately.**
+
 ### First Checks Statement (MANDATORY)
 
 **Before proceeding to detailed review, you MUST write:**
@@ -67,10 +78,11 @@ For EVERY text element:
 ```
 FIRST CHECKS COMPLETE:
 - Theme: [Dark/Light] - [Correct/WRONG for feature type]
-- Viewer: Screenshot captured at [X]% zoom
-- Text readability: [All readable / Issues at: ...]
+- Viewer: Overview screenshot at 85-100%, detail inspection at 160%
+- Detail inspection: [All clear / Issues at: ...]
 - Arrow paths: [Clear / Through content at: ...]
 - Space utilization: [Good / Wasted space at: ...]
+- Requirements legend: [Present with all FRs / Missing / Incomplete]
 - BLOCKING ISSUES: [None / List any that require immediate REGENERATE]
 ```
 
@@ -243,25 +255,40 @@ mcp__MCP_DOCKER__browser_evaluate({
   }`
 })
 
-// 3. Enter focus mode IMMEDIATELY (hides sidebar/footer)
+// 3. Enter FOCUS MODE (press 'f') - CRITICAL for accurate review
+// ⚠️ Focus mode hides the viewer's sidebar and footer
+// After pressing 'f', EVERYTHING on screen is part of the SVG
+// This ensures screenshots contain ONLY the wireframe, no UI chrome
+// Press 'Escape' to exit focus mode when done
 mcp__MCP_DOCKER__browser_press_key({ key: "f" })
 
-// 4. Reset zoom to 85% baseline
+// 4. Reset zoom to 85% baseline (good for overview)
 mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 
-// 5. Zoom out to fit all canvas sizes (55% fits 1600x1000)
-mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 70%
-mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 55%
-mcp__MCP_DOCKER__browser_press_key({ key: "-" })  // 40% (for architecture diagrams)
+// 5. For DETAIL inspection, zoom IN with + key (NOT -)
+// ⚠️ CRITICAL: + = zoom IN (more detail), - = zoom OUT (less detail)
+// Target: 160% for text clarity inspection
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 85% → 100%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 100% → 115%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 115% → 130%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 130% → 145%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 145% → 160%
+
+// ⛔ NEVER use "-" for detail inspection - that zooms OUT and defeats the purpose
 ```
 
-### 1c. Zoom Levels Reference
+### 1c. Zoom Levels (Two-Phase)
 
-| Canvas Size | Recommended Zoom | Key Presses After Reset |
-|-------------|------------------|------------------------|
-| 1400×800 (standard) | 55% | `0`, `-`, `-` |
-| 1600×800 (wide) | 55% | `0`, `-`, `-` |
-| 1600×1000 (architecture) | 40% | `0`, `-`, `-`, `-` |
+| Canvas Size | Overview Zoom | Detail Zoom | Overview Keys | Detail Keys |
+|-------------|---------------|-------------|---------------|-------------|
+| 1400×800 (standard) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
+| 1600×800 (wide) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
+| 1600×1000 (architecture) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
+| **⚠️ CRITICAL** | `+` = zoom IN (bigger) | `-` = zoom OUT (smaller) | **Never use `-` for detail** | |
+
+**Two-phase approach:**
+1. **Overview (85-100%)**: Structural check - layout, overlaps, theme
+2. **Detail (160%)**: Per-quadrant inspection - text readability, truncation
 
 ### 1d. Take Screenshots
 ```javascript
@@ -283,13 +310,86 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowLeft" })   // Previous
 mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].png" })
 ```
 
+### 1g. Verify Zoom Direction (MANDATORY)
+
+**After pressing zoom keys, verify you're at the RIGHT zoom level:**
+- **Detail inspection = 160%** (text is LARGE and easy to read)
+- If text appears SMALLER than at 85%, you pressed the WRONG key
+
+| Symptom | Problem | Fix |
+|---------|---------|-----|
+| Text getting smaller | Used `-` (zoom out) | Press `0` to reset, then use `+` |
+| Can't see full canvas | At 160% detail zoom | Press `0` to return to 85% overview |
+| Text blurry/unreadable | At <100% | Press `+` repeatedly until clear |
+
+**Rule: If you can't read every character clearly at detail zoom, you're zooming the WRONG direction.**
+
 **DO NOT skip viewer setup. DO NOT discover zoom/focus mid-review.**
 
 ---
 
 ## Step 2: Quadrant Deep Inspection (MANDATORY)
 
-Zoom into each quadrant to catch detail issues missed in overview (truncation, overlap, small text).
+1. **Take overview screenshot at 85-100%** (save this)
+2. **Zoom IN to 160%** for detail inspection (ephemeral - analysis only)
+
+```javascript
+// Zoom to 160% for detail inspection
+// Step 1: Reset to baseline
+mcp__MCP_DOCKER__browser_press_key({ key: "0" })  // Reset to 85%
+
+// Step 2: Press + (PLUS) five times to reach 160%
+// ⛔ DO NOT use - (MINUS) - that zooms OUT and defeats the purpose
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 85% → 100%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 100% → 115%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 115% → 130%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 130% → 145%
+mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 145% → 160%
+// Expected result: text is LARGE and easy to read
+```
+
+3. **Pan to each quadrant** using mouse drag gestures:
+
+```javascript
+// Step 3: PAN to each quadrant at 160% zoom
+// At 160%, only ~25% of canvas visible. MUST pan to see all 4 quadrants.
+
+// Pan to TOP-LEFT (drag right+down to expose top-left corner)
+mcp__MCP_DOCKER__browser_run_code({
+  code: `await page.mouse.move(400, 300);
+         await page.mouse.down();
+         await page.mouse.move(800, 600, { steps: 10 });
+         await page.mouse.up();`
+})
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-TL.png" })
+
+// Pan to TOP-RIGHT (drag left+down to expose top-right corner)
+mcp__MCP_DOCKER__browser_run_code({
+  code: `await page.mouse.move(400, 300);
+         await page.mouse.down();
+         await page.mouse.move(0, 600, { steps: 10 });
+         await page.mouse.up();`
+})
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-TR.png" })
+
+// Pan to BOTTOM-LEFT (drag right+up to expose bottom-left corner)
+mcp__MCP_DOCKER__browser_run_code({
+  code: `await page.mouse.move(400, 300);
+         await page.mouse.down();
+         await page.mouse.move(800, 0, { steps: 10 });
+         await page.mouse.up();`
+})
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BL.png" })
+
+// Pan to BOTTOM-RIGHT (drag left+up to expose bottom-right corner)
+mcp__MCP_DOCKER__browser_run_code({
+  code: `await page.mouse.move(400, 300);
+         await page.mouse.down();
+         await page.mouse.move(0, 0, { steps: 10 });
+         await page.mouse.up();`
+})
+mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BR.png" })
+```
 
 | Quadrant | Focus Areas |
 |----------|-------------|
@@ -298,7 +398,9 @@ Zoom into each quadrant to catch detail issues missed in overview (truncation, o
 | Top-right | MOBILE label, phone frame top, status bar |
 | Bottom-right | Mobile footer, touch targets, right-margin annotations |
 
-**Checkpoint**: Fullscreen PNG saved, all 4 quadrants inspected, obvious issues noted.
+**At 160%, for each quadrant**: Pan, verify text character-by-character, note issues.
+
+**Checkpoint**: Overview PNG saved, all 4 quadrants analyzed at 160%, issues noted.
 
 ---
 
