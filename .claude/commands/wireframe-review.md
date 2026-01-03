@@ -281,14 +281,14 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 
 | Canvas Size | Overview Zoom | Detail Zoom | Overview Keys | Detail Keys |
 |-------------|---------------|-------------|---------------|-------------|
-| 1400×800 (standard) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
-| 1600×800 (wide) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
-| 1600×1000 (architecture) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
+| 1400×800 (standard) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
+| 1600×800 (wide) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
+| 1600×1000 (architecture) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
 1. **Overview (130%)**: Structural check - layout, overlaps, theme (0, then ArrowUp x3)
-2. **Detail (280%)**: Per-quadrant inspection - text readability, truncation (ArrowUp x9 more)
+2. **Detail (160%)**: Per-quadrant inspection - text readability, truncation (ArrowUp x2 more)
 
 ### 1d. Take Screenshots (Relative Paths)
 
@@ -351,13 +351,13 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 
 **After pressing zoom keys, verify you're at the RIGHT zoom level:**
 - **Overview = 130%** (0, then ArrowUp x3)
-- **Detail inspection = 280%** (ArrowUp x9 more, text is LARGE and easy to read)
+- **Detail inspection = 160%** (ArrowUp x2 more, 4 quadrants cover full canvas)
 - If text appears SMALLER than at 130%, you pressed the WRONG key
 
 | Symptom | Problem | Fix |
 |---------|---------|-----|
 | Text getting smaller | Used `ArrowDown` (zoom out) | Press `0` to reset, then use `ArrowUp` |
-| Can't see full canvas | At 280% detail zoom | Press `0` to return to 85%, then ArrowUp x3 for 130% |
+| Can't see full canvas | At 160% detail zoom | Press `0` to return to 85%, then ArrowUp x3 for 130% |
 | Text blurry/unreadable | At <130% | Press `ArrowUp` repeatedly until clear |
 
 **Rule: If you can't read every character clearly at detail zoom, you're zooming the WRONG direction.**
@@ -370,7 +370,7 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 
 1. **Reset and zoom to 130%** for overview (press '0' then ArrowUp x3)
 2. **Take overview screenshot** at 130%
-3. **Zoom to 280%** for quadrant detail (press ArrowUp x9 more)
+3. **Zoom to 160%** for quadrant detail (press ArrowUp x2 more)
 
 ```javascript
 // OVERVIEW SCREENSHOT
@@ -388,67 +388,61 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 })
 
 // QUADRANT DETAIL INSPECTION
-// Step 3: Zoom 9 more ArrowUp to reach ~280%
+// Step 3: Zoom 2 more ArrowUp to reach ~160%
 mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
-mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~280% (quadrant detail)
-// Expected result: text is LARGE and easy to read, only ~15% of canvas visible
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detail)
+// At 160%, ~1063×638 canvas pixels visible - 4 quadrants cover full 1600×1000
 ```
 
 3. **Pan to each quadrant** using direct JavaScript (CLOCKWISE pattern: TL → TR → BR → BL):
 
 ```javascript
-// Step 3: PAN to each quadrant at 280% zoom (CLOCKWISE pattern)
-// At 280%, only ~430×285 canvas pixels visible. MUST pan to see all 4 quadrants.
+// Step 3: PAN to each quadrant at 160% zoom (CLOCKWISE pattern)
+// At 160%, ~1063×638 canvas pixels visible. 4 quadrants cover full canvas.
 // Use DIRECT JAVASCRIPT to set absolute pan coordinates (bypasses viewport drag limits).
+//
+// Pan formula: panX = (canvasX - canvasWidth/2) * zoom
+//              panY = (canvasY - canvasHeight/2) * zoom
+// Where canvasX,canvasY = the canvas coordinate you want at viewport center
 
 // Quadrant Coverage (1600×1000 canvas):
 // ┌─────────┬─────────┐
 // │   TL    │   TR    │
-// │ 0-800   │ 800-1600│
-// │ 0-500   │ 0-500   │
+// │ center  │ center  │
+// │(400,250)│(1200,250)|
 // ├─────────┼─────────┤
 // │   BL    │   BR    │
-// │ 0-800   │ 800-1600│
-// │ 500-1000│ 500-1000│
+// │ center  │ center  │
+// │(400,750)│(1200,750)|
 // └─────────┴─────────┘
 
-// Pan values: positive panX = image moves right (shows LEFT of canvas)
-//             positive panY = image moves down (shows TOP of canvas)
-
-// TL - pan to show top-left corner
+// TL - center on canvas (400, 250) → panX=-480, panY=-400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 1600; panY = 1000; updateTransform(); }`
+  function: `() => { panX = -480; panY = -400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 
-// TR - pan to show top-right corner
+// TR - center on canvas (1200, 250) → panX=800, panY=-400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -1600; panY = 1000; updateTransform(); }`
+  function: `() => { panX = 800; panY = -400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TR.png"
 })
 
-// BR - pan to show bottom-right corner
+// BR - center on canvas (1200, 750) → panX=800, panY=400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -1600; panY = -1000; updateTransform(); }`
+  function: `() => { panX = 800; panY = 400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BR.png"
 })
 
-// BL - pan to show bottom-left corner
+// BL - center on canvas (400, 750) → panX=-480, panY=400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 1600; panY = -1000; updateTransform(); }`
+  function: `() => { panX = -480; panY = 400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BL.png"
@@ -504,9 +498,9 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 - [ ] Touch targets ≥44px?
 - [ ] Issue found? → Note it with coordinates before moving on
 
-**At 280%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
+**At 160%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
 
-**Checkpoint**: Overview PNG saved at 130%, all 4 quadrants analyzed at 280%, issues noted.
+**Checkpoint**: Overview PNG saved at 130%, all 4 quadrants analyzed at 160%, issues noted.
 
 ---
 
