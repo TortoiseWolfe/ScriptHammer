@@ -575,6 +575,103 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 ---
 
+## ⛔ FR/SC/US TAG STYLING (MANDATORY - CONSISTENCY REQUIRED)
+
+**ALL requirement tags MUST use identical styling with type-specific colors.**
+
+### Tag Color Palette
+
+| Tag Type | Color | Hex | Use |
+|----------|-------|-----|-----|
+| **FR** (Functional) | Violet | `#8b5cf6` | Functional requirements |
+| **SC** (Success Criteria) | Cyan | `#06b6d4` | Performance/metrics |
+| **US** (User Story) | Amber | `#f59e0b` | User stories (inline only) |
+
+### Standard Tag Styling (all three types)
+
+| Property | Value |
+|----------|-------|
+| Font | `monospace` |
+| Size | `12px` |
+| Weight | `bold` (700) |
+| Border | `stroke-width="2"` (if pill) |
+
+### CSS Classes (add to `<style>` block)
+
+```css
+/* Base tag styling - shared by all */
+.tag-base {
+  font-family: monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Type-specific colors */
+.fr-tag { fill: #8b5cf6; }  /* Violet - Functional Requirements */
+.sc-tag { fill: #06b6d4; }  /* Cyan - Success Criteria */
+.us-tag { fill: #f59e0b; }  /* Amber - User Stories */
+```
+
+### Template: Text-Only Tags
+
+```xml
+<text class="tag-base fr-tag" x="100" y="200">FR-001</text>
+<text class="tag-base sc-tag" x="100" y="220">SC-001</text>
+<text class="tag-base us-tag" x="100" y="240">US-001</text>
+```
+
+### Template: Pill Tags (with matching borders)
+
+```xml
+<!-- FR pill (violet) -->
+<g transform="translate(100, 200)">
+  <rect width="70" height="24" rx="12" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="35" y="16" text-anchor="middle" class="tag-base fr-tag">FR-001</text>
+</g>
+
+<!-- SC pill (cyan) -->
+<g transform="translate(100, 240)">
+  <rect width="70" height="24" rx="12" fill="none" stroke="#06b6d4" stroke-width="2"/>
+  <text x="35" y="16" text-anchor="middle" class="tag-base sc-tag">SC-001</text>
+</g>
+
+<!-- US pill (amber) - rarely used, US is usually inline -->
+<g transform="translate(100, 280)">
+  <rect width="70" height="24" rx="12" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <text x="35" y="16" text-anchor="middle" class="tag-base us-tag">US-001</text>
+</g>
+```
+
+### Pill Sizing Reference
+
+| Content | Width | Height |
+|---------|-------|--------|
+| `FR-001` / `SC-001` / `US-001` | 70px | 24px |
+| `FR-001-005` / `SC-001-005` | 100px | 24px |
+
+**Formula**: `width = (chars × 8) + 20px padding`
+
+### ⛔ Consistency Rules
+
+1. **Same font/size/weight** for all three tag types
+2. **Color distinguishes type** - violet=FR, cyan=SC, amber=US
+3. **Border matches text** - pill stroke color = text fill color
+4. **No mixing styles** - if using pills, ALL tags use pills
+
+```xml
+<!-- ❌ WRONG: Inconsistent styling -->
+<text fill="#8b5cf6" font-size="12px">FR-001</text>
+<text fill="#8b5cf6" font-size="10px">SC-001</text>  <!-- Wrong size! -->
+<text fill="#22c55e">US-001</text>  <!-- Wrong color! -->
+
+<!-- ✅ CORRECT: Consistent styling, type-specific colors -->
+<text class="tag-base fr-tag">FR-001</text>  <!-- Violet -->
+<text class="tag-base sc-tag">SC-001</text>  <!-- Cyan -->
+<text class="tag-base us-tag">US-001</text>  <!-- Amber -->
+```
+
+---
+
 ## ⛔ CONTAINER BOUNDARY VALIDATION (MANDATORY GATE)
 
 **You CANNOT write the SVG until you complete this section.**
