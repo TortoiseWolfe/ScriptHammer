@@ -283,7 +283,7 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 |-------------|---------------|-------------|---------------|-------------|
 | 1400×800 (standard) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
 | 1600×800 (wide) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
-| 1600×1000 (architecture) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
+| 1600×1000 (architecture) | 100% | 160% | `0` | `0`, `ArrowUp` x5 |
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
@@ -401,9 +401,9 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detai
 // At 160%, ~1063×638 canvas pixels visible. 4 quadrants cover full canvas.
 // Use DIRECT JAVASCRIPT to set absolute pan coordinates (bypasses viewport drag limits).
 //
-// Pan formula: panX = (canvasX - canvasWidth/2) * zoom
-//              panY = (canvasY - canvasHeight/2) * zoom
-// Where canvasX,canvasY = the canvas coordinate you want at viewport center
+// Pan formula (CORRECTED): panX = (canvasWidth/2 - canvasX) * zoom
+//                          panY = (canvasHeight/2 - canvasY) * zoom
+// Positive pan → reveals that side of canvas (e.g., +panX reveals LEFT)
 
 // Quadrant Coverage (1600×1000 canvas):
 // ┌─────────┬─────────┐
@@ -416,33 +416,33 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detai
 // │(400,750)│(1200,750)|
 // └─────────┴─────────┘
 
-// TL - center on canvas (400, 250) → panX=-480, panY=-400
+// TL - center on canvas (400, 250) → panX=+640, panY=+400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -480; panY = -400; updateTransform(); }`
+  function: `() => { panX = 640; panY = 400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 
-// TR - center on canvas (1200, 250) → panX=800, panY=-400
+// TR - center on canvas (1200, 250) → panX=-640, panY=+400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 800; panY = -400; updateTransform(); }`
+  function: `() => { panX = -640; panY = 400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TR.png"
 })
 
-// BR - center on canvas (1200, 750) → panX=800, panY=400
+// BR - center on canvas (1200, 750) → panX=-640, panY=-400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 800; panY = 400; updateTransform(); }`
+  function: `() => { panX = -640; panY = -400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BR.png"
 })
 
-// BL - center on canvas (400, 750) → panX=-480, panY=400
+// BL - center on canvas (400, 750) → panX=+640, panY=-400
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -480; panY = 400; updateTransform(); }`
+  function: `() => { panX = 640; panY = -400; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BL.png"
