@@ -266,6 +266,10 @@ mcp__MCP_DOCKER__browser_evaluate({
 // Press 'Escape' to exit focus mode when done
 mcp__MCP_DOCKER__browser_press_key({ key: "f" })
 
+// 3a. Enter BROWSER FULLSCREEN (F11) for large canvases
+// Gives more viewport pixels to fit 1600×1000 architecture diagrams
+mcp__MCP_DOCKER__browser_press_key({ key: "F11" })
+
 // 3b. Close legend if open (toggle off with 'l')
 // Legend may be open by default - close it for clean screenshots
 mcp__MCP_DOCKER__browser_press_key({ key: "l" })
@@ -283,7 +287,7 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 |-------------|---------------|-------------|---------------|-------------|
 | 1400×800 (standard) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
 | 1600×800 (wide) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
-| 1600×1000 (architecture) | 100% | 160% | `0` | `0`, `ArrowUp` x5 |
+| 1600×1000 (architecture) | 115% | 160% | `0`, `ArrowUp` x2, `F11` | `0`, `ArrowUp` x5 |
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
@@ -416,33 +420,33 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detai
 // │(400,750)│(1200,750)|
 // └─────────┴─────────┘
 
-// TL - center on canvas (400, 250) → panX=+640, panY=+400
+// TL - edge-aligned tiling, center (600, 338) → panX=+320, panY=+260
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 640; panY = 400; updateTransform(); }`
+  function: `() => { panX = 320; panY = 260; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 
-// TR - center on canvas (1200, 250) → panX=-640, panY=+400
+// TR - edge-aligned tiling, center (1000, 338) → panX=-320, panY=+260
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -640; panY = 400; updateTransform(); }`
+  function: `() => { panX = -320; panY = 260; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TR.png"
 })
 
-// BR - center on canvas (1200, 750) → panX=-640, panY=-400
+// BR - edge-aligned tiling, center (1000, 662) → panX=-320, panY=-260
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -640; panY = -400; updateTransform(); }`
+  function: `() => { panX = -320; panY = -260; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BR.png"
 })
 
-// BL - center on canvas (400, 750) → panX=+640, panY=-400
+// BL - edge-aligned tiling, center (600, 662) → panX=+320, panY=-260
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 640; panY = -400; updateTransform(); }`
+  function: `() => { panX = 320; panY = -260; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BL.png"
