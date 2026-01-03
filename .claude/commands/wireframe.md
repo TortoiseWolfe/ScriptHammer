@@ -1033,6 +1033,35 @@ When using different border colors for badges/pills:
 </g>
 ```
 
+### RLS/Access Control Legend Palette (MANDATORY for RLS diagrams)
+
+**Use this consistent palette for ALL RLS, security, and access control wireframes:**
+
+| Badge | Color | Hex | Text Color | Use |
+|-------|-------|-----|------------|-----|
+| Allow | Green | `#22c55e` | `#052e16` | Full access granted |
+| Deny | Red | `#ef4444` | `#450a0a` | Access blocked |
+| Conditional | Amber | `#f59e0b` | `#451a03` | Policy-dependent access |
+| Auth Role | Violet | `#8b5cf6` | `#1e1b4b` | Authenticated user access |
+| Service Role | Fuchsia | `#d946ef` | `#4a044e` | Service/admin bypass |
+
+```xml
+<!-- RLS Legend Template -->
+<g id="rls-legend" transform="translate(40, 760)">
+  <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
+  <rect x="60" y="-10" width="12" height="12" rx="2" fill="#22c55e"/>
+  <text x="80" y="0" class="text-sm" fill="#94a3b8">Allow</text>
+  <rect x="140" y="-10" width="12" height="12" rx="2" fill="#ef4444"/>
+  <text x="160" y="0" class="text-sm" fill="#94a3b8">Deny</text>
+  <rect x="210" y="-10" width="12" height="12" rx="2" fill="#f59e0b"/>
+  <text x="230" y="0" class="text-sm" fill="#94a3b8">Conditional</text>
+  <rect x="320" y="-10" width="12" height="12" rx="2" fill="#8b5cf6"/>
+  <text x="340" y="0" class="text-sm" fill="#94a3b8">Auth Role</text>
+  <rect x="430" y="-10" width="12" height="12" rx="2" fill="#d946ef"/>
+  <text x="450" y="0" class="text-sm" fill="#94a3b8">Service Role</text>
+</g>
+```
+
 ### Abbreviation Rule (MANDATORY)
 
 **Define ALL abbreviations on first use.** Never assume readers know tech jargon.
