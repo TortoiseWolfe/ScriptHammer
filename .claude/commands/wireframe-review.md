@@ -283,7 +283,7 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 |-------------|---------------|-------------|---------------|-------------|
 | 1400×800 (standard) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
 | 1600×800 (wide) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
-| 1600×1000 (architecture) | 100% | 160% | `0`, `ArrowUp` x1 | `0`, `ArrowUp` x5 |
+| 1600×1000 (architecture) | 100% | 200% | `0`, `ArrowUp` x1 | `0`, `ArrowUp` x8 |
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
@@ -416,33 +416,33 @@ mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~160% (quadrant detai
 // │(400,750)│(1200,750)|
 // └─────────┴─────────┘
 
-// TL - edge-aligned tiling, center (600, 338) → panX=+320, panY=+260
+// TL - at 200% zoom, center (480, 270) → panX=+640, panY=+460
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 320; panY = 260; updateTransform(); }`
+  function: `() => { panX = 640; panY = 460; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 
-// TR - edge-aligned tiling, center (1000, 338) → panX=-320, panY=+260
+// TR - at 200% zoom, center (1120, 270) → panX=-640, panY=+460
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -320; panY = 260; updateTransform(); }`
+  function: `() => { panX = -640; panY = 460; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-TR.png"
 })
 
-// BR - edge-aligned tiling, center (1000, 662) → panX=-320, panY=-260
+// BR - at 200% zoom, center (1120, 730) → panX=-640, panY=-460
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = -320; panY = -260; updateTransform(); }`
+  function: `() => { panX = -640; panY = -460; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BR.png"
 })
 
-// BL - edge-aligned tiling, center (600, 662) → panX=+320, panY=-260
+// BL - at 200% zoom, center (480, 730) → panX=+640, panY=-460
 mcp__MCP_DOCKER__browser_evaluate({
-  function: `() => { panX = 320; panY = -260; updateTransform(); }`
+  function: `() => { panX = 640; panY = -460; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
   filename: "[NNN]-[PP]-quadrant-BL.png"
