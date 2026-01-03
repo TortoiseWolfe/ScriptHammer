@@ -47,15 +47,19 @@
       overflow: hidden;
     }
 
-    /* Sidebar */
+    /* Sidebar - always fixed position */
     nav {
+      position: fixed;
+      left: 0;
+      top: 0;
       width: 220px;
+      height: 100vh;
       background: #111827;
       border-right: 1px solid #374151;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      flex-shrink: 0;
+      z-index: 50;
       transition: transform 0.3s ease-out;
     }
 
@@ -235,7 +239,9 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
-      transition: width 0.3s ease-out;
+      margin-left: 220px;
+      margin-bottom: 60px;
+      transition: margin-left 0.3s ease-out, margin-bottom 0.3s ease-out;
     }
 
     #viewer-container {
@@ -256,17 +262,20 @@
       /* Transform set via JS: translate(-50%, -50%) translate(panX, panY) scale(zoom) */
     }
 
-    /* Bottom navigation */
+    /* Bottom navigation - fixed position */
     footer {
+      position: fixed;
+      bottom: 0;
+      left: 220px;
+      right: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 16px 24px;
       background: #111827;
       border-top: 1px solid #374151;
-      position: relative;
       z-index: 200;
-      transition: transform 0.3s ease-out;
+      transition: transform 0.3s ease-out, left 0.3s ease-out;
     }
 
     footer button {
@@ -368,23 +377,17 @@
 
     /* Focus mode - slide UI chrome out */
     body.focus-mode nav {
-      position: fixed;
-      left: 0;
-      top: 0;
-      height: 100vh;
       transform: translateX(-100%);
     }
 
-    body.focus-mode footer {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      transform: translateY(100%);
+    body.focus-mode main {
+      margin-left: 0;
+      margin-bottom: 0;
     }
 
-    body.focus-mode main {
-      width: 100vw;
+    body.focus-mode footer {
+      left: 0;
+      transform: translateY(100%);
     }
 
     /* Focus mode indicator */
@@ -429,7 +432,7 @@
       fill: currentColor;
     }
 
-    /* Legend drawer (K toggle) */
+    /* Legend drawer (L toggle) */
     .legend-drawer {
       position: fixed;
       right: -340px;
@@ -1432,7 +1435,7 @@
           <span id="zoom-display" class="zoom-display" title="Click to reset">100%</span>
           <button id="zoom-in" aria-label="Zoom in">+</button>
         </div>
-        <span class="shortcut-hint">F: focus | K: legend</span>
+        <span class="shortcut-hint">F: focus | L: legend</span>
       </div>
       <div id="current-info">
         <div class="title">User Dashboard</div>
@@ -1450,7 +1453,7 @@
 
   <div class="focus-hint">Press F or Escape to exit focus mode</div>
 
-  <!-- Legend drawer (toggle with K) -->
+  <!-- Legend drawer (toggle with L) -->
   <aside class="legend-drawer" id="legend-drawer">
     <div class="legend-header">
       <h2>Legend Reference</h2>
@@ -1460,7 +1463,7 @@
     <div class="legend-section">
       <h3>Keyboard Shortcuts</h3>
       <div class="legend-item">
-        <span class="legend-key">K</span>
+        <span class="legend-key">L</span>
         <span class="legend-desc">Toggle this legend</span>
       </div>
       <div class="legend-item">
@@ -1871,8 +1874,8 @@
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
-      // Legend drawer: K to toggle
-      if (e.key === 'k' || e.key === 'K') {
+      // Legend drawer: L to toggle
+      if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
         toggleLegendDrawer();
         return;
