@@ -28,18 +28,18 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 
 **⛔ If you cannot see the ENTIRE wireframe in the screenshot → adjust zoom before continuing.**
 
-### Check 3: Detail Inspection at 160% (BLOCKING)
+### Check 3: Detail Inspection at 280% (BLOCKING)
 
-**Zoom to 160% and pan through each quadrant. Look for issues invisible at overview zoom.**
+**Zoom to 280% and pan through each quadrant. Look for issues invisible at overview zoom.**
 
-At 160%, issues become visible that you'd miss at 85-100%:
+At 280%, issues become visible that you'd miss at 130%:
 - Text truncation, clipping, overlap
 - Alignment problems, spacing inconsistencies
 - Small font readability issues
 - Arrow paths crossing content
 - Container boundary violations
 
-**⛔ If you find issues at 160% that require layout changes → 🔴 REGENERATE.**
+**⛔ If you find issues at 280% that require layout changes → 🔴 REGENERATE.**
 
 ### Check 4: Arrow Path Trace (BLOCKING for Architecture Diagrams)
 
@@ -78,7 +78,7 @@ At 160%, issues become visible that you'd miss at 85-100%:
 ```
 FIRST CHECKS COMPLETE:
 - Theme: [Dark/Light] - [Correct/WRONG for feature type]
-- Viewer: Overview screenshot at 85-100%, detail inspection at 160%
+- Viewer: Overview screenshot at 130%, detail inspection at 280%
 - Detail inspection: [All clear / Issues at: ...]
 - Arrow paths: [Clear / Through content at: ...]
 - Space utilization: [Good / Wasted space at: ...]
@@ -262,52 +262,44 @@ mcp__MCP_DOCKER__browser_evaluate({
 // Press 'Escape' to exit focus mode when done
 mcp__MCP_DOCKER__browser_press_key({ key: "f" })
 
-// 4. Reset zoom to 85% baseline (good for overview)
+// 3b. Close legend if open (toggle off with 'l')
+// Legend may be open by default - close it for clean screenshots
+mcp__MCP_DOCKER__browser_press_key({ key: "l" })
+
+// 4. Reset zoom to 85% baseline
 mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 
-// 5. For DETAIL inspection, zoom IN with + key (NOT -)
-// ⚠️ CRITICAL: + = zoom IN (more detail), - = zoom OUT (less detail)
-// Target: 160% for text clarity inspection
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 85% → 100%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 100% → 115%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 115% → 130%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 130% → 145%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 145% → 160%
-
-// ⛔ NEVER use "-" for detail inspection - that zooms OUT and defeats the purpose
+// Setup complete. Proceed to Step 2 for zoom/screenshot workflow.
+// ⚠️ ArrowUp = zoom IN, ArrowDown = zoom OUT
 ```
 
 ### 1c. Zoom Levels (Two-Phase)
 
 | Canvas Size | Overview Zoom | Detail Zoom | Overview Keys | Detail Keys |
 |-------------|---------------|-------------|---------------|-------------|
-| 1400×800 (standard) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
-| 1600×800 (wide) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
-| 1600×1000 (architecture) | 85-100% | 160% | `0` or `0`, `+` | `0`, `+`, `+`, `+`, `+`, `+` |
-| **⚠️ CRITICAL** | `+` = zoom IN (bigger) | `-` = zoom OUT (smaller) | **Never use `-` for detail** | |
+| 1400×800 (standard) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
+| 1600×800 (wide) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
+| 1600×1000 (architecture) | 130% | 280% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x12 |
+| **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
-1. **Overview (85-100%)**: Structural check - layout, overlaps, theme
-2. **Detail (160%)**: Per-quadrant inspection - text readability, truncation
+1. **Overview (130%)**: Structural check - layout, overlaps, theme (0, then ArrowUp x3)
+2. **Detail (280%)**: Per-quadrant inspection - text readability, truncation (ArrowUp x9 more)
 
-### 1d. Take Screenshots (With Persistent Storage)
+### 1d. Take Screenshots (Relative Paths)
 
-**Screenshots save to `docs/design/wireframes/png/[feature]/` automatically.**
+**Screenshots save to `/tmp/playwright-output/` inside the container. Use relative filenames.**
 
 ```javascript
-// REQUIRED: Create feature directory first (do once per feature)
-// Run this bash command before taking screenshots:
-// mkdir -p docs/design/wireframes/png/[FEATURE]/
-
 // Screenshot naming: [NNN]-[PP]-[description].png
 // Example: 002-01-consent-modal-overview.png
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-[description].png"
+  filename: "[NNN]-[PP]-[description].png"
 })
 
-// Quadrant screenshots (at 160% zoom)
+// Quadrant screenshots (at 280% zoom)
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TL.png"
+  filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 ```
 
@@ -320,11 +312,29 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 | Quadrant | TL/TR/BL/BR | quadrant-TL |
 
 **Full example for 002-cookie-consent, page 01:**
-- `002-01-consent-modal-overview.png` (85% overview)
-- `002-01-quadrant-TL.png` (160% top-left)
-- `002-01-quadrant-TR.png` (160% top-right)
-- `002-01-quadrant-BL.png` (160% bottom-left)
-- `002-01-quadrant-BR.png` (160% bottom-right)
+- `002-01-consent-modal-overview.png` (130% overview)
+- `002-01-quadrant-TL.png` (280% top-left)
+- `002-01-quadrant-TR.png` (280% top-right)
+- `002-01-quadrant-BL.png` (280% bottom-left)
+- `002-01-quadrant-BR.png` (280% bottom-right)
+
+### 1e. Copy Screenshots to Host (REQUIRED)
+
+**After completing all screenshots for a feature, copy them from container to host:**
+
+```bash
+# Ensure target directory exists
+mkdir -p docs/design/wireframes/png/[FEATURE]/
+
+# Copy all PNGs from container to host
+docker cp $(docker ps -q -f ancestor=mcp/playwright):/tmp/playwright-output/. \
+  docs/design/wireframes/png/[FEATURE]/
+
+# Verify copy succeeded
+ls -la docs/design/wireframes/png/[FEATURE]/*.png
+```
+
+**Run this ONCE per feature, after all quadrant screenshots are complete.**
 
 ### 1f. Navigate Between Wireframes
 ```javascript
@@ -336,14 +346,15 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 ### 1g. Verify Zoom Direction (MANDATORY)
 
 **After pressing zoom keys, verify you're at the RIGHT zoom level:**
-- **Detail inspection = 160%** (text is LARGE and easy to read)
-- If text appears SMALLER than at 85%, you pressed the WRONG key
+- **Overview = 130%** (0, then ArrowUp x3)
+- **Detail inspection = 280%** (ArrowUp x9 more, text is LARGE and easy to read)
+- If text appears SMALLER than at 130%, you pressed the WRONG key
 
 | Symptom | Problem | Fix |
 |---------|---------|-----|
-| Text getting smaller | Used `-` (zoom out) | Press `0` to reset, then use `+` |
-| Can't see full canvas | At 160% detail zoom | Press `0` to return to 85% overview |
-| Text blurry/unreadable | At <100% | Press `+` repeatedly until clear |
+| Text getting smaller | Used `ArrowDown` (zoom out) | Press `0` to reset, then use `ArrowUp` |
+| Can't see full canvas | At 280% detail zoom | Press `0` to return to 85%, then ArrowUp x3 for 130% |
+| Text blurry/unreadable | At <130% | Press `ArrowUp` repeatedly until clear |
 
 **Rule: If you can't read every character clearly at detail zoom, you're zooming the WRONG direction.**
 
@@ -353,72 +364,90 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[PAGE]-[NAME].pn
 
 ## Step 2: Quadrant Deep Inspection (MANDATORY)
 
-1. **Take overview screenshot at 85-100%** (save this)
-2. **Zoom IN to 160%** for detail inspection (ephemeral - analysis only)
+1. **Reset and zoom to 130%** for overview (press '0' then ArrowUp x3)
+2. **Take overview screenshot** at 130%
+3. **Zoom to 280%** for quadrant detail (press ArrowUp x9 more)
 
 ```javascript
-// Zoom to 160% for detail inspection
-// Step 1: Reset to baseline
-mcp__MCP_DOCKER__browser_press_key({ key: "0" })  // Reset to 85%
+// OVERVIEW SCREENSHOT
+// Step 1: Reset to center and fullscreen (85%)
+mcp__MCP_DOCKER__browser_press_key({ key: "0" })  // Reset: center + 85%
 
-// Step 2: Press + (PLUS) five times to reach 160%
-// ⛔ DO NOT use - (MINUS) - that zooms OUT and defeats the purpose
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 85% → 100%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 100% → 115%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 115% → 130%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 130% → 145%
-mcp__MCP_DOCKER__browser_press_key({ key: "+" })  // 145% → 160%
-// Expected result: text is LARGE and easy to read
+// Step 2: Zoom to 130% with ArrowUp x3 (good for overview)
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~130% (overview zoom)
+
+// Take overview screenshot at 130%
+mcp__MCP_DOCKER__browser_take_screenshot({
+  filename: "[NNN]-[PP]-overview.png"
+})
+
+// QUADRANT DETAIL INSPECTION
+// Step 3: Zoom 9 more ArrowUp to reach ~280%
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // Zoom in
+mcp__MCP_DOCKER__browser_press_key({ key: "ArrowUp" })  // ~280% (quadrant detail)
+// Expected result: text is LARGE and easy to read, only ~15% of canvas visible
 ```
 
-3. **Pan to each quadrant** using mouse drag gestures:
+3. **Pan to each quadrant** using direct JavaScript (CLOCKWISE pattern: TL → TR → BR → BL):
 
 ```javascript
-// Step 3: PAN to each quadrant at 160% zoom
-// At 160%, only ~25% of canvas visible. MUST pan to see all 4 quadrants.
+// Step 3: PAN to each quadrant at 280% zoom (CLOCKWISE pattern)
+// At 280%, only ~430×285 canvas pixels visible. MUST pan to see all 4 quadrants.
+// Use DIRECT JAVASCRIPT to set absolute pan coordinates (bypasses viewport drag limits).
 
-// Pan to TOP-LEFT (drag right+down to expose top-left corner)
-mcp__MCP_DOCKER__browser_run_code({
-  code: `await page.mouse.move(400, 300);
-         await page.mouse.down();
-         await page.mouse.move(800, 600, { steps: 10 });
-         await page.mouse.up();`
+// Quadrant Coverage (1600×1000 canvas):
+// ┌─────────┬─────────┐
+// │   TL    │   TR    │
+// │ 0-800   │ 800-1600│
+// │ 0-500   │ 0-500   │
+// ├─────────┼─────────┤
+// │   BL    │   BR    │
+// │ 0-800   │ 800-1600│
+// │ 500-1000│ 500-1000│
+// └─────────┴─────────┘
+
+// Pan values: positive panX = image moves right (shows LEFT of canvas)
+//             positive panY = image moves down (shows TOP of canvas)
+
+// TL - pan to show top-left corner
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => { panX = 1600; panY = 1000; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TL.png"
+  filename: "[NNN]-[PP]-quadrant-TL.png"
 })
 
-// Pan to TOP-RIGHT (drag left+down to expose top-right corner)
-mcp__MCP_DOCKER__browser_run_code({
-  code: `await page.mouse.move(400, 300);
-         await page.mouse.down();
-         await page.mouse.move(0, 600, { steps: 10 });
-         await page.mouse.up();`
+// TR - pan to show top-right corner
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => { panX = -1600; panY = 1000; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-TR.png"
+  filename: "[NNN]-[PP]-quadrant-TR.png"
 })
 
-// Pan to BOTTOM-LEFT (drag right+up to expose bottom-left corner)
-mcp__MCP_DOCKER__browser_run_code({
-  code: `await page.mouse.move(400, 300);
-         await page.mouse.down();
-         await page.mouse.move(800, 0, { steps: 10 });
-         await page.mouse.up();`
+// BR - pan to show bottom-right corner
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => { panX = -1600; panY = -1000; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-BL.png"
+  filename: "[NNN]-[PP]-quadrant-BR.png"
 })
 
-// Pan to BOTTOM-RIGHT (drag left+up to expose bottom-right corner)
-mcp__MCP_DOCKER__browser_run_code({
-  code: `await page.mouse.move(400, 300);
-         await page.mouse.down();
-         await page.mouse.move(0, 0, { steps: 10 });
-         await page.mouse.up();`
+// BL - pan to show bottom-left corner
+mcp__MCP_DOCKER__browser_evaluate({
+  function: `() => { panX = 1600; panY = -1000; updateTransform(); }`
 })
 mcp__MCP_DOCKER__browser_take_screenshot({
-  filename: "docs/design/wireframes/png/[FEATURE]/[NNN]-[PP]-quadrant-BR.png"
+  filename: "[NNN]-[PP]-quadrant-BL.png"
 })
 ```
 
@@ -471,9 +500,9 @@ mcp__MCP_DOCKER__browser_take_screenshot({
 - [ ] Touch targets ≥44px?
 - [ ] Issue found? → Note it with coordinates before moving on
 
-**At 160%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
+**At 280%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
 
-**Checkpoint**: Overview PNG saved, all 4 quadrants analyzed at 160%, issues noted.
+**Checkpoint**: Overview PNG saved at 130%, all 4 quadrants analyzed at 280%, issues noted.
 
 ---
 
