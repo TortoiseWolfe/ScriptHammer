@@ -391,14 +391,56 @@ mcp__MCP_DOCKER__browser_run_code({
 mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BR.png" })
 ```
 
-| Quadrant | Focus Areas |
-|----------|-------------|
-| Top-left | Header buttons, sidebar top, desktop nav overflow |
-| Bottom-left | Footer signature (x=60, y=780), REQUIREMENTS KEY panel |
-| Top-right | MOBILE label, phone frame top, status bar |
-| Bottom-right | Mobile footer, touch targets, right-margin annotations |
+### Quadrant Inspection Protocol
 
-**At 160%, for each quadrant**: Pan, verify text character-by-character, note issues.
+#### BASE CHECKS (run in EVERY quadrant)
+
+| Check | Question |
+|-------|----------|
+| **Text readable?** | Every heading, label, annotation - character by character |
+| **Container overflow?** | Content stays within panel bounds |
+| **Truncation?** | No labels ending in "..." or cut-off FR codes |
+| **Touch targets?** | Interactive elements ≥44px height |
+| **Spacing?** | No cramped elements, consistent margins |
+| **Contrast?** | Text readable against background |
+
+#### LOCATION-SPECIFIC CHECKS
+
+**TOP-LEFT (Desktop header/sidebar)**
+- [ ] Header buttons fit? (sum widths + gaps ≤ header width)
+- [ ] Nav items complete? (no truncation)
+- [ ] Sidebar panel edges respected?
+- [ ] Logo/brand visible?
+
+**BOTTOM-LEFT (Footer/REQUIREMENTS KEY)**
+- [ ] Footer at `x=60, y=780`?
+- [ ] Footer format: `NNN:PP | Title | ScriptHammer`?
+- [ ] REQUIREMENTS KEY panel present at y>=700?
+- [ ] Legend FR/SC codes match page annotations?
+- [ ] Content ends by y=750 (30px footer clearance)?
+
+**TOP-RIGHT (Mobile frame)**
+- [ ] MOBILE label at x=980?
+- [ ] Phone frame at `translate(980, 60)`?
+- [ ] Status bar not obscured by content?
+- [ ] Mobile header complete?
+
+**BOTTOM-RIGHT (Annotations/Mobile bottom)**
+- [ ] Right-margin annotations complete?
+- [ ] Annotation context clear? (not "SC-001: <3 min" but "SC-001: Signup <3 min")
+- [ ] Mobile bottom nav visible (if applicable)?
+- [ ] Touch targets ≥44px in mobile footer?
+
+### Quadrant Checkpoint (MANDATORY per quadrant)
+
+**Before moving to next quadrant, verify:**
+- [ ] All text readable character-by-character?
+- [ ] Container boundaries respected? (no overflow)
+- [ ] Labels complete? (no truncation)
+- [ ] Touch targets ≥44px?
+- [ ] Issue found? → Note it with coordinates before moving on
+
+**At 160%, for each quadrant**: Pan, run BASE checks, run LOCATION-SPECIFIC checks, note issues.
 
 **Checkpoint**: Overview PNG saved, all 4 quadrants analyzed at 160%, issues noted.
 
@@ -462,6 +504,13 @@ element_y + element_height ≤ container_y + container_height
 Text width: ~6px/char (mono 10px), ~7px/char (12px), ~8px/char (14px).
 **DO NOT EYEBALL. Do the math. Violation = 🔴 REGENERATE.**
 
+**Example calculation:**
+```
+Header: x=0, width=900 → ends at x=900
+Buttons at x=760(w=44), x=812(w=44), x=864(w=44)
+Rightmost: 864 + 44 = 908 > 900 ❌ OVERFLOW by 8px
+```
+
 ### 2c. ⛔ TRUNCATION SCAN (MANDATORY)
 
 For every dynamic text (FR codes, labels): `text_width < container_width - padding`
@@ -469,7 +518,14 @@ For every dynamic text (FR codes, labels): `text_width < container_width - paddi
 **FR/SC check**: If annotation shows "FR-024, FR-0" → TRUNCATED. Full text must be visible.
 **Visual check**: Can you read EVERY character of EVERY label? If not → 🔴 REGENERATE.
 
-Common locations: cramped corners, small panels, narrow containers, canvas edges.
+**Common truncation locations to check:**
+- Cramped corners (annotation labels squeezed against edges)
+- Small panels (FR codes in legend boxes)
+- Narrow containers (mobile button labels)
+- Canvas edges (right-margin annotations)
+- Long requirement codes (FR-024-025 combined references)
+
+**VERIFY by reading each label character by character. Don't skim.**
 
 ### 3. SPACING & DENSITY ISSUES
 
@@ -675,6 +731,20 @@ Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 
 **Required**: `x="60" y="780" text-anchor="start"` with `[NNN:PP] | [Title] | ScriptHammer`
 
+**Footer Checklist:**
+- [ ] `x="60"` (left-aligned, not centered)
+- [ ] `y="780"` (NOT y=790 or y=770)
+- [ ] `text-anchor="start"` (left alignment)
+- [ ] Format: `NNN:PP | Title | ScriptHammer`
+- [ ] NNN = feature number (e.g., 002)
+- [ ] PP = page number (e.g., 01, 02)
+
+**Verify with grep:**
+```bash
+grep -n "y=\"78[0-9]\"" *.svg  # Find footer y positions
+grep -n "text-anchor" *.svg   # Check alignment
+```
+
 | Failure | Classification |
 |---------|----------------|
 | Wrong position (x/y/anchor) | 🟢 PATCH |
@@ -687,11 +757,19 @@ Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 
 **Labels MUST be self-explanatory WITHOUT reading spec.md.**
 
-| Bad | Good |
-|-----|------|
+**FAILURE Examples (require 🔴 REGENERATE):**
+
+| ❌ BAD (context missing) | ✅ GOOD (self-explanatory) |
+|--------------------------|----------------------------|
 | `SC-001: <3 min` | `SC-001: Signup flow <3 min` |
-| `<2 sec` | `Login response <2 sec` |
+| `SC-002: <2 sec` | `SC-002: Login response <2 sec` |
+| `<2 sec` | `Page load <2 sec` |
 | `1K users` | `Handle 1K concurrent logins` |
+| `FR-024` | `FR-024: Password reset` |
+| `99.9%` | `Uptime 99.9%` |
+| Green badge with no legend | Green = Active (in legend) |
+
+**The test:** Could someone understand the annotation without reading spec.md? If NO → fail.
 
 | Issue | Classification |
 |-------|----------------|
