@@ -281,9 +281,7 @@ mcp__MCP_DOCKER__browser_press_key({ key: "0" })
 
 | Canvas Size | Overview Zoom | Detail Zoom | Overview Keys | Detail Keys |
 |-------------|---------------|-------------|---------------|-------------|
-| 1400×800 (standard) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
-| 1600×800 (wide) | 130% | 160% | `0`, `ArrowUp` x3 | `0`, `ArrowUp` x5 |
-| 1600×1000 (architecture) | 100% | 200% | `0`, `ArrowUp` x1 | `0`, `ArrowUp` x8 |
+| All sizes | 100% | 200% | `0`, `ArrowUp` x1 | `0`, `ArrowUp` x8 |
 | **⚠️ CRITICAL** | `ArrowUp` = zoom IN | `ArrowDown` = zoom OUT | **Never use ArrowDown for detail** | |
 
 **Two-phase approach:**
@@ -973,18 +971,6 @@ This feedback passes to `/wireframe` for guided regeneration.
 ### Regeneration Candidates
 - [feature]: X issues, structural problems
 ```
-
----
-
-## Arguments
-
-| Arg | Action |
-|-----|--------|
-| `[feature]` | Review all SVGs in feature (e.g., `004`) |
-| `[feature]:[page]` | Review single SVG (e.g., `004:01` or `004:touch`) |
-| `batch 1-7` | Review specific batch (see Batch Mapping) |
-| `all` | Review all features |
-| `re-review [feature]` | Re-review after fixes |
 
 ---
 
