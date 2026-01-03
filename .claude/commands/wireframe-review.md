@@ -65,7 +65,7 @@ At 160%, issues become visible that you'd miss at 85-100%:
 
 **For EVERY wireframe with FR/SC/NFR annotations:**
 
-1. Look for REQUIREMENTS KEY panel at y>=700
+1. Look for REQUIREMENTS KEY panel at y=690 (bottom-left, height grows upward)
 2. Verify EVERY annotation code has a description in the legend
 3. Verify NO extra codes in legend that aren't on the page
 
@@ -415,7 +415,7 @@ mcp__MCP_DOCKER__browser_take_screenshot({ filename: "[FEATURE]-[NN]-quadrant-BR
 **BOTTOM-LEFT (Footer/REQUIREMENTS KEY)**
 - [ ] Footer at `x=60, y=780`?
 - [ ] Footer format: `NNN:PP | Title | ScriptHammer`?
-- [ ] REQUIREMENTS KEY panel present at y>=700?
+- [ ] REQUIREMENTS KEY panel present at y=690?
 - [ ] Legend FR/SC codes match page annotations?
 - [ ] Content ends by y=750 (30px footer clearance)?
 
@@ -709,11 +709,11 @@ Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 
 ### 14b. REQUIREMENTS LEGEND PANEL VERIFICATION (MANDATORY)
 
-**Every wireframe with FR/SC annotations MUST have REQUIREMENTS KEY panel at y>=700.**
+**Every wireframe with FR/SC annotations MUST have REQUIREMENTS KEY panel at y=690.**
 
 | Check | Requirement |
 |-------|-------------|
-| Legend exists | Panel present at y>=700 |
+| Legend exists | Panel present at y=690 |
 | Complete | Every annotation FR/SC in legend |
 | No phantoms | Legend matches page only |
 | US codes | Inline context only, NO legend entry |

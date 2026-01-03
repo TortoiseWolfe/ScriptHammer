@@ -303,15 +303,17 @@ Track FR/SC/US per page → legend includes FR+SC only (US inline).
 
 ### 5c. Requirements Legend Panel
 
-| Entries | Height | Y |
-|---------|--------|---|
-| 1-4 | 60px | 690 |
-| 5-8 | 80px | 670 |
-| 9-12 | 100px | 650 |
+**Position:** y=690 always. Height grows UPWARD as entries increase. Bottom edge at y=750.
+
+| Entries | Height |
+|---------|--------|
+| 1-4 | 60px |
+| 5-8 | 80px |
+| 9-12 | 100px |
 
 **Template** (colors: dark `#1e293b/#475569`, light `#dcc8a8/#b8a080`):
 ```xml
-<g id="requirements-legend" transform="translate(40, 700)">
+<g id="requirements-legend" transform="translate(40, 690)">
   <rect width="1320" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
   <!-- 4/row, 320px each -->
