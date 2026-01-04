@@ -2,7 +2,7 @@
 
 **Feature**: 001-wcag-aa-compliance
 **File**: `docs/design/wireframes/001-wcag-aa-compliance/01-a11y-testing-pipeline.svg`
-**Review Date**: 2026-01-03
+**Review Date**: 2026-01-04
 **Status**: ✅ PASS
 
 ---
@@ -15,6 +15,8 @@
 | 2 | 2026-01-03 | 0 | N/A |
 | 3 | 2026-01-03 | 0 | N/A |
 | 4 | 2026-01-03 | 7 | 7 |
+| 5 | 2026-01-04 | 4 | 4 (regenerated) |
+| 6 | 2026-01-04 | 0 | N/A |
 
 ---
 
@@ -42,9 +44,30 @@ Dark theme correct for pipeline/testing feature type.
 
 ---
 
+## Pass 5: Regeneration Required
+
+**Issues Found (4):**
+
+1. **FR-001 Arrow Collision** - FR-001 at y=45 collided with arrow at y=110
+2. **SC-008 Annotation Inconsistency** - Had inline description unlike other tags
+3. **Missing SC-008 in Legend** - Only FR-001-005 and SC-001 were shown
+4. **Legend Single Row Cramped** - 7 codes squeezed into one row
+
+**Resolution**: Full regeneration with two-row legend (80px height)
+
+---
+
+## Pass 6: Final Verification
+
+All issues resolved. Wireframe passes all 13 blocking checks and 16 issue categories.
+
+---
+
 ## Verification
 
 - [x] Dark theme correct for pipeline/testing type
 - [x] FR tags: BLUE (#2563eb) via `.tag-base fr-tag`
 - [x] SC tags: ORANGE (#ea580c) via `.tag-base sc-tag`
 - [x] Footer signature: [001:01] | A11y Testing Pipeline | ScriptHammer
+- [x] Legend: Two rows at y=690, 80px height
+- [x] All 7 requirements mapped (FR-001-005, SC-001, SC-008)
