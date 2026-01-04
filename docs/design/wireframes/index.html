@@ -1814,6 +1814,20 @@
       return findFeatureStart(targetFeature);
     }
 
+    // ========================================
+    // DEFAULT BOOKMARK - Change this to start on a different wireframe
+    // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
+    // Set to null to start at first wireframe
+    // ========================================
+    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal.svg";
+
+    // Find wireframe index by path
+    function findIndexByPath(path) {
+      if (!path) return 0;
+      const idx = wireframes.findIndex(wf => wf.path === path);
+      return idx >= 0 ? idx : 0;
+    }
+
     let currentIndex = 0;
     let zoom = 1;
     let panX = 0;
@@ -2132,9 +2146,9 @@
       viewerContainer.classList.remove('dragging');
     });
 
-    // Initialize
+    // Initialize - start at bookmark or first wireframe
     if (wireframes.length > 0) {
-      updateView(0);
+      updateView(findIndexByPath(DEFAULT_BOOKMARK));
     }
   </script>
 </body>
