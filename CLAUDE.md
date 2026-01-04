@@ -17,18 +17,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Session Checkpoint (2026-01-04)
 
-**Feature Completed**: 000-rls-implementation ✅
+**Features Completed**:
+- 000-rls-implementation ✅
+- 001-wcag-aa-compliance (1/3) 🔄
 
-| File | Status |
-|------|--------|
-| 01-rls-architecture-overview.svg | ✅ PASS |
-| 02-rls-policy-patterns.svg | ✅ PASS |
+| Feature | File | Status |
+|---------|------|--------|
+| 000 | 01-rls-architecture-overview.svg | ✅ PASS |
+| 000 | 02-rls-policy-patterns.svg | ✅ PASS |
+| 001 | 01-a11y-testing-pipeline.svg | ✅ PASS |
+| 001 | 02-a11y-dashboard.svg | ⏳ Pending |
+| 001 | 03-developer-feedback.svg | ⏳ Pending |
 
 **Next Session START HERE**:
-1. Run `/wireframe-review 001-wcag-aa-compliance` to review
-2. Run `/wireframe 001` to fix any issues
-3. Repeat until all ✅ PASS
-4. Continue with remaining Foundation features (002-006)
+1. Run `/wireframe-review 001:02` to review accessibility dashboard
+2. Run `/wireframe-review 001:03` to review developer feedback tooling
+3. Continue with remaining Foundation features (002-006)
 
 ---
 
@@ -149,13 +153,14 @@ find docs/design/wireframes -name "*.svg" -newer README.md
 
 Both files should stay in sync for implementation phases.
 
-### Current State (2026-01-03)
+### Current State (2026-01-04)
 
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
 | Wireframes generated | 46/46 features (123 SVGs) |
-| Wireframes reviewed | 0/46 (001 in progress - Pass 2 done, needs fixes) |
+| Wireframes reviewed | 1/46 complete (000), 1/46 in progress (001: 1/3 done) |
+| SVGs passed | 3/123 (000:2, 001:1) |
 | Implementation phase | All 46 blocked until wireframe review complete |
 
 ---
