@@ -37,7 +37,7 @@
 /wireframe-review 000-rls-implementation
 ```
 <details>
-<summary>📄 Per-page (3 SVGs)</summary>
+<summary>📄 Per-page (2 SVGs)</summary>
 
 > **01** rls-architecture-overview
 > ```
@@ -47,20 +47,12 @@
 > /wireframe 000:01
 > ```
 
-> **02** policy-patterns
+> **02** rls-policy-patterns
 > ```
 > /wireframe-review 000:02
 > ```
 > ```
 > /wireframe 000:02
-> ```
-
-> **03** access-control-matrix
-> ```
-> /wireframe-review 000:03
-> ```
-> ```
-> /wireframe 000:03
 > ```
 
 </details>
