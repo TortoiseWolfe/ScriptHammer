@@ -343,6 +343,6 @@
 
   <!-- ========== WATERMARK ========== -->
   <g transform="translate(40, 970)">
-    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">[000:01] | RLS Architecture Overview | ScriptHammer</text>
+    <text fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">000:01 | RLS Architecture Overview | ScriptHammer</text>
   </g>
 </svg>
