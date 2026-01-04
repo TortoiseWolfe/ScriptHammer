@@ -120,6 +120,7 @@ At 200%, issues become visible that you'd miss at 100%:
 | Font mismatch | Same label type but different font-size | Typography consistency |
 | Color drift | Same element type, slightly different colors | Fill/stroke hex values |
 | Padding mismatch | List items with uneven internal spacing | Consistent inner spacing |
+| Text alignment drift | Same-purpose labels with different text-anchor or x values | Check text-anchor consistency |
 
 **⚠️ COMMON FAILURE: List items with action buttons**
 - Scan ALL repeated list items (issues list, table rows, card grids)
@@ -392,7 +393,7 @@ Files marked "✅ RESOLVED" or "✅ PASS" need EXTRA scrutiny, not less:
 | Devil's Advocate skipped | Must complete checkpoint |
 | Truncated text | FR codes cut off, labels ending in "..." |
 | Unreadable labels | Every annotation must be readable character-by-character |
-| Footer wrong/missing | Must be `x="60" y="780"` with `[NNN:PP] | Title | ScriptHammer` |
+| Footer wrong/missing | Must be `x="60" y="780"` with `NNN:PP | Title | ScriptHammer` (no brackets, fill="#94a3b8") |
 
 **Any blocker = 🔴 REGENERATE. No exceptions.**
 
@@ -845,6 +846,25 @@ For every dynamic text (FR codes, labels): `text_width < container_width - paddi
 | Gutter problems | Column/row gaps consistent? |
 | Touch target spacing | 8px minimum between tappables? |
 
+### 3c. ⛔ SECTION VERTICAL GAP CHECK (MANDATORY for Multi-Section Layouts)
+
+**For multi-section layouts, verify gaps between sections.**
+
+| Check | Method |
+|-------|--------|
+| Find all `translate(x, Y)` | `grep -n "translate" *.svg` |
+| Calculate gap | next_Y - (current_Y + content_height) |
+| Minimum gap | 60px between sections, 30px to footer |
+
+**Gap Analysis Formula:**
+```
+gap = next_section_Y - (current_section_Y + current_section_height)
+```
+
+**Common failure**: Sections at Y=560, Y=600 with 180px content = 40px gap (TOO TIGHT)
+
+**Detection**: If gap < 60px between sections → 🟢 PATCHABLE (adjust translate Y values +20-40px)
+
 ### 3b. ⛔ WASTED SPACE = MISSED OPPORTUNITY (MANDATORY CHECK)
 
 **Wasted space = 🔴 REGENERATE.** If utilization < 70%, it's wasted.
@@ -1043,20 +1063,24 @@ Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 
 ### 15. ⛔ FOOTER SIGNATURE LINE (MANDATORY)
 
-**Required**: `x="60" y="780" text-anchor="start"` with `[NNN:PP] | [Title] | ScriptHammer`
+**Required**: `x="60" y="780" text-anchor="start"` with `NNN:PP | [Title] | ScriptHammer`
 
 **Footer Checklist:**
 - [ ] `x="60"` (left-aligned, not centered)
 - [ ] `y="780"` (NOT y=790 or y=770)
 - [ ] `text-anchor="start"` (left alignment)
-- [ ] Format: `NNN:PP | Title | ScriptHammer`
+- [ ] Format: `NNN:PP | Title | ScriptHammer` (NO square brackets around NNN:PP)
 - [ ] NNN = feature number (e.g., 002)
 - [ ] PP = page number (e.g., 01, 02)
+- [ ] `fill="#94a3b8"` (slate-400, NOT `#64748b` which is too dark)
 
 **Verify with grep:**
 ```bash
 grep -n "y=\"78[0-9]\"" *.svg  # Find footer y positions
 grep -n "text-anchor" *.svg   # Check alignment
+grep -n 'fill="#64748b"' *.svg  # Should return NOTHING (too dark)
+grep -n 'fill="#94a3b8"' *.svg  # Should find footer
+grep -n '\[0[0-9][0-9]:' *.svg  # Should return NOTHING (brackets are wrong)
 ```
 
 | Failure | Classification |

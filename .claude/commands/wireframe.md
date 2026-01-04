@@ -514,7 +514,7 @@ Use this template for architecture diagrams, data flows, and system visualizatio
   </g>
 
   <!-- Color Legend (REQUIRED if semantic colors are used) -->
-  <g id="color-legend" transform="translate(40, 770)">
+  <g id="color-legend" transform="translate(40, 730)">
     <!-- Add legend items when diagram uses colors to encode meaning -->
     <!-- Example format (colorblind-friendly with patterns):
     <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
@@ -526,6 +526,9 @@ Use this template for architecture diagrams, data flows, and system visualizatio
     <text x="320" y="0" class="text-sm">External dependency</text>
     -->
   </g>
+
+  <!-- Footer signature (MANDATORY) -->
+  <text x="60" y="780" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
 </svg>
 ```
 
@@ -785,6 +788,29 @@ If ANY calculation shows overflow:
 
 ---
 
+## ⛔ TEXT ALIGNMENT CONSISTENCY (Within Containers)
+
+**All text elements within a container MUST use consistent alignment.**
+
+| Container Type | Alignment | Property |
+|----------------|-----------|----------|
+| Labels left of content | `text-anchor="start"` | Left-align |
+| Labels right of content | `text-anchor="end"` | Right-align |
+| Centered headings | `text-anchor="middle"` | Center |
+
+**Example: Right-aligned labels within a 340px panel**
+```xml
+<!-- All labels right-aligned at x=330 (10px from 340px edge) -->
+<text x="330" y="20" text-anchor="end" fill="#22c55e">Label 1</text>
+<text x="330" y="40" text-anchor="end" fill="#3b82f6">Label 2</text>
+<text x="330" y="60" text-anchor="end" fill="#ef4444">Label 3</text>
+```
+
+**⛔ WRONG**: Mixed x positions (250, 200, 140, 150) for same-purpose labels
+**✅ RIGHT**: All labels at same x with `text-anchor="end"`
+
+---
+
 ## ⛔ SEMANTIC POSITIONING (MANDATORY for Data Visualizations)
 
 **When visualizing data on a spectrum, timeline, or scale:**
@@ -848,6 +874,49 @@ section_width = ((end_value - start_value) / max_data_value) × canvas_width
 **Violations = failed review**: Text overflow, overlapping elements, wasted vertical space, inconsistent footer positions.
 
 **Acronym rule**: Expand on first use. Compliance terms always: `GDPR (EU Data Protection)`, `SOC 2 (Security Audit)`, `WCAG (Web Accessibility)`, `RLS (Row Level Security)`.
+
+---
+
+## ⛔ SECTION SPACING (MANDATORY for Multi-Section Layouts)
+
+**Before writing SVG, calculate vertical gaps between sections.**
+
+### Gap Analysis Formula
+
+For each section transition, calculate:
+```
+gap = next_section_Y - (current_section_Y + current_section_height)
+```
+
+**Minimum gaps:**
+| Transition | Minimum Gap |
+|------------|-------------|
+| Section header → content | 20px |
+| Content → next section header | 60px |
+| Last content → legend | 40px |
+| Legend → footer | 30px |
+
+### Example Layout (1000px canvas)
+
+```
+Section A: translate(40, 100)
+  Content height: ~260px
+  Ends at: Y = 360
+
+Section B: translate(40, 420)  ← Gap = 420 - 360 = 60px ✅
+  Content height: ~180px
+  Ends at: Y = 600
+
+Legend: translate(40, 660)  ← Gap = 660 - 600 = 60px ✅
+  Height: ~60px
+  Ends at: Y = 720
+
+Footer: Y = 780  ← Gap = 780 - 720 = 60px ✅
+```
+
+**⛔ If gap < minimum → redistribute vertical space before writing SVG.**
+
+**Common fix**: Add +20-40px to `translate(x, Y)` for sections that are too tight.
 
 ---
 
@@ -1110,8 +1179,18 @@ Gap: 30px clear zone between content and footer
 
 **Page title format:**
 ```xml
-<text x="60" y="780" text-anchor="start" class="text-muted">NNN:PP | Wireframe Title | ScriptHammer</text>
+<text x="60" y="780" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
 ```
+
+**Footer rules:**
+- Position: `x="60" y="780"` (left-aligned, 30px above bottom)
+- Alignment: `text-anchor="start"` (NOT center)
+- Color: `#94a3b8` (slate-400, bright enough to read on dark)
+- Format: `NNN:PP | Title | ScriptHammer` (NO square brackets)
+- Font: `system-ui, sans-serif` at `10px`
+
+**⛔ WRONG**: `[000:01]`, `fill="#64748b"`, centered
+**✅ RIGHT**: `000:01`, `fill="#94a3b8"`, left-aligned
 
 **Footer numbering convention:**
 - `NNN` = 3-digit feature number (e.g., `000`, `001`, `042`)
