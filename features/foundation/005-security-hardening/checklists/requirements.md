@@ -38,12 +38,17 @@ All checklist items verified. Specification is ready for next phase.
 ## Notes
 
 - Comprehensive security hardening covering 4 priority levels (P0-P3)
-- 10 user stories organized by priority (4 P0, 3 P1, 3 P2)
-- 41 functional requirements across 9 categories
-- 10 measurable success criteria
-- 6 edge cases documented with resolution strategies
+- 11 user stories organized by priority (4 P0, 4 P1, 3 P2)
+- 47 functional requirements across 10 categories
+- 11 measurable success criteria
+- 8 edge cases documented with resolution strategies
 - Previous clarifications already resolved in feature file:
   - Session timeout: 24 hours standard, 7 days for "Remember Me"
   - Disposable emails: Warn but allow sign-up
   - Webhook failure notification: Email + database flag
   - Cleanup schedule: Weekly on Sunday 3 AM UTC
+- **Updated 2026-01-04**: Added REQ-SEC-009 (Pre-commit Secret Scanning) with:
+  - User Story 11 for developer secret detection workflow
+  - FR-042 through FR-047 for secret scanning requirements
+  - SC-011 for zero secrets metric
+  - 2 additional edge cases for allowlist and CI backup

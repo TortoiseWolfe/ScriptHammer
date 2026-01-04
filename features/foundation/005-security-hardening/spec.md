@@ -180,6 +180,23 @@ As a user experiencing authentication failures, I need clear error messages and 
 
 ---
 
+### User Story 11 - Pre-commit Secret Detection (Priority: P1)
+
+As a developer, I need all my commits to be automatically scanned for accidentally included secrets so that credentials never reach the repository and become difficult to remove.
+
+**Why this priority**: Credentials committed to git history are extremely difficult to remove and pose ongoing security risks even after deletion. Prevention is far more effective than remediation.
+
+**Independent Test**: Can be tested by attempting to commit a file containing a known secret pattern (e.g., AWS key format) and verifying the commit is blocked with a clear error.
+
+**Acceptance Scenarios**:
+
+1. **Given** I accidentally add an API key to code, **When** I attempt to commit, **Then** the commit is blocked with a clear error showing the detected secret location
+2. **Given** a file contains credentials in a known secret format, **When** I run git add, **Then** the secret is detected before it reaches the repository
+3. **Given** a false positive is detected, **When** I review the detection, **Then** I can add it to an allowlist to prevent future false alarms
+4. **Given** I am a new developer setting up the project, **When** I run the package install command, **Then** the pre-commit hook is automatically installed
+
+---
+
 ### Edge Cases
 
 - What happens when an attacker submits data with prototype pollution patterns?
@@ -199,6 +216,12 @@ As a user experiencing authentication failures, I need clear error messages and 
 
 - What happens when all retry attempts for a background process fail?
   - Administrators are notified via email and database flag; manual retry option available
+
+- What happens when the pre-commit hook detects a legitimate-looking but intentional test credential?
+  - Developer can add the specific pattern or file to the allowlist; the allowlist is version-controlled
+
+- What happens when a developer bypasses the pre-commit hook locally?
+  - CI pipeline runs the same secret scan as a backup gate and blocks the merge
 
 ---
 
@@ -277,6 +300,15 @@ As a user experiencing authentication failures, I need clear error messages and 
 - **FR-040**: System MUST automatically clean up expired temporary data on a configurable schedule (default: weekly)
 - **FR-041**: System MUST ensure background process retries are idempotent
 
+**Secret Scanning & Credential Protection**
+
+- **FR-042**: System MUST scan all commits for accidentally included secrets before acceptance
+- **FR-043**: System MUST block commits containing detected credentials with clear error messages
+- **FR-044**: System MUST display the exact file, line, and secret type when a secret is detected
+- **FR-045**: System MUST support an allowlist for false positive exceptions
+- **FR-046**: System MUST run secret scanning in CI pipeline as a backup gate
+- **FR-047**: System MUST automatically install pre-commit hooks when dependencies are installed
+
 ### Key Entities
 
 - **User Account**: Represents an authenticated user; includes unique identifier, email, verification status, creation timestamp
@@ -285,6 +317,7 @@ As a user experiencing authentication failures, I need clear error messages and 
 - **Security Audit Log**: Immutable record of security events; includes event type, user reference, timestamp, connection details, event data
 - **Rate Limit Tracker**: Server-side counter for failed attempts; includes identifier, attempt count, window start, lockout expiration
 - **OAuth State Token**: One-time token for OAuth session verification; includes state value, session reference, creation time, usage status
+- **Secret Detection Rule**: Pattern matching configuration for detecting credentials; includes rule identifier, detection pattern, description, allowlist entries
 
 ---
 
@@ -302,6 +335,7 @@ As a user experiencing authentication failures, I need clear error messages and 
 - **SC-008**: 95%+ of failed background processes eventually succeed after retries
 - **SC-009**: Users receive clear lockout feedback (duration, remaining attempts) on rate limit
 - **SC-010**: Session timeout warning displayed 1 minute before expiration
+- **SC-011**: Zero secrets committed to repository (pre-commit and CI gates effective)
 
 ---
 
@@ -331,3 +365,5 @@ As a user experiencing authentication failures, I need clear error messages and 
 - Standard session timeout of 24 hours is acceptable for general-purpose application usage
 - Extended "Remember Me" timeout of 7 days balances security and convenience
 - Weekly cleanup of expired data is sufficient for resource management
+- Pre-commit hooks are supported by the development environment (git hooks available)
+- CI pipeline supports running security scans as part of merge checks

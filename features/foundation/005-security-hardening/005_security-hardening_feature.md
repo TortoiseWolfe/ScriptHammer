@@ -170,6 +170,20 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - Retry mechanisms for transient failures
 - Users not left in uncertain states
 
+#### Scenario 9: Pre-commit Secret Detection
+
+1. **Given** a developer accidentally adds an API key to code, **When** they attempt to commit, **Then** the commit is blocked with clear error showing the detected secret
+2. **Given** a `.env` file with real credentials, **When** git add is run, **Then** gitleaks detects the secret before it reaches the repository
+3. **Given** a false positive detection, **When** developer reviews, **Then** they can allowlist the pattern in `.gitleaksignore`
+
+**Acceptance Criteria:**
+
+- Pre-commit hook blocks commits containing secrets
+- Clear error message identifies file and line with secret
+- Common secret patterns detected (API keys, passwords, tokens)
+- False positives manageable via allowlist
+- Works on all developer machines via husky
+
 ### Edge Cases
 
 - What happens when an attacker submits metadata with `__proto__` key to pollute JavaScript prototypes?
@@ -332,6 +346,25 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - Test: Two users can each have 5 failed attempts independently
 
 **Current Issue**: Rate limiter initialized with empty email on component mount
+
+---
+
+#### REQ-SEC-009: Pre-commit Secret Scanning
+
+**What**: All commits must be scanned for accidentally included secrets (API keys, passwords, tokens) before being accepted, blocking commits that contain detected credentials.
+
+**Why**: Credentials committed to git history are extremely difficult to remove and pose ongoing security risks even after deletion. Prevention is far more effective than remediation.
+
+**Acceptance Criteria**:
+
+- Gitleaks (or equivalent) runs as pre-commit hook
+- Commits containing detected secrets are blocked
+- Error message shows exact file, line, and secret type
+- `.gitleaksignore` allows legitimate false positive exceptions
+- CI pipeline also runs secret scan as backup gate
+- Hook installed automatically via `npm install` (husky)
+
+**Current Issue**: No secret scanning configured
 
 ---
 
@@ -523,6 +556,7 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - **Prototype Pollution**: Mitigated by REQ-SEC-005 (metadata validation)
 - **SQL Injection**: Already mitigated by Supabase parameterized queries (verified)
 - **XSS**: Already mitigated by React JSX escaping (verified)
+- **Credential Exposure**: Mitigated by REQ-SEC-009 (pre-commit secret scanning)
 
 ### Risk Assessment
 
@@ -540,6 +574,7 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - **Zero successful OAuth hijacking attempts** (REQ-SEC-002)
 - **Zero successful brute force attacks** (REQ-SEC-003)
 - **100% of security events logged** (REQ-SEC-007)
+- **Zero secrets committed to repository** (REQ-SEC-009)
 
 ### User Experience Metrics
 
