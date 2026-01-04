@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 000 | 01-rls-architecture-overview.svg | ✅ PASS |
 | 000 | 02-rls-policy-patterns.svg | ✅ PASS |
 | 001 | 01-a11y-testing-pipeline.svg | ✅ PASS |
-| 001 | 02-a11y-dashboard.svg | ✅ PASS (6 passes, fixed contrast + button sizing) |
+| 001 | 02-a11y-dashboard.svg | ✅ PASS (9 passes, fixed contrast, buttons, desktop panel, mobile icons) |
 | 001 | 03-dev-feedback-tooling.svg | ✅ PASS |
 
 **Next Session START HERE**:
