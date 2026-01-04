@@ -9,7 +9,13 @@ Open `index.html` in a browser to view all wireframes with navigation.
 ### Features
 - Sidebar with clickable index
 - Previous/Next navigation buttons
-- Keyboard navigation (Left/Right for prev/next, Up/Down for zoom)
+- Keyboard navigation:
+  - `⇧F1-F9` Jump to category (Foundation, Core, Auth, etc.)
+  - `^1-7` Jump to feature within current category
+  - `1-9` Jump to spec within current feature
+  - `←/→` Previous/Next wireframe
+  - `↑/↓` or `+/-` Zoom, `0` reset to 85%
+  - `L` Toggle legend, `F` Focus mode, `Escape` exit
 - Pan and zoom (mouse wheel, drag, +/- keys)
 - Dark theme for contrast with light SVG backgrounds
 

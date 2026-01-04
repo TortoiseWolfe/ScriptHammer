@@ -19,20 +19,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Features Completed**:
 - 000-rls-implementation ✅
-- 001-wcag-aa-compliance (1/3) 🔄
+- 001-wcag-aa-compliance ✅
 
 | Feature | File | Status |
 |---------|------|--------|
 | 000 | 01-rls-architecture-overview.svg | ✅ PASS |
 | 000 | 02-rls-policy-patterns.svg | ✅ PASS |
 | 001 | 01-a11y-testing-pipeline.svg | ✅ PASS |
-| 001 | 02-a11y-dashboard.svg | ⏳ Pending |
-| 001 | 03-developer-feedback.svg | ⏳ Pending |
+| 001 | 02-a11y-dashboard.svg | ✅ PASS (6 passes, fixed contrast + button sizing) |
+| 001 | 03-dev-feedback-tooling.svg | ✅ PASS |
 
 **Next Session START HERE**:
-1. Run `/wireframe-review 001:02` to review accessibility dashboard
-2. Run `/wireframe-review 001:03` to review developer feedback tooling
-3. Continue with remaining Foundation features (002-006)
+1. Run `/wireframe-review 002` to review Cookie Consent wireframes
+2. Continue with remaining Foundation features (003-006)
 
 ---
 
@@ -159,8 +158,8 @@ Both files should stay in sync for implementation phases.
 |--------|-------|
 | spec.md complete | 46/46 |
 | Wireframes generated | 46/46 features (123 SVGs) |
-| Wireframes reviewed | 1/46 complete (000), 1/46 in progress (001: 1/3 done) |
-| SVGs passed | 3/123 (000:2, 001:1) |
+| Wireframes reviewed | 2/46 complete (000, 001) |
+| SVGs passed | 5/123 (000:2, 001:3) |
 | Implementation phase | All 46 blocked until wireframe review complete |
 
 ---
@@ -297,11 +296,25 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 
 ## Wireframe Viewer Keyboard Shortcuts
 
-- **F**: Toggle focus mode (hide sidebar/footer), **Escape** to exit
-- **Left/Right**: Previous/Next wireframe
-- **Up/Down**: Zoom in/out
-- **+/-**: Zoom in/out
-- **0**: Reset zoom to 85%
+### Navigation Hierarchy
+
+| Level | Shortcut | Action |
+|-------|----------|--------|
+| Category | `⇧F1-F9` | Jump to category (Foundation, Core, Auth, etc.) |
+| Feature | `^1-7` | Jump to feature N within current category |
+| Spec | `1-9` | Jump to spec N within current feature |
+
+### Other Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `L` | Toggle legend drawer |
+| `F` | Toggle focus mode (hide UI) |
+| `Escape` | Exit focus mode or close legend |
+| `←/→` | Previous/Next wireframe |
+| `↑/↓` | Zoom in/out |
+| `+/-` | Zoom in/out |
+| `0` | Reset zoom to 85% |
 
 ## Generating Wireframes
 
