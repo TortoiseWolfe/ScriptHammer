@@ -548,7 +548,7 @@
     }
   </style>
 </head>
-<body class="legend-open">
+<body class="focus-mode">
   <nav>
     <h1><a href="https://github.com/TortoiseWolfe/First-Frame" target="_blank">FirstFrame</a></h1>
 
@@ -601,6 +601,10 @@
         <a href="#" data-svg="002-cookie-consent/02-privacy-settings.svg">
           Privacy Settings
           <span class="path">Preferences, data export, deletion</span>
+        </a>
+        <a href="#" data-svg="002-cookie-consent/03-data-dialogs.svg">
+          Data Dialogs
+          <span class="path">Export success, deletion confirmation</span>
         </a>
       </div>
     </div>
@@ -1482,6 +1486,50 @@
         <span class="legend-key">Esc</span>
         <span class="legend-desc">Exit focus mode</span>
       </div>
+      <div class="legend-item">
+        <span class="legend-key">1-9</span>
+        <span class="legend-desc">Jump to spec 1-9 in current feature</span>
+      </div>
+    </div>
+
+    <div class="legend-section">
+      <h3>Category Shortcuts (Shift + F-key)</h3>
+      <div class="legend-item">
+        <span class="legend-key">⇧F1</span>
+        <span class="legend-desc">Foundation (000-006)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F2</span>
+        <span class="legend-desc">Core Features (007-012)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F3</span>
+        <span class="legend-desc">Auth OAuth (013-016)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F4</span>
+        <span class="legend-desc">Enhancements (017-021)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F5</span>
+        <span class="legend-desc">Integrations (022-026)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F6</span>
+        <span class="legend-desc">Polish (027-030)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F7</span>
+        <span class="legend-desc">Testing (031-037)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F8</span>
+        <span class="legend-desc">Payments (038-043)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">⇧F9</span>
+        <span class="legend-desc">Code Quality (044-045)</span>
+      </div>
     </div>
 
     <div class="legend-section">
@@ -1565,6 +1613,7 @@
       // 002 - Cookie Consent
       { path: '002-cookie-consent/01-consent-modal.svg', title: 'Consent Modal' },
       { path: '002-cookie-consent/02-privacy-settings.svg', title: 'Privacy Settings' },
+      { path: '002-cookie-consent/03-data-dialogs.svg', title: 'Data Dialogs' },
       // 003 - User Authentication
       { path: '003-user-authentication/01-login-signup.svg', title: 'Login & Signup' },
       { path: '003-user-authentication/02-password-reset.svg', title: 'Password Reset Flow' },
@@ -1731,6 +1780,44 @@
       { path: '045-disqus-theme/03-integration-architecture.svg', title: 'Integration Architecture' },
     ];
 
+    // Category mapping for Shift+F1-F9 navigation
+    const categories = [
+      { name: 'Foundation', start: 0, end: 6 },      // F1
+      { name: 'Core Features', start: 7, end: 12 },  // F2
+      { name: 'Auth OAuth', start: 13, end: 16 },    // F3
+      { name: 'Enhancements', start: 17, end: 21 },  // F4
+      { name: 'Integrations', start: 22, end: 26 },  // F5
+      { name: 'Polish', start: 27, end: 30 },        // F6
+      { name: 'Testing', start: 31, end: 37 },       // F7
+      { name: 'Payments', start: 38, end: 43 },      // F8
+      { name: 'Code Quality', start: 44, end: 45 }   // F9
+    ];
+
+    // Parse feature number from path (e.g., "000-rls-implementation/..." → 0)
+    function getFeatureNum(path) {
+      return parseInt(path.substring(0, 3), 10);
+    }
+
+    // Get current feature number
+    function getCurrentFeature() {
+      return getFeatureNum(wireframes[currentIndex].path);
+    }
+
+    // Find first wireframe index for a feature number
+    function findFeatureStart(featureNum) {
+      const prefix = String(featureNum).padStart(3, '0');
+      return wireframes.findIndex(w => w.path.startsWith(prefix));
+    }
+
+    // Find wireframe index for spec N in current feature
+    function findSpecInFeature(specNum) {
+      const currentFeature = getCurrentFeature();
+      const prefix = String(currentFeature).padStart(3, '0');
+      return wireframes.findIndex(w =>
+        w.path.startsWith(prefix) && w.path.includes(`/0${specNum}-`)
+      );
+    }
+
     let currentIndex = 0;
     let zoom = 1;
     let panX = 0;
@@ -1869,6 +1956,30 @@
 
     // Keyboard navigation
     document.addEventListener('keydown', (e) => {
+      // Shift+F1 through Shift+F9 for category navigation
+      if (e.shiftKey && e.key.startsWith('F') && e.key.length <= 2) {
+        const fNum = parseInt(e.key.substring(1), 10);
+        if (fNum >= 1 && fNum <= 9) {
+          e.preventDefault(); // Block browser F-key defaults
+          const catIndex = fNum - 1;
+          if (catIndex < categories.length) {
+            const idx = findFeatureStart(categories[catIndex].start);
+            if (idx >= 0) updateView(idx);
+          }
+          return;
+        }
+      }
+
+      // Number keys 1-9 for specs within current feature
+      if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 9) {
+          const idx = findSpecInFeature(num);
+          if (idx >= 0) updateView(idx);
+          return;
+        }
+      }
+
       // Legend drawer: L to toggle
       if (e.key === 'l' || e.key === 'L') {
         e.preventDefault();
