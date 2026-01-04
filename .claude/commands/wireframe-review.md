@@ -268,6 +268,7 @@ FIRST CHECKS COMPLETE:
 - Multi-column overlap: [None / Overlap at: ...]
 - Flow completeness: [Complete / Missing terminal at: ...]
 - Color consistency: [Consistent / Mismatch at: ...]
+- Toggle colors (if present): [On=#22c55e, Off=#64748b / WRONG: ...]
 - Element boundaries: [Respected / Violation at: ...]
 - BLOCKING ISSUES: [None / List any that require immediate REGENERATE]
 ```
@@ -452,16 +453,12 @@ mcp__MCP_DOCKER__browser_evaluate({
   }`
 })
 
-// 3. Enter FOCUS MODE (press 'f') - CRITICAL for accurate review
-// ⚠️ Focus mode hides the viewer's sidebar and footer
-// After pressing 'f', EVERYTHING on screen is part of the SVG
-// This ensures screenshots contain ONLY the wireframe, no UI chrome
-// Press 'Escape' to exit focus mode when done
-mcp__MCP_DOCKER__browser_press_key({ key: "f" })
-
-// 3b. Close legend if open (toggle off with 'l')
-// Legend may be open by default - close it for clean screenshots
-mcp__MCP_DOCKER__browser_press_key({ key: "l" })
+// 3. Focus mode and legend are OFF by default - no need to toggle
+// If you need focus mode (hide sidebar/footer), press 'f'
+// If you need legend drawer, press 'l'
+// Both are toggles, so only press if you specifically want them ON
+// mcp__MCP_DOCKER__browser_press_key({ key: "f" })
+// mcp__MCP_DOCKER__browser_press_key({ key: "l" })
 
 // 4. Reset zoom to 85% baseline
 mcp__MCP_DOCKER__browser_press_key({ key: "0" })
