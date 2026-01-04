@@ -1,0 +1,405 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <defs>
+    <linearGradient id="bgGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <pattern id="dotGrid2" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="10" cy="10" r="1" fill="#475569" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1600" height="1000" fill="url(#bgGradient2)"/>
+  <rect width="1600" height="1000" fill="url(#dotGrid2)"/>
+
+  <!-- Title -->
+  <text x="800" y="45" fill="#fff" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" text-anchor="middle">RLS Policy Patterns &amp; Implementation</text>
+  <text x="800" y="70" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">000-rls-implementation | Policy Matrix, Templates &amp; Functional Requirements</text>
+
+  <!-- ========== SECTION 1: POLICY MATRIX (Top Left) ========== -->
+  <g transform="translate(40, 100)">
+    <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">POLICY MATRIX</text>
+    <text x="200" y="0" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12">(Role x Table x Operation)</text>
+
+    <!-- Matrix Grid -->
+    <g transform="translate(0, 25)">
+      <!-- Header Row -->
+      <rect x="0" y="0" width="120" height="35" fill="#334155"/>
+      <text x="60" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">Role / Table</text>
+
+      <rect x="120" y="0" width="140" height="35" fill="#334155"/>
+      <text x="190" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">users</text>
+
+      <rect x="260" y="0" width="140" height="35" fill="#334155"/>
+      <text x="330" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">profiles</text>
+
+      <rect x="400" y="0" width="140" height="35" fill="#334155"/>
+      <text x="470" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">sessions</text>
+
+      <rect x="540" y="0" width="140" height="35" fill="#334155"/>
+      <text x="610" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" text-anchor="middle">audit_logs</text>
+
+      <!-- authenticated Row -->
+      <rect x="0" y="35" width="120" height="60" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+      <circle cx="20" cy="65" r="10" fill="#8b5cf6"/>
+      <text x="20" y="69" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">A</text>
+      <text x="40" y="60" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">authenticated</text>
+      <text x="40" y="75" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(logged-in)</text>
+
+      <!-- authenticated cells -->
+      <rect x="120" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="130" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
+      <text x="130" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+
+      <rect x="260" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="270" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
+      <text x="270" y="70" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">UPDATE: own</text>
+      <text x="270" y="85" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/DELETE: deny</text>
+
+      <rect x="400" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="410" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
+      <text x="410" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+
+      <rect x="540" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="550" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
+      <text x="550" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+
+      <!-- service_role Row -->
+      <rect x="0" y="95" width="120" height="60" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+      <circle cx="20" cy="125" r="10" fill="#3b82f6"/>
+      <text x="20" y="129" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">S</text>
+      <text x="40" y="120" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">service_role</text>
+      <text x="40" y="135" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(backend)</text>
+
+      <!-- service_role cells (all allow) -->
+      <rect x="120" y="95" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="130" y="120" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">ALL: bypass</text>
+      <text x="130" y="135" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(logged to audit)</text>
+
+      <rect x="260" y="95" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="270" y="120" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">ALL: bypass</text>
+      <text x="270" y="135" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(logged to audit)</text>
+
+      <rect x="400" y="95" width="140" height="60" fill="#1e293b" stroke="#475569"/>
+      <text x="410" y="120" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">ALL: bypass</text>
+      <text x="410" y="135" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(logged to audit)</text>
+
+      <rect x="540" y="95" width="140" height="60" fill="#1e293b" stroke="#dc2626"/>
+      <text x="550" y="115" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">INSERT: allow</text>
+      <text x="550" y="130" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">UPDATE/DELETE: deny</text>
+      <text x="550" y="145" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="9">(immutable)</text>
+
+      <!-- anon Row -->
+      <rect x="0" y="155" width="120" height="50" fill="#1e293b" stroke="#6b7280" stroke-width="2"/>
+      <circle cx="20" cy="180" r="10" fill="#6b7280"/>
+      <text x="20" y="184" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">?</text>
+      <text x="40" y="175" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">anon</text>
+      <text x="40" y="190" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(no auth)</text>
+
+      <!-- anon cells (all deny) -->
+      <rect x="120" y="155" width="140" height="50" fill="#1e293b" stroke="#475569"/>
+      <text x="130" y="185" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">ALL: deny</text>
+
+      <rect x="260" y="155" width="140" height="50" fill="#1e293b" stroke="#475569"/>
+      <text x="270" y="185" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">ALL: deny</text>
+
+      <rect x="400" y="155" width="140" height="50" fill="#1e293b" stroke="#475569"/>
+      <text x="410" y="185" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">ALL: deny</text>
+
+      <rect x="540" y="155" width="140" height="50" fill="#1e293b" stroke="#475569"/>
+      <text x="550" y="185" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">ALL: deny</text>
+    </g>
+  </g>
+
+  <!-- ========== SECTION 2: STANDARD PATTERNS (Top Right) ========== -->
+  <g transform="translate(750, 100)">
+    <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">STANDARD PATTERNS (Templates)</text>
+
+    <!-- Pattern 1: Owner Isolation -->
+    <g transform="translate(0, 25)">
+      <rect width="400" height="90" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="2"/>
+      <rect x="8" y="8" width="70" height="22" rx="4" fill="#8b5cf6"/>
+      <text x="43" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">FR-022</text>
+      <text x="90" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Owner Isolation Pattern</text>
+      <text x="15" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="12">user_id = auth.uid()</text>
+      <text x="15" y="66" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">Ensures users can only access their own rows</text>
+      <text x="15" y="82" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Applied to: users, profiles, sessions, audit_logs (SELECT)</text>
+    </g>
+
+    <!-- Pattern 2: Service Role Bypass -->
+    <g transform="translate(0, 125)">
+      <rect width="400" height="90" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+      <rect x="8" y="8" width="70" height="22" rx="4" fill="#3b82f6"/>
+      <text x="43" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">FR-023</text>
+      <text x="90" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Service Role Bypass Pattern</text>
+      <text x="15" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="12">auth.jwt()-&gt;&gt;'role' = 'service_role'</text>
+      <text x="15" y="66" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">Backend services skip user-level restrictions</text>
+      <text x="15" y="82" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Applied to: all tables (webhooks, notifications, batch jobs)</text>
+    </g>
+
+    <!-- Pattern 3: Soft Delete -->
+    <g transform="translate(420, 25)">
+      <rect width="400" height="90" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+      <rect x="8" y="8" width="70" height="22" rx="4" fill="#f59e0b"/>
+      <text x="43" y="23" fill="#000" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">FR-024</text>
+      <text x="90" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Soft Delete Pattern</text>
+      <text x="15" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="12">deleted_at IS NULL (deny hard DELETE)</text>
+      <text x="15" y="66" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">Records archived via status flag, not removed</text>
+      <text x="15" y="82" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Applied to: data requiring recovery capability</text>
+    </g>
+
+    <!-- Pattern 4: Immutable Audit -->
+    <g transform="translate(420, 125)">
+      <rect width="400" height="90" rx="8" fill="#1e293b" stroke="#dc2626" stroke-width="2"/>
+      <rect x="8" y="8" width="70" height="22" rx="4" fill="#dc2626"/>
+      <text x="43" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">FR-025</text>
+      <text x="90" y="23" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Immutable Audit Pattern</text>
+      <text x="15" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="12">INSERT: service_role only | UPDATE/DELETE: deny all</text>
+      <text x="15" y="66" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">Logs cannot be tampered with after creation</text>
+      <text x="15" y="82" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Applied to: audit_logs, compliance records</text>
+    </g>
+  </g>
+
+  <!-- ========== SECTION 3: FUNCTIONAL REQUIREMENTS (Middle) ========== -->
+  <g transform="translate(40, 360)">
+    <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">FUNCTIONAL REQUIREMENTS</text>
+    <text x="280" y="0" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12">(25 requirements in 5 groups)</text>
+
+    <!-- Group 1: Core Table Security -->
+    <g transform="translate(0, 25)">
+      <rect width="290" height="160" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+      <rect width="290" height="30" rx="8" fill="#334155"/>
+      <text x="15" y="20" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="bold">Core Table Security (FR-001-005)</text>
+
+      <text x="15" y="50" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-001</text>
+      <text x="70" y="50" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Enable policies on users</text>
+
+      <text x="15" y="68" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-002</text>
+      <text x="70" y="68" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Enable policies on profiles</text>
+
+      <text x="15" y="86" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-003</text>
+      <text x="70" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Enable policies on sessions</text>
+
+      <text x="15" y="104" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-004</text>
+      <text x="70" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Enable policies on audit_logs</text>
+
+      <text x="15" y="122" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-005</text>
+      <text x="70" y="122" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Enable on ALL new tables</text>
+
+      <text x="15" y="148" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">ALTER TABLE ... ENABLE ROW LEVEL SECURITY</text>
+    </g>
+
+    <!-- Group 2: User Data Isolation -->
+    <g transform="translate(310, 25)">
+      <rect width="290" height="160" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+      <rect width="290" height="30" rx="8" fill="#334155"/>
+      <text x="15" y="20" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="bold">User Data Isolation (FR-006-010)</text>
+
+      <text x="15" y="50" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-006</text>
+      <text x="70" y="50" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">SELECT own user record only</text>
+
+      <text x="15" y="68" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-007</text>
+      <text x="70" y="68" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">SELECT own profile only</text>
+
+      <text x="15" y="86" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-008</text>
+      <text x="70" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">UPDATE own profile only</text>
+
+      <text x="15" y="104" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-009</text>
+      <text x="70" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Deny modifying others' data</text>
+
+      <text x="15" y="122" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="11">FR-010</text>
+      <text x="70" y="122" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Return empty (not error)</text>
+
+      <text x="15" y="148" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">WHERE user_id = auth.uid()</text>
+    </g>
+
+    <!-- Group 3: Service Role Access -->
+    <g transform="translate(620, 25)">
+      <rect width="290" height="160" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+      <rect width="290" height="30" rx="8" fill="#334155"/>
+      <text x="15" y="20" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="bold">Service Role Access (FR-011-014)</text>
+
+      <text x="15" y="50" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="11">FR-011</text>
+      <text x="70" y="50" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Bypass for backend ops</text>
+
+      <text x="15" y="68" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="11">FR-012</text>
+      <text x="70" y="68" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Log all service_role usage</text>
+
+      <text x="15" y="86" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="11">FR-013</text>
+      <text x="70" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Minimize service scope</text>
+
+      <text x="15" y="104" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-014</text>
+      <text x="70" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Never expose to client</text>
+
+      <text x="15" y="130" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Credentials in server-side env only</text>
+      <text x="15" y="148" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">SUPABASE_SERVICE_ROLE_KEY</text>
+    </g>
+
+    <!-- Group 4: Audit Trail Protection -->
+    <g transform="translate(930, 25)">
+      <rect width="290" height="160" rx="8" fill="#1e293b" stroke="#dc2626" stroke-width="2"/>
+      <rect width="290" height="30" rx="8" fill="#334155"/>
+      <text x="15" y="20" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="bold">Audit Trail Protection (FR-015-018)</text>
+
+      <text x="15" y="50" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="11">FR-015</text>
+      <text x="70" y="50" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">INSERT via service_role only</text>
+
+      <text x="15" y="68" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-016</text>
+      <text x="70" y="68" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Deny UPDATE for all roles</text>
+
+      <text x="15" y="86" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-017</text>
+      <text x="70" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Deny DELETE for all roles</text>
+
+      <text x="15" y="104" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-018</text>
+      <text x="70" y="104" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">SELECT own audit entries</text>
+
+      <text x="15" y="130" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="10">IMMUTABLE: No modifications allowed</text>
+      <text x="15" y="148" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Compliance: GDPR + SOC 2</text>
+    </g>
+
+    <!-- Group 5: Anonymous Access -->
+    <g transform="translate(1240, 25)">
+      <rect width="290" height="160" rx="8" fill="#1e293b" stroke="#6b7280" stroke-width="2"/>
+      <rect width="290" height="30" rx="8" fill="#334155"/>
+      <text x="15" y="20" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="bold">Anonymous Access (FR-019-021)</text>
+
+      <text x="15" y="50" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-019</text>
+      <text x="70" y="50" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Deny all writes</text>
+
+      <text x="15" y="68" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="11">FR-020</text>
+      <text x="70" y="68" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">SELECT public tables only</text>
+
+      <text x="15" y="86" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-021</text>
+      <text x="70" y="86" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Prevent user enumeration</text>
+
+      <text x="15" y="116" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Perimeter defense against</text>
+      <text x="15" y="132" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">reconnaissance attacks</text>
+      <text x="15" y="148" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">and data harvesting</text>
+    </g>
+  </g>
+
+  <!-- ========== SECTION 4: EDGE CASES (Bottom Left) ========== -->
+  <g transform="translate(40, 565)">
+    <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">EDGE CASES &amp; ERROR HANDLING</text>
+
+    <g transform="translate(0, 25)">
+      <rect width="740" height="140" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+      <!-- Edge Case 1 -->
+      <g transform="translate(15, 15)">
+        <rect width="340" height="50" rx="6" fill="#334155"/>
+        <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Session Expired Mid-Operation</text>
+        <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Operation fails with "session expired"</text>
+        <text x="250" y="38" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No partial data exposed</text>
+      </g>
+
+      <!-- Edge Case 2 -->
+      <g transform="translate(375, 15)">
+        <rect width="340" height="50" rx="6" fill="#334155"/>
+        <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Orphaned Data (User Deleted)</text>
+        <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Data remains protected</text>
+        <text x="200" y="38" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="10">service_role cleanup only</text>
+      </g>
+
+      <!-- Edge Case 3 -->
+      <g transform="translate(15, 75)">
+        <rect width="340" height="50" rx="6" fill="#334155"/>
+        <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Concurrent Policy Evaluation</text>
+        <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Atomic per query</text>
+        <text x="140" y="38" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No race conditions possible</text>
+      </g>
+
+      <!-- Edge Case 4 -->
+      <g transform="translate(375, 75)">
+        <rect width="340" height="50" rx="6" fill="#334155"/>
+        <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Policy Conflicts</text>
+        <text x="10" y="38" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11">Most restrictive wins</text>
+        <text x="150" y="38" fill="#ef4444" font-family="system-ui, sans-serif" font-size="10">Explicit denials never overridden</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- ========== SECTION 5: CONSTRAINTS & ASSUMPTIONS (Bottom Right) ========== -->
+  <g transform="translate(800, 565)">
+    <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">CONSTRAINTS &amp; ASSUMPTIONS</text>
+
+    <g transform="translate(0, 25)">
+      <rect width="380" height="140" rx="8" fill="#1e293b" stroke="#f59e0b" stroke-width="2"/>
+      <rect width="380" height="28" rx="8" fill="#334155"/>
+      <text x="15" y="19" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Constraints</text>
+
+      <text x="15" y="48" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Policies must be simple for query optimization</text>
+      <text x="15" y="66" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">No complex subqueries in policies</text>
+      <text x="15" y="84" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Single service_role credential (no granular roles)</text>
+
+      <line x1="15" y1="98" x2="365" y2="98" stroke="#475569"/>
+      <text x="15" y="114" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">Assumptions:</text>
+      <text x="110" y="114" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">All tables have user_id column</text>
+      <text x="15" y="130" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">Service creds in env config | Schema version controlled</text>
+    </g>
+
+    <!-- Dependencies -->
+    <g transform="translate(400, 25)">
+      <rect width="360" height="140" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+      <rect width="360" height="28" rx="8" fill="#334155"/>
+      <text x="15" y="19" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Dependencies</text>
+
+      <text x="15" y="48" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">Database with RLS capability</text>
+      <text x="250" y="48" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(Supabase/PostgreSQL)</text>
+
+      <text x="15" y="68" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">Auth service with user identity</text>
+      <text x="250" y="68" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(Supabase Auth)</text>
+
+      <text x="15" y="88" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">Audit logging service</text>
+      <text x="250" y="88" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">(Edge Functions)</text>
+
+      <line x1="15" y1="102" x2="345" y2="102" stroke="#475569"/>
+      <text x="15" y="118" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Scale: 1K-10K users, &lt;1M rows/table</text>
+      <text x="15" y="132" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">SLA: 99.9% uptime | Compliance: GDPR + SOC 2</text>
+    </g>
+  </g>
+
+  <!-- ========== LEGEND (Bottom) ========== -->
+  <g transform="translate(40, 735)">
+    <rect width="1520" height="55" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <text x="20" y="22" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Legend:</text>
+
+    <text x="90" y="22" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">FR-00X = Allow</text>
+    <text x="200" y="22" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">FR-00X = Deny</text>
+    <text x="300" y="22" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="11">FR-00X = Conditional</text>
+    <text x="440" y="22" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="11">FR-00X = Service</text>
+
+    <line x1="560" y1="8" x2="560" y2="47" stroke="#475569"/>
+
+    <circle cx="590" cy="18" r="8" fill="#8b5cf6"/>
+    <text x="605" y="22" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">authenticated</text>
+
+    <circle cx="720" cy="18" r="8" fill="#3b82f6"/>
+    <text x="735" y="22" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">service_role</text>
+
+    <circle cx="840" cy="18" r="8" fill="#6b7280"/>
+    <text x="855" y="22" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="11">anon</text>
+
+    <line x1="920" y1="8" x2="920" y2="47" stroke="#475569"/>
+
+    <text x="940" y="22" fill="#d946ef" font-family="system-ui, sans-serif" font-size="11" font-weight="bold">Key:</text>
+    <text x="980" y="22" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">own = user_id = auth.uid()</text>
+    <text x="1160" y="22" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">bypass = service_role check</text>
+    <text x="1340" y="22" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">deny = policy returns false</text>
+
+    <text x="20" y="42" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">Total: 25 Functional Requirements | 4 Standard Patterns | 5 Requirement Groups | 4 Edge Cases</text>
+  </g>
+
+  <!-- ========== WATERMARK ========== -->
+  <g transform="translate(40, 970)">
+    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">
+      <tspan>Spec: features/foundation/000-rls-implementation/spec.md</tspan>
+      <tspan x="400">Generated: 2026-01-04</tspan>
+      <tspan x="600">Theme: Dark</tspan>
+      <tspan x="750">Canvas: 1600x1000</tspan>
+      <tspan x="950">Page 2 of 2: Policy Patterns &amp; Implementation</tspan>
+    </text>
+  </g>
+</svg>
