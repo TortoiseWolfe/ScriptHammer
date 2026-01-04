@@ -343,12 +343,6 @@
 
   <!-- ========== WATERMARK ========== -->
   <g transform="translate(40, 970)">
-    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">
-      <tspan>Spec: features/foundation/000-rls-implementation/spec.md</tspan>
-      <tspan x="400">Generated: 2026-01-04</tspan>
-      <tspan x="600">Theme: Dark</tspan>
-      <tspan x="750">Canvas: 1600x1000</tspan>
-      <tspan x="950">Page 1 of 2: Architecture Overview</tspan>
-    </text>
+    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">[000:01] | RLS Architecture Overview | ScriptHammer</text>
   </g>
 </svg>

@@ -50,7 +50,8 @@
       <!-- authenticated cells -->
       <rect x="120" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
       <text x="130" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
-      <text x="130" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+      <text x="130" y="68" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/</text>
+      <text x="130" y="82" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">DELETE: deny</text>
 
       <rect x="260" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
       <text x="270" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
@@ -59,11 +60,13 @@
 
       <rect x="400" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
       <text x="410" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
-      <text x="410" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+      <text x="410" y="68" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/</text>
+      <text x="410" y="82" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">DELETE: deny</text>
 
       <rect x="540" y="35" width="140" height="60" fill="#1e293b" stroke="#475569"/>
       <text x="550" y="55" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">SELECT: own</text>
-      <text x="550" y="70" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/DELETE: deny</text>
+      <text x="550" y="68" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">INSERT/UPDATE/</text>
+      <text x="550" y="82" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">DELETE: deny</text>
 
       <!-- service_role Row -->
       <rect x="0" y="95" width="120" height="60" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
@@ -162,7 +165,7 @@
   </g>
 
   <!-- ========== SECTION 3: FUNCTIONAL REQUIREMENTS (Middle) ========== -->
-  <g transform="translate(40, 360)">
+  <g transform="translate(40, 400)">
     <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">FUNCTIONAL REQUIREMENTS</text>
     <text x="280" y="0" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="12">(25 requirements in 5 groups)</text>
 
@@ -280,7 +283,7 @@
   </g>
 
   <!-- ========== SECTION 4: EDGE CASES (Bottom Left) ========== -->
-  <g transform="translate(40, 565)">
+  <g transform="translate(40, 630)">
     <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">EDGE CASES &amp; ERROR HANDLING</text>
 
     <g transform="translate(0, 25)">
@@ -291,7 +294,7 @@
         <rect width="340" height="50" rx="6" fill="#334155"/>
         <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Session Expired Mid-Operation</text>
         <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Operation fails with "session expired"</text>
-        <text x="250" y="38" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No partial data exposed</text>
+        <text x="330" y="38" text-anchor="end" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No partial data exposed</text>
       </g>
 
       <!-- Edge Case 2 -->
@@ -299,7 +302,7 @@
         <rect width="340" height="50" rx="6" fill="#334155"/>
         <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Orphaned Data (User Deleted)</text>
         <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Data remains protected</text>
-        <text x="200" y="38" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="10">service_role cleanup only</text>
+        <text x="330" y="38" text-anchor="end" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="10">service_role cleanup only</text>
       </g>
 
       <!-- Edge Case 3 -->
@@ -307,7 +310,7 @@
         <rect width="340" height="50" rx="6" fill="#334155"/>
         <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Concurrent Policy Evaluation</text>
         <text x="10" y="38" fill="#cbd5e1" font-family="system-ui, sans-serif" font-size="11">Atomic per query</text>
-        <text x="140" y="38" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No race conditions possible</text>
+        <text x="330" y="38" text-anchor="end" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">No race conditions possible</text>
       </g>
 
       <!-- Edge Case 4 -->
@@ -315,13 +318,13 @@
         <rect width="340" height="50" rx="6" fill="#334155"/>
         <text x="10" y="20" fill="#d946ef" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Policy Conflicts</text>
         <text x="10" y="38" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="11">Most restrictive wins</text>
-        <text x="150" y="38" fill="#ef4444" font-family="system-ui, sans-serif" font-size="10">Explicit denials never overridden</text>
+        <text x="330" y="38" text-anchor="end" fill="#ef4444" font-family="system-ui, sans-serif" font-size="10">Explicit denials never overridden</text>
       </g>
     </g>
   </g>
 
   <!-- ========== SECTION 5: CONSTRAINTS & ASSUMPTIONS (Bottom Right) ========== -->
-  <g transform="translate(800, 565)">
+  <g transform="translate(800, 630)">
     <text x="0" y="0" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">CONSTRAINTS &amp; ASSUMPTIONS</text>
 
     <g transform="translate(0, 25)">
@@ -361,7 +364,7 @@
   </g>
 
   <!-- ========== LEGEND (Bottom) ========== -->
-  <g transform="translate(40, 735)">
+  <g transform="translate(40, 820)">
     <rect width="1520" height="55" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
 
     <text x="20" y="22" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="bold">Legend:</text>
@@ -394,12 +397,6 @@
 
   <!-- ========== WATERMARK ========== -->
   <g transform="translate(40, 970)">
-    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">
-      <tspan>Spec: features/foundation/000-rls-implementation/spec.md</tspan>
-      <tspan x="400">Generated: 2026-01-04</tspan>
-      <tspan x="600">Theme: Dark</tspan>
-      <tspan x="750">Canvas: 1600x1000</tspan>
-      <tspan x="950">Page 2 of 2: Policy Patterns &amp; Implementation</tspan>
-    </text>
+    <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">[000:02] | RLS Policy Patterns | ScriptHammer</text>
   </g>
 </svg>
