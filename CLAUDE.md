@@ -15,9 +15,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Generated spec.md for all 46 features
 - [x] Generated wireframes for all 46 features (123 SVGs total)
 
-### Next Session: Phase 2 - Wireframe Review
+### Session Checkpoint (2026-01-04)
 
-**START HERE**: Feature **000-rls-implementation**
+**Feature in Progress**: 000-rls-implementation
+
+**Status**: Wireframe deleted - needs fresh generation
+
+| File | Status | Action Needed |
+|------|--------|---------------|
+| 01-rls-architecture-overview.svg | ❌ DELETED | `/wireframe 000-rls-implementation` |
+
+**Next Session START HERE**:
+1. Run `/wireframe 000-rls-implementation` to generate fresh wireframe
+2. Run `/wireframe-review 000-rls-implementation` to verify
+3. Repeat until all ✅ PASS
+4. Move to next feature (001-wcag-aa-compliance)
+
+---
+
+### Phase 2 - Wireframe Review
 
 **MANDATORY**: Review ALL wireframes before proceeding to `/plan`. Run `/wireframe-review` on each feature:
 
@@ -30,6 +46,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 🔴 **REGENERATE** (layout, spacing, positioning, overlap) → `/wireframe` regenerates with feedback
 
 **Key Insight**: Patching structural issues makes things WORSE. Only patch minor cosmetic issues.
+
+### Wireframe Review File Structure
+
+**CRITICAL**: Each SVG gets its own issues file. Review ONLY documents issues - it does NOT patch.
+
+| File Type | Location | Purpose |
+|-----------|----------|---------|
+| Per-SVG issues | `docs/design/wireframes/[feature]/[svg-name].issues.md` | Detailed review findings for ONE SVG |
+| Feature summary | `features/[category]/[feature]/WIREFRAME_ISSUES.md` | Historical context only (do NOT update during review) |
+
+**Per-SVG Issues File Naming**:
+```
+docs/design/wireframes/000-rls-implementation/
+├── 01-rls-architecture-overview.svg
+├── 01-rls-architecture-overview.issues.md   ← Created by /wireframe-review
+├── 02-rls-policy-patterns.svg
+└── 02-rls-policy-patterns.issues.md         ← Created by /wireframe-review
+```
+
+**Workflow**:
+1. `/wireframe-review [feature:page]` → Creates `[svg-name].issues.md` with findings
+2. `/wireframe [feature]` → Reads `.issues.md` files, applies patches or regenerates
+3. Repeat until all issues resolved
+
+**Rules**:
+- One issues file per SVG (never combine)
+- Review documents issues only (never patches the SVG)
+- `/wireframe` reads issues files and applies fixes
+- Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
 
 ### Later: Phase 3 - Plan & Implement
 
@@ -105,13 +150,13 @@ find docs/design/wireframes -name "*.svg" -newer README.md
 
 Both files should stay in sync for implementation phases.
 
-### Current State (2026-01-01)
+### Current State (2026-01-03)
 
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
 | Wireframes generated | 46/46 features (123 SVGs) |
-| Wireframes reviewed | 0/46 (starting fresh) |
+| Wireframes reviewed | 0/46 (001 in progress - Pass 2 done, needs fixes) |
 | Implementation phase | All 46 blocked until wireframe review complete |
 
 ---

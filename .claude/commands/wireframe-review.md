@@ -2,6 +2,21 @@
 description: Critically review SVG wireframes with ruthless attention to detail. Find EVERY flaw.
 ---
 
+## ⚠️ CRITICAL REVIEW PHILOSOPHY
+
+**NEVER TRUST. ALWAYS VERIFY.**
+
+- Assume EVERY wireframe has issues. If you found zero, you're blind.
+- The default is FAIL until proven otherwise, not PASS until proven broken.
+- Finding 0 issues on Pass 1 is a REVIEW FAILURE, not a wireframe success.
+- Do NOT rubber-stamp. Do NOT auto-pass. Do NOT skip checks.
+- If something looks "fine," look harder. You missed something.
+
+**The user found 21 issues on a wireframe you passed with "no issues detected."
+That is unacceptable. Every check exists to catch problems, not to confirm success.**
+
+---
+
 ## ⛔ MANDATORY FIRST CHECKS (BLOCKING - DO BEFORE ANYTHING ELSE)
 
 **These checks are BLOCKING. You cannot proceed with the review until all pass. Do NOT skip to issue categories.**
@@ -11,16 +26,37 @@ description: Critically review SVG wireframes with ruthless attention to detail.
 **Before reviewing ANY file, verify the theme is correct for the content type.**
 
 1. Read the feature name and wireframe title
-2. Does it contain: `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`?
+2. Check for keyword matches:
 
-| Feature Type | Required Theme | Background Check |
-|--------------|----------------|------------------|
-| Architecture/Backend | **DARK** | Look for `#0f172a` or `#1e293b` gradient |
-| UI/UX screens | Light | Look for `#c7ddf5` or `#e8d4b8` parchment |
+| Theme | Keywords | Background |
+|-------|----------|------------|
+| **LIGHT** (UI/UX) | `dashboard`, `form`, `modal`, `screen`, `page`, `settings`, `profile`, `login`, `signup`, `checkout`, `cart`, `menu`, `navigation` | `#c7ddf5` or `#e8d4b8` parchment |
+| **DARK** (Backend) | `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system` | `#0f172a` or `#1e293b` gradient |
+
+**Priority:** UI/UX keywords take precedence. "Dashboard" = LIGHT even if title also contains "system".
 
 **How to verify:** Check SVG `<linearGradient id="bgGrad">` for background colors.
 
+**⛔ If UI/UX wireframe uses DARK theme → 🔴 REGENERATE immediately. Do not continue review.**
 **⛔ If architecture/backend diagram uses LIGHT theme → 🔴 REGENERATE immediately. Do not continue review.**
+
+**Exception - Hybrid Themes:**
+Dark wireframes MAY contain light-themed insets for:
+- Storybook/component previews
+- UI mockups showing end-user views
+- Browser window simulations
+
+Light insets use existing Light Theme (parchment/sky) with border to separate from dark parent.
+
+**⚠️ HYBRID TRIGGER KEYWORDS in dark wireframes:**
+| Keyword | Expected Behavior |
+|---------|-------------------|
+| `Storybook` | Light-themed panel showing component preview/a11y tab |
+| `Preview` | Light inset showing end-user view |
+| `Browser` | Light window simulation |
+
+**If dark wireframe contains Storybook panel → verify it uses LIGHT inset, not dark.**
+**Missing light inset for hybrid content → 🔴 REGENERATE.**
 
 ### Check 2: Viewer Setup (BLOCKING)
 
@@ -38,6 +74,7 @@ At 200%, issues become visible that you'd miss at 100%:
 - Small font readability issues
 - Arrow paths crossing content
 - Container boundary violations
+- Vertical stacked items exceeding container height (step lists, card grids)
 
 **⛔ If you find issues at detail zoom that require layout changes → 🔴 REGENERATE.**
 
@@ -63,13 +100,154 @@ At 200%, issues become visible that you'd miss at 100%:
 
 ### Check 6: Requirements Legend (BLOCKING)
 
-**For EVERY wireframe with FR/SC/NFR annotations:**
+**For EVERY wireframe with <kbd>**FR**</kbd> / <kbd>**SC**</kbd> / <kbd>**NFR**</kbd> annotations:**
 
-1. Look for REQUIREMENTS KEY panel at y=690 (bottom-left, height grows upward)
+1. Look for **REQUIREMENTS KEY** panel at y=690 (bottom-left, height grows upward)
 2. Verify EVERY annotation code has a description in the legend
 3. Verify NO extra codes in legend that aren't on the page
 
-**⛔ If FR/SC annotations exist but no REQUIREMENTS KEY panel → 🔴 REGENERATE immediately.**
+**⛔ If <kbd>**FR**</kbd> / <kbd>**SC**</kbd> annotations exist but no REQUIREMENTS KEY panel → 🔴 REGENERATE immediately.**
+
+### Check 7: Styling Inconsistency (BLOCKING)
+
+**Scan for visual inconsistencies in repeated/similar elements:**
+
+| Pattern | Example | What to Check |
+|---------|---------|---------------|
+| Missing fill | Button with transparent bg, siblings have solid | Background color consistency |
+| Outline vs solid | 2 buttons filled, 1 only has stroke (no fill) | All same-type buttons identical |
+| Border mismatch | One card has border, others don't | Stroke/border consistency |
+| Font mismatch | Same label type but different font-size | Typography consistency |
+| Color drift | Same element type, slightly different colors | Fill/stroke hex values |
+| Padding mismatch | List items with uneven internal spacing | Consistent inner spacing |
+
+**⚠️ COMMON FAILURE: List items with action buttons**
+- Scan ALL repeated list items (issues list, table rows, card grids)
+- Each item's button/badge/indicator MUST have identical styling
+- Example: 3 "View Fix →" buttons where 2 are solid fill, 1 is outline-only = 🟢 PATCHABLE (fix fill attribute)
+
+**Visual scan method:**
+1. Group similar elements (all buttons, all cards, all list items)
+2. Compare styling within each group - should be IDENTICAL
+3. Look for "one of these is not like the others" patterns
+4. Check that repeated UI patterns have consistent fills, strokes, fonts
+
+**⛔ If similar elements have mismatched styling → 🟢 PATCHABLE (fix fill/stroke/font attributes).**
+
+### Check 8: SVG Syntax Validation (BLOCKING)
+
+**Parse the SVG file for syntax errors that break rendering.**
+
+Common syntax errors to scan for:
+| Pattern | Example of Error | Detection |
+|---------|------------------|-----------|
+| Broken transform | `transform="translate(320"` | Missing `)` or comma |
+| Unclosed quotes | `fill="#8b5cf6` | Quote without closing |
+| Malformed attributes | `y="40">` after transform | Wrong attribute placement |
+| Invalid coordinates | `translate(NaN, 100)` | Non-numeric values |
+
+**Validation method:**
+```bash
+# Quick syntax check - if this fails, SVG is broken
+grep -n 'transform="[^"]*[^")]"' *.svg  # Unclosed transform
+```
+
+**⛔ If SVG has syntax errors that break rendering → 🔴 REGENERATE immediately.**
+
+### Check 9: Text Truncation Detection (BLOCKING)
+
+**Systematically verify ALL FR/SC/NFR tags are FULLY visible.**
+
+At 200% zoom, read every annotation character-by-character:
+- Does "FR-011-014" show all characters, or is it cut to "FR-011-01"?
+- Does "FR-022-025" fit within its panel, or does it bleed past the edge?
+- Can you read the ENTIRE text of every annotation?
+
+**High-risk locations:**
+- Panel corners (tags squeezed at edges)
+- Right margins (text extending past canvas)
+- Dense areas (multiple tags competing for space)
+- Narrow containers (mobile screens, small panels)
+
+**⛔ If ANY tag is truncated (even 1 character cut off) → 🔴 REGENERATE immediately.**
+
+### Check 10: Multi-Column Text Overlap (BLOCKING)
+
+**For any multi-column layout (User Stories, Feature grids, side-by-side lists):**
+
+1. Identify all multi-column areas
+2. Check each row: Does Column 1 text run into Column 2 text?
+3. Check vertical: Does Row N text collide with Row N+1?
+
+**Common failure patterns:**
+- User Stories in 2 columns: US-001 collides with US-004
+- Feature grids: Long labels overlapping adjacent cells
+- Two-column legends: Left column running into right
+
+**Visual test:** At 200%, can you read EVERY label without any text touching?
+
+**⛔ If text from adjacent elements collides → 🔴 REGENERATE immediately.**
+
+### Check 11: Flow Diagram Completeness (BLOCKING for Architecture)
+
+**For EVERY decision point in flow diagrams:**
+
+1. Trace the "Yes" path → Does it reach a terminal state?
+2. Trace the "No" path → Does it reach a terminal state?
+3. Check arrow lengths → Does any arrow just "stop" mid-canvas?
+
+**RLS flow must show:**
+```
+Query Request
+     ↓
+RLS Enabled? ──No──→ ALLOW (green)
+     ↓ Yes
+Policy Match? ──Yes──→ ALLOW (green)
+     ↓ No
+   DENY (red) ← This MUST exist!
+```
+
+**Detection:**
+- Arrow drops only 10-20px then stops → TRUNCATED
+- Decision has two branches but only one destination → INCOMPLETE
+- "No" and "Yes" both lead to same outcome → MISLEADING
+
+**⛔ If any flow path is incomplete or misleading → 🔴 REGENERATE immediately.**
+
+### Check 12: Color Consistency (BLOCKING)
+
+**Related elements MUST use matching colors.**
+
+| Pattern | Check |
+|---------|-------|
+| Role → Badge | If `authenticated` is purple, its badges should be purple (not blue) |
+| Status → Legend | If ALLOW is blue in legend, all ALLOW badges must be blue |
+| Theme coherence | Role icons, badges, and legends using same palette |
+
+**Detection method:**
+1. Identify the color for each role/status in the legend
+2. Find all instances of that role/status in the diagram
+3. Verify colors match
+
+**Example failure:** `authenticated` role box is purple (#8b5cf6) but "ALLOW (own)" badges are blue (#2563eb).
+
+**⛔ If color assignments are inconsistent → 🔴 REGENERATE immediately.**
+
+### Check 13: Element Boundary Violations (BLOCKING)
+
+**Tags and labels must NOT overlap panel borders or other structural elements.**
+
+At 200% zoom, check every FR/SC tag:
+- Is the tag INSIDE the panel it describes?
+- Does the tag overlap the panel border (dashed/solid line)?
+- Is the tag positioned on TOP of another element?
+
+**Common failures:**
+- FR-001-005 positioned on top of audit_logs dashed border
+- SC tags overlapping panel corners
+- Annotations bleeding across container boundaries
+
+**⛔ If any tag overlaps panel borders or structural elements → 🔴 REGENERATE immediately.**
 
 ### First Checks Statement (MANDATORY)
 
@@ -83,6 +261,13 @@ FIRST CHECKS COMPLETE:
 - Arrow paths: [Clear / Through content at: ...]
 - Space utilization: [Good / Wasted space at: ...]
 - Requirements legend: [Present with all FRs / Missing / Incomplete]
+- Styling consistency: [Consistent / Mismatch at: ...]
+- SVG syntax: [Valid / BROKEN at line: ...]
+- Text truncation: [None / Truncated at: ...]
+- Multi-column overlap: [None / Overlap at: ...]
+- Flow completeness: [Complete / Missing terminal at: ...]
+- Color consistency: [Consistent / Mismatch at: ...]
+- Element boundaries: [Respected / Violation at: ...]
 - BLOCKING ISSUES: [None / List any that require immediate REGENERATE]
 ```
 
@@ -137,36 +322,34 @@ Spec path comes from SVG watermark. Still read FULL spec for context.
 
 **Before starting the review, check if this is a subsequent pass.**
 
-Look for existing `WIREFRAME_ISSUES.md` in the feature directory:
+**Each SVG gets its own issues file** alongside the SVG:
 ```
-features/[category]/[feature-folder]/WIREFRAME_ISSUES.md
+docs/design/wireframes/[feature]/01-page-name.svg
+docs/design/wireframes/[feature]/01-page-name.issues.md
 ```
 
-### If NO existing file:
+### If NO existing .issues.md for this SVG:
 - This is **Pass 1** (fresh review)
 - Proceed with full review
-- Create new WIREFRAME_ISSUES.md
+- Create new `[svg-name].issues.md`
 
-### If existing file found:
+### If existing .issues.md found:
 - Read the file and extract:
-  - **Current pass number** (from Review History table)
-  - **Previous issues** (all rows from issue tables)
+  - **Current pass number** (from Review History)
+  - **Previous issues** (all rows from issue table)
   - **Issue fingerprints** (Category + Location + Description hash for matching)
 - Increment pass number
-- Proceed with **FULL review of ALL files** (don't skip any - might catch overlooked issues)
-- After review, compare findings against previous pass
+- Compare findings against previous pass
 
-### Per-Page Mode: Incremental Issue Tracking
+### File Naming Convention
 
-**If `:PAGE` provided AND existing WIREFRAME_ISSUES.md:**
+| SVG File | Issues File |
+|----------|-------------|
+| `01-consent-modal.svg` | `01-consent-modal.issues.md` |
+| `02-privacy-settings.svg` | `02-privacy-settings.issues.md` |
+| `03-auth-flow.svg` | `03-auth-flow.issues.md` |
 
-| Action | Scope |
-|--------|-------|
-| PRESERVE | Other files' issue tables, Visual Descriptions, Overlap Matrices |
-| UPDATE | Target file's section only |
-| RECALCULATE | Summary totals, increment pass counter for reviewed file |
-
-Per-page mode saves tokens. Preserving other sections maintains history.
+**One issues file per SVG. Never combine multiple SVGs into one issues file.**
 
 ⚠️ **CRITICAL: "RESOLVED" does NOT mean "skip review"**
 
@@ -189,6 +372,15 @@ Files marked "✅ RESOLVED" or "✅ PASS" need EXTRA scrutiny, not less:
 ### All Issues Resolved? ⚠️ FINAL VERIFICATION REQUIRED
 
 **If remaining issues = 0, verify before declaring PASS:**
+
+### ⛔ MINIMUM ISSUE GATE (CHECK FIRST)
+
+| Pass Number | Required | Found | Gate |
+|-------------|----------|-------|------|
+| Pass 1 | ≥5 | [count] | [✅/⛔] |
+| Pass 2+ | ≥3 | [count] | [✅/⛔] |
+
+**If gate = ⛔ → STOP. Re-run the 16 issue categories. You missed something.**
 
 ### ⛔ File CANNOT pass if ANY of these are true:
 
@@ -532,6 +724,26 @@ Find problems, not praise. Assume every wireframe has issues. If something looks
 
 ---
 
+## ⛔ MINIMUM ISSUE REQUIREMENTS (NON-NEGOTIABLE)
+
+**Every wireframe has issues. If you found zero, you're not looking hard enough.**
+
+| Pass | Minimum Issues | Consequence |
+|------|----------------|-------------|
+| Pass 1 (fresh review) | **≥5 issues** | Cannot declare PASS until 5+ found |
+| Pass 2+ (subsequent) | **≥3 issues** | Cannot declare PASS until 3+ found |
+
+**If you can't find enough issues, you haven't completed the existing review process thoroughly:**
+- Did you zoom to 200% and inspect all 5 quadrants?
+- Did you complete the Overlap Matrix for ALL adjacent element pairs?
+- Did you run through ALL 16 issue categories?
+- Did you do the Devil's Advocate checkpoint?
+- Did you verify every label character-by-character?
+
+**The techniques are in this skill. Use them. DO NOT DECLARE PASS UNTIL MINIMUM MET.**
+
+---
+
 ## Issue Categories - SCRUTINIZE EACH ONE
 
 ⛔ **STOP**: View rendered wireframes and write Visual Descriptions BEFORE using these checklists. Look first, then use as second-pass verification.
@@ -566,6 +778,7 @@ Find problems, not praise. Assume every wireframe has issues. If something looks
 | Text under overlays | Hidden behind badges/indicators? |
 | Heading visibility | Covered by decorative rings? |
 | Container overflow | Content escaping below/outside panel? |
+| Stacked item overflow | Last item in list bleeds below container bottom? |
 
 ### 2b. ⛔ CONTAINER BOUNDARY MATH VALIDATION (MANDATORY)
 
@@ -583,6 +796,21 @@ element_y + element_height ≤ container_y + container_height
 
 Text width: ~6px/char (mono 10px), ~7px/char (12px), ~8px/char (14px).
 **DO NOT EYEBALL. Do the math. Violation = 🔴 REGENERATE.**
+
+**⚠️ NUMBERED STEP LISTS (Flow diagrams, processes)**
+- For each numbered list inside a panel:
+  1. Count the steps (e.g., 4 steps)
+  2. Calculate: `step_count × step_height + gaps + padding`
+  3. Compare to container height
+  4. Example: 4 steps × 66px + 3 gaps × 14px + 40px padding = 346px
+     - Container height 280px → OVERFLOW by 66px!
+
+| Check | Formula |
+|-------|---------|
+| Step list fits | (steps × height) + ((steps-1) × gap) + padding ≤ container_height |
+| Last step visible | last_step_y + last_step_height < container_bottom_y |
+
+**⛔ If last step bleeds below container → 🔴 REGENERATE.**
 
 **Example calculation:**
 ```
@@ -659,9 +887,15 @@ For every dynamic text (FR codes, labels): `text_width < container_width - paddi
 |-------|-------|
 | Light theme | `#4a5568` on `#e8d4b8` = 7:1? |
 | Dark muted | `#94a3b8` on `#1e293b` readable? |
-| Annotations | `#8b5cf6` visible both themes? |
-| Buttons | White on `#8b5cf6` sufficient? |
-| Status | Green/red distinguishable without color? |
+| <kbd>**FR**</kbd> Tags | **`#2563eb`** (blue) visible both themes? |
+| <kbd>**SC**</kbd> Tags | **`#ea580c`** (orange) + **dashed** border? |
+| <kbd>**US**</kbd> Tags | **`#0891b2`** (teal) + **dotted** border? |
+| RLS Allow | **`#2563eb`** (blue) + **✓** icon? |
+| RLS Deny | **`#991b1b`** (dark red) + **✗** + stripes? |
+| RLS Conditional | **`#eab308`** (yellow) + **?** + dashed? |
+| Status | Colorblind-safe with icons/patterns? |
+| Badge text | Text MUST be readable against badge background, not parent background |
+| All text | Every text element must pass contrast test against its IMMEDIATE background |
 
 ---
 
@@ -896,6 +1130,24 @@ grep -n "text-anchor" *.svg   # Check alignment
 | Massive wasted space | >100px unused while cramped |
 | Missing footer | No signature at y=780 |
 | Mobile position wrong | Not at `translate(980, 60)` |
+
+**Note**: Styling mismatches (inconsistent fills/borders/fonts) are 🟢 PATCHABLE, not instant regenerate triggers.
+
+---
+
+## ⛔ COMMON FAILURE PATTERNS (CHECK EVERY TIME)
+
+| Pattern | Example | Detection |
+|---------|---------|-----------|
+| Badge-on-badge contrast | "OWN" purple text on purple badge | Text same color as background |
+| Redundant panels | REQUIREMENTS KEY duplicates FR/SC list | Same content in 2 places |
+| Cut-short legends | Legend ends mid-canvas with room right | Legend width << available width |
+| Row label clipping | Flow diagram labels too close vertically | Gap < font-size between rows |
+| Header bloat | Table header wider than data columns | Header text overflows column |
+| Container overflow | Badges extend past panel bounds | Element right edge > panel right edge |
+| Unused space + cramped | Empty areas while content overlaps | Wasted space + overlap in same file |
+
+---
 
 **No instant triggers?** Still complete Visual Description + Overlap Matrix + Devil's Advocate before ✅ PASS.
 

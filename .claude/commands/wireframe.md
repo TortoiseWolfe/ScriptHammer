@@ -6,13 +6,34 @@ description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerate
 
 ### Theme
 
-**Q1**: Contains `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`?
-- **YES** → ⛔ DARK THEME (no exceptions)
+**Q1**: Contains UI/UX keyword? `dashboard`, `form`, `modal`, `screen`, `page`, `settings`, `profile`, `login`, `signup`, `checkout`, `cart`, `menu`, `navigation`
+- **YES** → ⛔ LIGHT THEME (UI/UX takes priority)
 - **NO** → Q2
 
-**Q2**: Would end users see this screen?
-- **YES** → Light (settings, profile, dashboard)
-- **NO** → Dark (CI/CD, RLS, API, tests)
+**Q2**: Contains backend keyword? `architecture`, `RLS`, `API`, `auth`, `security`, `testing`, `integration`, `pipeline`, `database`, `schema`, `flow`, `system`
+- **YES** → ⛔ DARK THEME
+- **NO** → Q3
+
+**Q3**: Would end users see this screen?
+- **YES** → Light
+- **NO** → Dark
+
+### Hybrid Themes (Insets)
+
+Some wireframes need **light insets within dark parents**:
+
+| Parent Theme | Inset Type | Inset Theme |
+|--------------|------------|-------------|
+| Dark (dev tooling) | Storybook preview | Light |
+| Dark (testing) | Component demo | Light |
+| Dark (architecture) | UI mockup/screenshot | Light |
+
+**Light inset styling:**
+- Use existing Light Theme colors (parchment `#e8d4b8` or sky `#c7ddf5`)
+- Border: 2px to visually separate from dark parent
+- Text: Light theme text colors (`#1a1a2e`, `#374151`)
+
+**Use when:** The inset shows what an END USER would see, embedded in developer context.
 
 ### Canvas
 
@@ -89,26 +110,29 @@ Read full spec. Extract: feature purpose, user stories, UI requirements, screens
 
 ### 2c. Extract Requirements for Legend
 
-| Type | Source Section | Short Title (≤30 chars) |
-|------|----------------|-------------------------|
-| FR | `### Functional Requirements` | Keep MUST/SHOULD |
-| SC | `### Success Criteria` | Keep metric |
-| US | `### User Stories` | Inline only, no legend |
+| Tag | Source Section | Short Title (≤30 chars) |
+|-----|----------------|-------------------------|
+| <kbd>**FR**</kbd> | `### Functional Requirements` | Keep MUST/SHOULD |
+| <kbd>**SC**</kbd> | `### Success Criteria` | Keep metric |
+| <kbd>**US**</kbd> | `### User Stories` | Inline only, no legend |
 
 **Lookup table:**
-| Type | Code | Short | Full |
-|------|------|-------|------|
-| FR | FR-001 | MUST enable RLS | Full statement... |
-| SC | SC-001 | Auth <2sec | Full statement... |
-| US | US-001 | As admin... | *(inline only)* |
+| Tag | Code | Short | Full |
+|-----|------|-------|------|
+| <kbd>**FR**</kbd> | FR-001 | MUST enable RLS | Full statement... |
+| <kbd>**SC**</kbd> | SC-001 | Auth <2sec | Full statement... |
+| <kbd>**US**</kbd> | US-001 | As admin... | *(inline only)* |
 
 ---
 
 ### 2b. Check for Review Feedback & Triage (CRITICAL)
 
-Check `features/[category]/[feature-folder]/WIREFRAME_ISSUES.md`:
+Check for per-SVG issues files alongside each SVG:
+```
+docs/design/wireframes/[feature]/[svg-name].issues.md
+```
 - **Not found** → Fresh generation, proceed to Step 3.
-- **Found** → Fix/regeneration cycle. Triage each file:
+- **Found** → Fix/regeneration cycle. Triage based on issues:
 
 ---
 
@@ -168,7 +192,7 @@ Read SVG → find/replace hex, font-size, text, or add CSS class → write back 
 **Create NEW wireframe from scratch. Do NOT edit existing file.**
 
 1. **Rename**: `mv [file].svg → [file].reference.svg`
-2. **Read context**: spec.md, WIREFRAME_ISSUES.md, reference.svg (what worked vs failed)
+2. **Read context**: spec.md, `[file].issues.md`, reference.svg (what worked vs failed)
 3. **Design fresh**: Start from template, apply learnings (e.g., 44px targets)
 4. **Write new**: Save to original filename
 5. **Cleanup**: Delete `.reference.svg` after review passes
@@ -185,25 +209,25 @@ Reference informs thinking, not copy-paste material.
 #### Example Triage Output
 
 ```
-Analyzing WIREFRAME_ISSUES.md for 004-mobile-first-design...
+Scanning 004-mobile-first-design for per-SVG issues files...
 
-Found 5 SVG files. Triaging...
+Found 5 SVG files. Checking for .issues.md alongside each...
 
-  01-responsive-navigation.svg: 15 issues
+  01-responsive-navigation.svg + .issues.md: 15 issues
     🔴 REGENERATE - contains structural issues (overlap, cramped, spacing)
-  02-content-typography.svg: 3 issues
+  02-content-typography.svg + .issues.md: 3 issues
     🔴 REGENERATE - contains structural issues (spacing)
-  03-touch-targets.svg: 2 issues
+  03-touch-targets.svg + .issues.md: 2 issues
     🟢 PATCH - all issues patchable (color only)
-  04-breakpoint-system.svg: 3 issues
+  04-breakpoint-system.svg + .issues.md: 3 issues
     🔴 REGENERATE - contains structural issues (cramped)
-  05-architecture.svg: 0 issues (✅ PASS)
-    🔄 REGENERATE - fresh review (might catch something missed)
+  05-architecture.svg (no .issues.md): Fresh file
+    🔄 GENERATE - no previous review
 
 Actions:
   🟢 03-touch-targets.svg: Patching 2 color fixes...
-  🔄 05-architecture.svg: Regenerating fresh (no issues but reviewing again)...
-  🔴 01, 02, 04: Regenerating with feedback...
+  🔴 01, 02, 04: Regenerating with feedback from .issues.md...
+  🔄 05: Generating fresh...
 
 ALL 5 files processed. No files skipped.
 ```
@@ -212,10 +236,9 @@ ALL 5 files processed. No files skipped.
 
 #### After Processing
 
-Update WIREFRAME_ISSUES.md:
+Update each `[svg-name].issues.md`:
 - Mark patched issues with ✅ FIXED
-- Mark regenerated files with 🔄 REGENERATED
-- Update summary section with completion status
+- Mark file status as 🔄 REGENERATED or ✅ PASS
 
 ### 3. Plan the Wireframes
 
@@ -277,14 +300,14 @@ Create SVG wireframes using the appropriate theme.
      ============================================================ -->
 ```
 
-**Regeneration watermark (when WIREFRAME_ISSUES.md feedback was used):**
+**Regeneration watermark (when .issues.md feedback was used):**
 ```xml
 <!-- ============================================================
      GENERATED BY: /wireframe skill
      SOURCE: [SPEC_FILE_PATH]
      DATE: [YYYY-MM-DD]
      THEME: Dark (Backend/Architecture)
-     REGENERATED WITH FEEDBACK: features/.../WIREFRAME_ISSUES.md
+     REGENERATED WITH FEEDBACK: [svg-name].issues.md
      DO NOT MANUALLY EDIT - Regenerate with /wireframe command
      ============================================================ -->
 ```
@@ -317,8 +340,10 @@ Track FR/SC/US per page → legend includes FR+SC only (US inline).
   <rect width="1320" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
   <!-- 4/row, 320px each -->
+  <!-- FR codes use .tag-base fr-tag (BLUE), SC codes use .tag-base sc-tag (ORANGE) -->
+  <!-- NEVER use .legend-code for FR/SC codes - it's purple. Only use for US/other codes -->
   <g transform="translate(20, 38)">
-    <text x="0" class="legend-code">FR-001:</text>
+    <text x="0" class="tag-base fr-tag">FR-001:</text>
     <text x="55" class="legend-text">≤45 chars, keep MUST/SHOULD</text>
   </g>
 </g>
@@ -350,20 +375,20 @@ Use this template for user-facing screens, forms, and interactive UI.
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
     <style>
-      /* Typography - v3 Bigger + Bolder, WCAG AA compliant on parchment */
-      .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 24px; font-weight: 800; }
-      .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 700; }
-      .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
-      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 500; }
-      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; font-weight: 500; }
-      .annotation { fill: #6d28d9; font-family: monospace; font-size: 12px; font-weight: 600; }
+      /* Typography - v4 LARGER for readability, WCAG AA compliant on parchment */
+      .heading-lg { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 28px; font-weight: 800; }
+      .heading { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 20px; font-weight: 700; }
+      .text-md { fill: #2d3748; font-family: system-ui, sans-serif; font-size: 16px; font-weight: 500; }
+      .text-sm { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 500; }
+      .text-muted { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 13px; font-weight: 500; }
+      .annotation { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 700; }
       /* Layout labels */
-      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
-      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .label-desktop { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
+      .label-mobile { fill: #d946ef; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       /* Requirements Legend styles (light theme) */
-      .legend-header { fill: #6d28d9; font-family: monospace; font-size: 13px; font-weight: bold; }
-      .legend-code { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
-      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 11px; }
+      .legend-header { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
+      .legend-code { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
+      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
     </style>
   </defs>
 
@@ -382,7 +407,7 @@ Use this template for user-facing screens, forms, and interactive UI.
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563" letter-spacing="1">WIREFRAME TITLE</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">WIREFRAME TITLE</text>
 
   <!-- DESKTOP SECTION (left) -->
   <text x="40" y="52" class="label-desktop">DESKTOP</text>
@@ -446,21 +471,21 @@ Use this template for architecture diagrams, data flows, and system visualizatio
       <stop offset="100%" style="stop-color:#d946ef"/>
     </linearGradient>
     <style>
-      /* Typography - Dark Theme - AAA compliant, READABLE sizes */
-      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 24px; font-weight: bold; }
-      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
-      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
-      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 14px; }
-      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
-      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 12px; } /* AAA: lighter for readability */
-      .annotation { fill: #c4b5fd; font-family: monospace; font-size: 12px; font-weight: bold; }
+      /* Typography - Dark Theme v4 LARGER - AAA compliant, READABLE sizes */
+      .heading-lg { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 28px; font-weight: bold; }
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 20px; font-weight: bold; }
+      .heading-sm { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 16px; font-weight: bold; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 16px; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 14px; }
+      .text-muted { fill: #b4bcc8; font-family: system-ui, sans-serif; font-size: 13px; } /* AAA: lighter for readability */
+      .annotation { fill: #c4b5fd; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
       /* Layout labels */
-      .label-desktop { fill: #8b5cf6; font-family: monospace; font-size: 13px; font-weight: bold; }
-      .label-mobile { fill: #d946ef; font-family: monospace; font-size: 13px; font-weight: bold; }
+      .label-desktop { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
+      .label-mobile { fill: #d946ef; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       /* Requirements Legend styles (dark theme) */
-      .legend-header { fill: #c4b5fd; font-family: monospace; font-size: 13px; font-weight: bold; }
-      .legend-code { fill: #8b5cf6; font-family: monospace; font-size: 11px; font-weight: bold; }
-      .legend-text { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+      .legend-header { fill: #c4b5fd; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
+      .legend-code { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
+      .legend-text { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
     </style>
   </defs>
 
@@ -479,7 +504,7 @@ Use this template for architecture diagrams, data flows, and system visualizatio
   <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title - AAA fix: #64748b → #8494a8 -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8494a8" letter-spacing="1">ARCHITECTURE DIAGRAM TITLE</text>
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#8494a8" letter-spacing="1">ARCHITECTURE DIAGRAM TITLE</text>
 
   <!-- Architecture content -->
   <g id="diagram-content">
@@ -491,13 +516,13 @@ Use this template for architecture diagrams, data flows, and system visualizatio
   <!-- Color Legend (REQUIRED if semantic colors are used) -->
   <g id="color-legend" transform="translate(40, 770)">
     <!-- Add legend items when diagram uses colors to encode meaning -->
-    <!-- Example format:
+    <!-- Example format (colorblind-friendly with patterns):
     <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
-    <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#2563eb" stroke-width="2"/>
     <text x="80" y="0" class="text-sm">Target met</text>
-    <rect x="180" y="-10" width="12" height="12" rx="2" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <rect x="180" y="-10" width="12" height="12" rx="2" fill="none" stroke="#7c3aed" stroke-width="2"/>
     <text x="200" y="0" class="text-sm">Constraint</text>
-    <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#eab308" stroke-width="2" stroke-dasharray="2,1"/>
     <text x="320" y="0" class="text-sm">External dependency</text>
     -->
   </g>
@@ -519,33 +544,37 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 **Text ON colored backgrounds MUST meet WCAG AA (4.5:1 minimum ratio).**
 
+### RLS Badge Contrast (Colorblind-Friendly Palette)
+
 | Background Color | Text Color | Ratio | Status | Example Use |
 |-----------------|------------|-------|--------|-------------|
-| `#22c55e` (green) | `#052e16` (green-950) | ~12:1 | ✅ | Success badges - **DARK TEXT** |
-| `#ef4444` (red) | `#450a0a` (red-950) | ~10:1 | ✅ | Deny badges - **DARK TEXT** |
-| `#8b5cf6` (violet) | `#1e1b4b` (indigo-950) | ~5:1 | ✅ | OWN badges - **DARK TEXT** |
-| `#64748b` (gray) | `#ffffff` | ~4.8:1 | ✅ | Anonymous role badges - white OK |
-| `#eab308` (yellow) | `#1a1a2e` | ~8:1 | ✅ | Warning badges - **DARK TEXT** |
+| `#2563eb` (blue) | `#1e3a5f` (blue-950) | ~6:1 | ✅ | Allow badges - **DARK TEXT** |
+| `#991b1b` (dark red) | `#ffffff` | ~7:1 | ✅ | Deny badges - **WHITE TEXT** |
+| `#eab308` (yellow) | `#451a03` (amber-950) | ~8:1 | ✅ | Conditional badges - **DARK TEXT** |
+| `#7c3aed` (purple) | `#1e1b4b` (violet-950) | ~5:1 | ✅ | Auth Role badges - **DARK TEXT** |
+| `#c026d3` (magenta) | `#4a044e` (fuchsia-950) | ~6:1 | ✅ | Service Role badges - **DARK TEXT** |
 
-**⚠️ Green/Red/Purple ALL require dark text** - white fails AA on all three.
+**Key change**: Dark red `#991b1b` allows white text (unlike bright red `#ef4444`).
 
 ```xml
-<!-- ❌ WRONG: White on green/red - FAILS WCAG AA -->
-<rect fill="#22c55e"/><text fill="#ffffff">ALL</text>     <!-- 2.1:1 -->
-<rect fill="#ef4444"/><text fill="#ffffff">DENY</text>    <!-- 3.1:1 -->
+<!-- ❌ WRONG: White on blue/yellow - FAILS WCAG AA -->
+<rect fill="#2563eb"/><text fill="#ffffff">ALLOW</text>   <!-- 3.8:1 -->
+<rect fill="#eab308"/><text fill="#ffffff">COND</text>    <!-- 1.9:1 -->
 
-<!-- ✅ CORRECT: Dark text on green/red - PASSES AA -->
-<rect fill="#22c55e"/><text fill="#052e16" font-weight="bold">ALL</text>   <!-- 12:1 -->
-<rect fill="#ef4444"/><text fill="#450a0a" font-weight="bold">DENY</text>  <!-- 10:1 -->
+<!-- ✅ CORRECT: Appropriate contrast per color -->
+<rect fill="#2563eb"/><text fill="#1e3a5f" font-weight="bold">ALLOW</text>  <!-- 6:1 -->
+<rect fill="#991b1b"/><text fill="#ffffff" font-weight="bold">DENY</text>   <!-- 7:1, dark red allows white -->
+<rect fill="#eab308"/><text fill="#451a03" font-weight="bold">COND</text>   <!-- 8:1 -->
 ```
 
 **Color-specific text classes (add to `<style>` block):**
 ```css
-/* For text on #22c55e green backgrounds */
-.badge-text-on-green { fill: #052e16; font-weight: bold; }  /* green-950, ~12:1 */
-
-/* For text on #ef4444 red backgrounds */
-.badge-text-on-red { fill: #450a0a; font-weight: bold; }    /* red-950, ~10:1 */
+/* RLS badge text colors (colorblind-friendly palette) */
+.badge-text-on-blue { fill: #1e3a5f; font-weight: bold; }     /* Allow */
+.badge-text-on-darkred { fill: #ffffff; font-weight: bold; }  /* Deny - white OK on dark red */
+.badge-text-on-yellow { fill: #451a03; font-weight: bold; }   /* Conditional */
+.badge-text-on-purple { fill: #1e1b4b; font-weight: bold; }   /* Auth Role */
+.badge-text-on-magenta { fill: #4a044e; font-weight: bold; }  /* Service Role */
 ```
 
 ---
@@ -556,60 +585,67 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 | Class | Min Size |
 |-------|----------|
-| `.heading-lg` | 24px |
-| `.heading` / `.text-md` | 16px / 14px |
-| `.text-sm` / `.text-muted` | 13px / 12px |
+| `.heading-lg` | **28px** |
+| `.heading` / `.text-md` | **20px** / **16px** |
+| `.text-sm` / `.text-muted` | **14px** / **13px** |
 
 **Content doesn't fit?** Expand canvas or reduce content. Never shrink fonts.
 
 ```xml
 <!-- ❌ WRONG: Shrinking fonts to fit more content -->
-.heading-lg { font-size: 20px; }  /* Template says 24px! */
-.text-md { font-size: 12px; }     /* Template says 14px! */
+.heading-lg { font-size: 24px; }  /* Template says 28px! */
+.text-md { font-size: 14px; }     /* Template says 16px! */
 
 <!-- ✅ CORRECT: Use template sizes, expand canvas if needed -->
-.heading-lg { font-size: 24px; }
-.text-md { font-size: 14px; }
+.heading-lg { font-size: 28px; }
+.text-md { font-size: 16px; }
 <!-- viewBox="0 0 1600 1000" if content needs more space -->
 ```
 
 ---
 
-## ⛔ FR/SC/US TAG STYLING (MANDATORY - CONSISTENCY REQUIRED)
+## ⛔ <kbd>**FR**</kbd> <kbd>**SC**</kbd> <kbd>**US**</kbd> TAG STYLING (MANDATORY)
 
 **ALL requirement tags MUST use identical styling with type-specific colors.**
 
-### Tag Color Palette
+### Tag Color Palette (Colorblind-Friendly)
 
-| Tag Type | Color | Hex | Use |
-|----------|-------|-----|-----|
-| **FR** (Functional) | Violet | `#8b5cf6` | Functional requirements |
-| **SC** (Success Criteria) | Cyan | `#06b6d4` | Performance/metrics |
-| **US** (User Story) | Amber | `#f59e0b` | User stories (inline only) |
+| Tag | Color | Hex | Border | Use |
+|-----|-------|-----|--------|-----|
+| <kbd>**FR**</kbd> | **Blue** | **`#2563eb`** | **Solid** | Functional requirements |
+| <kbd>**SC**</kbd> | **Orange** | **`#ea580c`** | **Dashed** | Performance/metrics |
+| <kbd>**US**</kbd> | **Teal** | **`#0891b2`** | **Dotted** | User stories (inline only) |
+
+**Why these colors**: Maximum hue separation works for protanopia, deuteranopia, and tritanopia. Border styles provide secondary differentiation.
 
 ### Standard Tag Styling (all three types)
 
 | Property | Value |
 |----------|-------|
-| Font | `monospace` |
-| Size | `12px` |
-| Weight | `bold` (700) |
-| Border | `stroke-width="2"` (if pill) |
+| Font | **`system-ui, sans-serif`** |
+| Size | **`14px`** |
+| Weight | **`bold (700)`** |
+| Border | **`stroke-width="2"`** (if pill) |
 
 ### CSS Classes (add to `<style>` block)
 
 ```css
 /* Base tag styling - shared by all */
 .tag-base {
-  font-family: monospace;
-  font-size: 12px;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
   font-weight: bold;
 }
 
-/* Type-specific colors */
-.fr-tag { fill: #8b5cf6; }  /* Violet - Functional Requirements */
-.sc-tag { fill: #06b6d4; }  /* Cyan - Success Criteria */
-.us-tag { fill: #f59e0b; }  /* Amber - User Stories */
+/* Type-specific colors (colorblind-friendly) */
+.fr-tag { fill: #2563eb; }  /* Blue - Functional Requirements */
+.sc-tag { fill: #ea580c; }  /* Orange - Success Criteria */
+.us-tag { fill: #0891b2; }  /* Teal - User Stories */
+
+/* Border colors for pill variants */
+.fr-border { stroke: #2563eb; }
+.sc-border { stroke: #ea580c; stroke-dasharray: 4,2; }  /* Dashed */
+.us-border { stroke: #0891b2; stroke-dasharray: 2,2; }  /* Dotted */
 ```
 
 ### Template: Text-Only Tags
@@ -620,24 +656,24 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 <text class="tag-base us-tag" x="100" y="240">US-001</text>
 ```
 
-### Template: Pill Tags (with matching borders)
+### Template: Pill Tags (with matching borders + stroke patterns)
 
 ```xml
-<!-- FR pill (violet) -->
+<!-- FR pill (blue, solid border) -->
 <g transform="translate(100, 200)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+  <rect width="70" height="24" rx="12" fill="none" stroke="#2563eb" stroke-width="2"/>
   <text x="35" y="16" text-anchor="middle" class="tag-base fr-tag">FR-001</text>
 </g>
 
-<!-- SC pill (cyan) -->
+<!-- SC pill (orange, dashed border) -->
 <g transform="translate(100, 240)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#06b6d4" stroke-width="2"/>
+  <rect width="70" height="24" rx="12" fill="none" stroke="#ea580c" stroke-width="2" stroke-dasharray="4,2"/>
   <text x="35" y="16" text-anchor="middle" class="tag-base sc-tag">SC-001</text>
 </g>
 
-<!-- US pill (amber) - rarely used, US is usually inline -->
+<!-- US pill (teal, dotted border) - rarely used, US is usually inline -->
 <g transform="translate(100, 280)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#f59e0b" stroke-width="2"/>
+  <rect width="70" height="24" rx="12" fill="none" stroke="#0891b2" stroke-width="2" stroke-dasharray="2,2"/>
   <text x="35" y="16" text-anchor="middle" class="tag-base us-tag">US-001</text>
 </g>
 ```
@@ -646,28 +682,29 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 | Content | Width | Height |
 |---------|-------|--------|
-| `FR-001` / `SC-001` / `US-001` | 70px | 24px |
-| `FR-001-005` / `SC-001-005` | 100px | 24px |
+| <kbd>**FR-001**</kbd> / <kbd>**SC-001**</kbd> / <kbd>**US-001**</kbd> | **80px** | **28px** |
+| <kbd>**FR-001-005**</kbd> / <kbd>**SC-001-005**</kbd> | **110px** | **28px** |
 
-**Formula**: `width = (chars × 8) + 20px padding`
+**Formula**: `width = (chars × 9) + 24px padding`
 
 ### ⛔ Consistency Rules
 
-1. **Same font/size/weight** for all three tag types
-2. **Color distinguishes type** - violet=FR, cyan=SC, amber=US
-3. **Border matches text** - pill stroke color = text fill color
-4. **No mixing styles** - if using pills, ALL tags use pills
+1. **Same font/size/weight** for all three tag types (**14px system-ui bold**)
+2. **Color distinguishes type** - blue=<kbd>**FR**</kbd>, orange=<kbd>**SC**</kbd>, teal=<kbd>**US**</kbd>
+3. **Border pattern distinguishes type** - **solid**=<kbd>**FR**</kbd>, **dashed**=<kbd>**SC**</kbd>, **dotted**=<kbd>**US**</kbd>
+4. **Border matches text** - pill stroke color = text fill color
+5. **No mixing styles** - if using pills, ALL tags use pills
 
 ```xml
 <!-- ❌ WRONG: Inconsistent styling -->
-<text fill="#8b5cf6" font-size="12px">FR-001</text>
-<text fill="#8b5cf6" font-size="10px">SC-001</text>  <!-- Wrong size! -->
-<text fill="#22c55e">US-001</text>  <!-- Wrong color! -->
+<text fill="#2563eb" font-size="14px">FR-001</text>
+<text fill="#2563eb" font-size="12px">SC-001</text>  <!-- Wrong size! Should be 14px -->
+<text fill="#22c55e">US-001</text>  <!-- Wrong color! Should be #0891b2 teal -->
 
 <!-- ✅ CORRECT: Consistent styling, type-specific colors -->
-<text class="tag-base fr-tag">FR-001</text>  <!-- Violet -->
-<text class="tag-base sc-tag">SC-001</text>  <!-- Cyan -->
-<text class="tag-base us-tag">US-001</text>  <!-- Amber -->
+<text class="tag-base fr-tag">FR-001</text>  <!-- Blue 14px -->
+<text class="tag-base sc-tag">SC-001</text>  <!-- Orange 14px -->
+<text class="tag-base us-tag">US-001</text>  <!-- Teal 14px -->
 ```
 
 ---
@@ -723,18 +760,18 @@ RIGHT: "absolute y = 585 + 88 = 673, container ends at 690, fits ✓"
 
 | Font | Size | Width per char | Example |
 |------|------|----------------|---------|
-| Monospace | 10px | ~6px | "FR-032" (6 chars) = 36px |
-| System | 11px | ~6.5px | "Settings" (8 chars) = 52px |
-| System | 12px | ~7px | "Export Report" (13 chars) = 91px |
-| System | 14px | ~8px | "Dashboard" (9 chars) = 72px |
+| System-ui | **13px** | ~7px | "FR-032" (6 chars) = 42px |
+| System | **14px** | ~8px | "Settings" (8 chars) = 64px |
+| System | **16px** | ~9px | "Export Report" (13 chars) = 117px |
+| System | **20px** | ~11px | "Dashboard" (9 chars) = 99px |
 
 ```
 TEXT: "FR-032, FR-033, FR-034" (22 chars including spaces)
-  Font: monospace 12px → 22 × 7 = 154px estimated width
+  Font: system-ui 14px → 22 × 8 = 176px estimated width
   Position: x=720
-  RIGHT EDGE: 720 + 154 = 874
+  RIGHT EDGE: 720 + 176 = 896
   CONTAINER: Header bar ends at x=930
-  CHECK: 874 < 930 ✓
+  CHECK: 896 < 930 ✓
 ```
 
 ### Validation Failures = STOP
@@ -1106,56 +1143,77 @@ All content ≤ y=750. Footer at y=780. If content too tall: reduce height, expa
 
 **If colors encode meaning, a legend panel is MANDATORY.**
 
-When using different border colors for badges/pills:
+When using different border colors for badges/pills (colorblind-friendly):
 
-| Border Color | Meaning |
-|--------------|---------|
-| `#22c55e` (green) | Compliance achieved / Target met |
-| `#eab308` (yellow) | External dependency / Caution |
-| `#8b5cf6` (purple) | Technical constraint / Architecture limitation |
-| `#475569` (gray) | Informational / Not yet verified |
+| Border Color | Meaning | Pattern |
+|--------------|---------|---------|
+| `#2563eb` (blue) | Compliance achieved / Target met | Solid |
+| `#eab308` (yellow) | External dependency / Caution | Dashed |
+| `#7c3aed` (purple) | Technical constraint / Architecture limitation | Solid |
+| `#475569` (gray) | Informational / Not yet verified | Dotted |
 
 **Legend placement**: Footer area (y ≤ 750) or dedicated "Legend" panel.
 
 ```xml
-<!-- ✅ CORRECT: Legend explaining color coding -->
+<!-- ✅ CORRECT: Legend explaining color coding (colorblind-friendly with patterns) -->
 <g id="legend" transform="translate(40, 720)">
   <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
-  <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#22c55e" stroke-width="2"/>
+  <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#2563eb" stroke-width="2"/>
   <text x="80" y="0" class="text-sm">Target met</text>
-  <rect x="160" y="-10" width="12" height="12" rx="2" fill="none" stroke="#eab308" stroke-width="2"/>
+  <rect x="160" y="-10" width="12" height="12" rx="2" fill="none" stroke="#eab308" stroke-width="2" stroke-dasharray="2,1"/>
   <text x="180" y="0" class="text-sm">External dependency</text>
-  <rect x="300" y="-10" width="12" height="12" rx="2" fill="none" stroke="#8b5cf6" stroke-width="2"/>
-  <text x="320" y="0" class="text-sm">Constraint</text>
+  <rect x="320" y="-10" width="12" height="12" rx="2" fill="none" stroke="#7c3aed" stroke-width="2"/>
+  <text x="340" y="0" class="text-sm">Constraint</text>
 </g>
 ```
 
 ### RLS/Access Control Legend Palette (MANDATORY for RLS diagrams)
 
-**Use this consistent palette for ALL RLS, security, and access control wireframes:**
+**Colorblind-friendly palette for ALL RLS, security, and access control wireframes:**
 
-| Badge | Color | Hex | Text Color | Use |
-|-------|-------|-----|------------|-----|
-| Allow | Green | `#22c55e` | `#052e16` | Full access granted |
-| Deny | Red | `#ef4444` | `#450a0a` | Access blocked |
-| Conditional | Amber | `#f59e0b` | `#451a03` | Policy-dependent access |
-| Auth Role | Violet | `#8b5cf6` | `#1e1b4b` | Authenticated user access |
-| Service Role | Fuchsia | `#d946ef` | `#4a044e` | Service/admin bypass |
+| Badge | Color | Hex | Text Color | Icon | Pattern | Use |
+|-------|-------|-----|------------|------|---------|-----|
+| Allow | Blue | `#2563eb` | `#1e3a5f` | ✓ | Solid | Full access granted |
+| Deny | Dark Red | `#991b1b` | `#ffffff` | ✗ | Diagonal stripes | Access blocked |
+| Conditional | Yellow | `#eab308` | `#451a03` | ? | Dashed border | Policy-dependent access |
+| Auth Role | Purple | `#7c3aed` | `#1e1b4b` | 🔑 | Solid | Authenticated user access |
+| Service Role | Magenta | `#c026d3` | `#4a044e` | ⚙ | Double border | Service/admin bypass |
+
+**Why these colors**: Blue vs Dark Red avoids red-green confusion. Each has unique icon AND pattern as fallback.
 
 ```xml
-<!-- RLS Legend Template -->
-<g id="rls-legend" transform="translate(40, 760)">
-  <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
-  <rect x="60" y="-10" width="12" height="12" rx="2" fill="#22c55e"/>
-  <text x="80" y="0" class="text-sm" fill="#94a3b8">Allow</text>
-  <rect x="140" y="-10" width="12" height="12" rx="2" fill="#ef4444"/>
-  <text x="160" y="0" class="text-sm" fill="#94a3b8">Deny</text>
-  <rect x="210" y="-10" width="12" height="12" rx="2" fill="#f59e0b"/>
-  <text x="230" y="0" class="text-sm" fill="#94a3b8">Conditional</text>
-  <rect x="320" y="-10" width="12" height="12" rx="2" fill="#8b5cf6"/>
-  <text x="340" y="0" class="text-sm" fill="#94a3b8">Auth Role</text>
-  <rect x="430" y="-10" width="12" height="12" rx="2" fill="#d946ef"/>
-  <text x="450" y="0" class="text-sm" fill="#94a3b8">Service Role</text>
+<!-- RLS Legend Template (colorblind-friendly with icons, LARGER for readability) -->
+<g id="rls-legend" transform="translate(40, 755)">
+  <text x="0" y="0" class="text-md" fill="#94a3b8" font-weight="bold">Legend:</text>
+
+  <!-- Allow: Blue + checkmark (20x20 box, 14px icon) -->
+  <rect x="80" y="-12" width="20" height="20" rx="3" fill="#2563eb"/>
+  <text x="90" y="4" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">✓</text>
+  <text x="108" y="0" class="text-sm" fill="#94a3b8">Allow</text>
+
+  <!-- Deny: Dark red + X + diagonal stripes -->
+  <defs><pattern id="deny-stripes" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="4" stroke="#fff" stroke-width="1" opacity="0.3"/>
+  </pattern></defs>
+  <rect x="170" y="-12" width="20" height="20" rx="3" fill="#991b1b"/>
+  <rect x="170" y="-12" width="20" height="20" rx="3" fill="url(#deny-stripes)"/>
+  <text x="180" y="4" font-size="14" fill="#fff" text-anchor="middle" font-weight="bold">✗</text>
+  <text x="198" y="0" class="text-sm" fill="#94a3b8">Deny</text>
+
+  <!-- Conditional: Yellow + ? + dashed border -->
+  <rect x="260" y="-12" width="20" height="20" rx="3" fill="#eab308" stroke="#854d0e" stroke-width="2" stroke-dasharray="3,2"/>
+  <text x="270" y="4" font-size="14" fill="#451a03" text-anchor="middle" font-weight="bold">?</text>
+  <text x="288" y="0" class="text-sm" fill="#94a3b8">Conditional</text>
+
+  <!-- Auth Role: Purple + key icon -->
+  <rect x="390" y="-12" width="20" height="20" rx="3" fill="#7c3aed"/>
+  <text x="400" y="4" font-size="12" fill="#fff" text-anchor="middle">🔑</text>
+  <text x="418" y="0" class="text-sm" fill="#94a3b8">Auth Role</text>
+
+  <!-- Service Role: Magenta + gear + double border -->
+  <rect x="520" y="-12" width="20" height="20" rx="3" fill="#c026d3" stroke="#86198f" stroke-width="3"/>
+  <text x="530" y="4" font-size="12" fill="#fff" text-anchor="middle">⚙</text>
+  <text x="548" y="0" class="text-sm" fill="#94a3b8">Service Role</text>
 </g>
 ```
 
@@ -1223,12 +1281,20 @@ When using different border colors for badges/pills:
 
 **Example annotation with context:**
 ```xml
-<!-- Good: Context included -->
-<text class="annotation">FR-001: RLS on users table</text>
+<!-- Good: FR tag with context (blue) -->
+<text class="tag-base fr-tag">FR-001: RLS on users table</text>
+
+<!-- Good: SC tag with context (orange) -->
+<text class="tag-base sc-tag">SC-001: 100% AAA compliance</text>
 
 <!-- Bad: Code only, no context -->
-<text class="annotation">FR-001</text>
+<text class="tag-base fr-tag">FR-001</text>
 ```
+
+**⚠️ CRITICAL: Color Consistency**
+- ALL `FR-xxx` codes: Use `.fr-tag` class (blue `#2563eb`)
+- ALL `SC-xxx` codes: Use `.sc-tag` class (orange `#ea580c`)
+- NEVER use `.annotation` class for FR/SC codes (purple - inconsistent)
 
 #### Leader Lines Group Template
 

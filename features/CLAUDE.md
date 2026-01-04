@@ -66,6 +66,26 @@ Execute these commands **in order** - do not skip steps:
 | Overlapping elements | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
 | Positioning errors | 🔴 REGENERATE | `/wireframe` regenerates with feedback |
 
+### Wireframe Review File Structure
+
+**CRITICAL**: Each SVG gets its own issues file. Review ONLY documents - it does NOT patch.
+
+| File Type | Location | Purpose |
+|-----------|----------|---------|
+| Per-SVG issues | `docs/design/wireframes/[feature]/[svg-name].issues.md` | Detailed review findings for ONE SVG |
+| Feature summary | `features/[category]/[feature]/WIREFRAME_ISSUES.md` | Historical context only (do NOT update during review) |
+
+**Workflow**:
+1. `/wireframe-review [feature:page]` → Creates `[svg-name].issues.md` in wireframes folder
+2. `/wireframe [feature]` → Reads `.issues.md` files, applies patches or regenerates
+3. Repeat until all issues resolved
+
+**Rules**:
+- One issues file per SVG (never combine multiple SVGs into one file)
+- Review documents issues only (never patches the SVG directly)
+- `/wireframe` reads issues files and applies fixes
+- Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
+
 ## Feature File Format (PRP Structure)
 
 1. **Product Requirements** - What, why, success criteria, out of scope
