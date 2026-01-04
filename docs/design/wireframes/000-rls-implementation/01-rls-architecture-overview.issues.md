@@ -140,28 +140,36 @@
 | 🔴 REGENERATE | 0 | - |
 | ⚠️ Advisory | 2 | Edge cases and constraints in page 2 |
 
-### Overall Classification: 🟢 PATCHABLE
+### Overall Classification: ✅ PASS (after patches)
 
-The SVG structure and content are solid. Only the footer needs patching:
-1. Move from y=970 to y=780
-2. Change format to `[000:01] | RLS Architecture Overview | ScriptHammer`
+All issues were patchable and have been fixed.
 
 ---
 
-## Patch Instructions
+## Issues Found & Fixed
+
+### ISSUE-001: Footer Format Wrong (PATCHED - Pass 1)
+- **Location**: Lines 346-352
+- **Classification**: 🟢 PATCHABLE
+- **Before**: Multi-tspan verbose format
+- **After**: `[000:01] | RLS Architecture Overview | ScriptHammer`
+
+### ISSUE-002: Footer Color Too Dark (PATCHED - Pass 2)
+- **Location**: Line 346
+- **Classification**: 🟢 PATCHABLE
+- **Before**: `fill="#64748b"` (slate-500, too dark)
+- **After**: `fill="#94a3b8"` (slate-400, brighter)
+
+### ISSUE-003: Remove Square Brackets (PATCHED - Pass 2)
+- **Location**: Line 346
+- **Classification**: 🟢 PATCHABLE
+- **Before**: `[000:01] | RLS Architecture Overview | ScriptHammer`
+- **After**: `000:01 | RLS Architecture Overview | ScriptHammer`
+
+---
+
+## Current Footer (After All Patches)
 
 ```xml
-<!-- BEFORE (lines 344-353) -->
-<g transform="translate(40, 970)">
-  <text fill="#64748b" font-family="system-ui, sans-serif" font-size="10">
-    <tspan>Spec: features/foundation/000-rls-implementation/spec.md</tspan>
-    <tspan x="400">Generated: 2026-01-04</tspan>
-    <tspan x="600">Theme: Dark</tspan>
-    <tspan x="750">Canvas: 1600x1000</tspan>
-    <tspan x="950">Page 1 of 2: Architecture Overview</tspan>
-  </text>
-</g>
-
-<!-- AFTER -->
-<text x="60" y="780" fill="#64748b" font-family="system-ui, sans-serif" font-size="10">[000:01] | RLS Architecture Overview | ScriptHammer</text>
+<text fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">000:01 | RLS Architecture Overview | ScriptHammer</text>
 ```

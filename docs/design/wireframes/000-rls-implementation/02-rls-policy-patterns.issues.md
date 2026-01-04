@@ -157,10 +157,46 @@
 | 🟢 PATCHABLE | 4 | Footer format, text overflow, section spacing, X-alignment |
 | 🔴 REGENERATE | 0 | - |
 
+### ISSUE-005: Y-Axis Breathing Room (PATCHED - Pass 2)
+- **Location**: Lines 286, 327, 367
+- **Classification**: 🟢 PATCHABLE
+- **Problem**: EDGE CASES section down still too tight
+- **Fix**: Move sections down +30px each:
+
+| Section | Before | After | Change |
+|---------|--------|-------|--------|
+| EDGE CASES | translate(40, 630) | translate(40, 660) | +30px |
+| CONSTRAINTS | translate(800, 630) | translate(800, 660) | +30px |
+| LEGEND | translate(40, 820) | translate(40, 850) | +30px |
+
+### ISSUE-006: Footer Color Too Dark (PATCHED - Pass 2)
+- **Location**: Line 400
+- **Classification**: 🟢 PATCHABLE
+- **Before**: `fill="#64748b"` (slate-500, too dark)
+- **After**: `fill="#94a3b8"` (slate-400, brighter)
+
+### ISSUE-007: Remove Square Brackets (PATCHED - Pass 2)
+- **Location**: Line 400
+- **Classification**: 🟢 PATCHABLE
+- **Before**: `[000:02] | RLS Policy Patterns | ScriptHammer`
+- **After**: `000:02 | RLS Policy Patterns | ScriptHammer`
+
+---
+
+## Summary
+
+| Classification | Count | Issues |
+|----------------|-------|--------|
+| 🟢 PATCHABLE | 7 | Footer format, text overflow, section spacing, X-alignment, Y-spacing, footer color, remove brackets |
+| 🔴 REGENERATE | 0 | - |
+
 ### Overall Classification: ✅ PASS (after patches)
 
-All 4 issues were patchable and have been fixed:
-1. Footer format corrected
-2. Text overflow fixed with line breaks
-3. Section spacing improved with translate() adjustments
-4. Security assertions right-aligned in Edge Cases boxes
+All 7 issues were patchable and have been fixed:
+1. Footer format corrected (Pass 1)
+2. Text overflow fixed with line breaks (Pass 1)
+3. Section spacing improved with translate() adjustments (Pass 1)
+4. Security assertions right-aligned in Edge Cases boxes (Pass 1)
+5. Y-axis breathing room for EDGE CASES down (Pass 2)
+6. Footer color brightened to #94a3b8 (Pass 2)
+7. Square brackets removed from footer (Pass 2)

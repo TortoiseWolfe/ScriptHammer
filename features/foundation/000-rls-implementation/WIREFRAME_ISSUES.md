@@ -19,6 +19,7 @@
 | 2026-01-04 | **Split into 2 wireframes** | Better clarity: Architecture (what/why) + Patterns (how) |
 | 2026-01-04 | Fresh generation | 🟢 PATCHABLE (4 issues) |
 | 2026-01-04 | Patched: footer format (both), text overflow, section spacing, X-alignment | ✅ PASS |
+| 2026-01-04 | Patched: Y-spacing (+30px), footer color (#94a3b8), remove brackets | ✅ PASS |
 
 ---
 
