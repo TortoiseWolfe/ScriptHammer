@@ -98,7 +98,22 @@ At 200%, issues become visible that you'd miss at 100%:
 
 **⛔ Wasted space + cramped content + arrows through text = TRIPLE DESIGN FAILURE.**
 
-### Check 6: Requirements Legend (BLOCKING)
+### Check 6: Light Theme Consistency (BLOCKING for Light Wireframes)
+
+**For wireframes using Light theme (parchment/sky background), verify these mandatory elements:**
+
+| Element | Standard | How to Check |
+|---------|----------|--------------|
+| Desktop container | `<rect x="40" y="60" width="900" height="580" rx="8" fill="#e8d4b8" stroke="#b8a080"/>` | Search for `desktop-view` group, verify rect exists inside |
+| Mobile frame | 360×700 (rx=24) | Check first rect dimensions in `mobile-view` group |
+| Mobile screen | 340×680 (rx=16) | Check second rect in `mobile-view` group |
+| Status bar icons | `📶 🔋` at x=310, text-anchor="end" | Search for emoji text in status bar area |
+
+**Comparison reference**: 002-cookie-consent wireframes have correct Light Theme structure.
+
+**⛔ If Light wireframe missing any of these elements → 🔴 REGENERATE immediately.**
+
+### Check 7: Requirements Legend (BLOCKING)
 
 **For EVERY wireframe with <kbd>**FR**</kbd> / <kbd>**SC**</kbd> / <kbd>**NFR**</kbd> annotations:**
 
@@ -108,7 +123,7 @@ At 200%, issues become visible that you'd miss at 100%:
 
 **⛔ If <kbd>**FR**</kbd> / <kbd>**SC**</kbd> annotations exist but no REQUIREMENTS KEY panel → 🔴 REGENERATE immediately.**
 
-### Check 7: Styling Inconsistency (BLOCKING)
+### Check 8: Styling Inconsistency (BLOCKING)
 
 **Scan for visual inconsistencies in repeated/similar elements:**
 
@@ -135,7 +150,7 @@ At 200%, issues become visible that you'd miss at 100%:
 
 **⛔ If similar elements have mismatched styling → 🟢 PATCHABLE (fix fill/stroke/font attributes).**
 
-### Check 8: SVG Syntax Validation (BLOCKING)
+### Check 9: SVG Syntax Validation (BLOCKING)
 
 **Parse the SVG file for syntax errors that break rendering.**
 
@@ -1049,12 +1064,28 @@ Severity: CRITICAL (entire FR missing) → MAJOR (partial) → MINOR (unlabeled)
 | No phantoms | Legend matches page only |
 | US codes | Inline context only, NO legend entry |
 
+**⚠️ LEGEND INTERNAL SPACING STANDARD (Cross-Feature Consistency)**
+
+| Element | Standard Value | Verify With |
+|---------|----------------|-------------|
+| Legend y | 690 | `grep "requirements-legend" *.svg` |
+| Header y | 18 | `grep "legend-header" *.svg` |
+| Row 1 translate | (20, 38) | `grep "translate(20," *.svg` |
+| Row 2 translate | (20, 60) | (if 2-row legend) |
+| Rect height | 60 (1-row) / 75 (2-row) | `grep "height=" *.svg` |
+
+**Alignment Check Command:**
+```bash
+grep -E "(height=\"[67][05]\"|legend-header|translate\(20, [36])" *.svg
+```
+
 | Issue | Classification |
 |-------|----------------|
 | Missing/incomplete legend | 🔴 REGENERATE |
 | Extra FR/SC not on page | 🔴 REGENERATE |
 | US in legend | 🔴 REGENERATE |
 | Missing inline context | 🟢 PATCH |
+| Wrong internal spacing | 🟢 PATCH (align to standard) |
 
 ---
 

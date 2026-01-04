@@ -328,26 +328,47 @@ Track FR/SC/US per page → legend includes FR+SC only (US inline).
 
 **Position:** y=690 always. Height grows UPWARD as entries increase. Bottom edge at y=750.
 
-| Entries | Height |
-|---------|--------|
-| 1-4 | 60px |
-| 5-8 | 80px |
-| 9-12 | 100px |
+| Rows | Height | Row 1 y | Row 2 y |
+|------|--------|---------|---------|
+| 1 row (1-4 entries) | 60px | 38 | N/A |
+| 2 rows (5-8 entries) | 75px | 38 | 60 |
+| 3 rows (9-12 entries) | 95px | 38 | 60, 82 |
+
+**⚠️ STANDARD INTERNAL SPACING (MANDATORY)**
+
+| Element | Value | Notes |
+|---------|-------|-------|
+| Legend y | 690 | Fixed position |
+| Header y | 18 | "REQUIREMENTS KEY" text |
+| Row 1 translate | (20, 38) | First row of codes |
+| Row 2 translate | (20, 60) | Second row (if needed) |
+| Row 3 translate | (20, 82) | Third row (if needed) |
+| Row spacing | 22px | Between rows |
 
 **Template** (colors: dark `#1e293b/#475569`, light `#dcc8a8/#b8a080`):
 ```xml
+<!-- Single row (1-4 entries) -->
 <g id="requirements-legend" transform="translate(40, 690)">
-  <rect width="1320" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
+  <rect width="900" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
-  <!-- 4/row, 320px each -->
-  <!-- FR codes use .tag-base fr-tag (BLUE), SC codes use .tag-base sc-tag (ORANGE) -->
-  <!-- NEVER use .legend-code for FR/SC codes - it's purple. Only use for US/other codes -->
   <g transform="translate(20, 38)">
     <text x="0" class="tag-base fr-tag">FR-001:</text>
-    <text x="55" class="legend-text">≤45 chars, keep MUST/SHOULD</text>
+    <text x="55" class="legend-text">≤45 chars</text>
+    <!-- 4 entries per row, ~220px each -->
   </g>
 </g>
+
+<!-- Two rows (5-8 entries) -->
+<g id="requirements-legend" transform="translate(40, 690)">
+  <rect width="900" height="75" rx="6" fill="[FILL]" stroke="[STROKE]"/>
+  <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
+  <g transform="translate(20, 38)"><!-- Row 1 --></g>
+  <g transform="translate(20, 60)"><!-- Row 2 --></g>
+</g>
 ```
+
+**FR codes use `.tag-base .fr-tag` (BLUE), SC codes use `.tag-base .sc-tag` (ORANGE)**
+**NEVER use `.legend-code` for FR/SC codes - it's purple. Only use for US/other codes.**
 
 ---
 
@@ -389,6 +410,12 @@ Use this template for user-facing screens, forms, and interactive UI.
       .legend-header { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .legend-code { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
       .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      /* Toggle styling - standardized colors */
+      .toggle-on { fill: #22c55e; }      /* Green - active/enabled */
+      .toggle-off { fill: #64748b; }     /* Slate - inactive */
+      .toggle-disabled { fill: #9ca3af; } /* Light gray - non-interactive */
+      .toggle-always-on { fill: #22c55e; } /* Green - required (same as on) */
+      .toggle-thumb { fill: #ffffff; }
     </style>
   </defs>
 
@@ -412,10 +439,10 @@ Use this template for user-facing screens, forms, and interactive UI.
   <!-- DESKTOP SECTION (left) -->
   <text x="40" y="52" class="label-desktop">DESKTOP</text>
   <g id="desktop-view">
-    <!-- Desktop area: x=40, y=60, width=900, height=680 -->
+    <!-- Desktop background container (standard for all light wireframes) -->
+    <rect x="40" y="60" width="900" height="580" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
     <!-- 3-column layout: sidebar 200px | main 440px | detail 240px (10px gaps) -->
-    <!-- Panels use fill="#e8d4b8" (primary parchment) or fill="#dcc8a8" (secondary) -->
-    <!-- Input fields use fill="#f5f0e6" -->
+    <!-- Content panels use fill="#dcc8a8" (secondary) or fill="#f5f0e6" (inputs) -->
     <!-- Borders use stroke="#b8a080" -->
   </g>
 
@@ -429,6 +456,7 @@ Use this template for user-facing screens, forms, and interactive UI.
     <!-- Status bar - darker parchment -->
     <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
     <text x="30" y="28" class="text-sm">9:41</text>
+    <text x="310" y="28" text-anchor="end" class="text-sm">📶 🔋</text>
     <!-- Mobile content starts at y=48 within this group -->
   </g>
 </svg>
