@@ -41,6 +41,19 @@ Some wireframes need **light insets within dark parents**:
 
 This is the only size. If content doesn't fit, split into multiple SVGs - never change dimensions.
 
+### ⛔ Things NOT to Ask About (STANDARDIZED)
+
+These decisions are FINAL. Do not present options or ask the user:
+
+| Decision | Answer | Why |
+|----------|--------|-----|
+| Clickable tags | **Always YES** | Required for GitHub Pages navigation |
+| Canvas size | **Always 1920×1080** | Standardized for fullscreen viewing |
+| Badge links | **Always include** | MANDATORY per section below |
+| Theme choice | **Follow Q1-Q3 above** | Deterministic, not subjective |
+
+If you find yourself about to ask about any of these - STOP. The answer is already decided.
+
 ### USER STORIES Rule
 
 - USER STORIES section appears **only in wireframe 01** (first/overview wireframe per feature)
@@ -108,9 +121,11 @@ This is the only size. If content doesn't fit, split into multiple SVGs - never 
 
 **Data-ink ratio** means maximize ink for DATA (user stories, FRs, success criteria), minimize ink for DECORATION (gradients, shadows, unnecessary borders). It does NOT mean "remove all content".
 
-### Clickable Badge Links (MANDATORY for GitHub Pages)
+### Clickable Badge Links (MANDATORY - NEVER ASK)
 
-All FR, US, and SC badges MUST be wrapped with links to the source spec.md on GitHub.
+⚠️ **DO NOT ASK** the user about clickable tags. They are REQUIRED. This is non-negotiable.
+
+All FR, US, and SC badges MUST be wrapped with `<a>` links to the source spec.md on GitHub. Every badge, every time, no exceptions.
 
 **Base URL pattern:**
 ```
