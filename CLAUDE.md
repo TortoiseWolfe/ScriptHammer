@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 000 | 01-rls-architecture-overview.svg | ✅ PASS |
 | 000 | 02-rls-policy-patterns.svg | ✅ PASS |
 | 001 | 01-a11y-testing-pipeline.svg | ✅ PASS |
-| 001 | 02-a11y-dashboard.svg | ✅ PASS (9 passes, fixed contrast, buttons, desktop panel, mobile icons) |
+| 001 | 02-a11y-dashboard.svg | ✅ PASS (Pass 13: tag positioning, footer color) |
 | 001 | 03-dev-feedback-tooling.svg | ✅ PASS |
 
 **Next Session START HERE**:
@@ -158,7 +158,7 @@ Both files should stay in sync for implementation phases.
 |--------|-------|
 | spec.md complete | 46/46 |
 | Wireframes generated | 46/46 features (123 SVGs) |
-| Wireframes reviewed | 2/46 complete (000, 001) |
+| Wireframes reviewed | 2/46 complete (000 ✅, 001 ✅) |
 | SVGs passed | 5/123 (000:2, 001:3) |
 | Implementation phase | All 46 blocked until wireframe review complete |
 
@@ -257,7 +257,7 @@ npx playwright install chromium  # Install browser (first time)
 /speckit.constitution   # Define project vision
 /speckit.specify        # Create feature specs
 /speckit.clarify        # Refine requirements
-/wireframe              # Generate SVG wireframes (1400x800)
+/wireframe              # Generate SVG wireframes (1920x1080)
 
 # Phase 2: Wireframe Review (CURRENT)
 /wireframe-review       # Review SVGs with 🟢/🔴 classification (4 phases + half-view inspection)
@@ -314,7 +314,7 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 | `←/→` | Previous/Next wireframe |
 | `↑/↓` | Zoom in/out |
 | `+/-` | Zoom in/out |
-| `0` | Reset zoom to 85% |
+| `0` | Fit to view (dynamic) |
 
 ## Generating Wireframes
 
@@ -336,14 +336,14 @@ Use `/wireframe` to generate SVGs from specs. Theme auto-detects based on featur
 **Process**:
 1. Reads the spec to understand the feature
 2. Counts user stories, screens, states, and roles to determine wireframe count
-3. Creates appropriate wireframe type(s) at **1400×800** (or larger for complex diagrams)
+3. Creates appropriate wireframe type(s) at **1920×1080** (16:9 full HD, standard for all wireframes)
 4. Saves SVGs to `docs/design/wireframes/[feature-folder]/`
 5. Updates `index.html` navigation (wireframes array + nav section)
 
 ### SVG Layout Dimensions (for UI wireframes)
-- **Canvas**: 1400×800 (standard), 1600×800 (wide), 1400×1000 (tall)
-- **Desktop area**: x=40, y=60, 900px wide (3-column: 200 sidebar | 440 main | 240 detail)
-- **Mobile area**: x=980, y=60, 360×700 phone frame
+- **Canvas**: 1920×1080 (16:9 full HD, standard for all wireframes)
+- **Desktop area**: x=40, y=60, 1400px wide
+- **Mobile area**: x=1500, y=60, 360×700 phone frame
 
 ### SVG Dark Theme Colors
 - Background: gradient `#0f172a` to `#1e293b`

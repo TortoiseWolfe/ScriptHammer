@@ -1244,6 +1244,43 @@ This feedback passes to `/wireframe` for guided regeneration.
 
 ---
 
+## ⛔ TAG POSITION CHECKLIST (Pass 12 Learning)
+
+**Verify ALL tags meet this standard:**
+
+- [ ] Tags positioned in top-right corner of container
+- [ ] 15px margin from right edge (x = container_width - 15)
+- [ ] y=17 for first tag, y=35 for second tag
+- [ ] `text-anchor="end"` for right-alignment
+- [ ] FR tags before SC tags (consistent ordering: FR top/left, SC bottom/right)
+
+**Example verification**:
+```
+Container: width=280
+Expected tag x: 280 - 15 = 265
+Actual tag x: [check SVG]
+✅ PASS if x=265 with text-anchor="end"
+❌ FAIL if x != 265 or missing text-anchor="end"
+```
+
+---
+
+## ⛔ FOOTER CHECKLIST (Pass 13 Learning - Light Theme)
+
+**Verify footer matches standard:**
+
+- [ ] Uses `class="text-muted"` (NOT inline fill color)
+- [ ] Position: x=60, y=780
+- [ ] Alignment: `text-anchor="start"` (left-aligned)
+- [ ] Format: `NNN:PP | Title | ScriptHammer`
+
+**Common failures**:
+- ❌ `fill="#64748b"` - too light (slate-500)
+- ❌ `fill="#94a3b8"` - way too light (slate-400)
+- ✅ `class="text-muted"` - correct (#4b5563 gray-600)
+
+---
+
 ## Review Process
 
 1. **Read spec FIRST** (see Category 14)
@@ -1293,3 +1330,47 @@ This feedback passes to `/wireframe` for guided regeneration.
 **Workflow**: `/wireframe-review` → `/wireframe` → repeat until resolved.
 
 **Lesson**: DO NOT patch structural issues. When layout is broken, regenerate fresh.
+
+---
+
+## Status Update (MANDATORY)
+
+After completing review, update `docs/design/wireframes/wireframe-status.json`:
+
+### At Review START
+
+Set feature status to `review`:
+```json
+{
+  "000-rls-implementation": {
+    "status": "review",
+    ...
+  }
+}
+```
+
+### At Review END
+
+Based on review results:
+
+| Result | Feature Status | SVG Status |
+|--------|----------------|------------|
+| All SVGs pass (✅ PASS) | `approved` | `approved` |
+| Any 🔴 REGENERATE issues | `issues` | `issues` (files with issues) |
+| Only 🟢 PATCHABLE issues | `patchable` | `patchable` (files with issues) |
+
+**Update steps:**
+1. Read `docs/design/wireframes/wireframe-status.json`
+2. Find feature object
+3. Update `status` field based on worst issue severity
+4. Update each SVG status in `svgs` object individually
+5. Write updated JSON file
+
+**Report:**
+```
+STATUS UPDATE: 000-rls-implementation
+  Feature: issues (🔴) - 1 file needs regeneration
+  SVGs:
+    - 01-rls-architecture-overview.svg: approved (✅)
+    - 02-rls-policy-patterns.svg: issues (🔴)
+```

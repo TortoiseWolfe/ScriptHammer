@@ -35,15 +35,123 @@ Some wireframes need **light insets within dark parents**:
 
 **Use when:** The inset shows what an END USER would see, embedded in developer context.
 
-### Canvas
+### Canvas Size Standard
 
-| Type | Size |
-|------|------|
-| UI screens | 1400×800 |
-| Architecture | 1600×1000 |
-| Complex flows | 1600×1200 |
+**All SVGs: 1920×1080** (16:9 full HD)
 
-⛔ Expand canvas, never shrink fonts.
+This is the only size. If content doesn't fit, split into multiple SVGs - never change dimensions.
+
+### USER STORIES Rule
+
+- USER STORIES section appears **only in wireframe 01** (first/overview wireframe per feature)
+- Other wireframes in same feature do NOT duplicate USER STORIES
+- This prevents redundancy and keeps each wireframe focused on its specific topic
+
+### Professional Feature Documentation Standards (MANDATORY)
+
+**Wireframes are FEATURE POSTERS, not abstract diagrams.** Someone should understand the ENTIRE feature from the wireframes.
+
+*Based on Robin Williams' CRAP Principles, Tufte's Data Visualization, and C4 Model*
+
+#### The CRAP Checklist (Robin Williams)
+
+| Principle | Meaning | Application |
+|-----------|---------|-------------|
+| **Contrast** | Size/color/weight create hierarchy | Title 28px > Headers 20px > Body 14px > Captions 12px |
+| **Repetition** | Consistent visual language | Same FR badge style, same colors, same spacing |
+| **Alignment** | Everything connects visually | Grid-based layout, no random placement |
+| **Proximity** | Group related items | FRs grouped by category, user stories together |
+
+#### Required Content (from spec.md)
+
+| Section | Must Include | Prominence |
+|---------|--------------|------------|
+| **User Stories** | WHO, WHY, Priority (P0/P1/P2) | Top - high visibility (wireframe 01 only) |
+| **Functional Requirements** | All FRs with badges, grouped by category | Center - main content |
+| **Key Entities** | Tables/objects with relationships | Supporting diagram |
+| **Success Criteria** | Verification checklist (SC-###) | Bottom - completion reference |
+| **Architecture/Flow** | HOW it works technically | Supporting visual |
+
+#### Visual Hierarchy (type sizes)
+
+| Element | Size | Weight | Use |
+|---------|------|--------|-----|
+| Feature Title | 28px | Bold | One per wireframe |
+| Section Headers | 20px | Bold | User Stories, Requirements, etc. |
+| Subsection | 16px | Semibold | Category names within Requirements |
+| Body Text | 14px | Regular | Descriptions, FR text |
+| Badges | 13px | Mono | FR-001, P0, SC-001 |
+| Captions/Notes | 12px | Regular | Supporting text |
+
+#### Color Semantics (colors MUST have fixed meaning)
+
+| Color | Hex | Meaning | Use Case |
+|-------|-----|---------|----------|
+| Blue | #2563eb | Functional Requirement | FR-### badges |
+| Green | #16a34a | Success/Allowed | Access granted, SC passed, P2 |
+| Yellow | #ca8a04 | Caution/Partial | Limited access, P1 priority |
+| Red | #dc2626 | Denied/Critical | Access denied, P0 priority |
+| Purple | #7c3aed | Service/System | Service role, system operations |
+| Gray | #64748b | Supporting info | Captions, notes, secondary text |
+
+#### Anti-Patterns (AVOID)
+
+- ❌ Abstract flow diagrams with no requirements content
+- ❌ Decorative gradients/shadows that don't convey meaning
+- ❌ Random placement (everything must align to grid)
+- ❌ Missing user stories (WHO and WHY)
+- ❌ Missing FR badges (WHAT must be built)
+- ❌ Missing success criteria (HOW we verify)
+- ❌ Sparse "minimal" layouts - Tufte says maximize DATA, not minimize everything
+
+#### Tufte Reminder
+
+**Data-ink ratio** means maximize ink for DATA (user stories, FRs, success criteria), minimize ink for DECORATION (gradients, shadows, unnecessary borders). It does NOT mean "remove all content".
+
+### Clickable Badge Links (MANDATORY for GitHub Pages)
+
+All FR, US, and SC badges MUST be wrapped with links to the source spec.md on GitHub.
+
+**Base URL pattern:**
+```
+https://github.com/{owner}/{repo}/blob/main/features/{category}/{feature}/spec.md#{section}
+```
+
+**Section anchor mapping:**
+| Badge Prefix | Anchor |
+|--------------|--------|
+| FR-### | `#functional-requirements` |
+| US-# | `#user-story-N---title-priority-pN` |
+| SC-### | `#success-criteria-mandatory` |
+| P0/P1/P2 | Same as parent US |
+
+**Example FR badge with link:**
+```svg
+<a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/000-rls-implementation/spec.md#functional-requirements" target="_blank">
+  <g transform="translate(55, 125)">
+    <rect width="55" height="18" rx="3" fill="#2563eb"/>
+    <text x="27" y="13" class="badge" text-anchor="middle">FR-001</text>
+    <text x="65" y="13" class="fr-text">Description text</text>
+  </g>
+</a>
+```
+
+**Example US card with link:**
+```svg
+<a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/000-rls-implementation/spec.md#user-story-1---user-data-isolation-priority-p0" target="_blank">
+<rect x="40" y="125" width="520" height="80" rx="6" fill="#1e293b" stroke="#dc2626" stroke-width="2"/>
+<rect x="50" y="135" width="40" height="20" rx="4" fill="#dc2626"/>
+<text x="70" y="150" class="badge" text-anchor="middle">P0</text>
+<text x="100" y="150" class="subsection">US-1: User Data Isolation</text>
+<text x="50" y="172" class="body">As a user, I need...</text>
+</a>
+```
+
+**Rules:**
+- Always use `target="_blank"` to open in new tab
+- Wrap the entire card/badge group, not just the badge rect
+- Include description text inside the link for larger click target
+- GitHub generates anchors from headings only (lowercase, spaces→hyphens)
 
 ### Verify
 
@@ -114,14 +222,103 @@ Read full spec. Extract: feature purpose, user stories, UI requirements, screens
 |-----|----------------|-------------------------|
 | <kbd>**FR**</kbd> | `### Functional Requirements` | Keep MUST/SHOULD |
 | <kbd>**SC**</kbd> | `### Success Criteria` | Keep metric |
-| <kbd>**US**</kbd> | `### User Stories` | Inline only, no legend |
+| <kbd>**US**</kbd> | `### User Stories` | Full narrative in dedicated section |
 
 **Lookup table:**
 | Tag | Code | Short | Full |
 |-----|------|-------|------|
 | <kbd>**FR**</kbd> | FR-001 | MUST enable RLS | Full statement... |
 | <kbd>**SC**</kbd> | SC-001 | Auth <2sec | Full statement... |
-| <kbd>**US**</kbd> | US-001 | As admin... | *(inline only)* |
+| <kbd>**US**</kbd> | US-001 | User Data Isolation | As a user, I need... so that... |
+
+---
+
+## ⛔ USER STORY SECTION (MANDATORY)
+
+**Every wireframe MUST include a dedicated USER STORIES section with full narratives.**
+
+### US Extraction (Step 2c Continued)
+
+From spec.md `### User Stories` section, extract for EACH user story:
+1. **US code** (US-001, US-002, etc.)
+2. **Priority** (P0, P1, P2)
+3. **Short title** (e.g., "User Data Isolation")
+4. **Full narrative** (complete "As a [role], I need [goal], so that [benefit]" text)
+5. **Key acceptance criterion** (one bullet point)
+
+### USER STORIES Section Layout
+
+| Property | Value |
+|----------|-------|
+| Section header | "USER STORIES" in violet (#8b5cf6) |
+| Position | Right column or bottom section (depends on wireframe type) |
+| Card width | 520px minimum |
+| Card height | 110px minimum (for full narrative) |
+| Card spacing | 10-20px vertical gap between cards |
+
+### User Story Card Template (MANDATORY)
+
+```xml
+<!-- USER STORY CARD - 520×110px minimum -->
+<g class="user-story-card" transform="translate(X, Y)">
+  <!-- Card background -->
+  <rect width="520" height="110" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+  <!-- Priority badge (P0=red, P1=amber, P2=blue) -->
+  <rect x="8" y="8" width="50" height="20" rx="4" fill="#dc2626"/>
+  <text x="33" y="22" fill="#fff" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">P0</text>
+  <!-- Story ID and title (teal) -->
+  <text x="70" y="22" class="us-tag">US-001: User Data Isolation</text>
+  <!-- Full narrative text (word-wrapped, ~55 chars per line) -->
+  <text x="12" y="44" class="us-narrative">As a user, I need assurance that my personal data is</text>
+  <text x="12" y="60" class="us-narrative">isolated from other users, so that no one can view or</text>
+  <text x="12" y="76" class="us-narrative">modify my information without my explicit consent.</text>
+  <!-- Key acceptance criterion -->
+  <text x="12" y="98" class="us-acceptance">✓ Query returns only own data; unauthorized = empty set</text>
+</g>
+```
+
+### Required CSS Classes (Dark Theme)
+
+```css
+.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
+.us-narrative { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 13px; }
+.us-acceptance { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+```
+
+### Required CSS Classes (Light Theme)
+
+```css
+.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
+.us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+.us-acceptance { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; }
+```
+
+### Priority Badge Colors
+
+| Priority | Background | Text |
+|----------|------------|------|
+| P0 | `#dc2626` (red) | `#fff` |
+| P1 | `#f59e0b` (amber) | `#000` |
+| P2 | `#3b82f6` (blue) | `#fff` |
+
+### US Coverage Validation (BLOCKING GATE)
+
+Before completing ANY wireframe generation:
+
+1. List all US codes from spec.md
+2. For each US, verify a full narrative card exists in at least one wireframe
+3. If ANY user story is missing its full narrative → DO NOT complete generation
+
+```
+US COVERAGE CHECK:
+- US-001: "User Data Isolation" → 01-architecture.svg USER STORIES section ✓
+  Narrative: "As a user, I need assurance that my personal data..."
+- US-002: "Profile Self-Management" → 01-architecture.svg USER STORIES section ✓
+  Narrative: "As a user, I need to be the only person who can..."
+...
+```
+
+**⛔ Short tags like "US-001: Title" are NOT sufficient. Full narratives are MANDATORY.**
 
 ---
 
@@ -273,12 +470,7 @@ Example (`010-unified-blog-content`): `01-blog-list-post.svg` → Light | `04-mi
 | States | `screen-state.svg` | `dashboard-error.svg` |
 | Roles | `screen-role.svg` | `settings-admin.svg` |
 
-| Canvas | viewBox | Use |
-|--------|---------|-----|
-| Standard | `0 0 1400 800` | Default |
-| Wide | `0 0 1600 800` | Extra annotation margins |
-| Tall | `0 0 1400 1000` | Complex vertical |
-| Extended | `0 0 1600 1000` | Full annotation mode |
+**viewBox:** `0 0 1920 1080` (always)
 
 ### 5. Generate SVG Wireframes
 
@@ -322,7 +514,11 @@ grep -r "REGENERATED WITH FEEDBACK" docs/design/wireframes/
 
 ### 5b. Track Page Requirements
 
-Track FR/SC/US per page → legend includes FR+SC only (US inline).
+Track FR/SC/US per page:
+- **FR + SC** → Add to Requirements Legend panel
+- **US** → Add inline to wireframe content (see ⛔ USER STORY TAGS section above)
+
+⛔ CRITICAL: All US codes from spec.md MUST appear as inline annotations. This is non-negotiable.
 
 ### 5c. Requirements Legend Panel
 
@@ -377,7 +573,7 @@ Track FR/SC/US per page → legend includes FR+SC only (US inline).
 Use this template for user-facing screens, forms, and interactive UI.
 
 ```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" width="1400" height="800">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <!-- ============================================================
        GENERATED BY: /wireframe skill
        SOURCE: [SPEC_FILE_PATH]
@@ -420,18 +616,18 @@ Use this template for user-facing screens, forms, and interactive UI.
   </defs>
 
   <!-- Background - deeper sky blue -->
-  <rect width="1400" height="800" fill="url(#bgGrad)"/>
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
 
   <!-- Dot grid pattern - blue-tinted -->
   <g opacity="0.35">
     <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
       <circle cx="15" cy="15" r="1" fill="#6b8cba"/>
     </pattern>
-    <rect width="1400" height="800" fill="url(#dots)"/>
+    <rect width="1920" height="1080" fill="url(#dots)"/>
   </g>
 
   <!-- Accent line top -->
-  <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
+  <rect x="0" y="0" width="1920" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title -->
   <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">WIREFRAME TITLE</text>
@@ -440,15 +636,16 @@ Use this template for user-facing screens, forms, and interactive UI.
   <text x="40" y="52" class="label-desktop">DESKTOP</text>
   <g id="desktop-view">
     <!-- Desktop background container (standard for all light wireframes) -->
-    <rect x="40" y="60" width="900" height="580" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <!-- ⛔ MANDATORY: height=620 for consistency across all wireframes -->
+    <rect x="40" y="60" width="900" height="620" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
     <!-- 3-column layout: sidebar 200px | main 440px | detail 240px (10px gaps) -->
     <!-- Content panels use fill="#dcc8a8" (secondary) or fill="#f5f0e6" (inputs) -->
     <!-- Borders use stroke="#b8a080" -->
   </g>
 
   <!-- MOBILE SECTION (right) -->
-  <text x="980" y="52" class="label-mobile">MOBILE</text>
-  <g id="mobile-view" transform="translate(980, 60)">
+  <text x="1500" y="52" class="label-mobile">MOBILE</text>
+  <g id="mobile-view" transform="translate(1500, 60)">
     <!-- Phone frame: 360x700, rx=24 - darker tan -->
     <rect x="0" y="0" width="360" height="700" rx="24" fill="#c8b898" stroke="#a08860" stroke-width="2"/>
     <!-- Screen area: x=10, y=10, width=340, height=680, rx=16 - true parchment -->
@@ -481,7 +678,7 @@ Use this template for user-facing screens, forms, and interactive UI.
 Use this template for architecture diagrams, data flows, and system visualizations.
 
 ```xml
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 800" width="1400" height="800">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <!-- ============================================================
        GENERATED BY: /wireframe skill
        SOURCE: [SPEC_FILE_PATH]
@@ -518,18 +715,18 @@ Use this template for architecture diagrams, data flows, and system visualizatio
   </defs>
 
   <!-- Background -->
-  <rect width="1400" height="800" fill="url(#bgGrad)"/>
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
 
   <!-- Dot grid pattern -->
   <g opacity="0.05">
     <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
       <circle cx="15" cy="15" r="1" fill="#fff"/>
     </pattern>
-    <rect width="1400" height="800" fill="url(#dots)"/>
+    <rect width="1920" height="1080" fill="url(#dots)"/>
   </g>
 
   <!-- Accent line top -->
-  <rect x="0" y="0" width="1400" height="3" fill="url(#accentGrad)"/>
+  <rect x="0" y="0" width="1920" height="3" fill="url(#accentGrad)"/>
 
   <!-- Title - AAA fix: #64748b → #8494a8 -->
   <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#8494a8" letter-spacing="1">ARCHITECTURE DIAGRAM TITLE</text>
@@ -587,25 +784,55 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 **Key change**: Dark red `#991b1b` allows white text (unlike bright red `#ef4444`).
 
-```xml
-<!-- ❌ WRONG: White on blue/yellow - FAILS WCAG AA -->
-<rect fill="#2563eb"/><text fill="#ffffff">ALLOW</text>   <!-- 3.8:1 -->
-<rect fill="#eab308"/><text fill="#ffffff">COND</text>    <!-- 1.9:1 -->
+### ⛔ RLS Badge Text Consistency (MANDATORY)
 
-<!-- ✅ CORRECT: Appropriate contrast per color -->
-<rect fill="#2563eb"/><text fill="#1e3a5f" font-weight="bold">ALLOW</text>  <!-- 6:1 -->
-<rect fill="#991b1b"/><text fill="#ffffff" font-weight="bold">DENY</text>   <!-- 7:1, dark red allows white -->
-<rect fill="#eab308"/><text fill="#451a03" font-weight="bold">COND</text>   <!-- 8:1 -->
+**ALL badge text MUST follow these rules:**
+
+1. **Font**: Monospace (`Consolas`, `Monaco`, `Courier New`) - looks like code/SQL
+2. **Case**: ALL CAPS for all badge text
+3. **Symbols**: Consistent prefix symbols based on action type
+4. **Qualifiers**: Include OWN/SVC when access is scoped
+
+| Badge Type | Symbol | Example Text | Color |
+|------------|--------|--------------|-------|
+| Allow (user's own data) | ✓ | `✓ SEL OWN`, `✓ UPD OWN` | Blue |
+| Deny (blocked) | ✗ | `✗ UPDATE`, `✗ DELETE`, `✗ NO DEL` | Dark Red |
+| Conditional (policy-dependent) | ? | `? EMPTY` | Yellow |
+| Service bypass (no symbol) | — | `SVC ONLY`, `INS SVC` | Magenta |
+
+**Abbreviations (for 90px badge width):**
+- `SEL` = SELECT
+- `UPD` = UPDATE
+- `INS` = INSERT
+- `DEL` = DELETE
+- `OWN` = owner's data only
+- `SVC` = service role
+
+```xml
+<!-- ✅ CORRECT: Consistent badge format -->
+<text class="badge-text-on-blue">✓ SEL OWN</text>      <!-- User can SELECT own data -->
+<text class="badge-text-on-blue">✓ UPD OWN</text>      <!-- User can UPDATE own data -->
+<text class="badge-text-on-darkred">✗ DELETE</text>    <!-- DELETE denied -->
+<text class="badge-text-on-darkred">✗ NO DEL</text>    <!-- DELETE blocked (immutable) -->
+<text class="badge-text-on-magenta">SVC ONLY</text>    <!-- Service role bypass -->
+<text class="badge-text-on-magenta">INS SVC</text>     <!-- INSERT via service only -->
+<text class="badge-text-on-yellow">? EMPTY</text>      <!-- Conditional: returns empty set -->
+
+<!-- ❌ WRONG: Inconsistent format -->
+<text>SELECT own</text>    <!-- Mixed case -->
+<text>service</text>       <!-- Lowercase -->
+<text>NO DEL</text>        <!-- Missing ✗ symbol -->
+<text>ALLOW</text>         <!-- Missing ✓ symbol -->
 ```
 
 **Color-specific text classes (add to `<style>` block):**
 ```css
-/* RLS badge text colors (colorblind-friendly palette) */
-.badge-text-on-blue { fill: #1e3a5f; font-weight: bold; }     /* Allow */
-.badge-text-on-darkred { fill: #ffffff; font-weight: bold; }  /* Deny - white OK on dark red */
-.badge-text-on-yellow { fill: #451a03; font-weight: bold; }   /* Conditional */
-.badge-text-on-purple { fill: #1e1b4b; font-weight: bold; }   /* Auth Role */
-.badge-text-on-magenta { fill: #4a044e; font-weight: bold; }  /* Service Role */
+/* RLS badge text - monospace for SQL operations */
+.badge-text-on-blue { fill: #1e3a5f; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-darkred { fill: #ffffff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-yellow { fill: #451a03; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-purple { fill: #1e1b4b; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-magenta { fill: #4a044e; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
 ```
 
 ---
@@ -752,8 +979,8 @@ Before writing ANY SVG content, list every container with its boundaries:
 CONTAINER INVENTORY:
 - Desktop panel: x=40, y=60, w=900, h=700 → RIGHT=940, BOTTOM=760
 - Header bar: x=50, y=70, w=880, h=50 → RIGHT=930, BOTTOM=120
-- Mobile frame: x=980, y=60, w=360, h=700 → RIGHT=1340, BOTTOM=760
-- Mobile screen: x=990, y=70, w=340, h=680 → RIGHT=1330, BOTTOM=750
+- Mobile frame: x=1500, y=60, w=360, h=700 → RIGHT=1860, BOTTOM=760
+- Mobile screen: x=1510, y=70, w=340, h=680 → RIGHT=1330, BOTTOM=750
 - [Panel 1]: x=?, y=?, w=?, h=? → RIGHT=?, BOTTOM=?
 ```
 
@@ -1008,13 +1235,15 @@ Before drawing arrows, verify:
 
 | Section | Position | Size | Notes |
 |---------|----------|------|-------|
-| Desktop area | x=40, y=60 | 900×680 | 3-column layout |
+| Desktop area | x=40, y=60 | **1400×900** | Full desktop mockup |
 | - Sidebar | x=40 | 200px wide | Navigation |
 | - Main | x=250 | 440px wide | Primary content |
 | - Detail | x=700 | 240px wide | Item details |
 | - Gaps | | 10px | Between columns |
-| Mobile area | x=980, y=60 | 360×700 | Phone frame |
-| - Content | x=990, y=70 | 340×660 | 10px padding |
+| Mobile area | x=1500, y=60 | 360×700 | Phone frame |
+| - Content | x=1510, y=70 | 340×680 | 10px padding |
+
+**⛔ Desktop Height Rule**: All wireframes MUST use `height="620"` for the desktop panel. This ensures visual consistency across all pages.
 
 ---
 
@@ -1024,16 +1253,16 @@ Before drawing arrows, verify:
 
 ### Mobile Position Rule
 
-**Mobile frame: x=980, y=60** (1400 canvas - 360 frame - 60 margin = 980). No exceptions.
+**Mobile frame: x=1500, y=60** (1920 canvas - 360 frame - 60 margin = 1500). No exceptions.
 
 ```xml
 <!-- ❌ WRONG --> <g transform="translate(770, 60)">
-<!-- ✅ RIGHT --> <g transform="translate(980, 60)">
+<!-- ✅ RIGHT --> <g transform="translate(1500, 60)">
 ```
 
-Desktop x=40, mobile x=980. Empty space between is intentional. Never move mobile closer.
+Desktop x=40, mobile x=1500. Empty space between is intentional. Never move mobile closer.
 
-**Verify before writing**: `transform="translate(980, 60)"` + `MOBILE` label at x="980".
+**Verify before writing**: `transform="translate(1500, 60)"` + `MOBILE` label at x="1500".
 
 ---
 
@@ -1229,7 +1458,7 @@ Gap: 30px clear zone between content and footer
 
 ### Content Boundary Check
 
-All content ≤ y=750. Footer at y=780. If content too tall: reduce height, expand canvas (1400×1000), or move annotations to margins.
+All content ≤ y=1030. Footer at y=1060. If content too tall: reduce content or split into multiple SVGs.
 
 ---
 
@@ -1426,6 +1655,65 @@ Place all leader lines in a dedicated group at the END of the SVG, just before `
 
 ---
 
+## ⛔ TAG POSITIONING STANDARD (MANDATORY - Pass 12 Learning)
+
+**All FR/SC tags in card headers MUST follow this positioning standard:**
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Margin from right edge | **15px** | Container width - 15 = tag x-position |
+| First tag y-position | **17px** | From top of container |
+| Second tag y-position | **35px** | 18px line height below first |
+| Alignment | `text-anchor="end"` | Right-align tags to corner |
+| Tag order | FR first, SC second | FR tags above/left, SC tags below/right |
+
+### Example: Card with Two Tags
+
+```xml
+<!-- Card container: width=280 -->
+<rect x="0" y="0" width="280" height="90" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+<text x="15" y="22" class="heading-sm">Card Title</text>
+<!-- Tags positioned in top-right corner -->
+<text x="265" y="17" text-anchor="end" class="tag-base fr-tag">FR-033</text>
+<text x="265" y="35" text-anchor="end" class="tag-base sc-tag">SC-001</text>
+```
+
+### Example: Wide Container with Multiple Tags (side-by-side)
+
+```xml
+<!-- Container: width=880 -->
+<rect x="0" y="0" width="880" height="130" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+<text x="15" y="22" class="heading-sm">Section Title</text>
+<!-- Tags right-aligned, spaced 70px apart -->
+<text x="865" y="17" text-anchor="end" class="tag-base sc-tag">SC-010</text>
+<text x="795" y="17" text-anchor="end" class="tag-base fr-tag">FR-034</text>
+<text x="725" y="17" text-anchor="end" class="tag-base fr-tag">FR-032</text>
+```
+
+---
+
+## ⛔ FOOTER STANDARD (MANDATORY - Pass 13 Learning)
+
+**Light theme wireframes MUST use consistent footer styling:**
+
+```xml
+<!-- Light Theme Footer (CORRECT) -->
+<text x="60" y="780" text-anchor="start" class="text-muted">NNN:PP | Title | ScriptHammer</text>
+```
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| x-position | **60** | Left margin |
+| y-position | **780** | 20px from bottom on 800px canvas |
+| Alignment | `text-anchor="start"` | Left-aligned |
+| Class | `class="text-muted"` | Uses #4b5563 (gray-600) |
+| Format | `NNN:PP \| Title \| ScriptHammer` | Feature:page, title, brand |
+
+**⛔ WRONG**: Using inline `fill="#64748b"` or `fill="#94a3b8"` - too light
+**✅ RIGHT**: Using `class="text-muted"` which is defined as `#4b5563`
+
+---
+
 ### 6. Update the Wireframe Viewer
 
 **Per-page**: Skip if file registered, add single entry if new. **Full-feature**: Update all entries.
@@ -1456,5 +1744,62 @@ const wireframes = [
 ### 7. Verify
 
 List SVGs, show wireframes array update, confirm nav added. View at: `docs/design/wireframes/index.html`
+
+### 7b. US Coverage Report (MANDATORY)
+
+After generating all wireframes for a feature, output this report:
+
+```
+US COVERAGE REPORT for [FEATURE]:
+┌──────────┬─────────────────────────────┬──────────────────────┐
+│ US Code  │ Title                       │ Wireframe            │
+├──────────┼─────────────────────────────┼──────────────────────┤
+│ US-001   │ [Story title]               │ 01-xxx.svg ✓         │
+│ US-002   │ [Story title]               │ 01-xxx.svg ✓         │
+│ US-003   │ [Story title]               │ 02-xxx.svg ✓         │
+│ ...      │ ...                         │ ...                  │
+└──────────┴─────────────────────────────┴──────────────────────┘
+
+Coverage: X/Y User Stories (100% required)
+```
+
+**⛔ If coverage < 100%, identify which wireframes need US tags and add them before completing.**
+
+### 7c. Update Status in wireframe-status.json (MANDATORY)
+
+After generating/regenerating wireframes, update the central tracker:
+
+**File:** `docs/design/wireframes/wireframe-status.json`
+
+**Update logic:**
+- New wireframes (no prior .issues.md) → Set to `draft`
+- Regenerated wireframes (had .issues.md) → Set to `regenerating`
+
+**JSON structure:**
+```json
+{
+  "000-rls-implementation": {
+    "status": "draft",
+    "svgs": {
+      "01-rls-overview.svg": "draft",
+      "02-rls-requirements.svg": "draft"
+    }
+  }
+}
+```
+
+**Update steps:**
+1. Read `docs/design/wireframes/wireframe-status.json`
+2. Find the feature object (e.g., `000-rls-implementation`)
+3. Update `status` field to `draft` or `regenerating`
+4. Update each SVG's status in `svgs` object
+5. Write updated JSON file
+
+**Report:**
+```
+STATUS UPDATE: 000-rls-implementation
+  Feature: draft (📝)
+  SVGs: 2 files marked draft
+```
 
 ## Alternative: `/wireframe-dark` or `/wireframe-light` to force theme.

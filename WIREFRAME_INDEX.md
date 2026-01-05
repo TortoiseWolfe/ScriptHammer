@@ -6,6 +6,30 @@
 - UX wireframes → Light theme (Indigo palette)
 - Backend wireframes → Dark theme (Slate/Violet palette)
 
+## Status Tracking
+
+**Source of Truth:** `docs/design/wireframes/wireframe-status.json`
+
+Status is displayed dynamically in the wireframe viewer sidebar and can be updated via:
+- `/wireframe` → sets `draft` or `regenerating`
+- `/wireframe-review` → sets `review`, `issues`, `patchable`, or `approved`
+- `/wireframe-status` → manual override with interactive menu
+
+### Status Legend
+
+| Emoji | Key | Meaning |
+|-------|-----|---------|
+| 📝 | draft | Initial generation |
+| 🔄 | regenerating | Being regenerated |
+| 👁️ | review | Under review |
+| 🔴 | issues | Needs regeneration |
+| 🟡 | patchable | Minor fixes only |
+| ✅ | approved | Passed review |
+| 📋 | planning | In /speckit.plan |
+| 🚧 | inprogress | Being implemented |
+| ✅ | complete | Implemented |
+| ⛔ | blocked | Waiting on dependency |
+
 ---
 
 ## UX/Frontend Wireframes (85 SVGs)
@@ -14,20 +38,18 @@ User interfaces, forms, dashboards, modals, and interactive screens.
 
 ### Foundation (000-006)
 
-#### 001-wcag-aa-compliance
-- `docs/design/wireframes/001-wcag-aa-compliance/01-accessibility-dashboard.svg` - Accessibility testing dashboard
+#### 001-wcag-aa-compliance- `docs/design/wireframes/001-wcag-aa-compliance/01-accessibility-dashboard.svg` - Accessibility testing dashboard
 
-#### 002-cookie-consent
-- `docs/design/wireframes/002-cookie-consent/01-consent-modal.svg` - Cookie consent modal
+#### 002-cookie-consent- `docs/design/wireframes/002-cookie-consent/01-consent-modal.svg` - Cookie consent modal
 - `docs/design/wireframes/002-cookie-consent/02-privacy-settings.svg` - Privacy settings panel
 
-#### 003-user-authentication
-- `docs/design/wireframes/003-user-authentication/01-sign-in-register.svg` - Sign in and register forms
-- `docs/design/wireframes/003-user-authentication/02-password-reset.svg` - Password reset flow
-- `docs/design/wireframes/003-user-authentication/03-profile-management.svg` - User profile management
+#### 003-user-authentication- `docs/design/wireframes/003-user-authentication/01-login-signup.svg` - Login & Signup
+- `docs/design/wireframes/003-user-authentication/02-email-verification.svg` - Email Verification
+- `docs/design/wireframes/003-user-authentication/03-profile-settings.svg` - Profile & Settings
+- `docs/design/wireframes/003-user-authentication/04-password-reset.svg` - Password Reset
+- `docs/design/wireframes/003-user-authentication/05-auth-flow-architecture.svg` - Auth Flow Architecture
 
-#### 004-mobile-first-design
-- `docs/design/wireframes/004-mobile-first-design/01-breakpoint-system.svg` - Responsive breakpoint system
+#### 004-mobile-first-design- `docs/design/wireframes/004-mobile-first-design/01-breakpoint-system.svg` - Responsive breakpoint system
 - `docs/design/wireframes/004-mobile-first-design/02-navigation-responsive.svg` - Responsive navigation
 - `docs/design/wireframes/004-mobile-first-design/03-content-layout.svg` - Responsive content layouts
 - `docs/design/wireframes/004-mobile-first-design/04-image-error-states.svg` - Image error states
@@ -185,11 +207,9 @@ Architecture diagrams, data flows, test flows, and system diagrams.
 
 ### Foundation (000-006)
 
-#### 000-rls-implementation
-- `docs/design/wireframes/000-rls-implementation/rls-architecture.svg` - Row Level Security architecture
+#### 000-rls-implementation- `docs/design/wireframes/000-rls-implementation/rls-architecture.svg` - Row Level Security architecture
 
-#### 001-wcag-aa-compliance
-- `docs/design/wireframes/001-wcag-aa-compliance/02-wcag-testing-pipeline.svg` - WCAG testing pipeline
+#### 001-wcag-aa-compliance- `docs/design/wireframes/001-wcag-aa-compliance/02-wcag-testing-pipeline.svg` - WCAG testing pipeline
 
 #### 005-security-hardening
 - `docs/design/wireframes/005-security-hardening/01-security-architecture.svg` - Security architecture diagram
