@@ -1029,7 +1029,7 @@ If minimum value at origin → 🔴 REGENERATE with semantic error feedback.
 |-----------|----------|-----------|
 | Mobile position | x=980, y=60 | `grep "translate" *.svg` |
 | MOBILE label | x=980 | `grep "MOBILE" *.svg` |
-| Canvas size | 1400×800 | Check `viewBox` |
+| Canvas size | 1920×1080 | Check `viewBox` |
 | Desktop start | x=40 | First desktop element |
 
 **Inconsistency = 🔴 REGENERATE.** Moving mobile position requires full regeneration.

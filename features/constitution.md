@@ -117,7 +117,7 @@ this document temporarily for focused work.
 Before implementation, generate wireframes to visualize the feature:
 
 1. Run /wireframe (dark theme) or /wireframe-light (light theme)
-2. Review side-by-side desktop + mobile wireframes (1400x800)
+2. Review side-by-side desktop + mobile wireframes (1920x1080)
 3. Use /hot-reload-viewer to preview interactively
 4. Iterate on design before coding
 

@@ -34,7 +34,7 @@ Execute these commands **in order** - do not skip steps:
 # Phase 1: Specification
 /speckit.specify        # 1. Generate spec.md from *_feature.md
 /speckit.clarify        # 2. Refine requirements interactively
-/wireframe              # 3. Generate SVG wireframes (1400x800)
+/wireframe              # 3. Generate SVG wireframes (1920x1080)
 
 # Phase 2: Wireframe Review (MANDATORY GATE)
 /wireframe-review       # 4. Review SVGs with 🟢/🔴 classification (4 phases + half-view)

@@ -2789,7 +2789,7 @@ That's infinitely more useful than describing your UI in prose.
 ## 📦 What's Included
 
 - 🖥️ Interactive wireframe viewer with pan, zoom, keyboard navigation, and focus mode
-- 🎨 Side-by-side Desktop + Mobile wireframe layout (1400×800)
+- 🎨 Side-by-side Desktop + Mobile wireframe layout (1920×1080)
 - ⚙️ [GitHub's SpecKit](https://github.com/github/spec-kit) workflow commands built-in
 - 🌗 Dark and light theme support for wireframes
 
@@ -2867,7 +2867,7 @@ Continue using this repo with SpecKit's full workflow (`/speckit.plan`, `/specki
 | `/speckit.constitution` | Define project vision and principles |
 | `/speckit.specify` | Create feature specifications |
 | `/speckit.clarify` | Refine specs with clarifying questions |
-| `/wireframe` | Generate dark theme SVG wireframes (1400×800, side-by-side) |
+| `/wireframe` | Generate dark theme SVG wireframes (1920×1080, side-by-side) |
 | `/wireframe-light` | Generate light theme SVG wireframes |
 | `/speckit.plan` | Generate implementation plan |
 | `/speckit.checklist` | Generate custom implementation checklist |
