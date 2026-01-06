@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- ScriptHammer Desktop Footer
+       Position: Bottom of desktop viewport, above signature block
+       Width: 1346px (matches header width)
+       Height: 80px -->
+
+  <g id="site-footer">
+    <!-- Footer background -->
+    <rect width="1346" height="80" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Left section: Brand + tagline -->
+    <g transform="translate(20, 20)">
+      <rect x="0" y="0" width="24" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="34" y="18" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">ScriptHammer</text>
+      <text x="0" y="45" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px">Product planning template</text>
+    </g>
+
+    <!-- Center section: Navigation links -->
+    <g transform="translate(450, 25)">
+      <text x="0" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">Features</text>
+      <text x="80" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">Documentation</text>
+      <text x="200" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">GitHub</text>
+      <text x="270" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">Privacy</text>
+      <text x="330" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">Terms</text>
+      <text x="0" y="25" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px">Built with Next.js 15, Supabase, and Tailwind CSS</text>
+    </g>
+
+    <!-- Right section: Copyright -->
+    <g transform="translate(1050, 30)">
+      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px" text-anchor="end">2026 ScriptHammer</text>
+      <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="11px" text-anchor="end">MIT License</text>
+    </g>
+  </g>
+</svg>

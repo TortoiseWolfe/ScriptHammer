@@ -603,7 +603,34 @@
     <div class="nav-category" id="cat-foundation">
       <div class="category-header">Foundation <span class="shortcut">⇧F1</span></div>
       <div class="category-links">
-        <!-- Populated by /wireframe -->
+        <!-- 000-landing-page -->
+        <div class="nav-section">
+          <h2>000 - Landing Page</h2>
+          <div class="nav-links">
+            <a href="#" data-svg="000-landing-page/01-landing-page.svg">
+              Landing Page
+              <span class="path">Desktop 1366×768 + Mobile</span>
+            </a>
+          </div>
+        </div>
+        <!-- 001-wcag-aa-compliance -->
+        <div class="nav-section">
+          <h2>001 - WCAG AAA Compliance <span class="shortcut">^1</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="001-wcag-aa-compliance/01-a11y-testing-pipeline.svg">
+              Testing Pipeline
+              <span class="path">CI/CD Integration</span>
+            </a>
+            <a href="#" data-svg="001-wcag-aa-compliance/02-a11y-dashboard.svg">
+              A11y Dashboard
+              <span class="path">Compliance Monitoring</span>
+            </a>
+            <a href="#" data-svg="001-wcag-aa-compliance/03-dev-feedback-tooling.svg">
+              Dev Feedback
+              <span class="path">Real-time Warnings</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -817,7 +844,12 @@
   <script>
     // Wireframes array - populated dynamically by /wireframe command
     const wireframes = [
-      // Add entries here as features are processed with /wireframe
+      // 000-landing-page
+      { path: '000-landing-page/01-landing-page.svg', title: 'Landing Page' },
+      // 001-wcag-aa-compliance
+      { path: '001-wcag-aa-compliance/01-a11y-testing-pipeline.svg', title: 'A11y Testing Pipeline' },
+      { path: '001-wcag-aa-compliance/02-a11y-dashboard.svg', title: 'A11y Dashboard' },
+      { path: '001-wcag-aa-compliance/03-dev-feedback-tooling.svg', title: 'Dev Feedback Tooling' },
     ];
 
     // Category mapping for Shift+F1-F9 navigation
@@ -970,7 +1002,7 @@
     // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
     // Set to null to start at first wireframe
     // ========================================
-    const DEFAULT_BOOKMARK = "003-user-authentication/03-profile-settings.svg";
+    const DEFAULT_BOOKMARK = "000-landing-page/01-landing-page.svg";
 
     // Find wireframe index by path
     function findIndexByPath(path) {
@@ -1057,11 +1089,57 @@
       zoomInBtn.disabled = false;
       zoomOutBtn.disabled = zoom <= ZOOM_MIN;
 
+      // Resolve external <use href="file.svg#id"> references
+      async function resolveExternalUseRefs(svgContent, basePath) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+        const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+
+        // Find all <use> elements with external href (file.svg#id pattern)
+        const useElements = doc.querySelectorAll('use[href*=".svg#"]');
+        const fetchPromises = [];
+
+        for (const useEl of useElements) {
+          const href = useEl.getAttribute('href');
+          if (!href || !href.includes('.svg#')) continue;
+
+          const [filePath, elementId] = href.split('#');
+          const fullPath = baseDir + filePath;
+
+          fetchPromises.push(
+            fetch(fullPath)
+              .then(r => r.text())
+              .then(externalSvg => {
+                const externalDoc = parser.parseFromString(externalSvg, 'image/svg+xml');
+                const targetElement = externalDoc.getElementById(elementId);
+                if (targetElement) {
+                  // Clone the target element
+                  const clone = targetElement.cloneNode(true);
+                  // Apply position from <use> element
+                  const x = useEl.getAttribute('x') || '0';
+                  const y = useEl.getAttribute('y') || '0';
+                  // Wrap in a group with transform for positioning
+                  const wrapper = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                  wrapper.setAttribute('transform', `translate(${x}, ${y})`);
+                  wrapper.appendChild(clone);
+                  // Replace <use> with resolved content
+                  useEl.parentNode.replaceChild(wrapper, useEl);
+                }
+              })
+              .catch(() => {/* External ref failed, leave <use> as-is */})
+          );
+        }
+
+        await Promise.all(fetchPromises);
+        return new XMLSerializer().serializeToString(doc);
+      }
+
       // Fetch and inject SVG content (enables both clickable links AND zoom/pan)
       fetch(wf.path)
         .then(response => response.text())
-        .then(svgContent => {
-          viewer.innerHTML = svgContent;
+        .then(svgContent => resolveExternalUseRefs(svgContent, wf.path))
+        .then(resolvedSvg => {
+          viewer.innerHTML = resolvedSvg;
           // Auto-fit to visible viewport after SVG loads
           requestAnimationFrame(() => fitToView());
         })

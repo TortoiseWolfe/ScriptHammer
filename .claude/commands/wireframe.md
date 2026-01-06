@@ -54,6 +54,81 @@ These decisions are FINAL. Do not present options or ask the user:
 
 If you find yourself about to ask about any of these - STOP. The answer is already decided.
 
+### ⛔ STANDARD WEBSITE HEADER (Light Theme Only)
+
+**The header is FIXED** - only the **active nav item** changes per wireframe.
+
+| Nav Item | Fill (Inactive) | Fill (Active) | Text Class | Use When |
+|----------|-----------------|---------------|------------|----------|
+| Home | `transparent` | `#8b5cf6` | `.text-sm` / white 600 | Landing/overview wireframes |
+| Features | `transparent` | `#8b5cf6` | `.text-sm` / white 600 | Feature-specific wireframes |
+| Docs | `transparent` | `#8b5cf6` | `.text-sm` / white 600 | Documentation wireframes |
+| Account | `transparent` | `#8b5cf6` | `.text-sm` / white 600 | User profile/settings wireframes |
+
+**How to customize the active nav item:**
+1. Copy the header template exactly from Light Theme Template
+2. Change ONE nav item's rect fill from `transparent` to `#8b5cf6`
+3. Change that item's text from `class="text-sm"` to inline `fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600"`
+4. All other nav items remain inactive (transparent background, `.text-sm` class)
+
+**Do NOT change**: Logo, nav item text labels, positions, header right icons, header height (50px), nav item height (44px).
+
+**Header Right Side Icons (all 44px touch targets):**
+| Icon | Symbol | Purpose | Notes |
+|------|--------|---------|-------|
+| Accessibility | 👁 | WCAG options | Always visible - signals a11y commitment |
+| Settings | ⚙️ | Theme + Font | Opens preferences dropdown |
+| Avatar | U | User account | Violet circle with initial |
+
+**Example: "Docs" active instead of "Features":**
+```xml
+<!-- Features (inactive) -->
+<rect x="80" width="90" height="44" rx="4" fill="transparent"/>
+<text x="125" y="28" text-anchor="middle" class="text-sm">Features</text>
+<!-- Docs (active) -->
+<rect x="180" width="70" height="44" rx="4" fill="#8b5cf6"/>
+<text x="215" y="28" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Docs</text>
+```
+
+### ⛔ MOBILE NAVIGATION (Light Theme Only)
+
+**Mobile has TWO nav components** - both must sync with desktop's active nav item.
+
+#### Top Header (50px)
+- Hamburger menu (☰) left - opens secondary nav
+- Logo (SH + violet square) center
+- Avatar right
+
+#### Bottom Nav (56px, 4 tabs)
+- Each tab: 85×56px (exceeds 44px touch target)
+- Icons: 🏠 Home, ⚡ Features, 📄 Docs, 👤 Account
+- Active tab: `fill="#8b5cf6"` + white text
+- Inactive tab: `fill="transparent"` + `.text-muted`
+
+**How to customize active mobile tab:**
+1. Find the tab group in `mobile-bottom-nav` matching your active desktop nav
+2. Change that tab's rect fill from `transparent` to `#8b5cf6`
+3. Change that tab's text from `class="text-muted"` to inline `fill="#fff" font-weight="600"`
+4. All other tabs remain inactive
+
+**Example: "Docs" active instead of "Features":**
+```xml
+<!-- Features (inactive) -->
+<g transform="translate(85, 0)">
+  <rect width="85" height="56" fill="transparent"/>
+  <text x="42" y="24" text-anchor="middle" font-size="18">⚡</text>
+  <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Features</text>
+</g>
+<!-- Docs (active) -->
+<g transform="translate(170, 0)">
+  <rect width="85" height="56" fill="#8b5cf6" rx="0"/>
+  <text x="42" y="24" text-anchor="middle" font-size="18">📄</text>
+  <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Docs</text>
+</g>
+```
+
+**Mobile Content Area**: y=88 to y=634 (546px available, down from 632px without nav)
+
 ### USER STORIES Rule
 
 - USER STORIES section appears **only in wireframe 01** (first/overview wireframe per feature)
@@ -583,6 +658,71 @@ Track FR/SC/US per page:
 
 ---
 
+## Include Files (Build-Time Injection)
+
+**CRITICAL**: Read include files and inject content directly. Do NOT use `<use href="external.svg#group">` - nested icons won't render.
+
+### Include Files Location
+```
+docs/design/wireframes/includes/
+├── header-desktop.svg  → <g id="desktop-header">
+├── header-mobile.svg   → <g id="mobile-header-group">
+├── footer-mobile.svg   → <g id="mobile-bottom-nav">
+└── defs.svg            → Reference only (icons embedded in includes)
+```
+
+### Injection Process (for EVERY wireframe)
+
+1. **Read** include files at generation time
+2. **Extract** content inside the `<g id="...">` group
+3. **Inject** directly into SVG at correct position with transform
+4. **Customize** active nav state per wireframe
+
+### Desktop Header Injection
+```xml
+<!-- Read includes/header-desktop.svg, inject <g id="desktop-header"> content -->
+<g transform="translate(50, 70)">
+  <!-- PASTE desktop-header content here (rect, logo, nav, icons with inline paths) -->
+</g>
+<!-- Add active nav overlay AFTER header -->
+<g transform="translate(600, 73)"><!-- Nav positions: Home=600, Features=680, Docs=780, Account=860 -->
+  <rect width="70" height="44" rx="4" fill="#8b5cf6"/>
+  <text x="35" y="28" text-anchor="middle" fill="#fff" font-size="14px" font-weight="600">Home</text>
+</g>
+```
+
+### Mobile Header Injection
+```xml
+<!-- Read includes/header-mobile.svg, inject <g id="mobile-header-group"> content -->
+<g transform="translate(10, 10)">
+  <!-- PASTE mobile-header-group content (status bar + header with inline icon paths) -->
+</g>
+```
+
+### Mobile Bottom Nav Injection
+```xml
+<!-- Read includes/footer-mobile.svg, inject <g id="mobile-bottom-nav"> content -->
+<g transform="translate(10, 634)">
+  <!-- PASTE mobile-bottom-nav content (4 tabs with inline icon paths) -->
+</g>
+<!-- Add active tab overlay AFTER bottom nav -->
+<g transform="translate(10, 634)"><!-- Tab positions: Home=0, Features=85, Docs=170, Account=255 -->
+  <rect width="85" height="56" fill="#8b5cf6"/>
+  <g transform="translate(30, 6)">
+    <path fill="#fff" d="..."/> <!-- Copy icon paths from footer-mobile.svg, change fill to #fff -->
+  </g>
+  <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Home</text>
+</g>
+```
+
+### Why Build-Time Injection?
+- External `<use href="file.svg#group">` works for content
+- BUT nested `<use href="#symbol">` inside that group doesn't resolve
+- Icons must be inline `<path>` elements, embedded at generation time
+- Single source of truth maintained - edit include, regenerate wireframes
+
+---
+
 ## Light Theme Template (UX/Frontend Wireframes)
 
 Use this template for user-facing screens, forms, and interactive UI.
@@ -648,12 +788,47 @@ Use this template for user-facing screens, forms, and interactive UI.
   <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">WIREFRAME TITLE</text>
 
   <!-- DESKTOP SECTION (left) -->
-  <text x="40" y="52" class="label-desktop">DESKTOP</text>
+  <text x="40" y="52" class="label-desktop">DESKTOP (16:9)</text>
   <g id="desktop-view">
-    <!-- Desktop background container (standard for all light wireframes) -->
-    <!-- ⛔ MANDATORY: height=620 for consistency across all wireframes -->
-    <rect x="40" y="60" width="900" height="620" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
-    <!-- 3-column layout: sidebar 200px | main 440px | detail 240px (10px gaps) -->
+    <!-- Desktop viewport (16:9 ratio: 1366×768 - common laptop resolution) -->
+    <!-- ⛔ MANDATORY: 1366×768 for 16:9 aspect ratio, 94px gap to mobile -->
+    <rect x="40" y="60" width="1366" height="768" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- WEBSITE HEADER (ScriptHammer Standard - customize active nav item per feature) -->
+    <g id="site-header" transform="translate(50, 70)">
+      <!-- Header background (1346px = 1366 - 20 padding) -->
+      <rect width="1346" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+      <!-- Logo (left) - ScriptHammer brand -->
+      <rect x="15" y="10" width="30" height="30" rx="4" fill="#8b5cf6"/>
+      <text x="55" y="32" class="heading-sm">ScriptHammer</text>
+      <!-- Navigation items (center) - 44px touch targets -->
+      <g transform="translate(550, 3)">
+        <rect x="0" width="70" height="44" rx="4" fill="transparent"/>
+        <text x="35" y="28" text-anchor="middle" class="text-sm">Home</text>
+        <rect x="80" width="90" height="44" rx="4" fill="#8b5cf6"/>
+        <text x="125" y="28" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Features</text>
+        <rect x="180" width="70" height="44" rx="4" fill="transparent"/>
+        <text x="215" y="28" text-anchor="middle" class="text-sm">Docs</text>
+        <rect x="260" width="80" height="44" rx="4" fill="transparent"/>
+        <text x="300" y="28" text-anchor="middle" class="text-sm">Account</text>
+      </g>
+      <!-- Header right side: Accessibility + Settings + Avatar -->
+      <g transform="translate(1170, 3)">
+        <!-- Accessibility icon (always visible - WCAG commitment) -->
+        <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
+        <text x="22" y="28" text-anchor="middle" font-size="18">👁</text>
+        <!-- Settings gear (theme + font) - darker fill for visibility -->
+        <rect x="54" y="0" width="44" height="44" rx="4" fill="transparent"/>
+        <text x="76" y="28" text-anchor="middle" fill="#4b5563" font-size="18">⚙️</text>
+        <!-- User avatar -->
+        <circle cx="130" cy="22" r="16" fill="#8b5cf6"/>
+        <text x="130" y="27" text-anchor="middle" fill="#fff" font-size="12">U</text>
+      </g>
+    </g>
+
+    <!-- CONTENT AREA (below header, starts at y=130 relative to desktop) -->
+    <!-- Available space: 1346×688 (header 50px + 30px padding, content area 688px) -->
+    <!-- 3-column layout: sidebar 200px | main 800px | detail 320px (10px gaps) -->
     <!-- Content panels use fill="#dcc8a8" (secondary) or fill="#f5f0e6" (inputs) -->
     <!-- Borders use stroke="#b8a080" -->
   </g>
@@ -669,8 +844,67 @@ Use this template for user-facing screens, forms, and interactive UI.
     <rect x="10" y="10" width="340" height="28" rx="16" fill="#dcc8a8"/>
     <text x="30" y="28" class="text-sm">9:41</text>
     <text x="310" y="28" text-anchor="end" class="text-sm">📶 🔋</text>
-    <!-- Mobile content starts at y=48 within this group -->
+
+    <!-- MOBILE HEADER (ScriptHammer Standard - customize active tab to match desktop) -->
+    <g id="mobile-header" transform="translate(10, 38)">
+      <!-- Header bar -->
+      <rect width="340" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+      <!-- Hamburger menu (left) - 44px tap target -->
+      <rect x="3" y="3" width="44" height="44" rx="4" fill="transparent"/>
+      <text x="25" y="32" text-anchor="middle" class="text-md">☰</text>
+      <!-- Logo (left of center) -->
+      <rect x="55" y="10" width="24" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="85" y="30" class="text-sm">SH</text>
+      <!-- Header right side: Accessibility + Settings + Avatar -->
+      <g transform="translate(155, 3)">
+        <!-- Accessibility icon -->
+        <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
+        <text x="22" y="28" text-anchor="middle" font-size="16">👁</text>
+        <!-- Settings gear - darker fill -->
+        <rect x="44" y="0" width="44" height="44" rx="4" fill="transparent"/>
+        <text x="66" y="28" text-anchor="middle" fill="#4b5563" font-size="16">⚙️</text>
+        <!-- Avatar -->
+        <circle cx="110" cy="22" r="14" fill="#8b5cf6"/>
+        <text x="110" y="27" text-anchor="middle" fill="#fff" font-size="11">U</text>
+      </g>
+    </g>
+
+    <!-- CONTENT AREA (between header and bottom nav) -->
+    <!-- Available space: y=88 to y=634 = 546px height -->
+    <!-- Mobile content starts at y=98 within this group (88 + 10px padding) -->
+
+    <!-- MOBILE BOTTOM NAV (ScriptHammer Standard - customize active tab) -->
+    <g id="mobile-bottom-nav" transform="translate(10, 634)">
+      <rect width="340" height="56" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+      <!-- Home (inactive) -->
+      <g transform="translate(0, 0)">
+        <rect width="85" height="56" fill="transparent"/>
+        <text x="42" y="24" text-anchor="middle" font-size="18">🏠</text>
+        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Home</text>
+      </g>
+      <!-- Features (active - default) -->
+      <g transform="translate(85, 0)">
+        <rect width="85" height="56" fill="#8b5cf6" rx="0"/>
+        <text x="42" y="24" text-anchor="middle" font-size="18">⚡</text>
+        <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Features</text>
+      </g>
+      <!-- Docs (inactive) -->
+      <g transform="translate(170, 0)">
+        <rect width="85" height="56" fill="transparent"/>
+        <text x="42" y="24" text-anchor="middle" font-size="18">📄</text>
+        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Docs</text>
+      </g>
+      <!-- Account (inactive) -->
+      <g transform="translate(255, 0)">
+        <rect width="85" height="56" fill="transparent"/>
+        <text x="42" y="24" text-anchor="middle" font-size="18">👤</text>
+        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Account</text>
+      </g>
+    </g>
   </g>
+
+  <!-- Footer signature (lower-left corner, 30px from bottom) -->
+  <text x="60" y="1050" text-anchor="start" class="text-muted">000:01 | Feature Name | ScriptHammer</text>
 </svg>
 ```
 
@@ -1250,15 +1484,22 @@ Before drawing arrows, verify:
 
 | Section | Position | Size | Notes |
 |---------|----------|------|-------|
-| Desktop area | x=40, y=60 | **1400×900** | Full desktop mockup |
-| - Sidebar | x=40 | 200px wide | Navigation |
-| - Main | x=250 | 440px wide | Primary content |
-| - Detail | x=700 | 240px wide | Item details |
+| Desktop viewport | x=40, y=60 | **1366×768** | 16:9 ratio (common laptop resolution) |
+| - Header bar | y=70 (relative) | 1346×50 | Standard nav, 44px touch targets |
+| - Content area | y=130 (relative) | 1346×688 | Main content below header |
+| - Sidebar | x=50 | 200px wide | Optional navigation |
+| - Main | varies | 800px wide | Primary content |
+| - Detail | varies | 320px wide | Item details |
 | - Gaps | | 10px | Between columns |
-| Mobile area | x=1500, y=60 | 360×700 | Phone frame |
+| Mobile area | x=1500, y=60 | 360×700 | Phone frame (94px gap from desktop) |
 | - Content | x=1510, y=70 | 340×680 | 10px padding |
+| Footer | x=60, y=1050 | - | 30px from bottom, lower-left corner |
 
-**⛔ Desktop Height Rule**: All wireframes MUST use `height="620"` for the desktop panel. This ensures visual consistency across all pages.
+**⛔ Desktop Dimension Rules**:
+- **Width**: 1366px (16:9 ratio, common laptop)
+- **Height**: 768px (exact 16:9 with width)
+- **Header**: 50px fixed height with 44px nav items
+- **Content**: 688px available after header (+148px vs previous)
 
 ---
 

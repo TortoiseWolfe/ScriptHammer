@@ -1,1 +1,10 @@
-{}
+{
+  "001-wcag-aa-compliance": {
+    "status": "draft",
+    "svgs": {
+      "01-a11y-testing-pipeline.svg": "draft",
+      "02-a11y-dashboard.svg": "draft",
+      "03-dev-feedback-tooling.svg": "draft"
+    }
+  }
+}
