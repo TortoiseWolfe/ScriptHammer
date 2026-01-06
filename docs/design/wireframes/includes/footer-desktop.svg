@@ -1,12 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <!-- ScriptHammer Desktop Footer
-       Position: Bottom of desktop viewport, above signature block
-       Width: 1346px (matches header width)
+       Position: Bottom of desktop viewport, edge-to-edge
+       Width: 1366px (full viewport width)
        Height: 80px -->
 
   <g id="site-footer">
-    <!-- Footer background -->
-    <rect width="1346" height="80" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+    <!-- Footer background - full width, bottom corners rounded (r=8) -->
+    <path d="M 0 0 L 1366 0 L 1366 72 A 8 8 0 0 1 1358 80 L 8 80 A 8 8 0 0 1 0 72 Z" fill="#dcc8a8" stroke="#b8a080"/>
 
     <!-- Left section: Brand + tagline -->
     <g transform="translate(20, 20)">
@@ -26,7 +26,7 @@
     </g>
 
     <!-- Right section: Copyright -->
-    <g transform="translate(1050, 30)">
+    <g transform="translate(1340, 30)">
       <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px" text-anchor="end">2026 ScriptHammer</text>
       <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="11px" text-anchor="end">MIT License</text>
     </g>

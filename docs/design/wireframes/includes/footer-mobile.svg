@@ -10,12 +10,12 @@
 -->
 
 <g id="mobile-bottom-nav">
-  <!-- Background -->
-  <rect width="340" height="56" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+  <!-- Background - only bottom corners rounded -->
+  <path d="M 0 0 L 340 0 L 340 40 A 16 16 0 0 1 324 56 L 16 56 A 16 16 0 0 1 0 40 Z" fill="#dcc8a8" stroke="#b8a080"/>
 
-  <!-- Home tab (inactive by default) -->
+  <!-- Home tab (inactive by default) - bottom-left corner rounded -->
   <g id="tab-home" transform="translate(0, 0)">
-    <rect width="85" height="56" fill="transparent"/>
+    <path d="M 0 0 L 85 0 L 85 56 L 16 56 A 16 16 0 0 1 0 40 L 0 0 Z" fill="transparent"/>
     <g transform="translate(30, 6)">
       <path fill="#1a1a2e" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
       <path fill="#1a1a2e" d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
@@ -42,9 +42,9 @@
     <text x="42" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="11px">Docs</text>
   </g>
 
-  <!-- Account tab (inactive by default) -->
+  <!-- Account tab (inactive by default) - bottom-right corner rounded -->
   <g id="tab-account" transform="translate(255, 0)">
-    <rect width="85" height="56" fill="transparent"/>
+    <path d="M 0 0 L 85 0 L 85 40 A 16 16 0 0 1 69 56 L 0 56 L 0 0 Z" fill="transparent"/>
     <g transform="translate(30, 6)">
       <path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
     </g>
@@ -53,14 +53,20 @@
 </g>
 
 <!-- ACTIVE STATE TEMPLATE (copy to wireframe to activate a tab)
-To make Home active, add this in wireframe AFTER the bottom nav:
+To make Home active (bottom-left rounded), add this AFTER the bottom nav:
 <g transform="translate(x, y)">  // same position as bottom nav
-  <rect width="85" height="56" fill="#8b5cf6"/>
+  <path d="M 0 0 L 85 0 L 85 56 L 16 56 A 16 16 0 0 1 0 40 L 0 0 Z" fill="#8b5cf6"/>
   <g transform="translate(30, 6)">
-    <path fill="#fff" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061..."/>
-    <path fill="#fff" d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84..."/>
+    <path fill="#fff" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69..."/>
+    <path fill="#fff" d="m12 5.432 8.159 8.159c.03.03.06.058..."/>
   </g>
   <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Home</text>
 </g>
+
+To make Account active (bottom-right rounded), use:
+  <path d="M 0 0 L 85 0 L 85 40 A 16 16 0 0 1 69 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+
+Middle tabs (Features, Docs) use regular rect:
+  <rect width="85" height="56" fill="#8b5cf6"/>
 -->
 </svg>
