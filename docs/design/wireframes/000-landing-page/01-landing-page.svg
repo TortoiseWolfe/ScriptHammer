@@ -49,7 +49,7 @@
   <rect x="0" y="0" width="1920" height="3" fill="#8b5cf6"/>
 
   <!-- Title -->
-  <text x="750" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">LANDING PAGE - LIGHT THEME v4</text>
+  <text x="723" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">LANDING PAGE - LIGHT THEME</text>
 
   <!-- DESKTOP SECTION (left) -->
   <text x="40" y="52" class="label-desktop">DESKTOP (16:9)</text>
@@ -70,6 +70,7 @@
     <g id="content-area" transform="translate(50, 130)">
       <!-- Hero Section -->
       <rect x="0" y="0" width="1346" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <!-- CUSTOMIZE: Slogan - change this text when forking -->
       <text x="673" y="60" text-anchor="middle" class="heading-lg">Build Better Apps Faster</text>
       <text x="673" y="95" text-anchor="middle" class="text-md">A complete product planning template with 46 feature specifications</text>
       <text x="673" y="120" text-anchor="middle" class="text-muted">SVG wireframes, SpecKit workflow, and constitution-driven development</text>
@@ -79,64 +80,64 @@
       <rect x="683" y="145" width="140" height="40" rx="6" fill="transparent" stroke="#8b5cf6" stroke-width="2"/>
       <text x="753" y="171" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">View Docs</text>
 
-      <!-- Feature Cards Grid (3 columns) -->
+      <!-- Feature Cards Grid (3 columns) - Row 1 -->
       <g transform="translate(0, 220)">
         <!-- Card 1 -->
-        <rect x="0" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="20" y="35" class="heading">46 Feature Specs</text>
-        <text x="20" y="60" class="text-sm">Complete product requirements</text>
-        <rect x="20" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="215" y="125" text-anchor="middle" class="text-muted">Foundation - Core - Auth - Payments</text>
-        <rect x="20" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="70" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Explore</text>
+        <rect x="0" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="20" y="30" class="heading">46 Feature Specs</text>
+        <text x="20" y="50" class="text-sm">Complete product requirements</text>
+        <rect x="20" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="215" y="93" text-anchor="middle" class="text-muted">Foundation - Core - Auth - Payments</text>
+        <rect x="20" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="70" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Explore</text>
 
         <!-- Card 2 -->
-        <rect x="450" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="470" y="35" class="heading">SVG Wireframes</text>
-        <text x="470" y="60" class="text-sm">Interactive design system</text>
-        <rect x="470" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="665" y="125" text-anchor="middle" class="text-muted">1920x1080 - Hot reload - Keyboard nav</text>
-        <rect x="470" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="520" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">View</text>
+        <rect x="450" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="470" y="30" class="heading">SVG Wireframes</text>
+        <text x="470" y="50" class="text-sm">Interactive design system</text>
+        <rect x="470" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="665" y="93" text-anchor="middle" class="text-muted">1920x1080 - Hot reload - Keyboard nav</text>
+        <rect x="470" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="520" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">View</text>
 
         <!-- Card 3 -->
-        <rect x="900" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="920" y="35" class="heading">SpecKit Workflow</text>
-        <text x="920" y="60" class="text-sm">End-to-end development</text>
-        <rect x="920" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="1115" y="125" text-anchor="middle" class="text-muted">Specify - Clarify - Plan - Implement</text>
-        <rect x="920" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="970" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Learn</text>
+        <rect x="900" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="920" y="30" class="heading">SpecKit Workflow</text>
+        <text x="920" y="50" class="text-sm">End-to-end development</text>
+        <rect x="920" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="1115" y="93" text-anchor="middle" class="text-muted">Specify - Clarify - Plan - Implement</text>
+        <rect x="920" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="970" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Learn</text>
       </g>
 
-      <!-- Second Row -->
-      <g transform="translate(0, 440)">
+      <!-- Feature Cards Grid - Row 2 -->
+      <g transform="translate(0, 380)">
         <!-- Card 4 -->
-        <rect x="0" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="20" y="35" class="heading">Constitution</text>
-        <text x="20" y="60" class="text-sm">Project governance rules</text>
-        <rect x="20" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="215" y="125" text-anchor="middle" class="text-muted">6 core principles - Quality gates</text>
-        <rect x="20" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="70" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Read</text>
+        <rect x="0" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="20" y="30" class="heading">Constitution</text>
+        <text x="20" y="50" class="text-sm">Project governance rules</text>
+        <rect x="20" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="215" y="93" text-anchor="middle" class="text-muted">6 core principles - Quality gates</text>
+        <rect x="20" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="70" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Read</text>
 
         <!-- Card 5 -->
-        <rect x="450" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="470" y="35" class="heading">Docker-First</text>
-        <text x="470" y="60" class="text-sm">No local dependencies</text>
-        <rect x="470" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="665" y="125" text-anchor="middle" class="text-muted">MCP Playwright - Supabase - Build tools</text>
-        <rect x="470" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="520" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Setup</text>
+        <rect x="450" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="470" y="30" class="heading">Docker-First</text>
+        <text x="470" y="50" class="text-sm">No local dependencies</text>
+        <rect x="470" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="665" y="93" text-anchor="middle" class="text-muted">MCP Playwright - Supabase - Build tools</text>
+        <rect x="470" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="520" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Setup</text>
 
         <!-- Card 6 -->
-        <rect x="900" y="0" width="430" height="200" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-        <text x="920" y="35" class="heading">WCAG AAA</text>
-        <text x="920" y="60" class="text-sm">Accessibility-first design</text>
-        <rect x="920" y="80" width="390" height="80" rx="4" fill="#f5f0e6"/>
-        <text x="1115" y="125" text-anchor="middle" class="text-muted">7:1 contrast - 44px targets - Focus mgmt</text>
-        <rect x="920" y="170" width="100" height="25" rx="4" fill="#8b5cf6"/>
-        <text x="970" y="187" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Check</text>
+        <rect x="900" y="0" width="430" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="920" y="30" class="heading">WCAG AAA</text>
+        <text x="920" y="50" class="text-sm">Accessibility-first design</text>
+        <rect x="920" y="65" width="390" height="45" rx="4" fill="#f5f0e6"/>
+        <text x="1115" y="93" text-anchor="middle" class="text-muted">7:1 contrast - 44px targets - Focus mgmt</text>
+        <rect x="920" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+        <text x="970" y="137" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Check</text>
       </g>
     </g>
 
@@ -159,7 +160,8 @@
     <g transform="translate(10, 98)">
       <!-- Hero (compact) -->
       <rect x="10" y="0" width="320" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
-      <text x="170" y="30" text-anchor="middle" class="heading-sm">Build Better Apps</text>
+      <!-- CUSTOMIZE: Slogan - must match desktop -->
+      <text x="170" y="30" text-anchor="middle" class="heading-sm">Build Better Apps Faster</text>
       <text x="170" y="50" text-anchor="middle" class="text-muted">46 feature specifications</text>
       <rect x="100" y="65" width="120" height="28" rx="4" fill="#8b5cf6"/>
       <text x="160" y="84" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Get Started</text>

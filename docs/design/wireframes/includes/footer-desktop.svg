@@ -9,6 +9,7 @@
     <path d="M 0 0 L 1366 0 L 1366 72 A 8 8 0 0 1 1358 80 L 8 80 A 8 8 0 0 1 0 72 Z" fill="#dcc8a8" stroke="#b8a080"/>
 
     <!-- Left section: Brand + tagline -->
+    <!-- CUSTOMIZE: Change product name and tagline when forking -->
     <g transform="translate(20, 20)">
       <rect x="0" y="0" width="24" height="24" rx="4" fill="#8b5cf6"/>
       <text x="34" y="18" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">ScriptHammer</text>
@@ -26,8 +27,9 @@
     </g>
 
     <!-- Right section: Copyright -->
+    <!-- CUSTOMIZE: Change product name and year when forking -->
     <g transform="translate(1340, 30)">
-      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px" text-anchor="end">2026 ScriptHammer</text>
+      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="12px" text-anchor="end">© ScriptHammer 2026</text>
       <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="11px" text-anchor="end">MIT License</text>
     </g>
   </g>
