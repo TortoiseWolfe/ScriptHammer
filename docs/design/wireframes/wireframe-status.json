@@ -1,4 +1,11 @@
 {
+  "000-rls-implementation": {
+    "status": "draft",
+    "svgs": {
+      "01-rls-architecture-overview.svg": "draft",
+      "02-rls-policy-patterns.svg": "draft"
+    }
+  },
   "001-wcag-aa-compliance": {
     "status": "draft",
     "svgs": {

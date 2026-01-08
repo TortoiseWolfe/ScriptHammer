@@ -219,5 +219,5 @@
   </g>
 
   <!-- Footer signature (page-specific) -->
-  <text x="60" y="1050" text-anchor="start" class="text-muted">000:01 | Landing Page | ScriptHammer</text>
+  <text x="60" y="1050" text-anchor="start" class="text-muted">000:00 | Landing Page | ScriptHammer</text>
 </svg>

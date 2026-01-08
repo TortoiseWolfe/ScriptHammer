@@ -52,7 +52,7 @@
       position: fixed;
       left: 0;
       top: 0;
-      width: 220px;
+      width: 260px;
       height: 100vh;
       background: #111827;
       border-right: 1px solid #374151;
@@ -268,7 +268,7 @@
       display: flex;
       flex-direction: column;
       min-width: 0;
-      margin-left: 220px;
+      margin-left: 260px;
       margin-bottom: 60px;
       transition: margin-left 0.3s ease-out, margin-bottom 0.3s ease-out;
     }
@@ -310,7 +310,7 @@
     footer {
       position: fixed;
       bottom: 0;
-      left: 220px;
+      left: 260px;
       right: 0;
       display: flex;
       align-items: center;
@@ -603,13 +603,27 @@
     <div class="nav-category" id="cat-foundation">
       <div class="category-header">Foundation <span class="shortcut">⇧F1</span></div>
       <div class="category-links">
-        <!-- 000-landing-page -->
+        <!-- 000-landing-page (FIRST) -->
         <div class="nav-section">
-          <h2>000 - Landing Page</h2>
+          <h2>000 - Landing Page <span class="shortcut">^1</span></h2>
           <div class="nav-links">
             <a href="#" data-svg="000-landing-page/01-landing-page.svg">
               Landing Page
               <span class="path">Desktop 1366×768 + Mobile</span>
+            </a>
+          </div>
+        </div>
+        <!-- 000-rls-implementation -->
+        <div class="nav-section">
+          <h2>000 - RLS Implementation <span class="shortcut">^2</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="000-rls-implementation/01-rls-architecture-overview.svg">
+              Architecture Overview
+              <span class="path">Tables, Roles, Access Matrix</span>
+            </a>
+            <a href="#" data-svg="000-rls-implementation/02-rls-policy-patterns.svg">
+              Policy Patterns
+              <span class="path">Owner, Service, Soft Delete, Audit</span>
             </a>
           </div>
         </div>
@@ -844,8 +858,11 @@
   <script>
     // Wireframes array - populated dynamically by /wireframe command
     const wireframes = [
-      // 000-landing-page
+      // 000-landing-page (FIRST)
       { path: '000-landing-page/01-landing-page.svg', title: 'Landing Page' },
+      // 000-rls-implementation
+      { path: '000-rls-implementation/01-rls-architecture-overview.svg', title: 'RLS Architecture Overview' },
+      { path: '000-rls-implementation/02-rls-policy-patterns.svg', title: 'RLS Policy Patterns' },
       // 001-wcag-aa-compliance
       { path: '001-wcag-aa-compliance/01-a11y-testing-pipeline.svg', title: 'A11y Testing Pipeline' },
       { path: '001-wcag-aa-compliance/02-a11y-dashboard.svg', title: 'A11y Dashboard' },
@@ -937,12 +954,17 @@
             // Remove any existing status badge
             const existingBadge = link.querySelector('.status-badge');
             if (existingBadge) existingBadge.remove();
-            // Add new badge
+            // Add new badge (insert BEFORE .path span to stay inline with title)
             if (emoji) {
               const badge = document.createElement('span');
               badge.className = 'status-badge';
               badge.textContent = emoji;
-              link.appendChild(badge);
+              const pathSpan = link.querySelector('.path');
+              if (pathSpan) {
+                link.insertBefore(badge, pathSpan);
+              } else {
+                link.appendChild(badge);
+              }
             }
           }
         }
