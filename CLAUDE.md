@@ -13,25 +13,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Created `features/analysis/ANALYSIS_REPORT.md`
 - [x] Created `features/analysis/ACTION_ITEMS.md` (all fixed)
 - [x] Generated spec.md for all 46 features
-- [x] Generated wireframes for all 46 features (123 SVGs total)
+- [x] Generated wireframes for 44 features (~120 SVGs) - 000, 001 DELETED pending regeneration
 
-### Session Checkpoint (2026-01-04)
+### Session Checkpoint (2026-01-08)
 
-**Features Completed**:
-- 000-rls-implementation ✅
-- 001-wcag-aa-compliance ✅
+**Skill Streamlining Completed**:
+- /wireframe skill streamlined: 2,085 → 1,895 lines (-9%)
+- Dynamic `<use href>` includes enabled (edit header once → all SVGs update)
+- Interactive patterns extracted to `.claude/guides/INTERACTIVE_PATTERNS.md`
 
-| Feature | File | Status |
+**SVG Status** (TRUTH):
+| Feature | SVGs | Status |
 |---------|------|--------|
-| 000 | 01-rls-architecture-overview.svg | ✅ PASS |
-| 000 | 02-rls-policy-patterns.svg | ✅ PASS |
-| 001 | 01-a11y-testing-pipeline.svg | ✅ PASS |
-| 001 | 02-a11y-dashboard.svg | ✅ PASS (Pass 13: tag positioning, footer color) |
-| 001 | 03-dev-feedback-tooling.svg | ✅ PASS |
+| 000-rls-implementation | 0 | ❌ DELETED - need regeneration |
+| 001-wcag-aa-compliance | 0 | ❌ DELETED - need regeneration |
+| 002-045 | ~120 | ⏳ Not reviewed |
 
 **Next Session START HERE**:
-1. Run `/wireframe-review 002` to review Cookie Consent wireframes
-2. Continue with remaining Foundation features (003-006)
+1. Run `/wireframe 000-rls-implementation` to test streamlined skill
+2. Verify dynamic includes work (edit header, refresh, see change)
+3. If working, run `/wireframe 001-wcag-aa-compliance`
+4. Then continue wireframe review from 002+
 
 ---
 
@@ -152,15 +154,15 @@ find docs/design/wireframes -name "*.svg" -newer README.md
 
 Both files should stay in sync for implementation phases.
 
-### Current State (2026-01-04)
+### Current State (2026-01-08)
 
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
-| Wireframes generated | 46/46 features (123 SVGs) |
-| Wireframes reviewed | 2/46 complete (000 ✅, 001 ✅) |
-| SVGs passed | 5/123 (000:2, 001:3) |
-| Implementation phase | All 46 blocked until wireframe review complete |
+| Wireframes generated | 44/46 features (~120 SVGs) |
+| 000, 001 SVGs | ❌ DELETED - need regeneration |
+| Wireframes reviewed | 0/46 (must regenerate 000, 001 first) |
+| Implementation phase | Blocked until wireframe review complete |
 
 ---
 

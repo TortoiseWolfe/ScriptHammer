@@ -137,18 +137,7 @@ If you find yourself about to ask about any of these - STOP. The answer is alrea
 
 ### Professional Feature Documentation Standards (MANDATORY)
 
-**Wireframes are FEATURE POSTERS, not abstract diagrams.** Someone should understand the ENTIRE feature from the wireframes.
-
-*Based on Robin Williams' CRAP Principles, Tufte's Data Visualization, and C4 Model*
-
-#### The CRAP Checklist (Robin Williams)
-
-| Principle | Meaning | Application |
-|-----------|---------|-------------|
-| **Contrast** | Size/color/weight create hierarchy | Title 28px > Headers 20px > Body 14px > Captions 12px |
-| **Repetition** | Consistent visual language | Same FR badge style, same colors, same spacing |
-| **Alignment** | Everything connects visually | Grid-based layout, no random placement |
-| **Proximity** | Group related items | FRs grouped by category, user stories together |
+**Wireframes are FEATURE POSTERS.** Apply CRAP: Contrast (hierarchy), Repetition (consistency), Alignment (grid), Proximity (grouping).
 
 #### Required Content (from spec.md)
 
@@ -184,17 +173,9 @@ If you find yourself about to ask about any of these - STOP. The answer is alrea
 
 #### Anti-Patterns (AVOID)
 
-- ❌ Abstract flow diagrams with no requirements content
-- ❌ Decorative gradients/shadows that don't convey meaning
-- ❌ Random placement (everything must align to grid)
-- ❌ Missing user stories (WHO and WHY)
-- ❌ Missing FR badges (WHAT must be built)
-- ❌ Missing success criteria (HOW we verify)
-- ❌ Sparse "minimal" layouts - Tufte says maximize DATA, not minimize everything
-
-#### Tufte Reminder
-
-**Data-ink ratio** means maximize ink for DATA (user stories, FRs, success criteria), minimize ink for DECORATION (gradients, shadows, unnecessary borders). It does NOT mean "remove all content".
+- ❌ Abstract diagrams without FR/US/SC content
+- ❌ Missing requirements (user stories, FRs, success criteria)
+- ❌ Sparse layouts - maximize DATA, minimize decoration (Tufte's data-ink ratio)
 
 ### Clickable Badge Links (MANDATORY - NEVER ASK)
 
@@ -274,6 +255,25 @@ $ARGUMENTS
 - `/wireframe 004:01` → Only `01-responsive-navigation.svg`
 - `/wireframe 004:touch` → Only `03-touch-targets.svg`
 
+---
+
+## QUICK-START CHECKLIST
+
+**Before generating:**
+- [ ] PRE-FLIGHT complete (theme selected: light for UI, dark for architecture)
+- [ ] Spec read & requirements extracted (FR, US, SC codes)
+- [ ] .issues.md checked (triage: 🟢 PATCH vs 🔴 REGENERATE)
+- [ ] Container boundaries calculated (desktop 1366×768, mobile 360×700)
+- [ ] All FR/US/SC badges will be clickable `<a href>` links
+
+**After generating:**
+- [ ] US coverage = 100% (all user stories appear in wireframes)
+- [ ] Clickable links validation passed (grep for `<a href=`)
+- [ ] Dynamic includes used (`<use href="../includes/...">`)
+- [ ] Viewer updated (wireframes array + nav section in index.html)
+
+---
+
 ## Outline
 
 Handles full lifecycle: fresh generation, 🟢 patches, 🔴 regenerates. Never skips files.
@@ -325,7 +325,7 @@ Read full spec. Extract: feature purpose, user stories, UI requirements, screens
 
 ## ⛔ USER STORY SECTION (MANDATORY)
 
-**Every wireframe MUST include a dedicated USER STORIES section with full narratives.**
+**Wireframe 01 (overview) MUST include a dedicated USER STORIES section with full narratives.**
 
 ### US Extraction (Step 2c Continued)
 
@@ -348,24 +348,30 @@ From spec.md `### User Stories` section, extract for EACH user story:
 
 ### User Story Card Template (MANDATORY)
 
+**⛔ MUST be wrapped in `<a href>` link to spec.md - NO EXCEPTIONS**
+
 ```xml
-<!-- USER STORY CARD - 520×110px minimum -->
-<g class="user-story-card" transform="translate(X, Y)">
-  <!-- Card background -->
-  <rect width="520" height="110" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
-  <!-- Priority badge (P0=red, P1=amber, P2=blue) -->
-  <rect x="8" y="8" width="50" height="20" rx="4" fill="#dc2626"/>
-  <text x="33" y="22" fill="#fff" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">P0</text>
-  <!-- Story ID and title (teal) -->
-  <text x="70" y="22" class="us-tag">US-001: User Data Isolation</text>
-  <!-- Full narrative text (word-wrapped, ~55 chars per line) -->
-  <text x="12" y="44" class="us-narrative">As a user, I need assurance that my personal data is</text>
-  <text x="12" y="60" class="us-narrative">isolated from other users, so that no one can view or</text>
-  <text x="12" y="76" class="us-narrative">modify my information without my explicit consent.</text>
-  <!-- Key acceptance criterion -->
-  <text x="12" y="98" class="us-acceptance">✓ Query returns only own data; unauthorized = empty set</text>
-</g>
+<!-- USER STORY CARD - 520×110px minimum - WRAPPED IN LINK -->
+<a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/{category}/{feature}/spec.md#user-story-1---user-data-isolation-priority-p0" target="_blank">
+  <g class="user-story-card" transform="translate(X, Y)">
+    <!-- Card background -->
+    <rect width="520" height="110" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    <!-- Priority badge (P0=red, P1=amber, P2=blue) -->
+    <rect x="8" y="8" width="50" height="20" rx="4" fill="#dc2626"/>
+    <text x="33" y="22" fill="#fff" font-family="system-ui, sans-serif" font-size="10" font-weight="bold" text-anchor="middle">P0</text>
+    <!-- Story ID and title (teal) -->
+    <text x="70" y="22" class="us-tag">US-001: User Data Isolation</text>
+    <!-- Full narrative text (word-wrapped, ~55 chars per line) -->
+    <text x="12" y="44" class="us-narrative">As a user, I need assurance that my personal data is</text>
+    <text x="12" y="60" class="us-narrative">isolated from other users, so that no one can view or</text>
+    <text x="12" y="76" class="us-narrative">modify my information without my explicit consent.</text>
+    <!-- Key acceptance criterion -->
+    <text x="12" y="98" class="us-acceptance">✓ Query returns only own data; unauthorized = empty set</text>
+  </g>
+</a>
 ```
+
+**Anchor format**: `#user-story-N---title-slug-priority-pN` (lowercase, hyphens for spaces)
 
 ### Required CSS Classes (Dark Theme)
 
@@ -449,7 +455,7 @@ docs/design/wireframes/[feature]/[svg-name].issues.md
 | Layout/Structure | overlap, collision, swap, move, rearrange |
 | Spacing/Positioning | cramped, spacing, gap, wasted space |
 | Element Position | x=, y=, transform, shift, extend |
-| Canvas/Size | canvas, 1600, resize, extend |
+| Canvas/Size | wrong canvas size, resize, extend, not 1920×1080 |
 | Missing Content | missing row, missing section, add content, new panel, add annotation |
 | Touch targets | 44x44, touch target, undersized |
 | Element counts | too many, add device, remove |
@@ -612,7 +618,7 @@ Track FR/SC/US per page:
 
 ### 5c. Requirements Legend Panel
 
-**Position:** y=690 always. Height grows UPWARD as entries increase. Bottom edge at y=750.
+**Position:** y=950 always. Height grows UPWARD as entries increase. Bottom edge at y=1010.
 
 | Rows | Height | Row 1 y | Row 2 y |
 |------|--------|---------|---------|
@@ -624,7 +630,7 @@ Track FR/SC/US per page:
 
 | Element | Value | Notes |
 |---------|-------|-------|
-| Legend y | 690 | Fixed position |
+| Legend y | 950 | Fixed position |
 | Header y | 18 | "REQUIREMENTS KEY" text |
 | Row 1 translate | (20, 38) | First row of codes |
 | Row 2 translate | (20, 60) | Second row (if needed) |
@@ -634,7 +640,7 @@ Track FR/SC/US per page:
 **Template** (colors: dark `#1e293b/#475569`, light `#dcc8a8/#b8a080`):
 ```xml
 <!-- Single row (1-4 entries) -->
-<g id="requirements-legend" transform="translate(40, 690)">
+<g id="requirements-legend" transform="translate(40, 950)">
   <rect width="900" height="60" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
   <g transform="translate(20, 38)">
@@ -645,7 +651,7 @@ Track FR/SC/US per page:
 </g>
 
 <!-- Two rows (5-8 entries) -->
-<g id="requirements-legend" transform="translate(40, 690)">
+<g id="requirements-legend" transform="translate(40, 950)">
   <rect width="900" height="75" rx="6" fill="[FILL]" stroke="[STROKE]"/>
   <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
   <g transform="translate(20, 38)"><!-- Row 1 --></g>
@@ -794,36 +800,12 @@ Use this template for user-facing screens, forms, and interactive UI.
     <!-- ⛔ MANDATORY: 1366×768 for 16:9 aspect ratio, 94px gap to mobile -->
     <rect x="40" y="60" width="1366" height="768" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
 
-    <!-- WEBSITE HEADER (ScriptHammer Standard - customize active nav item per feature) -->
-    <g id="site-header" transform="translate(50, 70)">
-      <!-- Header background (1346px = 1366 - 20 padding) -->
-      <rect width="1346" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
-      <!-- Logo (left) - ScriptHammer brand -->
-      <rect x="15" y="10" width="30" height="30" rx="4" fill="#8b5cf6"/>
-      <text x="55" y="32" class="heading-sm">ScriptHammer</text>
-      <!-- Navigation items (center) - 44px touch targets -->
-      <g transform="translate(550, 3)">
-        <rect x="0" width="70" height="44" rx="4" fill="transparent"/>
-        <text x="35" y="28" text-anchor="middle" class="text-sm">Home</text>
-        <rect x="80" width="90" height="44" rx="4" fill="#8b5cf6"/>
-        <text x="125" y="28" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Features</text>
-        <rect x="180" width="70" height="44" rx="4" fill="transparent"/>
-        <text x="215" y="28" text-anchor="middle" class="text-sm">Docs</text>
-        <rect x="260" width="80" height="44" rx="4" fill="transparent"/>
-        <text x="300" y="28" text-anchor="middle" class="text-sm">Account</text>
-      </g>
-      <!-- Header right side: Accessibility + Settings + Avatar -->
-      <g transform="translate(1170, 3)">
-        <!-- Accessibility icon (always visible - WCAG commitment) -->
-        <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <text x="22" y="28" text-anchor="middle" font-size="18">👁</text>
-        <!-- Settings gear (theme + font) - darker fill for visibility -->
-        <rect x="54" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <text x="76" y="28" text-anchor="middle" fill="#4b5563" font-size="18">⚙️</text>
-        <!-- User avatar -->
-        <circle cx="130" cy="22" r="16" fill="#8b5cf6"/>
-        <text x="130" y="27" text-anchor="middle" fill="#fff" font-size="12">U</text>
-      </g>
+    <!-- DESKTOP HEADER (dynamic include - edit includes/header-desktop.svg to update all wireframes) -->
+    <use href="../includes/header-desktop.svg#desktop-header" x="50" y="70"/>
+    <!-- Active nav overlay - customize per wireframe (positions: Home=600, Features=680, Docs=780, Account=860) -->
+    <g transform="translate(600, 73)">
+      <rect width="70" height="44" rx="4" fill="#8b5cf6"/>
+      <text x="35" y="28" text-anchor="middle" fill="#fff" font-size="14px" font-weight="600">Home</text>
     </g>
 
     <!-- CONTENT AREA (below header, starts at y=130 relative to desktop) -->
@@ -845,61 +827,20 @@ Use this template for user-facing screens, forms, and interactive UI.
     <text x="30" y="28" class="text-sm">9:41</text>
     <text x="310" y="28" text-anchor="end" class="text-sm">📶 🔋</text>
 
-    <!-- MOBILE HEADER (ScriptHammer Standard - customize active tab to match desktop) -->
-    <g id="mobile-header" transform="translate(10, 38)">
-      <!-- Header bar -->
-      <rect width="340" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
-      <!-- Hamburger menu (left) - 44px tap target -->
-      <rect x="3" y="3" width="44" height="44" rx="4" fill="transparent"/>
-      <text x="25" y="32" text-anchor="middle" class="text-md">☰</text>
-      <!-- Logo (left of center) -->
-      <rect x="55" y="10" width="24" height="24" rx="4" fill="#8b5cf6"/>
-      <text x="85" y="30" class="text-sm">SH</text>
-      <!-- Header right side: Accessibility + Settings + Avatar -->
-      <g transform="translate(155, 3)">
-        <!-- Accessibility icon -->
-        <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <text x="22" y="28" text-anchor="middle" font-size="16">👁</text>
-        <!-- Settings gear - darker fill -->
-        <rect x="44" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <text x="66" y="28" text-anchor="middle" fill="#4b5563" font-size="16">⚙️</text>
-        <!-- Avatar -->
-        <circle cx="110" cy="22" r="14" fill="#8b5cf6"/>
-        <text x="110" y="27" text-anchor="middle" fill="#fff" font-size="11">U</text>
-      </g>
-    </g>
+    <!-- MOBILE HEADER (dynamic include - edit includes/header-mobile.svg to update all wireframes) -->
+    <use href="../includes/header-mobile.svg#mobile-header-group" x="10" y="10"/>
 
     <!-- CONTENT AREA (between header and bottom nav) -->
     <!-- Available space: y=88 to y=634 = 546px height -->
     <!-- Mobile content starts at y=98 within this group (88 + 10px padding) -->
 
-    <!-- MOBILE BOTTOM NAV (ScriptHammer Standard - customize active tab) -->
-    <g id="mobile-bottom-nav" transform="translate(10, 634)">
-      <rect width="340" height="56" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
-      <!-- Home (inactive) -->
-      <g transform="translate(0, 0)">
-        <rect width="85" height="56" fill="transparent"/>
-        <text x="42" y="24" text-anchor="middle" font-size="18">🏠</text>
-        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Home</text>
-      </g>
-      <!-- Features (active - default) -->
-      <g transform="translate(85, 0)">
-        <rect width="85" height="56" fill="#8b5cf6" rx="0"/>
-        <text x="42" y="24" text-anchor="middle" font-size="18">⚡</text>
-        <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Features</text>
-      </g>
-      <!-- Docs (inactive) -->
-      <g transform="translate(170, 0)">
-        <rect width="85" height="56" fill="transparent"/>
-        <text x="42" y="24" text-anchor="middle" font-size="18">📄</text>
-        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Docs</text>
-      </g>
-      <!-- Account (inactive) -->
-      <g transform="translate(255, 0)">
-        <rect width="85" height="56" fill="transparent"/>
-        <text x="42" y="24" text-anchor="middle" font-size="18">👤</text>
-        <text x="42" y="44" text-anchor="middle" class="text-muted" font-size="11">Account</text>
-      </g>
+    <!-- MOBILE BOTTOM NAV (dynamic include - edit includes/footer-mobile.svg to update all wireframes) -->
+    <use href="../includes/footer-mobile.svg#mobile-bottom-nav" x="10" y="634"/>
+    <!-- Active tab overlay - customize per wireframe (positions: Home=0, Features=85, Docs=170, Account=255) -->
+    <g transform="translate(10, 634)">
+      <rect width="85" height="56" fill="#8b5cf6"/>
+      <text x="42" y="24" text-anchor="middle" font-size="18">🏠</text>
+      <text x="42" y="44" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Home</text>
     </g>
   </g>
 
@@ -1002,7 +943,7 @@ Use this template for architecture diagrams, data flows, and system visualizatio
   </g>
 
   <!-- Footer signature (MANDATORY) -->
-  <text x="60" y="780" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
+  <text x="60" y="1050" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
 </svg>
 ```
 
@@ -1017,6 +958,90 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 ---
 
+## ⛔ ARCHITECTURE DIAGRAM CONTENT REQUIREMENTS (MANDATORY)
+
+**Every box, arrow, and label MUST be derived from the spec. No generic placeholders.**
+
+### Box Labels = Spec Entities or FR Targets
+
+| If spec mentions... | Diagram MUST have... |
+|---------------------|----------------------|
+| "users table" | Box labeled "users" with relevant RLS badges |
+| "FR-001 about auth" | Auth component box with FR-001 badge |
+| "profiles table" | Box labeled "profiles" |
+| "session management" | Session lifecycle box with states |
+
+**⛔ FORBIDDEN**: Generic labels like "Component", "Service", "Module", "Handler"
+
+### Flow Arrows = Spec Actions
+
+Every arrow MUST be labeled with an action from the spec:
+
+```xml
+<!-- ✅ CORRECT: Arrow labeled with spec action -->
+<path d="M100,100 L200,100" stroke="#8b5cf6" marker-end="url(#arrow)"/>
+<text x="150" y="90" class="arrow-label">SELECT (user_id = auth.uid())</text>
+
+<!-- ❌ WRONG: Unlabeled or generic arrow -->
+<path d="M100,100 L200,100" stroke="#8b5cf6"/>
+<!-- No label = meaningless arrow -->
+```
+
+### Required Elements by Diagram Type
+
+| Diagram Type | Must Include |
+|--------------|--------------|
+| **RLS** | Tables, policies, role badges (user/service), allow/deny indicators |
+| **Auth** | Login flow stages, token lifecycle, session states, error paths |
+| **Testing** | Test types (unit/e2e/a11y), coverage areas, pipeline stages, pass/fail states |
+| **API** | Endpoints, request/response flows, auth checks, error responses |
+| **Data Flow** | Sources, transformations, destinations, validation points |
+
+### Content Extraction Checklist (BLOCKING)
+
+Before writing architecture diagram:
+
+1. [ ] **List all entities** from spec (tables, services, components)
+2. [ ] **Map each FR** to a diagram element (box, arrow, or badge)
+3. [ ] **Identify all state transitions** (success, error, conditional)
+4. [ ] **Label every arrow** with spec-derived action
+
+### Content Validation (Before Completing)
+
+```
+CONTENT VALIDATION CHECK:
+
+Spec FR count: 12
+Diagram FR badges: [count <a href> links with #functional-requirements]
+Coverage: ?/12 = ?%
+
+ENTITIES from spec:
+- users table → Box present? [Y/N]
+- profiles table → Box present? [Y/N]
+- RLS policies → Badge present? [Y/N]
+
+ARROWS:
+- All arrows labeled? [Y/N]
+- Labels match spec actions? [Y/N]
+
+⛔ If any [N] → FIX before completing
+```
+
+### ⛔ Anti-Pattern Detection
+
+**If you write ANY of these, STOP and redesign:**
+
+- `<text>Component</text>` ← Generic
+- `<text>Service</text>` ← Generic
+- `<text>Module</text>` ← Generic
+- `<text>Handler</text>` ← Generic
+- Unlabeled arrows
+- Boxes without FR/SC badges
+
+**Every element must trace back to the spec.**
+
+---
+
 ## ⛔ TEXT CONTRAST RULES (MANDATORY - WCAG AA)
 
 **Text ON colored backgrounds MUST meet WCAG AA (4.5:1 minimum ratio).**
@@ -1025,11 +1050,11 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 
 | Background Color | Text Color | Ratio | Status | Example Use |
 |-----------------|------------|-------|--------|-------------|
-| `#2563eb` (blue) | `#1e3a5f` (blue-950) | ~6:1 | ✅ | Allow badges - **DARK TEXT** |
+| `#2563eb` (blue) | `#ffffff` (white) | ~4.5:1 | ✅ | Allow badges - **WHITE TEXT** |
 | `#991b1b` (dark red) | `#ffffff` | ~7:1 | ✅ | Deny badges - **WHITE TEXT** |
 | `#eab308` (yellow) | `#451a03` (amber-950) | ~8:1 | ✅ | Conditional badges - **DARK TEXT** |
-| `#7c3aed` (purple) | `#1e1b4b` (violet-950) | ~5:1 | ✅ | Auth Role badges - **DARK TEXT** |
-| `#c026d3` (magenta) | `#4a044e` (fuchsia-950) | ~6:1 | ✅ | Service Role badges - **DARK TEXT** |
+| `#7c3aed` (purple) | `#ffffff` (white) | ~4.6:1 | ✅ | Auth Role badges - **WHITE TEXT** |
+| `#c026d3` (magenta) | `#ffffff` (white) | ~3.4:1 | ✅ | Service Role badges - **WHITE TEXT** |
 
 **Key change**: Dark red `#991b1b` allows white text (unlike bright red `#ef4444`).
 
@@ -1077,11 +1102,11 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 **Color-specific text classes (add to `<style>` block):**
 ```css
 /* RLS badge text - monospace for SQL operations */
-.badge-text-on-blue { fill: #1e3a5f; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-blue { fill: #ffffff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
 .badge-text-on-darkred { fill: #ffffff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
 .badge-text-on-yellow { fill: #451a03; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
-.badge-text-on-purple { fill: #1e1b4b; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
-.badge-text-on-magenta { fill: #4a044e; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-purple { fill: #ffffff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
+.badge-text-on-magenta { fill: #ffffff; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-weight: bold; font-size: 11px; }
 ```
 
 ---
@@ -1096,17 +1121,17 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 | `.heading` / `.text-md` | **20px** / **16px** |
 | `.text-sm` / `.text-muted` | **14px** / **13px** |
 
-**Content doesn't fit?** Expand canvas or reduce content. Never shrink fonts.
+**Content doesn't fit?** Reduce content or split into multiple wireframes. Never shrink fonts. Never change canvas size.
 
 ```xml
 <!-- ❌ WRONG: Shrinking fonts to fit more content -->
 .heading-lg { font-size: 24px; }  /* Template says 28px! */
 .text-md { font-size: 14px; }     /* Template says 16px! */
 
-<!-- ✅ CORRECT: Use template sizes, expand canvas if needed -->
+<!-- ✅ CORRECT: Use template sizes, split content if needed -->
 .heading-lg { font-size: 28px; }
 .text-md { font-size: 16px; }
-<!-- viewBox="0 0 1600 1000" if content needs more space -->
+<!-- Canvas is ALWAYS 1920×1080 - no exceptions -->
 ```
 
 ---
@@ -1155,35 +1180,50 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 .us-border { stroke: #0891b2; stroke-dasharray: 2,2; }  /* Dotted */
 ```
 
-### Template: Text-Only Tags
+### Template: Text-Only Tags (MUST be wrapped in `<a href>`)
 
 ```xml
-<text class="tag-base fr-tag" x="100" y="200">FR-001</text>
-<text class="tag-base sc-tag" x="100" y="220">SC-001</text>
-<text class="tag-base us-tag" x="100" y="240">US-001</text>
+<!-- ⛔ ALL tags MUST be clickable - wrap in <a href> -->
+<a href="SPEC_URL#functional-requirements" target="_blank">
+  <text class="tag-base fr-tag" x="100" y="200">FR-001</text>
+</a>
+<a href="SPEC_URL#success-criteria-mandatory" target="_blank">
+  <text class="tag-base sc-tag" x="100" y="220">SC-001</text>
+</a>
+<a href="SPEC_URL#user-story-1---title-priority-p0" target="_blank">
+  <text class="tag-base us-tag" x="100" y="240">US-001</text>
+</a>
 ```
 
-### Template: Pill Tags (with matching borders + stroke patterns)
+### Template: Pill Tags (MUST be wrapped in `<a href>`)
 
 ```xml
-<!-- FR pill (blue, solid border) -->
-<g transform="translate(100, 200)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#2563eb" stroke-width="2"/>
-  <text x="35" y="16" text-anchor="middle" class="tag-base fr-tag">FR-001</text>
-</g>
+<!-- FR pill (blue, solid border) - WRAPPED IN LINK -->
+<a href="SPEC_URL#functional-requirements" target="_blank">
+  <g transform="translate(100, 200)">
+    <rect width="70" height="24" rx="12" fill="none" stroke="#2563eb" stroke-width="2"/>
+    <text x="35" y="16" text-anchor="middle" class="tag-base fr-tag">FR-001</text>
+  </g>
+</a>
 
-<!-- SC pill (orange, dashed border) -->
-<g transform="translate(100, 240)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#ea580c" stroke-width="2" stroke-dasharray="4,2"/>
-  <text x="35" y="16" text-anchor="middle" class="tag-base sc-tag">SC-001</text>
-</g>
+<!-- SC pill (orange, dashed border) - WRAPPED IN LINK -->
+<a href="SPEC_URL#success-criteria-mandatory" target="_blank">
+  <g transform="translate(100, 240)">
+    <rect width="70" height="24" rx="12" fill="none" stroke="#ea580c" stroke-width="2" stroke-dasharray="4,2"/>
+    <text x="35" y="16" text-anchor="middle" class="tag-base sc-tag">SC-001</text>
+  </g>
+</a>
 
-<!-- US pill (teal, dotted border) - rarely used, US is usually inline -->
-<g transform="translate(100, 280)">
-  <rect width="70" height="24" rx="12" fill="none" stroke="#0891b2" stroke-width="2" stroke-dasharray="2,2"/>
-  <text x="35" y="16" text-anchor="middle" class="tag-base us-tag">US-001</text>
-</g>
+<!-- US pill (teal, dotted border) - WRAPPED IN LINK -->
+<a href="SPEC_URL#user-story-1---title-priority-p0" target="_blank">
+  <g transform="translate(100, 280)">
+    <rect width="70" height="24" rx="12" fill="none" stroke="#0891b2" stroke-width="2" stroke-dasharray="2,2"/>
+    <text x="35" y="16" text-anchor="middle" class="tag-base us-tag">US-001</text>
+  </g>
+</a>
 ```
+
+**⛔ BLOCKING CHECK**: Before writing SVG, verify EVERY FR/SC/US element is wrapped in `<a href>`
 
 ### Pill Sizing Reference
 
@@ -1193,6 +1233,67 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 | <kbd>**FR-001-005**</kbd> / <kbd>**SC-001-005**</kbd> | **110px** | **28px** |
 
 **Formula**: `width = (chars × 9) + 24px padding`
+
+---
+
+## ⛔ BADGE CLUSTER LAYOUT (MANDATORY for Multiple Badges)
+
+**Before placing multiple badges horizontally, CALCULATE positions to prevent overlap.**
+
+### Position Formula
+
+| Cluster Size | Total Min Width | Badge Gap | Position Formula |
+|--------------|-----------------|-----------|------------------|
+| 2 badges | 170px | 10px | x2 = x1 + badge1_width + 10 |
+| 3 badges | 260px | 10px | x3 = x2 + badge2_width + 10 |
+| 4 badges | 350px | 10px | x4 = x3 + badge3_width + 10 |
+
+### Calculation Example: "Build Pass" + "Build Fail" badges
+
+```
+BADGE CLUSTER CALCULATION (BLOCKING - do this BEFORE writing):
+
+Badge 1 (Pass):
+  x = 100 (container_x + 10 padding)
+  width = 80px
+  right_edge = 100 + 80 = 180
+
+Gap: 10px
+
+Badge 2 (Fail):
+  x = 180 + 10 = 190
+  width = 80px
+  right_edge = 190 + 80 = 270
+
+Container requirement:
+  min_width = 270 + 10 (right padding) = 280px
+
+VERIFY: Container width >= 280px?
+  YES → proceed
+  NO → STOP, resize container first
+```
+
+### SVG Example
+
+```xml
+<!-- ✅ CORRECT: Calculated positions, no overlap -->
+<g id="status-cluster" transform="translate(100, 200)">
+  <!-- Badge 1: x=0, width=80 → right=80 -->
+  <rect x="0" y="0" width="80" height="28" rx="4" fill="#22c55e"/>
+  <text x="40" y="18" text-anchor="middle" class="badge">PASS</text>
+
+  <!-- Badge 2: x=90 (80+10 gap), width=80 → right=170 -->
+  <rect x="90" y="0" width="80" height="28" rx="4" fill="#ef4444"/>
+  <text x="130" y="18" text-anchor="middle" class="badge">FAIL</text>
+</g>
+```
+
+### ⛔ BLOCKING CHECK
+
+If calculated right edge > container width:
+1. **STOP** - do not write the badges
+2. Either **expand container** or **stack badges vertically**
+3. **Re-verify** all calculations before proceeding
 
 ### ⛔ Consistency Rules
 
@@ -1225,11 +1326,12 @@ Use this template for architecture diagrams, data flows, and system visualizatio
 Before writing ANY SVG content, list every container with its boundaries:
 
 ```
-CONTAINER INVENTORY:
-- Desktop panel: x=40, y=60, w=900, h=700 → RIGHT=940, BOTTOM=760
-- Header bar: x=50, y=70, w=880, h=50 → RIGHT=930, BOTTOM=120
+CONTAINER INVENTORY (1920×1080 canvas):
+- Desktop viewport: x=40, y=60, w=1366, h=768 → RIGHT=1406, BOTTOM=828
+- Header bar: x=50, y=70, w=1346, h=50 → RIGHT=1396, BOTTOM=120
 - Mobile frame: x=1500, y=60, w=360, h=700 → RIGHT=1860, BOTTOM=760
-- Mobile screen: x=1510, y=70, w=340, h=680 → RIGHT=1330, BOTTOM=750
+- Mobile screen: x=1510, y=70, w=340, h=680 → RIGHT=1850, BOTTOM=750
+- Legend: x=40, y=950, w=1840, h=60 → RIGHT=1880, BOTTOM=1010
 - [Panel 1]: x=?, y=?, w=?, h=? → RIGHT=?, BOTTOM=?
 ```
 
@@ -1243,8 +1345,8 @@ ELEMENT: [button/text/rect name]
   Size: w=160, h=44
   RIGHT EDGE: 760 + 160 = 920
   BOTTOM EDGE: 656 + 44 = 700
-  CONTAINER: Issue History panel (RIGHT=930, BOTTOM=750)
-  CHECK: 920 < 930 ✓, 700 < 750 ✓
+  CONTAINER: Issue History panel (RIGHT=1396, BOTTOM=828)
+  CHECK: 920 < 1396 ✓, 700 < 828 ✓
 ```
 
 ### Step 3: Transform-Aware Calculations (CRITICAL)
@@ -1254,11 +1356,11 @@ When using `<g transform="translate(x, y)">`, calculate ABSOLUTE positions:
 ```
 TRANSFORM GROUP: translate(75, 585)
   Text at y=88 → ABSOLUTE Y = 585 + 88 = 673
-  Container: Code block ends at y=690
-  CHECK: 673 < 690 ✓
+  Container: Desktop viewport ends at y=828
+  CHECK: 673 < 828 ✓
 
 WRONG: "y=88 looks fine"
-RIGHT: "absolute y = 585 + 88 = 673, container ends at 690, fits ✓"
+RIGHT: "absolute y = 585 + 88 = 673, viewport ends at 828, fits ✓"
 ```
 
 ### Step 4: Text Width Verification
@@ -1333,7 +1435,8 @@ If ANY calculation shows overflow:
 
 **✅ CORRECT** (origin at 0px, positions scaled proportionally):
 ```xml
-<!-- Full spectrum from 0 to 1440px, mapped to 0-1320px canvas width -->
+<!-- Full spectrum from 0 to 1440px viewport widths, mapped to content area -->
+<!-- Content area width: 1320px (within 1920×1080 canvas) -->
 <!-- Scale factor: 1320 / 1440 = 0.917 -->
 <!-- Mobile section (320-767px) → x = 320 × 0.917 = 293, width = (767-320) × 0.917 = 410 -->
 <rect x="293" y="15" width="410" height="40"/>
@@ -1372,12 +1475,86 @@ section_width = ((end_value - start_value) / max_data_value) × canvas_width
 | Line spacing | 22-25px | Larger fonts |
 | Section gaps | 40px min | Between major sections |
 | Card padding | 15px min | Internal |
-| Content end | y≤750 | 30px gap to footer |
-| Footer | y=780, x=60 | LEFT-ALIGNED, `text-anchor="start"` |
+| Content end | y≤920 | 30px gap to legend |
+| Footer | y=1050, x=60 | See FOOTER STANDARD section |
 
 **Violations = failed review**: Text overflow, overlapping elements, wasted vertical space, inconsistent footer positions.
 
 **Acronym rule**: Expand on first use. Compliance terms always: `GDPR (EU Data Protection)`, `SOC 2 (Security Audit)`, `WCAG (Web Accessibility)`, `RLS (Row Level Security)`.
+
+---
+
+## ⛔ VERTICAL SPACE PLANNING (MANDATORY - Do BEFORE Writing)
+
+**Run this calculation BEFORE writing any elements. Prevents cramped/wasted space.**
+
+### Step 1: Content Inventory
+
+List ALL sections with estimated heights:
+
+```
+CONTENT INVENTORY:
+- Title bar: 40px
+- Section A (Pipeline diagram): ~250px
+- Section B (Compliance grid): ~300px
+- Section C (User Stories): ~280px
+- Legend: 60px
+- Footer zone: 30px
+
+TOTAL CONTENT HEIGHT: 960px
+```
+
+### Step 2: Calculate Available Space
+
+```
+AVAILABLE SPACE:
+Canvas height: 1080px
+Top margin: -60px (y starts at 60)
+Footer zone: -70px (footer at 1050, need 20px gap)
+
+USABLE HEIGHT: 1080 - 60 - 70 = 950px
+```
+
+### Step 3: Distribute Surplus/Deficit
+
+```
+SPACE DISTRIBUTION:
+Content total: 960px
+Usable height: 950px
+Surplus/Deficit: 950 - 960 = -10px (DEFICIT!)
+
+If DEFICIT:
+  → Reduce a section OR split into 2 wireframes
+  → DO NOT shrink fonts or cram content
+
+If SURPLUS (e.g., 950 - 800 = 150px):
+  Gaps needed: 5 (between each section + before first + after last)
+  Gap size: 150 / 5 = 30px each
+```
+
+### Step 4: Assign Y Positions
+
+```
+POSITION ASSIGNMENT:
+- Title: y = 60
+- Section A: y = 60 + 40 + 30 = 130
+- Section B: y = 130 + 250 + 30 = 410
+- Section C: y = 410 + 300 + 30 = 740
+- Legend: y = 740 + 280 + 30 = 1050... TOO LOW!
+
+RECALCULATE: Reduce gap to 20px
+- Legend: y = 740 + 280 + 20 = 1040... still too low
+- SOLUTION: Reduce Section C to 250px
+```
+
+### ⛔ BLOCKING CHECK
+
+Do NOT proceed to write SVG until:
+- [ ] All sections inventoried with heights
+- [ ] Y positions calculated for each section
+- [ ] No section exceeds y=920 (30px gap to legend)
+- [ ] Legend at y≤950 (30px gap to footer at 1050)
+- [ ] Footer at y=1050
 
 ---
 
@@ -1400,22 +1577,22 @@ gap = next_section_Y - (current_section_Y + current_section_height)
 | Last content → legend | 40px |
 | Legend → footer | 30px |
 
-### Example Layout (1000px canvas)
+### Example Layout (1920×1080 canvas)
 
 ```
 Section A: translate(40, 100)
-  Content height: ~260px
-  Ends at: Y = 360
+  Content height: ~300px
+  Ends at: Y = 400
 
-Section B: translate(40, 420)  ← Gap = 420 - 360 = 60px ✅
-  Content height: ~180px
-  Ends at: Y = 600
+Section B: translate(40, 460)  ← Gap = 460 - 400 = 60px ✅
+  Content height: ~400px
+  Ends at: Y = 860
 
-Legend: translate(40, 660)  ← Gap = 660 - 600 = 60px ✅
+Legend: translate(40, 950)  ← Gap = 950 - 860 = 90px ✅
   Height: ~60px
-  Ends at: Y = 720
+  Ends at: Y = 1010
 
-Footer: Y = 780  ← Gap = 780 - 720 = 60px ✅
+Footer: Y = 1050  ← Gap = 1050 - 1010 = 40px ✅
 ```
 
 **⛔ If gap < minimum → redistribute vertical space before writing SVG.**
@@ -1493,7 +1670,7 @@ Before drawing arrows, verify:
 | - Gaps | | 10px | Between columns |
 | Mobile area | x=1500, y=60 | 360×700 | Phone frame (94px gap from desktop) |
 | - Content | x=1510, y=70 | 340×680 | 10px padding |
-| Footer | x=60, y=1050 | - | 30px from bottom, lower-left corner |
+| Footer | x=60, y=1050 | - | See FOOTER STANDARD section below |
 
 **⛔ Desktop Dimension Rules**:
 - **Width**: 1366px (16:9 ratio, common laptop)
@@ -1543,134 +1720,9 @@ Desktop x=40, mobile x=1500. Empty space between is intentional. Never move mobi
 
 ## ⛔ INTERACTIVE ELEMENT PATTERNS (MANDATORY)
 
-**These patterns MUST be used for all interactive elements. Do NOT improvise smaller versions.**
+**All interactive elements MUST be at least 44×44px tap target.** See `.claude/guides/INTERACTIVE_PATTERNS.md` for detailed patterns (checkbox, radio, toggle, links, buttons, nav items).
 
-### Checkbox Pattern (44px tap target)
-
-Checkboxes are visually 16x16px but MUST have a 44x44px invisible tap target:
-
-```xml
-<!-- ✅ CORRECT: Checkbox with 44px tap target -->
-<g class="checkbox-field">
-  <!-- Invisible 44x44 tap target (centered on checkbox) -->
-  <rect x="-14" y="-14" width="44" height="44" rx="6" fill="transparent"/>
-  <!-- Visual checkbox (16x16) -->
-  <rect x="0" y="0" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
-  <!-- Label text -->
-  <text x="24" y="13" class="text-sm">Remember me</text>
-</g>
-```
-
-```xml
-<!-- ❌ WRONG: Checkbox without tap target -->
-<rect x="0" y="0" width="16" height="16" rx="3" fill="#f5f0e6" stroke="#b8a080"/>
-<text x="24" y="13" class="text-sm">Remember me</text>
-```
-
-### Text Link Pattern (44px tap target)
-
-Text links MUST have an invisible tap target rect:
-
-```xml
-<!-- ✅ CORRECT: Link with 44px tap target -->
-<g class="link">
-  <!-- Invisible tap target (extends around text) -->
-  <rect x="0" y="-10" width="120" height="44" rx="4" fill="transparent"/>
-  <!-- Link text -->
-  <text x="60" y="14" text-anchor="middle" class="link-text">Forgot password?</text>
-</g>
-```
-
-```xml
-<!-- ❌ WRONG: Link without tap target -->
-<text x="60" y="14" class="link-text">Forgot password?</text>
-```
-
-### Action Link Pattern (e.g., "Revoke", "Delete", "Edit")
-
-Small action links in lists/panels need proper tap targets:
-
-```xml
-<!-- ✅ CORRECT: Action link with 60x44 tap target -->
-<g class="action-link">
-  <!-- Tap target (minimum 44px height, width fits text + padding) -->
-  <rect x="0" y="-10" width="60" height="44" rx="3" fill="transparent"/>
-  <!-- Action text -->
-  <text x="30" y="14" text-anchor="middle" class="danger-text">Revoke</text>
-</g>
-```
-
-### Radio Button Pattern (44px tap target)
-
-```xml
-<!-- ✅ CORRECT: Radio with 44px tap target -->
-<g class="radio-field">
-  <!-- Invisible tap target -->
-  <rect x="-14" y="-14" width="44" height="44" rx="22" fill="transparent"/>
-  <!-- Visual radio (16x16 circle) -->
-  <circle cx="8" cy="8" r="8" fill="none" stroke="#b8a080" stroke-width="2"/>
-  <!-- Selected state (inner circle) -->
-  <circle cx="8" cy="8" r="4" fill="#8b5cf6"/>
-  <!-- Label -->
-  <text x="24" y="13" class="text-sm">Option A</text>
-</g>
-```
-
-### Toggle/Switch Pattern (44px tap target)
-
-```xml
-<!-- ✅ CORRECT: Toggle with 44px tap target -->
-<g class="toggle-switch">
-  <!-- Invisible tap target -->
-  <rect x="-6" y="-10" width="60" height="44" rx="6" fill="transparent"/>
-  <!-- Toggle track (48x24) -->
-  <rect x="0" y="0" width="48" height="24" rx="12" fill="#8b5cf6"/>
-  <!-- Toggle thumb (20x20) -->
-  <circle cx="36" cy="12" r="10" fill="#ffffff"/>
-</g>
-```
-
-### Icon Button Pattern (minimum 44x44)
-
-```xml
-<!-- ✅ CORRECT: Icon button at 44x44 minimum -->
-<g class="icon-button">
-  <rect x="0" y="0" width="44" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
-  <!-- Icon centered (example: close X) -->
-  <text x="22" y="28" text-anchor="middle" font-size="18">✕</text>
-</g>
-```
-
-### Nav Item Pattern (full-width, 44px height)
-
-```xml
-<!-- ✅ CORRECT: Nav item with proper sizing -->
-<g class="nav-item">
-  <rect x="0" y="0" width="180" height="44" rx="6" fill="#8b5cf6"/>
-  <text x="15" y="28" class="btn-text">Dashboard</text>
-</g>
-
-<!-- Inactive state -->
-<g class="nav-item">
-  <rect x="0" y="0" width="180" height="44" rx="6" fill="transparent"/>
-  <text x="15" y="28" class="text-md">Settings</text>
-</g>
-```
-
-### Summary: Minimum Tap Target Sizes
-
-| Element | Minimum Size | Pattern |
-|---------|--------------|---------|
-| Checkbox | 44×44 invisible rect around 16×16 visual | Use checkbox pattern |
-| Radio | 44×44 invisible rect around 16×16 visual | Use radio pattern |
-| Text link | 44px height × text width + 20px padding | Use link pattern |
-| Action link | 44×44 minimum, width fits text | Use action link pattern |
-| Icon button | 44×44 visible button | Direct sizing |
-| Toggle | 44px height × toggle width + 12px padding | Use toggle pattern |
-| Nav item | Full width × 44px height | Direct sizing |
-| List item (tappable) | Full width × 44px minimum height | Direct sizing |
-
-**ENFORCEMENT**: When generating ANY interactive element, check this table and use the correct pattern. Never create a tappable element smaller than 44×44px total tap area.
+**ENFORCEMENT**: Never create a tappable element smaller than 44×44px total tap area.
 
 ---
 
@@ -1681,22 +1733,23 @@ Annotations must never overlap with content. Follow these rules:
 ### Footer Safety Zone
 
 ```
-Canvas height: 800px
-Page title: y=780, x=60, text-anchor="start" (LEFT-ALIGNED)
-Content clearance: 30px above footer
+Canvas height: 1080px
+Page title: y=1050, x=60, text-anchor="start" (LEFT-ALIGNED)
+Content clearance: 30px above legend
 
-CONTENT END: y ≤ 750 (mandatory - Rule 11)
-Footer at: y = 780, x = 60 (left-aligned)
-Gap: 30px clear zone between content and footer
+CONTENT END: y ≤ 920 (mandatory - Rule 11)
+Legend at: y = 950 (requirements key)
+Footer at: y = 1050, x = 60 (left-aligned)
+Gap: 30px clear zone between content and legend
 ```
 
 **Page title format:**
 ```xml
-<text x="60" y="780" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
+<text x="60" y="1050" text-anchor="start" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="10">NNN:PP | Wireframe Title | ScriptHammer</text>
 ```
 
 **Footer rules:**
-- Position: `x="60" y="780"` (left-aligned, 30px above bottom)
+- Position: `x="60" y="1050"` (left-aligned, 30px above bottom)
 - Alignment: `text-anchor="start"` (NOT center)
 - Color: `#94a3b8` (slate-400, bright enough to read on dark)
 - Format: `NNN:PP | Title | ScriptHammer` (NO square brackets)
@@ -1744,11 +1797,11 @@ When using different border colors for badges/pills (colorblind-friendly):
 | `#7c3aed` (purple) | Technical constraint / Architecture limitation | Solid |
 | `#475569` (gray) | Informational / Not yet verified | Dotted |
 
-**Legend placement**: Footer area (y ≤ 750) or dedicated "Legend" panel.
+**Legend placement**: Legend area at y=950 or dedicated "Legend" panel.
 
 ```xml
 <!-- ✅ CORRECT: Legend explaining color coding (colorblind-friendly with patterns) -->
-<g id="legend" transform="translate(40, 720)">
+<g id="legend" transform="translate(40, 950)">
   <text x="0" y="0" class="text-sm" fill="#94a3b8">Legend:</text>
   <rect x="60" y="-10" width="12" height="12" rx="2" fill="none" stroke="#2563eb" stroke-width="2"/>
   <text x="80" y="0" class="text-sm">Target met</text>
@@ -1765,11 +1818,11 @@ When using different border colors for badges/pills (colorblind-friendly):
 
 | Badge | Color | Hex | Text Color | Icon | Pattern | Use |
 |-------|-------|-----|------------|------|---------|-----|
-| Allow | Blue | `#2563eb` | `#1e3a5f` | ✓ | Solid | Full access granted |
+| Allow | Blue | `#2563eb` | `#ffffff` | ✓ | Solid | Full access granted |
 | Deny | Dark Red | `#991b1b` | `#ffffff` | ✗ | Diagonal stripes | Access blocked |
 | Conditional | Yellow | `#eab308` | `#451a03` | ? | Dashed border | Policy-dependent access |
-| Auth Role | Purple | `#7c3aed` | `#1e1b4b` | 🔑 | Solid | Authenticated user access |
-| Service Role | Magenta | `#c026d3` | `#4a044e` | ⚙ | Double border | Service/admin bypass |
+| Auth Role | Purple | `#7c3aed` | `#ffffff` | 🔑 | Solid | Authenticated user access |
+| Service Role | Magenta | `#c026d3` | `#ffffff` | ⚙ | Double border | Service/admin bypass |
 
 **Why these colors**: Blue vs Dark Red avoids red-green confusion. Each has unique icon AND pattern as fallback.
 
@@ -1954,13 +2007,13 @@ Place all leader lines in a dedicated group at the END of the SVG, just before `
 
 ```xml
 <!-- Light Theme Footer (CORRECT) -->
-<text x="60" y="780" text-anchor="start" class="text-muted">NNN:PP | Title | ScriptHammer</text>
+<text x="60" y="1050" text-anchor="start" class="text-muted">NNN:PP | Title | ScriptHammer</text>
 ```
 
 | Property | Value | Notes |
 |----------|-------|-------|
 | x-position | **60** | Left margin |
-| y-position | **780** | 20px from bottom on 800px canvas |
+| y-position | **1050** | 30px from bottom on 1080px canvas |
 | Alignment | `text-anchor="start"` | Left-aligned |
 | Class | `class="text-muted"` | Uses #4b5563 (gray-600) |
 | Format | `NNN:PP \| Title \| ScriptHammer` | Feature:page, title, brand |
@@ -2020,6 +2073,27 @@ Coverage: X/Y User Stories (100% required)
 ```
 
 **⛔ If coverage < 100%, identify which wireframes need US tags and add them before completing.**
+
+### 7b2. Clickable Links Validation (MANDATORY)
+
+After generating wireframes, verify ALL FR, US, and SC badges are clickable links:
+
+```bash
+# Count clickable badges in each SVG
+for svg in docs/design/wireframes/[feature]/*.svg; do
+  echo "$svg: $(grep -c '<a href=' "$svg") links"
+done
+```
+
+**Validation checklist:**
+| Check | Command | Expected |
+|-------|---------|----------|
+| FR links exist | `grep -c 'href=.*#functional-requirements'` | ≥1 per SVG |
+| US links exist | `grep -c 'href=.*#user-story'` | ≥1 per SVG |
+| SC links exist | `grep -c 'href=.*#success-criteria'` | ≥1 per SVG |
+| All have target | `grep '<a href=' \| grep -v 'target="_blank"'` | 0 matches |
+
+**⛔ If ANY badge is missing `<a href=` wrapper, fix it before completing. Zero exceptions.**
 
 ### 7c. Update Status in wireframe-status.json (MANDATORY)
 
