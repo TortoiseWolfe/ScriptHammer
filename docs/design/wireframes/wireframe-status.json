@@ -7,7 +7,9 @@
     }
   },
   "001-wcag-aa-compliance": {
-    "status": "pending",
-    "svgs": {}
+    "status": "draft",
+    "svgs": {
+      "01-wcag-compliance-overview.svg": "draft"
+    }
   }
 }
