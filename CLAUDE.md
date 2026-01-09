@@ -15,25 +15,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Generated spec.md for all 46 features
 - [x] Generated wireframes for 44 features (~120 SVGs) - 000, 001 DELETED pending regeneration
 
-### Session Checkpoint (2026-01-08)
+### Session Checkpoint (2026-01-09)
 
 **Skill Streamlining Completed**:
 - /wireframe skill streamlined: 2,085 → 1,895 lines (-9%)
 - Dynamic `<use href>` includes enabled (edit header once → all SVGs update)
 - Interactive patterns extracted to `.claude/guides/INTERACTIVE_PATTERNS.md`
+- Added LABEL PROXIMITY CHECK as blocking gate in /wireframe skill
 
 **SVG Status** (TRUTH):
 | Feature | SVGs | Status |
 |---------|------|--------|
-| 000-rls-implementation | 0 | ❌ DELETED - need regeneration |
-| 001-wcag-aa-compliance | 0 | ❌ DELETED - need regeneration |
+| 000-rls-implementation | 2 | 📝 Draft (01, 02) - need review |
+| 001-wcag-aa-compliance | 3 | 📝 Draft (01, 02, 03) - label proximity fixed in 03 |
 | 002-045 | ~120 | ⏳ Not reviewed |
 
 **Next Session START HERE**:
-1. Run `/wireframe 000-rls-implementation` to test streamlined skill
-2. Verify dynamic includes work (edit header, refresh, see change)
-3. If working, run `/wireframe 001-wcag-aa-compliance`
-4. Then continue wireframe review from 002+
+1. Run `/wireframe-review 000` to review the 2 RLS wireframes
+2. Run `/wireframe-review 001` to verify label proximity fixes in 03
+3. Continue wireframe review from 002+
 
 ---
 
@@ -154,14 +154,16 @@ find docs/design/wireframes -name "*.svg" -newer README.md
 
 Both files should stay in sync for implementation phases.
 
-### Current State (2026-01-08)
+### Current State (2026-01-09)
 
 | Metric | Value |
 |--------|-------|
 | spec.md complete | 46/46 |
-| Wireframes generated | 44/46 features (~120 SVGs) |
-| 000, 001 SVGs | ❌ DELETED - need regeneration |
-| Wireframes reviewed | 0/46 (must regenerate 000, 001 first) |
+| Wireframes generated | 46/46 features (~125 SVGs) |
+| 000-rls-implementation | 2 SVGs (draft, need review) |
+| 001-wcag-aa-compliance | 3 SVGs (draft, label proximity fixed) |
+| 002-045 | ~120 SVGs (not reviewed) |
+| Wireframes reviewed | 0/46 |
 | Implementation phase | Blocked until wireframe review complete |
 
 ---

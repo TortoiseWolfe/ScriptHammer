@@ -11,7 +11,7 @@
     "svgs": {
       "01-wcag-compliance-overview.svg": "draft",
       "02-accessibility-dashboard.svg": "draft",
-      "03-development-tooling.svg": "regenerating"
+      "03-development-tooling.svg": "draft"
     }
   }
 }

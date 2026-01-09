@@ -1,6 +1,6 @@
 # SpecKit Progress Tracker
 
-Last updated: 2025-12-31
+Last updated: 2026-01-09
 
 ## Summary
 
@@ -8,8 +8,14 @@ Last updated: 2025-12-31
 |--------|-------|
 | spec.md complete | 46 |
 | spec.md pending | 0 |
-| wireframes complete | 4/46 features (12 SVGs) |
+| wireframes generated | 46/46 features (~125 SVGs) |
+| wireframes reviewed | 0/46 features |
 | **Total Features** | **46** |
+
+### Wireframe Review Status
+- 000-rls-implementation: 2 SVGs (📝 draft, need review)
+- 001-wcag-aa-compliance: 3 SVGs (📝 draft, label proximity fixed in 03)
+- 002-045: ~120 SVGs (not reviewed)
 
 ---
 
@@ -91,8 +97,8 @@ All 46 features have been specified!
 
 | Feature | Wireframes | Status |
 |---------|------------|--------|
-| 000-rls-implementation | 3 | ✅ |
-| 001-wcag-aa-compliance | 2 | ✅ |
+| 000-rls-implementation | 2 | 📝 draft |
+| 001-wcag-aa-compliance | 3 | 📝 draft |
 | 002-cookie-consent | 2 | ✅ |
 | 003-user-authentication | 3 | ✅ |
 | 004-mobile-first-design | 4 | ✅ regen |
@@ -137,11 +143,16 @@ All 46 features have been specified!
 | 043-group-service | 3 | ✅ |
 | 044-error-handler-integrations | 3 | ✅ |
 | 045-disqus-theme | 3 | ✅ |
-| **Total** | **123** | |
+| **Total** | **~125** | |
 
-### Features with spec.md needing wireframes (0)
+### Wireframe Review Phase
 
-✅ **All 46 features have wireframes!**
+All 46 features have wireframes generated. Next step: run `/wireframe-review` on each feature.
+
+**Status Legend:**
+- 📝 draft = Generated, needs review
+- ✅ = Reviewed and approved
+- ✅ regen = Regenerated after review
 
 ---
 
