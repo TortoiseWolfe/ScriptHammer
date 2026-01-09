@@ -160,7 +160,7 @@
 
     <!-- Row 1: 4 categories -->
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(0, 20)">
+      <g transform="translate(0, 12)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Contrast</text>
         <text x="10" y="44" class="cat-desc">7:1 ratio for AAA</text>
@@ -168,7 +168,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(195, 20)">
+      <g transform="translate(195, 12)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Keyboard</text>
         <text x="10" y="44" class="cat-desc">Full keyboard access</text>
@@ -176,7 +176,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(0, 110)">
+      <g transform="translate(0, 94)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Touch Targets</text>
         <text x="10" y="44" class="cat-desc">44x44px minimum</text>
@@ -184,7 +184,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(195, 110)">
+      <g transform="translate(195, 94)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Screen Reader</text>
         <text x="10" y="44" class="cat-desc">ARIA landmarks</text>
@@ -194,7 +194,7 @@
 
     <!-- Row 2: 4 categories -->
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(0, 200)">
+      <g transform="translate(0, 176)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Time/Cognitive</text>
         <text x="10" y="44" class="cat-desc">No time limits</text>
@@ -202,7 +202,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(195, 200)">
+      <g transform="translate(195, 176)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Dev Tooling</text>
         <text x="10" y="44" class="cat-desc">Real-time feedback</text>
@@ -210,7 +210,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
-      <g transform="translate(0, 290)">
+      <g transform="translate(0, 258)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#475569"/>
         <text x="10" y="24" class="cat-title">Dashboard</text>
         <text x="10" y="44" class="cat-desc">Compliance tracking</text>
@@ -218,7 +218,7 @@
       </g>
     </a>
     <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#success-criteria-mandatory" target="_blank">
-      <g transform="translate(195, 290)">
+      <g transform="translate(195, 258)">
         <rect width="185" height="80" rx="6" fill="#1e293b" stroke="#ea580c"/>
         <text x="10" y="24" class="cat-title">Success Criteria</text>
         <text x="10" y="44" class="cat-desc">10 measurable goals</text>
