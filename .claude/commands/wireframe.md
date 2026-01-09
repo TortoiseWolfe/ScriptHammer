@@ -220,8 +220,8 @@ https://github.com/{owner}/{repo}/blob/main/features/{category}/{feature}/spec.m
 
 **Rules:**
 - Always use `target="_blank"` to open in new tab
-- Wrap the entire card/badge group, not just the badge rect
-- Include description text inside the link for larger click target
+- Each badge gets its OWN `<a>` link - NEVER cluster multiple badges in one link
+- Panels/boxes containing badges are NOT links - only the individual badges inside
 - GitHub generates anchors from headings only (lowercase, spaces→hyphens)
 
 ### Verify
@@ -1572,10 +1572,12 @@ gap = next_section_Y - (current_section_Y + current_section_height)
 **Minimum gaps:**
 | Transition | Minimum Gap |
 |------------|-------------|
-| Section header → content | 20px |
-| Content → next section header | 60px |
-| Last content → legend | 40px |
+| Section header → content | 12-20px |
+| Content → next section header | 40px (MUST be ≥2x header→content gap) |
+| Last content → legend | 30px |
 | Legend → footer | 30px |
+
+**⛔ LABEL PROXIMITY RULE**: Section labels must be closer to their content than to the content above. If header→content is 15px, then previous_content→header must be ≥30px.
 
 ### Example Layout (1920×1080 canvas)
 
