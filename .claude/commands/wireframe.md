@@ -1582,6 +1582,30 @@ gap = next_section_Y - (current_section_Y + current_section_height)
 
 **⛔ LABEL PROXIMITY RULE**: Section labels must be closer to their content than to the content above. If header→content is 15px, then previous_content→header must be ≥30px.
 
+### ⛔ LABEL PROXIMITY CHECK (BLOCKING - Run Before Writing)
+
+**For EVERY section label after the first, calculate and verify:**
+
+```
+LABEL PROXIMITY CHECK:
+  For each section label AFTER the first:
+    previous_panel_bottom = previous_panel_Y + previous_panel_height
+    gap_above = label_Y - previous_panel_bottom
+    gap_below = panel_Y - label_Y
+
+    VERIFY: gap_above >= 2 × gap_below
+
+    ❌ WRONG: gap_above = 20px, gap_below = 20px (1:1 ratio - equidistant)
+    ✅ RIGHT: gap_above = 40px+, gap_below = 20px (2:1+ ratio - label closer to its content)
+
+  If ANY section FAILS this check:
+    1. STOP - do NOT write the SVG
+    2. Recalculate Y positions to fix label proximity
+    3. Re-verify ALL sections before proceeding
+```
+
+**DO NOT rely on "it looks fine" - run the calculation for every multi-section wireframe.**
+
 ### Example Layout (1920×1080 canvas)
 
 ```
@@ -1668,6 +1692,19 @@ Before drawing arrows, verify:
 - Do arrows need to cross content? → MOVE CONTENT to create clear channels
 
 **Wasted space + arrows through text = DESIGN FAILURE. Use the space to fix the arrows.**
+
+---
+
+## ⛔ MULTI-PANEL GAP FORMULA (MANDATORY)
+
+**Calculate Y for each row dynamically. Never hardcode Y values.**
+
+```
+next_row_Y = max(current_row_panel_bottoms) + 40
+panel_bottom = panel_Y + panel_height
+```
+
+Before placing ANY element, compute its Y from the row above it.
 
 ---
 
