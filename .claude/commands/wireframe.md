@@ -209,6 +209,7 @@ https://github.com/{owner}/{repo}/blob/main/features/{category}/{feature}/spec.m
 
 **Example US card with link:**
 ```svg
+<!-- US cards CAN wrap entire card - they represent ONE story -->
 <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/000-rls-implementation/spec.md#user-story-1---user-data-isolation-priority-p0" target="_blank">
 <rect x="40" y="125" width="520" height="80" rx="6" fill="#1e293b" stroke="#dc2626" stroke-width="2"/>
 <rect x="50" y="135" width="40" height="20" rx="4" fill="#dc2626"/>
@@ -1277,6 +1278,8 @@ VERIFY: Container width >= 280px?
 
 ```xml
 <!-- ✅ CORRECT: Calculated positions, no overlap -->
+<!-- NOTE: This example shows status badges (PASS/FAIL), not FR/SC badges -->
+<!-- For FR/SC badges, each MUST be wrapped in its own <a href> link -->
 <g id="status-cluster" transform="translate(100, 200)">
   <!-- Badge 1: x=0, width=80 → right=80 -->
   <rect x="0" y="0" width="80" height="28" rx="4" fill="#22c55e"/>
@@ -1583,12 +1586,21 @@ gap = next_section_Y - (current_section_Y + current_section_height)
 
 ```
 Section A: translate(40, 100)
-  Content height: ~300px
-  Ends at: Y = 400
+  Label at: Y = 100
+  Content starts: Y = 120 (label + 20px)
+  Content height: ~280px
+  Content ends at: Y = 400
 
-Section B: translate(40, 460)  ← Gap = 460 - 400 = 60px ✅
-  Content height: ~400px
-  Ends at: Y = 860
+Section B: translate(40, 460)
+  Label at: Y = 460
+  Content starts: Y = 480 (label + 20px)
+  Content height: ~380px
+  Content ends at: Y = 860
+
+  LABEL PROXIMITY CHECK:
+    Gap above label: 460 - 400 = 60px
+    Gap below label: 480 - 460 = 20px
+    Ratio: 60px ≥ 2×20px ✅ (label closer to its content)
 
 Legend: translate(40, 950)  ← Gap = 950 - 860 = 90px ✅
   Height: ~60px
