@@ -17,6 +17,7 @@
 | G-007 | User story font too small (12px) | Use minimum 13px for `.us-narrative` readability | User Stories Section |
 | G-008 | Mobile views missing requirement tags | Every FR/SC/US on desktop MUST appear on mobile too | Mobile Annotation Parity |
 | G-009 | Requirement tags blend with UI buttons | Use distinct colors: FR=blue, SC=orange, US=cyan with HIGH contrast | Tag Color Distinction |
+| G-010 | Body text classes at 13px (minimum) instead of 14px (target) | `.legend-text`, `.us-narrative` should be 14px, not 13px | Typography hierarchy |
 
 ---
 
@@ -68,6 +69,7 @@ docs/design/wireframes/includes/
 |------|-------------|--------|
 | 2026-01-09 | G-001 to G-006 | 002:01 review feedback |
 | 2026-01-09 | G-007 to G-009 | 002:01 screenshot review - font size, mobile parity, tag distinction |
+| 2026-01-09 | G-010 | 001:02, 002:01 review - body text using minimum (13px) instead of target (14px) |
 
 ---
 
@@ -95,3 +97,23 @@ Mobile has less space, so:
 - Use smaller font (11px) but keep colored backgrounds
 - Position tags near the elements they reference
 - At minimum: show key FR/SC tags, can abbreviate US to just priority badge
+
+---
+
+## Body Text Font Sizes (G-010)
+
+**Rule**: Body text = 14px. The 13px size is MINIMUM for edge cases, not the default.
+
+| Class | Wrong | Correct | Purpose |
+|-------|-------|---------|---------|
+| `.legend-text` | 13px | **14px** | Requirements Key descriptions |
+| `.us-narrative` | 13px | **14px** | User Story narrative text |
+| `.us-title` | 13px | **14px** | User Story titles |
+
+**Systemic fix required**:
+1. Update `/wireframe` skill CSS templates (both Light and Dark themes)
+2. Patch all existing SVGs using these classes
+
+**Why 14px?** Per /wireframe skill typography hierarchy:
+- Body Text = 14px Regular
+- 13px is for `.text-muted` and edge cases only

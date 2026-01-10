@@ -394,21 +394,21 @@ From spec.md `### User Stories` section, extract for EACH user story:
 
 ### Required CSS Classes (Dark Theme)
 
-**⛔ G-007: User story narrative font MUST be 13px minimum, NOT 12px.**
+**⛔ G-010: Body text = 14px (not 13px minimum).**
 
 ```css
-.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-.us-narrative { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 13px; }  /* NOT 12px! */
+.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+.us-narrative { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 14px; }  /* Body text = 14px */
 .us-acceptance { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
 ```
 
 ### Required CSS Classes (Light Theme)
 
-**⛔ G-007: User story narrative font MUST be 13px minimum, NOT 12px.**
+**⛔ G-010: Body text = 14px (not 13px minimum).**
 
 ```css
-.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-.us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }  /* NOT 12px! */
+.us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+.us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }  /* Body text = 14px */
 .us-acceptance { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; }
 ```
 
@@ -568,9 +568,27 @@ ALL 5 files processed. No files skipped.
 
 #### After Processing
 
-Update each `[svg-name].issues.md`:
-- Mark patched issues with ✅ FIXED
-- Mark file status as 🔄 REGENERATED or ✅ PASS
+Update each `[svg-name].issues.md` using **ADDITIVE-ONLY** edits:
+
+1. **ADD** a new "vN Fixes" section at the TOP with what was fixed and how
+2. **KEEP** all original problem documentation intact (tables, locations, root causes, classifications)
+3. **UPDATE** classification markers by appending: `🔴 STRUCTURAL → ✅ FIXED in vN`
+4. **NEVER** delete historical sections - issues files are learning records
+
+**Example structure after fix:**
+```
+## v11 Fixes (date)
+- Issue 18: Widened containers to fit text
+- Issue 19: Aligned FR-008 with FR-005
+
+## v10 Issues (date) - ✅ ALL FIXED IN v11
+### 🔴 Issue 18: Text Overflow
+[Original problem documentation preserved exactly]
+**Classification**: 🔴 STRUCTURAL → ✅ FIXED in v11
+
+## v9 Issues...
+[All historical sections remain]
+```
 
 ### 3. Plan the Wireframes
 
@@ -820,7 +838,7 @@ Use this template for user-facing screens, forms, and interactive UI.
       /* Requirements Legend styles (light theme) */
       .legend-header { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .legend-code { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }  /* G-010: 14px */
       /* Toggle styling - standardized colors */
       .toggle-on { fill: #22c55e; }      /* Green - active/enabled */
       .toggle-off { fill: #64748b; }     /* Slate - inactive */
@@ -954,7 +972,7 @@ Use this template for architecture diagrams, data flows, and system visualizatio
       /* Requirements Legend styles (dark theme) */
       .legend-header { fill: #c4b5fd; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .legend-code { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-      .legend-text { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 13px; }
+      .legend-text { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 14px; }  /* G-010: 14px */
     </style>
   </defs>
 

@@ -1,13 +1,13 @@
 # Issues: 02-privacy-settings-page.svg
 
-**Status**: 🔴 REGENERATE
+**Status**: 🟢 PATCHABLE
 **Reviewed**: 2026-01-09 (updated)
 
 ---
 
 ## Issue 1: Not Using Include Templates
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: Desktop and mobile headers/footers were manually written instead of using the shared include templates.
 
@@ -27,7 +27,7 @@
 
 ## Issue 2: Success Criteria Inconsistent Documentation
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: SC codes in wireframe don't align with proper documentation pattern. Some SC codes have elaboration inline, some in legend, terminology inconsistent.
 
@@ -58,7 +58,7 @@
 
 ## Issue 4: Wasted Vertical Space
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: ~150px empty gap between footer (y~600) and REQUIREMENTS KEY (y~700).
 
@@ -128,17 +128,35 @@
 
 ---
 
+## Issue 9: Font Sizes Too Small (G-010)
+
+**Classification**: 🟢 PATCHABLE
+
+**Location**: CSS `<style>` block
+
+| Class | Current | Should Be |
+|-------|---------|-----------|
+| `.legend-text` | 13px | 14px |
+| `.us-narrative` | 13px | 14px |
+| `.us-title` | 13px | 14px |
+
+**Standard**: Body text = 14px (not 13px minimum)
+**Reference**: G-010 in GENERAL_ISSUES.md
+
+---
+
 ## Summary
 
 | Issue | Type | Classification |
 |-------|------|----------------|
-| Not using include templates | Structure | 🔴 REGENERATE |
-| SC documentation inconsistent | Content | 🔴 REGENERATE |
+| Not using include templates | Structure | 🟢 PATCHABLE |
+| SC documentation inconsistent | Content | 🟢 PATCHABLE |
 | G-002 Logo placeholder | Icon | 🟡 CHECK |
-| Wasted vertical space | Layout | 🔴 REGENERATE |
+| Wasted vertical space | Layout | 🟢 PATCHABLE |
 | Mobile icons unverified | Icon | 🟡 CHECK |
 | Inconsistent badge colors | Style | 🟡 CHECK |
 | Label proximity | Layout | 🟡 CHECK |
 | Mobile SC-004 orphaned | Content | 🟢 PATCH |
+| Font sizes too small (G-010) | Style | 🟢 PATCHABLE |
 
-**Action Required**: 3 structural issues require regeneration; 4 items need verification; 1 patchable.
+**Action Required**: 3 structural issues require regeneration; 4 items need verification; 2 patchable.

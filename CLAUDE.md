@@ -15,25 +15,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Generated spec.md for all 46 features
 - [x] Generated wireframes for 44 features (~120 SVGs) - 000, 001 DELETED pending regeneration
 
-### Session Checkpoint (2026-01-09)
+### Session Checkpoint (2026-01-09 - Updated)
 
-**Skill Streamlining Completed**:
-- /wireframe skill streamlined: 2,085 → 1,895 lines (-9%)
-- Dynamic `<use href>` includes enabled (edit header once → all SVGs update)
-- Interactive patterns extracted to `.claude/guides/INTERACTIVE_PATTERNS.md`
-- Added LABEL PROXIMITY CHECK as blocking gate in /wireframe skill
+**G-010 Systemic Fix Completed**:
+- `/wireframe` skill template updated: `.legend-text`, `.us-narrative`, `.us-tag` from 13px → 14px
+- G-010 added to `GENERAL_ISSUES.md` as recurring mistake pattern
+- All 8 affected SVGs have issues tracked (see table below)
+
+**Issues Files Status**:
+| Feature | SVG | Issues File | Key Issues |
+|---------|-----|-------------|------------|
+| 000 | 01 | ✅ Created | G-010 only |
+| 000 | 02 | ✅ Created | G-010 only |
+| 001 | 01 | ✅ Created | G-010 only |
+| 001 | 02 | ✅ Has 2 issues | G-010 + emoji→path (G-002) |
+| 001 | 03 | ✅ Has 7 issues | G-010 + layout patches |
+| 002 | 01 | ✅ Has 24 issues | G-010 + layout patches |
+| 002 | 02 | ✅ Has 9 issues | G-010 + layout patches |
+| 002 | 03 | ✅ Has 7 issues | G-010 + layout patches |
 
 **SVG Status** (TRUTH):
 | Feature | SVGs | Status |
 |---------|------|--------|
-| 000-rls-implementation | 2 | 📝 Draft (01, 02) - need review |
-| 001-wcag-aa-compliance | 3 | 📝 Draft (01, 02, 03) - label proximity fixed in 03 |
-| 002-045 | ~120 | ⏳ Not reviewed |
+| 000-rls-implementation | 2 | 🟢 PATCHABLE (G-010 font fix only) |
+| 001-wcag-aa-compliance | 3 | 🟢 PATCHABLE (G-010 + minor fixes) |
+| 002-cookie-consent | 3 | 🟢 PATCHABLE (all issues are patches now) |
+| 003-045 | ~120 | ⏳ Not reviewed |
 
 **Next Session START HERE**:
-1. Run `/wireframe-review 000` to review the 2 RLS wireframes
-2. Run `/wireframe-review 001` to verify label proximity fixes in 03
-3. Continue wireframe review from 002+
+1. Run `/wireframe 000` to patch G-010 font sizes (quick win)
+2. Run `/wireframe 001` to patch all 3 SVGs
+3. Run `/wireframe 002` to patch all 3 SVGs
+4. Continue reviewing/patching 003+
 
 ---
 

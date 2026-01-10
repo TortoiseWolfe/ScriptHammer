@@ -1,13 +1,13 @@
 # Issues: 03-data-export-deletion.svg
 
-**Status**: 🔴 REGENERATE
+**Status**: 🟢 PATCHABLE
 **Reviewed**: 2026-01-09 (updated)
 
 ---
 
 ## Issue 1: Not Using Include Templates
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: Desktop and mobile headers/footers were manually written instead of using the shared include templates.
 
@@ -27,7 +27,7 @@
 
 ## Issue 2: "Acceptance Criteria" Wrong Terminology
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: Used "Acceptance Criteria" instead of Success Criteria (SC codes). These are different concepts:
 - SC codes = measurable outcomes from spec.md
@@ -46,7 +46,7 @@
 
 ## Issue 3: "User Stories Covered" Section Redundant
 
-**Classification**: 🔴 REGENERATE
+**Classification**: 🟢 PATCHABLE
 
 **Problem**: Wireframe 03 includes a "User Stories Covered" section. Per /wireframe skill:
 > "USER STORIES section appears **only in wireframe 01** (first/overview wireframe per feature)"
@@ -104,15 +104,33 @@
 
 ---
 
+## Issue 7: Font Sizes Too Small (G-010)
+
+**Classification**: 🟢 PATCHABLE
+
+**Location**: CSS `<style>` block
+
+| Class | Current | Should Be |
+|-------|---------|-----------|
+| `.legend-text` | 13px | 14px |
+| `.us-narrative` | 13px | 14px |
+| `.us-title` | 13px | 14px |
+
+**Standard**: Body text = 14px (not 13px minimum)
+**Reference**: G-010 in GENERAL_ISSUES.md
+
+---
+
 ## Summary
 
 | Issue | Type | Classification |
 |-------|------|----------------|
-| Not using include templates | Structure | 🔴 REGENERATE |
-| Wrong "Acceptance Criteria" term | Content | 🔴 REGENERATE |
-| User Stories in wrong wireframe | Content | 🔴 REGENERATE |
+| Not using include templates | Structure | 🟢 PATCHABLE |
+| Wrong "Acceptance Criteria" term | Content | 🟢 PATCHABLE |
+| User Stories in wrong wireframe | Content | 🟢 PATCHABLE |
 | G-002 Logo placeholder | Icon | 🟡 CHECK |
 | Mobile icons unverified | Icon | 🟡 CHECK |
 | Label proximity | Layout | 🟡 CHECK |
+| Font sizes too small (G-010) | Style | 🟢 PATCHABLE |
 
-**Action Required**: 3 structural issues require regeneration; 3 items need verification.
+**Action Required**: 3 structural issues require regeneration; 3 items need verification; 1 patchable.

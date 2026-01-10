@@ -1,7 +1,192 @@
 # Issues: 01-consent-modal-flow.svg
 
-**Status**: 🟡 ISSUES (v9 - 1 structural, 2 patchable remaining)
+**Status**: 🟢 PATCHABLE (v11 - 4 issues remaining)
 **Reviewed**: 2026-01-09
+**Regenerated**: 2026-01-09
+
+---
+
+## v11 Issues (2026-01-09)
+
+### 🔴 Issue 21: FR-004 Container Still Too Small (repeat of Issue 18)
+
+**Location**: STATE 1 modal, FR-004 annotation (line 113-117)
+
+| Element | Position | Width | Ends At |
+|---------|----------|-------|---------|
+| Container rect | x=170 | 165px | x=335 |
+| Badge | x=175 | 60px | x=235 |
+| Text "No dark patterns" | x=245 | ~115px | x=360 |
+
+**Problem**: Text extends 25px past container right edge (360 > 335)
+
+**Root cause**: Container width not recalculated. Wrote "165" but didn't verify text fits.
+
+**Classification**: 🟢 PATCHABLE
+
+---
+
+### 🔴 Issue 22: FR-008 Wrong Position and Smaller Size (repeat of Issue 19)
+
+**Location**: STATE 2 modal, FR-008 annotation (line 143-148)
+
+| Element | FR-005 | FR-008 | Problem |
+|---------|--------|--------|---------|
+| Y position | y=55 | y=145 | FR-008 placed after Necessary category, not after FR-005 |
+| Container height | 28px | 20px | FR-008 container smaller |
+| Badge height | 20px | 16px | FR-008 badge smaller |
+| Font size | 11px | 9px | FR-008 text smaller |
+
+**Problem**:
+- FR-008 should be immediately after FR-005 (y=88 or same row), not y=145
+- FR-008 sizing should match FR-005 (container 28px, badge 20px, font 11px)
+
+**Root cause**: Misunderstood "aligned with FR-005" as x-position only. Should mean same row AND same sizing.
+
+**Classification**: 🟢 PATCHABLE
+
+---
+
+### 🔴 Issue 23: REQUIREMENTS KEY Collides with Footer (repeat of Issue 20)
+
+**Location**: Requirements Legend (line 365-366) and Footer (line 432)
+
+| Element | Y Position | Height | Ends At |
+|---------|------------|--------|---------|
+| Legend | y=950 | 90px | y=1040 |
+| Footer | y=1050 | - | - |
+| Gap | - | - | 10px (too tight) |
+
+**Standard**: Legend should end at y≤1020 to maintain 30px gap to footer at y=1050
+
+**Problem**: With height=90, legend ends at 1040, leaving only 10px gap. Text baselines visually overlap.
+
+**Root cause**: Reduced height from 95 to 90 but still too tall. Should use height=70 max (y=950+70=1020, gap to 1050=30px).
+
+**Classification**: 🟢 PATCHABLE
+
+---
+
+### 🟢 Issue 24: Font Sizes Too Small in REQUIREMENTS KEY and USER STORIES
+
+**Location**: CSS classes in `<style>` block (lines 33, 38, 39)
+
+| Class | Current | Should Be | Purpose |
+|-------|---------|-----------|---------|
+| `.legend-text` | 13px | 14px | REQUIREMENTS KEY descriptions |
+| `.us-narrative` | 13px | 14px | User Story narrative text |
+| `.us-title` | 13px | 14px | User Story titles |
+
+**Standard** (from /wireframe skill):
+- Body Text = 14px Regular
+- 13px is the MINIMUM, not the target
+
+**Classification**: 🟢 PATCHABLE (font size change only)
+
+---
+
+## v11 Summary
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| 21 | FR-004 container still too small | 🟢 PATCHABLE |
+| 22 | FR-008 wrong position and smaller size | 🟢 PATCHABLE |
+| 23 | REQUIREMENTS KEY collides with footer | 🟢 PATCHABLE |
+| 24 | Font sizes too small (legend-text, us-narrative, us-title) | 🟢 PATCHABLE |
+
+---
+
+## v11 Attempted Fixes (2026-01-09) - FAILED
+
+### ✅ Issue 18: Text Overflows Annotation Containers - FIXED
+
+**Fix applied**: Widened annotation container rects to fit badge + gap + text + padding:
+- FR-001: 185px → 210px
+- FR-004: 160px → 165px
+- FR-005: 140px → 170px
+- SC-002: 220px → 240px
+- SC-001: 200px → 210px
+
+**Classification**: ✅ FIXED
+
+---
+
+### ✅ Issue 19: FR-008 Alignment - FIXED
+
+**Fix applied**: Moved FR-008 annotation from x=165 to x=15, aligning with FR-005 badge above.
+
+**Classification**: ✅ FIXED
+
+---
+
+### ✅ Issue 20: REQUIREMENTS KEY Overflow - FIXED
+
+**Fix applied**:
+- Reduced legend height from 95px to 90px
+- Consolidated to 2 rows instead of 3
+- Row 1: All FR codes (FR-001 through FR-024) with abbreviated descriptions
+- Row 2: All SC codes (SC-001, SC-002, SC-006, SC-007)
+- Better horizontal spacing to use available 1840px width
+
+**Classification**: ✅ FIXED
+
+---
+
+## v11 Summary
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| 18 | Text overflows annotation containers | ✅ FIXED |
+| 19 | FR-008 not aligned with FR-005 | ✅ FIXED |
+| 20 | REQUIREMENTS KEY overflows into footer | ✅ FIXED |
+
+---
+
+## v10 Issues (Screenshot Review 2026-01-09) - ✅ ALL FIXED IN v11
+
+### 🔴 Issue 18: Text Overflows Annotation Containers
+
+**Location**: Multiple annotation groups
+
+| Location | Badge | Text | Problem |
+|----------|-------|------|---------|
+| STATE 1 | FR-004 | "No dark patterns" | Text overflows container right edge |
+| STATE 2 | FR-005 | "4 categories" | Text overflows container right edge |
+| STATE 3 | SC-002 | "100% blocked until consent" | Text overflows container right edge |
+
+**Root cause**: Container width not calculated to fit badge + gap + text + padding.
+
+**Classification**: 🟢 PATCHABLE → ✅ FIXED in v11
+
+---
+
+### 🔴 Issue 19: FR-008 Alignment
+
+**Location**: STATE 2 modal, FR-008 badge
+
+**Problem**: FR-008 badge is not horizontally aligned with FR-005 badge above it.
+
+**Classification**: 🟢 PATCHABLE → ✅ FIXED in v11
+
+---
+
+### 🔴 Issue 20: REQUIREMENTS KEY Overflow
+
+**Location**: REQUIREMENTS KEY at y=950
+
+**Problem**: Legend text overflows into footer signature area (y=1050) while there's empty horizontal space on the right side that could be used.
+
+**Classification**: 🟢 PATCHABLE → ✅ FIXED in v11
+
+---
+
+## v10 Summary
+
+| Issue | Description | Status |
+|-------|-------------|--------|
+| 18 | Text overflows annotation containers | ✅ FIXED in v11 |
+| 19 | FR-008 not aligned with FR-005 | ✅ FIXED in v11 |
+| 20 | REQUIREMENTS KEY overflows into footer | ✅ FIXED in v11 |
 
 ---
 
@@ -69,7 +254,7 @@
 
 ---
 
-### 🟢 Issue 14: Mobile View Missing All Tags
+### ✅ Issue 14: Mobile View Missing All Tags (FIXED in v10)
 
 **Location**: Mobile section (x=1500, y=60)
 
@@ -87,11 +272,13 @@
 
 **CRITICAL CONSTRAINT**: Badges MUST NOT overlap each other or any UI elements. Calculate positions carefully - mobile has only 320px content width. May need to place badges outside modal frame or use smaller sizing.
 
-**Classification**: 🟢 PATCHABLE - insert badge elements into mobile section (with careful positioning)
+**Fixed**: 2026-01-09 (v10) - Added mobile "Requirements:" row at bottom with FR-001, FR-002, FR-005, SC-001, SC-002 badges.
+
+**Classification**: ✅ FIXED
 
 ---
 
-### 🟢 Issue 15: Annotation Groups Need Distinct Backgrounds
+### ✅ Issue 15: Annotation Groups Need Distinct Backgrounds (FIXED in v10)
 
 **Location**: All desktop FR/SC badge + description pairs within modals
 
@@ -106,11 +293,13 @@
 
 **Fix**: Add background rect behind each (badge + text) annotation group with distinct styling (different fill, border, or opacity) that clearly marks it as an annotation layer.
 
-**Classification**: 🟢 PATCHABLE - add background containers behind annotation groups
+**Fixed**: 2026-01-09 (v10) - Added `.annotation-bg` class with violet-tinted backgrounds (#ede9fe, #c4b5fd stroke) behind badge+text groups.
+
+**Classification**: ✅ FIXED
 
 ---
 
-### 🔴 Issue 17: Duplicate Requirements Sections
+### ✅ Issue 17: Duplicate Requirements Sections (FIXED in v10)
 
 **Location**:
 - "Accessibility Requirements" panel at y=565 (inside desktop viewport)
@@ -124,7 +313,9 @@ These are both partial attempts at the same purpose. Should be ONE consolidated 
 
 **Fix**: Merge into a single REQUIREMENTS KEY section with all FR/SC codes organized logically (not scattered across two locations).
 
-**Classification**: 🔴 STRUCTURAL - requires layout reorganization
+**Fixed**: 2026-01-09 (v10) - Removed "Accessibility Requirements" panel, consolidated all FR/SC codes into expanded REQUIREMENTS KEY with 3 rows.
+
+**Classification**: ✅ FIXED
 
 ---
 
@@ -152,12 +343,12 @@ These are both partial attempts at the same purpose. Should be ONE consolidated 
 | 11 | Text truncation | ✅ FIXED |
 | 12 | Requirements Key inconsistent | ✅ FIXED |
 | 13 | Legend badges not clickable | ✅ FIXED |
-| 14 | Mobile missing all tags | 🟢 PATCHABLE |
-| 15 | Annotation groups need distinct backgrounds | 🟢 PATCHABLE |
+| 14 | Mobile missing all tags | ✅ FIXED (v10) |
+| 15 | Annotation groups need distinct backgrounds | ✅ FIXED (v10) |
 | 16 | Font size too small | ✅ FIXED |
-| 17 | Duplicate requirements sections (A11y panel + Key) | 🔴 STRUCTURAL |
+| 17 | Duplicate requirements sections (A11y panel + Key) | ✅ FIXED (v10) |
 
-**v9 status**: 5 issues fixed, 1 structural + 2 patchable remaining.
+**v9 status**: All 8 issues fixed (5 in v9, 3 in v10).
 
 ---
 

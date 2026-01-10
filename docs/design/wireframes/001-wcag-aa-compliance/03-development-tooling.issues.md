@@ -1,6 +1,6 @@
 # 03-development-tooling.svg Issues
 
-**Status**: 🔄 REGENERATED
+**Status**: 🟢 PATCHABLE
 **Date**: 2026-01-09
 **Regenerated**: 2026-01-09
 
@@ -56,6 +56,23 @@
 **Fix**:
 1. Patch Y positions in SVG (🟢 PATCHABLE - no structural change, just Y values)
 2. Add LABEL PROXIMITY CHECK to wireframe skill as mandatory gate
+
+### 7. Font Sizes Too Small (G-010)
+
+**Classification**: 🟢 PATCHABLE
+
+**Location**: CSS `<style>` block
+
+| Class | Current | Should Be |
+|-------|---------|-----------|
+| `.legend-text` | 13px | 14px |
+| `.us-narrative` | 13px | 14px |
+| `.us-title` | 13px | 14px |
+
+**Standard**: Body text = 14px (not 13px minimum)
+**Reference**: G-010 in GENERAL_ISSUES.md
+
+---
 
 ## Skill Improvements Needed
 
