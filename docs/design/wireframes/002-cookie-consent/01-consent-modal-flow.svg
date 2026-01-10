@@ -30,13 +30,13 @@
       .label-desktop { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 18px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .legend-header { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
-      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }
       .tag-base { font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
       .fr-tag { fill: #2563eb; }
       .sc-tag { fill: #ea580c; }
       .us-tag { fill: #0891b2; }
-      .us-title { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-      .us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      .us-title { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }
       .btn-text { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; }
       .btn-text-dark { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 600; }
       .toggle-on { fill: #22c55e; }
@@ -110,7 +110,7 @@
       </a>
       <text x="90" y="319" class="text-muted">3 options</text>
       <!-- FR-004 annotation (width=195px - FIXED for Issue 18) -->
-      <rect x="170" y="300" width="165" height="28" rx="4" class="annotation-bg"/>
+      <rect x="170" y="300" width="195" height="28" rx="4" class="annotation-bg"/>
       <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/002-cookie-consent/spec.md#functional-requirements" target="_blank">
         <g transform="translate(175, 305)"><rect width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="14" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">FR-004</text></g>
       </a>
@@ -141,11 +141,11 @@
         <g transform="translate(240, 12)"><rect x="0" y="0" width="48" height="24" rx="12" class="toggle-always-on"/><circle cx="36" cy="12" r="10" class="toggle-thumb"/></g>
       </g>
       <!-- FR-008 annotation (x=15 FIXED for Issue 19 - aligned with FR-005) -->
-      <rect x="15" y="145" width="140" height="20" rx="4" class="annotation-bg"/>
+      <rect x="190" y="55" width="170" height="28" rx="4" class="annotation-bg"/>
       <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/002-cookie-consent/spec.md#functional-requirements" target="_blank">
-        <g transform="translate(20, 147)"><rect width="55" height="16" rx="3" fill="#2563eb"/><text x="27" y="12" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">FR-008</text></g>
+        <g transform="translate(195, 60)"><rect width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="14" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">FR-008</text></g>
       </a>
-      <text x="82" y="159" class="text-muted" font-size="10">Always on</text>
+      <text x="265" y="74" class="text-muted">Always on</text>
       <!-- Category 2: Functional -->
       <g transform="translate(20, 170)">
         <rect x="0" y="0" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
@@ -363,7 +363,7 @@
 
   <!-- CONSOLIDATED REQUIREMENTS KEY (FIXED for Issue 20 - proper multi-row layout) -->
   <g id="requirements-legend" transform="translate(40, 950)">
-    <rect width="1840" height="90" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect width="1840" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
     <!-- Row 1: Core FRs (spaced to fit within 1840px) -->
     <g transform="translate(20, 35)">

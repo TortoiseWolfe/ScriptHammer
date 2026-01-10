@@ -26,7 +26,7 @@
       .label-desktop { fill: #8b5cf6; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .label-mobile { fill: #d946ef; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
       .legend-header { fill: #6d28d9; font-family: system-ui, sans-serif; font-size: 15px; font-weight: bold; }
-      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      .legend-text { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }
       .tag-base { font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
       .fr-tag { fill: #2563eb; }
       .sc-tag { fill: #ea580c; }
@@ -40,7 +40,7 @@
       .stat-value { fill: #1a1a2e; font-family: system-ui, sans-serif; font-size: 28px; font-weight: 700; }
       .stat-label { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 12px; }
       .us-title { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
-      .us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+      .us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 14px; }
       .us-acceptance { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; }
     </style>
   </defs>
@@ -335,14 +335,16 @@
     <!-- Active tab overlay - Features -->
     <g transform="translate(95, 634)">
       <rect width="85" height="56" fill="#8b5cf6"/>
-      <text x="42" y="24" text-anchor="middle" font-size="18">⚡</text>
+      <g transform="translate(30, 6)">
+        <path fill="#fff" d="M14.6152 1.59492C14.9164 1.76287 15.0643 2.1146 14.9736 2.44734L12.9819 9.75H20.25C20.5486 9.75 20.8188 9.92718 20.9378 10.2011C21.0569 10.475 21.0021 10.7934 20.7983 11.0117L10.2983 22.2617C10.063 22.5139 9.68601 22.573 9.38478 22.4051C9.08354 22.2371 8.93567 21.8854 9.02641 21.5527L11.018 14.25H3.74999C3.45134 14.25 3.18115 14.0728 3.06213 13.7989C2.9431 13.525 2.99792 13.2066 3.20169 12.9883L13.7017 1.73826C13.937 1.48613 14.314 1.42698 14.6152 1.59492Z"/>
+      </g>
       <text x="42" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="600">Features</text>
     </g>
   </g>
 
   <!-- Requirements Legend -->
   <g id="requirements-legend" transform="translate(40, 950)">
-    <rect width="1340" height="75" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect width="1100" height="75" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="20" y="18" class="legend-header">REQUIREMENTS KEY</text>
     <g transform="translate(20, 38)">
       <a href="https://github.com/TortoiseWolfe/ScriptHammer/blob/main/features/foundation/001-wcag-aa-compliance/spec.md#functional-requirements" target="_blank">
