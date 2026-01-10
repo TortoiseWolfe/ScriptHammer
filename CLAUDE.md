@@ -93,6 +93,22 @@ docs/design/wireframes/000-rls-implementation/
 - `/wireframe` reads issues files and applies fixes
 - Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
 
+### Wireframe Workflow Commands
+
+**Before patching SVGs:**
+```bash
+/wireframe-prep          # Loads: CLAUDE.md, GENERAL_ISSUES.md, all .issues.md files, status
+```
+
+**Before new/specific feature SVGs:**
+```bash
+/wireframe-prep 002      # Loads: CLAUDE.md, GENERAL_ISSUES.md, feature spec, status
+```
+
+**Then run:**
+- `/wireframe [NNN]` to patch or generate
+- `/wireframe-review [NNN]` to review
+
 ### SVG Wireframes - Hands Off
 
 **NEVER edit, write, or plan changes to SVG files directly.**

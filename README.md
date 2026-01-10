@@ -2876,6 +2876,28 @@ Continue using this repo with SpecKit's full workflow (`/speckit.plan`, `/specki
 | `/speckit.analyze` | Review spec quality and consistency |
 | `/speckit.implement` | Execute implementation plan |
 
+### Wireframe Workflow
+
+**Prep for patching** (loads issues + status):
+```bash
+/wireframe-prep
+```
+
+**Prep for specific feature** (loads spec + status):
+```bash
+/wireframe-prep 002
+```
+
+**Patch or generate SVGs:**
+```bash
+/wireframe 002
+```
+
+**Review SVGs:**
+```bash
+/wireframe-review 002
+```
+
 ### Wireframe Viewer
 
 | Command | Purpose |

@@ -47,7 +47,12 @@ $ARGUMENTS
 cat docs/design/wireframes/wireframe-status.json
 ```
 
-If no arguments, show status summary table of all features.
+If no arguments, show status summary.
+
+**Concise output format** (1-2 lines):
+> "Status: [N] approved, [N] patchable, [N] issues, [N] draft. Ready."
+
+Only include non-zero counts. DO NOT create detailed tables or list individual features.
 
 If feature number provided:
 1. Find feature in JSON (e.g., `000-rls-implementation`)
