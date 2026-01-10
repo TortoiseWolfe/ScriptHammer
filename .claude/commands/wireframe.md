@@ -135,6 +135,24 @@ If you find yourself about to ask about any of these - STOP. The answer is alrea
 - Other wireframes in same feature do NOT duplicate USER STORIES
 - This prevents redundancy and keeps each wireframe focused on its specific topic
 
+### ⛔ MOBILE ANNOTATION PARITY (G-008)
+
+**Every FR/SC/US tag on desktop MUST appear on mobile.**
+
+Mobile views are NOT just UI mockups - they document requirements too. If desktop shows FR-001, FR-002, SC-001 on a modal, mobile MUST show the same tags.
+
+| Desktop Has | Mobile MUST Have |
+|-------------|------------------|
+| FR-001 badge | FR-001 badge (can be smaller) |
+| SC-002 badge | SC-002 badge |
+| US card with P0 | At minimum P0 badge near related UI |
+
+**Mobile adaptation rules:**
+- Stack tags vertically if needed (mobile is narrower)
+- Use smaller font (11px) but KEEP colored backgrounds
+- Position tags near the elements they reference
+- Abbreviate US narratives to just priority badge if space is tight
+
 ### Professional Feature Documentation Standards (MANDATORY)
 
 **Wireframes are FEATURE POSTERS.** Apply CRAP: Contrast (hierarchy), Repetition (consistency), Alignment (grid), Proximity (grouping).
@@ -376,17 +394,21 @@ From spec.md `### User Stories` section, extract for EACH user story:
 
 ### Required CSS Classes (Dark Theme)
 
+**⛔ G-007: User story narrative font MUST be 13px minimum, NOT 12px.**
+
 ```css
 .us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-.us-narrative { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 13px; }
+.us-narrative { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 13px; }  /* NOT 12px! */
 .us-acceptance { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
 ```
 
 ### Required CSS Classes (Light Theme)
 
+**⛔ G-007: User story narrative font MUST be 13px minimum, NOT 12px.**
+
 ```css
 .us-tag { fill: #0891b2; font-family: system-ui, sans-serif; font-size: 13px; font-weight: bold; }
-.us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }
+.us-narrative { fill: #374151; font-family: system-ui, sans-serif; font-size: 13px; }  /* NOT 12px! */
 .us-acceptance { fill: #4b5563; font-family: system-ui, sans-serif; font-size: 11px; }
 ```
 
@@ -489,7 +511,23 @@ Read SVG → find/replace hex, font-size, text, or add CSS class → write back 
 2. **Read context**: spec.md, `[file].issues.md`, reference.svg (what worked vs failed)
 3. **Design fresh**: Start from template, apply learnings (e.g., 44px targets)
 4. **Write new**: Save to original filename
-5. **Cleanup**: Delete `.reference.svg` after review passes
+
+## ⛔⛔⛔ NEVER DELETE `.reference.svg` ⛔⛔⛔
+
+**The `.reference.svg` file is your ONLY backup. This skill CANNOT delete it.**
+
+| Situation | Action |
+|-----------|--------|
+| After regeneration completes | **KEEP** `.reference.svg` |
+| After review passes | **KEEP** `.reference.svg` |
+| User asks for cleanup | **KEEP** `.reference.svg` - tell them to delete manually |
+| Any other situation | **KEEP** `.reference.svg` |
+
+**Why?** This skill runs BEFORE `/wireframe-review`. It has NO WAY to know if the regeneration is acceptable. If you delete the backup and the regeneration is worse, THE ORIGINAL IS LOST FOREVER.
+
+**Reference files are cleaned up by:**
+- User manually running `rm *.reference.svg`
+- NEVER by this skill
 
 **From feedback, extract**: Diagnosis, root cause, suggested layout, FR/SC to preserve.
 
@@ -662,6 +700,21 @@ Track FR/SC/US per page:
 
 **FR codes use `.tag-base .fr-tag` (BLUE), SC codes use `.tag-base .sc-tag` (ORANGE)**
 **NEVER use `.legend-code` for FR/SC codes - it's purple. Only use for US/other codes.**
+
+### ⛔ TAG DISTINCTION FROM UI (G-009)
+
+**Requirement tags must be VISUALLY DISTINCT from UI mockup elements.**
+
+Tags annotate the wireframe - they are NOT part of the UI being designed. Users must instantly distinguish "this is a requirement marker" from "this is an actual button."
+
+| Tag Type | Background | Text | Contrast With UI |
+|----------|------------|------|------------------|
+| FR-### | `#2563eb` (blue-600) | white | UI buttons use `#8b5cf6` (violet) |
+| SC-### | `#ea580c` (orange-600) | white | No orange in UI palette |
+| US-### | `#0891b2` (cyan-600) | white | No cyan in UI palette |
+| P0/P1/P2 | `#dc2626`/`#f59e0b`/`#3b82f6` | white/black | Priority colors unique |
+
+**The colored pill backgrounds (not just text color) are MANDATORY for distinction.**
 
 ---
 

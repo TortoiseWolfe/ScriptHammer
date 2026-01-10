@@ -80,6 +80,16 @@ docs/design/wireframes/000-rls-implementation/
 - `/wireframe` reads issues files and applies fixes
 - Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
 
+### SVG Wireframes - Hands Off
+
+**NEVER edit, write, or plan changes to SVG files directly.**
+
+SVGs are generated/regenerated ONLY by the `/wireframe` skill.
+
+Your job:
+- Document issues in `.issues.md` files
+- Let the user run `/wireframe` when ready
+
 ### Later: Phase 3 - Plan & Implement
 
 After wireframe review is complete for ALL features, run on each feature:
@@ -322,6 +332,8 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 
 ## Generating Wireframes
 
+**BEFORE generating ANY wireframe, read `docs/design/wireframes/GENERAL_ISSUES.md`** - Contains recurring mistakes to avoid.
+
 Use `/wireframe` to generate SVGs from specs. Theme auto-detects based on feature type, or use `--theme=dark|light` to override.
 
 **CRITICAL RULES**:
@@ -356,6 +368,24 @@ Use `/wireframe` to generate SVGs from specs. Theme auto-detects based on featur
 - Panels: `#1e293b`, `#334155`
 - Borders: `#475569`
 - Text: `#fff` (headings), `#94a3b8`/`#cbd5e1` (body), `#64748b` (muted)
+
+### /wireframe Blocking Checks (MANDATORY)
+
+**BEFORE writing ANY SVG code**, output these checks with explicit calculations:
+
+| Check | What to Output |
+|-------|----------------|
+| PRE-FLIGHT | Theme decision with Q1/Q2/Q3 reasoning |
+| TRIAGE | Each issue classified 🟢/🔴 with keywords |
+| CONTAINERS | ALL containers with x,y,w,h,RIGHT,BOTTOM |
+| VERTICAL SPACE | Content inventory with heights + y positions |
+| LABEL PROXIMITY | gap_above >= 2x gap_below for EVERY section label |
+| COLLISION TABLE | Every vertical transition with gap verified |
+| HORIZONTAL FIT | Element widths + container widths |
+
+**If ANY check fails → STOP and recalculate. Do NOT write SVG with failing checks.**
+
+This is not a "do it later if asked" list - these are actual blockers. The /wireframe skill says "You CANNOT write the SVG until you complete this section" - that means OUTPUT THE CHECK FIRST, then write the SVG.
 
 ## Implementation Options
 

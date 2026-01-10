@@ -13,5 +13,13 @@
       "02-accessibility-dashboard.svg": "draft",
       "03-development-tooling.svg": "draft"
     }
+  },
+  "002-cookie-consent": {
+    "status": "partial",
+    "svgs": {
+      "01-consent-modal-flow.svg": "regenerating",
+      "02-privacy-settings-page.svg": "issues",
+      "03-data-export-deletion.svg": "issues"
+    }
   }
 }

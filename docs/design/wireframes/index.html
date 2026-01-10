@@ -655,6 +655,24 @@
             </a>
           </div>
         </div>
+        <!-- 002-cookie-consent -->
+        <div class="nav-section">
+          <h2>002 - Cookie Consent <span class="shortcut">^4</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="002-cookie-consent/01-consent-modal-flow.svg">
+              Cookie Consent Modal Flow
+              <span class="path">Initial Modal, Manage Preferences, Focus Trap</span>
+            </a>
+            <a href="#" data-svg="002-cookie-consent/02-privacy-settings-page.svg">
+              Privacy Settings Page
+              <span class="path">Cookie Status, GDPR Rights, Footer Link</span>
+            </a>
+            <a href="#" data-svg="002-cookie-consent/03-data-export-deletion.svg">
+              Data Export &amp; Deletion
+              <span class="path">Export Flow, Deletion Confirmation, Success States</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -899,6 +917,10 @@
       { path: '001-wcag-aa-compliance/01-wcag-compliance-overview.svg', title: 'WCAG AAA Compliance Overview' },
       { path: '001-wcag-aa-compliance/02-accessibility-dashboard.svg', title: 'Accessibility Dashboard' },
       { path: '001-wcag-aa-compliance/03-development-tooling.svg', title: 'Development Tooling' },
+      // 002-cookie-consent
+      { path: '002-cookie-consent/01-consent-modal-flow.svg', title: 'Cookie Consent Modal Flow' },
+      { path: '002-cookie-consent/02-privacy-settings-page.svg', title: 'Privacy Settings Page' },
+      { path: '002-cookie-consent/03-data-export-deletion.svg', title: 'Data Export & Deletion' },
     ];
 
     // Category mapping for Shift+F1-F9 navigation
@@ -1056,7 +1078,7 @@
     // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
     // Set to null to start at first wireframe
     // ========================================
-    const DEFAULT_BOOKMARK = "000-landing-page/01-landing-page.svg";
+    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal-flow.svg";
 
     // Find wireframe index by path
     function findIndexByPath(path) {
