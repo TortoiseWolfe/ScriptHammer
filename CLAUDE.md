@@ -15,38 +15,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Generated spec.md for all 46 features
 - [x] Generated wireframes for 44 features (~120 SVGs) - 000, 001 DELETED pending regeneration
 
-### Session Checkpoint (2026-01-09 - Updated)
+### Session Checkpoint (2026-01-11 - Wireframe v3.1)
 
-**G-010 Systemic Fix Completed**:
-- `/wireframe` skill template updated: `.legend-text`, `.us-narrative`, `.us-tag` from 13px → 14px
-- G-010 added to `GENERAL_ISSUES.md` as recurring mistake pattern
-- All 8 affected SVGs have issues tracked (see table below)
+**MAJOR CHANGE: Wireframe Standard v3.1 - Lean UI Mockups + User Stories**
 
-**Issues Files Status**:
-| Feature | SVG | Issues File | Key Issues |
-|---------|-----|-------------|------------|
-| 000 | 01 | ✅ Created | G-010 only |
-| 000 | 02 | ✅ Created | G-010 only |
-| 001 | 01 | ✅ Created | G-010 only |
-| 001 | 02 | ✅ Has 2 issues | G-010 + emoji→path (G-002) |
-| 001 | 03 | ✅ Has 7 issues | G-010 + layout patches |
-| 002 | 01 | ✅ Has 24 issues | G-010 + layout patches |
-| 002 | 02 | ✅ Has 9 issues | G-010 + layout patches |
-| 002 | 03 | ✅ Has 7 issues | G-010 + layout patches |
+After v3.0 removed too much, v3.1 adds User Stories back (compact format):
 
-**SVG Status** (TRUTH):
-| Feature | SVGs | Status |
-|---------|------|--------|
-| 000-rls-implementation | 2 | 🟢 PATCHABLE (G-010 font fix only) |
-| 001-wcag-aa-compliance | 3 | 🟢 PATCHABLE (G-010 + minor fixes) |
-| 002-cookie-consent | 3 | 🟢 PATCHABLE (all issues are patches now) |
-| 003-045 | ~120 | ⏳ Not reviewed |
+| Include | Exclude |
+|---------|---------|
+| Desktop + Mobile UI mockups | Requirement descriptions |
+| STATE labels and flow arrows | "Accessibility" / "Performance" panels |
+| Small FR/SC badges ON elements | 30-word legend definitions |
+| Simple color-key legend (1 row) | Annotation boxes with text |
+| **User Stories (compact cards)** | |
+
+**Philosophy:** Wireframes show screens AND user context.
+
+**Updated Files:**
+- `~/.claude/commands/wireframe.md` - v3.1 skill (11 rules)
+- `docs/design/wireframes/GENERAL_ISSUES.md` - v3.1 standards
+- `docs/design/requirements-trace/` - FR/SC/US mapping docs
+
+**All Existing SVGs Need REGENERATION** (not patching):
+- Headers must use `<use href>` templates
+- User Stories section (compact format) required
+- Layout fundamentally changes
 
 **Next Session START HERE**:
-1. Run `/wireframe 000` to patch G-010 font sizes (quick win)
-2. Run `/wireframe 001` to patch all 3 SVGs
-3. Run `/wireframe 002` to patch all 3 SVGs
-4. Continue reviewing/patching 003+
+1. Run `/wireframe 002:01` to regenerate with v3.1 standard
+2. Review output - confirm headers use templates, US section present
+3. Regenerate remaining features one at a time with user approval
 
 ---
 
@@ -286,12 +284,10 @@ cat .specify/memory/spec-inventory.md
 ### Wireframe Viewer Development
 
 ```bash
-cd docs/design/wireframes
-npm install                      # Install dependencies
-npm run dev                      # Start dev server with hot reload
-npm test                         # Run Playwright tests
-npx playwright install chromium  # Install browser (first time)
+cd docs/design/wireframes && docker compose up   # Start dev server at localhost:3000
 ```
+
+For browser testing, use MCP Docker Playwright tools (see "Browser Testing with MCP Toolkit" below).
 
 ### SpecKit Workflow
 
@@ -359,62 +355,66 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 | `+/-` | Zoom in/out |
 | `0` | Fit to view (dynamic) |
 
-## Generating Wireframes
+## Generating Wireframes (v3.1 - Lean UI Mockups + User Stories)
 
-**BEFORE generating ANY wireframe, read `docs/design/wireframes/GENERAL_ISSUES.md`** - Contains recurring mistakes to avoid.
+**Read `docs/design/wireframes/GENERAL_ISSUES.md` first** - Contains the v3.1 standard.
 
-Use `/wireframe` to generate SVGs from specs. Theme auto-detects based on feature type, or use `--theme=dark|light` to override.
+**Philosophy:** Wireframes show screens AND user context.
 
-**CRITICAL RULES**:
-1. **Every feature gets wireframes** - no exceptions
-2. **Number of wireframes depends on spec content** - NOT 1:1 with features
-3. **Wireframe type depends on feature type**:
+### What Wireframes Show
 
-| Feature Type | Wireframe Approach |
-|--------------|-------------------|
-| UI screens | Desktop + Mobile side-by-side layouts |
-| Backend/infrastructure | Architecture diagrams, data flow |
-| Testing frameworks | Test flow diagrams, coverage dashboards |
-| Integrations | System diagrams, API flow charts |
-| Security features | Security architecture diagrams |
+| Include | Exclude |
+|---------|---------|
+| Desktop + Mobile UI mockups | Requirement descriptions |
+| STATE labels and flow arrows | "Accessibility" / "Performance" panels |
+| Small FR/SC badges ON elements | 30-word legend definitions |
+| Simple color-key legend (1 row) | Annotation boxes with text |
+| **User Stories (compact cards)** | |
 
-**Process**:
-1. Reads the spec to understand the feature
-2. Counts user stories, screens, states, and roles to determine wireframe count
-3. Creates appropriate wireframe type(s) at **1920×1080** (16:9 full HD, standard for all wireframes)
-4. Saves SVGs to `docs/design/wireframes/[feature-folder]/`
-5. Updates `index.html` navigation (wireframes array + nav section)
+### 11 Rules
 
-### SVG Layout Dimensions (for UI wireframes)
-- **Canvas**: 1920×1080 (16:9 full HD, standard for all wireframes)
-- **Desktop area**: x=40, y=60, 1400px wide
-- **Mobile area**: x=1500, y=60, 360×700 phone frame
+| # | Rule |
+|---|------|
+| 1 | Canvas 1920×1080 |
+| 2 | Desktop at (40,60), 1366×768 |
+| 3 | Mobile at (1500,60), 360×700 |
+| 4 | Badge-only labels (no descriptions) |
+| 5 | No duplicate FR/SC codes |
+| 6 | All badges clickable (link to spec.md) |
+| 7 | Color-key legend only (1 row) |
+| 8 | Headers from templates (`<use href>`) |
+| 9 | Light theme: parchment (#e8d4b8) |
+| 10 | 44px touch targets |
+| 11 | User Stories section (compact cards at y=850) |
 
-### SVG Dark Theme Colors
-- Background: gradient `#0f172a` to `#1e293b`
-- Primary: `#8b5cf6` (violet)
-- Accent: `#d946ef` (fuchsia)
-- Panels: `#1e293b`, `#334155`
-- Borders: `#475569`
-- Text: `#fff` (headings), `#94a3b8`/`#cbd5e1` (body), `#64748b` (muted)
+### Pre-Flight (Required Before SVG Generation)
 
-### /wireframe Blocking Checks (MANDATORY)
+```
+SCREENS TO SHOW:
+- STATE 1: [description] - [FR/SC badges]
+- STATE 2: [description] - [FR/SC badges]
 
-**BEFORE writing ANY SVG code**, output these checks with explicit calculations:
+BADGE PLACEMENT (each code ONCE):
+- FR-001 → STATE 1, modal header
+- SC-001 → STATE 3, confirmation
 
-| Check | What to Output |
-|-------|----------------|
-| PRE-FLIGHT | Theme decision with Q1/Q2/Q3 reasoning |
-| TRIAGE | Each issue classified 🟢/🔴 with keywords |
-| CONTAINERS | ALL containers with x,y,w,h,RIGHT,BOTTOM |
-| VERTICAL SPACE | Content inventory with heights + y positions |
-| LABEL PROXIMITY | gap_above >= 2x gap_below for EVERY section label |
-| COLLISION TABLE | Every vertical transition with gap verified |
-| HORIZONTAL FIT | Element widths + container widths |
+USER STORIES (compact cards):
+- US-001: [1-line title] [P0]
+- US-002: [1-line title] [P1]
 
-**If ANY check fails → STOP and recalculate. Do NOT write SVG with failing checks.**
+BLOCKING CHECKS:
+[ ] Each badge appears exactly once
+[ ] User Stories section present (compact)
+[ ] No annotation descriptions
+[ ] Legend is color-key only
+[ ] Headers use <use href> templates
+```
 
-This is not a "do it later if asked" list - these are actual blockers. The /wireframe skill says "You CANNOT write the SVG until you complete this section" - that means OUTPUT THE CHECK FIRST, then write the SVG.
+**User must confirm pre-flight before SVG generation.**
+
+### Requirements Traceability
+
+Full FR/SC/US mapping lives in `docs/design/requirements-trace/NNN-feature.md`, not in wireframes.
 
 ## Implementation Options
 

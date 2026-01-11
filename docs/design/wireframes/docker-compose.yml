@@ -1,0 +1,9 @@
+services:
+  viewer:
+    image: node:20-alpine
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: npx live-server --port=3000 --host=0.0.0.0

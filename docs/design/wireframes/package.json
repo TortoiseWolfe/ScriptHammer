@@ -4,13 +4,6 @@
   "private": true,
   "description": "Interactive wireframe viewer for FirstFrame template",
   "scripts": {
-    "dev": "live-server --port=3000",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "live-server": "^1.2.2"
+    "dev": "echo 'Run from repo root: docker compose up wireframe-viewer'"
   }
 }
