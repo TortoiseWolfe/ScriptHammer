@@ -1,7 +1,120 @@
 # Issues: 03-data-export-deletion.svg
 
-**Status**: 🟢 PATCHABLE
-**Reviewed**: 2026-01-09 (updated)
+**Status**: 🔴 DELETE (consolidate into 02)
+**Reviewed**: 2026-01-10 (G-014: redundant wireframe)
+
+---
+
+## v2 Decision (2026-01-10) - CONSOLIDATE
+
+### G-014: This wireframe is redundant
+
+**Decision**: DELETE this SVG. Consolidate export/delete content into 02-privacy-settings-page.svg.
+
+**Reason**:
+- Export/Delete buttons belong on the Settings page (02)
+- This wireframe uses filler sections ("User Stories Covered", "Key Requirements", "Acceptance Criteria") to pad space
+- Same UI as 02, just different buttons
+
+**Action**:
+1. Add Export/Delete section to 02-privacy-settings-page.svg
+2. Delete 03-data-export-deletion.svg
+3. Update index.html navigation
+
+---
+
+## Previous Issues (for reference when consolidating)
+
+### Issue 11: G-012 "Key Requirements" Duplicates Legend
+
+**Classification**: 🔴 REGENERATE
+
+**Location**: Lines 260-291 "Key Requirements" section
+
+**Problem**: "Key Requirements" section lists FR-016, FR-017, FR-018, SC-005 with descriptions. This DUPLICATES the REQUIREMENTS KEY legend at y=950.
+
+**Rule**: FR/SC codes appear in exactly TWO places:
+1. **INLINE** - as annotations on the UI elements they reference
+2. **REQUIREMENTS KEY legend** (y=950) - provides definitions
+
+**Fix**: Remove "Key Requirements" section. Move FR/SC tags to inline positions on Export/Delete flow elements.
+
+---
+
+### Issue 12: G-013 "Acceptance Criteria" Wrong Terminology
+
+**Classification**: 🔴 REGENERATE
+
+**Location**: Lines 293-306 "Acceptance Criteria" section
+
+**Problem**: Section labeled "Acceptance Criteria" but contains descriptions that should be Success Criteria. Wrong terminology.
+
+**Rule**:
+- **Success Criteria (SC)** = Measurable outcomes from spec.md
+- **Acceptance Scenarios** = BDD Given/When/Then from User Stories (belong in US cards)
+
+**Fix**: Remove "Acceptance Criteria" section entirely. SC codes already in legend.
+
+---
+
+## v1 Fixes (2026-01-10)
+
+### ✅ Issue 7: G-010 Font Sizes - FIXED
+
+**Fix applied**: Changed `.legend-text` from 13px to 14px in CSS `<style>` block.
+
+**Classification**: 🟢 PATCHABLE → ✅ FIXED
+
+---
+
+## CONSISTENCY ISSUES (2026-01-10) - 🟢 PATCHABLE REQUIRED
+
+### Issue 8: Inline FR Tags Missing Blue Pill Badge Pattern
+
+**Classification**: 🟢 PATCHABLE
+
+**Problem**: Inline FR tags in the content area use plain text styling instead of the blue pill badge pattern used in 01-consent-modal-flow.svg.
+
+**Current (WRONG):**
+```xml
+<text class="tag-base fr-tag">FR-016</text>
+```
+
+**Expected (per 01-consent-modal-flow.svg lines 91-96):**
+```xml
+<rect class="annotation-bg"/>
+<a href="...#functional-requirements" target="_blank">
+  <g><rect width="60" height="20" rx="4" fill="#2563eb"/>
+  <text fill="#fff" font-size="11">FR-016</text></g>
+</a>
+<text class="text-muted">Data export (Right of Access)</text>
+```
+
+**Affected inline tags**: FR-016, FR-017, FR-018, SC-005
+
+---
+
+### Issue 9: Inline FR Tags Missing Clickable Links
+
+**Classification**: 🟢 PATCHABLE
+
+**Problem**: Inline FR tags are NOT wrapped in `<a href>` links. Only legend has clickable links.
+
+**Evidence**: Lines 102, 105, 137, 167 have bare `<text>` elements without `<a>` wrapper.
+
+---
+
+### Issue 10: Inline FR Tags Missing Descriptions
+
+**Classification**: 🟢 PATCHABLE
+
+**Problem**: Inline FR tags show only the code (e.g., "FR-016") without the short description that follows in 01's pattern.
+
+**Expected pattern**:
+- FR-016: Data export (Right of Access)
+- FR-017: Data deletion (Right to Erasure)
+- FR-018: Export all local data
+- SC-005: Export <5 seconds
 
 ---
 
@@ -131,6 +244,15 @@
 | G-002 Logo placeholder | Icon | 🟡 CHECK |
 | Mobile icons unverified | Icon | 🟡 CHECK |
 | Label proximity | Layout | 🟡 CHECK |
-| Font sizes too small (G-010) | Style | 🟢 PATCHABLE |
+| Font sizes too small (G-010) | Style | ✅ FIXED (v1) |
+| **Inline tags missing pill badge** | Consistency | 🟢 PATCHABLE |
+| **Inline tags missing `<a href>`** | Consistency | 🟢 PATCHABLE |
+| **Inline tags missing descriptions** | Consistency | 🟢 PATCHABLE |
 
-**Action Required**: 3 structural issues require regeneration; 3 items need verification; 1 patchable.
+**Status**: 🔴 REGENERATION REQUIRED for consistency with 01-consent-modal-flow.svg
+
+**Reference**: See 01-consent-modal-flow.svg lines 91-96, 106-111, 130-135 for correct inline tag pattern.
+
+**Additional fixes during regeneration**:
+- Remove User Stories section (per skill rule: US only in wireframe 01)
+- Use "Success Criteria" not "Acceptance Criteria" terminology

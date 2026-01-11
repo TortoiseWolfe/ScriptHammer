@@ -15,11 +15,12 @@
     }
   },
   "002-cookie-consent": {
-    "status": "partial",
+    "status": "regenerate",
     "svgs": {
-      "01-consent-modal-flow.svg": "regenerating",
-      "02-privacy-settings-page.svg": "issues",
-      "03-data-export-deletion.svg": "issues"
-    }
+      "01-consent-modal-flow.svg": "reference",
+      "02-privacy-settings-page.svg": "regenerate",
+      "03-data-export-deletion.svg": "delete"
+    },
+    "notes": "G-014: Consolidate 03 into 02. Delete 03 after regeneration."
   }
 }

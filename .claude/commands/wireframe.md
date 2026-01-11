@@ -2,6 +2,16 @@
 description: Generate or regenerate ALL SVG wireframes (patches 🟢, regenerates 🔴 and ✅ PASS - never skips files)
 ---
 
+## Output Rules (Token Efficiency)
+
+- NO verbose status confirmations
+- NO repeating back context or instructions
+- Report ONLY: files created/modified, blocking issues found
+- Skip intermediate calculations in output - verify internally
+- Output SVG code directly without preamble
+
+---
+
 ## ⛔ PRE-FLIGHT CHECK (BLOCKING)
 
 ### Theme
@@ -194,6 +204,9 @@ Mobile views are NOT just UI mockups - they document requirements too. If deskto
 - ❌ Abstract diagrams without FR/US/SC content
 - ❌ Missing requirements (user stories, FRs, success criteria)
 - ❌ Sparse layouts - maximize DATA, minimize decoration (Tufte's data-ink ratio)
+- ❌ **G-012**: "Key Requirements" summary section - DUPLICATES the REQUIREMENTS KEY legend. FR/SC codes go INLINE on UI elements + legend ONLY.
+- ❌ **G-013**: "Acceptance Criteria" section - WRONG TERMINOLOGY. Use "Success Criteria" for SC codes. Acceptance scenarios belong in User Story cards, not separate sections.
+- ❌ **G-014**: Redundant wireframes with filler - If you need "Key Requirements", "Acceptance Criteria", or repeated "User Stories" sections to fill space, CONSOLIDATE into fewer SVGs. Each wireframe must show DISTINCT content.
 
 ### Clickable Badge Links (MANDATORY - NEVER ASK)
 
