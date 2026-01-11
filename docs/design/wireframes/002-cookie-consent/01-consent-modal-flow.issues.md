@@ -1,12 +1,142 @@
 # Issues: 01-consent-modal-flow.svg
 
-**Status**: 🟢 PATCHABLE (v11 - 4 issues remaining)
-**Reviewed**: 2026-01-09
-**Regenerated**: 2026-01-09
+**Status**: 🔴 REGENERATE (v12 - 6 new issues, 2 structural)
+**Reviewed**: 2026-01-10
+**Regenerated**: 2026-01-10 (with G-015, G-016 fixes but new systemic failures)
 
 ---
 
-## v11 Issues (2026-01-09)
+## v12 Issues (2026-01-10)
+
+**Context**: SVG regenerated with fixed skill template (G-015, G-016) but multiple systemic failures were introduced. Screenshot review revealed blocking check failures.
+
+### Process Failures (Root Cause)
+
+These blocking checks were NOT performed before writing the SVG:
+
+| Check | Required Output | Performed? |
+|-------|-----------------|------------|
+| COLLISION TABLE | All vertical transitions with gap verified | NO |
+| CONTAINER BOUNDARY VALIDATION | All content ≥50px from container edges | NO |
+| BADGE CLUSTER LAYOUT | Badge widths + gaps calculated | NO |
+| Include Template Injection | Headers from includes/*.svg | NO |
+
+---
+
+### 🔴 Issue 25: Headers NOT Using Include Templates (G-017)
+
+**Location**: Desktop header (lines ~60-90) and Mobile header (lines ~300-340)
+
+**Problem**: Headers are manually drawn simplified versions instead of injecting from include templates.
+
+**Desktop header missing**:
+- Full navigation bar from `includes/header-desktop.svg`
+- Accessibility icon (eye path)
+- Settings icon (gear path)
+- User avatar
+
+**Mobile header missing**:
+- Proper status bar icons from `includes/header-mobile.svg`
+- Hamburger menu path (not rectangle placeholder)
+- Right-side icons
+
+**Root cause**: Did not read include template files and inject content. Drew simplified versions manually.
+
+**Classification**: 🔴 REGENERATE (structural - templates must be injected)
+
+---
+
+### 🔴 Issue 26: User Stories Cramped at Left Edge (G-018)
+
+**Location**: USER STORIES section (lines ~400-500)
+
+**Problem**: User Story cards positioned at x=0 within their transform group, with only 12px internal padding. The P0 priority badge is cut off at the left edge of the container.
+
+**Screenshot evidence**: Orange/red circle highlighting P0 badge cut off at left edge.
+
+**Affected elements**:
+- US-001 card: P0 badge partially outside visible area
+- All 6 US cards have insufficient left margin
+
+**Root cause**: Cards placed at container edge without calculating boundary padding.
+
+**Classification**: 🔴 REGENERATE (layout issue - need proper margins)
+
+---
+
+### 🟢 Issue 27: FR/SC Tags Missing Annotation Containers (G-019)
+
+**Location**: Accessibility panel and Performance panel badge areas
+
+**Problem**: Some FR/SC tags are placed as raw badges without the violet `.annotation-bg` container that distinguishes annotations from UI mockup elements.
+
+**Missing containers on**:
+- FR-023, FR-024, SC-006, SC-007 in Accessibility panel
+- SC-001, SC-002 in Performance panel
+
+**Required**: Every FR/SC tag must have a violet background container (#ede9fe fill, #c4b5fd stroke) behind the badge+text group.
+
+**Classification**: 🟢 PATCHABLE (add annotation containers)
+
+---
+
+### 🟢 Issue 28: FR-023 / SC-006 Collision (G-020)
+
+**Location**: Accessibility panel, badge cluster area
+
+**Problem**: FR-023 badge overlaps with SC-006 badge. Screenshot shows visible collision.
+
+**Measurements needed**:
+- FR-023: x=?, width=?
+- SC-006: x=?, width=?
+- Gap between: negative (collision)
+
+**Root cause**: BADGE CLUSTER LAYOUT not calculated before placement.
+
+**Classification**: 🟢 PATCHABLE (reposition badges)
+
+---
+
+### 🟢 Issue 29: SC-001 / SC-007 Collision (G-020)
+
+**Location**: Performance panel, badge cluster area
+
+**Problem**: SC-001 badge overlaps with SC-007 badge. Screenshot shows visible collision.
+
+**Root cause**: BADGE CLUSTER LAYOUT not calculated before placement.
+
+**Classification**: 🟢 PATCHABLE (reposition badges)
+
+---
+
+### 🟢 Issue 30: FR-005 / FR-008 Cramped (G-020)
+
+**Location**: STATE 2 modal header area
+
+**Problem**: FR-005 and FR-008 badges are cramped together with insufficient gap. Not a full collision but visually too close.
+
+**Root cause**: BADGE CLUSTER LAYOUT not calculated before placement.
+
+**Classification**: 🟢 PATCHABLE (increase gap)
+
+---
+
+## v12 Summary
+
+| Issue | Description | Classification | G-Code |
+|-------|-------------|----------------|--------|
+| 25 | Headers not using include templates | 🔴 REGENERATE | G-017 |
+| 26 | User Stories cramped at left edge | 🔴 REGENERATE | G-018 |
+| 27 | FR/SC tags missing annotation containers | 🟢 PATCHABLE | G-019 |
+| 28 | FR-023 / SC-006 collision | 🟢 PATCHABLE | G-020 |
+| 29 | SC-001 / SC-007 collision | 🟢 PATCHABLE | G-020 |
+| 30 | FR-005 / FR-008 cramped | 🟢 PATCHABLE | G-020 |
+
+**Action**: Run `/wireframe 002:01` to regenerate with proper blocking checks.
+
+---
+
+## v11 Issues (2026-01-09) - HISTORICAL
 
 ### 🔴 Issue 21: FR-004 Container Still Too Small (repeat of Issue 18)
 

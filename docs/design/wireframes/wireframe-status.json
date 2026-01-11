@@ -15,12 +15,11 @@
     }
   },
   "002-cookie-consent": {
-    "status": "regenerate",
+    "status": "draft",
     "svgs": {
-      "01-consent-modal-flow.svg": "reference",
-      "02-privacy-settings-page.svg": "regenerate",
-      "03-data-export-deletion.svg": "delete"
+      "01-consent-modal-flow.svg": "draft",
+      "02-privacy-settings-data-rights.svg": "draft"
     },
-    "notes": "G-014: Consolidate 03 into 02. Delete 03 after regeneration."
+    "notes": "Regenerated 2026-01-10 with fixed skill template (G-015, G-016). Consolidated from 3 SVGs to 2 per G-014."
   }
 }
