@@ -7,3 +7,19 @@ services:
       - .:/app
     working_dir: /app
     command: npx live-server --port=3000 --host=0.0.0.0
+
+  # Wireframe review: takes screenshots + runs validator
+  # Usage: docker compose run review 002
+  review:
+    build:
+      context: .
+      dockerfile: Dockerfile.review
+    volumes:
+      - .:/wireframes:rw
+    # Playwright image runs as pwuser (UID 1000) by default
+    # WSL2 usually handles permissions correctly
+    # If permission issues occur, run: sudo chown -R $USER png/
+    # Pass feature number as argument
+    # Examples:
+    #   docker compose run review 002           # All SVGs in feature
+    #   docker compose run review 002:01        # Single SVG

@@ -1215,6 +1215,8 @@ class IssueLogger:
                 cat = "Layout Issues"
             elif code.startswith('CLUTTER'):
                 cat = "Clutter Issues"
+            elif code.startswith('VIS'):
+                cat = "Visual Issues"
             else:
                 cat = "Other Issues"
 
@@ -1225,7 +1227,8 @@ class IssueLogger:
         # Determine classification (PATCH vs REGENERATE)
         def classify_issue(code: str) -> str:
             """Determine if an issue is PATCH or REGENERATE."""
-            patch_codes = ['C-', 'COLL', 'A-03', 'FONT-001']  # Localized fixes
+            # PATCH: localized fixes that don't require full regeneration
+            patch_codes = ['C-', 'COLL', 'A-03', 'FONT-001', 'VIS-002', 'VIS-006']
             if any(code.startswith(p) for p in patch_codes):
                 return "PATCH"
             return "REGENERATE"

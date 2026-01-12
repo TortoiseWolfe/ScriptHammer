@@ -1,0 +1,35 @@
+# Wireframe Review Docker Image
+# Self-contained: live-server + Playwright + Python validator
+#
+# Usage:
+#   docker compose build review
+#   docker compose run review 002
+
+FROM mcr.microsoft.com/playwright/python:v1.48.0-noble
+
+# Install Node.js for live-server
+RUN apt-get update && apt-get install -y \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install live-server globally
+RUN npm install -g live-server
+
+# Set working directory
+WORKDIR /wireframes
+
+# Copy wireframe files (will be overridden by volume mount in dev)
+COPY . .
+
+# Install Python dependencies (none needed beyond playwright which is pre-installed)
+# The validator uses only standard library
+
+# Install Playwright browsers
+RUN playwright install chromium
+
+# Entrypoint runs the screenshot script
+ENTRYPOINT ["python3", "screenshot-wireframes.py"]
+
+# Default command (feature number)
+CMD ["--help"]
