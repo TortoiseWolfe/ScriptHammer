@@ -26,5 +26,20 @@
       "svg02_errors": 30,
       "known_false_positives": ["G-001 text fills", "HDR-001 inlined templates", "FONT-001 mobile fonts", "ANN-002 callout detection", "BTN-001 tertiary buttons"]
     }
+  },
+  "003-user-authentication": {
+    "status": "reviewed",
+    "svgs": {
+      "01-registration-sign-in.svg": "pass",
+      "02-verification-password-reset.svg": "pass",
+      "03-profile-session-management.svg": "pass"
+    },
+    "notes": "Reviewed 2026-01-12. All 3 wireframes pass validator (0 errors) and visual review. Hash routing fix applied to viewer.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "svg03_errors": 0,
+      "review_date": "2026-01-12"
+    }
   }
 }

@@ -669,6 +669,24 @@
             </a>
           </div>
         </div>
+        <!-- 003-user-authentication -->
+        <div class="nav-section">
+          <h2>003 - User Authentication <span class="shortcut">^5</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="003-user-authentication/01-registration-sign-in.svg">
+              Registration &amp; Sign In
+              <span class="path">Email/Password, OAuth, Sign In</span>
+            </a>
+            <a href="#" data-svg="003-user-authentication/02-verification-password-reset.svg">
+              Verification &amp; Password Reset
+              <span class="path">Email Verification, Recovery Flow</span>
+            </a>
+            <a href="#" data-svg="003-user-authentication/03-profile-session-management.svg">
+              Profile &amp; Session Management
+              <span class="path">Profile Settings, Sessions, Protected Routes</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -916,6 +934,10 @@
       // 002-cookie-consent
       { path: '002-cookie-consent/01-consent-modal-flow.svg', title: 'Cookie Consent Modal Flow' },
       { path: '002-cookie-consent/02-privacy-settings-data-rights.svg', title: 'Privacy Settings & Data Rights' },
+      // 003-user-authentication
+      { path: '003-user-authentication/01-registration-sign-in.svg', title: 'Registration & Sign In' },
+      { path: '003-user-authentication/02-verification-password-reset.svg', title: 'Verification & Password Reset' },
+      { path: '003-user-authentication/03-profile-session-management.svg', title: 'Profile & Session Management' },
     ];
 
     // Category mapping for Shift+F1-F9 navigation
@@ -1496,9 +1518,19 @@
       viewerContainer.classList.remove('dragging');
     });
 
-    // Initialize - start at bookmark or first wireframe
+    // Initialize - check URL hash first, then bookmark, then first wireframe
+    function getInitialPath() {
+      // Check URL hash (e.g., #002-cookie-consent/01-consent-modal-flow.svg)
+      const hash = window.location.hash.slice(1); // Remove leading #
+      if (hash && findIndexByPath(hash) >= 0) {
+        return hash;
+      }
+      // Fall back to default bookmark
+      return DEFAULT_BOOKMARK;
+    }
+
     if (wireframes.length > 0) {
-      updateView(findIndexByPath(DEFAULT_BOOKMARK));
+      updateView(findIndexByPath(getInitialPath()));
     }
   </script>
 </body>
