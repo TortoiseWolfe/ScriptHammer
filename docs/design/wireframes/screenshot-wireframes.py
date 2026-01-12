@@ -317,6 +317,37 @@ def main():
     }, indent=2))
     print(f"\nSummary: {summary_path.relative_to(WIREFRAMES_DIR)}")
 
+    # Fix permissions to match host user
+    fix_permissions(summary_path.parent)
+
+
+def fix_permissions(output_dir: Path):
+    """Fix permissions on output files to match host user.
+
+    Reads HOST_UID and HOST_GID from environment (set by docker-compose).
+    Falls back to 1000:1000 which is typical for WSL2 users.
+    """
+    import os
+
+    host_uid = int(os.environ.get('HOST_UID', 1000))
+    host_gid = int(os.environ.get('HOST_GID', 1000))
+
+    print(f"\nFixing permissions to {host_uid}:{host_gid}...")
+
+    try:
+        # Fix all files and subdirectories
+        for path in output_dir.rglob('*'):
+            os.chown(path, host_uid, host_gid)
+
+        # Fix the output directory itself
+        os.chown(output_dir, host_uid, host_gid)
+
+        print("  Permissions fixed.")
+    except PermissionError as e:
+        print(f"  Warning: Could not fix permissions: {e}")
+    except Exception as e:
+        print(f"  Warning: Permission fix failed: {e}")
+
 
 if __name__ == '__main__':
     main()

@@ -16,9 +16,9 @@ services:
       dockerfile: Dockerfile.review
     volumes:
       - .:/wireframes:rw
-    # Playwright image runs as pwuser (UID 1000) by default
-    # WSL2 usually handles permissions correctly
-    # If permission issues occur, run: sudo chown -R $USER png/
+    environment:
+      - HOST_UID=${UID:-1000}
+      - HOST_GID=${GID:-1000}
     # Pass feature number as argument
     # Examples:
     #   docker compose run review 002           # All SVGs in feature
