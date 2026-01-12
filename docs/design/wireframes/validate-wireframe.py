@@ -1301,8 +1301,10 @@ class IssueLogger:
             feature = issues_file.parent.name
             content = issues_file.read_text()
 
-            # Extract issue codes from the file
-            codes = re.findall(r'\| ([A-Z]+-\d+) \|', content)
+            # Extract validator codes from the Code column (4th column)
+            # Codes look like: FONT-001, G-022, ANN-001, HDR-001, MODAL-001
+            # Using \d{3} to match 3-digit codes and avoid matching auto-generated IDs (F-01, S-01)
+            codes = re.findall(r'\| ([A-Z]+-\d{3}) \|', content)
             for code in codes:
                 if code not in pattern_occurrences:
                     pattern_occurrences[code] = set()

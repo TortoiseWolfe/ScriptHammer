@@ -17,7 +17,7 @@
 | G-007 | User story font too small (12px) | Use minimum 13px for `.us-narrative` readability | User Stories Section |
 | G-008 | Mobile views missing requirement tags | Every FR/SC/US on desktop MUST appear on mobile too | Mobile Annotation Parity |
 | G-009 | Requirement tags blend with UI buttons | Use distinct colors: FR=blue, SC=orange, US=cyan with HIGH contrast | Tag Color Distinction |
-| G-010 | Body text classes at 13px (minimum) instead of 14px (target) | `.legend-text`, `.us-narrative` should be 14px, not 13px | Typography hierarchy |
+| G-010 | Body text classes at 13px (minimum) instead of 14px (target) | `.legend-text`, `.us-narrative` should be 14px, not 13px | Typography hierarchy (validator: FONT-001) |
 | G-011 | Annotations placed at container edge bleed outside | Keep content ≥50px from container bottom; account for rounded corners | Container Boundary Validation |
 | G-012 | "Key Requirements" section duplicates REQUIREMENTS KEY legend | FR/SC codes appear INLINE on UI elements only; legend provides definitions; NO separate summary section | Requirements Legend Panel |
 | G-013 | Using "Acceptance Criteria" instead of "Success Criteria" | Use "Success Criteria" consistently; SC codes are Success Criteria from spec.md | Terminology Consistency |
@@ -31,7 +31,11 @@
 | G-022 | Missing canvas background gradient | Canvas MUST have `#c7ddf5` → `#b8d4f0` gradient, not solid parchment | Background Gradient |
 | G-024 | Missing title block | MUST have centered title at y=28: "FEATURE - PAGE NAME" | Title Block |
 | G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at y=1060, 18px bold | Signature Block |
-| G-026 | No numbered callouts on mockups | Red circles ①②③④ MUST appear ON mockup UI elements | v4 Callout System |
+| G-026 | No numbered callouts on mockups | Red circles ①②③④ MUST appear ON mockup UI elements | v4 Callout System (validator: ANN-002, G-026) |
+| G-030 | Annotation groups clustered instead of distributed | Use 4-column grid: x=20, 470, 920, 1370. One group per column. | Annotation Column Distribution |
+| G-031 | Callout circle placed ON TOP of UI element | Place callout 10-20px ADJACENT to element, never covering it | Callout Placement |
+| G-032 | Desktop UI cramped to left, wasting right side | Center content; 2 panels=640px each, 3 states=420px each | Desktop Space Usage |
+| G-033 | Callouts at random Y positions when alignment possible | Align callouts highlighting same row to shared Y coordinate | Callout Grid Alignment |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -359,6 +363,11 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-12 | G-025 | 002:01 review - missing signature block |
 | 2026-01-12 | G-026 | 002:01 review - no numbered callouts on mockups |
 | 2026-01-12 | DEMOTED | G-019, G-023, G-027, G-028, G-029 → feature-specific (only seen once) |
+| 2026-01-12 | ESCALATED | FONT-001 → G-010, ANN-002 → G-026 (seen in 2+ features) |
+| 2026-01-12 | G-030 | 003:01 review - annotation groups clustered to left, not distributed |
+| 2026-01-12 | G-031 | 003:01 review - callout ③ blocking GitHub button |
+| 2026-01-12 | G-032 | 003:01 review - desktop UI cramped left, wasting right side |
+| 2026-01-12 | G-033 | 003:01 review - callouts at random Y positions, not aligned |
 
 ---
 
@@ -439,3 +448,163 @@ Place include `<use>` elements in this order:
 ### For Modals Specifically
 
 When a modal has an overlay, the footer should still be visible at the bottom of the viewport. Place the footer `<use>` AFTER the modal group closes.
+
+---
+
+## Annotation Column Distribution (G-030)
+
+**Problem**: User story groups in annotation panel clustered to one side instead of evenly distributed.
+
+### Bad Example (003:01)
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ① Email Registration  ② User Sign In  ③ OAuth  ④ Security               │
+│ [all badges]          [badges]        [badges] [badges]                 │
+│                                                                         │
+│ ← Everything crammed left, right side empty →                           │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Good Example (002:01)
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ① First Visit       │ ② Granular Control │ ③ Persistence  │ ④ Update   │
+│ [badges]            │ [badges]           │ [badges]       │ [badges]   │
+│                     │                    │                │            │
+│ x=20                │ x=470              │ x=920          │ x=1370     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Rule
+
+| Groups | Distribution |
+|--------|--------------|
+| 4 groups | One per column (x=20, 470, 920, 1370) |
+| 3 groups | Columns 1, 2, 3 (leave 4 empty or span) |
+| 2 groups | Columns 1-2 and 3-4 (480px each) |
+| 5+ groups | Two rows, distribute evenly |
+
+**Column width**: 450px each with 20px gaps.
+
+---
+
+## Callout Must Not Block UI (G-031)
+
+**Problem**: Callout circles placed directly ON TOP of the UI element they reference, hiding it from view.
+
+### Bad Example (003:01)
+```
+┌─────────────────────────────────┐
+│  Sign up with GitHub            │  ← Button hidden
+│         ③                       │  ← Callout ON TOP of button
+└─────────────────────────────────┘
+```
+
+### Good Example
+```
+┌─────────────────────────────────┐
+│  Sign up with GitHub            │③ ← Callout adjacent (10px offset)
+└─────────────────────────────────┘
+```
+
+### Placement Philosophy
+
+**Callouts are SUPPORTIVE** - they follow the UI, don't lead it.
+
+| Priority | Position | When to use |
+|----------|----------|-------------|
+| 1st | RIGHT of element | Default - follows reading flow |
+| 2nd | BELOW element | When right side is crowded |
+| NEVER | LEFT or ABOVE | Takes visual priority from UI |
+
+### Placement Rules by Element
+
+| Element Type | Callout Position | Offset |
+|--------------|------------------|--------|
+| Button | RIGHT side, vertically centered | 10px from edge |
+| Input field | RIGHT side, vertically centered | 10px from edge |
+| Toggle | RIGHT side | 10px from toggle |
+| Panel/Card | RIGHT edge or BOTTOM-RIGHT corner | Inside panel border |
+
+**NEVER place callout where it:**
+- Leads the element (left/above)
+- Obscures button text, input content, or toggle state
+- Takes visual priority from UI
+
+---
+
+## Desktop Content Centering (G-032)
+
+**Problem**: UI content crammed to left side of 1280px desktop mockup, leaving right side empty.
+
+### Bad Example (003:01)
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────┐ ┌──────────┐                                             │
+│  │ Register │ │ Sign In  │                   (empty space)             │
+│  │  form    │ │  form    │                                             │
+│  └──────────┘ └──────────┘                                             │
+│  x=60        x=380        x=700+  ← wasted                             │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Good Example
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│         ┌──────────────┐              ┌──────────────┐                 │
+│         │   Register   │              │   Sign In    │                 │
+│         │     form     │              │     form     │                 │
+│         └──────────────┘              └──────────────┘                 │
+│         x=80, w=540                   x=660, w=540                     │
+│              ← 20px gap →                                              │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### Width Calculations (1280px desktop)
+
+| Panels | Width Each | Gap | Margin |
+|--------|------------|-----|--------|
+| 1 panel | 800px centered | - | 240px each side |
+| 2 panels | 600px each | 40px | 20px each side |
+| 3 panels | 400px each | 20px | 20px each side |
+
+**Formula**: `(1280 - margins - gaps) / panels = panel_width`
+
+---
+
+## Callout Grid Alignment (G-033)
+
+**Problem**: Callouts scattered at random Y positions when they highlight elements on the same row.
+
+### Bad Example (003:01) - Y positions scattered
+```
+   ┌────────┐          ┌────────┐
+   │ Panel  │①         │ Panel  │
+   └────────┘          └────────┘②   ← ① and ② at different Y positions
+```
+
+### Good Example - Y aligned, RIGHT of elements
+```
+   ┌────────┐          ┌────────┐
+   │ Panel  │①         │ Panel  │②   ← Both at same Y (right side of panels)
+   └────────┘          └────────┘
+```
+
+### Alignment Rules
+
+1. **Header row callouts**: All at y=header_bottom + 10px
+2. **Form field callouts**: Align to field's vertical center
+3. **Button callouts**: Align to button's vertical center
+4. **Footer callouts**: All at y=footer_top - 10px
+
+### Grid Positions (common Y values)
+
+| Zone | Y Position | Purpose |
+|------|------------|---------|
+| Header | y=100 | Navigation, settings, user actions |
+| Content top | y=200 | First row of content |
+| Content mid | y=400 | Middle content area |
+| Content bottom | y=600 | Last row before footer |
+| Footer | y=700 | Footer elements |
+
+**Exception**: When elements being highlighted are at different Y positions, callouts should still follow the element - but try to design UI with aligned elements first.

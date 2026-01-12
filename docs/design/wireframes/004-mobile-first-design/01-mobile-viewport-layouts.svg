@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE with text-anchor="middle" -->
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">MOBILE-FIRST DESIGN - VIEWPORT LAYOUTS</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP MOCKUP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Title: Mobile Viewport Comparison -->
+    <text x="640" y="80" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="20" font-weight="bold" fill="#374151">Mobile Viewport Width Comparison</text>
+
+    <!-- 4 Phone Frames showing different widths -->
+    <!-- Frame 1: 320px (iPhone SE) -->
+    <g transform="translate(60, 100)">
+      <rect width="200" height="400" rx="20" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+      <text x="100" y="-10" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">320px</text>
+      <text x="100" y="8" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">iPhone SE</text>
+      <!-- Status bar -->
+      <rect x="10" y="10" width="180" height="24" rx="4" fill="#e8d4b8"/>
+      <!-- Nav header - compact -->
+      <rect x="10" y="38" width="180" height="44" rx="4" fill="#f5f0e6"/>
+      <rect x="16" y="46" width="28" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="30" y="65" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6" font-weight="bold">H</text>
+      <rect x="50" y="50" width="80" height="20" rx="4" fill="#dcc8a8"/>
+      <rect x="136" y="46" width="28" height="28" rx="4" fill="#8b5cf6"/>
+      <rect x="146" y="50" width="8" height="20" rx="2" fill="#f5f0e6"/>
+      <!-- Content area -->
+      <rect x="10" y="90" width="180" height="260" rx="4" fill="#f5f0e6"/>
+      <rect x="20" y="100" width="160" height="16" rx="2" fill="#dcc8a8"/>
+      <rect x="20" y="124" width="140" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="146" width="155" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="168" width="120" height="14" rx="2" fill="#e8d4b8"/>
+      <!-- Bottom nav -->
+      <rect x="10" y="356" width="180" height="34" rx="4" fill="#dcc8a8"/>
+    </g>
+
+    <!-- Frame 2: 375px (iPhone 13 Mini) -->
+    <g transform="translate(320, 100)">
+      <rect width="220" height="400" rx="20" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+      <text x="110" y="-10" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">375px</text>
+      <text x="110" y="8" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">iPhone Mini</text>
+      <!-- Status bar -->
+      <rect x="10" y="10" width="200" height="24" rx="4" fill="#e8d4b8"/>
+      <!-- Nav header -->
+      <rect x="10" y="38" width="200" height="44" rx="4" fill="#f5f0e6"/>
+      <rect x="16" y="46" width="32" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="32" y="65" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6" font-weight="bold">H</text>
+      <rect x="54" y="50" width="100" height="20" rx="4" fill="#dcc8a8"/>
+      <rect x="160" y="46" width="32" height="28" rx="4" fill="#8b5cf6"/>
+      <!-- Content area -->
+      <rect x="10" y="90" width="200" height="260" rx="4" fill="#f5f0e6"/>
+      <rect x="20" y="100" width="180" height="18" rx="2" fill="#dcc8a8"/>
+      <rect x="20" y="126" width="160" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="148" width="175" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="170" width="140" height="14" rx="2" fill="#e8d4b8"/>
+      <!-- Bottom nav -->
+      <rect x="10" y="356" width="200" height="34" rx="4" fill="#dcc8a8"/>
+    </g>
+
+    <!-- Frame 3: 390px (iPhone 12/13/14) -->
+    <g transform="translate(600, 100)">
+      <rect width="240" height="400" rx="20" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+      <text x="120" y="-10" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">390px</text>
+      <text x="120" y="8" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">iPhone 12-14</text>
+      <!-- Status bar -->
+      <rect x="10" y="10" width="220" height="24" rx="4" fill="#e8d4b8"/>
+      <!-- Nav header -->
+      <rect x="10" y="38" width="220" height="44" rx="4" fill="#f5f0e6"/>
+      <rect x="16" y="46" width="36" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="34" y="65" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6" font-weight="bold">H</text>
+      <rect x="58" y="50" width="120" height="20" rx="4" fill="#dcc8a8"/>
+      <rect x="184" y="46" width="36" height="28" rx="4" fill="#8b5cf6"/>
+      <!-- Content area -->
+      <rect x="10" y="90" width="220" height="260" rx="4" fill="#f5f0e6"/>
+      <rect x="20" y="100" width="200" height="20" rx="2" fill="#dcc8a8"/>
+      <rect x="20" y="128" width="180" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="150" width="195" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="172" width="160" height="14" rx="2" fill="#e8d4b8"/>
+      <!-- Code block with internal scroll indicator -->
+      <rect x="20" y="200" width="200" height="80" rx="4" fill="#374151"/>
+      <rect x="30" y="210" width="120" height="14" rx="2" fill="#4b5563"/>
+      <rect x="30" y="230" width="150" height="14" rx="2" fill="#4b5563"/>
+      <rect x="30" y="250" width="100" height="14" rx="2" fill="#4b5563"/>
+      <!-- Scroll indicator -->
+      <rect x="202" y="210" width="8" height="40" rx="4" fill="#6b7280"/>
+      <!-- Bottom nav -->
+      <rect x="10" y="356" width="220" height="34" rx="4" fill="#dcc8a8"/>
+    </g>
+
+    <!-- Frame 4: 428px (iPhone 14 Pro Max) -->
+    <g transform="translate(900, 100)">
+      <rect width="260" height="400" rx="20" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+      <text x="130" y="-10" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">428px</text>
+      <text x="130" y="8" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">iPhone Pro Max</text>
+      <!-- Status bar -->
+      <rect x="10" y="10" width="240" height="24" rx="4" fill="#e8d4b8"/>
+      <!-- Nav header - full size -->
+      <rect x="10" y="38" width="240" height="44" rx="4" fill="#f5f0e6"/>
+      <rect x="16" y="46" width="44" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="38" y="65" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6" font-weight="bold">H</text>
+      <rect x="66" y="50" width="130" height="20" rx="4" fill="#dcc8a8"/>
+      <rect x="202" y="46" width="44" height="28" rx="4" fill="#8b5cf6"/>
+      <!-- Content area -->
+      <rect x="10" y="90" width="240" height="260" rx="4" fill="#f5f0e6"/>
+      <rect x="20" y="100" width="220" height="22" rx="2" fill="#dcc8a8"/>
+      <rect x="20" y="130" width="200" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="152" width="215" height="14" rx="2" fill="#e8d4b8"/>
+      <rect x="20" y="174" width="180" height="14" rx="2" fill="#e8d4b8"/>
+      <!-- Bottom nav -->
+      <rect x="10" y="356" width="240" height="34" rx="4" fill="#dcc8a8"/>
+    </g>
+
+    <!-- Touch Target Diagram -->
+    <g transform="translate(1180, 100)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Touch Targets</text>
+      <!-- 44x44 target box -->
+      <rect x="0" y="20" width="44" height="44" rx="4" fill="#8b5cf6" stroke="#6b21a8" stroke-width="2"/>
+      <text x="22" y="48" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6" font-weight="bold">44</text>
+      <text x="50" y="48" font-family="system-ui, sans-serif" font-size="14" fill="#374151">x 44px min</text>
+      <!-- Spacing indicator -->
+      <rect x="0" y="80" width="44" height="44" rx="4" fill="#8b5cf6"/>
+      <rect x="0" y="80" width="8" height="44" fill="#22c55e" opacity="0.5"/>
+      <rect x="52" y="80" width="44" height="44" rx="4" fill="#8b5cf6"/>
+      <text x="48" y="108" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">8px</text>
+    </g>
+
+    <!-- Breakpoints Legend -->
+    <g transform="translate(60, 540)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Breakpoint Strategy</text>
+      <rect x="0" y="20" width="200" height="30" rx="4" fill="#8b5cf6"/>
+      <text x="100" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6">Mobile: 320-767px</text>
+      <rect x="210" y="20" width="200" height="30" rx="4" fill="#d946ef"/>
+      <text x="310" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6">Tablet: 768-1023px</text>
+      <rect x="420" y="20" width="200" height="30" rx="4" fill="#0891b2"/>
+      <text x="520" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#f5f0e6">Desktop: 1024px+</text>
+    </g>
+
+    <!-- Typography scale note -->
+    <g transform="translate(60, 620)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">
+        Body text: 16px min | Headings: 60-75% of desktop | Line-height: 1.5
+      </text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- DESKTOP CALLOUTS - positioned outside UI elements, to their right -->
+  <g id="desktop-callouts">
+    <!-- Callout 1: Navigation scaling (right of first phone frame) -->
+    <circle cx="310" cy="220" r="14" fill="#dc2626"/>
+    <text x="310" y="225" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+    <!-- Callout 2: Code block with scroll (right of third phone frame) -->
+    <circle cx="890" cy="360" r="14" fill="#dc2626"/>
+    <text x="890" y="365" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+    <!-- Callout 3: Touch targets diagram -->
+    <circle cx="1260" cy="180" r="14" fill="#dc2626"/>
+    <text x="1260" y="185" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+    <!-- Callout 4: Breakpoint strategy -->
+    <circle cx="720" cy="620" r="14" fill="#dc2626"/>
+    <text x="720" y="625" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+  </g>
+
+  <!-- MOBILE MOCKUP (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Page Title -->
+    <text x="180" y="100" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="18" font-weight="bold" fill="#374151">390px Viewport</text>
+
+    <!-- Content Panel -->
+    <rect x="16" y="120" width="328" height="480" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Navigation bar demo -->
+    <rect x="24" y="130" width="312" height="50" rx="6" fill="#dcc8a8"/>
+    <rect x="32" y="140" width="44" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="54" y="160" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#f5f0e6" font-weight="bold">H</text>
+    <rect x="84" y="145" width="160" height="20" rx="4" fill="#e8d4b8"/>
+    <rect x="252" y="140" width="44" height="30" rx="4" fill="#8b5cf6"/>
+    <rect x="266" y="148" width="16" height="14" rx="2" fill="#f5f0e6"/>
+
+    <!-- Content text -->
+    <text x="32" y="210" font-family="system-ui, sans-serif"
+          font-size="16" font-weight="bold" fill="#374151">Readable Content</text>
+    <text x="32" y="234" font-family="system-ui, sans-serif"
+          font-size="14" fill="#4b5563">Body text at 16px minimum</text>
+    <text x="32" y="254" font-family="system-ui, sans-serif"
+          font-size="14" fill="#4b5563">Line-height 1.5 for readability</text>
+
+    <!-- Touch target demo -->
+    <text x="32" y="300" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Touch Targets</text>
+    <rect x="32" y="315" width="120" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="92" y="342" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#f5f0e6" font-weight="bold">Primary Action</text>
+    <rect x="168" y="315" width="120" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="228" y="342" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#8b5cf6" font-weight="bold">Secondary</text>
+
+    <!-- Code block with scroll -->
+    <text x="32" y="400" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Code Block (overflow-x: auto)</text>
+    <rect x="32" y="415" width="280" height="80" rx="4" fill="#374151"/>
+    <rect x="42" y="425" width="180" height="14" rx="2" fill="#4b5563"/>
+    <rect x="42" y="445" width="240" height="14" rx="2" fill="#4b5563"/>
+    <rect x="42" y="465" width="160" height="14" rx="2" fill="#4b5563"/>
+    <!-- Scroll indicator -->
+    <rect x="290" y="425" width="12" height="50" rx="6" fill="#6b7280"/>
+
+    <!-- Breakpoint indicator -->
+    <rect x="32" y="520" width="280" height="34" rx="6" fill="#8b5cf6"/>
+    <text x="172" y="542" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#f5f0e6" font-weight="bold">Mobile: 320-767px</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- MOBILE CALLOUTS - positioned outside the mobile viewport -->
+  <g id="mobile-callouts">
+    <!-- Callout 1: Nav bar -->
+    <circle cx="1740" cy="215" r="14" fill="#dc2626"/>
+    <text x="1740" y="220" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+    <!-- Callout 2: Readable content -->
+    <circle cx="1740" cy="290" r="14" fill="#dc2626"/>
+    <text x="1740" y="295" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+    <!-- Callout 3: Touch targets -->
+    <circle cx="1740" cy="395" r="14" fill="#dc2626"/>
+    <text x="1740" y="400" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+    <!-- Callout 4: Breakpoint -->
+    <circle cx="1740" cy="597" r="14" fill="#dc2626"/>
+    <text x="1740" y="602" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: Group 1 Viewport-Safe Navigation -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Viewport-Safe Navigation</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">As a mobile user, I need navigation</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">to fit without horizontal scrolling.</text>
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-002</text></a>
+      <a href="#FR-004"><rect x="223" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-004</text></a>
+      <a href="#SC-001"><rect x="284" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="311" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-001</text></a>
+    </g>
+
+    <!-- Column 2: Group 2 Readable Content -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Readable Content</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">As a mobile user, I need text to be</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">comfortably readable without zooming.</text>
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-002</text></a>
+      <a href="#FR-006"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-006</text></a>
+      <a href="#FR-008"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-008</text></a>
+      <a href="#FR-014"><rect x="223" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-014</text></a>
+      <a href="#SC-004"><rect x="284" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="311" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-004</text></a>
+    </g>
+
+    <!-- Column 3: Group 3 Touch-Friendly Interactions -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Touch-Friendly Interactions</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">As a mobile user, I need to accurately</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">tap elements without hitting adjacent.</text>
+      <!-- Badges -->
+      <a href="#US-003"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-003</text></a>
+      <a href="#FR-020"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-020</text></a>
+      <a href="#FR-021"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-021</text></a>
+      <a href="#SC-002"><rect x="223" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-002</text></a>
+      <a href="#SC-003"><rect x="284" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="311" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-003</text></a>
+    </g>
+
+    <!-- Column 4: Group 4 Consistent Mobile Experience -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Consistent Mobile Experience</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">As a mobile user, I need purpose-built</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">mobile layouts, not scaled-down desktop.</text>
+      <!-- Badges -->
+      <a href="#US-004"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-004</text></a>
+      <a href="#FR-011"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-011</text></a>
+      <a href="#FR-017"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-017</text></a>
+      <a href="#FR-018"><rect x="223" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-018</text></a>
+      <a href="#SC-008"><rect x="284" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="311" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-008</text></a>
+    </g>
+  </g>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    004:01 | Mobile-First Design | ScriptHammer
+  </text>
+</svg>

@@ -52,12 +52,14 @@ VIEWPORT_WIDTH = 3840  # 2x native 1920
 VIEWPORT_HEIGHT = 2160  # 2x native 1080
 SCREENSHOT_TIMEOUT = 10000  # ms
 
-# Quadrant definitions (at 200% zoom, these are the viewport positions)
+# Quadrant definitions - pan offsets to show each region at 200% zoom
+# At zoom=2, the SVG (1920x1080) becomes 3840x2160, filling the viewport
+# Pan values shift the view to center each quadrant
 QUADRANTS = {
-    'tl': {'x': 0, 'y': 0},           # Top-left
-    'tr': {'x': 1920, 'y': 0},        # Top-right (half of 3840)
-    'bl': {'x': 0, 'y': 1080},        # Bottom-left (half of 2160)
-    'br': {'x': 1920, 'y': 1080},     # Bottom-right
+    'tl': {'zoom': 2, 'panX': 960, 'panY': 540},     # Top-left
+    'tr': {'zoom': 2, 'panX': -960, 'panY': 540},    # Top-right
+    'bl': {'zoom': 2, 'panX': 960, 'panY': -540},    # Bottom-left
+    'br': {'zoom': 2, 'panX': -960, 'panY': -540},   # Bottom-right
 }
 
 
@@ -149,20 +151,19 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     print(f"    Saved: overview.png")
 
     # Quadrant screenshots at 200% zoom
-    # First, zoom in by scrolling or using keyboard
-    page.keyboard.press('+')  # Zoom in
-    page.keyboard.press('+')  # Zoom in more
-    page.wait_for_timeout(500)
-
-    for quadrant_name, position in QUADRANTS.items():
-        # Scroll to quadrant position
-        page.evaluate(f"window.scrollTo({position['x']}, {position['y']})")
+    # Use window.setViewerState() API exposed by the viewer
+    for quadrant_name, settings in QUADRANTS.items():
+        # Set zoom and pan via the viewer's exposed API
+        page.evaluate(f"window.setViewerState({settings['zoom']}, {settings['panX']}, {settings['panY']})")
         page.wait_for_timeout(300)
 
         quadrant_path = output_dir / f'quadrant-{quadrant_name}.png'
         page.screenshot(path=str(quadrant_path), full_page=False)
         screenshots[f'quadrant_{quadrant_name}'] = str(quadrant_path.relative_to(WIREFRAMES_DIR))
         print(f"    Saved: quadrant-{quadrant_name}.png")
+
+    # Reset zoom/pan for next SVG (re-enables automatic fitToView)
+    page.evaluate("window.resetViewerState()")
 
     return screenshots
 

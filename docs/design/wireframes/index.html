@@ -1388,8 +1388,23 @@
       zoomOutBtn.disabled = zoom <= ZOOM_MIN;
     }
 
+    // Expose API for screenshot tool (Playwright can't access let/const variables)
+    let manualZoomActive = false;
+    window.setViewerState = function(newZoom, newPanX, newPanY) {
+      manualZoomActive = true; // Prevent fitToView from overriding
+      zoom = newZoom;
+      panX = newPanX;
+      panY = newPanY;
+      updateTransform();
+    };
+    window.resetViewerState = function() {
+      manualZoomActive = false;
+      fitToView();
+    };
+
     // Fit SVG to available viewport with minimal margins
     function fitToView() {
+      if (manualZoomActive) return; // Don't override screenshot tool's zoom
       const svg = viewer.querySelector('svg');
       if (!svg) return;
 

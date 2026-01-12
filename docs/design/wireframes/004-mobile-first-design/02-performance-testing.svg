@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE with text-anchor="middle" -->
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">MOBILE-FIRST DESIGN - PERFORMANCE AND TESTING</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP MOCKUP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Title: Core Web Vitals Dashboard -->
+    <text x="640" y="80" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="20" font-weight="bold" fill="#374151">Core Web Vitals Dashboard</text>
+
+    <!-- Performance Metrics Panel -->
+    <g transform="translate(60, 100)">
+      <rect width="560" height="280" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Performance Metrics</text>
+
+      <!-- LCP Metric -->
+      <g transform="translate(20, 50)">
+        <rect width="160" height="80" rx="6" fill="#22c55e"/>
+        <text x="80" y="30" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#f5f0e6">LCP</text>
+        <text x="80" y="55" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="24" font-weight="bold" fill="#f5f0e6">1.8s</text>
+        <text x="80" y="72" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#f5f0e6">Target: &lt;2.5s</text>
+      </g>
+
+      <!-- FID Metric -->
+      <g transform="translate(200, 50)">
+        <rect width="160" height="80" rx="6" fill="#22c55e"/>
+        <text x="80" y="30" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#f5f0e6">FID</text>
+        <text x="80" y="55" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="24" font-weight="bold" fill="#f5f0e6">45ms</text>
+        <text x="80" y="72" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#f5f0e6">Target: &lt;100ms</text>
+      </g>
+
+      <!-- CLS Metric -->
+      <g transform="translate(380, 50)">
+        <rect width="160" height="80" rx="6" fill="#22c55e"/>
+        <text x="80" y="30" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#f5f0e6">CLS</text>
+        <text x="80" y="55" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="24" font-weight="bold" fill="#f5f0e6">0.05</text>
+        <text x="80" y="72" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#f5f0e6">Target: &lt;0.1</text>
+      </g>
+
+      <!-- Additional Metrics Row - height 65 to avoid button detection -->
+      <g transform="translate(20, 150)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="125" y="25" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Time to Interactive</text>
+        <text x="125" y="50" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="18" font-weight="bold" fill="#22c55e">3.2s on 3G</text>
+      </g>
+
+      <g transform="translate(290, 150)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="125" y="25" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Page Weight</text>
+        <text x="125" y="50" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="18" font-weight="bold" fill="#22c55e">780KB / 1MB</text>
+      </g>
+
+      <!-- Performance bar -->
+      <g transform="translate(20, 235)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Overall Score: 92/100</text>
+        <rect x="150" y="0" width="380" height="20" rx="4" fill="#f5f0e6"/>
+        <rect x="150" y="0" width="350" height="20" rx="4" fill="#22c55e"/>
+      </g>
+    </g>
+
+    <!-- Test Automation Panel -->
+    <g transform="translate(660, 100)">
+      <rect width="560" height="280" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Automated Testing</text>
+
+      <!-- Horizontal Scroll Test - height 65 to avoid button detection -->
+      <g transform="translate(20, 50)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <rect x="8" y="10" width="44" height="44" rx="4" fill="#22c55e"/>
+        <text x="30" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="20" fill="#f5f0e6" font-weight="bold">✓</text>
+        <text x="70" y="30" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Horizontal Scroll</text>
+        <text x="70" y="50" font-family="system-ui, sans-serif"
+              font-size="14" fill="#4b5563">0 violations detected</text>
+      </g>
+
+      <!-- Touch Target Test -->
+      <g transform="translate(290, 50)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <rect x="8" y="10" width="44" height="44" rx="4" fill="#22c55e"/>
+        <text x="30" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="20" fill="#f5f0e6" font-weight="bold">✓</text>
+        <text x="70" y="30" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Touch Targets</text>
+        <text x="70" y="50" font-family="system-ui, sans-serif"
+              font-size="14" fill="#4b5563">All 44x44px minimum</text>
+      </g>
+
+      <!-- Visual Regression Test -->
+      <g transform="translate(20, 135)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <rect x="8" y="10" width="44" height="44" rx="4" fill="#22c55e"/>
+        <text x="30" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="20" fill="#f5f0e6" font-weight="bold">✓</text>
+        <text x="70" y="30" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Visual Regression</text>
+        <text x="70" y="50" font-family="system-ui, sans-serif"
+              font-size="14" fill="#4b5563">Baselines match</text>
+      </g>
+
+      <!-- Viewport Tests -->
+      <g transform="translate(290, 135)">
+        <rect width="250" height="65" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <rect x="8" y="10" width="44" height="44" rx="4" fill="#22c55e"/>
+        <text x="30" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="20" fill="#f5f0e6" font-weight="bold">✓</text>
+        <text x="70" y="30" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">Viewport Widths</text>
+        <text x="70" y="50" font-family="system-ui, sans-serif"
+              font-size="14" fill="#4b5563">320, 375, 390, 428px</text>
+      </g>
+
+      <!-- Test summary -->
+      <g transform="translate(20, 220)">
+        <rect width="520" height="44" rx="6" fill="#22c55e"/>
+        <text x="260" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="bold" fill="#f5f0e6">All 24 Mobile Tests Passing</text>
+      </g>
+    </g>
+
+    <!-- Loading Sequence Visualization -->
+    <g transform="translate(60, 400)">
+      <text x="0" y="0" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Progressive Loading Sequence</text>
+
+      <!-- Stage 1: Shell -->
+      <g transform="translate(0, 30)">
+        <rect width="180" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="90" y="20" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">0-500ms</text>
+        <rect x="20" y="40" width="140" height="20" rx="4" fill="#8b5cf6"/>
+        <rect x="20" y="70" width="140" height="65" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="90" y="110" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#4b5563">App Shell</text>
+        <text x="90" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Header + Layout</text>
+      </g>
+
+      <!-- Arrow -->
+      <g transform="translate(190, 100)">
+        <rect x="0" y="0" width="40" height="4" fill="#8b5cf6"/>
+        <polygon points="40,0 50,2 40,4" fill="#8b5cf6"/>
+      </g>
+
+      <!-- Stage 2: Content -->
+      <g transform="translate(250, 30)">
+        <rect width="180" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="90" y="20" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">500ms-1.5s</text>
+        <rect x="20" y="40" width="140" height="20" rx="4" fill="#8b5cf6"/>
+        <rect x="20" y="70" width="140" height="65" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+        <rect x="30" y="80" width="120" height="14" rx="2" fill="#e8d4b8"/>
+        <rect x="30" y="100" width="100" height="14" rx="2" fill="#e8d4b8"/>
+        <text x="90" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Text Content</text>
+      </g>
+
+      <!-- Arrow -->
+      <g transform="translate(440, 100)">
+        <rect x="0" y="0" width="40" height="4" fill="#8b5cf6"/>
+        <polygon points="40,0 50,2 40,4" fill="#8b5cf6"/>
+      </g>
+
+      <!-- Stage 3: Images -->
+      <g transform="translate(500, 30)">
+        <rect width="180" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="90" y="20" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#374151">1.5s-2.5s</text>
+        <rect x="20" y="40" width="140" height="20" rx="4" fill="#8b5cf6"/>
+        <rect x="20" y="70" width="65" height="65" rx="4" fill="#0891b2"/>
+        <rect x="95" y="70" width="70" height="14" rx="2" fill="#e8d4b8"/>
+        <rect x="95" y="90" width="60" height="14" rx="2" fill="#e8d4b8"/>
+        <rect x="95" y="110" width="55" height="14" rx="2" fill="#e8d4b8"/>
+        <text x="90" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Images + Media</text>
+      </g>
+
+      <!-- Arrow -->
+      <g transform="translate(690, 100)">
+        <rect x="0" y="0" width="40" height="4" fill="#8b5cf6"/>
+        <polygon points="40,0 50,2 40,4" fill="#8b5cf6"/>
+      </g>
+
+      <!-- Stage 4: Interactive -->
+      <g transform="translate(750, 30)">
+        <rect width="180" height="160" rx="8" fill="#22c55e" stroke="#16a34a"/>
+        <text x="90" y="20" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold" fill="#f5f0e6">2.5s+ TTI</text>
+        <rect x="20" y="40" width="140" height="20" rx="4" fill="#8b5cf6"/>
+        <rect x="20" y="70" width="65" height="65" rx="4" fill="#0891b2"/>
+        <rect x="95" y="70" width="70" height="14" rx="2" fill="#f5f0e6"/>
+        <rect x="95" y="90" width="60" height="14" rx="2" fill="#f5f0e6"/>
+        <rect x="95" y="110" width="70" height="20" rx="4" fill="#8b5cf6"/>
+        <text x="90" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="14" fill="#f5f0e6">Fully Interactive</text>
+      </g>
+    </g>
+
+    <!-- CLS Indicator -->
+    <g transform="translate(1000, 400)">
+      <text x="0" y="0" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Layout Shift Prevention</text>
+      <rect x="0" y="30" width="200" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="100" y="60" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Reserved Space</text>
+      <rect x="20" y="80" width="160" height="80" rx="4" fill="#e8d4b8" stroke="#b8a080" stroke-dasharray="4"/>
+      <text x="100" y="125" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Image placeholder</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- DESKTOP CALLOUTS -->
+  <g id="desktop-callouts">
+    <!-- Callout 1: Performance metrics (right of panel) -->
+    <circle cx="665" cy="280" r="14" fill="#dc2626"/>
+    <text x="665" y="285" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+    <!-- Callout 2: Automated testing panel -->
+    <circle cx="1285" cy="280" r="14" fill="#dc2626"/>
+    <text x="1285" y="285" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+    <!-- Callout 3: Loading sequence -->
+    <circle cx="970" cy="540" r="14" fill="#dc2626"/>
+    <text x="970" y="545" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+    <!-- Callout 4: CLS prevention -->
+    <circle cx="1250" cy="540" r="14" fill="#dc2626"/>
+    <text x="1250" y="545" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+  </g>
+
+  <!-- MOBILE MOCKUP (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Page Title -->
+    <text x="180" y="100" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="18" font-weight="bold" fill="#374151">Loading Sequence</text>
+
+    <!-- Content Panel -->
+    <rect x="16" y="120" width="328" height="480" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Stage 1 -->
+    <text x="32" y="150" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Stage 1: App Shell (0-500ms)</text>
+    <rect x="32" y="160" width="280" height="65" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="42" y="170" width="260" height="20" rx="4" fill="#8b5cf6"/>
+    <rect x="42" y="196" width="260" height="20" rx="2" fill="#f5f0e6"/>
+
+    <!-- Stage 2 -->
+    <text x="32" y="255" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Stage 2: Content (0.5-1.5s)</text>
+    <rect x="32" y="265" width="280" height="80" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="42" y="275" width="260" height="20" rx="4" fill="#8b5cf6"/>
+    <rect x="42" y="301" width="200" height="14" rx="2" fill="#f5f0e6"/>
+    <rect x="42" y="321" width="180" height="14" rx="2" fill="#f5f0e6"/>
+
+    <!-- Stage 3 -->
+    <text x="32" y="375" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Stage 3: Media (1.5-2.5s)</text>
+    <rect x="32" y="385" width="280" height="80" rx="6" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="42" y="395" width="80" height="65" rx="4" fill="#0891b2"/>
+    <rect x="132" y="400" width="170" height="14" rx="2" fill="#f5f0e6"/>
+    <rect x="132" y="420" width="140" height="14" rx="2" fill="#f5f0e6"/>
+    <rect x="132" y="440" width="160" height="14" rx="2" fill="#f5f0e6"/>
+
+    <!-- Stage 4 -->
+    <text x="32" y="495" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#374151">Stage 4: Interactive (TTI)</text>
+    <rect x="32" y="505" width="280" height="80" rx="6" fill="#22c55e"/>
+    <rect x="42" y="515" width="80" height="65" rx="4" fill="#0891b2"/>
+    <rect x="132" y="520" width="170" height="14" rx="2" fill="#f5f0e6"/>
+    <rect x="132" y="540" width="100" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="182" y="560" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#f5f0e6" font-weight="bold">Action</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- MOBILE CALLOUTS -->
+  <g id="mobile-callouts">
+    <!-- Callout 1: Early loading stages -->
+    <circle cx="1740" cy="300" r="14" fill="#dc2626"/>
+    <text x="1740" y="305" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+    <!-- Callout 2: Media stage -->
+    <circle cx="1740" cy="420" r="14" fill="#dc2626"/>
+    <text x="1740" y="425" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+    <!-- Callout 3: Interactive state -->
+    <circle cx="1740" cy="545" r="14" fill="#dc2626"/>
+    <text x="1740" y="550" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+    <!-- Callout 4: Action button -->
+    <circle cx="1740" cy="575" r="14" fill="#dc2626"/>
+    <text x="1740" y="580" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: Group 1 Core Web Vitals -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">1</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Core Web Vitals</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">LCP &lt;2.5s, FID &lt;100ms, CLS &lt;0.1</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">for optimal mobile performance.</text>
+      <!-- Badges -->
+      <a href="#US-005"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-005</text></a>
+      <a href="#SC-005"><rect x="101" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-005</text></a>
+      <a href="#SC-006"><rect x="162" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-006</text></a>
+      <a href="#SC-007"><rect x="223" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-007</text></a>
+    </g>
+
+    <!-- Column 2: Group 2 Automated Testing -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">2</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Automated Testing</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Horizontal scroll and touch target</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">validation across viewports.</text>
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-001</text></a>
+      <a href="#FR-025"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-025</text></a>
+      <a href="#FR-026"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-026</text></a>
+      <a href="#SC-008"><rect x="223" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-008</text></a>
+    </g>
+
+    <!-- Column 3: Group 3 Progressive Loading -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">3</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Progressive Loading</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Shell first, then content, images,</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">and finally interactive elements.</text>
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-002</text></a>
+      <a href="#FR-023"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-023</text></a>
+      <a href="#FR-024"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-024</text></a>
+      <a href="#SC-011"><rect x="223" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-011</text></a>
+    </g>
+
+    <!-- Column 4: Group 4 Visual Regression -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#f5f0e6">4</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Visual Regression</text>
+      <text x="40" y="40" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Baseline comparison for layouts</text>
+      <text x="40" y="58" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">at 320, 375, 390, 428px widths.</text>
+      <!-- Badges -->
+      <a href="#US-004"><rect x="40" y="70" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">US-004</text></a>
+      <a href="#FR-027"><rect x="101" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-027</text></a>
+      <a href="#FR-028"><rect x="162" y="70" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">FR-028</text></a>
+      <a href="#SC-010"><rect x="223" y="70" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="250" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="12" fill="#f5f0e6">SC-010</text></a>
+    </g>
+  </g>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    004:02 | Mobile-First Design | ScriptHammer
+  </text>
+</svg>
