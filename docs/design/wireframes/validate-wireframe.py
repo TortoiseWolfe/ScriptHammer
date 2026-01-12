@@ -498,7 +498,7 @@ class WireframeValidator:
             self.issues.append(Issue(
                 severity="WARNING",
                 code="ANN-002",
-                message=f"Only {callout_count} annotation groups found (recommend 4-8 for complete coverage)"
+                message=f"Only {callout_count} annotation groups found (minimum 4 recommended)"
             ))
         # Note: Legend check moved to _check_clutter() as CLUTTER-001 (inverted - now warns if legend EXISTS)
 
