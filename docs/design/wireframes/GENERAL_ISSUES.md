@@ -25,6 +25,7 @@
 | G-015 | Inconsistent toggle/button colors (light grey, purple, transparent) | Toggles: OFF=#6b7280, ON=#22c55e. Buttons: all have visible fills | UI Element Standards |
 | G-016 | No layout planning before SVG generation | Create LAYOUT PLAN table with coordinates; check for collisions BEFORE generating | Layout Planning Phase |
 | G-017 | Badges placed ON TOP of UI elements | Badges must be 10px OUTSIDE elements; never overlap toggles, buttons, or text | Badge Placement Rules |
+| G-018 | Annotation groups without User Story anchor | Each annotation group MUST be anchored by a US-XXX badge with narrative text | User Story Anchoring |
 
 ---
 

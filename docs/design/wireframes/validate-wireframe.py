@@ -181,6 +181,9 @@ class WireframeValidator:
         self._check_signature()
         self._check_annotation_spacing()
 
+        # v4 checks (User Story support)
+        self._check_user_story_coverage()
+
         return self.issues
 
     def _check_xml_syntax(self):
@@ -712,6 +715,36 @@ class WireframeValidator:
                         code="LAYOUT-002",
                         message=f"Annotation panel clips into signature area (ends at y={ann_bottom}, need gap before y=1040)"
                     ))
+
+    # ============================================================
+    # v4 CHECKS (User Story support - 2026-01-11)
+    # ============================================================
+
+    def _check_user_story_coverage(self):
+        """US-001/002: Check that User Story badges are present in annotations.
+
+        Each annotation group should be anchored by a User Story (US-XXX).
+        User Stories provide the narrative context that makes wireframes meaningful.
+        """
+        if 'id="annotations"' not in self.svg_content:
+            return  # No annotation panel to check
+
+        annotation_section = self.svg_content[self.svg_content.find('id="annotations"'):]
+        us_badges = re.findall(r'US-\d{3}', annotation_section)
+        unique_us = set(us_badges)
+
+        if len(unique_us) == 0:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="US-001",
+                message="No User Story badges found in annotation panel - each group should be anchored by a US"
+            ))
+        elif len(unique_us) < 3:
+            self.issues.append(Issue(
+                severity="WARNING",
+                code="US-002",
+                message=f"Only {len(unique_us)} User Story badges found - most features have 4+ User Stories"
+            ))
 
 
 def main():
