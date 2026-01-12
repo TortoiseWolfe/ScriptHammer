@@ -22,12 +22,9 @@
 | G-012 | "Key Requirements" section duplicates REQUIREMENTS KEY legend | FR/SC codes appear INLINE on UI elements only; legend provides definitions; NO separate summary section | Requirements Legend Panel |
 | G-013 | Using "Acceptance Criteria" instead of "Success Criteria" | Use "Success Criteria" consistently; SC codes are Success Criteria from spec.md | Terminology Consistency |
 | G-014 | Redundant wireframes with fluff/filler to pad space | Only create SVGs that show DISTINCT content; consolidate similar views; NO padding sections | Wireframe Count |
-| G-015 | Legend descriptions too terse (under 5 words) | Each REQUIREMENTS KEY description must be 10-30 words explaining what/why/how | Legend Description Requirements |
-| G-016 | Legend-signature collision (gap < 20px) | Legend at y=920, signature at y=1050, verify 20px+ gap between legend bottom and signature | Standard Internal Spacing |
-| G-017 | Headers manually drawn instead of template injection | Use `<use href>` or copy EXACT content from includes/header-*.svg; verify icons are paths not rectangles | Include Files (Build-Time Injection) |
-| G-018 | Content placed at container edge (0px margin) | Maintain ≥20px internal margin from all container edges; verify badges/text not cut off | Container Boundary Validation |
-| G-019 | FR/SC tags without annotation containers | ALL inline FR/SC tags must have `.annotation-bg` violet container (#ede9fe fill, #c4b5fd stroke) | Annotation Placement Rules |
-| G-020 | Badge clusters placed without collision check | Calculate badge widths + gaps BEFORE placement; output COLLISION TABLE showing all badge positions | Badge Cluster Layout |
+| G-015 | Inconsistent toggle/button colors (light grey, purple, transparent) | Toggles: OFF=#6b7280, ON=#22c55e. Buttons: all have visible fills | UI Element Standards |
+| G-016 | No layout planning before SVG generation | Create LAYOUT PLAN table with coordinates; check for collisions BEFORE generating | Layout Planning Phase |
+| G-017 | Badges placed ON TOP of UI elements | Badges must be 10px OUTSIDE elements; never overlap toggles, buttons, or text | Badge Placement Rules |
 
 ---
 
@@ -37,15 +34,10 @@ Before writing ANY SVG:
 
 - [ ] Read this file (GENERAL_ISSUES.md)
 - [ ] Check Light Theme palette: `#e8d4b8`, `#dcc8a8`, `#f5f0e6` - NOT `#ffffff`
-- [ ] Open include files and prepare to copy EXACT paths (not emoji, not redrawn) - G-017
+- [ ] Open include files and prepare to copy EXACT paths
 - [ ] Calculate vertical space distribution BEFORE placing elements
-- [ ] **Draft all legend descriptions (10-30 words each) - G-015**
-- [ ] **Verify legend-signature gap is 20px+ - G-016**
 - [ ] Plan arrow positions to match the elements they reference
 - [ ] Identify clear areas for annotation boxes
-- [ ] **Output CONTAINER BOUNDARY VALIDATION table - G-018**
-- [ ] **Verify ALL FR/SC tags have annotation containers - G-019**
-- [ ] **Output COLLISION TABLE for all badge clusters - G-020**
 
 ---
 
@@ -89,11 +81,6 @@ docs/design/wireframes/includes/
 | 2026-01-10 | G-012 | 002:03 review - "Key Requirements" section duplicates legend |
 | 2026-01-10 | G-013 | 002:03 review - "Acceptance Criteria" should be "Success Criteria" |
 | 2026-01-10 | G-014 | 002 review - 3 SVGs when 2 would suffice; 02 and 03 show redundant content with filler |
-| 2026-01-10 | G-015, G-016 | 002:02 review - legend descriptions "Persist prefs" (2 words), legend-signature 10px gap |
-| 2026-01-10 | G-017 | 002:01 v12 - headers manually drawn instead of template injection |
-| 2026-01-10 | G-018 | 002:01 v12 - User Stories cramped at container edge, P0 badge cut off |
-| 2026-01-10 | G-019 | 002:01 v12 - FR/SC tags in panels without violet annotation containers |
-| 2026-01-10 | G-020 | 002:01 v12 - badge collisions (FR-023/SC-006, SC-001/SC-007, FR-005/FR-008) |
 
 ---
 
@@ -228,125 +215,130 @@ These sections are often used to pad wireframes that don't have enough real cont
 
 ---
 
-## Header Template Injection (G-017)
+## UI Element Color Standards (G-015)
 
-**Rule**: NEVER manually draw headers. Always inject from include templates.
+**Problem**: Toggles and buttons use inconsistent colors that blend with backgrounds or look like annotation badges.
 
-### Process
+### Toggle Switch Colors
 
-1. Read `includes/header-desktop.svg` and `includes/header-mobile.svg`
-2. Copy the EXACT `<g id="...">` groups into the target SVG
-3. Verify icons are actual `<path>` elements, not rectangles or emoji
+| State | Track Color | Knob Color |
+|-------|-------------|------------|
+| OFF | `#6b7280` (gray-500) | `#ffffff` |
+| ON | `#22c55e` (green-500) | `#ffffff` |
 
-### Signs of Manual Drawing (WRONG)
+**NEVER use**:
+- Light grey (`#d1d5db`) - blends with parchment background
+- Purple (`#8b5cf6`) - conflicts with primary button color
+- Transparent - invisible
 
-- Simple rectangles for hamburger menu
-- Missing accessibility/settings/avatar icons
-- Status bar without proper icon paths
-- Logo as text instead of path
+### Button Colors
 
-### Verification Checklist
+| Button Type | Background | Text | Border |
+|-------------|------------|------|--------|
+| Primary | `#8b5cf6` (violet) | `#ffffff` | none |
+| Secondary | `#f5f0e6` (cream) | `#8b5cf6` | `#8b5cf6` 2px |
+| Tertiary | `#dcc8a8` (tan) | `#374151` | `#b8a080` 1px |
 
-| Element | Template Source | Expected Content |
-|---------|-----------------|------------------|
-| Desktop header | `header-desktop.svg#desktop-header` | Full nav, logo, icons, avatar |
-| Mobile status bar | `header-mobile.svg` lines 1-40 | Time, signal, wifi, battery paths |
-| Mobile header | `header-mobile.svg` lines 41-80 | Hamburger menu, title, right icons |
+**NO transparent backgrounds.** Every button must have a visible fill.
 
----
+### Badge vs UI Element Distinction
 
-## Container Boundary Validation (G-018)
+| Element | Background | Purpose |
+|---------|------------|---------|
+| FR badge | `#2563eb` (blue) | Annotation - NOT clickable |
+| SC badge | `#ea580c` (orange) | Annotation - NOT clickable |
+| US badge | `#0891b2` (cyan) | Annotation - NOT clickable |
+| UI button | `#8b5cf6` (violet) | Actual interactive element |
 
-**Rule**: All content must maintain ≥20px margin from container edges.
-
-### Blocking Check (MUST perform before writing SVG)
-
-For EVERY container (desktop viewport, mobile frame, panels):
-
-| Container | Left Edge | Right Edge | Content Start | Content End | Left Margin | Right Margin |
-|-----------|-----------|------------|---------------|-------------|-------------|--------------|
-| Desktop | x=40 | x=1406 | ? | ? | ≥20px? | ≥20px? |
-| Mobile | x=1500 | x=1860 | ? | ? | ≥20px? | ≥20px? |
-
-### Common Violations
-
-- USER STORIES cards at x=0 (cut off badges)
-- Badges placed at panel edge
-- Text overflowing right edge
-
-### Fix Pattern
-
-```
-Content x = Container x + 20px margin
-Content width = Container width - 40px (20px each side)
-```
+**Badges annotate. Buttons act. They must look DIFFERENT.**
 
 ---
 
-## Annotation Container Requirements (G-019)
+## Layout Planning Phase (G-016)
 
-**Rule**: ALL inline FR/SC tags must have violet `.annotation-bg` containers.
+**Problem**: Jumping straight to SVG code without planning element positions leads to cramped layouts, wasted space, and collisions.
 
-### What Needs Containers
+### Required: LAYOUT PLAN Output
 
-- Every FR-### badge + description pair
-- Every SC-### badge + description pair
-- Badges inside modals, panels, or viewport
+Before generating ANY SVG, output a layout table:
 
-### Container Styling
+```
+═══════════════════════════════════════════════════════════════
+LAYOUT PLAN: [feature] wireframe [NN]
+═══════════════════════════════════════════════════════════════
 
-```css
-.annotation-bg {
-  fill: #ede9fe;  /* violet-50 */
-  stroke: #c4b5fd;  /* violet-300 */
-  stroke-width: 1;
-  rx: 4;
-}
+CANVAS: 1920×1080
+DESKTOP AREA: x=40, y=60, w=1366, h=768 (ends at x=1406)
+MOBILE AREA: x=1500, y=60, w=360, h=700
+
+─────────────────────────────────────────────────────────────────
+DESKTOP LAYOUT
+─────────────────────────────────────────────────────────────────
+State count: [N]
+State width: [calculated]px each
+
+| Element          | x    | y    | w    | h    | Collision? |
+|------------------|------|------|------|------|------------|
+| STATE 1 panel    | ...  | ...  | ...  | ...  | ✓ OK       |
+| FR-001 badge     | ...  | ...  | 55   | 20   | ✓ OK       |
+...
+
+SPACE CHECK:
+- Desktop width used: [X]px / 1366px = [Y]%
+- Desktop height used: [X]px / 768px = [Y]%
+
+═══════════════════════════════════════════════════════════════
+LAYOUT APPROVED? [Wait for user]
+═══════════════════════════════════════════════════════════════
 ```
 
-### Verification
+**DO NOT generate SVG until layout is approved.**
 
-Before writing SVG, list ALL FR/SC annotations:
+### Space Distribution Rules
 
-| Location | Badge | Has Container? |
-|----------|-------|----------------|
-| STATE 1 modal | FR-001 | ✅ / ❌ |
-| STATE 2 modal | FR-005 | ✅ / ❌ |
-| ... | ... | ... |
-
-If ANY row shows ❌, DO NOT write the SVG - add containers first.
+| States | Width per State | Gap |
+|--------|-----------------|-----|
+| 2 | 680px | 20px |
+| 3 | 450px | 20px |
+| 4 | 330px | 20px |
 
 ---
 
-## Badge Cluster Layout (G-020)
+## Badge Placement Rules (G-017)
 
-**Rule**: Calculate badge positions BEFORE writing SVG to prevent collisions.
+**Problem**: Badges placed ON TOP of UI elements (toggles, buttons, text) make the wireframe unreadable.
 
-### Blocking Check: COLLISION TABLE
+### Rules
 
-For EVERY cluster of 2+ badges, output this table:
+1. Badges must be **10px minimum** from element edges
+2. Badges go **OUTSIDE** UI elements, not on top
+3. Preferred positions:
+   - Top-right corner of containing panel
+   - Bottom-left corner of element being annotated
+   - Below element with arrow pointing up
+4. **NEVER** place a badge:
+   - On top of a toggle switch
+   - On top of button text
+   - Overlapping other badges
 
-| Badge | X Position | Width | Right Edge | Next Badge X | Gap |
-|-------|------------|-------|------------|--------------|-----|
-| FR-023 | 100 | 50 | 150 | 145 | -5 (COLLISION!) |
-| SC-006 | 145 | 48 | 193 | - | - |
+### Collision Detection
 
-### Gap Requirements
+Two elements collide if ALL of these are true:
+```
+el1.x < el2.x + el2.width AND
+el1.x + el1.width > el2.x AND
+el1.y < el2.y + el2.height AND
+el1.y + el1.height > el2.y
+```
 
-- Horizontal gap between badges: ≥8px minimum
-- Vertical gap between stacked badges: ≥4px minimum
+Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 
-### Common Collision Patterns
+---
 
-| Pattern | Problem | Fix |
-|---------|---------|-----|
-| Side-by-side badges | X + width > next X | Increase gap or stack vertically |
-| Stacked badges | Y + height > next Y | Increase vertical spacing |
-| Badge + text | Text overlaps next badge | Widen container or stack |
+## History (continued)
 
-### Process
-
-1. List all badges in the cluster
-2. Calculate: X, width (badge + text), right edge
-3. Verify gap to next element ≥8px
-4. If ANY gap < 8px, STOP and recalculate before writing SVG
+| Date | Issue Added | Source |
+|------|-------------|--------|
+| 2026-01-11 | G-015 | 002:01 review - toggles using light grey/purple, buttons transparent |
+| 2026-01-11 | G-016 | 002:01 review - cramped layout with wasted space, no pre-planning |
+| 2026-01-11 | G-017 | 002:01 review - FR badges overlapping toggle switches |

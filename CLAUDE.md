@@ -15,97 +15,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [x] Generated spec.md for all 46 features
 - [x] Generated wireframes for 44 features (~120 SVGs) - 000, 001 DELETED pending regeneration
 
-### Session Checkpoint (2026-01-11 - Wireframe v3.1)
+### Session Checkpoint (2026-01-11 - Wireframe v4)
 
-**MAJOR CHANGE: Wireframe Standard v3.1 - Lean UI Mockups + User Stories**
+**MAJOR CHANGE: Wireframe Standard v4 - Numbered Callouts**
 
-After v3.0 removed too much, v3.1 adds User Stories back (compact format):
+v3 approach (FR/SC badges on UI elements) caused 157 validation errors per file.
+v4 uses industry-standard numbered callouts for clean, readable wireframes.
 
 | Include | Exclude |
 |---------|---------|
-| Desktop + Mobile UI mockups | Requirement descriptions |
-| STATE labels and flow arrows | "Accessibility" / "Performance" panels |
-| Small FR/SC badges ON elements | 30-word legend definitions |
-| Simple color-key legend (1 row) | Annotation boxes with text |
-| **User Stories (compact cards)** | |
+| Desktop + Mobile UI mockups | FR/SC badges ON elements |
+| Numbered callouts (①②③) on elements | Violet annotation containers |
+| Annotation panel below mockups | User Stories section |
+| FR/SC codes in [brackets] at end | 30-word legend definitions |
 
-**Philosophy:** Wireframes show screens AND user context.
+**Philosophy:** Wireframes preview the app. Callouts explain, not clutter.
 
-**Updated Files:**
-- `~/.claude/commands/wireframe.md` - v3.1 skill (11 rules)
-- `docs/design/wireframes/GENERAL_ISSUES.md` - v3.1 standards
-- `docs/design/requirements-trace/` - FR/SC/US mapping docs
+**Key Files:**
+- `~/.claude/commands/wireframe.md` - v4 skill (226 lines, down from 406)
+- `~/.claude/commands/wireframe-v3-archived.md` - old approach (archived)
+- `docs/design/wireframes/validate-wireframe.py` - automated validation
+- `docs/design/wireframes/GENERAL_ISSUES.md` - issue catalog
 
-**All Existing SVGs Need REGENERATION** (not patching):
-- Headers must use `<use href>` templates
-- User Stories section (compact format) required
-- Layout fundamentally changes
+**Workflow:**
+1. Run `/wireframe NNN` - generates with numbered callouts
+2. Run `python validate-wireframe.py [file.svg]` - must PASS
+3. Fix any errors, re-validate until clean
 
-**Next Session START HERE**:
-1. Run `/wireframe 002:01` to regenerate with v3.1 standard
-2. Review output - confirm headers use templates, US section present
-3. Regenerate remaining features one at a time with user approval
+**All Existing SVGs Need REGENERATION** (deleted 002, starting fresh)
 
 ---
 
-### Phase 2 - Wireframe Review
+### Phase 2 - Wireframe Generation (v4)
 
-**MANDATORY**: Review ALL wireframes before proceeding to `/plan`. Run `/wireframe-review` on each feature:
+**Workflow:**
+1. `/wireframe NNN` - generates SVG with numbered callouts
+2. `python validate-wireframe.py [file.svg]` - automated validation
+3. Fix errors, re-validate until PASS
+4. Visual review in viewer at localhost:3000
 
-```bash
-/wireframe-review   # Review SVGs with 🟢/🔴 classification
-```
+**Validator Checks:**
+- Color compliance (no #ffffff, correct toggle colors)
+- SVG root attributes (width/height required for viewer)
+- Badge collision detection
+- Container boundary violations
 
-**Classification System**:
-- 🟢 **PATCHABLE** (color, typo, font size, missing CSS class) → `/wireframe` patches in place
-- 🔴 **REGENERATE** (layout, spacing, positioning, overlap) → `/wireframe` regenerates with feedback
-
-**Key Insight**: Patching structural issues makes things WORSE. Only patch minor cosmetic issues.
-
-### Wireframe Review File Structure
-
-**CRITICAL**: Each SVG gets its own issues file. Review ONLY documents issues - it does NOT patch.
-
-| File Type | Location | Purpose |
-|-----------|----------|---------|
-| Per-SVG issues | `docs/design/wireframes/[feature]/[svg-name].issues.md` | Detailed review findings for ONE SVG |
-| Feature summary | `features/[category]/[feature]/WIREFRAME_ISSUES.md` | Historical context only (do NOT update during review) |
-
-**Per-SVG Issues File Naming**:
-```
-docs/design/wireframes/000-rls-implementation/
-├── 01-rls-architecture-overview.svg
-├── 01-rls-architecture-overview.issues.md   ← Created by /wireframe-review
-├── 02-rls-policy-patterns.svg
-└── 02-rls-policy-patterns.issues.md         ← Created by /wireframe-review
-```
-
-**Workflow**:
-1. `/wireframe-review [feature:page]` → Creates `[svg-name].issues.md` with findings
-2. `/wireframe [feature]` → Reads `.issues.md` files, applies patches or regenerates
-3. Repeat until all issues resolved
-
-**Rules**:
-- One issues file per SVG (never combine)
-- Review documents issues only (never patches the SVG)
-- `/wireframe` reads issues files and applies fixes
-- Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
-
-### Wireframe Workflow Commands
-
-**Before patching SVGs:**
-```bash
-/wireframe-prep          # Loads: CLAUDE.md, GENERAL_ISSUES.md, all .issues.md files, status
-```
-
-**Before new/specific feature SVGs:**
-```bash
-/wireframe-prep 002      # Loads: CLAUDE.md, GENERAL_ISSUES.md, feature spec, status
-```
-
-**Then run:**
-- `/wireframe [NNN]` to patch or generate
-- `/wireframe-review [NNN]` to review
+**No manual issues files needed** - validator catches problems programmatically.
 
 ### SVG Wireframes - Hands Off
 
@@ -355,66 +310,61 @@ mcp__MCP_DOCKER__browser_navigate url="http://host.docker.internal:3000"
 | `+/-` | Zoom in/out |
 | `0` | Fit to view (dynamic) |
 
-## Generating Wireframes (v3.1 - Lean UI Mockups + User Stories)
+## Generating Wireframes (v4 - Numbered Callouts)
 
-**Read `docs/design/wireframes/GENERAL_ISSUES.md` first** - Contains the v3.1 standard.
-
-**Philosophy:** Wireframes show screens AND user context.
+**Philosophy:** Wireframes preview the app. Callouts explain, not clutter.
 
 ### What Wireframes Show
 
 | Include | Exclude |
 |---------|---------|
-| Desktop + Mobile UI mockups | Requirement descriptions |
-| STATE labels and flow arrows | "Accessibility" / "Performance" panels |
-| Small FR/SC badges ON elements | 30-word legend definitions |
-| Simple color-key legend (1 row) | Annotation boxes with text |
-| **User Stories (compact cards)** | |
+| Desktop + Mobile UI mockups | FR/SC badges ON elements |
+| Numbered callouts (①②③) | Violet annotation containers |
+| Annotation panel below | User Stories section |
+| FR/SC codes in [brackets] | 30-word legend definitions |
 
-### 11 Rules
+### 10 Rules
 
 | # | Rule |
 |---|------|
-| 1 | Canvas 1920×1080 |
-| 2 | Desktop at (40,60), 1366×768 |
-| 3 | Mobile at (1500,60), 360×700 |
-| 4 | Badge-only labels (no descriptions) |
-| 5 | No duplicate FR/SC codes |
-| 6 | All badges clickable (link to spec.md) |
-| 7 | Color-key legend only (1 row) |
-| 8 | Headers from templates (`<use href>`) |
-| 9 | Light theme: parchment (#e8d4b8) |
-| 10 | 44px touch targets |
-| 11 | User Stories section (compact cards at y=850) |
+| 1 | Canvas: `viewBox="0 0 1920 1080" width="1920" height="1080"` |
+| 2 | Desktop mockup: x=40, y=60, 1000×700 |
+| 3 | Mobile mockup: x=1120, y=60, 320×640 |
+| 4 | Callouts: red circles (①②③) on non-obvious elements only |
+| 5 | Max 6-8 callouts per page |
+| 6 | Annotation panel: y=780, spans full width |
+| 7 | FR/SC codes in [brackets] at end of each annotation |
+| 8 | Light theme: panels #e8d4b8, NO #ffffff |
+| 9 | Toggle colors: OFF=#6b7280, ON=#22c55e |
+| 10 | Touch targets: 44px minimum |
 
 ### Pre-Flight (Required Before SVG Generation)
 
 ```
 SCREENS TO SHOW:
-- STATE 1: [description] - [FR/SC badges]
-- STATE 2: [description] - [FR/SC badges]
+- Desktop: [description]
+- Mobile: [description]
 
-BADGE PLACEMENT (each code ONCE):
-- FR-001 → STATE 1, modal header
-- SC-001 → STATE 3, confirmation
-
-USER STORIES (compact cards):
-- US-001: [1-line title] [P0]
-- US-002: [1-line title] [P1]
+CALLOUTS (max 8):
+① [element] - [what it does] [FR/SC codes]
+② [element] - [what it does] [FR/SC codes]
+③ ...
 
 BLOCKING CHECKS:
-[ ] Each badge appears exactly once
-[ ] User Stories section present (compact)
-[ ] No annotation descriptions
-[ ] Legend is color-key only
-[ ] Headers use <use href> templates
+[ ] Max 8 callouts
+[ ] No FR/SC badges on UI elements
+[ ] Annotation panel fits (60px per callout)
 ```
 
 **User must confirm pre-flight before SVG generation.**
 
-### Requirements Traceability
+### Validation
 
-Full FR/SC/US mapping lives in `docs/design/requirements-trace/NNN-feature.md`, not in wireframes.
+After generating, run:
+```bash
+python docs/design/wireframes/validate-wireframe.py [file.svg]
+```
+Must PASS before done.
 
 ## Implementation Options
 

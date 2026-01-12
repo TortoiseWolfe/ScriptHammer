@@ -1,15 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg">
-<!-- ScriptHammer Desktop Header (INCLUDE - for external <use href> reference)
-     Position: After desktop viewport rect, before content area
-     Width: 1346px (fits 1366px desktop viewport with 10px padding each side)
+<!-- ScriptHammer Desktop Header (INCLUDE - for template injection)
+     Position: Top of desktop mockup container (y=0, after container rect)
+     Width: 1280px (matches wireframe desktop container width - 16:9 at 720 height)
+     Height: 50px
+     Corners: Rounded TOP only (rx=8) to match container
 
-     USAGE: Reference with <use href="../includes/header-desktop.svg#desktop-header" x="50" y="70"/>
+     USAGE: Inject content directly into wireframe SVG with appropriate transform.
      Icons are inline paths (nested <use href="#symbol"> doesn't work with external refs).
 -->
 
 <g id="desktop-header">
-  <!-- Header background -->
-  <rect width="1346" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+  <!-- Header background - rounded TOP corners only -->
+  <path d="M 8 0 L 1272 0 A 8 8 0 0 1 1280 8 L 1280 50 L 0 50 L 0 8 A 8 8 0 0 1 8 0 Z" fill="#dcc8a8" stroke="#b8a080"/>
 
   <!-- Logo (left) - ScriptHammer brand -->
   <rect x="15" y="10" width="30" height="30" rx="4" fill="#8b5cf6"/>
@@ -17,7 +19,7 @@
 
   <!-- Navigation items (center) - 44px touch targets -->
   <!-- NOTE: Active state must be overlaid per-page -->
-  <g id="nav-items" transform="translate(550, 3)">
+  <g id="nav-items" transform="translate(400, 3)">
     <!-- Home -->
     <g id="nav-home">
       <rect x="0" width="70" height="44" rx="4" fill="transparent"/>
@@ -41,7 +43,7 @@
   </g>
 
   <!-- Header right side: Accessibility + Settings + Avatar -->
-  <g transform="translate(1170, 3)">
+  <g transform="translate(1100, 3)">
     <!-- Accessibility icon (eye) - 44px tap target -->
     <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
     <g transform="translate(10, 10)">

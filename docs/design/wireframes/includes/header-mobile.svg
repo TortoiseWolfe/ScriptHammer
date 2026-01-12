@@ -1,19 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg">
-<!-- ScriptHammer Mobile Header + Status Bar (INCLUDE - for external <use href> reference)
-     Position: After mobile viewport rect, before content area
-     Width: 340px (fits 360px phone frame with 10px padding each side)
-     Includes: Status bar (28px) + Header bar (50px) = 78px total height
+<!-- ScriptHammer Mobile Header + Status Bar (INCLUDE - for template injection)
+     Position: Top of mobile mockup container (y=0, after container rect)
+     Width: 360px (matches wireframe mobile container width)
+     Height: 78px (status bar 28px + header bar 50px)
+     Corners: Rounded TOP only (rx=24) to match mobile container
 
-     USAGE: Reference with <use href="../includes/header-mobile.svg#mobile-header-group" x="10" y="10"/>
+     USAGE: Inject content directly into wireframe SVG with appropriate transform.
      Icons are inline paths (nested <use href="#symbol"> doesn't work with external refs).
 -->
 
 <g id="mobile-header-group">
-  <!-- STATUS BAR (iOS-style) -->
+  <!-- STATUS BAR (iOS-style) - rounded TOP corners only -->
   <g id="status-bar">
-    <rect width="340" height="28" rx="16" fill="#dcc8a8"/>
+    <path d="M 24 0 L 336 0 A 24 24 0 0 1 360 24 L 360 28 L 0 28 L 0 24 A 24 24 0 0 1 24 0 Z" fill="#dcc8a8"/>
     <text x="20" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">9:41</text>
-    <g transform="translate(260, 4)">
+    <g transform="translate(280, 4)">
       <!-- Signal icon (inline) -->
       <g transform="translate(0, 0) scale(0.667)">
         <path fill="#1a1a2e" d="M5.636 4.575a.75.75 0 0 1 0 1.061 9 9 0 0 0 0 12.728.75.75 0 1 1-1.06 1.06c-4.101-4.1-4.101-10.748 0-14.849a.75.75 0 0 1 1.06 0Zm12.728 0a.75.75 0 0 1 1.06 0c4.101 4.1 4.101 10.75 0 14.85a.75.75 0 1 1-1.06-1.061 9 9 0 0 0 0-12.728.75.75 0 0 1 0-1.06ZM7.757 6.697a.75.75 0 0 1 0 1.06 6 6 0 0 0 0 8.486.75.75 0 0 1-1.06 1.06 7.5 7.5 0 0 1 0-10.606.75.75 0 0 1 1.06 0Zm8.486 0a.75.75 0 0 1 1.06 0 7.5 7.5 0 0 1 0 10.606.75.75 0 0 1-1.06-1.06 6 6 0 0 0 0-8.486.75.75 0 0 1 0-1.06ZM9.879 8.818a.75.75 0 0 1 0 1.06 3 3 0 0 0 0 4.243.75.75 0 1 1-1.061 1.061 4.5 4.5 0 0 1 0-6.364.75.75 0 0 1 1.06 0Zm4.242 0a.75.75 0 0 1 1.061 0 4.5 4.5 0 0 1 0 6.364.75.75 0 0 1-1.06-1.06 3 3 0 0 0 0-4.243.75.75 0 0 1 0-1.061ZM10.875 12a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z"/>
@@ -28,8 +29,8 @@
 
   <!-- HEADER BAR -->
   <g id="mobile-header" transform="translate(0, 28)">
-    <!-- Header background -->
-    <rect width="340" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
+    <!-- Header background - full width, no corner rounding (middle of mobile frame) -->
+    <rect width="360" height="50" rx="0" fill="#dcc8a8" stroke="#b8a080"/>
 
     <!-- Hamburger menu (left) - 44px tap target -->
     <rect x="3" y="3" width="44" height="44" rx="4" fill="transparent"/>
@@ -42,7 +43,7 @@
     <text x="85" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">ScriptHammer</text>
 
     <!-- Header right side: Accessibility + Settings + Avatar -->
-    <g transform="translate(206, 3)">
+    <g transform="translate(220, 3)">
       <!-- Accessibility icon (eye) - 44px tap target -->
       <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
       <g transform="translate(10, 10)">
