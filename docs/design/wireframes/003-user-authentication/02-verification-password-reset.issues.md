@@ -11,25 +11,24 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 0 |
+| Open | 3 |
 
 ---
 
-## Review History
+## Open Issues (2026-01-12 Review)
 
-### 2026-01-12 Review - PASS
+### Button Issues
 
-**Validator Errors:** 0
-**Visual Issues:** 0
-**Classification:** PASS
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| B-01 | Button uses faded fill color (#e8d4b8) - use solid fill for ... | BTN-001 | REGENERATE |
+| B-02 | Button uses faded fill color (#e8d4b8) - use solid fill for ... | BTN-001 | REGENERATE |
 
-All checks passed:
-- Title centered correctly
-- 4+ callouts present
-- Email verification flow clear
-- Password reset 2-step process well documented
-- Error states and recovery paths shown
-- Mobile parity maintained
+### User Story Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| U-01 | Only 2 User Story badges found - need at least 3 User Storie... | US-002 | REGENERATE |
 
 ---
 

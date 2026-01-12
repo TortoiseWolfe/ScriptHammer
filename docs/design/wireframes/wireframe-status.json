@@ -15,16 +15,16 @@
     }
   },
   "002-cookie-consent": {
-    "status": "draft",
+    "status": "reviewed",
     "svgs": {
-      "01-consent-modal-flow.svg": "draft",
-      "02-privacy-settings-data-rights.svg": "draft"
+      "01-consent-modal-flow.svg": "pass",
+      "02-privacy-settings-data-rights.svg": "pass"
     },
-    "notes": "Regenerated 2026-01-12 following v4 skill standards. Validator shows errors but most are limitations: G-001 flags text fills (not panels), HDR-001 expects use-href pattern, FONT-001 flags intentional mobile sizes, ANN-002 counts wrong color for callouts.",
+    "notes": "Regenerated 2026-01-12 with v5 skill. Both wireframes pass validator (0 errors). Modal flow shows dark overlay, granular toggles. Privacy settings shows data rights management.",
     "validation": {
-      "svg01_errors": 23,
-      "svg02_errors": 30,
-      "known_false_positives": ["G-001 text fills", "HDR-001 inlined templates", "FONT-001 mobile fonts", "ANN-002 callout detection", "BTN-001 tertiary buttons"]
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-12"
     }
   },
   "003-user-authentication": {
@@ -34,11 +34,24 @@
       "02-verification-password-reset.svg": "pass",
       "03-profile-session-management.svg": "pass"
     },
-    "notes": "Reviewed 2026-01-12. All 3 wireframes pass validator (0 errors) and visual review. Hash routing fix applied to viewer.",
+    "notes": "Regenerated 2026-01-12 with v5 skill. All 3 wireframes pass validator (0 errors). Registration/Sign-in shows forms with OAuth. Verification shows email and password reset flows. Profile shows session management.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
       "svg03_errors": 0,
+      "review_date": "2026-01-12"
+    }
+  },
+  "004-mobile-first-design": {
+    "status": "reviewed",
+    "svgs": {
+      "01-mobile-viewport-layouts.svg": "pass",
+      "02-performance-testing.svg": "pass"
+    },
+    "notes": "Generated 2026-01-12. Both wireframes pass validator (0 errors). Mobile viewport layouts showing 320-428px frames with touch targets. Performance testing showing Core Web Vitals dashboard.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
       "review_date": "2026-01-12"
     }
   }

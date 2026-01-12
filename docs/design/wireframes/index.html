@@ -687,6 +687,20 @@
             </a>
           </div>
         </div>
+        <!-- 004-mobile-first-design -->
+        <div class="nav-section">
+          <h2>004 - Mobile-First Design <span class="shortcut">^6</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="004-mobile-first-design/01-mobile-viewport-layouts.svg">
+              Mobile Viewport Layouts
+              <span class="path">320-428px Viewports, Touch Targets</span>
+            </a>
+            <a href="#" data-svg="004-mobile-first-design/02-performance-testing.svg">
+              Performance Testing
+              <span class="path">Core Web Vitals, LCP, FID, CLS</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -938,6 +952,9 @@
       { path: '003-user-authentication/01-registration-sign-in.svg', title: 'Registration & Sign In' },
       { path: '003-user-authentication/02-verification-password-reset.svg', title: 'Verification & Password Reset' },
       { path: '003-user-authentication/03-profile-session-management.svg', title: 'Profile & Session Management' },
+      // 004-mobile-first-design
+      { path: '004-mobile-first-design/01-mobile-viewport-layouts.svg', title: 'Mobile Viewport Layouts' },
+      { path: '004-mobile-first-design/02-performance-testing.svg', title: 'Performance Testing' },
     ];
 
     // Category mapping for Shift+F1-F9 navigation
@@ -1389,13 +1406,15 @@
     }
 
     // Expose API for screenshot tool (Playwright can't access let/const variables)
+    // This bypasses ZOOM_MAX limit since it's for automated screenshots
     let manualZoomActive = false;
     window.setViewerState = function(newZoom, newPanX, newPanY) {
       manualZoomActive = true; // Prevent fitToView from overriding
-      zoom = newZoom;
+      zoom = newZoom;  // No limit check - allow any zoom for screenshots
       panX = newPanX;
       panY = newPanY;
       updateTransform();
+      console.log('setViewerState:', zoom, panX, panY); // Debug
     };
     window.resetViewerState = function() {
       manualZoomActive = false;
