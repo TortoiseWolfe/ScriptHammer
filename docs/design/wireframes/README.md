@@ -1,6 +1,26 @@
-# FirstFrame Wireframes
+# ScriptHammer Wireframes
 
-Example wireframes demonstrating the FirstFrame template structure.
+SVG wireframes for ScriptHammer features with automated validation and issue tracking.
+
+## Workflow
+
+### Generation
+```bash
+/wireframe-prep NNN    # Prime context, check escalation candidates
+/wireframe NNN         # Generate SVG (user-triggered)
+```
+
+### Validation
+```bash
+python validate-wireframe.py NNN-feature/01-page.svg     # Validate single file
+python validate-wireframe.py --all                        # Validate all SVGs
+python validate-wireframe.py --check-escalation           # Find issues to escalate
+```
+
+### Issue Tracking
+- **Auto-logged**: Validator writes issues to `NNN-feature/*.issues.md`
+- **Escalation**: Issues seen in 2+ features promote to `GENERAL_ISSUES.md`
+- **Policy**: Feature-specific first, general only after recurring pattern
 
 ## Viewing Wireframes
 

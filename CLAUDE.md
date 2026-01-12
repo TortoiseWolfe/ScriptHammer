@@ -10,22 +10,33 @@ ScriptHammer is a **planning template** for AI-assisted development. It contains
 
 **Improving Wireframe Tooling** - Refining the `/wireframe` skill and Python validators.
 
-### Workflow
+### Wireframe Workflow
 
-1. User runs `/wireframe NNN` manually (never include in plans)
-2. User shows issues with generated SVGs
-3. Claude documents issues in `GENERAL_ISSUES.md`
-4. Claude updates `validate-wireframe.py` to catch the issue
-5. Claude updates `~/.claude/commands/wireframe.md` skill to avoid the issue
-6. Repeat
+1. `/wireframe-prep NNN` - Primes context, reads spec, checks escalation candidates
+2. `/wireframe NNN` - User runs manually (never include in plans)
+3. Validator runs automatically, logs issues to `feature/*.issues.md`
+4. Issues escalate to `GENERAL_ISSUES.md` when seen in 2+ features
+
+### Issue Escalation Policy
+
+- **Feature-specific first**: Issues go to `docs/design/wireframes/NNN-feature/*.issues.md`
+- **Escalate after 2+ occurrences**: Run `--check-escalation` to find candidates
+- **GENERAL_ISSUES.md**: Only recurring patterns across multiple features
+
+```bash
+# Check for escalation candidates
+python docs/design/wireframes/validate-wireframe.py --check-escalation
+```
 
 ### Key Files Being Improved
 
 | File | Purpose |
 |------|---------|
-| `~/.claude/commands/wireframe.md` | Wireframe generation skill |
-| `docs/design/wireframes/validate-wireframe.py` | Automated SVG validation |
-| `docs/design/wireframes/GENERAL_ISSUES.md` | Recurring mistakes catalog |
+| `~/.claude/commands/wireframe.md` | Wireframe generation skill (v5) |
+| `~/.claude/commands/wireframe-prep.md` | Context priming + escalation check |
+| `docs/design/wireframes/validate-wireframe.py` | Automated SVG validation (v5.0) |
+| `docs/design/wireframes/GENERAL_ISSUES.md` | Recurring mistakes (escalated only) |
+| `docs/design/wireframes/NNN-*/*.issues.md` | Feature-specific issues (auto-logged) |
 
 ### What NOT to Include in Plans
 

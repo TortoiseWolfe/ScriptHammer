@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v4.0
+SVG Wireframe Validator v5.0
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
 All checks are errors - either it passes or it fails. No ambiguous warnings.
+
+NEW in v5.0: Auto-logs issues to feature-specific .issues.md files.
+Issues only escalate to GENERAL_ISSUES.md when seen in 2+ features.
 
 Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
         annotations, title, signature, background gradient, paint order.
@@ -11,14 +14,17 @@ Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
     python validate-wireframe.py --all  # Validate all SVGs
+    python validate-wireframe.py --check-escalation  # Check for patterns to escalate
 """
 
 import sys
 import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from dataclasses import dataclass
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Set
+from datetime import date
+import json
 
 # ============================================================
 # COLOR STANDARDS
@@ -1152,14 +1158,195 @@ class WireframeValidator:
             ))
 
 
+# ============================================================
+# ISSUE LOGGER - Auto-logs to feature-specific .issues.md files
+# ============================================================
+
+class IssueLogger:
+    """Logs validation issues to feature-specific .issues.md files.
+
+    Issues are logged per-feature first. Only escalate to GENERAL_ISSUES.md
+    when the same issue code appears in 2+ different features.
+    """
+
+    def __init__(self, wireframes_dir: Path):
+        self.wireframes_dir = wireframes_dir
+        self.general_issues_path = wireframes_dir / "GENERAL_ISSUES.md"
+
+    def get_issues_file_path(self, svg_path: Path) -> Path:
+        """Get the .issues.md file path for an SVG."""
+        svg_name = svg_path.stem  # e.g., "01-consent-modal-flow"
+        return svg_path.parent / f"{svg_name}.issues.md"
+
+    def log_issues(self, svg_path: Path, issues: List[Issue]) -> None:
+        """Log issues to the feature-specific .issues.md file."""
+        if not issues:
+            return
+
+        issues_file = self.get_issues_file_path(svg_path)
+        feature_name = svg_path.parent.name  # e.g., "002-cookie-consent"
+        svg_name = svg_path.name
+        today = date.today().isoformat()
+
+        # Categorize issues
+        categories: Dict[str, List[Issue]] = {}
+        for issue in issues:
+            # Determine category from issue code prefix
+            code = issue.code
+            if code.startswith('S-') or code.startswith('G-02'):
+                cat = "Structure Issues"
+            elif code.startswith('MODAL'):
+                cat = "Modal Issues"
+            elif code.startswith('C-') or code.startswith('COLL'):
+                cat = "Collision Issues"
+            elif code.startswith('ANN') or code.startswith('A-'):
+                cat = "Annotation Issues"
+            elif code.startswith('FONT') or code.startswith('F-'):
+                cat = "Font Issues"
+            elif code.startswith('HDR'):
+                cat = "Header/Footer Issues"
+            elif code.startswith('BTN'):
+                cat = "Button Issues"
+            elif code.startswith('US-'):
+                cat = "User Story Issues"
+            elif code.startswith('TITLE') or code.startswith('SECTION'):
+                cat = "Title/Section Issues"
+            elif code.startswith('LAYOUT'):
+                cat = "Layout Issues"
+            elif code.startswith('CLUTTER'):
+                cat = "Clutter Issues"
+            else:
+                cat = "Other Issues"
+
+            if cat not in categories:
+                categories[cat] = []
+            categories[cat].append(issue)
+
+        # Determine classification (PATCH vs REGENERATE)
+        def classify_issue(code: str) -> str:
+            """Determine if an issue is PATCH or REGENERATE."""
+            patch_codes = ['C-', 'COLL', 'A-03', 'FONT-001']  # Localized fixes
+            if any(code.startswith(p) for p in patch_codes):
+                return "PATCH"
+            return "REGENERATE"
+
+        # Build markdown content
+        lines = [
+            f"# Issues: {svg_name}",
+            "",
+            f"**Feature:** {feature_name}",
+            f"**SVG:** {svg_name}",
+            f"**Last Review:** {today}",
+            "**Validator:** v5.0",
+            "",
+            "---",
+            "",
+            "## Summary",
+            "",
+            "| Status | Count |",
+            "|--------|-------|",
+            f"| Open | {len(issues)} |",
+            "",
+            "---",
+            "",
+            f"## Open Issues ({today} Review)",
+            "",
+        ]
+
+        for category, cat_issues in categories.items():
+            lines.append(f"### {category}")
+            lines.append("")
+            lines.append("| ID | Issue | Code | Classification |")
+            lines.append("|----|-------|------|----------------|")
+
+            for i, issue in enumerate(cat_issues, 1):
+                prefix = category[0] if category != "Other Issues" else "X"
+                issue_id = f"{prefix}-{i:02d}"
+                classification = classify_issue(issue.code)
+                # Truncate message if too long
+                msg = issue.message[:60] + "..." if len(issue.message) > 60 else issue.message
+                lines.append(f"| {issue_id} | {msg} | {issue.code} | {classification} |")
+
+            lines.append("")
+
+        lines.extend([
+            "---",
+            "",
+            "## Notes",
+            "",
+            "- Auto-generated by validator v5.0",
+            f"- Run validator to refresh: `python validate-wireframe.py {feature_name}/{svg_name}`",
+            "",
+        ])
+
+        # Write file
+        issues_file.write_text("\n".join(lines))
+        print(f"  Issues logged to: {issues_file.relative_to(self.wireframes_dir)}")
+
+    def check_escalation(self) -> Dict[str, List[str]]:
+        """Check all .issues.md files for patterns that should escalate.
+
+        Returns dict of issue_code -> list of features where it appears.
+        """
+        pattern_occurrences: Dict[str, Set[str]] = {}
+
+        # Find all .issues.md files
+        for issues_file in self.wireframes_dir.glob("**/*.issues.md"):
+            if issues_file.name == "GENERAL_ISSUES.md":
+                continue
+
+            feature = issues_file.parent.name
+            content = issues_file.read_text()
+
+            # Extract issue codes from the file
+            codes = re.findall(r'\| ([A-Z]+-\d+) \|', content)
+            for code in codes:
+                if code not in pattern_occurrences:
+                    pattern_occurrences[code] = set()
+                pattern_occurrences[code].add(feature)
+
+        # Filter to codes appearing in 2+ features
+        escalation_candidates = {
+            code: list(features)
+            for code, features in pattern_occurrences.items()
+            if len(features) >= 2
+        }
+
+        return escalation_candidates
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python validate-wireframe.py <svg-file-or-dir>")
         print("       python validate-wireframe.py --all")
+        print("       python validate-wireframe.py --check-escalation")
         sys.exit(1)
 
     wireframes_dir = Path(__file__).parent
+    logger = IssueLogger(wireframes_dir)
 
+    # Handle escalation check mode
+    if sys.argv[1] == '--check-escalation':
+        print(f"\n{'='*60}")
+        print("CHECKING FOR ESCALATION CANDIDATES")
+        print('='*60)
+
+        candidates = logger.check_escalation()
+
+        if not candidates:
+            print("\nNo escalation candidates found.")
+            print("Issues must appear in 2+ features to escalate to GENERAL_ISSUES.md")
+        else:
+            print(f"\n{len(candidates)} issue codes found in 2+ features:")
+            print("")
+            for code, features in sorted(candidates.items()):
+                print(f"  {code}: {', '.join(sorted(features))}")
+            print("")
+            print("ACTION: Add these to GENERAL_ISSUES.md if not already present.")
+
+        sys.exit(0)
+
+    # Standard validation mode
     if sys.argv[1] == '--all':
         svg_files = list(wireframes_dir.glob('**/*.svg'))
         svg_files = [f for f in svg_files if 'includes' not in str(f)]
@@ -1190,6 +1377,9 @@ def main():
                 print(f"  ERROR [{issue.code}]{line_info}: {issue.message}")
 
             print(f"\n  {len(errors)} errors")
+
+            # Auto-log issues to feature-specific file
+            logger.log_issues(svg_file, issues)
 
         total_errors += len(errors)
 
