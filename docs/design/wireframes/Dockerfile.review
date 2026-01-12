@@ -16,17 +16,14 @@ RUN apt-get update && apt-get install -y \
 # Install live-server globally
 RUN npm install -g live-server
 
+# Install Playwright Python package - MUST match base image version
+RUN pip install playwright==1.48.0
+
 # Set working directory
 WORKDIR /wireframes
 
 # Copy wireframe files (will be overridden by volume mount in dev)
 COPY . .
-
-# Install Python dependencies (none needed beyond playwright which is pre-installed)
-# The validator uses only standard library
-
-# Install Playwright browsers
-RUN playwright install chromium
 
 # Entrypoint runs the screenshot script
 ENTRYPOINT ["python3", "screenshot-wireframes.py"]
