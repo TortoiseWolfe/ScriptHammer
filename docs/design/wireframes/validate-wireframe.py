@@ -66,15 +66,19 @@ FORBIDDEN_PANEL_COLORS = [
 FORBIDDEN_FRAME_COLORS = ['#1f2937', '#111827', '#0f172a']
 
 # ============================================================
-# HEADER TEMPLATE PATTERNS
+# INCLUDE REFERENCES (resolved at runtime by viewer)
 # ============================================================
 
-# Icon path fragments that indicate proper template usage
-REQUIRED_ICON_PATTERNS = [
-    r'M12 15a3 3 0 1 0 0-6',           # Eye icon (accessibility)
-    r'M11\.0779 2\.25',                 # Gear icon start (settings)
-    r'M3 6\.75A\.75\.75 0 0 1 3\.75 6', # Hamburger menu (mobile)
-]
+REQUIRED_INCLUDES = {
+    'desktop': [
+        'includes/header-desktop.svg#desktop-header',
+        'includes/footer-desktop.svg#site-footer',
+    ],
+    'mobile': [
+        'includes/header-mobile.svg#mobile-header-group',
+        'includes/footer-mobile.svg#mobile-bottom-nav',
+    ],
+}
 
 # ============================================================
 # LAYOUT STANDARDS
@@ -167,6 +171,15 @@ class WireframeValidator:
         # v2.1 checks
         self._check_callout_collisions()
         self._check_annotation_structure()
+
+        # v3 checks (from plan analysis)
+        self._check_title_format()
+        self._check_section_labels()
+        self._check_clutter()
+        self._check_callout_coverage()
+        self._check_button_fills()
+        self._check_signature()
+        self._check_annotation_spacing()
 
         return self.issues
 
@@ -295,7 +308,7 @@ class WireframeValidator:
                     ))
 
     def _check_header_templates(self):
-        """HDR-001: Check that header templates from includes/ are properly injected."""
+        """HDR-001: Check that include references are present (viewer resolves at runtime)."""
         has_desktop = 'id="desktop"' in self.svg_content or 'DESKTOP' in self.svg_content
         has_mobile = 'id="mobile"' in self.svg_content or 'MOBILE' in self.svg_content
 
@@ -304,47 +317,28 @@ class WireframeValidator:
 
         missing = []
 
-        # Check for injected template group IDs
+        # Check for <use> references to include files
         if has_desktop:
-            if 'id="desktop-header"' not in self.svg_content:
-                missing.append("desktop-header (from includes/header-desktop.svg)")
-            if 'id="site-footer"' not in self.svg_content:
-                missing.append("site-footer (from includes/footer-desktop.svg)")
+            if 'href="includes/header-desktop.svg#desktop-header"' not in self.svg_content:
+                missing.append("header-desktop.svg#desktop-header")
+            if 'href="includes/footer-desktop.svg#site-footer"' not in self.svg_content:
+                missing.append("footer-desktop.svg#site-footer")
 
         if has_mobile:
-            if 'id="mobile-header-group"' not in self.svg_content:
-                missing.append("mobile-header-group (from includes/header-mobile.svg)")
-            if 'id="mobile-bottom-nav"' not in self.svg_content:
-                missing.append("mobile-bottom-nav (from includes/footer-mobile.svg)")
+            if 'href="includes/header-mobile.svg#mobile-header-group"' not in self.svg_content:
+                missing.append("header-mobile.svg#mobile-header-group")
+            if 'href="includes/footer-mobile.svg#mobile-bottom-nav"' not in self.svg_content:
+                missing.append("footer-mobile.svg#mobile-bottom-nav")
 
         if missing:
             self.issues.append(Issue(
                 severity="ERROR",
                 code="HDR-001",
-                message=f"Missing template injections: {', '.join(missing)}"
+                message=f"Missing include references: {', '.join(missing)}. Use <use href=\"includes/...\"/>"
             ))
 
-        # Also check for required icon patterns as backup
-        missing_icons = []
-
-        # Eye icon (accessibility) - should be in both
-        if not re.search(REQUIRED_ICON_PATTERNS[0], self.svg_content):
-            missing_icons.append("eye icon")
-
-        # Gear icon (settings) - should be in both
-        if not re.search(REQUIRED_ICON_PATTERNS[1], self.svg_content):
-            missing_icons.append("gear icon")
-
-        # Hamburger menu - only required for mobile
-        if has_mobile and not re.search(REQUIRED_ICON_PATTERNS[2], self.svg_content):
-            missing_icons.append("hamburger menu")
-
-        if missing_icons:
-            self.issues.append(Issue(
-                severity="WARNING",
-                code="HDR-002",
-                message=f"Missing icon paths (may indicate hand-drawn headers): {', '.join(missing_icons)}"
-            ))
+        # Note: Icon patterns are NOT checked here because they live in the include files,
+        # not in the wireframe SVG itself. The viewer resolves includes at runtime.
 
     def _check_mobile_frame(self):
         """MOB-001: Check mobile phone frame isn't using dark colors."""
@@ -506,14 +500,7 @@ class WireframeValidator:
                 code="ANN-002",
                 message=f"Only {callout_count} annotation groups found (recommend 4-8 for complete coverage)"
             ))
-
-        # Check for legend
-        if 'Legend' not in self.svg_content and 'legend' not in self.svg_content.lower():
-            self.issues.append(Issue(
-                severity="WARNING",
-                code="ANN-003",
-                message="No legend found in annotation panel"
-            ))
+        # Note: Legend check moved to _check_clutter() as CLUTTER-001 (inverted - now warns if legend EXISTS)
 
     def _check_boundaries(self):
         """Check content stays within canvas boundaries."""
@@ -538,6 +525,193 @@ class WireframeValidator:
                     ))
             except (ValueError, TypeError):
                 continue
+
+    # ============================================================
+    # v3 CHECKS (from plan analysis - 2026-01-11)
+    # ============================================================
+
+    def _check_title_format(self):
+        """TITLE-001/002/003: Title must be centered and human-readable."""
+        # Find title text (y < 50, large font)
+        title_pattern = r'<text[^>]*y=["\']?(\d+)["\']?[^>]*>([^<]+)</text>'
+        for match in re.finditer(title_pattern, self.svg_content[:2000]):
+            try:
+                y = int(match.group(1))
+                text_content = match.group(2).strip()
+                if y < 50 and len(text_content) > 5:  # Likely a title
+                    # Check for pipe character (indicates wrong format)
+                    if '|' in text_content:
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="TITLE-001",
+                            message=f"Title contains '|' - use human-readable format: '{text_content[:50]}...'"
+                        ))
+                    # Check for "Page X of Y"
+                    if 'Page' in text_content and 'of' in text_content:
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="TITLE-002",
+                            message="Remove 'Page X of Y' from title"
+                        ))
+                    # Check centering
+                    context = self.svg_content[max(0, match.start()-300):match.start()]
+                    if 'text-anchor="middle"' not in context and 'text-anchor:middle' not in context:
+                        self.issues.append(Issue(
+                            severity="WARNING",
+                            code="TITLE-003",
+                            message="Title should be centered (text-anchor='middle')"
+                        ))
+                    break
+            except (ValueError, TypeError):
+                continue
+
+    def _check_section_labels(self):
+        """SECTION-001/002: Must have DESKTOP and MOBILE section labels."""
+        # Look for section labels at y ~52 (just below title)
+        has_desktop_label = bool(re.search(r'DESKTOP.*?y=["\']?5[0-9]', self.svg_content[:4000], re.DOTALL) or
+                                  re.search(r'y=["\']?5[0-9]["\']?.*?>.*?DESKTOP', self.svg_content[:4000], re.DOTALL))
+        has_mobile_label = bool(re.search(r'MOBILE.*?y=["\']?5[0-9]', self.svg_content, re.DOTALL) or
+                                 re.search(r'y=["\']?5[0-9]["\']?.*?>.*?MOBILE', self.svg_content, re.DOTALL))
+
+        if not has_desktop_label:
+            self.issues.append(Issue(
+                severity="WARNING",
+                code="SECTION-001",
+                message="Missing DESKTOP section label (e.g., 'DESKTOP (16:9)' at y=52)"
+            ))
+        if not has_mobile_label:
+            self.issues.append(Issue(
+                severity="WARNING",
+                code="SECTION-002",
+                message="Missing MOBILE section label"
+            ))
+
+    def _check_clutter(self):
+        """CLUTTER-001/002/003: No Legend/Coverage/Integration rows."""
+        if 'Legend:' in self.svg_content:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="CLUTTER-001",
+                message="Remove 'Legend:' row - badge colors are self-explanatory"
+            ))
+        if 'Coverage:' in self.svg_content:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="CLUTTER-002",
+                message="Remove 'Coverage:' row - internal tracking, not wireframe content"
+            ))
+        if 'Integration:' in self.svg_content:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="CLUTTER-003",
+                message="Remove 'Integration:' row - shows nothing visual"
+            ))
+
+    def _check_callout_coverage(self):
+        """CALLOUT-002: Mockup must illustrate ALL annotation concepts."""
+        if 'id="annotations"' not in self.svg_content:
+            return  # No annotation panel to check
+
+        # Count callouts on mockups (before annotations section)
+        annotation_start = self.svg_content.find('id="annotations"')
+        mockup_section = self.svg_content[:annotation_start]
+        mockup_callouts = len(re.findall(r'<circle[^>]*fill=["\']?#dc2626["\']?', mockup_section))
+
+        # Count callouts in annotation panel
+        annotation_section = self.svg_content[annotation_start:]
+        annotation_callouts = len(re.findall(r'<circle[^>]*fill=["\']?#dc2626["\']?', annotation_section))
+
+        if mockup_callouts < annotation_callouts:
+            missing = annotation_callouts - mockup_callouts
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="CALLOUT-002",
+                message=f"Mockup missing {missing} callout circles (annotation has {annotation_callouts} concepts, mockup only illustrates {mockup_callouts})"
+            ))
+
+    def _check_button_fills(self):
+        """BTN-001: Buttons should have solid fill colors, not faded/transparent.
+
+        General warning for any button-sized rect using faded panel colors.
+        Feature-specific rules (e.g., GDPR Accept/Reject equality) come from spec.md.
+        """
+        # Faded colors that make buttons look "transparent" or muted
+        faded_colors = ['#f5f0e6', '#e8d4b8', '#dcc8a8']
+
+        # Find button-sized rects (width 80-300, height 35-60)
+        button_pattern = r'<rect[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)["\']?[^>]*fill=["\']?([^"\'>\s]+)'
+        alt_pattern = r'<rect[^>]*fill=["\']?([^"\'>\s]+)["\']?[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)'
+
+        for pattern in [button_pattern, alt_pattern]:
+            for match in re.finditer(pattern, self.svg_content):
+                try:
+                    if pattern == button_pattern:
+                        width = int(match.group(1))
+                        height = int(match.group(2))
+                        fill = match.group(3).lower()
+                    else:
+                        fill = match.group(1).lower()
+                        width = int(match.group(2))
+                        height = int(match.group(3))
+
+                    # Check if this looks like a button (reasonable dimensions)
+                    if 80 <= width <= 300 and 35 <= height <= 60:
+                        if fill in faded_colors:
+                            line_num = self.svg_content[:match.start()].count('\n') + 1
+                            self.issues.append(Issue(
+                                severity="WARNING",
+                                code="BTN-001",
+                                message=f"Button uses faded fill color ({fill}) - consider solid fill for prominence",
+                                line=line_num
+                            ))
+                except (ValueError, TypeError):
+                    continue
+
+    def _check_signature(self):
+        """SIGNATURE-001/002: Signature must be 18px+ and bold."""
+        # Find signature (y > 1040)
+        sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*'
+        match = re.search(sig_pattern, self.svg_content)
+        if match:
+            sig_element = match.group()
+            # Check font size
+            size_match = re.search(r'font-size=["\']?(\d+)', sig_element)
+            if size_match:
+                font_size = int(size_match.group(1))
+                if font_size < 18:
+                    self.issues.append(Issue(
+                        severity="WARNING",
+                        code="SIGNATURE-001",
+                        message=f"Signature font too small ({font_size}px) - use 18px"
+                    ))
+            # Check for bold
+            if 'font-weight="bold"' not in sig_element and 'font-weight:bold' not in sig_element:
+                self.issues.append(Issue(
+                    severity="WARNING",
+                    code="SIGNATURE-002",
+                    message="Signature should be bold"
+                ))
+
+    def _check_annotation_spacing(self):
+        """LAYOUT-002: Annotation panel must not clip into signature."""
+        # Find annotation panel position
+        ann_pattern = r'id="annotations"[^>]*transform="translate\(\s*\d+\s*,\s*(\d+)'
+        match = re.search(ann_pattern, self.svg_content)
+        if match:
+            ann_y = int(match.group(1))
+            # Find annotation panel height
+            # Look for first rect after id="annotations"
+            start_pos = match.end()
+            height_match = re.search(r'<rect[^>]*height=["\']?(\d+)', self.svg_content[start_pos:start_pos+500])
+            if height_match:
+                ann_height = int(height_match.group(1))
+                ann_bottom = ann_y + ann_height
+                if ann_bottom > 1020:  # Needs 40px gap to signature at 1060
+                    self.issues.append(Issue(
+                        severity="ERROR",
+                        code="LAYOUT-002",
+                        message=f"Annotation panel clips into signature area (ends at y={ann_bottom}, need gap before y=1040)"
+                    ))
 
 
 def main():
