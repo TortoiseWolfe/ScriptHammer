@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wireframe Screenshot Tool v1.0
+Wireframe Screenshot Tool v1.1
 
 Takes standardized screenshots of SVG wireframes using Playwright.
 Runs in Docker with self-contained live-server - no external dependencies.
@@ -12,12 +12,16 @@ Usage:
 
 Output:
     png/[feature]/[svg-name]/
-        overview.png       # Full canvas at 100%
-        quadrant-tl.png    # Top-left at 200%
-        quadrant-tr.png    # Top-right at 200%
-        quadrant-bl.png    # Bottom-left at 200%
-        quadrant-br.png    # Bottom-right at 200%
-        manifest.json      # Paths + validator results
+        overview.png          # Full canvas (fit to view)
+        quadrant-center.png   # Center at 400% (overlaps all corners)
+        quadrant-tl.png       # Top-left at 400%
+        quadrant-tr.png       # Top-right at 400%
+        quadrant-bl.png       # Bottom-left at 400%
+        quadrant-br.png       # Bottom-right at 400%
+        manifest.json         # Paths + validator results
+
+The 5 quadrant shots tile to cover the entire 1920x1080 SVG canvas.
+Each shows 960x540 SVG pixels for readable detail inspection.
 """
 
 import sys
@@ -52,14 +56,16 @@ VIEWPORT_WIDTH = 3840  # 2x native 1920
 VIEWPORT_HEIGHT = 2160  # 2x native 1080
 SCREENSHOT_TIMEOUT = 10000  # ms
 
-# Quadrant definitions - pan offsets to show each region at 200% zoom
-# At zoom=2, the SVG (1920x1080) becomes 3840x2160, filling the viewport
-# Pan values shift the view to center each quadrant
+# Quadrant definitions for 5-shot coverage at zoom=4
+# At zoom=4, viewport (3840x2160) shows 960x540 SVG pixels
+# 5 shots tile to cover entire 1920x1080 SVG canvas
+# Pan formula: panX = (svgCenterX - shotCenterX) * zoom
 QUADRANTS = {
-    'tl': {'zoom': 2, 'panX': 960, 'panY': 540},     # Top-left
-    'tr': {'zoom': 2, 'panX': -960, 'panY': 540},    # Top-right
-    'bl': {'zoom': 2, 'panX': 960, 'panY': -540},    # Bottom-left
-    'br': {'zoom': 2, 'panX': -960, 'panY': -540},   # Bottom-right
+    'center': {'zoom': 4, 'panX': 0, 'panY': 0},           # (960, 540) - middle overlap
+    'tl': {'zoom': 4, 'panX': 1920, 'panY': 1080},         # (480, 270) - top-left
+    'tr': {'zoom': 4, 'panX': -1920, 'panY': 1080},        # (1440, 270) - top-right
+    'bl': {'zoom': 4, 'panX': 1920, 'panY': -1080},        # (480, 810) - bottom-left
+    'br': {'zoom': 4, 'panX': -1920, 'panY': -1080},       # (1440, 810) - bottom-right
 }
 
 
@@ -150,20 +156,29 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     screenshots['overview'] = str(overview_path.relative_to(WIREFRAMES_DIR))
     print(f"    Saved: overview.png")
 
-    # Quadrant screenshots at 200% zoom
-    # Use window.setViewerState() API exposed by the viewer
+    # Quadrant screenshots at 400% zoom using direct CSS transform
+    # 5 shots (center + 4 corners) tile to cover entire 1920x1080 canvas
+    # Direct DOM manipulation bypasses viewer's internal state management
+
+    # Disable CSS transition to prevent animation during transforms
+    page.evaluate("document.querySelector('#viewer').style.transition = 'none'")
+
     for quadrant_name, settings in QUADRANTS.items():
-        # Set zoom and pan via the viewer's exposed API
-        page.evaluate(f"window.setViewerState({settings['zoom']}, {settings['panX']}, {settings['panY']})")
-        page.wait_for_timeout(300)
+        # Set CSS transform directly on viewer element
+        transform = f"translate(-50%, -50%) translate({settings['panX']}px, {settings['panY']}px) scale({settings['zoom']})"
+        page.evaluate(f"document.querySelector('#viewer').style.transform = '{transform}'")
+        # Force reflow to ensure transform is applied
+        page.evaluate("document.querySelector('#viewer').offsetHeight")
+        page.wait_for_timeout(100)
 
         quadrant_path = output_dir / f'quadrant-{quadrant_name}.png'
         page.screenshot(path=str(quadrant_path), full_page=False)
         screenshots[f'quadrant_{quadrant_name}'] = str(quadrant_path.relative_to(WIREFRAMES_DIR))
         print(f"    Saved: quadrant-{quadrant_name}.png")
 
-    # Reset zoom/pan for next SVG (re-enables automatic fitToView)
-    page.evaluate("window.resetViewerState()")
+    # Restore transition and reset transform for next SVG
+    page.evaluate("document.querySelector('#viewer').style.transition = ''")
+    page.evaluate("document.querySelector('#viewer').style.transform = ''")
 
     return screenshots
 
