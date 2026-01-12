@@ -57,7 +57,7 @@
       </g>
       <!-- Avatar -->
       <circle cx="110" cy="22" r="14" fill="#8b5cf6"/>
-      <text x="110" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px">U</text>
+      <text x="110" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px">U</text>
     </g>
   </g>
 </g>

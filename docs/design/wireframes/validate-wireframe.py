@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v2.0
+SVG Wireframe Validator v4.0
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
-Catches issues Claude keeps forgetting: colors, collisions, boundaries,
-header templates, font sizes, clickable badges.
+All checks are errors - either it passes or it fails. No ambiguous warnings.
+
+Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
+        annotations, title, signature, background gradient, paint order.
 
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
@@ -95,7 +97,7 @@ MAX_UNUSED_RIGHT_SPACE = 200  # pixels
 
 @dataclass
 class Issue:
-    severity: str  # ERROR, WARNING
+    severity: str  # ERROR only - no warnings, they're useless
     code: str
     message: str
     line: Optional[int] = None
@@ -184,6 +186,23 @@ class WireframeValidator:
         # v4 checks (User Story support)
         self._check_user_story_coverage()
 
+        # v5 checks (Design principle validation - 2026-01-12)
+        self._check_modal_overlay()
+        self._check_callout_positioning()
+        self._check_annotation_columns()
+        self._check_annotation_containment()
+        self._check_section_separation()
+
+        # v6 checks (G-019, G-020, G-021 - 2026-01-12)
+        self._check_annotation_group_spacing()
+        self._check_footer_paint_order()
+
+        # v7 checks (G-022 to G-029 - 2026-01-12)
+        self._check_background_gradient()
+        self._check_title_exists()
+        self._check_signature_exists()
+        self._check_callouts_on_mockups()
+
         return self.issues
 
     def _check_xml_syntax(self):
@@ -267,16 +286,17 @@ class WireframeValidator:
             ))
 
     def _check_colors(self):
-        """Check for forbidden colors."""
+        """Check for forbidden colors on PANELS (rect elements only, not text)."""
         for color in FORBIDDEN_PANEL_COLORS:
-            pattern = rf'fill=["\']?{re.escape(color)}'
+            # Only match <rect elements with forbidden fill - text can use #ffffff
+            pattern = rf'<rect[^>]*fill=["\']?{re.escape(color)}'
             matches = list(re.finditer(pattern, self.svg_content, re.IGNORECASE))
             for match in matches:
                 line_num = self.svg_content[:match.start()].count('\n') + 1
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="G-001",
-                    message=f"Forbidden panel color '{color}' found (use #e8d4b8 parchment)",
+                    message=f"Forbidden panel color '{color}' on rect (use #e8d4b8 parchment)",
                     line=line_num
                 ))
 
@@ -304,9 +324,9 @@ class WireframeValidator:
                 if fill not in ['#6b7280', '#22c55e', 'none', 'url(']:
                     line_num = self.svg_content[:match.start()].count('\n') + 1
                     self.issues.append(Issue(
-                        severity="WARNING",
+                        severity="ERROR",
                         code="G-015",
-                        message=f"Possible toggle with wrong color '{fill}' (should be #6b7280 OFF or #22c55e ON)",
+                        message=f"Toggle has wrong color '{fill}' (must be #6b7280 OFF or #22c55e ON)",
                         line=line_num
                     ))
 
@@ -443,7 +463,7 @@ class WireframeValidator:
         unused_space = CANVAS_WIDTH - rightmost_x
         if unused_space > MAX_UNUSED_RIGHT_SPACE:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="LAYOUT-001",
                 message=f"{int(unused_space)}px unused space on right (rightmost element at x={int(rightmost_x)})"
             ))
@@ -475,9 +495,9 @@ class WireframeValidator:
                 # Warn if callout appears near footer or edge elements
                 if 'footer' in context.lower() or 'site-footer' in context:
                     self.issues.append(Issue(
-                        severity="WARNING",
+                        severity="ERROR",
                         code="COLL-001",
-                        message=f"Callout circle near footer area - verify no overlap",
+                        message=f"Callout circle near footer area - move away from footer",
                         line=line_num
                     ))
 
@@ -486,22 +506,23 @@ class WireframeValidator:
         # Check for annotation panel
         if 'id="annotations"' not in self.svg_content:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="ANN-001",
                 message="No annotation panel found (expected id='annotations')"
             ))
             return
 
-        # Count annotation groups (circles with numbers in annotation area)
-        # Look for callout circles in annotation panel (y > 800)
+        # Count callout CIRCLES specifically (not P0 badges which are rects)
+        # Look for <circle elements with red fill in annotation panel
         annotation_section = self.svg_content[self.svg_content.find('id="annotations"'):]
-        callout_count = annotation_section.count('fill="#dc2626"')
+        callout_pattern = r'<circle[^>]*fill=["\']?#dc2626'
+        callout_count = len(re.findall(callout_pattern, annotation_section))
 
         if callout_count < 4:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="ANN-002",
-                message=f"Only {callout_count} annotation groups found (minimum 4 recommended)"
+                message=f"Only {callout_count} callout circles in annotation panel (minimum 4 required)"
             ))
         # Note: Legend check moved to _check_clutter() as CLUTTER-001 (inverted - now warns if legend EXISTS)
 
@@ -560,9 +581,9 @@ class WireframeValidator:
                     context = self.svg_content[max(0, match.start()-300):match.start()]
                     if 'text-anchor="middle"' not in context and 'text-anchor:middle' not in context:
                         self.issues.append(Issue(
-                            severity="WARNING",
+                            severity="ERROR",
                             code="TITLE-003",
-                            message="Title should be centered (text-anchor='middle')"
+                            message="Title must be centered (text-anchor='middle')"
                         ))
                     break
             except (ValueError, TypeError):
@@ -578,13 +599,13 @@ class WireframeValidator:
 
         if not has_desktop_label:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="SECTION-001",
                 message="Missing DESKTOP section label (e.g., 'DESKTOP (16:9)' at y=52)"
             ))
         if not has_mobile_label:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="SECTION-002",
                 message="Missing MOBILE section label"
             ))
@@ -635,11 +656,12 @@ class WireframeValidator:
     def _check_button_fills(self):
         """BTN-001: Buttons should have solid fill colors, not faded/transparent.
 
-        General warning for any button-sized rect using faded panel colors.
-        Feature-specific rules (e.g., GDPR Accept/Reject equality) come from spec.md.
+        Note: #f5f0e6 is valid for tertiary/secondary buttons per design system.
+        Only flag truly invisible/panel-matching colors.
         """
-        # Faded colors that make buttons look "transparent" or muted
-        faded_colors = ['#f5f0e6', '#e8d4b8', '#dcc8a8']
+        # Colors that make buttons invisible against parchment background
+        # Removed #f5f0e6 - valid for tertiary buttons
+        faded_colors = ['#e8d4b8', '#dcc8a8']
 
         # Find button-sized rects (width 80-300, height 35-60)
         button_pattern = r'<rect[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)["\']?[^>]*fill=["\']?([^"\'>\s]+)'
@@ -662,9 +684,9 @@ class WireframeValidator:
                         if fill in faded_colors:
                             line_num = self.svg_content[:match.start()].count('\n') + 1
                             self.issues.append(Issue(
-                                severity="WARNING",
+                                severity="ERROR",
                                 code="BTN-001",
-                                message=f"Button uses faded fill color ({fill}) - consider solid fill for prominence",
+                                message=f"Button uses faded fill color ({fill}) - use solid fill for prominence",
                                 line=line_num
                             ))
                 except (ValueError, TypeError):
@@ -683,16 +705,16 @@ class WireframeValidator:
                 font_size = int(size_match.group(1))
                 if font_size < 18:
                     self.issues.append(Issue(
-                        severity="WARNING",
+                        severity="ERROR",
                         code="SIGNATURE-001",
                         message=f"Signature font too small ({font_size}px) - use 18px"
                     ))
             # Check for bold
             if 'font-weight="bold"' not in sig_element and 'font-weight:bold' not in sig_element:
                 self.issues.append(Issue(
-                    severity="WARNING",
+                    severity="ERROR",
                     code="SIGNATURE-002",
-                    message="Signature should be bold"
+                    message="Signature must be bold"
                 ))
 
     def _check_annotation_spacing(self):
@@ -741,9 +763,392 @@ class WireframeValidator:
             ))
         elif len(unique_us) < 3:
             self.issues.append(Issue(
-                severity="WARNING",
+                severity="ERROR",
                 code="US-002",
-                message=f"Only {len(unique_us)} User Story badges found - most features have 4+ User Stories"
+                message=f"Only {len(unique_us)} User Story badges found - need at least 3 User Stories"
+            ))
+
+    # ============================================================
+    # v5 CHECKS (Design principle validation - 2026-01-12)
+    # ============================================================
+
+    def _check_modal_overlay(self):
+        """MODAL-001: Modals must have DARK dimmed background overlay.
+
+        A modal should have a semi-transparent DARK overlay behind it to dim the
+        background content. Using the same light color (e.g., parchment) with
+        opacity is not a proper modal overlay - it should be dark grey/black.
+        """
+        # Look for modal-like structures: centered panels with "modal", "dialog", or "consent" nearby
+        modal_indicators = ['modal', 'dialog', 'consent', 'Cookie Preferences', 'Privacy Preferences']
+        has_modal = any(indicator.lower() in self.svg_content.lower() for indicator in modal_indicators)
+
+        if not has_modal:
+            return  # No modal to check
+
+        # Check for DARK overlay: must be a dark color with transparency
+        # More flexible patterns to catch various SVG attribute orderings
+        dark_overlay_patterns = [
+            r'fill=["\']?rgba\s*\(\s*0\s*,\s*0\s*,\s*0',  # rgba(0,0,0,...)
+            r'fill=["\']?#000["\']?',  # #000
+            r'fill=["\']?#000000["\']?',  # #000000
+            r'fill=["\']?black["\']?',  # black
+            r'opacity=["\']?0\.[3-6]["\']?[^>]*fill=["\']?#000',  # opacity before fill
+        ]
+
+        # Also check for rect with dark fill AND opacity attribute nearby
+        dark_rect_pattern = r'<rect[^>]*fill=["\']?#000(?:000)?["\']?[^>]*opacity=["\']?0\.[3-6]'
+        dark_rect_alt = r'<rect[^>]*opacity=["\']?0\.[3-6]["\']?[^>]*fill=["\']?#000'
+
+        has_dark_overlay = (
+            any(re.search(p, self.svg_content, re.IGNORECASE) for p in dark_overlay_patterns) or
+            re.search(dark_rect_pattern, self.svg_content, re.IGNORECASE) or
+            re.search(dark_rect_alt, self.svg_content, re.IGNORECASE)
+        )
+
+        # Check for light/parchment colors used as "overlay" - this is wrong
+        # Parchment colors: #e8d4b8, #dcc8a8, #f5f0e6 - all start with d, e, or f
+        light_overlay_pattern = r'fill=["\']?#[d-fD-F][0-9a-fA-F]{5}["\']?[^>]*opacity=["\']?0\.[3-9]'
+        has_light_overlay = re.search(light_overlay_pattern, self.svg_content, re.IGNORECASE)
+
+        if has_light_overlay:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="MODAL-001",
+                message="Modal uses light-colored overlay - use dark grey/black (rgba(0,0,0,0.5)) for proper dimming"
+            ))
+        elif not has_dark_overlay:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="MODAL-001",
+                message="Modal detected but no dimmed background overlay found (use semi-transparent dark rect behind modal)"
+            ))
+
+    def _check_callout_positioning(self):
+        """CALLOUT-003: Callouts should be positioned after (right/below) elements, not on top.
+
+        Callouts are supporting annotations - they should not obscure or compete
+        with the UI elements they're explaining.
+        """
+        # Find callout circles (red fill #dc2626) and their positions
+        # This is a heuristic check - we look for callouts that appear centered on elements
+
+        # Find all callout positions in the mockup areas (not annotation panel)
+        if 'id="annotations"' in self.svg_content:
+            mockup_section = self.svg_content[:self.svg_content.find('id="annotations"')]
+        else:
+            mockup_section = self.svg_content
+
+        # Look for callout circles
+        callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*>'
+        callouts = list(re.finditer(callout_pattern, mockup_section))
+
+        # Look for UI elements (buttons, toggles) that might have callouts on them
+        # Buttons: rect with rx=4-8, typical button dimensions
+        button_pattern = r'<rect[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)["\']?[^>]*rx=["\']?[4-8]["\']?'
+
+        buttons = list(re.finditer(button_pattern, mockup_section))
+
+        # Heuristic: if there are callouts and buttons, and they're close together
+        # in the SVG source, warn about potential overlap
+        # (Full geometric analysis would require parsing transforms)
+        if len(callouts) > 0 and len(buttons) > 0:
+            for callout in callouts:
+                callout_pos = callout.start()
+                # Check if any button is very close in source (within 500 chars)
+                for button in buttons:
+                    button_pos = button.start()
+                    if abs(callout_pos - button_pos) < 300:
+                        # They're close in source - might be overlapping
+                        line_num = self.svg_content[:callout_pos].count('\n') + 1
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="CALLOUT-003",
+                            message="Callout positioned on top of UI element - place after (right/below) instead",
+                            line=line_num
+                        ))
+                        break  # Only warn once per callout
+
+    def _check_annotation_columns(self):
+        """ANN-003: Annotation text must stay within column boundaries.
+
+        The annotation panel uses a 4-column grid:
+        - Column 1: x=20 to x=470
+        - Column 2: x=470 to x=920
+        - Column 3: x=920 to x=1370
+        - Column 4: x=1370 to x=1820
+        """
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_section = self.svg_content[annotation_start:]
+
+        # Column boundaries (relative to annotation panel)
+        columns = [(20, 470), (470, 920), (920, 1370), (1370, 1820)]
+
+        # Find text elements with x positions
+        text_pattern = r'<text[^>]*x=["\']?(\d+)["\']?[^>]*>([^<]*)</text>'
+
+        for match in re.finditer(text_pattern, annotation_section):
+            try:
+                x = int(match.group(1))
+                text_content = match.group(2)[:30]  # First 30 chars
+
+                # Estimate text width (rough: 8px per char for 14px font)
+                estimated_width = len(match.group(2)) * 8
+                text_end = x + estimated_width
+
+                # Check if text fits within any column
+                fits_column = False
+                for col_start, col_end in columns:
+                    if x >= col_start and text_end <= col_end:
+                        fits_column = True
+                        break
+
+                # Only warn if text is clearly outside all columns and long enough to matter
+                if not fits_column and estimated_width > 100:
+                    # Check if it's just starting in a valid column
+                    in_valid_start = any(col_start <= x < col_end for col_start, col_end in columns)
+                    if in_valid_start and text_end > 1820:
+                        line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="ANN-003",
+                            message=f"Text overflows column boundary: '{text_content}...' (x={x}, est. end={text_end})",
+                            line=line_num
+                        ))
+            except (ValueError, TypeError):
+                continue
+
+    def _check_annotation_containment(self):
+        """ANN-004: All annotation content must fit within panel bounds.
+
+        Panel is 1840w × 220h at translate(40, 800).
+        Content should not extend beyond x=1840 or y=220 (relative to panel).
+        """
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_section = self.svg_content[annotation_start:]
+
+        # Check for elements with positions beyond bounds
+        # Look for x > 1800 or y > 200 (leaving some margin)
+        x_pattern = r'x=["\']?(\d+)["\']?'
+        y_pattern = r'y=["\']?(\d+)["\']?'
+
+        # Find all x values
+        for match in re.finditer(x_pattern, annotation_section[:5000]):  # First 5000 chars of annotation
+            try:
+                x = int(match.group(1))
+                if x > 1800:
+                    line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                    self.issues.append(Issue(
+                        severity="ERROR",
+                        code="ANN-004",
+                        message=f"Content extends beyond annotation panel (x={x} > 1800)",
+                        line=line_num
+                    ))
+            except ValueError:
+                continue
+
+        # Find all y values (within annotation section)
+        for match in re.finditer(y_pattern, annotation_section[:5000]):
+            try:
+                y = int(match.group(1))
+                if y > 200:
+                    line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                    self.issues.append(Issue(
+                        severity="ERROR",
+                        code="ANN-004",
+                        message=f"Content extends beyond annotation panel (y={y} > 200)",
+                        line=line_num
+                    ))
+            except ValueError:
+                continue
+
+    def _check_section_separation(self):
+        """ANN-005: UI Elements section must be at bottom of annotation panel.
+
+        The annotation panel layout:
+        - Row 1 (y=20): Callout groups ①②③④
+        - Row 2 (y=90): More callout groups ⑤⑥⑦⑧
+        - Bottom (y≥150): UI Elements or similar summary sections
+
+        If "UI Elements" is at y < 140, it's too close to the callouts.
+        """
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_section = self.svg_content[annotation_start:]
+
+        # Check for "UI Elements" or similar sections positioned too high
+        section_indicators = ['UI Elements', 'Summary', 'Notes']
+
+        for indicator in section_indicators:
+            if indicator not in annotation_section:
+                continue
+
+            # Find the y position of this section
+            # Look for pattern: "UI Elements" followed by text element with y attribute
+            pattern = rf'{re.escape(indicator)}[^<]*</text>|<text[^>]*>.*?{re.escape(indicator)}'
+            match = re.search(pattern, annotation_section)
+
+            if match:
+                # Get context around the match to find y value
+                start = max(0, match.start() - 100)
+                end = min(len(annotation_section), match.end() + 50)
+                context = annotation_section[start:end]
+
+                y_match = re.search(r'y=["\']?(\d+)', context)
+                if y_match:
+                    y = int(y_match.group(1))
+                    if y < 140:
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="ANN-005",
+                            message=f"'{indicator}' section at y={y} is too close to callouts - move to y>=150 for visual separation"
+                        ))
+
+    # ============================================================
+    # v6 CHECKS (G-019, G-020, G-021 - 2026-01-12)
+    # ============================================================
+
+    def _check_annotation_group_spacing(self):
+        """G-020: Annotation groups need 20px vertical gap between each."""
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_section = self.svg_content[annotation_start:]
+
+        # Find callout circles in annotation panel (they mark group starts)
+        circle_pattern = r'<circle[^>]*cy=["\']?(\d+)["\']?[^>]*fill=["\']?#dc2626'
+        alt_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*cy=["\']?(\d+)'
+
+        y_positions = []
+        for pattern in [circle_pattern, alt_pattern]:
+            for match in re.finditer(pattern, annotation_section[:3000]):
+                try:
+                    y = int(match.group(1))
+                    if y not in y_positions:
+                        y_positions.append(y)
+                except ValueError:
+                    continue
+
+        y_positions.sort()
+
+        # Check gaps between consecutive groups on same row
+        for i in range(1, len(y_positions)):
+            gap = y_positions[i] - y_positions[i-1]
+            # Groups on same row should have same y; different rows should be 70+ apart
+            if 0 < gap < 60:
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-020",
+                    message=f"Annotation groups too close: y={y_positions[i-1]} to y={y_positions[i]} (gap={gap}px, need 70px between rows)"
+                ))
+
+    def _check_footer_paint_order(self):
+        """G-021: Footer <use> must come AFTER modal content in SVG order."""
+        # Only relevant if there's a modal
+        modal_indicators = ['modal', 'dialog', 'consent', 'opacity="0.5"', 'opacity="0.4"']
+        has_modal = any(indicator in self.svg_content.lower() for indicator in modal_indicators)
+
+        if not has_modal:
+            return
+
+        # Find positions of footer reference and modal overlay
+        footer_match = re.search(r'<use[^>]*footer-desktop\.svg', self.svg_content)
+        overlay_match = re.search(r'<rect[^>]*opacity=["\']?0\.[3-6]', self.svg_content)
+
+        if footer_match and overlay_match:
+            footer_pos = footer_match.start()
+            overlay_pos = overlay_match.start()
+
+            if footer_pos < overlay_pos:
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-021",
+                    message="Footer <use> appears BEFORE modal overlay - will be hidden. Move footer after modal content."
+                ))
+
+    # ============================================================
+    # v7 CHECKS (G-022 to G-029 - 2026-01-12)
+    # ============================================================
+
+    def _check_background_gradient(self):
+        """G-022: Canvas must have blue gradient background, not solid parchment."""
+        has_gradient = 'linearGradient' in self.svg_content and '#c7ddf5' in self.svg_content
+        has_gradient_ref = 'fill="url(#bg)"' in self.svg_content or "fill='url(#bg)'" in self.svg_content
+
+        if not has_gradient:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="G-022",
+                message="Missing background gradient. Add linearGradient with #c7ddf5 → #b8d4f0"
+            ))
+        elif not has_gradient_ref:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="G-022",
+                message="Background gradient defined but not used. Add fill=\"url(#bg)\" to background rect"
+            ))
+
+    def _check_title_exists(self):
+        """G-024: Must have centered title at y < 40."""
+        # Look for text element with y < 40 and text-anchor="middle"
+        title_pattern = r'<text[^>]*text-anchor=["\']middle["\'][^>]*y=["\']?(\d+)["\']?'
+        alt_pattern = r'<text[^>]*y=["\']?(\d+)["\']?[^>]*text-anchor=["\']middle["\']'
+
+        found_title = False
+        for pattern in [title_pattern, alt_pattern]:
+            match = re.search(pattern, self.svg_content[:2000])
+            if match:
+                y = int(match.group(1))
+                if y < 40:
+                    found_title = True
+                    break
+
+        if not found_title:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="G-024",
+                message="Missing centered title block at y=28. Add text-anchor=\"middle\" title."
+            ))
+
+    def _check_signature_exists(self):
+        """G-025: Must have signature at y > 1040."""
+        # Look for text element with y > 1040
+        sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?'
+        match = re.search(sig_pattern, self.svg_content)
+
+        if not match:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="G-025",
+                message="Missing signature block at y=1060. Add 18px bold signature."
+            ))
+
+    def _check_callouts_on_mockups(self):
+        """G-026: Red numbered callout circles must appear on mockup UI, not just annotation panel."""
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        mockup_section = self.svg_content[:annotation_start]
+
+        # Count red callout circles in mockup area
+        callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?'
+        mockup_callouts = len(re.findall(callout_pattern, mockup_section))
+
+        if mockup_callouts < 2:
+            self.issues.append(Issue(
+                severity="ERROR",
+                code="G-026",
+                message=f"Only {mockup_callouts} callout circles on mockups. Need numbered callouts (①②③④) ON the UI elements."
             ))
 
 
@@ -766,7 +1171,6 @@ def main():
         svg_files = [svg_path]
 
     total_errors = 0
-    total_warnings = 0
 
     for svg_file in svg_files:
         print(f"\n{'='*60}")
@@ -777,30 +1181,24 @@ def main():
         issues = validator.validate()
 
         errors = [i for i in issues if i.severity == "ERROR"]
-        warnings = [i for i in issues if i.severity == "WARNING"]
 
         if not issues:
             print("PASS - No issues found")
         else:
             for issue in issues:
-                prefix = "ERROR" if issue.severity == "ERROR" else "WARN "
                 line_info = f" (line {issue.line})" if issue.line else ""
-                print(f"  {prefix} [{issue.code}]{line_info}: {issue.message}")
+                print(f"  ERROR [{issue.code}]{line_info}: {issue.message}")
 
-            print(f"\n  Summary: {len(errors)} errors, {len(warnings)} warnings")
+            print(f"\n  {len(errors)} errors")
 
         total_errors += len(errors)
-        total_warnings += len(warnings)
 
     print(f"\n{'='*60}")
-    print(f"TOTAL: {total_errors} errors, {total_warnings} warnings across {len(svg_files)} files")
+    print(f"TOTAL: {total_errors} errors across {len(svg_files)} files")
 
     if total_errors > 0:
         print("STATUS: FAIL")
         sys.exit(1)
-    elif total_warnings > 0:
-        print("STATUS: PASS with warnings")
-        sys.exit(0)
     else:
         print("STATUS: PASS")
         sys.exit(0)

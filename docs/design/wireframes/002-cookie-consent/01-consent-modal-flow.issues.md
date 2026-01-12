@@ -2,8 +2,8 @@
 
 **Feature:** 002-cookie-consent
 **SVG:** 01-consent-modal-flow.svg
-**Reviewed:** 2026-01-11
-**Validator:** v2.1
+**Last Review:** 2026-01-12
+**Validator:** v4.0
 
 ---
 
@@ -12,108 +12,110 @@
 | Status | Count |
 |--------|-------|
 | Resolved | 4 |
-| Open | 1 |
+| Open | 14 |
 
 ---
 
-## Resolved Issues
+## Open Issues (2026-01-12 Review)
+
+### Structure Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| S-01 | Missing canvas background gradient (#c7ddf5 → #b8d4f0) | G-022 | REGENERATE |
+| S-02 | Missing centered title block at y=28 | G-024 | REGENERATE |
+| S-03 | Missing signature block at y=1060, 18px bold | G-025 | REGENERATE |
+| S-04 | No numbered callout circles (①②③④) on mockup UI | G-026 | REGENERATE |
+| S-05 | Not using `<use href="includes/..."/>` for header/footer | HDR-001 | REGENERATE |
+
+### Modal Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| M-01 | Light-colored overlay instead of dark (#000 opacity) | MODAL-001 | REGENERATE |
+| M-02 | Footer `<use>` before modal overlay (hidden by paint order) | G-021 | REGENERATE |
+
+### Collision Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| C-01 | "Always On" text colliding with toggle switch | - | PATCH |
+| C-02 | FR-003 badge blocking "Privacy Policy" text | - | PATCH |
+| C-03 | Duo-tone wavy divider (should be single color) | - | PATCH |
+
+### Annotation Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| A-01 | 0 callout circles in annotation panel (need 4+) | ANN-002 | REGENERATE |
+| A-02 | REQUIREMENTS KEY wastes space - move to callout explanations | - | REGENERATE |
+| A-03 | Cramped annotation text, no visual gaps between groups | G-020 | PATCH |
+
+### Font Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| F-01 | Multiple text elements below 14px minimum | FONT-001 | REGENERATE |
+
+---
+
+## Resolved Issues (2026-01-11)
 
 ### Issue 1: Template Injection
-**Status:** Resolved
-**Classification:** Was missing, now complete
-
-All 4 templates properly injected:
-- `desktop-header` at (10, 10)
-- `site-footer` at (10, 640)
-- `mobile-header-group` at (10, 10)
-- `mobile-bottom-nav` at (10, 654)
+**Status:** Resolved → REOPENED (S-05)
+Templates were injected but latest regeneration removed them.
 
 ### Issue 2: Mobile Frame Color
 **Status:** Resolved
-**Classification:** Was dark (#1f2937), now light (#e8d4b8)
-
 Mobile frame uses light parchment color, passes MOB-001.
 
 ### Issue 3: Clickable Badges
 **Status:** Resolved
-**Classification:** All FR/SC badges wrapped in `<a href>`
-
 All badge pills are clickable links to spec sections.
 
 ### Issue 4: Font Sizes
-**Status:** Resolved
-**Classification:** All text >= 14px (except 11-12px badge text inside links, allowed)
+**Status:** Resolved → REOPENED (F-01)
+Include templates updated to 14px, but SVG has hand-drawn elements with small fonts.
 
 ---
 
-## Open Issues
+## Previous Open Issue (Now Superseded)
 
 ### Issue 5: Incomplete FR/SC Coverage
-**Status:** Open
-**Classification:** REGENERATE
-**Priority:** Medium
+**Status:** Superseded by full regeneration needed
 
-#### Current Coverage (6 groups)
+The wireframe needs complete regeneration using v5 skill rules, which will address FR/SC coverage through proper User Story-anchored annotation groups.
 
-| Group | FRs | SCs |
-|-------|-----|-----|
-| Consent Modal | FR-001, FR-003 | SC-001 |
-| Three Equal Options | FR-002, FR-004 | - |
-| Category Toggles | FR-005, FR-006, FR-007, FR-008 | - |
-| Privacy Settings Link | FR-011 | SC-004 |
-| Accessibility | FR-022, FR-023, FR-024 | SC-006 |
-| Preference Persistence | FR-009, FR-012 | SC-003 |
+---
 
-**Total covered:** 15 FRs, 4 SCs
+## Escalation Watch
 
-#### Missing Requirements
+Issues to monitor for recurrence in other features:
 
-| Category | Missing FRs | Missing SCs |
-|----------|-------------|-------------|
-| Versioning & Audit | FR-010, FR-013, FR-014, FR-015 | SC-002, SC-005 |
-| Data Rights | FR-016, FR-017, FR-018 | SC-007 |
-| Granular Controls | FR-019, FR-020, FR-021 | SC-008 |
+| Issue Pattern | Occurrences | Escalate? |
+|---------------|-------------|-----------|
+| Missing background gradient | 1 (002:01) | Watch |
+| Missing title/signature | 1 (002:01) | Watch |
+| No callouts on mockups | 1 (002:01) | Watch |
+| Footer paint order with modals | 1 (002:01) | Watch |
+| Badge blocking text | 1 (002:01) | Watch |
+| Text collision with toggles | 1 (002:01) | Watch |
 
-**Total missing:** 9 FRs, 4 SCs
+---
 
-#### Recommended Fix
+## Resolution History
 
-Add 2 annotation groups to Row 2 (bringing total to 8 groups):
-
-**Group 7: Versioning & Audit**
-```
-- FR-010: Version tracking for consent changes
-- FR-013: Consent receipts/proof
-- FR-014: Audit logging
-- FR-015: Compliance export
-- SC-002: Compliance verification metrics
-- SC-005: Audit trail completeness
-```
-
-**Group 8: Data Rights & Granular Controls**
-```
-- FR-016: Right to access consent data
-- FR-017: Right to data portability
-- FR-018: Right to deletion
-- FR-019: Per-vendor consent options
-- FR-020: Per-purpose consent options
-- FR-021: Consent duration controls
-- SC-007: Data rights response time
-- SC-008: Granular control accuracy
-```
+| Date | Action | Result |
+|------|--------|--------|
+| 2026-01-11 | Initial review (v2.1 validator) | 5 issues, 4 resolved |
+| 2026-01-12 | Post-regeneration review (v4.0 validator) | 25 errors, 14 open issues |
+| 2026-01-12 | Updated include templates to 14px fonts | Pending regeneration |
+| 2026-01-12 | Fixed validator false positives | Validator v4.0 ready |
 
 ---
 
 ## Notes
 
-### Callout #4 Positioning
-- Desktop: At (660, 15) in footer - near Privacy link (acceptable)
-- Mobile: At (360, 28) - intentionally off-screen to avoid blocking nav
-
-**User decision:** Off-screen preferred over blocking UI elements.
-
-### Red Corner Marks
-User reported red L-shaped marks at mockup corners in viewer.
-- Not in SVG source
-- Not in viewer JavaScript
-- Likely from screenshot tool, browser extension, or dev tools
+- Generator attempted to bypass validator with "false positives" excuse - unacceptable
+- Wireframe used old style (badges on UI) instead of v4/v5 numbered callouts
+- Full regeneration required using `/wireframe-prep 002` then `/wireframe 002`

@@ -26,6 +26,15 @@
 | G-016 | No layout planning before SVG generation | Create LAYOUT PLAN table with coordinates; check for collisions BEFORE generating | Layout Planning Phase |
 | G-017 | Badges placed ON TOP of UI elements | Badges must be 10px OUTSIDE elements; never overlap toggles, buttons, or text | Badge Placement Rules |
 | G-018 | Annotation groups without User Story anchor | Each annotation group MUST be anchored by a US-XXX badge with narrative text | User Story Anchoring |
+| G-020 | Cramped annotation callout text | Add line breaks and vertical gaps between callout groups for readability | Annotation Spacing |
+| G-021 | Footer hidden behind modal overlay | Place footer `<use>` AFTER modal content in SVG order (SVG paints in order) | SVG Paint Order |
+| G-022 | Missing canvas background gradient | Canvas MUST have `#c7ddf5` → `#b8d4f0` gradient, not solid parchment | Background Gradient |
+| G-024 | Missing title block | MUST have centered title at y=28: "FEATURE - PAGE NAME" | Title Block |
+| G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at y=1060, 18px bold | Signature Block |
+| G-026 | No numbered callouts on mockups | Red circles ①②③④ MUST appear ON mockup UI elements | v4 Callout System |
+
+<!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
+     These have only been observed once. Promote back if seen in 2+ features. -->
 
 ---
 
@@ -343,3 +352,90 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-11 | G-015 | 002:01 review - toggles using light grey/purple, buttons transparent |
 | 2026-01-11 | G-016 | 002:01 review - cramped layout with wasted space, no pre-planning |
 | 2026-01-11 | G-017 | 002:01 review - FR badges overlapping toggle switches |
+| 2026-01-12 | G-020 | 002:01 review - annotation callouts cramped, no visual gaps |
+| 2026-01-12 | G-021 | 002:01 review - footer rendered but hidden behind modal overlay |
+| 2026-01-12 | G-022 | 002:01 review - missing blue gradient background |
+| 2026-01-12 | G-024 | 002:01 review - missing centered title block |
+| 2026-01-12 | G-025 | 002:01 review - missing signature block |
+| 2026-01-12 | G-026 | 002:01 review - no numbered callouts on mockups |
+| 2026-01-12 | DEMOTED | G-019, G-023, G-027, G-028, G-029 → feature-specific (only seen once) |
+
+---
+
+## Annotation Spacing (G-020)
+
+**Problem**: Annotation callout text is cramped with no visual separation between groups.
+
+### Rule
+
+Each callout group (①②③④) needs:
+1. **Vertical gap** of at least 20px between groups
+2. **Line breaks** in narrative text for readability
+3. **Clear visual boundary** - either whitespace or subtle separator
+
+### Annotation Panel Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ① First Visit Consent                                               │
+│    As a first-time visitor, I need to make a choice                 │
+│    before cookies are set.                                          │
+│    [US-001] [FR-001] [FR-003] [FR-004] [SC-001]                     │
+│                                                                     │
+│                              ← 20px gap                             │
+│                                                                     │
+│ ② Granular Cookie Control                                           │
+│    As a privacy-conscious user, I need to control                   │
+│    each cookie category independently.                              │
+│    [US-002] [FR-005] [FR-006] [FR-007] [SC-002]                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Text Wrapping
+
+Long narrative text should wrap at ~60 characters:
+
+| Wrong | Correct |
+|-------|---------|
+| `As a first-time visitor, I need to make a choice before cookies are set.` (one line, 72 chars) | `As a first-time visitor, I need to make`<br>`a choice before cookies are set.` (two lines) |
+
+---
+
+## SVG Paint Order (G-021)
+
+**Problem**: Footer `<use>` placed before modal content gets painted UNDER the modal overlay.
+
+### How SVG Rendering Works
+
+SVG elements render in document order. Later elements paint ON TOP of earlier elements.
+
+```xml
+<!-- WRONG: Footer painted first, then covered by modal -->
+<g id="desktop-nav-templates">
+    <use href="includes/footer-desktop.svg#site-footer" x="40" y="700"/>
+</g>
+<g id="desktop">
+    <rect ... modal-overlay .../>  <!-- Covers the footer! -->
+</g>
+
+<!-- CORRECT: Footer painted last, visible on top -->
+<g id="desktop">
+    <rect ... modal-overlay .../>
+</g>
+<g id="desktop-nav-templates">
+    <use href="includes/footer-desktop.svg#site-footer" x="40" y="700"/>
+</g>
+```
+
+### Rule
+
+Place include `<use>` elements in this order:
+1. Header (top of viewport group)
+2. Page content
+3. Modal overlay (if present)
+4. Modal content (if present)
+5. **Footer (LAST, so it's always visible)**
+
+### For Modals Specifically
+
+When a modal has an overlay, the footer should still be visible at the bottom of the viewport. Place the footer `<use>` AFTER the modal group closes.
