@@ -24,4 +24,6 @@ docs/design/wireframes/node_modules/
 docs/design/wireframes/package-lock.json
 docs/design/wireframes/playwright-report/
 docs/design/wireframes/screenshots/
+docs/design/wireframes/png/
+docs/design/wireframes/__pycache__/
 .env

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Wireframe Screenshot Tool v1.1
+Wireframe Screenshot Tool v1.2
 
 Takes standardized screenshots of SVG wireframes using Playwright.
 Runs in Docker with self-contained live-server - no external dependencies.
@@ -13,15 +13,19 @@ Usage:
 Output:
     png/[feature]/[svg-name]/
         overview.png          # Full canvas (fit to view)
-        quadrant-center.png   # Center at 400% (overlaps all corners)
-        quadrant-tl.png       # Top-left at 400%
-        quadrant-tr.png       # Top-right at 400%
-        quadrant-bl.png       # Bottom-left at 400%
-        quadrant-br.png       # Bottom-right at 400%
+        quadrant-center.png   # Center region (overlaps all corners)
+        quadrant-tl.png       # Top-left quarter
+        quadrant-tr.png       # Top-right quarter
+        quadrant-bl.png       # Bottom-left quarter
+        quadrant-br.png       # Bottom-right quarter
         manifest.json         # Paths + validator results
 
-The 5 quadrant shots tile to cover the entire 1920x1080 SVG canvas.
-Each shows 960x540 SVG pixels for readable detail inspection.
+Method:
+    - Viewport: 3840x2160 (2x native)
+    - SVG forced to zoom=2 (fills viewport exactly)
+    - Playwright clips capture 1920x1080 regions
+    - Each clip shows 960x540 SVG pixels at 2x detail
+    - 5 quadrant shots tile to cover entire 1920x1080 SVG canvas
 """
 
 import sys
@@ -56,16 +60,16 @@ VIEWPORT_WIDTH = 3840  # 2x native 1920
 VIEWPORT_HEIGHT = 2160  # 2x native 1080
 SCREENSHOT_TIMEOUT = 10000  # ms
 
-# Quadrant definitions for 5-shot coverage at zoom=4
-# At zoom=4, viewport (3840x2160) shows 960x540 SVG pixels
-# 5 shots tile to cover entire 1920x1080 SVG canvas
-# Pan formula: panX = (svgCenterX - shotCenterX) * zoom
-QUADRANTS = {
-    'center': {'zoom': 4, 'panX': 0, 'panY': 0},           # (960, 540) - middle overlap
-    'tl': {'zoom': 4, 'panX': 1920, 'panY': 1080},         # (480, 270) - top-left
-    'tr': {'zoom': 4, 'panX': -1920, 'panY': 1080},        # (1440, 270) - top-right
-    'bl': {'zoom': 4, 'panX': 1920, 'panY': -1080},        # (480, 810) - bottom-left
-    'br': {'zoom': 4, 'panX': -1920, 'panY': -1080},       # (1440, 810) - bottom-right
+# Quadrant clip regions at exact zoom=2
+# At zoom=2, SVG (1920x1080) fills viewport (3840x2160) exactly
+# Clip regions capture quarters of the viewport = quarters of the SVG
+# Each clip is 1920x1080 showing 960x540 SVG pixels
+QUADRANT_CLIPS = {
+    'center': {'x': 960, 'y': 540, 'width': 1920, 'height': 1080},  # Center overlap
+    'tl': {'x': 0, 'y': 0, 'width': 1920, 'height': 1080},          # Top-left quarter
+    'tr': {'x': 1920, 'y': 0, 'width': 1920, 'height': 1080},       # Top-right quarter
+    'bl': {'x': 0, 'y': 1080, 'width': 1920, 'height': 1080},       # Bottom-left quarter
+    'br': {'x': 1920, 'y': 1080, 'width': 1920, 'height': 1080},    # Bottom-right quarter
 }
 
 
@@ -156,27 +160,21 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     screenshots['overview'] = str(overview_path.relative_to(WIREFRAMES_DIR))
     print(f"    Saved: overview.png")
 
-    # Quadrant screenshots at 400% zoom using direct CSS transform
-    # 5 shots (center + 4 corners) tile to cover entire 1920x1080 canvas
-    # Direct DOM manipulation bypasses viewer's internal state management
-
-    # Disable CSS transition to prevent animation during transforms
+    # Quadrant screenshots using Playwright's clip option
+    # First, force exact zoom=2 to fill viewport (bypasses fitToView's padding)
     page.evaluate("document.querySelector('#viewer').style.transition = 'none'")
+    page.evaluate("document.querySelector('#viewer').style.transform = 'translate(-50%, -50%) scale(2)'")
+    page.wait_for_timeout(200)
 
-    for quadrant_name, settings in QUADRANTS.items():
-        # Set CSS transform directly on viewer element
-        transform = f"translate(-50%, -50%) translate({settings['panX']}px, {settings['panY']}px) scale({settings['zoom']})"
-        page.evaluate(f"document.querySelector('#viewer').style.transform = '{transform}'")
-        # Force reflow to ensure transform is applied
-        page.evaluate("document.querySelector('#viewer').offsetHeight")
-        page.wait_for_timeout(100)
-
+    # 5 clips that tile to cover entire 1920x1080 SVG canvas
+    # At zoom=2, each 1920x1080 clip shows 960x540 SVG pixels
+    for quadrant_name, clip in QUADRANT_CLIPS.items():
         quadrant_path = output_dir / f'quadrant-{quadrant_name}.png'
-        page.screenshot(path=str(quadrant_path), full_page=False)
+        page.screenshot(path=str(quadrant_path), clip=clip)
         screenshots[f'quadrant_{quadrant_name}'] = str(quadrant_path.relative_to(WIREFRAMES_DIR))
         print(f"    Saved: quadrant-{quadrant_name}.png")
 
-    # Restore transition and reset transform for next SVG
+    # Reset for next SVG
     page.evaluate("document.querySelector('#viewer').style.transition = ''")
     page.evaluate("document.querySelector('#viewer').style.transform = ''")
 
