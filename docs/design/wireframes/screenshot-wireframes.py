@@ -60,16 +60,15 @@ VIEWPORT_WIDTH = 3840  # 2x native 1920
 VIEWPORT_HEIGHT = 2160  # 2x native 1080
 SCREENSHOT_TIMEOUT = 10000  # ms
 
-# Quadrant clip regions at exact zoom=2
-# At zoom=2, SVG (1920x1080) fills viewport (3840x2160) exactly
-# Clip regions capture quarters of the viewport = quarters of the SVG
-# Each clip is 1920x1080 showing 960x540 SVG pixels
+# Standard quadrant tiling - clips assemble like puzzle pieces
+# At zoom=2, viewport is 3840×2160, SVG fills it exactly
+# Each clip is 1920×1080 (half viewport), showing 960×540 SVG pixels
 QUADRANT_CLIPS = {
-    'center': {'x': 960, 'y': 540, 'width': 1920, 'height': 1080},  # Center overlap
-    'tl': {'x': 0, 'y': 0, 'width': 1920, 'height': 1080},          # Top-left quarter
-    'tr': {'x': 1920, 'y': 0, 'width': 1920, 'height': 1080},       # Top-right quarter
-    'bl': {'x': 0, 'y': 1080, 'width': 1920, 'height': 1080},       # Bottom-left quarter
-    'br': {'x': 1920, 'y': 1080, 'width': 1920, 'height': 1080},    # Bottom-right quarter
+    'tl': {'x': 0, 'y': 0, 'width': 1920, 'height': 1080},          # SVG 0-960 × 0-540
+    'tr': {'x': 1920, 'y': 0, 'width': 1920, 'height': 1080},       # SVG 960-1920 × 0-540
+    'center': {'x': 960, 'y': 540, 'width': 1920, 'height': 1080},  # SVG 480-1440 × 270-810
+    'bl': {'x': 0, 'y': 1080, 'width': 1920, 'height': 1080},       # SVG 0-960 × 540-1080
+    'br': {'x': 1920, 'y': 1080, 'width': 1920, 'height': 1080},    # SVG 960-1920 × 540-1080
 }
 
 
@@ -103,25 +102,20 @@ def find_svg_files(feature_dir: Path, svg_num: Optional[str] = None) -> List[Pat
 
 
 def start_server() -> subprocess.Popen:
-    """Start live-server for serving wireframes."""
-    print(f"Starting live-server on port {SERVER_PORT}...")
+    """Start HTTP server for serving wireframes.
 
-    # Use Python's http.server as fallback if live-server not available
-    try:
-        proc = subprocess.Popen(
-            ['live-server', '--port=' + str(SERVER_PORT), '--no-browser', '--quiet'],
-            cwd=WIREFRAMES_DIR,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-    except FileNotFoundError:
-        # Fallback to Python http.server
-        proc = subprocess.Popen(
-            [sys.executable, '-m', 'http.server', str(SERVER_PORT)],
-            cwd=WIREFRAMES_DIR,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
+    Uses Python's http.server instead of live-server to avoid
+    auto-reload issues when PNG files are created during screenshots.
+    """
+    print(f"Starting HTTP server on port {SERVER_PORT}...")
+
+    # Use Python http.server (no auto-reload) to avoid context destruction
+    proc = subprocess.Popen(
+        [sys.executable, '-m', 'http.server', str(SERVER_PORT)],
+        cwd=WIREFRAMES_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
+    )
 
     # Wait for server to start
     time.sleep(2)
@@ -149,7 +143,8 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     print(f"  Navigating to: {url}")
     page.goto(url, wait_until='networkidle')
 
-    # Wait for SVG to load
+    # Wait for SVG to be present in viewer
+    page.wait_for_selector('#viewer svg', timeout=10000)
     page.wait_for_timeout(1000)
 
     screenshots = {}
@@ -160,23 +155,50 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     screenshots['overview'] = str(overview_path.relative_to(WIREFRAMES_DIR))
     print(f"    Saved: overview.png")
 
-    # Quadrant screenshots using Playwright's clip option
-    # First, force exact zoom=2 to fill viewport (bypasses fitToView's padding)
-    page.evaluate("document.querySelector('#viewer').style.transition = 'none'")
-    page.evaluate("document.querySelector('#viewer').style.transform = 'translate(-50%, -50%) scale(2)'")
-    page.wait_for_timeout(200)
+    # Wait for page to fully stabilize after fitToView animations
+    page.wait_for_timeout(500)
 
-    # 5 clips that tile to cover entire 1920x1080 SVG canvas
-    # At zoom=2, each 1920x1080 clip shows 960x540 SVG pixels
-    for quadrant_name, clip in QUADRANT_CLIPS.items():
+    # Quadrant screenshots - use setViewerState API which sets manualZoomActive
+    page.evaluate("""
+        const viewer = document.querySelector('#viewer');
+        viewer.style.transition = 'none';
+    """)
+
+    # Pan values for 1920×1080 canvas at zoom=2
+    # At zoom=2, ~960×540 canvas pixels visible per shot
+    # Sequence: CENTER first, then corners (matching original MCP Toolkit)
+    pan_positions = [
+        ('center', 0, 0),           # Canvas center (960, 540)
+        ('tl', 960, 540),           # Top-left (480, 270)
+        ('tr', -960, 540),          # Top-right (1440, 270)
+        ('br', -960, -540),         # Bottom-right (1440, 810)
+        ('bl', 960, -540),          # Bottom-left (480, 810)
+    ]
+
+    # Clip coordinates: center 1920x1080 region of 3840x2160 viewport
+    clip_x = (VIEWPORT_WIDTH - 1920) // 2   # 960
+    clip_y = (VIEWPORT_HEIGHT - 1080) // 2  # 540
+    clip = {'x': clip_x, 'y': clip_y, 'width': 1920, 'height': 1080}
+
+    for quadrant_name, pan_x, pan_y in pan_positions:
+        # Directly set CSS transform, bypassing viewer state management entirely
+        page.evaluate(f"""
+            const viewer = document.querySelector('#viewer');
+            viewer.style.transform = 'translate(-50%, -50%) translate({pan_x}px, {pan_y}px) scale(2)';
+        """)
+        page.wait_for_timeout(50)  # Brief wait for render
+
         quadrant_path = output_dir / f'quadrant-{quadrant_name}.png'
-        page.screenshot(path=str(quadrant_path), clip=clip)
+        page.screenshot(path=str(quadrant_path), full_page=False, clip=clip)
         screenshots[f'quadrant_{quadrant_name}'] = str(quadrant_path.relative_to(WIREFRAMES_DIR))
-        print(f"    Saved: quadrant-{quadrant_name}.png")
+        print(f"    Saved: quadrant-{quadrant_name}.png (pan: {pan_x}, {pan_y})")
 
     # Reset for next SVG
-    page.evaluate("document.querySelector('#viewer').style.transition = ''")
-    page.evaluate("document.querySelector('#viewer').style.transform = ''")
+    page.evaluate("""
+        const viewer = document.querySelector('#viewer');
+        viewer.style.transition = '';
+        window.resetViewerState();
+    """)
 
     return screenshots
 
