@@ -38,6 +38,8 @@
 | G-033 | Callouts at random Y positions when alignment possible | Align callouts highlighting same row to shared Y coordinate | Callout Grid Alignment |
 | G-034 | Mobile content y-position too high (overlaps header) | Mobile content must start at y >= 78 (after header area) | Mobile Safe Area |
 | G-035 | Buttons using faded/parchment colors | Use solid button colors: primary=#8b5cf6, secondary=#f5f0e6, tertiary=#dcc8a8 | Button Color Standards |
+| G-036 | Badge/pill overflows its container row | Keep badges within parent container bounds; use smaller font or abbreviate if needed | Badge Containment |
+| G-037 | Annotation narrative text too light/small | Use 14px bold for titles, 14px regular for narrative, high contrast | Annotation Readability |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -372,6 +374,8 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-12 | G-033 | 003:01 review - callouts at random Y positions, not aligned |
 | 2026-01-12 | G-034 | 002:01, 002:02 review - mobile content overlaps header insert |
 | 2026-01-12 | G-035 | 003:02, 004:02 review - buttons using faded parchment fills |
+| 2026-01-12 | G-036 | 002:01 review - "Always On" badge outside cookie row container |
+| 2026-01-12 | G-037 | 002:01 review - annotation text too small/light to read |
 
 ---
 
@@ -694,3 +698,69 @@ BTN-001 fires when button `<rect>` elements use these faded fills:
 - Parchment (#e8d4b8) is for panels, not buttons
 - Faded buttons look disabled or non-interactive
 - Users can't distinguish clickable from non-clickable elements
+
+---
+
+## Badge Row Containment (G-036)
+
+**Problem**: Status badges like "Always On" positioned outside their logical container row, bleeding into adjacent areas.
+
+### Rule
+
+**Badges must stay within the bounds of their parent container.**
+
+### Common Mistake (002:01 "Always On")
+
+The "Always On" badge next to the Necessary Cookies toggle overflows the cookie row:
+- Row width is fixed (~400px on desktop, ~280px on mobile)
+- Badge positioned at x that puts it outside the row rect
+- On mobile, even worse due to narrower container
+
+### Fix
+
+1. Position badge INSIDE the row, aligned right but with padding
+2. Use smaller font (11px) if space is tight
+3. Abbreviate to "On" or use a checkmark icon if still too wide
+4. Calculate: `badge_x + badge_width < row_x + row_width - 10px`
+
+### Visual Example
+
+```
+WRONG:                                    CORRECT:
+┌─────────────────────┐                   ┌─────────────────────────────┐
+│ Necessary Cookies   │ Always On         │ Necessary Cookies    Always On │
+└─────────────────────┘ ← outside         └─────────────────────────────┘
+                                                              ↑ inside
+```
+
+---
+
+## Annotation Readability (G-037)
+
+**Problem**: User Story titles and narrative text in annotation panel are hard to read - too small, too light, or insufficient contrast.
+
+### Required Styling
+
+| Element | Font Size | Weight | Color |
+|---------|-----------|--------|-------|
+| US title (e.g., "① First Visit") | 14px | **bold** | #1f2937 |
+| Narrative text | 14px | regular | #374151 |
+| Badge pills (FR-001, SC-001) | 11px | semibold | white on colored bg |
+
+### Rule
+
+**Annotation titles must be 14px bold. Narrative must be 14px regular with dark color (#374151 or darker).**
+
+### Why This Matters
+
+- Annotations explain the wireframe's purpose and requirements coverage
+- If unreadable, the wireframe fails its documentation purpose
+- G-010 covers minimum size (14px); this covers weight and contrast
+- Bold titles create visual hierarchy between callout groups
+
+### CSS Reference
+
+```css
+.us-title { font-size: 14px; font-weight: bold; fill: #1f2937; }
+.us-narrative { font-size: 14px; font-weight: normal; fill: #374151; }
+```

@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v5.1
+SVG Wireframe Validator v5.2
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
 All checks are errors - either it passes or it fails. No ambiguous warnings.
 
+NEW in v5.2: Added G-036 (badge containment) and G-037 (annotation text readability) checks.
 NEW in v5.1: Added MOBILE-001 check for mobile content overlapping header (G-034).
 NEW in v5.0: Auto-logs issues to feature-specific .issues.md files.
 Issues only escalate to GENERAL_ISSUES.md when seen in 2+ features.
 
 Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
-        annotations, title, signature, background gradient, paint order, mobile safe area.
+        annotations, title, signature, background gradient, paint order, mobile safe area,
+        badge containment, annotation text readability.
 
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
@@ -217,6 +219,10 @@ class WireframeValidator:
 
         # v8 checks (G-034 - 2026-01-12)
         self._check_mobile_content_position()
+
+        # v9 checks (G-036, G-037 - 2026-01-12)
+        self._check_badge_containment()
+        self._check_annotation_text_readability()
 
         return self.issues
 
@@ -1224,6 +1230,127 @@ class WireframeValidator:
                     element=first_element.group(0)[:60]
                 ))
 
+    # ============================================================
+    # v9 CHECKS (G-036, G-037 - 2026-01-12)
+    # ============================================================
+
+    def _check_badge_containment(self):
+        """G-036: Badge/pill must not overflow container boundaries.
+
+        Badges are small rounded rects (rx=4) used for FR/SC/US labels.
+        Desktop mockup ends at x=1320 (40 + 1280), mobile at x=1720 (1360 + 360).
+        Annotation panel ends at x=1880 (40 + 1840).
+        """
+        # Badge pattern: small rounded rect with rx=4
+        badge_pattern = r'<rect[^>]*rx=["\']?4["\']?[^>]*>'
+
+        for match in re.finditer(badge_pattern, self.svg_content):
+            rect_str = match.group()
+
+            # Skip if this looks like a toggle (toggles have rx >= 10, not 4)
+            if 'width="4' in rect_str or 'width="5' in rect_str:
+                continue  # Too narrow to be a badge
+
+            # Extract x and width
+            x_match = re.search(r'\bx=["\']?(\d+)', rect_str)
+            w_match = re.search(r'width=["\']?(\d+)', rect_str)
+
+            if not x_match or not w_match:
+                continue
+
+            try:
+                x = int(x_match.group(1))
+                w = int(w_match.group(1))
+                right = x + w
+
+                # Determine which container this badge is in
+                if x < 1360:  # Desktop mockup or annotation panel
+                    if x < 40:  # Outside canvas
+                        continue
+                    # Desktop mockup ends at 1320, annotation panel at 1880
+                    # Check if in annotation panel (y > 800) vs mockup
+                    y_match = re.search(r'\by=["\']?(\d+)', rect_str)
+                    if y_match:
+                        y = int(y_match.group(1))
+                        if y > 800:  # Annotation panel
+                            if right > 1880:
+                                line_num = self.svg_content[:match.start()].count('\n') + 1
+                                self.issues.append(Issue(
+                                    severity="ERROR",
+                                    code="G-036",
+                                    message=f"Badge at x={x} overflows annotation panel (right edge {right} > 1880)",
+                                    line=line_num
+                                ))
+                        else:  # Desktop mockup
+                            if right > 1320:
+                                line_num = self.svg_content[:match.start()].count('\n') + 1
+                                self.issues.append(Issue(
+                                    severity="ERROR",
+                                    code="G-036",
+                                    message=f"Badge at x={x} overflows desktop mockup (right edge {right} > 1320)",
+                                    line=line_num
+                                ))
+                else:  # Mobile mockup area (x >= 1360)
+                    if right > 1720:
+                        line_num = self.svg_content[:match.start()].count('\n') + 1
+                        self.issues.append(Issue(
+                            severity="ERROR",
+                            code="G-036",
+                            message=f"Badge at x={x} overflows mobile mockup (right edge {right} > 1720)",
+                            line=line_num
+                        ))
+            except (ValueError, TypeError):
+                continue
+
+    def _check_annotation_text_readability(self):
+        """G-037: Annotation text must be readable (bold titles, adequate contrast).
+
+        Annotation panel titles (numbered ①②③④) must be bold for visual hierarchy.
+        All annotation text should use dark colors (#1f2937, #374151) not light grey.
+        """
+        if 'id="annotations"' not in self.svg_content:
+            return
+
+        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_section = self.svg_content[annotation_start:]
+
+        # Find numbered annotation titles (①②③④⑤⑥⑦⑧⑨⑩)
+        # These should have font-weight="bold"
+        circled_nums = '[①②③④⑤⑥⑦⑧⑨⑩]'
+        title_pattern = rf'<text[^>]*>({circled_nums}[^<]*)</text>'
+
+        for match in re.finditer(title_pattern, annotation_section):
+            text_content = match.group(1)
+            text_element = match.group(0)
+
+            # Check for bold
+            if 'font-weight="bold"' not in text_element and 'font-weight:bold' not in text_element:
+                line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-037",
+                    message=f"Annotation title not bold: '{text_content[:30]}...' - add font-weight=\"bold\"",
+                    line=line_num
+                ))
+
+        # Check for light/faded text colors in annotation panel
+        # Light colors that are hard to read: #9ca3af, #d1d5db, #e5e7eb
+        light_colors = ['#9ca3af', '#d1d5db', '#e5e7eb', '#6b7280']
+        text_color_pattern = r'<text[^>]*fill=["\']?([^"\'>\s]+)["\']?[^>]*>([^<]+)</text>'
+
+        for match in re.finditer(text_color_pattern, annotation_section):
+            fill = match.group(1).lower()
+            text_content = match.group(2)[:20]
+
+            if fill in light_colors:
+                line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-037",
+                    message=f"Annotation text uses light color {fill}: '{text_content}...' - use #374151 or darker",
+                    line=line_num
+                ))
+
 
 # ============================================================
 # ISSUE LOGGER - Auto-logs to feature-specific .issues.md files
@@ -1278,7 +1405,7 @@ class IssueLogger:
                 cat = "User Story Issues"
             elif code.startswith('TITLE') or code.startswith('SECTION'):
                 cat = "Title/Section Issues"
-            elif code.startswith('LAYOUT'):
+            elif code.startswith('LAYOUT') or code == 'G-036':
                 cat = "Layout Issues"
             elif code.startswith('CLUTTER'):
                 cat = "Clutter Issues"
@@ -1286,6 +1413,8 @@ class IssueLogger:
                 cat = "Visual Issues"
             elif code.startswith('MOBILE') or code.startswith('MOB'):
                 cat = "Mobile Issues"
+            elif code == 'G-037':
+                cat = "Annotation Issues"
             else:
                 cat = "Other Issues"
 
