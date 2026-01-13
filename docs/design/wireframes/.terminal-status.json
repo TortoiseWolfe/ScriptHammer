@@ -1,37 +1,43 @@
 {
-  "lastUpdated": "2026-01-12T21:00:00Z",
+  "lastUpdated": "2026-01-13T00:00:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
-      "lastSeen": null,
-      "currentTask": null,
-      "notes": null
-    },
-    "validator": {
-      "status": "idle",
-      "lastSeen": null,
-      "currentTask": null,
-      "notes": null
-    },
-    "reviewer": {
-      "status": "idle",
-      "lastSeen": null,
-      "currentTask": null,
-      "notes": null
+      "feature": null,
+      "task": null
     },
     "generator": {
       "status": "idle",
-      "lastSeen": null,
-      "currentTask": null,
-      "notes": null
+      "feature": null,
+      "task": null
     },
     "viewer": {
       "status": "idle",
-      "lastSeen": null,
-      "currentTask": null,
-      "notes": null
+      "feature": null,
+      "task": null
+    },
+    "reviewer": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "validator": {
+      "status": "idle",
+      "feature": null,
+      "task": null
     }
   },
-  "queue": [],
-  "completedToday": []
+  "queue": [
+    {
+      "feature": "005-security-hardening",
+      "svg": "03-admin-security-dashboard.svg",
+      "action": "PATCH",
+      "reason": "P-01: Annotation titles at 16px (should be 14px per G-037)",
+      "assignedTo": "generator"
+    }
+  ],
+  "completedToday": [
+    "005-security-hardening/03-admin-security-dashboard.issues.md created",
+    "Reviewer: Validated 03-admin-security-dashboard - 1 PATCH issue (P-01)"
+  ]
 }

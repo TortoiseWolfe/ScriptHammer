@@ -12,7 +12,7 @@
 
 ## Terminal Primers
 
-This project uses multiple Claude Code terminals working as a team. Copy a block to prime a terminal:
+Copy a block to prime a new terminal. Each terminal tracks its own feature independently.
 
 ```
                     ┌─────────────┐
@@ -30,14 +30,10 @@ This project uses multiple Claude Code terminals working as a team. Copy a block
 <summary><strong>Manager</strong> - Coordinate workflow, update docs</summary>
 
 ```
-You are the Manager terminal. Load context then check status:
-/prep
-cat docs/design/wireframes/.terminal-status.json | jq .
+You are the Manager terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.manager, queue: .queue | length}'
 
-Your focus: Coordinate terminals, maintain queue, update docs/skills.
-Key files: CLAUDE.md, GENERAL_ISSUES.md, .terminal-status.json
-
-Handoff: Assign features to Generator → Viewer confirms → Reviewer analyzes
+Skills: /prep, /wireframe-status, /commit, /ship
 ```
 </details>
 
@@ -45,15 +41,10 @@ Handoff: Assign features to Generator → Viewer confirms → Reviewer analyzes
 <summary><strong>Generator</strong> - Create/fix SVG wireframes</summary>
 
 ```
-You are the Generator terminal. Load context and check queue:
-/wireframe-prep NNN
-cat docs/design/wireframes/.terminal-status.json | jq .queue
+You are the Generator terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.generator, queue: .queue}'
 
-Your focus: Generate SVGs with /wireframe, iterate until validator PASS.
-Before generating: Read NNN-feature/*.issues.md for known problems.
-After generating: Run validator, fix errors, repeat until PASS.
-
-Handoff: When PASS → Notify Viewer to refresh → Reviewer takes screenshots
+Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
 </details>
 
@@ -61,13 +52,10 @@ Handoff: When PASS → Notify Viewer to refresh → Reviewer takes screenshots
 <summary><strong>Viewer</strong> - Run hot-reload viewer</summary>
 
 ```
-You are the Viewer terminal. Start viewer:
-/hot-reload-viewer
+You are the Viewer terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.viewer}'
 
-Your focus: Keep localhost:3000 running for visual review.
-The viewer auto-refreshes when SVGs change.
-
-Status: Update .terminal-status.json with "running" or "stopped".
+Skills: /hot-reload-viewer
 ```
 </details>
 
@@ -75,21 +63,10 @@ Status: Update .terminal-status.json with "running" or "stopped".
 <summary><strong>Reviewer</strong> - Analyze screenshots, document issues</summary>
 
 ```
-You are the Reviewer terminal. Check queue:
-cat docs/design/wireframes/.terminal-status.json | jq .queue
+You are the Reviewer terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.reviewer, queue: .queue}'
 
-Your focus: Take screenshots, analyze, document issues.
-Commands:
-  /wireframe-screenshots --feature NNN   # All SVGs in feature
-  /wireframe-screenshots --svg NNN:NN    # Single SVG
-
-Output: png/[feature]/[svg-name]/ (6 screenshots + manifest.json)
-
-Classify issues in NNN-feature/*.issues.md:
-  - PATCH: Color, typo, font, missing class
-  - REGEN: Layout, spacing, overlap, structural
-
-Handoff: Issues documented → Generator fixes → Validator checks escalation
+Skills: /wireframe-screenshots, /wireframe-review
 ```
 </details>
 
@@ -97,18 +74,10 @@ Handoff: Issues documented → Generator fixes → Validator checks escalation
 <summary><strong>Validator</strong> - Maintain validation rules</summary>
 
 ```
-You are the Validator terminal. Check escalation:
-python3 docs/design/wireframes/validate-wireframe.py --check-escalation
+You are the Validator terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.validator}'
 
-Your focus: validate-wireframe.py rules, GENERAL_ISSUES.md maintenance.
-Escalation policy: Promote to GENERAL_ISSUES.md when seen in 2+ features.
-
-Key files:
-  - docs/design/wireframes/validate-wireframe.py
-  - docs/design/wireframes/GENERAL_ISSUES.md
-  - docs/design/wireframes/NNN-*/*.issues.md
-
-Handoff: New general rules → Notify Generator to check before next wireframe
+Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
 </details>
 

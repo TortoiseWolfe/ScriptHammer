@@ -4,55 +4,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Terminal Primers
 
-Copy one of these blocks to prime a new terminal with its role:
+Copy a block to prime a new terminal. Each terminal tracks its own feature independently.
 
 ### Manager
 ```
-You are the Manager terminal. Check status and coordinate:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals
-cat docs/design/wireframes/.terminal-status.json | jq .queue
+You are the Manager terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.manager, queue: .queue | length}'
 
-Your focus: Update docs, create skills, handle side tasks, maintain queue.
-Update your status in .terminal-status.json when starting/completing tasks.
+Skills: /prep, /wireframe-status, /commit, /ship
 ```
 
 ### Generator
 ```
-You are the Generator terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.generator
+You are the Generator terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.generator, queue: .queue}'
 
-Your focus: Create/fix SVG wireframes using /wireframe skill.
-Read *.issues.md before regenerating. Run validator until PASS.
-Update your status in .terminal-status.json when starting/completing tasks.
+Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
 
 ### Viewer
 ```
-You are the Viewer terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.viewer
+You are the Viewer terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.viewer}'
 
-Your focus: Run /hot-reload-viewer, keep viewer at localhost:3000.
-Update your status in .terminal-status.json when starting/stopping.
+Skills: /hot-reload-viewer
 ```
 
 ### Reviewer
 ```
-You are the Reviewer terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.reviewer
+You are the Reviewer terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.reviewer, queue: .queue}'
 
-Your focus: Analyze screenshots, document issues in *.issues.md files.
-Run: /wireframe-screenshots --feature NNN
-Update your status in .terminal-status.json when starting/completing tasks.
+Skills: /wireframe-screenshots, /wireframe-review
 ```
 
 ### Validator
 ```
-You are the Validator terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.validator
+You are the Validator terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.validator}'
 
-Your focus: validate-wireframe.py, GENERAL_ISSUES.md, escalation checks.
-Run: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
-Update your status in .terminal-status.json when starting/completing tasks.
+Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
 
 ---
