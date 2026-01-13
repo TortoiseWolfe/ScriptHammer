@@ -12,28 +12,59 @@
 
 ## Terminal Primers
 
-Copy a block to prime a new terminal. Each terminal tracks its own feature independently.
+Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
 
 ```
-                    ┌─────────────┐
-                    │   Manager   │
-                    │ coordinates │
-                    └──────┬──────┘
-                           │
+                 ┌─────────────┐     ┌─────────────┐
+                 │   Primary   │     │  Assistant  │
+                 │   Manager   │◀───▶│   Manager   │
+                 │ docs/queue  │     │skills/tools │
+                 └──────┬──────┘     └─────────────┘
+                        │
+┌─────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Planner │────▶│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
+│ assigns │     │ /wireframe  │     │ /hot-reload │     │ screenshots │     │ escalation  │
+└─────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                      │                                                            │
+                      └────────────────────────────────────────────────────────────┘
+                                           (feedback loop)
+
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
-│  /wireframe │     │ /hot-reload │     │ screenshots │     │ escalation  │
+│   Author    │     │   Tester    │     │ Implementer │     │   Auditor   │
+│   writes    │     │   tests     │     │    codes    │     │   audits    │
 └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
 ```
 
 <details>
-<summary><strong>Manager</strong> - Coordinate workflow, update docs</summary>
+<summary><strong>Primary Manager</strong> - Coordinate workflow, update docs</summary>
 
 ```
-You are the Manager terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.manager, queue: .queue | length}'
+You are the Primary Manager terminal.
+/prep manager
 
-Skills: /prep, /wireframe-status, /commit, /ship
+Skills: /wireframe-status, /commit, /ship
+```
+</details>
+
+<details>
+<summary><strong>Assistant Manager</strong> - Maintain skill files, refactor tools</summary>
+
+```
+You are the Assistant Manager terminal.
+/prep assistant
+
+Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+```
+</details>
+
+<details>
+<summary><strong>Planner</strong> - Plan SVG assignments for Generator</summary>
+
+```
+You are the Planner terminal.
+/prep planner
+
+Skills: /wireframe-plan [feature]
 ```
 </details>
 
@@ -42,7 +73,7 @@ Skills: /prep, /wireframe-status, /commit, /ship
 
 ```
 You are the Generator terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.generator, queue: .queue}'
+/prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -53,7 +84,7 @@ Skills: /wireframe-prep [feature], /wireframe [feature]
 
 ```
 You are the Viewer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.viewer}'
+/prep viewer
 
 Skills: /hot-reload-viewer
 ```
@@ -64,7 +95,7 @@ Skills: /hot-reload-viewer
 
 ```
 You are the Reviewer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.reviewer, queue: .queue}'
+/prep reviewer
 
 Skills: /wireframe-screenshots, /wireframe-review
 ```
@@ -75,7 +106,7 @@ Skills: /wireframe-screenshots, /wireframe-review
 
 ```
 You are the Validator terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.validator}'
+/prep validator
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
@@ -86,10 +117,9 @@ Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 
 ```
 You are the Author terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.author}'
+/prep author
 
 Skills: /session-summary, /changelog
-Focus: Blog posts, social media, release notes, workflow documentation
 ```
 </details>
 
@@ -98,10 +128,9 @@ Focus: Blog posts, social media, release notes, workflow documentation
 
 ```
 You are the Tester terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.tester}'
+/prep tester
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
-Focus: Run Vitest, Playwright, Pa11y. Report coverage gaps.
 ```
 </details>
 
@@ -110,10 +139,9 @@ Focus: Run Vitest, Playwright, Pa11y. Report coverage gaps.
 
 ```
 You are the Implementer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.implementer, queue: .queue}'
+/prep implementer
 
 Skills: /speckit.implement, /speckit.tasks
-Focus: Convert specs + wireframes into actual code
 ```
 </details>
 
@@ -122,22 +150,9 @@ Focus: Convert specs + wireframes into actual code
 
 ```
 You are the Auditor terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.auditor}'
+/prep auditor
 
 Skills: /speckit.analyze, /read-spec
-Focus: Verify consistency across artifacts. Flag drift.
-```
-</details>
-
-<details>
-<summary><strong>Planner</strong> - Plan SVG assignments for Generator</summary>
-
-```
-You are the Planner terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.planner}'
-
-Skills: /wireframe-plan [feature]
-Focus: Analyze spec, create SVG assignments, hand off to Generators
 ```
 </details>
 
