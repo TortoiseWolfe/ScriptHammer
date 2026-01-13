@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T17:05:00Z",
+  "lastUpdated": "2026-01-13T17:32:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -12,9 +12,9 @@
       "task": null
     },
     "generator-1": {
-      "status": "idle",
-      "feature": null,
-      "task": null
+      "status": "working",
+      "feature": "005-security-hardening",
+      "task": "generating 3 SVGs"
     },
     "generator-2": {
       "status": "idle",
@@ -62,12 +62,26 @@
       "task": null
     },
     "planner": {
-      "status": "idle",
-      "feature": null,
-      "task": null
+      "status": "active",
+      "feature": "002-cookie-consent",
+      "task": "wireframe-planning"
     }
   },
   "queue": [
+    {
+      "feature": "002-cookie-consent",
+      "svg": null,
+      "action": "PLAN",
+      "reason": "Manager assignment - wireframe planning needed",
+      "assignedTo": "planner"
+    },
+    {
+      "feature": "001-wcag-aa-compliance",
+      "svg": null,
+      "action": "PLAN",
+      "reason": "Manager assignment - wireframe planning for generator-2",
+      "assignedTo": "planner"
+    },
     {
       "feature": "005-security-hardening",
       "svg": "01-security-ux-enhancements.svg",
@@ -119,6 +133,8 @@
     "Generator-2: Completed 003-user-authentication (3 SVGs: registration, verification, profile)",
     "Planner: Completed wireframe plan for 006-template-fork-experience (2 SVGs)",
     "Planner: Assigned 006-template-fork-experience (2 SVGs) to generator-2",
-    "Generator-2: Completed 006-template-fork-experience (2 SVGs: service-setup-guidance, rebrand-automation-flow)"
+    "Generator-2: Completed 006-template-fork-experience (2 SVGs: service-setup-guidance, rebrand-automation-flow)",
+    "Manager: Assigned 002-cookie-consent to planner for wireframe planning",
+    "Manager: Assigned 001-wcag-aa-compliance to planner (for generator-2)"
   ]
 }
