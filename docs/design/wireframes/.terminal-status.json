@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T16:00:00Z",
+  "lastUpdated": "2026-01-13T16:05:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -67,8 +67,17 @@
       "task": null
     }
   },
-  "queue": [],
+  "queue": [
+    {
+      "feature": "000-landing-page",
+      "svg": "01-landing-page.svg",
+      "action": "REGEN",
+      "reason": "Existing v3 wireframe needs v5 refresh - proper desktop+mobile layout with annotation panel",
+      "assignedTo": "generator-1"
+    }
+  ],
   "completedToday": [
-    "Manager: Clean slate - deleted all SVGs except 000-landing-page"
+    "Manager: Clean slate - deleted all SVGs except 000-landing-page",
+    "Manager: Assigned 000-landing-page to generator-1"
   ]
 }
