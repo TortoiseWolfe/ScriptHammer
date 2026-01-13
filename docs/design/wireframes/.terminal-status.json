@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T16:25:00Z",
+  "lastUpdated": "2026-01-13T16:45:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -69,13 +69,6 @@
   },
   "queue": [
     {
-      "feature": "000-landing-page",
-      "svg": "01-landing-page.svg",
-      "action": "REGEN",
-      "reason": "Existing v3 wireframe needs v5 refresh - proper desktop+mobile layout with annotation panel",
-      "assignedTo": "generator-1"
-    },
-    {
       "feature": "003-user-authentication",
       "svg": "01-registration-sign-in.svg",
       "action": "GENERATE",
@@ -102,6 +95,42 @@
       "action": "GENERATE",
       "reason": "Planned by Planner - Profile view/edit + session management",
       "assignedTo": "generator-2"
+    },
+    {
+      "feature": "005-security-hardening",
+      "svg": "01-security-ux-enhancements.svg",
+      "action": "GENERATE",
+      "reason": "Planned by Planner - Password strength, email validation, lockout UI",
+      "assignedTo": "generator-1"
+    },
+    {
+      "feature": "005-security-hardening",
+      "svg": "02-session-timeout-warning.svg",
+      "action": "GENERATE",
+      "reason": "Planned by Planner - Session timeout warning modal",
+      "assignedTo": "generator-1"
+    },
+    {
+      "feature": "005-security-hardening",
+      "svg": "03-security-audit-dashboard.svg",
+      "action": "GENERATE",
+      "reason": "Planned by Planner - Admin audit log viewer",
+      "assignedTo": "generator-1"
+    },
+    {
+      "feature": "007-e2e-testing-framework",
+      "svg": "TBD",
+      "action": "PLAN",
+      "reason": "Tier 1 Foundation - requires wireframe planning for generator-3",
+      "assignedTo": "planner",
+      "targetGenerator": "generator-3"
+    },
+    {
+      "feature": "006-component-template",
+      "svg": "TBD",
+      "action": "PLAN",
+      "reason": "Tier 1 Foundation - requires wireframe planning",
+      "assignedTo": "planner"
     }
   ],
   "completedToday": [
@@ -109,6 +138,11 @@
     "Manager: Assigned 000-landing-page to generator-1",
     "Manager: Assigned 003-user-authentication to planner for wireframe planning",
     "Planner: Completed wireframe plan for 003-user-authentication (4 SVGs)",
-    "Manager: Assigned 003-user-authentication (4 SVGs) to generator-2"
+    "Manager: Assigned 003-user-authentication (4 SVGs) to generator-2",
+    "Manager: Assigned 007-e2e-testing-framework to planner (for generator-3)",
+    "Manager: Removed 000-landing-page from queue (already passes v5 validation)",
+    "Manager: Assigned 006-component-template to planner (for generator-1)",
+    "Planner: Completed wireframe plan for 005-security-hardening (3 SVGs)",
+    "Manager: Assigned 005-security-hardening (3 SVGs) to generator-1"
   ]
 }
