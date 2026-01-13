@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v5.0
+SVG Wireframe Validator v5.1
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
 All checks are errors - either it passes or it fails. No ambiguous warnings.
 
+NEW in v5.1: Added MOBILE-001 check for mobile content overlapping header (G-034).
 NEW in v5.0: Auto-logs issues to feature-specific .issues.md files.
 Issues only escalate to GENERAL_ISSUES.md when seen in 2+ features.
 
 Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
-        annotations, title, signature, background gradient, paint order.
+        annotations, title, signature, background gradient, paint order, mobile safe area.
 
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
@@ -96,6 +97,11 @@ CANVAS_WIDTH = 1920
 CANVAS_HEIGHT = 1080
 MIN_FONT_SIZE = 14  # pixels (12 is too small for readability)
 MAX_UNUSED_RIGHT_SPACE = 200  # pixels
+
+# Mobile content safe area (G-034)
+MOBILE_HEADER_HEIGHT = 78   # header-mobile.svg total height (status bar + nav)
+MOBILE_FOOTER_Y = 664       # footer-mobile.svg starts here
+MOBILE_CONTENT_MIN_Y = MOBILE_HEADER_HEIGHT  # Content must start at y >= 78
 
 # ============================================================
 # VALIDATION CLASSES
@@ -208,6 +214,9 @@ class WireframeValidator:
         self._check_title_exists()
         self._check_signature_exists()
         self._check_callouts_on_mockups()
+
+        # v8 checks (G-034 - 2026-01-12)
+        self._check_mobile_content_position()
 
         return self.issues
 
@@ -1157,6 +1166,49 @@ class WireframeValidator:
                 message=f"Only {mockup_callouts} callout circles on mockups. Need numbered callouts (①②③④) ON the UI elements."
             ))
 
+    def _check_mobile_content_position(self):
+        """MOBILE-001 / G-034: Mobile content must not overlap header area.
+
+        Mobile mockup header (header-mobile.svg) occupies y=0 to y=78.
+        First content element should be at y >= 78.
+        """
+        # Find mobile group
+        mobile_match = re.search(
+            r'<g[^>]*id=["\']mobile["\'][^>]*>',
+            self.svg_content
+        )
+        if not mobile_match:
+            return  # No mobile mockup
+
+        # Find content after header include
+        mobile_start = mobile_match.end()
+        # Look for header include
+        header_pattern = r'<use[^>]*header-mobile\.svg[^>]*/>'
+        header_match = re.search(header_pattern, self.svg_content[mobile_start:])
+
+        if not header_match:
+            return  # No header include found
+
+        content_start = mobile_start + header_match.end()
+
+        # Find first content element (rect, text, or nested group with y attribute)
+        first_element = re.search(
+            r'<(rect|text|g)[^>]*\sy=["\']?(\d+)',
+            self.svg_content[content_start:content_start + 2000]
+        )
+
+        if first_element:
+            element_y = int(first_element.group(2))
+            if element_y < MOBILE_CONTENT_MIN_Y:
+                line_num = self.svg_content[:content_start + first_element.start()].count('\n') + 1
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="MOBILE-001",
+                    message=f"Mobile content y={element_y} overlaps header zone (must be y >= {MOBILE_CONTENT_MIN_Y})",
+                    line=line_num,
+                    element=first_element.group(0)[:60]
+                ))
+
 
 # ============================================================
 # ISSUE LOGGER - Auto-logs to feature-specific .issues.md files
@@ -1217,6 +1269,8 @@ class IssueLogger:
                 cat = "Clutter Issues"
             elif code.startswith('VIS'):
                 cat = "Visual Issues"
+            elif code.startswith('MOBILE') or code.startswith('MOB'):
+                cat = "Mobile Issues"
             else:
                 cat = "Other Issues"
 
@@ -1290,8 +1344,12 @@ class IssueLogger:
         """Check all .issues.md files for patterns that should escalate.
 
         Returns dict of issue_code -> list of features where it appears.
+        Filters out codes already documented in GENERAL_ISSUES.md.
         """
         pattern_occurrences: Dict[str, Set[str]] = {}
+
+        # Load already-documented codes from GENERAL_ISSUES.md
+        documented_codes = self._get_documented_codes()
 
         # Find all .issues.md files
         for issues_file in self.wireframes_dir.glob("**/*.issues.md"):
@@ -1310,14 +1368,46 @@ class IssueLogger:
                     pattern_occurrences[code] = set()
                 pattern_occurrences[code].add(feature)
 
-        # Filter to codes appearing in 2+ features
+        # Filter to codes appearing in 2+ features AND not already documented
         escalation_candidates = {
             code: list(features)
             for code, features in pattern_occurrences.items()
-            if len(features) >= 2
+            if len(features) >= 2 and code not in documented_codes
         }
 
         return escalation_candidates
+
+    def _get_documented_codes(self) -> Set[str]:
+        """Extract validator codes already documented in GENERAL_ISSUES.md.
+
+        Parses the history table for entries like "FONT-001 → G-010" and the
+        Validator Trigger sections for codes like "BTN-001 fires when...".
+        """
+        documented = set()
+
+        if not self.general_issues_path.exists():
+            return documented
+
+        content = self.general_issues_path.read_text()
+
+        # Pattern 1: History entries like "FONT-001 → G-010" or "validator: FONT-001"
+        escalated = re.findall(r'([A-Z]+-\d{3})\s*[→→]', content)
+        documented.update(escalated)
+
+        # Pattern 2: Validator trigger references like "BTN-001 fires" or "(validator: ANN-002)"
+        validator_refs = re.findall(r'(?:validator:\s*)?([A-Z]+-\d{3})(?:\s+fires|\))', content)
+        documented.update(validator_refs)
+
+        # Pattern 3: Direct G-XXX entries map to their validator codes
+        # G-031 -> COLL (callout placement), G-018 -> US (user story), G-024 -> TITLE
+        code_mappings = {
+            'COLL-001': 'G-031',  # Callout Must Not Block UI
+            'US-002': 'G-018',    # User Story anchor
+            'TITLE-003': 'G-024', # Title block
+        }
+        documented.update(code_mappings.keys())
+
+        return documented
 
 
 def main():

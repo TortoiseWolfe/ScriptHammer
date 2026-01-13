@@ -36,6 +36,8 @@
 | G-031 | Callout circle placed ON TOP of UI element | Place callout 10-20px ADJACENT to element, never covering it | Callout Placement |
 | G-032 | Desktop UI cramped to left, wasting right side | Center content; 2 panels=640px each, 3 states=420px each | Desktop Space Usage |
 | G-033 | Callouts at random Y positions when alignment possible | Align callouts highlighting same row to shared Y coordinate | Callout Grid Alignment |
+| G-034 | Mobile content y-position too high (overlaps header) | Mobile content must start at y >= 78 (after header area) | Mobile Safe Area |
+| G-035 | Buttons using faded/parchment colors | Use solid button colors: primary=#8b5cf6, secondary=#f5f0e6, tertiary=#dcc8a8 | Button Color Standards |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -368,6 +370,8 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-12 | G-031 | 003:01 review - callout ③ blocking GitHub button |
 | 2026-01-12 | G-032 | 003:01 review - desktop UI cramped left, wasting right side |
 | 2026-01-12 | G-033 | 003:01 review - callouts at random Y positions, not aligned |
+| 2026-01-12 | G-034 | 002:01, 002:02 review - mobile content overlaps header insert |
+| 2026-01-12 | G-035 | 003:02, 004:02 review - buttons using faded parchment fills |
 
 ---
 
@@ -608,3 +612,85 @@ When a modal has an overlay, the footer should still be visible at the bottom of
 | Footer | y=700 | Footer elements |
 
 **Exception**: When elements being highlighted are at different Y positions, callouts should still follow the element - but try to design UI with aligned elements first.
+
+---
+
+## Mobile Content Safe Area (G-034)
+
+**Problem**: Mobile mockup content placed at y < 78 overlaps the header insert area.
+
+### Mobile Mockup Structure
+
+| Zone | Y Range | Purpose |
+|------|---------|---------|
+| Header | y=0 to y=78 | Reserved for header-mobile.svg insert |
+| Content | y=78 to y=664 | Safe area for UI elements |
+| Footer | y=664 to y=720 | Reserved for footer-mobile.svg insert |
+
+### Mobile Frame Coordinates
+
+```
+Mobile mockup: x=1360, y=60, w=360, h=720
+├── Header zone: y=0-78 (RESERVED - do not place content)
+├── Content zone: y=78-664 (586px available)
+└── Footer zone: y=664-720 (RESERVED)
+```
+
+### Rule
+
+**First content element inside mobile group must have y >= 78.**
+
+### Common Mistake
+
+```xml
+<!-- WRONG: Content overlaps header area -->
+<g id="mobile" transform="translate(1360, 60)">
+  <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+  <rect y="40" .../>  <!-- y=40 is inside header zone! -->
+</g>
+
+<!-- CORRECT: Content starts below header -->
+<g id="mobile" transform="translate(1360, 60)">
+  <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+  <rect y="78" .../>  <!-- y=78 is safe -->
+</g>
+```
+
+### Why 78px?
+
+The `header-mobile.svg` insert includes:
+- Status bar (~22px)
+- Navigation bar (~56px)
+- Total header height: 78px
+
+Content starting below y=78 ensures no visual overlap.
+
+---
+
+## Button Fill Colors (G-035)
+
+**Problem**: Buttons using faded parchment colors (#e8d4b8, #dcc8a8) lack visual prominence and are hard to identify as interactive elements.
+
+### Validator Trigger
+
+BTN-001 fires when button `<rect>` elements use these faded fills:
+- `#e8d4b8` (panel parchment)
+- Transparent or near-transparent fills
+
+### Correct Button Colors
+
+| Button Type | Fill | Text | Border |
+|-------------|------|------|--------|
+| Primary | `#8b5cf6` (violet) | `#ffffff` | none |
+| Secondary | `#f5f0e6` (cream) | `#8b5cf6` | `#8b5cf6` 2px |
+| Tertiary | `#dcc8a8` (tan) | `#374151` | `#b8a080` 1px |
+
+### Rule
+
+**Every button must have a distinct, solid fill that stands out from panel backgrounds.**
+
+### Why This Matters
+
+- Parchment (#e8d4b8) is for panels, not buttons
+- Faded buttons look disabled or non-interactive
+- Users can't distinguish clickable from non-clickable elements

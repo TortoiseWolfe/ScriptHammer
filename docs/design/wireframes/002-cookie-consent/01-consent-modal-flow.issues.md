@@ -11,7 +11,7 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 1 |
+| Open | 2 |
 
 ---
 
@@ -22,6 +22,12 @@
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
 | T-01 | Title must be centered (text-anchor='middle') | TITLE-003 | REGENERATE |
+
+### Structure Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| S-01 | Footer <use> appears BEFORE modal overlay - will be hidden. ... | G-021 | REGENERATE |
 
 ---
 
