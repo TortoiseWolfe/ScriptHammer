@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T16:05:00Z",
+  "lastUpdated": "2026-01-13T16:10:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -74,10 +74,18 @@
       "action": "REGEN",
       "reason": "Existing v3 wireframe needs v5 refresh - proper desktop+mobile layout with annotation panel",
       "assignedTo": "generator-1"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "TBD",
+      "action": "PLAN",
+      "reason": "Tier 1 Foundation - requires wireframe planning to determine SVG breakdown",
+      "assignedTo": "planner"
     }
   ],
   "completedToday": [
     "Manager: Clean slate - deleted all SVGs except 000-landing-page",
-    "Manager: Assigned 000-landing-page to generator-1"
+    "Manager: Assigned 000-landing-page to generator-1",
+    "Manager: Assigned 003-user-authentication to planner for wireframe planning"
   ]
 }
