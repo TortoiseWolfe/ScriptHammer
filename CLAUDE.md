@@ -46,6 +46,42 @@ cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.validator
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
 
+### Author
+```
+You are the Author terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.author}'
+
+Skills: /session-summary, /changelog
+Focus: Blog posts, social media, release notes, workflow documentation
+```
+
+### Tester
+```
+You are the Tester terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.tester}'
+
+Skills: /test, /test-components, /test-a11y, /test-hooks
+Focus: Run Vitest, Playwright, Pa11y. Report coverage gaps.
+```
+
+### Implementer
+```
+You are the Implementer terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.implementer, queue: .queue}'
+
+Skills: /speckit.implement, /speckit.tasks
+Focus: Convert specs + wireframes into actual code
+```
+
+### Auditor
+```
+You are the Auditor terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.auditor}'
+
+Skills: /speckit.analyze, /read-spec
+Focus: Verify consistency across artifacts. Flag drift.
+```
+
 ---
 
 ## Repository Purpose

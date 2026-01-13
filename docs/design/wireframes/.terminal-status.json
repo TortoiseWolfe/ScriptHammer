@@ -25,6 +25,26 @@
       "status": "idle",
       "feature": null,
       "task": null
+    },
+    "author": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "tester": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "implementer": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "auditor": {
+      "status": "idle",
+      "feature": null,
+      "task": null
     }
   },
   "queue": [
