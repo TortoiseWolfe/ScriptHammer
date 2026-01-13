@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE text-anchor="middle" -->
+  <text text-anchor="middle" x="960" y="28" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">SECURITY HARDENING - SESSION MANAGEMENT</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Dashboard content behind modal -->
+    <text x="100" y="100" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#374151">Dashboard</text>
+    <rect x="100" y="120" width="500" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="120" y="160" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Recent Activity</text>
+    <text x="120" y="190" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Your account is secure. Last login: Today at 2:30 PM</text>
+    <text x="120" y="220" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Payment data is isolated to your account only.</text>
+
+    <!-- Session info panel -->
+    <rect x="650" y="120" width="300" height="100" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="670" y="155" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Session Info</text>
+    <text x="670" y="180" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Expires: 23h 45m remaining</text>
+    <text x="670" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Remember Me: Active (7 days)</text>
+
+    <!-- Sign Out button -->
+    <rect x="980" y="135" width="120" height="40" rx="6" fill="#6b7280"/>
+    <text x="1040" y="160" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Sign Out</text>
+
+    <!-- Modal overlay -->
+    <rect x="0" y="0" width="1280" height="720" fill="#000000" opacity="0.5"/>
+
+    <!-- Session Timeout Warning Modal -->
+    <rect x="390" y="220" width="500" height="280" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="640" y="270" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#374151" text-anchor="middle">Session Expiring Soon</text>
+
+    <!-- Warning icon -->
+    <circle cx="640" cy="320" r="30" fill="#f59e0b"/>
+    <text x="640" y="332" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" fill="#ffffff" text-anchor="middle">!</text>
+
+    <text x="640" y="380" font-family="system-ui, sans-serif" font-size="16" fill="#374151" text-anchor="middle">Your session will expire in</text>
+    <text x="640" y="410" font-family="system-ui, sans-serif" font-size="36" font-weight="bold" fill="#dc2626" text-anchor="middle">0:58</text>
+    <text x="640" y="435" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563" text-anchor="middle">Click below to stay signed in</text>
+
+    <!-- Modal buttons -->
+    <rect x="420" y="455" width="180" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="510" y="483" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">Stay Signed In</text>
+
+    <rect x="620" y="455" width="140" height="44" rx="8" fill="#6b7280"/>
+    <text x="690" y="483" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#ffffff" text-anchor="middle">Sign Out</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!--
+    ============================================================================
+    ============================================================================
+    DESKTOP CALLOUTS SECTION
+    ============================================================================
+    These callouts are positioned to the right of the modal and form elements.
+    They indicate the numbered annotation references in the panel below.
+    ============================================================================
+    ============================================================================
+  -->
+
+  <!-- Desktop callouts positioned outside mockup area -->
+  <g id="desktop-callouts" transform="translate(40, 60)">
+    <circle cx="1100" cy="170" r="14" fill="#dc2626"/>
+    <text x="1100" y="175" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+
+    <circle cx="1100" cy="230" r="14" fill="#dc2626"/>
+    <text x="1100" y="235" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+
+    <circle cx="920" cy="350" r="14" fill="#dc2626"/>
+    <text x="920" y="355" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+
+    <circle cx="790" cy="480" r="14" fill="#dc2626"/>
+    <text x="790" y="485" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Background content -->
+    <text x="20" y="110" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">Dashboard</text>
+    <rect x="15" y="125" width="330" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="25" y="155" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Session Active</text>
+    <text x="25" y="180" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Expires: 23h remaining</text>
+
+    <!-- Sign out button -->
+    <rect x="250" y="140" width="80" height="32" rx="6" fill="#6b7280"/>
+    <text x="290" y="161" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Sign Out</text>
+
+    <!-- Modal overlay -->
+    <rect x="0" y="0" width="360" height="720" fill="#000000" opacity="0.5" rx="24"/>
+
+    <!-- Session Timeout Modal - mobile -->
+    <rect x="20" y="200" width="320" height="280" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <text x="180" y="240" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151" text-anchor="middle">Session Expiring</text>
+
+    <circle cx="180" cy="290" r="24" fill="#f59e0b"/>
+    <text x="180" y="300" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#ffffff" text-anchor="middle">!</text>
+
+    <text x="180" y="340" font-family="system-ui, sans-serif" font-size="14" fill="#374151" text-anchor="middle">Your session expires in</text>
+    <text x="180" y="375" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" fill="#dc2626" text-anchor="middle">0:58</text>
+
+    <rect x="40" y="400" width="130" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="105" y="428" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Stay In</text>
+
+    <rect x="190" y="400" width="130" height="44" rx="8" fill="#6b7280"/>
+    <text x="255" y="428" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">Sign Out</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!--
+    ============================================================================
+    MOBILE CALLOUTS SECTION
+    Positioned separately from mobile UI elements
+    ============================================================================
+  -->
+
+  <!-- Mobile callouts -->
+  <g id="mobile-callouts" transform="translate(1680, 60)">
+    <circle cx="0" cy="155" r="12" fill="#dc2626"/>
+    <text x="0" y="159" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+
+    <circle cx="0" cy="295" r="12" fill="#dc2626"/>
+    <text x="0" y="299" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+
+    <circle cx="0" cy="420" r="12" fill="#dc2626"/>
+    <text x="0" y="424" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: Session Timeout Warning -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Session Timeout Warning</text>
+      <text x="40" y="40" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">As a user, I need my session to expire after</text>
+      <text x="40" y="58" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">inactivity with advance warning.</text>
+      <g transform="translate(40, 70)">
+        <a href="#US-009"><rect x="0" y="0" width="55" height="22" rx="4" fill="#0891b2"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">US-009</text></a>
+        <a href="#FR-029"><rect x="61" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-029</text></a>
+        <a href="#FR-030"><rect x="122" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="149" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-030</text></a>
+        <a href="#FR-031"><rect x="183" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="210" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-031</text></a>
+      </g>
+      <g transform="translate(40, 98)">
+        <a href="#FR-032"><rect x="0" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-032</text></a>
+        <a href="#SC-010"><rect x="61" y="0" width="55" height="22" rx="4" fill="#ea580c"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">SC-010</text></a>
+      </g>
+    </g>
+
+    <!-- Column 2: Explicit Sign-Out -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Explicit Sign-Out</text>
+      <text x="40" y="40" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Full session termination when user</text>
+      <text x="40" y="58" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">explicitly signs out.</text>
+      <g transform="translate(40, 70)">
+        <a href="#US-009"><rect x="0" y="0" width="55" height="22" rx="4" fill="#0891b2"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">US-009</text></a>
+        <a href="#FR-033"><rect x="61" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-033</text></a>
+      </g>
+    </g>
+
+    <!-- Column 3: OAuth Session Protection -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">OAuth Session Protection</text>
+      <text x="40" y="40" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">As a user signing in with third-party, I need</text>
+      <text x="40" y="58" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">callback verification to prevent hijacking.</text>
+      <g transform="translate(40, 70)">
+        <a href="#US-002"><rect x="0" y="0" width="55" height="22" rx="4" fill="#0891b2"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">US-002</text></a>
+        <a href="#FR-005"><rect x="61" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-005</text></a>
+        <a href="#FR-006"><rect x="122" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="149" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-006</text></a>
+        <a href="#FR-007"><rect x="183" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="210" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-007</text></a>
+      </g>
+      <g transform="translate(40, 98)">
+        <a href="#FR-008"><rect x="0" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-008</text></a>
+        <a href="#SC-002"><rect x="61" y="0" width="55" height="22" rx="4" fill="#ea580c"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">SC-002</text></a>
+      </g>
+    </g>
+
+    <!-- Column 4: Payment Data Isolation -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Payment Data Isolation</text>
+      <text x="40" y="40" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">As a user with payment history, my data</text>
+      <text x="40" y="58" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">is completely isolated from other users.</text>
+      <g transform="translate(40, 70)">
+        <a href="#US-001"><rect x="0" y="0" width="55" height="22" rx="4" fill="#0891b2"/><text x="27" y="15" fill="#ffffff" font-size="14" text-anchor="middle">US-001</text></a>
+        <a href="#FR-001"><rect x="61" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="88" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-001</text></a>
+        <a href="#FR-002"><rect x="122" y="0" width="55" height="22" rx="4" fill="#2563eb"/><text x="149" y="15" fill="#ffffff" font-size="14" text-anchor="middle">FR-002</text></a>
+        <a href="#SC-001"><rect x="183" y="0" width="55" height="22" rx="4" fill="#ea580c"/><text x="210" y="15" fill="#ffffff" font-size="14" text-anchor="middle">SC-001</text></a>
+      </g>
+    </g>
+  </g>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">005:02 | Security Hardening | ScriptHammer</text>
+</svg>
