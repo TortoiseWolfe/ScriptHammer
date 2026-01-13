@@ -719,6 +719,20 @@
             </a>
           </div>
         </div>
+        <!-- 006-template-fork-experience -->
+        <div class="nav-section">
+          <h2>006 - Template Fork Experience <span class="shortcut">^8</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="006-template-fork-experience/01-service-setup-guidance.svg">
+              Service Setup Guidance
+              <span class="path">Dashboard, Status Indicators, Quick Actions</span>
+            </a>
+            <a href="#" data-svg="006-template-fork-experience/02-rebrand-automation-flow.svg">
+              Rebrand Automation Flow
+              <span class="path">CLI Workflow, Config Updates, Validation</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -726,7 +740,20 @@
     <div class="nav-category" id="cat-core">
       <div class="category-header">Core Features <span class="shortcut">⇧F2</span></div>
       <div class="category-links">
-        <!-- Populated by /wireframe -->
+        <!-- 007-e2e-testing-framework -->
+        <div class="nav-section">
+          <h2>007 - E2E Testing Framework <span class="shortcut">^8</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="007-e2e-testing-framework/01-test-architecture-diagram.svg">
+              Test Architecture Diagram
+              <span class="path">Playwright Framework, Browser Engines, CI/CD</span>
+            </a>
+            <a href="#" data-svg="007-e2e-testing-framework/02-cicd-pipeline-flow.svg">
+              CI/CD Pipeline Flow
+              <span class="path">GitHub Actions, Artifacts, Status</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -974,9 +1001,15 @@
       { path: '004-mobile-first-design/01-mobile-viewport-layouts.svg', title: 'Mobile Viewport Layouts' },
       { path: '004-mobile-first-design/02-performance-testing.svg', title: 'Performance Testing' },
       // 005-security-hardening
-      { path: '005-security-hardening/01-security-ux-sign-in.svg', title: 'Security UX - Sign In' },
-      { path: '005-security-hardening/02-session-management.svg', title: 'Session Management' },
-      { path: '005-security-hardening/03-admin-security-dashboard.svg', title: 'Admin Security Dashboard' },
+      { path: '005-security-hardening/01-security-ux-enhancements.svg', title: 'Security UX Enhancements' },
+      { path: '005-security-hardening/02-session-timeout-warning.svg', title: 'Session Timeout Warning' },
+      { path: '005-security-hardening/03-security-audit-dashboard.svg', title: 'Security Audit Dashboard' },
+      // 006-template-fork-experience
+      { path: '006-template-fork-experience/01-service-setup-guidance.svg', title: 'Service Setup Guidance' },
+      { path: '006-template-fork-experience/02-rebrand-automation-flow.svg', title: 'Rebrand Automation Flow' },
+      // 007-e2e-testing-framework
+      { path: '007-e2e-testing-framework/01-test-architecture-diagram.svg', title: 'Test Architecture Diagram' },
+      { path: '007-e2e-testing-framework/02-cicd-pipeline-flow.svg', title: 'CI/CD Pipeline Flow' },
     ];
 
     // Category mapping for Shift+F1-F9 navigation
@@ -1227,6 +1260,20 @@
         const doc = parser.parseFromString(svgContent, 'image/svg+xml');
         const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
 
+        // Security: Validate path to prevent path traversal attacks
+        function isValidSvgPath(path) {
+          // Block path traversal sequences
+          if (path.includes('..') || path.includes('//') || path.startsWith('/')) {
+            return false;
+          }
+          // Only allow .svg files from includes/ directory
+          if (!path.endsWith('.svg')) {
+            return false;
+          }
+          // Allow relative paths within project (includes/ or same directory)
+          return path.startsWith('includes/') || !path.includes('/');
+        }
+
         // Find all <use> elements with external href (file.svg#id pattern)
         const useElements = doc.querySelectorAll('use[href*=".svg#"]');
         const fetchPromises = [];
@@ -1236,6 +1283,13 @@
           if (!href || !href.includes('.svg#')) continue;
 
           const [filePath, elementId] = href.split('#');
+
+          // Security: Validate path before fetching
+          if (!isValidSvgPath(filePath)) {
+            console.warn('Blocked suspicious SVG reference:', filePath);
+            continue;
+          }
+
           const fullPath = baseDir + filePath;
 
           fetchPromises.push(
@@ -1266,17 +1320,48 @@
         return new XMLSerializer().serializeToString(doc);
       }
 
+      // Security: SVG sanitization to prevent XSS via embedded scripts
+      function sanitizeSVG(svgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+        const svg = doc.documentElement;
+
+        // Remove all script elements
+        svg.querySelectorAll('script').forEach(el => el.remove());
+
+        // Remove all event handlers (onclick, onload, onerror, etc.)
+        const allElements = svg.querySelectorAll('*');
+        allElements.forEach(el => {
+          const attrs = [...el.attributes];
+          attrs.forEach(attr => {
+            if (attr.name.startsWith('on') || (attr.name === 'href' && attr.value.startsWith('javascript:'))) {
+              el.removeAttribute(attr.name);
+            }
+          });
+        });
+
+        // Remove dangerous SVG elements
+        svg.querySelectorAll('foreignObject, set, animate[attributeName="href"]').forEach(el => el.remove());
+
+        return new XMLSerializer().serializeToString(svg);
+      }
+
       // Fetch and inject SVG content (enables both clickable links AND zoom/pan)
       fetch(wf.path)
         .then(response => response.text())
         .then(svgContent => resolveExternalUseRefs(svgContent, wf.path))
         .then(resolvedSvg => {
-          viewer.innerHTML = resolvedSvg;
+          viewer.innerHTML = sanitizeSVG(resolvedSvg);
           // Auto-fit to visible viewport after SVG loads
           requestAnimationFrame(() => fitToView());
         })
         .catch(err => {
-          viewer.innerHTML = `<p style="color: #ef4444; padding: 20px;">Failed to load: ${wf.path}</p>`;
+          // Security: Use textContent to prevent XSS in error path
+          const errorP = document.createElement('p');
+          errorP.style.cssText = 'color: #ef4444; padding: 20px;';
+          errorP.textContent = 'Failed to load: ' + wf.path;
+          viewer.innerHTML = '';
+          viewer.appendChild(errorP);
         });
 
       // Update info

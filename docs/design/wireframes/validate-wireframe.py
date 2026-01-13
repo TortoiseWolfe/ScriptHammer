@@ -20,14 +20,15 @@ Usage:
     python validate-wireframe.py --check-escalation  # Check for patterns to escalate
 """
 
-import sys
-import re
-import xml.etree.ElementTree as ET
-from pathlib import Path
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Set
-from datetime import date
+import bisect
 import json
+import re
+import sys
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
+from typing import Dict, List, Optional, Set
 
 # ============================================================
 # COLOR STANDARDS
@@ -129,6 +130,16 @@ MOBILE_HEADER_HEIGHT = 78   # header-mobile.svg total height (status bar + nav)
 MOBILE_FOOTER_Y = 664       # footer-mobile.svg starts here
 MOBILE_CONTENT_MIN_Y = MOBILE_HEADER_HEIGHT  # Content must start at y >= 78
 
+# Annotation panel layout (4-column grid)
+ANNOTATION_COLUMNS = [(20, 470), (470, 920), (920, 1370), (1370, 1820)]
+ANNOTATION_PANEL_MAX_X = 1800  # Content should not exceed this x position
+ANNOTATION_PANEL_MAX_Y = 200   # Content should not exceed this y position (relative to panel)
+
+# Mockup boundaries
+DESKTOP_MOCKUP_RIGHT = 1320   # 40 + 1280
+MOBILE_MOCKUP_RIGHT = 1720    # 1360 + 360
+ANNOTATION_PANEL_RIGHT = 1880  # 40 + 1840
+
 # ============================================================
 # VALIDATION CLASSES
 # ============================================================
@@ -178,6 +189,59 @@ class WireframeValidator:
         self.root = None
         self.svg_content = ""
         self.ns = {'svg': 'http://www.w3.org/2000/svg'}
+        self._line_offsets: List[int] = []  # Cumulative line offsets for O(log n) lookups
+        # Cached sections (computed lazily on first access)
+        self._annotation_start: Optional[int] = None
+        self._annotation_section: Optional[str] = None
+        self._mockup_section: Optional[str] = None
+        self._parent_map: Optional[Dict] = None
+
+    @property
+    def annotation_start(self) -> int:
+        """Cached position of annotation section start."""
+        if self._annotation_start is None:
+            pos = self.svg_content.find('id="annotations"')
+            self._annotation_start = pos if pos != -1 else len(self.svg_content)
+        return self._annotation_start
+
+    @property
+    def annotation_section(self) -> str:
+        """Cached annotation section content."""
+        if self._annotation_section is None:
+            if 'id="annotations"' in self.svg_content:
+                self._annotation_section = self.svg_content[self.annotation_start:]
+            else:
+                self._annotation_section = ""
+        return self._annotation_section
+
+    @property
+    def mockup_section(self) -> str:
+        """Cached mockup section (everything before annotations)."""
+        if self._mockup_section is None:
+            self._mockup_section = self.svg_content[:self.annotation_start]
+        return self._mockup_section
+
+    @property
+    def parent_map(self) -> Dict:
+        """Cached ElementTree parent map."""
+        if self._parent_map is None:
+            self._parent_map = {child: parent for parent in self.root.iter() for child in parent}
+        return self._parent_map
+
+    def _build_line_offsets(self) -> None:
+        """Build cumulative line offset map for O(log n) line number lookups.
+
+        Instead of counting newlines via svg_content[:pos].count('\\n') for each
+        issue (O(n) per lookup = O(n²) total), we build this once and use binary search.
+        """
+        self._line_offsets = [0]
+        for i, char in enumerate(self.svg_content):
+            if char == '\n':
+                self._line_offsets.append(i + 1)
+
+    def _get_line_number(self, pos: int) -> int:
+        """Get line number for a character position using binary search. O(log n)."""
+        return bisect.bisect_right(self._line_offsets, pos)
 
     def validate(self) -> List[Issue]:
         """Run all validation checks."""
@@ -192,6 +256,9 @@ class WireframeValidator:
                 message=f"Failed to parse SVG: {e}"
             ))
             return self.issues
+
+        # Build line offset map for O(log n) line lookups (instead of O(n²) repeated counting)
+        self._build_line_offsets()
 
         # Check for common XML/SVG issues that cause browser errors
         self._check_xml_syntax()
@@ -255,7 +322,7 @@ class WireframeValidator:
         # Check for unescaped ampersands (not part of entities)
         amp_pattern = r'&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)'
         for match in re.finditer(amp_pattern, self.svg_content):
-            line_num = self.svg_content[:match.start()].count('\n') + 1
+            line_num = self._get_line_number(match.start())
             self.issues.append(Issue(
                 severity="ERROR",
                 code="XML-001",
@@ -267,7 +334,7 @@ class WireframeValidator:
         # Pattern: look for < that's not starting a tag (followed by letter or /)
         bad_lt_pattern = r'<(?![a-zA-Z/?!])'
         for match in re.finditer(bad_lt_pattern, self.svg_content):
-            line_num = self.svg_content[:match.start()].count('\n') + 1
+            line_num = self._get_line_number(match.start())
             self.issues.append(Issue(
                 severity="ERROR",
                 code="XML-002",
@@ -279,7 +346,7 @@ class WireframeValidator:
         # Look for patterns like attr="value' or attr='value"
         mismatched_quote_pattern = r'(\w+)="[^"]*\'|(\w+)=\'[^\']*"'
         for match in re.finditer(mismatched_quote_pattern, self.svg_content):
-            line_num = self.svg_content[:match.start()].count('\n') + 1
+            line_num = self._get_line_number(match.start())
             self.issues.append(Issue(
                 severity="ERROR",
                 code="XML-003",
@@ -296,7 +363,7 @@ class WireframeValidator:
             # Skip if it looks like a gradient reference
             if attr_value.startswith('url('):
                 continue
-            line_num = self.svg_content[:match.start()].count('\n') + 1
+            line_num = self._get_line_number(match.start())
             self.issues.append(Issue(
                 severity="ERROR",
                 code="XML-004",
@@ -337,7 +404,7 @@ class WireframeValidator:
             pattern = rf'<rect[^>]*fill=["\']?{re.escape(color)}'
             matches = list(re.finditer(pattern, self.svg_content, re.IGNORECASE))
             for match in matches:
-                line_num = self.svg_content[:match.start()].count('\n') + 1
+                line_num = self._get_line_number(match.start())
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="G-001",
@@ -367,7 +434,7 @@ class WireframeValidator:
             if fill_match:
                 fill = fill_match.group(1).lower()
                 if fill not in ['#6b7280', '#22c55e', 'none', 'url(']:
-                    line_num = self.svg_content[:match.start()].count('\n') + 1
+                    line_num = self._get_line_number(match.start())
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="G-015",
@@ -419,7 +486,7 @@ class WireframeValidator:
             if fill_match:
                 fill = fill_match.group(1).lower()
                 if fill in FORBIDDEN_FRAME_COLORS:
-                    line_num = self.svg_content[:match.start()].count('\n') + 1
+                    line_num = self._get_line_number(match.start())
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="MOB-001",
@@ -433,9 +500,6 @@ class WireframeValidator:
         """
         BADGE_MIN_SIZE = 11  # Badge pill text can be smaller
 
-        # Build parent map
-        parent_map = {child: parent for parent in self.root.iter() for child in parent}
-
         for text in self.root.iter('{http://www.w3.org/2000/svg}text'):
             font_size_str = text.get('font-size', '14')
             # Remove 'px' suffix if present
@@ -445,7 +509,7 @@ class WireframeValidator:
                 content = ''.join(text.itertext())[:30]
 
                 # Check if inside an <a> tag (badge pill) - use different minimum
-                parent = parent_map.get(text)
+                parent = self.parent_map.get(text)
                 is_badge = parent is not None and parent.tag == '{http://www.w3.org/2000/svg}a'
 
                 min_size = BADGE_MIN_SIZE if is_badge else MIN_FONT_SIZE
@@ -476,7 +540,7 @@ class WireframeValidator:
             has_link_after = '</a>' in search_after
 
             if not (has_link_before and has_link_after):
-                line_num = self.svg_content[:start].count('\n') + 1
+                line_num = self._get_line_number(start)
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="LINK-001",
@@ -526,7 +590,7 @@ class WireframeValidator:
 
         # Find mockup section (before annotations)
         if 'id="annotations"' in self.svg_content:
-            mockup_section = self.svg_content[:self.svg_content.find('id="annotations"')]
+            mockup_section = self.mockup_section
         else:
             mockup_section = self.svg_content
 
@@ -552,7 +616,7 @@ class WireframeValidator:
                 # Check if callout overlaps or is too close to footer
                 callout_bottom = cy + r
                 if callout_bottom >= footer_y - FOOTER_MARGIN:
-                    line_num = self.svg_content[:section_offset + match.start()].count('\n') + 1
+                    line_num = self._get_line_number(section_offset + match.start())
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="COLL-001",
@@ -584,7 +648,7 @@ class WireframeValidator:
 
         # Count callout CIRCLES specifically (not P0 badges which are rects)
         # Look for <circle elements with red fill in annotation panel
-        annotation_section = self.svg_content[self.svg_content.find('id="annotations"'):]
+        annotation_section = self.annotation_section
         callout_pattern = r'<circle[^>]*fill=["\']?#dc2626'
         callout_count = len(re.findall(callout_pattern, annotation_section))
 
@@ -709,8 +773,8 @@ class WireframeValidator:
             return  # No annotation panel to check
 
         # Count callouts on mockups (before annotations section)
-        annotation_start = self.svg_content.find('id="annotations"')
-        mockup_section = self.svg_content[:annotation_start]
+        annotation_start = self.annotation_start
+        mockup_section = self.mockup_section
         mockup_callouts = len(re.findall(r'<circle[^>]*fill=["\']?#dc2626["\']?', mockup_section))
 
         # Count callouts in annotation panel
@@ -761,7 +825,7 @@ class WireframeValidator:
                     # Check if this looks like a button (reasonable dimensions)
                     if 80 <= width <= 300 and 35 <= height <= 60:
                         if fill in faded_colors:
-                            line_num = self.svg_content[:match.start()].count('\n') + 1
+                            line_num = self._get_line_number(match.start())
                             self.issues.append(Issue(
                                 severity="ERROR",
                                 code="BTN-001",
@@ -769,7 +833,7 @@ class WireframeValidator:
                                 line=line_num
                             ))
                         elif fill in transparent_values:
-                            line_num = self.svg_content[:match.start()].count('\n') + 1
+                            line_num = self._get_line_number(match.start())
                             self.issues.append(Issue(
                                 severity="ERROR",
                                 code="BTN-001",
@@ -838,7 +902,7 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return  # No annotation panel to check
 
-        annotation_section = self.svg_content[self.svg_content.find('id="annotations"'):]
+        annotation_section = self.annotation_section
         us_badges = re.findall(r'US-\d{3}', annotation_section)
         unique_us = set(us_badges)
 
@@ -922,7 +986,7 @@ class WireframeValidator:
         """
         # Find all callout positions in the mockup areas (not annotation panel)
         if 'id="annotations"' in self.svg_content:
-            mockup_section = self.svg_content[:self.svg_content.find('id="annotations"')]
+            mockup_section = self.mockup_section
         else:
             mockup_section = self.svg_content
 
@@ -976,7 +1040,7 @@ class WireframeValidator:
 
                 for btn in buttons:
                     if btn['x'] <= cx <= btn['x'] + btn['w'] and btn['y'] <= cy <= btn['y'] + btn['h']:
-                        line_num = self.svg_content[:section_offset + match.start()].count('\n') + 1
+                        line_num = self._get_line_number(section_offset + match.start())
                         self.issues.append(Issue(
                             severity="ERROR",
                             code="CALLOUT-003",
@@ -1008,11 +1072,8 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_start = self.annotation_start
         annotation_section = self.svg_content[annotation_start:]
-
-        # Column boundaries (relative to annotation panel)
-        columns = [(20, 470), (470, 920), (920, 1370), (1370, 1820)]
 
         # Find text elements with x positions
         text_pattern = r'<text[^>]*x=["\']?(\d+)["\']?[^>]*>([^<]*)</text>'
@@ -1028,7 +1089,7 @@ class WireframeValidator:
 
                 # Check if text fits within any column
                 fits_column = False
-                for col_start, col_end in columns:
+                for col_start, col_end in ANNOTATION_COLUMNS:
                     if x >= col_start and text_end <= col_end:
                         fits_column = True
                         break
@@ -1036,9 +1097,9 @@ class WireframeValidator:
                 # Only warn if text is clearly outside all columns and long enough to matter
                 if not fits_column and estimated_width > 100:
                     # Check if it's just starting in a valid column
-                    in_valid_start = any(col_start <= x < col_end for col_start, col_end in columns)
-                    if in_valid_start and text_end > 1820:
-                        line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                    in_valid_start = any(col_start <= x < col_end for col_start, col_end in ANNOTATION_COLUMNS)
+                    if in_valid_start and text_end > ANNOTATION_COLUMNS[-1][1]:
+                        line_num = self._get_line_number(annotation_start + match.start())
                         self.issues.append(Issue(
                             severity="ERROR",
                             code="ANN-003",
@@ -1057,7 +1118,7 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_start = self.annotation_start
         annotation_section = self.svg_content[annotation_start:]
 
         # Find the closing </g> of the annotation group (handle nested groups)
@@ -1090,7 +1151,6 @@ class WireframeValidator:
             annotation_group = annotation_section[:5000]
 
         # Check for elements with positions beyond bounds
-        # Look for x > 1800 or y > 200 (leaving some margin)
         x_pattern = r'x=["\']?(\d+)["\']?'
         y_pattern = r'y=["\']?(\d+)["\']?'
 
@@ -1098,12 +1158,12 @@ class WireframeValidator:
         for match in re.finditer(x_pattern, annotation_group):
             try:
                 x = int(match.group(1))
-                if x > 1800:
-                    line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                if x > ANNOTATION_PANEL_MAX_X:
+                    line_num = self._get_line_number(annotation_start + match.start())
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="ANN-004",
-                        message=f"Content extends beyond annotation panel (x={x} > 1800)",
+                        message=f"Content extends beyond annotation panel (x={x} > {ANNOTATION_PANEL_MAX_X})",
                         line=line_num
                     ))
             except ValueError:
@@ -1113,12 +1173,12 @@ class WireframeValidator:
         for match in re.finditer(y_pattern, annotation_group):
             try:
                 y = int(match.group(1))
-                if y > 200:
-                    line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                if y > ANNOTATION_PANEL_MAX_Y:
+                    line_num = self._get_line_number(annotation_start + match.start())
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="ANN-004",
-                        message=f"Content extends beyond annotation panel (y={y} > 200)",
+                        message=f"Content extends beyond annotation panel (y={y} > {ANNOTATION_PANEL_MAX_Y})",
                         line=line_num
                     ))
             except ValueError:
@@ -1137,7 +1197,7 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_start = self.annotation_start
         annotation_section = self.svg_content[annotation_start:]
 
         # Check for "UI Elements" or similar sections positioned too high
@@ -1177,7 +1237,7 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_start = self.annotation_start
         annotation_section = self.svg_content[annotation_start:]
 
         # Find callout circles in annotation panel (they mark group starts)
@@ -1293,8 +1353,8 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
-        mockup_section = self.svg_content[:annotation_start]
+        annotation_start = self.annotation_start
+        mockup_section = self.mockup_section
 
         # Count red callout circles in mockup area
         callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?'
@@ -1341,7 +1401,7 @@ class WireframeValidator:
         if first_element:
             element_y = int(first_element.group(2))
             if element_y < MOBILE_CONTENT_MIN_Y:
-                line_num = self.svg_content[:content_start + first_element.start()].count('\n') + 1
+                line_num = self._get_line_number(content_start + first_element.start())
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="MOBILE-001",
@@ -1387,36 +1447,35 @@ class WireframeValidator:
                 if x < 1360:  # Desktop mockup or annotation panel
                     if x < 40:  # Outside canvas
                         continue
-                    # Desktop mockup ends at 1320, annotation panel at 1880
                     # Check if in annotation panel (y > 800) vs mockup
                     y_match = re.search(r'\by=["\']?(\d+)', rect_str)
                     if y_match:
                         y = int(y_match.group(1))
                         if y > 800:  # Annotation panel
-                            if right > 1880:
-                                line_num = self.svg_content[:match.start()].count('\n') + 1
+                            if right > ANNOTATION_PANEL_RIGHT:
+                                line_num = self._get_line_number(match.start())
                                 self.issues.append(Issue(
                                     severity="ERROR",
                                     code="G-036",
-                                    message=f"Badge at x={x} overflows annotation panel (right edge {right} > 1880)",
+                                    message=f"Badge at x={x} overflows annotation panel (right edge {right} > {ANNOTATION_PANEL_RIGHT})",
                                     line=line_num
                                 ))
                         else:  # Desktop mockup
-                            if right > 1320:
-                                line_num = self.svg_content[:match.start()].count('\n') + 1
+                            if right > DESKTOP_MOCKUP_RIGHT:
+                                line_num = self._get_line_number(match.start())
                                 self.issues.append(Issue(
                                     severity="ERROR",
                                     code="G-036",
-                                    message=f"Badge at x={x} overflows desktop mockup (right edge {right} > 1320)",
+                                    message=f"Badge at x={x} overflows desktop mockup (right edge {right} > {DESKTOP_MOCKUP_RIGHT})",
                                     line=line_num
                                 ))
                 else:  # Mobile mockup area (x >= 1360)
-                    if right > 1720:
-                        line_num = self.svg_content[:match.start()].count('\n') + 1
+                    if right > MOBILE_MOCKUP_RIGHT:
+                        line_num = self._get_line_number(match.start())
                         self.issues.append(Issue(
                             severity="ERROR",
                             code="G-036",
-                            message=f"Badge at x={x} overflows mobile mockup (right edge {right} > 1720)",
+                            message=f"Badge at x={x} overflows mobile mockup (right edge {right} > {MOBILE_MOCKUP_RIGHT})",
                             line=line_num
                         ))
             except (ValueError, TypeError):
@@ -1431,7 +1490,7 @@ class WireframeValidator:
         if 'id="annotations"' not in self.svg_content:
             return
 
-        annotation_start = self.svg_content.find('id="annotations"')
+        annotation_start = self.annotation_start
         annotation_section = self.svg_content[annotation_start:]
 
         # Find numbered annotation titles (①②③④⑤⑥⑦⑧⑨⑩)
@@ -1445,7 +1504,7 @@ class WireframeValidator:
 
             # Check for bold
             if 'font-weight="bold"' not in text_element and 'font-weight:bold' not in text_element:
-                line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                line_num = self._get_line_number(annotation_start + match.start())
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="G-037",
@@ -1463,7 +1522,7 @@ class WireframeValidator:
             text_content = match.group(2)[:20]
 
             if fill in light_colors:
-                line_num = self.svg_content[:annotation_start + match.start()].count('\n') + 1
+                line_num = self._get_line_number(annotation_start + match.start())
                 self.issues.append(Issue(
                     severity="ERROR",
                     code="G-037",
