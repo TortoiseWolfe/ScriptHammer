@@ -1,0 +1,29 @@
+{
+  "feature": "005-security-hardening",
+  "plannedAt": "2026-01-13T16:35:00Z",
+  "svgCount": 3,
+  "assignments": [
+    {
+      "svg": "01-security-ux-enhancements.svg",
+      "focus": "Password strength indicator with real-time feedback, email validation error states, and brute force lockout countdown UI",
+      "userStories": ["US-3", "US-7", "US-8"],
+      "requirements": ["FR-012", "FR-021", "FR-022", "FR-023", "FR-024", "FR-034", "FR-035", "FR-036", "FR-037"],
+      "mode": "new"
+    },
+    {
+      "svg": "02-session-timeout-warning.svg",
+      "focus": "Session timeout warning modal with countdown, stay signed in button, and automatic sign-out flow",
+      "userStories": ["US-9", "US-10"],
+      "requirements": ["FR-029", "FR-030", "FR-031", "FR-032", "FR-033", "FR-036"],
+      "mode": "new"
+    },
+    {
+      "svg": "03-security-audit-dashboard.svg",
+      "focus": "Admin audit log viewer with event type filtering, user search, and timestamp range queries",
+      "userStories": ["US-6"],
+      "requirements": ["FR-025", "FR-026", "FR-027", "FR-028"],
+      "mode": "new"
+    }
+  ],
+  "notes": "Feature is primarily backend/security focused. US-1, US-2, US-4, US-5, US-11 are backend-only with no UI components."
+}

@@ -1,0 +1,22 @@
+{
+  "feature": "007-e2e-testing-framework",
+  "plannedAt": "2026-01-13T16:50:00Z",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-test-architecture-diagram.svg",
+      "focus": "Architectural diagram showing test spec files, fixtures, Playwright browsers (Chrome/Firefox/Safari), report generation, and artifact storage",
+      "userStories": ["US-1", "US-2", "US-7"],
+      "requirements": ["FR-001", "FR-002", "FR-003", "FR-004", "FR-008", "FR-009", "FR-010", "FR-011", "FR-012"],
+      "mode": "new"
+    },
+    {
+      "svg": "02-cicd-pipeline-flow.svg",
+      "focus": "GitHub Actions workflow diagram showing PR trigger, Docker test execution, artifact upload on failure, and status check reporting",
+      "userStories": ["US-6"],
+      "requirements": ["FR-013", "FR-014", "FR-015", "FR-016"],
+      "mode": "new"
+    }
+  ],
+  "notes": "Developer infrastructure feature - architectural diagrams only, no end-user UI. US-3, US-4, US-5 test existing UI features."
+}
