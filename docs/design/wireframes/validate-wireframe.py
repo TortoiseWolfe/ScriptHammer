@@ -514,37 +514,62 @@ class WireframeValidator:
             ))
 
     def _check_callout_collisions(self):
-        """COLL-001: Check that callout circles don't overlap important UI elements."""
-        # Find all callout circles (red circles with r >= 14)
-        callout_pattern = r'<circle[^>]*r=["\']?(\d+)["\']?[^>]*fill=["\']?#dc2626["\']?[^>]*>'
-        alt_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*r=["\']?(\d+)["\']?[^>]*>'
+        """COLL-001: Check that callout circles don't overlap footer areas.
 
-        callouts = []
-        for pattern in [callout_pattern, alt_pattern]:
-            for match in re.finditer(pattern, self.svg_content):
-                r = int(match.group(1))
-                if r >= 14:
-                    line_num = self.svg_content[:match.start()].count('\n') + 1
-                    callouts.append((line_num, match.group()))
+        Uses geometric coordinates to detect actual overlap, not text proximity.
+        Desktop footer starts at y=640, mobile footer at y=664 (within their groups).
+        """
+        # Footer Y positions (relative to viewport groups)
+        DESKTOP_FOOTER_Y = 640
+        MOBILE_FOOTER_Y = 664
+        FOOTER_MARGIN = 30  # Callouts should stay this far from footer
 
-        # For now, just warn about callouts that might be in problematic positions
-        # Full collision detection would require computing absolute positions through transforms
-        for line_num, callout_str in callouts:
-            # Check if callout is positioned at edge of a container (common collision point)
-            if 'transform="translate' in self.svg_content[max(0, self.svg_content.rfind('<g', 0, self.svg_content.find(callout_str))):self.svg_content.find(callout_str)]:
-                # Check surrounding context for potential collisions
-                context_start = max(0, self.svg_content.find(callout_str) - 500)
-                context_end = self.svg_content.find(callout_str) + len(callout_str) + 200
-                context = self.svg_content[context_start:context_end]
+        # Find mockup section (before annotations)
+        if 'id="annotations"' in self.svg_content:
+            mockup_section = self.svg_content[:self.svg_content.find('id="annotations"')]
+        else:
+            mockup_section = self.svg_content
 
-                # Warn if callout appears near footer or edge elements
-                if 'footer' in context.lower() or 'site-footer' in context:
+        # Find desktop and mobile sections
+        desktop_start = mockup_section.find('id="desktop"')
+        mobile_start = mockup_section.find('id="mobile"')
+
+        def check_section_callouts(section_content: str, section_offset: int, footer_y: int, section_name: str):
+            """Check callouts in a viewport section against footer position."""
+            callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*>'
+
+            for match in re.finditer(callout_pattern, section_content):
+                callout_str = match.group()
+                # Extract cy from the circle
+                cy_match = re.search(r'cy=["\']?(\d+)', callout_str)
+                r_match = re.search(r'\br=["\']?(\d+)', callout_str)
+                if not cy_match:
+                    continue
+
+                cy = int(cy_match.group(1))
+                r = int(r_match.group(1)) if r_match else 14
+
+                # Check if callout overlaps or is too close to footer
+                callout_bottom = cy + r
+                if callout_bottom >= footer_y - FOOTER_MARGIN:
+                    line_num = self.svg_content[:section_offset + match.start()].count('\n') + 1
                     self.issues.append(Issue(
                         severity="ERROR",
                         code="COLL-001",
-                        message=f"Callout circle near footer area - move away from footer",
+                        message=f"Callout at cy={cy} too close to {section_name} footer (y={footer_y}) - move up",
                         line=line_num
                     ))
+
+        # Check desktop section
+        if desktop_start != -1:
+            desktop_end = mobile_start if mobile_start > desktop_start else len(mockup_section)
+            desktop_section = mockup_section[desktop_start:desktop_end]
+            check_section_callouts(desktop_section, desktop_start, DESKTOP_FOOTER_Y, "desktop")
+
+        # Check mobile section
+        if mobile_start != -1:
+            mobile_section = mockup_section[mobile_start:]
+            check_section_callouts(mobile_section, mobile_start, MOBILE_FOOTER_Y, "mobile")
 
     def _check_annotation_structure(self):
         """ANN-001: Check annotation panel has required structure."""
@@ -913,7 +938,9 @@ class WireframeValidator:
             """Check callouts within a single viewport section."""
             callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*>'
 
-            # Collect buttons in this section
+            # Collect actual BUTTONS in this section (not panels/cards)
+            # Buttons: small rounded rects (rx=4-8) with typical button dimensions
+            # Width 60-200px, height 25-50px (not large panels)
             buttons = []
             for match in re.finditer(r'<rect[^>]*>', section_content):
                 rect_str = match.group()
@@ -927,12 +954,16 @@ class WireframeValidator:
                 w_match = re.search(r'width=["\']?(\d+)', rect_str)
                 h_match = re.search(r'height=["\']?(\d+)', rect_str)
                 if x_match and y_match and w_match and h_match:
-                    buttons.append({
-                        'x': int(x_match.group(1)),
-                        'y': int(y_match.group(1)),
-                        'w': int(w_match.group(1)),
-                        'h': int(h_match.group(1))
-                    })
+                    w = int(w_match.group(1))
+                    h = int(h_match.group(1))
+                    # Only consider button-sized elements (not panels/cards)
+                    if 60 <= w <= 200 and 25 <= h <= 50:
+                        buttons.append({
+                            'x': int(x_match.group(1)),
+                            'y': int(y_match.group(1)),
+                            'w': w,
+                            'h': h
+                        })
 
             # Check callouts against buttons in this section only
             for match in re.finditer(callout_pattern, section_content):
