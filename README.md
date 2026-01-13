@@ -21,13 +21,16 @@ Copy a block to prime a new terminal. Each primer auto-loads focused context via
                  │ docs/queue  │     │skills/tools │
                  └──────┬──────┘     └─────────────┘
                         │
-┌─────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Planner │────▶│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
-│ assigns │     │ /wireframe  │     │ /hot-reload │     │ screenshots │     │ escalation  │
-└─────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                      │                                                            │
-                      └────────────────────────────────────────────────────────────┘
-                                           (feedback loop)
+                        │           ┌─────────────┐
+                        │      ┌───▶│ Generator-1 │───┐
+┌─────────┐             │      │    └─────────────┘   │     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Planner │─────────────┼──────┼───▶│ Generator-2 │───┼────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
+│ assigns │             │      │    └─────────────┘   │     │ /hot-reload │     │ screenshots │     │ escalation  │
+└─────────┘             │      └───▶│ Generator-3 │───┘     └─────────────┘     └─────────────┘     └─────────────┘
+                        │           └─────────────┘               │                                       │
+                        │                 │                       └───────────────────────────────────────┘
+                        └─────────────────┴──────────────────────────────────────────────────────────────────┘
+                                                            (feedback loop)
 
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Author    │     │   Tester    │     │ Implementer │     │   Auditor   │
@@ -69,10 +72,32 @@ Skills: /wireframe-plan [feature]
 </details>
 
 <details>
-<summary><strong>Generator</strong> - Create/fix SVG wireframes</summary>
+<summary><strong>Generator 1</strong> - Create/fix SVG wireframes (parallel)</summary>
 
 ```
-You are the Generator terminal.
+You are the Generator-1 terminal.
+/prep generator
+
+Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+</details>
+
+<details>
+<summary><strong>Generator 2</strong> - Create/fix SVG wireframes (parallel)</summary>
+
+```
+You are the Generator-2 terminal.
+/prep generator
+
+Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+</details>
+
+<details>
+<summary><strong>Generator 3</strong> - Create/fix SVG wireframes (parallel)</summary>
+
+```
+You are the Generator-3 terminal.
 /prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
