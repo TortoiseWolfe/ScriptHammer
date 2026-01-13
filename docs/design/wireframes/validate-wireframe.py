@@ -671,12 +671,19 @@ class WireframeValidator:
     def _check_button_fills(self):
         """BTN-001: Buttons should have solid fill colors, not faded/transparent.
 
-        Note: #f5f0e6 is valid for tertiary/secondary buttons per design system.
-        Only flag truly invisible/panel-matching colors.
+        Valid button colors per G-035:
+        - Primary: #8b5cf6 (violet)
+        - Secondary: #f5f0e6 (cream)
+        - Tertiary: #dcc8a8 (tan)
+
+        Invalid:
+        - #e8d4b8 (panel parchment - blends with background)
+        - none/transparent
         """
-        # Colors that make buttons invisible against parchment background
-        # Removed #f5f0e6 - valid for tertiary buttons
-        faded_colors = ['#e8d4b8', '#dcc8a8']
+        # Only flag panel background color - buttons disappear against it
+        # Note: #dcc8a8 is VALID for tertiary buttons, don't flag it
+        faded_colors = ['#e8d4b8']
+        transparent_values = ['none', 'transparent']
 
         # Find button-sized rects (width 80-300, height 35-60)
         button_pattern = r'<rect[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)["\']?[^>]*fill=["\']?([^"\'>\s]+)'
@@ -701,7 +708,15 @@ class WireframeValidator:
                             self.issues.append(Issue(
                                 severity="ERROR",
                                 code="BTN-001",
-                                message=f"Button uses faded fill color ({fill}) - use solid fill for prominence",
+                                message=f"Button uses panel background color ({fill}) - use solid fill for prominence",
+                                line=line_num
+                            ))
+                        elif fill in transparent_values:
+                            line_num = self.svg_content[:match.start()].count('\n') + 1
+                            self.issues.append(Issue(
+                                severity="ERROR",
+                                code="BTN-001",
+                                message=f"Button has transparent fill ({fill}) - buttons must have solid fills",
                                 line=line_num
                             ))
                 except (ValueError, TypeError):

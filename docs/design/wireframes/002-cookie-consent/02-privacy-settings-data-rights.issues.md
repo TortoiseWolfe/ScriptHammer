@@ -11,32 +11,17 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 6 |
+| Open | 1 |
 
 ---
 
 ## Open Issues (2026-01-12 Review)
 
-### Other Issues
+### Annotation Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Attribute 'y' has unquoted value '1060' | XML-004 | REGENERATE |
-
-### Collision Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| C-01 | Callout circle near footer area - move away from footer | COLL-001 | PATCH |
-| C-02 | Callout circle near footer area - move away from footer | COLL-001 | PATCH |
-| C-03 | Callout circle near footer area - move away from footer | COLL-001 | PATCH |
-| C-04 | Callout circle near footer area - move away from footer | COLL-001 | PATCH |
-
-### Modal Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| M-01 | Modal detected but no dimmed background overlay found (use s... | MODAL-001 | REGENERATE |
+| A-01 | Content extends beyond annotation panel (y=1060 > 200) | ANN-004 | REGENERATE |
 
 ---
 
