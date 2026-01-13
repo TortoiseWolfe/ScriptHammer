@@ -169,10 +169,10 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     # Sequence: CENTER first, then corners (matching original MCP Toolkit)
     pan_positions = [
         ('center', 0, 0),           # Canvas center (960, 540)
-        ('tl', 960, 540),           # Top-left (480, 270)
-        ('tr', -960, 540),          # Top-right (1440, 270)
-        ('br', -960, -540),         # Bottom-right (1440, 810)
-        ('bl', 960, -540),          # Bottom-left (480, 810)
+        ('tl', 860, 440),           # Top-left with 50px overlap
+        ('tr', -860, 440),          # Top-right with 50px overlap
+        ('br', -860, -440),         # Bottom-right with 50px overlap
+        ('bl', 860, -440),          # Bottom-left with 50px overlap
     ]
 
     # Clip coordinates: center 1920x1080 region of 3840x2160 viewport
