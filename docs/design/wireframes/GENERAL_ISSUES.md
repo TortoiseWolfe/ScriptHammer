@@ -40,6 +40,8 @@
 | G-035 | Buttons using faded/parchment colors | Use solid button colors: primary=#8b5cf6, secondary=#f5f0e6, tertiary=#dcc8a8 | Button Color Standards |
 | G-036 | Badge/pill overflows its container row | Keep badges within parent container bounds; use smaller font or abbreviate if needed | Badge Containment |
 | G-037 | Annotation narrative text too light/small | Use 16px bold for titles, 14px regular for narrative, high contrast | Annotation Readability |
+| G-038 | Signature text not bold | Signature MUST have `font-weight="bold"` or `font-weight:bold` in style | Signature Block (validator: SIGNATURE-002) |
+| G-039 | Navigation shows no active page indicator | Desktop AND mobile nav must highlight current page with `#8b5cf6` fill | Active Navigation State |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -56,6 +58,7 @@ Before writing ANY SVG:
 - [ ] Calculate vertical space distribution BEFORE placing elements
 - [ ] Plan arrow positions to match the elements they reference
 - [ ] Identify clear areas for annotation boxes
+- [ ] Navigation active state: Highlight current page in BOTH desktop nav AND mobile footer
 
 ---
 
@@ -376,6 +379,8 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-12 | G-035 | 003:02, 004:02 review - buttons using faded parchment fills |
 | 2026-01-12 | G-036 | 002:01 review - "Always On" badge outside cookie row container |
 | 2026-01-12 | G-037 | 002:01 review - annotation text too small/light to read |
+| 2026-01-13 | G-038 | ESCALATED - SIGNATURE-002 seen in 000-landing-page, 000-rls-implementation, 001-wcag-aa-compliance |
+| 2026-01-13 | G-039 | ESCALATED - NAV-001 seen in 003-user-authentication/01 and 003-user-authentication/02 |
 
 ---
 
@@ -764,3 +769,82 @@ WRONG:                                    CORRECT:
 .us-title { font-size: 16px; font-weight: bold; fill: #1f2937; }
 .us-narrative { font-size: 14px; font-weight: normal; fill: #374151; }
 ```
+
+---
+
+## Active Navigation State (G-039)
+
+**Problem**: Navigation in wireframes shows no indication of which page is currently active. Both desktop header and mobile footer nav appear with all items in default (inactive) state.
+
+### Rule
+
+**Every wireframe MUST highlight the current page in BOTH desktop nav AND mobile footer nav.**
+
+### Desktop Header Active State
+
+The desktop header include (`includes/header-desktop.svg`) has nav items with transparent backgrounds by default. Overlay the active item:
+
+```xml
+<!-- After <use href="includes/header-desktop.svg#desktop-header">, add: -->
+<!-- Active state for Account page (example) -->
+<rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+<text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Account</text>
+```
+
+| Nav Item | X Position (inside desktop group) |
+|----------|-----------------------------------|
+| Home | x=400 |
+| Features | x=480 |
+| Docs | x=580 |
+| Account | x=660 |
+
+### Mobile Footer Active State
+
+The mobile footer include (`includes/footer-mobile.svg`) has all tabs inactive by default. Add an overlay after the `<use>` element:
+
+```xml
+<!-- After <use href="includes/footer-mobile.svg#mobile-bottom-nav">, add: -->
+<!-- Active state for Account tab (example - rightmost, needs rounded corner) -->
+<g transform="translate(270, 0)">
+  <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+  <g transform="translate(33, 6)">
+    <!-- Copy icon path from include, change fill to #fff -->
+    <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+  </g>
+  <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Account</text>
+</g>
+```
+
+| Tab | Transform | Shape |
+|-----|-----------|-------|
+| Home | translate(0, 0) | Rounded bottom-left path |
+| Features | translate(90, 0) | Regular rect |
+| Docs | translate(180, 0) | Regular rect |
+| Account | translate(270, 0) | Rounded bottom-right path |
+
+### Active State Colors
+
+| Element | Inactive | Active |
+|---------|----------|--------|
+| Background | transparent | `#8b5cf6` (violet) |
+| Text | `#374151` or `#4b5563` | `#ffffff` |
+| Icon | `#1a1a2e` | `#ffffff` |
+
+### Common Mistakes
+
+| Wrong | Correct |
+|-------|---------|
+| Both Home and Account highlighted | Only current page highlighted |
+| Mobile shows Home active on Account page | Active tab matches page context |
+| No active state at all | One item highlighted per nav |
+
+### Page-to-Nav Mapping
+
+| Page Context | Desktop Nav Active | Mobile Tab Active |
+|--------------|-------------------|-------------------|
+| Landing/Home | Home | Home |
+| Feature list | Features | Features |
+| Documentation | Docs | Docs |
+| Auth (login/register) | Account | Account |
+| User settings | Account | Account |
+| Cookie consent modal | Home (modal overlay) | Home |
