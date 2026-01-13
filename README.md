@@ -30,12 +30,14 @@ This project uses multiple Claude Code terminals working as a team. Copy a block
 <summary><strong>Manager</strong> - Coordinate workflow, update docs</summary>
 
 ```
-You are the Manager terminal. Check status and coordinate:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals
-cat docs/design/wireframes/.terminal-status.json | jq .queue
+You are the Manager terminal. Load context then check status:
+/prep
+cat docs/design/wireframes/.terminal-status.json | jq .
 
-Your focus: Update docs, create skills, handle side tasks, maintain queue.
-Update your status in .terminal-status.json when starting/completing tasks.
+Your focus: Coordinate terminals, maintain queue, update docs/skills.
+Key files: CLAUDE.md, GENERAL_ISSUES.md, .terminal-status.json
+
+Handoff: Assign features to Generator → Viewer confirms → Reviewer analyzes
 ```
 </details>
 
@@ -43,12 +45,15 @@ Update your status in .terminal-status.json when starting/completing tasks.
 <summary><strong>Generator</strong> - Create/fix SVG wireframes</summary>
 
 ```
-You are the Generator terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.generator
+You are the Generator terminal. Load context and check queue:
+/wireframe-prep NNN
+cat docs/design/wireframes/.terminal-status.json | jq .queue
 
-Your focus: Create/fix SVG wireframes using /wireframe skill.
-Read *.issues.md before regenerating. Run validator until PASS.
-Update your status in .terminal-status.json when starting/completing tasks.
+Your focus: Generate SVGs with /wireframe, iterate until validator PASS.
+Before generating: Read NNN-feature/*.issues.md for known problems.
+After generating: Run validator, fix errors, repeat until PASS.
+
+Handoff: When PASS → Notify Viewer to refresh → Reviewer takes screenshots
 ```
 </details>
 
@@ -56,11 +61,13 @@ Update your status in .terminal-status.json when starting/completing tasks.
 <summary><strong>Viewer</strong> - Run hot-reload viewer</summary>
 
 ```
-You are the Viewer terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.viewer
+You are the Viewer terminal. Start viewer:
+/hot-reload-viewer
 
-Your focus: Run /hot-reload-viewer, keep viewer at localhost:3000.
-Update your status in .terminal-status.json when starting/stopping.
+Your focus: Keep localhost:3000 running for visual review.
+The viewer auto-refreshes when SVGs change.
+
+Status: Update .terminal-status.json with "running" or "stopped".
 ```
 </details>
 
@@ -68,12 +75,21 @@ Update your status in .terminal-status.json when starting/stopping.
 <summary><strong>Reviewer</strong> - Analyze screenshots, document issues</summary>
 
 ```
-You are the Reviewer terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.reviewer
+You are the Reviewer terminal. Check queue:
+cat docs/design/wireframes/.terminal-status.json | jq .queue
 
-Your focus: Analyze screenshots, document issues in *.issues.md files.
-Run: /wireframe-screenshots --feature NNN
-Update your status in .terminal-status.json when starting/completing tasks.
+Your focus: Take screenshots, analyze, document issues.
+Commands:
+  /wireframe-screenshots --feature NNN   # All SVGs in feature
+  /wireframe-screenshots --svg NNN:NN    # Single SVG
+
+Output: png/[feature]/[svg-name]/ (6 screenshots + manifest.json)
+
+Classify issues in NNN-feature/*.issues.md:
+  - PATCH: Color, typo, font, missing class
+  - REGEN: Layout, spacing, overlap, structural
+
+Handoff: Issues documented → Generator fixes → Validator checks escalation
 ```
 </details>
 
@@ -81,12 +97,18 @@ Update your status in .terminal-status.json when starting/completing tasks.
 <summary><strong>Validator</strong> - Maintain validation rules</summary>
 
 ```
-You are the Validator terminal. Check status:
-cat docs/design/wireframes/.terminal-status.json | jq .terminals.validator
+You are the Validator terminal. Check escalation:
+python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 
-Your focus: validate-wireframe.py, GENERAL_ISSUES.md, escalation checks.
-Run: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
-Update your status in .terminal-status.json when starting/completing tasks.
+Your focus: validate-wireframe.py rules, GENERAL_ISSUES.md maintenance.
+Escalation policy: Promote to GENERAL_ISSUES.md when seen in 2+ features.
+
+Key files:
+  - docs/design/wireframes/validate-wireframe.py
+  - docs/design/wireframes/GENERAL_ISSUES.md
+  - docs/design/wireframes/NNN-*/*.issues.md
+
+Handoff: New general rules → Notify Generator to check before next wireframe
 ```
 </details>
 
