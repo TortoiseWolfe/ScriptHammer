@@ -45,13 +45,22 @@ This is a **planning template repository** containing:
 3. **Safe Error Rendering** (index.html:1315-1321)
    - Changed from template literal in innerHTML to createElement + textContent
 
-### Remaining (Not Fixed - Require Infrastructure Changes)
+4. **Content Security Policy** (index.html:7)
+   - Added CSP meta tag with:
+     - `default-src 'self'` - blocks unauthorized resources
+     - `script-src` - allows self, inline, and Google Analytics domains
+     - `style-src` - allows self and inline styles
+     - `img-src` - allows self, data URIs, and GA tracking pixels
+     - `connect-src` - allows fetch to self and GA
+     - `frame-ancestors 'self'` - prevents clickjacking
 
-| Issue | Severity | Reason |
-|-------|----------|--------|
-| No Content Security Policy | HIGH | Requires server config or meta tag testing |
-| No Subresource Integrity for GA | MEDIUM | GA script changes frequently |
-| No X-Frame-Options | MEDIUM | Static site deployment limitation |
+### Remaining (Accepted Risk)
+
+| Issue | Severity | Decision |
+|-------|----------|----------|
+| No SRI for Google Analytics | MEDIUM | GA script changes frequently; SRI would break on updates |
+
+**Note:** SRI is not practical for GA because Google updates the script without notice. CSP already restricts which domains can serve scripts.
 
 ### Python Scripts - No Issues Found
 
@@ -108,9 +117,9 @@ This is a planning template with minimal code:
 
 | Category | Found | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Security | 6 | 4 | 2 (infrastructure) |
+| Security | 6 | 5 | 1 (accepted risk) |
 | Performance | 0 | 0 | 0 |
 | Code Quality | 1 | 1 | 0 |
 | Test Coverage | N/A | N/A | N/A |
 
-**All actionable issues have been fixed.** Remaining items require deployment infrastructure changes (CSP headers, SRI hashes) that cannot be applied to a static HTML file without testing in the deployment environment.
+**All actionable issues have been fixed.** The remaining item (SRI for Google Analytics) is an accepted risk because GA scripts change frequently and SRI would cause breakage.
