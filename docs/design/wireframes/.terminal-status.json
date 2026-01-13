@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T16:45:00Z",
+  "lastUpdated": "2026-01-13T17:05:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -69,34 +69,6 @@
   },
   "queue": [
     {
-      "feature": "003-user-authentication",
-      "svg": "01-registration-sign-in.svg",
-      "action": "GENERATE",
-      "reason": "Planned by Planner - Sign-up/sign-in forms with OAuth buttons",
-      "assignedTo": "generator-2"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "02-password-recovery.svg",
-      "action": "GENERATE",
-      "reason": "Planned by Planner - Forgot password + reset flow",
-      "assignedTo": "generator-2"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "03-email-verification.svg",
-      "action": "GENERATE",
-      "reason": "Planned by Planner - Verification prompt + resend",
-      "assignedTo": "generator-2"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "04-profile-settings.svg",
-      "action": "GENERATE",
-      "reason": "Planned by Planner - Profile view/edit + session management",
-      "assignedTo": "generator-2"
-    },
-    {
       "feature": "005-security-hardening",
       "svg": "01-security-ux-enhancements.svg",
       "action": "GENERATE",
@@ -119,18 +91,17 @@
     },
     {
       "feature": "007-e2e-testing-framework",
-      "svg": "TBD",
-      "action": "PLAN",
-      "reason": "Tier 1 Foundation - requires wireframe planning for generator-3",
-      "assignedTo": "planner",
-      "targetGenerator": "generator-3"
+      "svg": "01-test-architecture-diagram.svg",
+      "action": "GENERATE",
+      "reason": "Planned by Planner - Test framework architecture (dev infrastructure)",
+      "assignedTo": "generator-3"
     },
     {
-      "feature": "006-component-template",
-      "svg": "TBD",
-      "action": "PLAN",
-      "reason": "Tier 1 Foundation - requires wireframe planning",
-      "assignedTo": "planner"
+      "feature": "007-e2e-testing-framework",
+      "svg": "02-cicd-pipeline-flow.svg",
+      "action": "GENERATE",
+      "reason": "Planned by Planner - GitHub Actions CI/CD workflow",
+      "assignedTo": "generator-3"
     }
   ],
   "completedToday": [
@@ -143,6 +114,11 @@
     "Manager: Removed 000-landing-page from queue (already passes v5 validation)",
     "Manager: Assigned 006-component-template to planner (for generator-1)",
     "Planner: Completed wireframe plan for 005-security-hardening (3 SVGs)",
-    "Manager: Assigned 005-security-hardening (3 SVGs) to generator-1"
+    "Manager: Assigned 005-security-hardening (3 SVGs) to generator-1",
+    "Planner: Completed wireframe plan for 007-e2e-testing-framework (2 SVGs)",
+    "Generator-2: Completed 003-user-authentication (3 SVGs: registration, verification, profile)",
+    "Planner: Completed wireframe plan for 006-template-fork-experience (2 SVGs)",
+    "Planner: Assigned 006-template-fork-experience (2 SVGs) to generator-2",
+    "Generator-2: Completed 006-template-fork-experience (2 SVGs: service-setup-guidance, rebrand-automation-flow)"
   ]
 }

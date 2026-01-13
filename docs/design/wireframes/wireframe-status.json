@@ -56,18 +56,44 @@
     }
   },
   "005-security-hardening": {
-    "status": "draft",
+    "status": "reviewed",
     "svgs": {
-      "01-security-ux-sign-in.svg": "pass",
-      "02-session-management.svg": "pass",
-      "03-admin-security-dashboard.svg": "pass"
+      "01-security-ux-enhancements.svg": "pass",
+      "02-session-timeout-warning.svg": "pass",
+      "03-security-audit-dashboard.svg": "pass"
     },
-    "notes": "Generated 2026-01-12. All 3 wireframes pass validator (0 errors). Sign-in security UX shows password strength, lockout, email validation. Session management shows timeout warning modal. Admin dashboard shows audit trail and status panels.",
+    "notes": "Generated 2026-01-13. All 3 wireframes pass validator (0 errors). Security UX shows password strength, email validation, lockout warning, error recovery. Session timeout warning shows comprehensive session management with timeout alert preview. Security audit dashboard shows admin audit log viewer with event filtering.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
       "svg03_errors": 0,
-      "review_date": "2026-01-12"
+      "review_date": "2026-01-13"
+    }
+  },
+  "006-template-fork-experience": {
+    "status": "draft",
+    "svgs": {
+      "01-service-setup-guidance.svg": "pass",
+      "02-rebrand-automation-flow.svg": "pass"
+    },
+    "notes": "Generated 2026-01-13. Both wireframes pass validator (0 errors). Service setup guidance shows dashboard with status indicators and quick actions. Rebrand automation flow shows CLI workflow with config updates.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-13"
+    }
+  },
+  "007-e2e-testing-framework": {
+    "status": "draft",
+    "svgs": {
+      "01-test-architecture-diagram.svg": "pass",
+      "02-cicd-pipeline-flow.svg": "pass"
+    },
+    "notes": "Generated 2026-01-13. Test architecture diagram shows Playwright framework with browser engines and outputs. CI/CD pipeline flow shows GitHub Actions workflow with parallel browser matrix, retry logic, and artifact collection.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-13"
     }
   }
 }
