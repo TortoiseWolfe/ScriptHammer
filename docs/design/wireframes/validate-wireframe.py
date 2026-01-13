@@ -92,6 +92,30 @@ REQUIRED_INCLUDES = {
 }
 
 # ============================================================
+# THEME ANALYSIS KEYWORDS
+# ============================================================
+
+BACKEND_KEYWORDS = [
+    'rls', 'row-level', 'isolation', 'policy', 'policies',
+    'csrf', 'token', 'oauth', 'session', 'callback',
+    'injection', 'sanitiz', 'validation', 'xss', 'sql',
+    'pre-commit', 'hook', 'ci/cd', 'pipeline', 'scan',
+    'audit log', 'compliance', 'retention',
+    'rate limit', 'brute force', 'lockout', 'server-side',
+    'database', 'migration', 'schema', 'trigger',
+]
+
+UX_KEYWORDS = [
+    'form', 'button', 'modal', 'toast', 'dialog',
+    'dashboard', 'list', 'view', 'page', 'screen',
+    'input', 'toggle', 'checkbox', 'dropdown',
+    'settings', 'profile', 'preferences',
+    'feedback', 'indicator', 'strength', 'meter',
+    'warning', 'error message', 'recovery',
+    'display', 'show', 'see', 'click', 'tap',
+]
+
+# ============================================================
 # LAYOUT STANDARDS
 # ============================================================
 
@@ -598,14 +622,16 @@ class WireframeValidator:
                             code="TITLE-002",
                             message="Remove 'Page X of Y' from title"
                         ))
-                    # Check centering
-                    context = self.svg_content[max(0, match.start()-300):match.start()]
-                    if 'text-anchor="middle"' not in context and 'text-anchor:middle' not in context:
-                        self.issues.append(Issue(
-                            severity="ERROR",
-                            code="TITLE-003",
-                            message="Title must be centered (text-anchor='middle')"
-                        ))
+                    # Check centering - search within the text element, not before it
+                    tag_start = self.svg_content.rfind('<text', 0, match.start())
+                    if tag_start != -1:
+                        text_element = self.svg_content[tag_start:match.end()]
+                        if 'text-anchor="middle"' not in text_element and 'text-anchor:middle' not in text_element:
+                            self.issues.append(Issue(
+                                severity="ERROR",
+                                code="TITLE-003",
+                                message="Title must be centered (text-anchor='middle')"
+                            ))
                     break
             except (ValueError, TypeError):
                 continue
@@ -865,45 +891,79 @@ class WireframeValidator:
 
         Callouts are supporting annotations - they should not obscure or compete
         with the UI elements they're explaining.
-        """
-        # Find callout circles (red fill #dc2626) and their positions
-        # This is a heuristic check - we look for callouts that appear centered on elements
 
+        NOTE: Coordinates are relative within transform groups (desktop/mobile).
+        We only check callouts against buttons in the SAME viewport group.
+        """
         # Find all callout positions in the mockup areas (not annotation panel)
         if 'id="annotations"' in self.svg_content:
             mockup_section = self.svg_content[:self.svg_content.find('id="annotations"')]
         else:
             mockup_section = self.svg_content
 
-        # Look for callout circles
-        callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*>'
-        callouts = list(re.finditer(callout_pattern, mockup_section))
+        # Extract desktop and mobile sections separately to handle transforms correctly
+        desktop_start = mockup_section.find('id="desktop"')
+        mobile_start = mockup_section.find('id="mobile"')
 
-        # Look for UI elements (buttons, toggles) that might have callouts on them
-        # Buttons: rect with rx=4-8, typical button dimensions
-        button_pattern = r'<rect[^>]*width=["\']?(\d+)["\']?[^>]*height=["\']?(\d+)["\']?[^>]*rx=["\']?[4-8]["\']?'
+        # If no clear sections, skip this check (too complex to analyze)
+        if desktop_start == -1 and mobile_start == -1:
+            return
 
-        buttons = list(re.finditer(button_pattern, mockup_section))
+        def check_viewport_section(section_content: str, section_offset: int):
+            """Check callouts within a single viewport section."""
+            callout_pattern = r'<circle[^>]*fill=["\']?#dc2626["\']?[^>]*>'
 
-        # Heuristic: if there are callouts and buttons, and they're close together
-        # in the SVG source, warn about potential overlap
-        # (Full geometric analysis would require parsing transforms)
-        if len(callouts) > 0 and len(buttons) > 0:
-            for callout in callouts:
-                callout_pos = callout.start()
-                # Check if any button is very close in source (within 500 chars)
-                for button in buttons:
-                    button_pos = button.start()
-                    if abs(callout_pos - button_pos) < 300:
-                        # They're close in source - might be overlapping
-                        line_num = self.svg_content[:callout_pos].count('\n') + 1
+            # Collect buttons in this section
+            buttons = []
+            for match in re.finditer(r'<rect[^>]*>', section_content):
+                rect_str = match.group()
+                # Check if this looks like a button (has rx=4-8)
+                rx_match = re.search(r'rx=["\']?([4-8])["\']?', rect_str)
+                if not rx_match:
+                    continue
+                # Extract coordinates
+                x_match = re.search(r'\bx=["\']?(\d+)', rect_str)
+                y_match = re.search(r'\by=["\']?(\d+)', rect_str)
+                w_match = re.search(r'width=["\']?(\d+)', rect_str)
+                h_match = re.search(r'height=["\']?(\d+)', rect_str)
+                if x_match and y_match and w_match and h_match:
+                    buttons.append({
+                        'x': int(x_match.group(1)),
+                        'y': int(y_match.group(1)),
+                        'w': int(w_match.group(1)),
+                        'h': int(h_match.group(1))
+                    })
+
+            # Check callouts against buttons in this section only
+            for match in re.finditer(callout_pattern, section_content):
+                callout_str = match.group()
+                cx_match = re.search(r'cx=["\']?(\d+)', callout_str)
+                cy_match = re.search(r'cy=["\']?(\d+)', callout_str)
+                if not cx_match or not cy_match:
+                    continue
+                cx, cy = int(cx_match.group(1)), int(cy_match.group(1))
+
+                for btn in buttons:
+                    if btn['x'] <= cx <= btn['x'] + btn['w'] and btn['y'] <= cy <= btn['y'] + btn['h']:
+                        line_num = self.svg_content[:section_offset + match.start()].count('\n') + 1
                         self.issues.append(Issue(
                             severity="ERROR",
                             code="CALLOUT-003",
-                            message="Callout positioned on top of UI element - place after (right/below) instead",
+                            message=f"Callout at ({cx},{cy}) overlaps button at ({btn['x']},{btn['y']}) - place after (right/below) instead",
                             line=line_num
                         ))
-                        break  # Only warn once per callout
+                        break
+
+        # Check desktop section if present
+        if desktop_start != -1:
+            desktop_end = mobile_start if mobile_start > desktop_start else len(mockup_section)
+            desktop_section = mockup_section[desktop_start:desktop_end]
+            check_viewport_section(desktop_section, desktop_start)
+
+        # Check mobile section if present
+        if mobile_start != -1:
+            mobile_section = mockup_section[mobile_start:]
+            check_viewport_section(mobile_section, mobile_start)
 
     def _check_annotation_columns(self):
         """ANN-003: Annotation text must stay within column boundaries.
@@ -969,13 +1029,42 @@ class WireframeValidator:
         annotation_start = self.svg_content.find('id="annotations"')
         annotation_section = self.svg_content[annotation_start:]
 
+        # Find the closing </g> of the annotation group (handle nested groups)
+        depth = 1  # We start inside the annotation <g>
+        pos = 0
+        # Skip past the opening <g> tag
+        first_gt = annotation_section.find('>')
+        if first_gt == -1:
+            return
+        pos = first_gt + 1
+
+        while depth > 0 and pos < len(annotation_section):
+            next_open = annotation_section.find('<g', pos)
+            next_close = annotation_section.find('</g>', pos)
+
+            if next_close == -1:
+                break  # Malformed SVG
+
+            if next_open != -1 and next_open < next_close:
+                depth += 1
+                pos = next_open + 2
+            else:
+                depth -= 1
+                if depth == 0:
+                    annotation_group = annotation_section[:next_close]
+                    break
+                pos = next_close + 4
+        else:
+            # Fallback to first 5000 chars if parsing fails
+            annotation_group = annotation_section[:5000]
+
         # Check for elements with positions beyond bounds
         # Look for x > 1800 or y > 200 (leaving some margin)
         x_pattern = r'x=["\']?(\d+)["\']?'
         y_pattern = r'y=["\']?(\d+)["\']?'
 
-        # Find all x values
-        for match in re.finditer(x_pattern, annotation_section[:5000]):  # First 5000 chars of annotation
+        # Find all x values within annotation group only
+        for match in re.finditer(x_pattern, annotation_group):
             try:
                 x = int(match.group(1))
                 if x > 1800:
@@ -989,8 +1078,8 @@ class WireframeValidator:
             except ValueError:
                 continue
 
-        # Find all y values (within annotation section)
-        for match in re.finditer(y_pattern, annotation_section[:5000]):
+        # Find all y values within annotation group only
+        for match in re.finditer(y_pattern, annotation_group):
             try:
                 y = int(match.group(1))
                 if y > 200:
@@ -1554,15 +1643,197 @@ class IssueLogger:
         return documented
 
 
+# ============================================================
+# THEME ANALYSIS - Classify User Stories as Light (UX) or Dark (Backend)
+# ============================================================
+
+def classify_story(title: str, content: str) -> tuple:
+    """Classify a user story as 'light' (UX) or 'dark' (backend).
+
+    Returns (theme, matched_keywords) tuple.
+
+    Algorithm:
+    1. Strong UX indicators in body override everything (has visible UI)
+    2. Strong backend keywords in title force dark (if no strong UX)
+    3. Title keywords weighted 3x (title is authoritative)
+    4. UX wins ties (if there's any UI, show it)
+    """
+    title_lower = title.lower()
+    content_lower = content.lower()
+
+    # Strong UX indicators - if in body, force light (these mean visible UI exists)
+    STRONG_UX = ['modal', 'toggle', 'warning', 'indicator', 'strength', 'meter',
+                 'feedback', 'i see', 'then i see', 'is warned', 'remember me']
+    for kw in STRONG_UX:
+        if kw in content_lower:
+            return ('light', [kw])
+
+    # Strong backend indicators - if in title AND no strong UX, force dark
+    STRONG_BACKEND = ['rls', 'isolation', 'csrf', 'oauth', 'pre-commit', 'secret detection', 'injection', 'sanitiz']
+    for kw in STRONG_BACKEND:
+        if kw in title_lower:
+            return ('dark', [kw])
+
+    # Count matches with title weighting (3x for title)
+    ux_title = [kw for kw in UX_KEYWORDS if kw in title_lower]
+    ux_body = [kw for kw in UX_KEYWORDS if kw in content_lower]
+    backend_title = [kw for kw in BACKEND_KEYWORDS if kw in title_lower]
+    backend_body = [kw for kw in BACKEND_KEYWORDS if kw in content_lower]
+
+    ux_score = len(ux_title) * 3 + len(ux_body)
+    backend_score = len(backend_title) * 3 + len(backend_body)
+
+    # Collect matched keywords for reporting
+    ux_matches = list(set(ux_title + ux_body[:2]))[:3]
+    backend_matches = list(set(backend_title + backend_body[:2]))[:3]
+
+    # UX wins ties (if there's any visible UI, show it)
+    if ux_score >= backend_score:
+        return ('light', ux_matches)
+    return ('dark', backend_matches)
+
+
+def analyze_themes(spec_path: Path) -> dict:
+    """Analyze spec.md and recommend themes per user story.
+
+    Reads the spec file, extracts user stories, classifies each as
+    light (UX) or dark (backend), and groups them into SVG assignments.
+    """
+    if not spec_path.exists():
+        return {"error": f"Spec file not found: {spec_path}"}
+
+    content = spec_path.read_text()
+
+    # Extract feature name from path
+    feature_name = spec_path.parent.name
+
+    # Parse user stories - pattern: ### User Story N - Title (Priority: PX)
+    us_pattern = r'### User Story (\d+) - ([^\(]+)\(Priority: (P\d)\)'
+    us_matches = list(re.finditer(us_pattern, content))
+
+    if not us_matches:
+        return {
+            "feature": feature_name,
+            "error": "No user stories found in spec",
+            "user_stories": [],
+            "svg_assignments": []
+        }
+
+    user_stories = []
+    light_stories = []
+    dark_stories = []
+
+    for i, match in enumerate(us_matches):
+        us_num = int(match.group(1))
+        us_title = match.group(2).strip()
+        priority = match.group(3)
+
+        # Get content until next user story or end of section
+        start = match.end()
+        if i + 1 < len(us_matches):
+            end = us_matches[i + 1].start()
+        else:
+            # Find end of user stories section (next ## or ---)
+            end_match = re.search(r'\n## |\n---', content[start:])
+            end = start + end_match.start() if end_match else len(content)
+
+        us_content = content[start:end]
+
+        # Classify this user story
+        theme, keywords = classify_story(us_title, us_content)
+
+        story_info = {
+            "id": f"US-{us_num:03d}",
+            "title": us_title,
+            "priority": priority,
+            "theme": theme,
+            "reason": ", ".join(keywords) if keywords else "default"
+        }
+        user_stories.append(story_info)
+
+        if theme == 'light':
+            light_stories.append(story_info)
+        else:
+            dark_stories.append(story_info)
+
+    # Generate SVG assignments
+    svg_assignments = []
+
+    # Group light stories by related functionality
+    if light_stories:
+        # Simple grouping: all UX stories in one or two SVGs
+        if len(light_stories) <= 4:
+            svg_assignments.append({
+                "file": "01-ux-overview.svg",
+                "theme": "light",
+                "stories": [s["id"] for s in light_stories]
+            })
+        else:
+            # Split into multiple SVGs
+            mid = len(light_stories) // 2
+            svg_assignments.append({
+                "file": "01-ux-primary.svg",
+                "theme": "light",
+                "stories": [s["id"] for s in light_stories[:mid]]
+            })
+            svg_assignments.append({
+                "file": "02-ux-secondary.svg",
+                "theme": "light",
+                "stories": [s["id"] for s in light_stories[mid:]]
+            })
+
+    # Group dark stories into backend diagram
+    if dark_stories:
+        svg_assignments.append({
+            "file": f"{len(svg_assignments)+1:02d}-backend-architecture.svg",
+            "theme": "dark",
+            "stories": [s["id"] for s in dark_stories]
+        })
+
+    return {
+        "feature": feature_name,
+        "user_stories": user_stories,
+        "svg_assignments": svg_assignments,
+        "summary": {
+            "total": len(user_stories),
+            "light": len(light_stories),
+            "dark": len(dark_stories)
+        }
+    }
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python validate-wireframe.py <svg-file-or-dir>")
         print("       python validate-wireframe.py --all")
         print("       python validate-wireframe.py --check-escalation")
+        print("       python validate-wireframe.py --analyze-themes <spec.md>")
         sys.exit(1)
 
     wireframes_dir = Path(__file__).parent
     logger = IssueLogger(wireframes_dir)
+
+    # Handle theme analysis mode
+    if sys.argv[1] == '--analyze-themes':
+        if len(sys.argv) < 3:
+            print("ERROR: --analyze-themes requires a spec.md path")
+            print("Usage: python validate-wireframe.py --analyze-themes features/.../spec.md")
+            sys.exit(1)
+
+        spec_path = Path(sys.argv[2])
+        if not spec_path.is_absolute():
+            # Try relative to wireframes dir, then cwd
+            if (wireframes_dir / spec_path).exists():
+                spec_path = wireframes_dir / spec_path
+            elif (wireframes_dir.parent.parent.parent / spec_path).exists():
+                # Relative to repo root (wireframes is 3 levels deep)
+                spec_path = wireframes_dir.parent.parent.parent / spec_path
+            else:
+                spec_path = Path.cwd() / spec_path
+
+        result = analyze_themes(spec_path)
+        print(json.dumps(result, indent=2))
+        sys.exit(0)
 
     # Handle escalation check mode
     if sys.argv[1] == '--check-escalation':
