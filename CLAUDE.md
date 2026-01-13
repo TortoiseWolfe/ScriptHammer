@@ -30,9 +30,25 @@ You are the Planner terminal.
 Skills: /wireframe-plan [feature]
 ```
 
-### Generator
+### Generator 1
 ```
-You are the Generator terminal.
+You are the Generator-1 terminal.
+/prep generator
+
+Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+
+### Generator 2
+```
+You are the Generator-2 terminal.
+/prep generator
+
+Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+
+### Generator 3
+```
+You are the Generator-3 terminal.
 /prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
@@ -151,7 +167,7 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 | **Primary Manager** | Coordinate workflow, update docs, queue management | `CLAUDE.md`, `.terminal-status.json` |
 | **Assistant Manager** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
 | **Planner** | Analyze spec, create SVG assignments, hand off to Generators | `features/*/spec.md` |
-| **Generator** | Create SVGs using `/wireframe` skill, fix validation errors | `NNN-feature/*.svg` |
+| **Generator 1/2/3** | Create SVGs using `/wireframe` skill, fix validation errors (3 parallel) | `NNN-feature/*.svg` |
 | **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
 | **Reviewer** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
 | **Validator** | Add `_check_*()` methods, manage `GENERAL_ISSUES.md` escalation | `validate-wireframe.py`, `GENERAL_ISSUES.md` |
@@ -169,12 +185,15 @@ This project uses multiple Claude Code terminals working as a team. Each termina
                  │ docs/queue  │     │skills/tools │
                  └──────┬──────┘     └─────────────┘
                         │
-┌─────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│ Planner │────▶│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
-│ assigns │     │ /wireframe  │     │ /hot-reload │     │ screenshots │     │ escalation  │
-└─────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-                      │                                                            │
-                      └────────────────────────────────────────────────────────────┘
+                        │           ┌─────────────┐
+                        │      ┌───▶│ Generator-1 │───┐
+┌─────────┐             │      │    └─────────────┘   │
+│ Planner │─────────────┼──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator
+│ assigns │             │      │    └─────────────┘   │
+└─────────┘             │      └───▶│ Generator-3 │───┘
+                        │           └─────────────┘
+                        │                 │
+                        └─────────────────┴──────────────────────────────────────────┘
                                            (feedback loop)
 
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -212,11 +231,12 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Create SVG assignment list for Generator
 - Consider consolidation (multiple screens → single SVG)
 
-**If you are the Generator terminal:**
-- Focus: Creating/fixing SVG wireframes
+**If you are a Generator terminal (Generator-1, Generator-2, or Generator-3):**
+- Focus: Creating/fixing SVG wireframes assigned to YOUR generator number
 - Read `*.issues.md` before regenerating
 - Run validator after generation, fix until PASS
 - Never bypass validator errors
+- Check `.terminal-status.json` queue for items assigned to your generator number
 
 **If you are the Viewer terminal:**
 - Focus: Running `/hot-reload-viewer`
