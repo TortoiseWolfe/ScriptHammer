@@ -129,6 +129,18 @@ Focus: Verify consistency across artifacts. Flag drift.
 ```
 </details>
 
+<details>
+<summary><strong>Planner</strong> - Plan SVG assignments for Generator</summary>
+
+```
+You are the Planner terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.planner}'
+
+Skills: /wireframe-plan [feature]
+Focus: Analyze spec, create SVG assignments, hand off to Generators
+```
+</details>
+
 ---
 
 <details>

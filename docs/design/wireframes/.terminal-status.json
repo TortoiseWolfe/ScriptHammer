@@ -45,6 +45,11 @@
       "status": "idle",
       "feature": null,
       "task": null
+    },
+    "planner": {
+      "status": "idle",
+      "feature": null,
+      "task": null
     }
   },
   "queue": [
@@ -52,15 +57,26 @@
       "feature": "000-landing-page",
       "svg": "01-landing-page.svg",
       "action": "REGEN",
-      "reason": "v3 wireframe - wrong viewports (1366x768 vs 1280x720), no annotation panel, no callouts, 26 validator errors",
+      "reason": "v3 wireframe - wrong viewports, no annotation panel, 26 errors",
       "assignedTo": "generator"
+    },
+    {
+      "feature": "001-wcag-aa-compliance",
+      "svg": "ALL (01, 02, 03)",
+      "action": "REGEN",
+      "reason": "Dark theme v3 wireframes - need light theme, desktop+mobile layout. 96 total errors.",
+      "assignedTo": "generator",
+      "note": "Consider consolidating 3 SVGs into 1-2"
     }
   ],
   "completedToday": [
-    "005-security-hardening/03-admin-security-dashboard.issues.md created",
-    "Reviewer: Validated 03-admin-security-dashboard - 1 PATCH issue (P-01)",
-    "Manager: Corrected G-037 - 16px titles is correct, queue item voided",
-    "Manager: Fixed CLAUDE.md dimensions (1280x720/360x720) and G-037 font standard",
-    "Reviewer: Reviewed 000-landing-page/01 - REGEN required (v3 wireframe, 26 errors)"
+    "005-security-hardening/03-admin-security-dashboard.issues.md - PASS",
+    "Manager: Fixed CLAUDE.md dimensions and G-037 font standard",
+    "Reviewer: 000-landing-page/01 - REGEN (26 errors)",
+    "Reviewer: 001-wcag-aa-compliance/01 - REGEN (50 errors, dark theme)",
+    "Reviewer: 001-wcag-aa-compliance/02 - REGEN (15 errors, dark theme)",
+    "Reviewer: 001-wcag-aa-compliance/03 - REGEN (31 errors, dark theme)",
+    "Reviewer: 002-cookie-consent/01 - PASS (v5 compliant)",
+    "Reviewer: 002-cookie-consent/02 - PASS (v5 compliant)"
   ]
 }

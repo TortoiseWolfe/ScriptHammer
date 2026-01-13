@@ -82,6 +82,15 @@ Skills: /speckit.analyze, /read-spec
 Focus: Verify consistency across artifacts. Flag drift.
 ```
 
+### Planner
+```
+You are the Planner terminal.
+cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.planner}'
+
+Skills: /wireframe-plan [feature]
+Focus: Analyze spec, create SVG assignments, hand off to Generators
+```
+
 ---
 
 ## Repository Purpose
