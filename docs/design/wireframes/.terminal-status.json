@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-13T15:00:00Z",
+  "lastUpdated": "2026-01-13T16:00:00Z",
   "terminals": {
     "manager": {
       "status": "idle",
@@ -67,86 +67,8 @@
       "task": null
     }
   },
-  "queue": [
-    {
-      "feature": "000-landing-page",
-      "svg": "01-landing-page.svg",
-      "action": "REGEN",
-      "reason": "v3 wireframe - wrong viewports, no annotation panel, 26 errors",
-      "assignedTo": "generator-1"
-    },
-    {
-      "feature": "001-wcag-aa-compliance",
-      "svg": "ALL (01, 02, 03)",
-      "action": "REGEN",
-      "reason": "Dark theme v3 wireframes - need light theme, desktop+mobile layout. 96 total errors.",
-      "assignedTo": "generator-1",
-      "note": "Consider consolidating 3 SVGs into 1-2"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "01-registration-sign-in.svg",
-      "action": "REGEN",
-      "reason": "SVG missing. Previous review found 5 issues (1 REGEN, 4 PATCH). See issues file.",
-      "assignedTo": "generator-2",
-      "note": "Sign Up/Sign In forms + OAuth buttons"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "02-verification-password-reset.svg",
-      "action": "REGEN",
-      "reason": "SVG missing. Previous review found 9 issues (5 REGEN). Show as flow states, not simultaneous panels.",
-      "assignedTo": "generator-2",
-      "note": "Email verification + password reset flows"
-    },
-    {
-      "feature": "003-user-authentication",
-      "svg": "03-profile-session-management.svg",
-      "action": "REGEN",
-      "reason": "SVG missing. Previous review found 1 issue (REGEN). Need 3+ user stories.",
-      "assignedTo": "generator-2",
-      "note": "Profile view/edit, sessions, account deletion"
-    },
-    {
-      "feature": "005-security-hardening",
-      "svg": "01-security-ux-sign-in.svg",
-      "action": "PATCH",
-      "reason": "2 minor issues: callout circles near footer area",
-      "assignedTo": "generator-3",
-      "note": "Password strength meter, email validation, lockout feedback"
-    },
-    {
-      "feature": "005-security-hardening",
-      "svg": "02-session-management.svg",
-      "action": "REGEN",
-      "reason": "Toggle has wrong color #e8d4b8 - must be #6b7280 (OFF) or #22c55e (ON)",
-      "assignedTo": "generator-3",
-      "note": "Session timeout warning, remember me toggle"
-    },
-    {
-      "feature": "006-template-fork-experience",
-      "svg": "01-setup-guidance-banner.svg",
-      "action": "GENERATE",
-      "reason": "New SVG. Infrastructure feature - only 1 wireframe needed for guidance banner UI.",
-      "assignedTo": "generator-3",
-      "note": "Dismissible setup guidance when services not configured + footer attribution"
-    }
-  ],
+  "queue": [],
   "completedToday": [
-    "005-security-hardening/03-admin-security-dashboard.issues.md - PASS",
-    "Manager: Fixed CLAUDE.md dimensions and G-037 font standard",
-    "Manager: Assigned 003, 005, 006 wireframes to generator (6 items)",
-    "Manager: Enabled 3 parallel generators, distributed by feature",
-    "Reviewer: 000-landing-page/01 - REGEN (26 errors)",
-    "Reviewer: 001-wcag-aa-compliance/01 - REGEN (50 errors, dark theme)",
-    "Reviewer: 001-wcag-aa-compliance/02 - REGEN (15 errors, dark theme)",
-    "Reviewer: 001-wcag-aa-compliance/03 - REGEN (31 errors, dark theme)",
-    "Reviewer: 002-cookie-consent/01 - PASS (v5 compliant)",
-    "Reviewer: 002-cookie-consent/02 - PASS (v5 compliant)",
-    "Reviewer: 004-mobile-first-design/01 - PASS (v5 compliant)",
-    "Reviewer: 004-mobile-first-design/02 - PASS (v5 compliant)",
-    "Planner: 003-user-authentication - 3 SVGs planned",
-    "Planner: 005-security-hardening - 2 SVGs queued (1 PASS already)",
-    "Planner: 006-template-fork-experience - 1 SVG planned (infrastructure feature)"
+    "Manager: Clean slate - deleted all SVGs except 000-landing-page"
   ]
 }
