@@ -6,6 +6,11 @@
       "feature": null,
       "task": null
     },
+    "assistant-manager": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
     "generator": {
       "status": "idle",
       "feature": null,
@@ -77,6 +82,8 @@
     "Reviewer: 001-wcag-aa-compliance/02 - REGEN (15 errors, dark theme)",
     "Reviewer: 001-wcag-aa-compliance/03 - REGEN (31 errors, dark theme)",
     "Reviewer: 002-cookie-consent/01 - PASS (v5 compliant)",
-    "Reviewer: 002-cookie-consent/02 - PASS (v5 compliant)"
+    "Reviewer: 002-cookie-consent/02 - PASS (v5 compliant)",
+    "Reviewer: 004-mobile-first-design/01 - PASS (v5 compliant)",
+    "Reviewer: 004-mobile-first-design/02 - PASS (v5 compliant)"
   ]
 }

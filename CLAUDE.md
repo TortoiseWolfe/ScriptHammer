@@ -4,20 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Terminal Primers
 
-Copy a block to prime a new terminal. Each terminal tracks its own feature independently.
+Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
 
-### Manager
+### Primary Manager
 ```
-You are the Manager terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.manager, queue: .queue | length}'
+You are the Primary Manager terminal.
+/prep manager
 
-Skills: /prep, /wireframe-status, /commit, /ship
+Skills: /wireframe-status, /commit, /ship
+```
+
+### Assistant Manager
+```
+You are the Assistant Manager terminal.
+/prep assistant
+
+Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+```
+
+### Planner
+```
+You are the Planner terminal.
+/prep planner
+
+Skills: /wireframe-plan [feature]
 ```
 
 ### Generator
 ```
 You are the Generator terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.generator, queue: .queue}'
+/prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -25,7 +41,7 @@ Skills: /wireframe-prep [feature], /wireframe [feature]
 ### Viewer
 ```
 You are the Viewer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.viewer}'
+/prep viewer
 
 Skills: /hot-reload-viewer
 ```
@@ -33,7 +49,7 @@ Skills: /hot-reload-viewer
 ### Reviewer
 ```
 You are the Reviewer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.reviewer, queue: .queue}'
+/prep reviewer
 
 Skills: /wireframe-screenshots, /wireframe-review
 ```
@@ -41,7 +57,7 @@ Skills: /wireframe-screenshots, /wireframe-review
 ### Validator
 ```
 You are the Validator terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.validator}'
+/prep validator
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
@@ -49,46 +65,33 @@ Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ### Author
 ```
 You are the Author terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.author}'
+/prep author
 
 Skills: /session-summary, /changelog
-Focus: Blog posts, social media, release notes, workflow documentation
 ```
 
 ### Tester
 ```
 You are the Tester terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.tester}'
+/prep tester
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
-Focus: Run Vitest, Playwright, Pa11y. Report coverage gaps.
 ```
 
 ### Implementer
 ```
 You are the Implementer terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.implementer, queue: .queue}'
+/prep implementer
 
 Skills: /speckit.implement, /speckit.tasks
-Focus: Convert specs + wireframes into actual code
 ```
 
 ### Auditor
 ```
 You are the Auditor terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.auditor}'
+/prep auditor
 
 Skills: /speckit.analyze, /read-spec
-Focus: Verify consistency across artifacts. Flag drift.
-```
-
-### Planner
-```
-You are the Planner terminal.
-cat docs/design/wireframes/.terminal-status.json | jq '{me: .terminals.planner}'
-
-Skills: /wireframe-plan [feature]
-Focus: Analyze spec, create SVG assignments, hand off to Generators
 ```
 
 ---
@@ -145,58 +148,80 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 
 | Terminal | Responsibility | Focus Files |
 |----------|----------------|-------------|
-| **Manager** | Coordinate workflow, update docs, create skills, handle side tasks | `CLAUDE.md`, skill files |
-| **Validator** | Maintain `validate-wireframe.py`, add checks, manage `GENERAL_ISSUES.md` escalation | `validate-wireframe.py`, `GENERAL_ISSUES.md` |
-| **Reviewer** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
+| **Primary Manager** | Coordinate workflow, update docs, queue management | `CLAUDE.md`, `.terminal-status.json` |
+| **Assistant Manager** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
+| **Planner** | Analyze spec, create SVG assignments, hand off to Generators | `features/*/spec.md` |
 | **Generator** | Create SVGs using `/wireframe` skill, fix validation errors | `NNN-feature/*.svg` |
 | **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
+| **Reviewer** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
+| **Validator** | Add `_check_*()` methods, manage `GENERAL_ISSUES.md` escalation | `validate-wireframe.py`, `GENERAL_ISSUES.md` |
+| **Author** | Blog posts, social media, release notes, workflow documentation | `docs/*.md` |
+| **Tester** | Run Vitest, Playwright, Pa11y, report coverage gaps | `*.test.ts`, `*.spec.ts` |
+| **Implementer** | Convert specs + wireframes into actual code | `src/**/*.tsx` |
+| **Auditor** | Verify consistency across artifacts, flag drift | `spec.md`, `plan.md`, `tasks.md` |
 
 ### Workflow Sequence
 
 ```
-                    ┌─────────────┐
-                    │   Manager   │
-                    │ coordinates │
-                    │  docs/skills│
-                    └──────┬──────┘
-                           │
+                 ┌─────────────┐     ┌─────────────┐
+                 │   Primary   │     │  Assistant  │
+                 │   Manager   │◀───▶│   Manager   │
+                 │ docs/queue  │     │skills/tools │
+                 └──────┬──────┘     └─────────────┘
+                        │
+┌─────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ Planner │────▶│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
+│ assigns │     │ /wireframe  │     │ /hot-reload │     │ screenshots │     │ escalation  │
+└─────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+                      │                                                            │
+                      └────────────────────────────────────────────────────────────┘
+                                           (feedback loop)
+
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Generator  │────▶│   Viewer    │────▶│  Reviewer   │────▶│  Validator  │
-│ /wireframe  │     │ /hot-reload │     │ screenshots │     │ escalation  │
-│  creates    │     │  displays   │     │  documents  │     │  codifies   │
-│    SVG      │     │    SVG      │     │   issues    │     │   checks    │
+│   Author    │     │   Tester    │     │ Implementer │     │   Auditor   │
+│   writes    │     │   tests     │     │    codes    │     │   audits    │
 └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
-      │                                                            │
-      └────────────────────────────────────────────────────────────┘
-                         (feedback loop)
 ```
 
 ### This Terminal's Role
 
-**If you are the Manager terminal:**
-- Focus: Coordination and documentation
-- Update `CLAUDE.md` when workflow or tools change
-- Create/update skills in `~/.claude/commands/`
-- Handle side tasks without distracting other terminals
-- Prime new terminals: "You are the [Role] terminal"
-- Maintain `.terminal-status.json` queue and clear stale entries
-
 **Status File:** `docs/design/wireframes/.terminal-status.json`
 ```bash
-# View all terminal status
-cat docs/design/wireframes/.terminal-status.json | jq .terminals
-
-# View queue
-cat docs/design/wireframes/.terminal-status.json | jq .queue
+cat docs/design/wireframes/.terminal-status.json | jq .terminals  # View all
+cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 ```
 
-**If you are the Validator terminal:**
-- Focus: `docs/design/wireframes/validate-wireframe.py`
-- Add new `_check_*()` methods for recurring issues
-- Maintain `GENERAL_ISSUES.md` with G-XXX entries
-- Run `--check-escalation` to find patterns across features
-- Update `/wireframe` skill rules when adding new checks
-- Update `.terminal-status.json` with your current task
+**If you are the Primary Manager terminal:**
+- Focus: Coordination and documentation
+- Update `CLAUDE.md` when workflow or tools change
+- Prime new terminals: "You are the [Role] terminal"
+- Maintain `.terminal-status.json` queue and clear stale entries
+- Make escalation decisions for `GENERAL_ISSUES.md`
+
+**If you are the Assistant Manager terminal:**
+- Focus: Skill files and tool maintenance
+- Create/update skills in `~/.claude/commands/`
+- Test and debug skill behavior
+- Refactor large skill files (wireframe-review.md etc.)
+- Optimize `validate-wireframe.py` (shared with Validator)
+- Keep skills aligned with CLAUDE.md standards
+
+**If you are the Planner terminal:**
+- Focus: Analyzing specs and planning SVG assignments
+- Read feature spec, identify screens needed
+- Create SVG assignment list for Generator
+- Consider consolidation (multiple screens → single SVG)
+
+**If you are the Generator terminal:**
+- Focus: Creating/fixing SVG wireframes
+- Read `*.issues.md` before regenerating
+- Run validator after generation, fix until PASS
+- Never bypass validator errors
+
+**If you are the Viewer terminal:**
+- Focus: Running `/hot-reload-viewer`
+- Keep viewer running for screenshot workflow
+- Report any viewer bugs or rendering issues
 
 **If you are the Reviewer terminal:**
 - Focus: `docs/design/wireframes/NNN-*/*.issues.md`
@@ -205,37 +230,36 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue
 - Document issues with classification (PATCH vs REGENERATE)
 - Suggest which issues should escalate to GENERAL_ISSUES.md
 
-**Reviewer Tools:**
-```bash
-# Screenshot commands
-/wireframe-screenshots --all              # All features
-/wireframe-screenshots --feature 002      # Single feature
-/wireframe-screenshots --svg 002:01       # Single SVG
+**If you are the Validator terminal:**
+- Focus: `docs/design/wireframes/validate-wireframe.py`
+- Add new `_check_*()` methods for recurring issues
+- Maintain `GENERAL_ISSUES.md` with G-XXX entries
+- Run `--check-escalation` to find patterns across features
+- Update `/wireframe` skill rules when adding new checks
 
-# Docker direct
-docker compose run --rm review 002        # Screenshots + validation
-```
+**If you are the Author terminal:**
+- Focus: Documentation and communication
+- Write blog posts, release notes, workflow guides
+- Create social media content
+- Document lessons learned
 
-**Screenshot output:** `docs/design/wireframes/png/[feature]/[svg-name]/`
-- `overview.png` - Full canvas
-- `quadrant-center.png` - Center region
-- `quadrant-tl.png`, `quadrant-tr.png`, `quadrant-bl.png`, `quadrant-br.png` - Corners
-- `manifest.json` - Paths + validator results
+**If you are the Tester terminal:**
+- Focus: Test execution and coverage
+- Run Vitest, Playwright, Pa11y test suites
+- Report coverage gaps and failing tests
+- Suggest test improvements
 
-Update `.terminal-status.json` with your current task.
+**If you are the Implementer terminal:**
+- Focus: Converting specs + wireframes into code
+- Use `/speckit.implement` to execute tasks
+- Follow 5-file component pattern
+- Ensure tests pass before marking complete
 
-**If you are the Generator terminal:**
-- Focus: Creating/fixing SVG wireframes
-- Read `*.issues.md` before regenerating
-- Run validator after generation, fix until PASS
-- Never bypass validator errors
-- Update `.terminal-status.json` with your current task
-
-**If you are the Viewer terminal:**
-- Focus: Running `/hot-reload-viewer`
-- Keep viewer running for screenshot workflow
-- Report any viewer bugs or rendering issues
-- Update `.terminal-status.json` when starting/stopping viewer
+**If you are the Auditor terminal:**
+- Focus: Cross-artifact consistency
+- Use `/speckit.analyze` to check drift
+- Flag inconsistencies between spec, plan, tasks
+- Verify implementation matches wireframes
 
 ## Commands
 
