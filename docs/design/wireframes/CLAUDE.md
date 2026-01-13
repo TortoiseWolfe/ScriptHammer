@@ -87,6 +87,40 @@ python validate-wireframe.py --check-escalation
 | `NNN-feature/*.issues.md` | Feature-specific issues |
 | `.terminal-status.json` | Queue and terminal status |
 
+## Status State Machine
+
+Valid status values and transitions for `.terminal-status.json`:
+
+```
+                    ┌──────────────────────────────────┐
+                    │                                  │
+                    ▼                                  │
+planning ──► queued ──► generating ──► validating ──► review ──► approved
+                            │              │            │
+                            │              ▼            │
+                            │           failed         │
+                            │              │            │
+                            └──────────────┴── issues ◄─┘
+```
+
+| Status | Description | Next States |
+|--------|-------------|-------------|
+| `planning` | Planner analyzing spec | `queued` |
+| `queued` | In queue, waiting for Generator | `generating` |
+| `generating` | Generator actively working | `validating`, `failed` |
+| `validating` | Validator running checks | `review`, `issues` |
+| `review` | Reviewer analyzing screenshots | `approved`, `issues` |
+| `issues` | Problems found, needs regen | `generating` |
+| `approved` | Passed all checks | (terminal state) |
+| `failed` | Unrecoverable error | (terminal state) |
+
+**Transition rules:**
+- Only Manager can transition `planning` → `queued`
+- Only Generator can transition `queued` → `generating`
+- Validator auto-transitions `generating` → `validating` → `review` or `issues`
+- Reviewer transitions `review` → `approved` or `issues`
+- `issues` always goes back to `generating` (via REGEN queue)
+
 ## Viewer Shortcuts
 
 | Key | Action |
