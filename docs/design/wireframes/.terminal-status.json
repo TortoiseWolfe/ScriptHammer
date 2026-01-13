@@ -49,15 +49,18 @@
   },
   "queue": [
     {
-      "feature": "005-security-hardening",
-      "svg": "03-admin-security-dashboard.svg",
-      "action": "PATCH",
-      "reason": "P-01: Annotation titles at 16px (should be 14px per G-037)",
+      "feature": "000-landing-page",
+      "svg": "01-landing-page.svg",
+      "action": "REGEN",
+      "reason": "v3 wireframe - wrong viewports (1366x768 vs 1280x720), no annotation panel, no callouts, 26 validator errors",
       "assignedTo": "generator"
     }
   ],
   "completedToday": [
     "005-security-hardening/03-admin-security-dashboard.issues.md created",
-    "Reviewer: Validated 03-admin-security-dashboard - 1 PATCH issue (P-01)"
+    "Reviewer: Validated 03-admin-security-dashboard - 1 PATCH issue (P-01)",
+    "Manager: Corrected G-037 - 16px titles is correct, queue item voided",
+    "Manager: Fixed CLAUDE.md dimensions (1280x720/360x720) and G-037 font standard",
+    "Reviewer: Reviewed 000-landing-page/01 - REGEN required (v3 wireframe, 26 errors)"
   ]
 }

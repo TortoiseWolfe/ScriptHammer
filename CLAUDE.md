@@ -331,10 +331,11 @@ Features must be implemented in dependency order, not numeric order. See `featur
 
 ## SVG Wireframe Rules
 
-1. Canvas: `viewBox="0 0 1920 1080" width="1920" height="1920"`
-2. Desktop mockup: x=40, y=60, 1000×700
-3. Mobile mockup: x=1120, y=60, 320×640
+1. Canvas: `viewBox="0 0 1920 1080" width="1920" height="1080"`
+2. Desktop mockup: x=40, y=60, 1280×720
+3. Mobile mockup: x=1360, y=60, 360×720
 4. Minimum 4 callouts recommended (no max limit)
 5. Light theme: panels `#e8d4b8`, NO `#ffffff`
 6. Toggle colors: OFF=`#6b7280`, ON=`#22c55e`
 7. Touch targets: 44px minimum
+8. Annotation titles: 16px bold, narrative: 14px regular

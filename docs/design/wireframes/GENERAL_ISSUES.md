@@ -39,7 +39,7 @@
 | G-034 | Mobile content y-position too high (overlaps header) | Mobile content must start at y >= 78 (after header area) | Mobile Safe Area |
 | G-035 | Buttons using faded/parchment colors | Use solid button colors: primary=#8b5cf6, secondary=#f5f0e6, tertiary=#dcc8a8 | Button Color Standards |
 | G-036 | Badge/pill overflows its container row | Keep badges within parent container bounds; use smaller font or abbreviate if needed | Badge Containment |
-| G-037 | Annotation narrative text too light/small | Use 14px bold for titles, 14px regular for narrative, high contrast | Annotation Readability |
+| G-037 | Annotation narrative text too light/small | Use 16px bold for titles, 14px regular for narrative, high contrast | Annotation Readability |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -743,24 +743,24 @@ WRONG:                                    CORRECT:
 
 | Element | Font Size | Weight | Color |
 |---------|-----------|--------|-------|
-| US title (e.g., "① First Visit") | 14px | **bold** | #1f2937 |
+| US title (e.g., "① First Visit") | 16px | **bold** | #1f2937 |
 | Narrative text | 14px | regular | #374151 |
 | Badge pills (FR-001, SC-001) | 11px | semibold | white on colored bg |
 
 ### Rule
 
-**Annotation titles must be 14px bold. Narrative must be 14px regular with dark color (#374151 or darker).**
+**Annotation titles must be 16px bold. Narrative must be 14px regular with dark color (#374151 or darker).**
 
 ### Why This Matters
 
 - Annotations explain the wireframe's purpose and requirements coverage
 - If unreadable, the wireframe fails its documentation purpose
-- G-010 covers minimum size (14px); this covers weight and contrast
+- 16px titles + 14px narrative creates clear visual hierarchy
 - Bold titles create visual hierarchy between callout groups
 
 ### CSS Reference
 
 ```css
-.us-title { font-size: 14px; font-weight: bold; fill: #1f2937; }
+.us-title { font-size: 16px; font-weight: bold; fill: #1f2937; }
 .us-narrative { font-size: 14px; font-weight: normal; fill: #374151; }
 ```
