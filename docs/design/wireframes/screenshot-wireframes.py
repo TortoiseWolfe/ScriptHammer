@@ -164,15 +164,16 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
         viewer.style.transition = 'none';
     """)
 
-    # Pan values for 1920×1080 canvas at zoom=2
-    # At zoom=2, ~960×540 canvas pixels visible per shot
+    # Pan and zoom values for 1920×1080 canvas
+    # CENTER at zoom=2 shows 960×540 (exact center)
+    # Corners at zoom=1.9 show ~1010×568 (captures true corners + ~100px overlap)
     # Sequence: CENTER first, then corners (matching original MCP Toolkit)
     pan_positions = [
-        ('center', 0, 0),           # Canvas center (960, 540)
-        ('tl', 860, 440),           # Top-left with 50px overlap
-        ('tr', -860, 440),          # Top-right with 50px overlap
-        ('br', -860, -440),         # Bottom-right with 50px overlap
-        ('bl', 860, -440),          # Bottom-left with 50px overlap
+        ('center', 0, 0, 2.0),        # Canvas center at zoom=2
+        ('tl', 864, 486, 1.9),        # Top-left corner with overlap
+        ('tr', -864, 486, 1.9),       # Top-right corner with overlap
+        ('br', -864, -486, 1.9),      # Bottom-right corner with overlap
+        ('bl', 864, -486, 1.9),       # Bottom-left corner with overlap
     ]
 
     # Clip coordinates: center 1920x1080 region of 3840x2160 viewport
@@ -180,18 +181,18 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     clip_y = (VIEWPORT_HEIGHT - 1080) // 2  # 540
     clip = {'x': clip_x, 'y': clip_y, 'width': 1920, 'height': 1080}
 
-    for quadrant_name, pan_x, pan_y in pan_positions:
-        # Directly set CSS transform, bypassing viewer state management entirely
+    for quadrant_name, pan_x, pan_y, zoom_level in pan_positions:
+        # Set CSS transform with per-quadrant zoom level
         page.evaluate(f"""
             const viewer = document.querySelector('#viewer');
-            viewer.style.transform = 'translate(-50%, -50%) translate({pan_x}px, {pan_y}px) scale(2)';
+            viewer.style.transform = 'translate(-50%, -50%) translate({pan_x}px, {pan_y}px) scale({zoom_level})';
         """)
         page.wait_for_timeout(50)  # Brief wait for render
 
         quadrant_path = output_dir / f'quadrant-{quadrant_name}.png'
         page.screenshot(path=str(quadrant_path), full_page=False, clip=clip)
         screenshots[f'quadrant_{quadrant_name}'] = str(quadrant_path.relative_to(WIREFRAMES_DIR))
-        print(f"    Saved: quadrant-{quadrant_name}.png (pan: {pan_x}, {pan_y})")
+        print(f"    Saved: quadrant-{quadrant_name}.png (pan: {pan_x}, {pan_y}, zoom: {zoom_level})")
 
     # Reset for next SVG
     page.evaluate("""
