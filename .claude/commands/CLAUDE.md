@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance for the Assistant Manager terminal working with skill files.
+This file provides guidance for the Toolsmith terminal working with skill files.
 
 ## Terminal Using This Context
 
-- **Assistant Manager** - Maintain skill files, refactor tools, optimize validator
+- **Toolsmith** - Maintain skill files, refactor tools, optimize validator
 
 ## Skill Locations
 
@@ -74,7 +74,7 @@ Document any arguments: `/skill [arg1] [arg2]`
 
 The `validate-wireframe.py` script is shared with Validator terminal:
 - **Validator** adds new `_check_*()` methods
-- **Assistant Manager** refactors and optimizes
+- **Toolsmith** refactors and optimizes
 
 ## Key Files
 

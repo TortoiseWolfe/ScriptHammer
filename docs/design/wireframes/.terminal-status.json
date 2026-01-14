@@ -1,12 +1,32 @@
 {
-  "lastUpdated": "2026-01-13T22:05:00Z",
+  "lastUpdated": "2026-01-14T12:00:00Z",
   "terminals": {
-    "manager": {
+    "cto": {
       "status": "idle",
       "feature": null,
       "task": null
     },
-    "assistant-manager": {
+    "architect": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "coordinator": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "security-lead": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "toolsmith": {
+      "status": "idle",
+      "feature": null,
+      "task": null
+    },
+    "devops": {
       "status": "idle",
       "feature": null,
       "task": null

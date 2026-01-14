@@ -6,20 +6,52 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
 
-### Primary Manager
+### CTO
 ```
-You are the Primary Manager terminal.
-/prep manager
+You are the CTO terminal.
+/prep cto
+
+Skills: Strategic oversight, technology decisions, cross-cutting concerns
+```
+
+### Architect
+```
+You are the Architect terminal.
+/prep architect
+
+Skills: /speckit.plan, architectural reviews, dependency management
+```
+
+### Coordinator
+```
+You are the Coordinator terminal.
+/prep coordinator
 
 Skills: /wireframe-status, /commit, /ship
 ```
 
-### Assistant Manager
+### Security Lead
 ```
-You are the Assistant Manager terminal.
-/prep assistant
+You are the Security Lead terminal.
+/prep security
+
+Skills: Security audits, OWASP compliance, vulnerability scanning
+```
+
+### Toolsmith
+```
+You are the Toolsmith terminal.
+/prep toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+```
+
+### DevOps
+```
+You are the DevOps terminal.
+/prep devops
+
+Skills: Docker configs, GitHub Actions, deployment pipelines
 ```
 
 ### Planner
@@ -172,8 +204,12 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 
 | Terminal | Responsibility | Focus Files |
 |----------|----------------|-------------|
-| **Primary Manager** | Coordinate workflow, update docs, queue management | `CLAUDE.md`, `.terminal-status.json` |
-| **Assistant Manager** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
+| **CTO** | Strategic oversight, technology decisions, cross-cutting concerns | All specs, high-level project direction |
+| **Architect** | System design, component patterns, dependency decisions | `constitution.md`, `IMPLEMENTATION_ORDER.md` |
+| **Coordinator** | Coordinate workflow, update docs, queue management | `CLAUDE.md`, `.terminal-status.json` |
+| **Security Lead** | Security review, OWASP compliance, vulnerability scanning | Security features, auth flows |
+| **Toolsmith** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
+| **DevOps** | CI/CD, Docker configs, deployment pipelines, GitHub Actions | `docker-compose.yml`, `.github/workflows/` |
 | **Planner** | Analyze spec, create SVG assignments, hand off to Generators | `features/*/spec.md` |
 | **Generator 1/2/3** | Create SVGs using `/wireframe` skill, fix validation errors (3 parallel) | `NNN-feature/*.svg` |
 | **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
@@ -187,23 +223,47 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 
 ### Workflow Sequence
 
+CTO provides strategic oversight. Coordinator manages operational flow.
+
 ```
-                 ┌─────────────┐     ┌─────────────┐
-                 │   Primary   │     │  Assistant  │
-                 │   Manager   │◀───▶│   Manager   │
-                 │ docs/queue  │     │skills/tools │
-                 └──────┬──────┘     └─────────────┘
-                        │
-                        │           ┌─────────────┐
-                        │      ┌───▶│ Generator-1 │───┐
-┌─────────┐             │      │    └─────────────┘   │
-│ Planner │─────────────┼──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator ───▶ Inspector
-│ assigns │             │      │    └─────────────┘   │                                                  │
-└─────────┘             │      └───▶│ Generator-3 │───┘                                                  │
-                        │           └─────────────┘                                                      │
-                        │                 │                                                              │
-                        └─────────────────┴──────────────────────────────────────────────────────────────┘
-                                           (feedback loop)
+                              ┌─────────────┐
+                              │     CTO     │  ◄── Strategic oversight
+                              │  strategy   │
+                              └──────┬──────┘
+                                     │
+          ┌──────────────────────────┼──────────────────────────┐
+          │                          │                          │
+          ▼                          ▼                          ▼
+   ┌─────────────┐            ┌─────────────┐           ┌─────────────┐
+   │  Architect  │            │ Coordinator │           │Security Lead│
+   │   design    │            │ orchestrate │           │   review    │
+   └─────────────┘            └──────┬──────┘           └─────────────┘
+                                     │
+                              ┌──────┴──────┐
+                              │             │
+                              ▼             ▼
+                       ┌─────────────┐ ┌─────────────┐
+                       │  Toolsmith  │ │   DevOps    │
+                       │ skills/tools│ │   CI/CD     │
+                       └─────────────┘ └─────────────┘
+
+--- Wireframe Production Pipeline (under Coordinator) ---
+
+┌─────────┐
+│ Planner │
+│ assigns │
+└────┬────┘
+     │           ┌─────────────┐
+     │      ┌───▶│ Generator-1 │───┐
+     │      │    └─────────────┘   │
+     ├──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator ───▶ Inspector
+     │      │    └─────────────┘   │                                                  │
+     │      └───▶│ Generator-3 │───┘                                                  │
+     │           └─────────────┘                                                      │
+     └────────────────────────────────────────────────────────────────────────────────┘
+                                 (feedback loop)
+
+--- Supporting Roles ---
 
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Author    │     │   Tester    │     │ Implementer │     │   Auditor   │
@@ -219,20 +279,48 @@ cat docs/design/wireframes/.terminal-status.json | jq .terminals  # View all
 cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 ```
 
-**If you are the Primary Manager terminal:**
+**If you are the CTO terminal:**
+- Focus: Strategic oversight and technology decisions
+- Make high-level project direction decisions
+- Technology stack choices and cross-cutting concerns
+- Risk assessment and mitigation
+- Cross-feature coordination and prioritization
+
+**If you are the Architect terminal:**
+- Focus: System design and component patterns
+- Enforce 5-file component pattern
+- Review technical approaches before implementation
+- Manage feature dependencies in `IMPLEMENTATION_ORDER.md`
+- Design data models and API contracts
+
+**If you are the Coordinator terminal:**
 - Focus: Coordination and documentation
 - Update `CLAUDE.md` when workflow or tools change
 - Prime new terminals: "You are the [Role] terminal"
 - Maintain `.terminal-status.json` queue and clear stale entries
 - Make escalation decisions for `GENERAL_ISSUES.md`
 
-**If you are the Assistant Manager terminal:**
+**If you are the Security Lead terminal:**
+- Focus: Security review and compliance
+- Security-focused code review
+- OWASP Top 10 compliance checks
+- Dependency vulnerability scanning
+- Auth flow and secrets management review
+
+**If you are the Toolsmith terminal:**
 - Focus: Skill files and tool maintenance
 - Create/update skills in `~/.claude/commands/`
 - Test and debug skill behavior
 - Refactor large skill files (wireframe-review.md etc.)
 - Optimize `validate-wireframe.py` (shared with Validator)
 - Keep skills aligned with CLAUDE.md standards
+
+**If you are the DevOps terminal:**
+- Focus: CI/CD and deployment pipelines
+- Maintain Docker configurations
+- Set up GitHub Actions workflows
+- Configure deployment to GitHub Pages
+- Build optimization and caching
 
 **If you are the Planner terminal:**
 - Focus: Analyzing specs and planning SVG assignments

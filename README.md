@@ -15,48 +15,101 @@
 Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
 
 ```
-          ┌───────────────┐     ┌───────────────┐
-          │    Primary    │     │   Assistant   │
-          │    Manager    │◄───►│    Manager    │
-          └───────┬───────┘     └───────────────┘
-                  │
-                  │       ┌──────────────┐
-┌──────────┐      │  ┌───►│ Generator-1  │───┐
-│ Planner  │──────┼──┼───►│ Generator-2  │───┤
-└──────────┘      │  └───►│ Generator-3  │───┘
-                  │       └──────────────┘
-                  │             │
-                  ▼             ▼
-          ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
-          │  Viewer  │─►│ Reviewer │─►│Validator │─►│Inspector │
-          └────┬─────┘  └──────────┘  └──────────┘  └────┬─────┘
-               └──────────────────────────────────────────┘
-                              (feedback loop)
+                        ┌─────────────┐
+                        │     CTO     │  ◄── Strategic oversight
+                        └──────┬──────┘
+                               │
+        ┌──────────────────────┼──────────────────────┐
+        │                      │                      │
+        ▼                      ▼                      ▼
+ ┌─────────────┐        ┌─────────────┐       ┌─────────────┐
+ │  Architect  │        │ Coordinator │       │Security Lead│
+ └─────────────┘        └──────┬──────┘       └─────────────┘
+                               │
+                        ┌──────┴──────┐
+                        │             │
+                        ▼             ▼
+                 ┌─────────────┐ ┌─────────────┐
+                 │  Toolsmith  │ │   DevOps    │
+                 └─────────────┘ └─────────────┘
 
+--- Wireframe Production Pipeline ---
+
+┌──────────┐      ┌──────────────┐
+│ Planner  │──────┤ Generator 1/2/3 │───► Viewer ─► Reviewer ─► Validator ─► Inspector
+└──────────┘      └──────────────┘                                              │
+     └──────────────────────────────────────────────────────────────────────────┘
+                                    (feedback loop)
+
+--- Supporting Roles ---
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │   Author    │  │   Tester    │  │ Implementer │  │   Auditor   │
 └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
 ```
 
 <details>
-<summary><strong>Primary Manager</strong> - Coordinate workflow, update docs</summary>
+<summary><strong>CTO</strong> - Strategic oversight, technology decisions</summary>
 
 ```
-You are the Primary Manager terminal.
-/prep manager
+You are the CTO terminal.
+/prep cto
+
+Skills: Strategic oversight, technology decisions, cross-cutting concerns
+```
+</details>
+
+<details>
+<summary><strong>Architect</strong> - System design, component patterns</summary>
+
+```
+You are the Architect terminal.
+/prep architect
+
+Skills: /speckit.plan, architectural reviews, dependency management
+```
+</details>
+
+<details>
+<summary><strong>Coordinator</strong> - Coordinate workflow, update docs</summary>
+
+```
+You are the Coordinator terminal.
+/prep coordinator
 
 Skills: /wireframe-status, /commit, /ship
 ```
 </details>
 
 <details>
-<summary><strong>Assistant Manager</strong> - Maintain skill files, refactor tools</summary>
+<summary><strong>Security Lead</strong> - Security review, OWASP compliance</summary>
 
 ```
-You are the Assistant Manager terminal.
-/prep assistant
+You are the Security Lead terminal.
+/prep security
+
+Skills: Security audits, OWASP compliance, vulnerability scanning
+```
+</details>
+
+<details>
+<summary><strong>Toolsmith</strong> - Maintain skill files, refactor tools</summary>
+
+```
+You are the Toolsmith terminal.
+/prep toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+```
+</details>
+
+<details>
+<summary><strong>DevOps</strong> - CI/CD, Docker configs, deployment</summary>
+
+```
+You are the DevOps terminal.
+/prep devops
+
+Skills: Docker configs, GitHub Actions, deployment pipelines
 ```
 </details>
 
