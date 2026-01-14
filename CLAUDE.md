@@ -76,42 +76,42 @@ You are the Planner terminal.
 Skills: /wireframe-plan [feature]
 ```
 
-### Generator 1
+### Wireframe Generator 1
 ```
-You are the Generator-1 terminal.
-/prep generator
+You are the Wireframe Generator-1 terminal.
+/prep wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
 
-### Generator 2
+### Wireframe Generator 2
 ```
-You are the Generator-2 terminal.
-/prep generator
+You are the Wireframe Generator-2 terminal.
+/prep wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
 
-### Generator 3
+### Wireframe Generator 3
 ```
-You are the Generator-3 terminal.
-/prep generator
+You are the Wireframe Generator-3 terminal.
+/prep wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
 
-### Viewer
+### Preview Host
 ```
-You are the Viewer terminal.
-/prep viewer
+You are the Preview Host terminal.
+/prep preview-host
 
 Skills: /hot-reload-viewer
 ```
 
-### Reviewer
+### Wireframe QA
 ```
-You are the Reviewer terminal.
-/prep reviewer
+You are the Wireframe QA terminal.
+/prep wireframe-qa
 
 Skills: /wireframe-screenshots, /wireframe-review
 ```
@@ -140,18 +140,18 @@ You are the Author terminal.
 Skills: /session-summary, /changelog
 ```
 
-### Tester
+### Test Engineer
 ```
-You are the Tester terminal.
-/prep tester
+You are the Test Engineer terminal.
+/prep test-engineer
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
 ```
 
-### Implementer
+### Developer
 ```
-You are the Implementer terminal.
-/prep implementer
+You are the Developer terminal.
+/prep developer
 
 Skills: /speckit.implement, /speckit.tasks
 ```
@@ -162,6 +162,67 @@ You are the Auditor terminal.
 /prep auditor
 
 Skills: /speckit.analyze, /read-spec
+```
+
+### QA Lead
+```
+You are the QA Lead terminal.
+/prep qa-lead
+
+Skills: Process compliance, acceptance criteria verification, UAT coordination
+Reports to: Architect
+```
+
+### Technical Writer
+```
+You are the Technical Writer terminal.
+/prep tech-writer
+
+Skills: User documentation, API docs, tutorials, developer guides
+Reports to: CTO
+```
+
+### Operator (External - runs OUTSIDE tmux)
+```
+You are the Operator terminal - the meta-orchestrator.
+
+You run OUTSIDE the tmux session, managing 21 worker terminals INSIDE it.
+You are the user's proxy, keeping the system productive.
+
+## Lifecycle Commands
+
+# 1. Launch workers (creates tmux session)
+./scripts/tmux-session.sh --all
+# Session runs detached after init, or Ctrl+b d to detach
+
+# 2. Check status
+./scripts/tmux-dispatch.sh --status
+
+# 3. Dispatch work
+./scripts/tmux-dispatch.sh --vote    # RFC votes to council
+./scripts/tmux-dispatch.sh --tasks   # Audit items to owners
+./scripts/tmux-dispatch.sh --queue   # Process wireframe queue
+
+# 4. Monitor specific terminal
+tmux capture-pane -t scripthammer:4 -p | tail -30  # Toolsmith
+
+# 5. Check completion
+grep -c '✅' docs/interoffice/audits/*.md
+
+# 6. Attach to observe (Ctrl+b d to detach)
+tmux attach -t scripthammer
+
+# 7. Kill session when done
+tmux kill-session -t scripthammer
+
+## Responsibilities
+
+1. Launch the tmux session with appropriate workers
+2. Dispatch work using the dispatcher scripts
+3. Monitor progress across all terminals
+4. Re-dispatch to stuck/idle terminals
+5. Escalate blockers to the user
+6. Keep the system productive - no idle terminals
 ```
 
 ---
@@ -225,26 +286,39 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 | **Toolsmith** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
 | **DevOps** | CI/CD, Docker configs, deployment pipelines, GitHub Actions | `docker-compose.yml`, `.github/workflows/` |
 | **Product Owner** | User story validation, acceptance criteria, UX consistency | Feature specs, user requirements |
-| **Planner** | Analyze spec, create SVG assignments, hand off to Generators | `features/*/spec.md` |
-| **Generator 1/2/3** | Create SVGs using `/wireframe` skill, fix validation errors (3 parallel) | `NNN-feature/*.svg` |
-| **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
-| **Reviewer** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
+| **Planner** | Analyze spec, create SVG assignments, hand off to Wireframe Generators | `features/*/spec.md` |
+| **Wireframe Generator 1/2/3** | Create SVGs using `/wireframe` skill, fix validation errors (3 parallel) | `NNN-feature/*.svg` |
+| **Preview Host** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
+| **Wireframe QA** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
 | **Validator** | Add `_check_*()` methods, manage `GENERAL_ISSUES.md` escalation | `validate-wireframe.py`, `GENERAL_ISSUES.md` |
 | **Inspector** | Cross-SVG consistency checks, pattern enforcement | `inspect-wireframes.py`, `*.issues.md` |
 | **Author** | Blog posts, social media, release notes, workflow documentation | `docs/*.md` |
-| **Tester** | Run Vitest, Playwright, Pa11y, report coverage gaps | `*.test.ts`, `*.spec.ts` |
-| **Implementer** | Convert specs + wireframes into actual code | `src/**/*.tsx` |
+| **Test Engineer** | Run Vitest, Playwright, Pa11y, report coverage gaps | `*.test.ts`, `*.spec.ts` |
+| **Developer** | Convert specs + wireframes into actual code | `src/**/*.tsx` |
 | **Auditor** | Verify consistency across artifacts, flag drift | `spec.md`, `plan.md`, `tasks.md` |
+| **QA Lead** | Process compliance, acceptance criteria, UAT coordination | Test coverage, acceptance criteria |
+| **Technical Writer** | User documentation, API docs, tutorials, developer guides | `docs/*.md`, API references |
+| **Operator** | Meta-orchestrator: dispatch work, monitor progress, keep system productive | `scripts/tmux-dispatch.sh`, all windows |
 
 ### Workflow Sequence
 
-CTO provides strategic oversight. Coordinator manages operational flow.
+Operator (external) dispatches work. CTO provides strategic oversight. Coordinator manages operational flow.
 
 ```
-                              ┌─────────────┐
-                              │     CTO     │  ◄── Strategic oversight
-                              │  strategy   │
-                              └──────┬──────┘
+┌─────────────────────────────────────────────────────────────┐
+│  OPERATOR (External - outside tmux)                         │
+│  Launches session, dispatches work, monitors progress       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    manages via tmux send-keys
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│  TMUX SESSION "scripthammer" (19 windows)                   │
+│                                                             │
+│                       ┌─────────────┐                       │
+│                       │     CTO     │  ◄── Strategic        │
+│                       │  strategy   │      oversight        │
+│                       └──────┬──────┘
                                      │
           ┌──────────────────────────┼──────────────────────────┐
           │                          │                          │
@@ -269,11 +343,11 @@ CTO provides strategic oversight. Coordinator manages operational flow.
 │ assigns │
 └────┬────┘
      │           ┌─────────────┐
-     │      ┌───▶│ Generator-1 │───┐
+     │      ┌───▶│WFGenerator-1│───┐
      │      │    └─────────────┘   │
-     ├──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator ───▶ Inspector
+     ├──────┼───▶│WFGenerator-2│───┼───▶PreviewHost──▶WireframeQA──▶ Validator ───▶ Inspector
      │      │    └─────────────┘   │                                                  │
-     │      └───▶│ Generator-3 │───┘                                                  │
+     │      └───▶│WFGenerator-3│───┘                                                  │
      │           └─────────────┘                                                      │
      └────────────────────────────────────────────────────────────────────────────────┘
                                  (feedback loop)
@@ -281,9 +355,14 @@ CTO provides strategic oversight. Coordinator manages operational flow.
 --- Supporting Roles ---
 
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Author    │     │   Tester    │     │ Implementer │     │   Auditor   │
+│   Author    │     │TestEngineer │     │  Developer  │     │ConsistAudit │
 │   writes    │     │   tests     │     │    codes    │     │   audits    │
 └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+
+┌─────────────┐     ┌─────────────┐
+│   QA Lead   │     │ Tech Writer │
+│   quality   │     │    docs     │
+└─────────────┘     └─────────────┘
 ```
 
 ### This Terminal's Role
@@ -348,22 +427,22 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 **If you are the Planner terminal:**
 - Focus: Analyzing specs and planning SVG assignments
 - Read feature spec, identify screens needed
-- Create SVG assignment list for Generator
+- Create SVG assignment list for Wireframe Generators
 - Consider consolidation (multiple screens → single SVG)
 
-**If you are a Generator terminal (Generator-1, Generator-2, or Generator-3):**
+**If you are a Wireframe Generator terminal (WireframeGenerator-1, WireframeGenerator-2, or WireframeGenerator-3):**
 - Focus: Creating/fixing SVG wireframes assigned to YOUR generator number
 - Read `*.issues.md` before regenerating
 - Run validator after generation, fix until PASS
 - Never bypass validator errors
 - Check `.terminal-status.json` queue for items assigned to your generator number
 
-**If you are the Viewer terminal:**
+**If you are the Preview Host terminal:**
 - Focus: Running `/hot-reload-viewer`
 - Keep viewer running for screenshot workflow
 - Report any viewer bugs or rendering issues
 
-**If you are the Reviewer terminal:**
+**If you are the Wireframe QA terminal:**
 - Focus: `docs/design/wireframes/NNN-*/*.issues.md`
 - Use `/wireframe-screenshots` to generate standardized screenshots
 - Analyze quadrant images (overview + 5 corners per SVG)
@@ -390,13 +469,13 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Create social media content
 - Document lessons learned
 
-**If you are the Tester terminal:**
+**If you are the Test Engineer terminal:**
 - Focus: Test execution and coverage
 - Run Vitest, Playwright, Pa11y test suites
 - Report coverage gaps and failing tests
 - Suggest test improvements
 
-**If you are the Implementer terminal:**
+**If you are the Developer terminal:**
 - Focus: Converting specs + wireframes into code
 - Use `/speckit.implement` to execute tasks
 - Follow 5-file component pattern
@@ -407,6 +486,30 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Use `/speckit.analyze` to check drift
 - Flag inconsistencies between spec, plan, tasks
 - Verify implementation matches wireframes
+
+**If you are the QA Lead terminal:**
+- Focus: Process compliance and acceptance criteria
+- Verify acceptance criteria before marking tasks complete
+- Coordinate user acceptance testing
+- Review test coverage gaps with Test Engineer terminal
+- Reports to: Architect
+
+**If you are the Technical Writer terminal:**
+- Focus: User documentation and API references
+- Create end-user documentation (distinct from Author's blog posts)
+- Write API reference documentation
+- Develop tutorials and getting-started guides
+- Reports to: CTO
+
+**If you are the Operator terminal (EXTERNAL - outside tmux):**
+- You run in a separate terminal, managing the tmux session
+- Launch workers: `./scripts/tmux-session.sh --all`
+- Check status: `./scripts/tmux-dispatch.sh --status`
+- Dispatch work: `./scripts/tmux-dispatch.sh --vote|--tasks|--queue`
+- Monitor: `tmux capture-pane -t scripthammer:N -p | tail -30`
+- Attach to observe: `tmux attach -t scripthammer` (Ctrl+b d to detach)
+- Keep terminals productive - dispatch new work when idle
+- Escalate blockers to the user
 
 ## Interoffice Communication System
 
@@ -428,11 +531,11 @@ Terminals communicate through a structured mixture-of-experts system with tiered
 | Terminal | Reports To |
 |----------|------------|
 | Coordinator | CTO |
-| Planner, Reviewer, Inspector, Implementer | Architect |
-| Generator 1/2/3, Viewer | Coordinator |
+| Planner, WireframeQA, Inspector, Developer, QA Lead | Architect |
+| WireframeGenerator 1/2/3, PreviewHost | Coordinator |
 | Validator | Toolsmith |
-| Tester | DevOps |
-| Author, Auditor | CTO |
+| TestEngineer | DevOps |
+| Author, Auditor, Technical Writer | CTO |
 
 ### Communication Channels
 

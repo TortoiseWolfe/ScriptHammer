@@ -25,15 +25,17 @@ Contributors send memos to their manager. Cannot create RFCs directly.
 |----------|------------|
 | Coordinator | CTO |
 | Planner | Architect |
-| Generator 1/2/3 | Coordinator |
-| Viewer | Coordinator |
-| Reviewer | Architect |
+| WireframeGenerator 1/2/3 | Coordinator |
+| PreviewHost | Coordinator |
+| WireframeQA | Architect |
 | Validator | Toolsmith |
 | Inspector | Architect |
 | Author | CTO |
-| Tester | DevOps |
-| Implementer | Architect |
+| TestEngineer | DevOps |
+| Developer | Architect |
 | Auditor | CTO |
+| QA Lead | Architect |
+| Technical Writer | CTO |
 
 ## Folder Structure
 

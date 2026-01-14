@@ -15,36 +15,39 @@
 Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
 
 ```
-                        ┌─────────────┐
-                        │     CTO     │  ◄── Strategic oversight
-                        └──────┬──────┘
-                               │
-        ┌──────────────────────┼──────────────────────┐
-        │                      │                      │
-        ▼                      ▼                      ▼
- ┌─────────────┐        ┌─────────────┐       ┌─────────────┐
- │  Architect  │        │ Coordinator │       │Security Lead│
- └─────────────┘        └──────┬──────┘       └─────────────┘
-                               │
-                        ┌──────┴──────┐
-                        │             │
-                        ▼             ▼
-                 ┌─────────────┐ ┌─────────────┐
-                 │  Toolsmith  │ │   DevOps    │
-                 └─────────────┘ └─────────────┘
-
---- Wireframe Production Pipeline ---
-
-┌──────────┐      ┌──────────────┐
-│ Planner  │──────┤ Generator 1/2/3 │───► Viewer ─► Reviewer ─► Validator ─► Inspector
-└──────────┘      └──────────────┘                                              │
-     └──────────────────────────────────────────────────────────────────────────┘
-                                    (feedback loop)
-
---- Supporting Roles ---
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│   Author    │  │   Tester    │  │ Implementer │  │   Auditor   │
-└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  OPERATOR (External terminal - runs outside tmux)           │
+│  Launches session, dispatches work, monitors progress       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    manages via tmux send-keys
+                              │
+┌─────────────────────────────▼───────────────────────────────┐
+│  TMUX SESSION "scripthammer" (19 windows)                   │
+│                                                             │
+│                        ┌─────────────┐                      │
+│                        │     CTO     │  ◄── Strategic       │
+│                        └──────┬──────┘                      │
+│                               │                             │
+│        ┌──────────────────────┼──────────────────────┐      │
+│        │                      │                      │      │
+│        ▼                      ▼                      ▼      │
+│  ┌─────────────┐       ┌─────────────┐      ┌─────────────┐ │
+│  │  Architect  │       │ Coordinator │      │Security Lead│ │
+│  └─────────────┘       └──────┬──────┘      └─────────────┘ │
+│                               │                             │
+│                        ┌──────┴──────┐                      │
+│                        ▼             ▼                      │
+│                 ┌─────────────┐ ┌─────────────┐             │
+│                 │  Toolsmith  │ │   DevOps    │             │
+│                 └─────────────┘ └─────────────┘             │
+│                                                             │
+│  --- Wireframe Pipeline ---                                 │
+│  Planner → WFGen 1/2/3 → PreviewHost → WFQa → Validator     │
+│                                                             │
+│  --- Supporting ---                                         │
+│  Author | TestEngineer | Developer | Auditor     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 <details>
@@ -198,29 +201,11 @@ Bonus: Suggest a better title for your role if you have one!
 </details>
 
 <details>
-<summary><strong>Generator 1</strong> - Create/fix SVG wireframes (parallel)</summary>
+<summary><strong>Wireframe Generator 1</strong> - Create/fix SVG wireframes (parallel)</summary>
 
 ```
-You are the Generator-1 terminal.
-/prep generator
-
-Skills: /wireframe-prep [feature], /wireframe [feature]
-```
-
-**Audit Participation:**
-```
-Read docs/interoffice/audits/2026-01-14-organizational-review.md
-Fill in the Generator (1/2/3) section with answers to the 6 questions.
-Bonus: Suggest a better title for your role if you have one!
-```
-</details>
-
-<details>
-<summary><strong>Generator 2</strong> - Create/fix SVG wireframes (parallel)</summary>
-
-```
-You are the Generator-2 terminal.
-/prep generator
+You are the Wireframe Generator-1 terminal.
+/prep wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -228,17 +213,17 @@ Skills: /wireframe-prep [feature], /wireframe [feature]
 **Audit Participation:**
 ```
 Read docs/interoffice/audits/2026-01-14-organizational-review.md
-Fill in the Generator (1/2/3) section with answers to the 6 questions.
+Fill in the Wireframe Generator (1/2/3) section with answers to the 6 questions.
 Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
 <details>
-<summary><strong>Generator 3</strong> - Create/fix SVG wireframes (parallel)</summary>
+<summary><strong>Wireframe Generator 2</strong> - Create/fix SVG wireframes (parallel)</summary>
 
 ```
-You are the Generator-3 terminal.
-/prep generator
+You are the Wireframe Generator-2 terminal.
+/prep wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -246,17 +231,35 @@ Skills: /wireframe-prep [feature], /wireframe [feature]
 **Audit Participation:**
 ```
 Read docs/interoffice/audits/2026-01-14-organizational-review.md
-Fill in the Generator (1/2/3) section with answers to the 6 questions.
+Fill in the Wireframe Generator (1/2/3) section with answers to the 6 questions.
 Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
 <details>
-<summary><strong>Viewer</strong> - Run hot-reload viewer</summary>
+<summary><strong>Wireframe Generator 3</strong> - Create/fix SVG wireframes (parallel)</summary>
 
 ```
-You are the Viewer terminal.
-/prep viewer
+You are the Wireframe Generator-3 terminal.
+/prep wireframe-generator
+
+Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in the Wireframe Generator (1/2/3) section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
+</details>
+
+<details>
+<summary><strong>Preview Host</strong> - Run hot-reload viewer</summary>
+
+```
+You are the Preview Host terminal.
+/prep preview-host
 
 Skills: /hot-reload-viewer
 ```
@@ -270,11 +273,11 @@ Bonus: Suggest a better title for your role if you have one!
 </details>
 
 <details>
-<summary><strong>Reviewer</strong> - Analyze screenshots, document issues</summary>
+<summary><strong>Wireframe QA</strong> - Analyze screenshots, document issues</summary>
 
 ```
-You are the Reviewer terminal.
-/prep reviewer
+You are the Wireframe QA terminal.
+/prep wireframe-qa
 
 Skills: /wireframe-screenshots, /wireframe-review
 ```
@@ -342,11 +345,11 @@ Bonus: Suggest a better title for your role if you have one!
 </details>
 
 <details>
-<summary><strong>Tester</strong> - Run test suites</summary>
+<summary><strong>Test Engineer</strong> - Run test suites</summary>
 
 ```
-You are the Tester terminal.
-/prep tester
+You are the Test Engineer terminal.
+/prep test-engineer
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
 ```
@@ -360,11 +363,11 @@ Bonus: Suggest a better title for your role if you have one!
 </details>
 
 <details>
-<summary><strong>Implementer</strong> - Execute SpecKit workflow</summary>
+<summary><strong>Developer</strong> - Execute SpecKit workflow</summary>
 
 ```
-You are the Implementer terminal.
-/prep implementer
+You are the Developer terminal.
+/prep developer
 
 Skills: /speckit.implement, /speckit.tasks
 ```
@@ -393,6 +396,74 @@ Read docs/interoffice/audits/2026-01-14-organizational-review.md
 Fill in your section with answers to the 6 questions.
 Bonus: Suggest a better title for your role if you have one!
 ```
+</details>
+
+<details>
+<summary><strong>QA Lead</strong> - Process compliance and UAT coordination</summary>
+
+```
+You are the QA Lead terminal.
+/prep qa-lead
+
+Skills: Process compliance, acceptance criteria verification, UAT coordination
+Reports to: Architect
+```
+
+**QA Focus:**
+- Verify acceptance criteria before marking tasks complete
+- Coordinate user acceptance testing
+- Ensure process compliance across terminals
+- Review test coverage gaps with Tester
+</details>
+
+<details>
+<summary><strong>Technical Writer</strong> - User documentation and API docs</summary>
+
+```
+You are the Technical Writer terminal.
+/prep tech-writer
+
+Skills: User documentation, API docs, tutorials, developer guides
+Reports to: CTO
+```
+
+**Documentation Focus:**
+- End-user documentation (distinct from Author's blog posts)
+- API reference documentation
+- Tutorials and getting-started guides
+- Developer onboarding materials
+</details>
+
+<details>
+<summary><strong>Operator</strong> - Meta-orchestrator (runs OUTSIDE tmux)</summary>
+
+```
+You are the Operator terminal - the meta-orchestrator.
+
+You run OUTSIDE the tmux session, managing 21 worker terminals INSIDE it.
+
+## Quick Start
+
+# 1. Launch workers
+./scripts/tmux-session.sh --all
+# Ctrl+b d to detach
+
+# 2. Check status
+./scripts/tmux-dispatch.sh --status
+
+# 3. Dispatch work
+./scripts/tmux-dispatch.sh --vote    # RFC votes
+./scripts/tmux-dispatch.sh --tasks   # Audit items
+./scripts/tmux-dispatch.sh --queue   # Wireframe queue
+
+# 4. Monitor
+tmux capture-pane -t scripthammer:4 -p | tail -30
+
+# 5. Attach to observe
+tmux attach -t scripthammer
+```
+
+**Note:** Operator does not participate in audits - it orchestrates them.
 </details>
 
 ---
@@ -3347,7 +3418,7 @@ Automate multi-terminal sessions with the launcher script. Each terminal opens w
 
 **Custom mix (pick specific roles):**
 ```bash
-./scripts/tmux-session.sh CTO Architect Implementer Tester
+./scripts/tmux-session.sh CTO Architect Developer TestEngineer
 ```
 
 #### Reattach to Existing Session
@@ -3360,9 +3431,9 @@ tmux attach -t scripthammer
 
 | Flag | Terminals | Use Case |
 |------|-----------|----------|
-| `--wireframe` | Planner, Generator1-3, Viewer, Reviewer, Validator, Inspector | SVG production |
+| `--wireframe` | Planner, WireframeGenerator1-3, PreviewHost, WireframeQA, Validator, Inspector | SVG production |
 | `--council` | CTO, Architect, Security, Toolsmith, DevOps, ProductOwner | Strategic decisions |
-| `--implement` | Implementer, Tester, Auditor | Code implementation |
+| `--implement` | Developer, TestEngineer, Auditor | Code implementation |
 | `--coord` | Coordinator, CTO | Quick coordination |
 | `--all` | All 19 roles | Quarterly audit |
 
@@ -3400,6 +3471,41 @@ Then reload: `source ~/.bashrc`
 | **←/→** | Previous/Next wireframe |
 | **↑/↓** or **+/-** | Zoom in/out |
 | **0** | Reset zoom to 85% |
+
+## 🛠️ Development Setup
+
+### Pre-commit Hooks
+
+Install pre-commit hooks for automated linting on every commit:
+
+```bash
+# Install pre-commit (if not installed)
+pip install pre-commit
+
+# Install hooks for this repo
+pre-commit install
+
+# Run manually on all files
+pre-commit run --all-files
+```
+
+**What gets checked:**
+- Python files: Ruff linter + formatter
+- YAML files: Syntax validation
+- JSON files: Syntax validation
+- Markdown: Style checks
+- Shell scripts: ShellCheck
+- SVG wireframes: Custom validator
+
+### Docker Services
+
+```bash
+# Start wireframe viewer
+cd docs/design/wireframes && docker compose up viewer
+
+# Run wireframe review (screenshots + validation)
+docker compose run review 002
+```
 
 ## 🔨 Why "ScriptHammer"?
 

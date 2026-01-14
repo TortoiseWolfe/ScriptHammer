@@ -7,6 +7,13 @@ services:
       - .:/app
     working_dir: /app
     command: npx live-server --port=3000 --host=0.0.0.0
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
 
   # Wireframe review: takes screenshots + runs validator
   # Usage: docker compose run review 002
