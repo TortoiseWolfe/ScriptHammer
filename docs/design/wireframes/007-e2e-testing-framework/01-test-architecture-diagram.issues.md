@@ -11,17 +11,20 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 1 |
+| Open | 4 |
 
 ---
 
 ## Open Issues (2026-01-13 Review)
 
-### Mobile Issues
+### Font Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| M-01 | Mobile content y=35 overlaps header zone (must be y >= 78) | MOBILE-001 | REGENERATE |
+| F-01 | Font size 12.0px below minimum 14px: '2' | FONT-001 | PATCH |
+| F-02 | Font size 12.0px below minimum 14px: '3' | FONT-001 | PATCH |
+| F-03 | Font size 12.0px below minimum 14px: '1' | FONT-001 | PATCH |
+| F-04 | Font size 12.0px below minimum 14px: '4' | FONT-001 | PATCH |
 
 ---
 

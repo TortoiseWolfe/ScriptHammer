@@ -27,11 +27,11 @@ Copy a block to prime a new terminal. Each primer auto-loads focused context via
                   │       └──────────────┘
                   │             │
                   ▼             ▼
-          ┌──────────┐  ┌──────────┐  ┌──────────┐
-          │  Viewer  │─►│ Reviewer │─►│Validator │
-          └────┬─────┘  └──────────┘  └────┬─────┘
-               └───────────────────────────┘
-                      (feedback loop)
+          ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+          │  Viewer  │─►│ Reviewer │─►│Validator │─►│Inspector │
+          └────┬─────┘  └──────────┘  └──────────┘  └────┬─────┘
+               └──────────────────────────────────────────┘
+                              (feedback loop)
 
 ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
 │   Author    │  │   Tester    │  │ Implementer │  │   Auditor   │
@@ -134,6 +134,17 @@ You are the Validator terminal.
 /prep validator
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
+```
+</details>
+
+<details>
+<summary><strong>Inspector</strong> - Cross-SVG consistency checker</summary>
+
+```
+You are the Inspector terminal.
+/prep inspector
+
+Skills: /wireframe-inspect, python3 docs/design/wireframes/inspect-wireframes.py
 ```
 </details>
 

@@ -20,154 +20,248 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- CENTERED TITLE -->
-  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
         font-size="18" font-weight="700" fill="#374151" letter-spacing="1">
     E2E TESTING - TEST ARCHITECTURE
   </text>
 
   <!-- Section labels -->
   <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="bold">DESKTOP (Full-Width Architecture)</text>
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
   <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
-        font-size="15" font-weight="bold">MOBILE (Same Architecture)</text>
+        font-size="15" font-weight="bold">MOBILE</text>
 
-  <!-- Include references (hidden for architecture diagram) -->
-  <g id="desktop" transform="translate(40, 60)" opacity="0">
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
     <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
-    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
-  </g>
-  <g id="mobile" transform="translate(1920, 60)" opacity="0">
-    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
-    <!-- Placeholder to satisfy MOBILE-001 validator check -->
-    <rect x="0" y="78" width="360" height="1" fill="none"/>
-    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
-  </g>
-
-  <!-- DIAGRAM AREA -->
-  <g id="diagram" transform="translate(40, 60)">
-    <rect width="1840" height="700" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
 
     <!-- Row 1: Test Files + Dev Server -->
-
     <!-- Test Files Panel -->
-    <g transform="translate(100, 40)">
-      <rect width="400" height="120" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
-      <text x="200" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Test Spec Files</text>
-      <text x="200" y="60" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">e2e/tests/*.spec.ts</text>
-      <text x="200" y="85" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">homepage.spec.ts</text>
-      <text x="200" y="105" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">theme.spec.ts, pwa.spec.ts</text>
+    <g transform="translate(60, 60)">
+      <rect width="320" height="100" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="160" y="30" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Test Spec Files</text>
+      <text x="160" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">e2e/tests/*.spec.ts</text>
+      <text x="160" y="75" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">homepage, theme, pwa</text>
     </g>
     <!-- Callout ② on Test Files -->
-    <g transform="translate(520, 80)">
-      <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
-    </g>
+    <circle cx="395" cy="100" r="14" fill="#dc2626"/>
+    <text x="395" y="105" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">2</text>
 
     <!-- Dev Server Panel -->
-    <g transform="translate(1340, 40)">
-      <rect width="400" height="120" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
-      <text x="200" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Dev Server</text>
-      <text x="200" y="60" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">localhost:3000</text>
-      <text x="200" y="85" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">Next.js Static Export</text>
-      <text x="200" y="105" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">npm run dev</text>
+    <g transform="translate(900, 60)">
+      <rect width="320" height="100" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="160" y="30" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Dev Server</text>
+      <text x="160" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">localhost:3000</text>
+      <text x="160" y="75" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">Next.js Static Export</text>
     </g>
 
     <!-- Row 2: Playwright Test Runner (Central) -->
-    <g transform="translate(620, 200)">
-      <rect width="600" height="140" rx="12" fill="#312e81" stroke="#8b5cf6" stroke-width="3"/>
-      <text x="300" y="45" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Playwright Test Runner</text>
-      <text x="300" y="75" text-anchor="middle" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="16">@playwright/test</text>
-      <text x="300" y="100" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Parallel execution | Auto-retries | Multi-browser</text>
-      <text x="300" y="125" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">npx playwright test</text>
+    <g transform="translate(340, 190)">
+      <rect width="600" height="100" rx="12" fill="#312e81" stroke="#8b5cf6" stroke-width="3"/>
+      <text x="300" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Playwright Test Runner</text>
+      <text x="300" y="58" text-anchor="middle" fill="#a5b4fc" font-family="system-ui, sans-serif" font-size="14">@playwright/test</text>
+      <text x="300" y="80" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Parallel | Auto-retries | Multi-browser</text>
     </g>
     <!-- Callout ③ on Test Runner -->
-    <g transform="translate(1240, 250)">
-      <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
-    </g>
+    <circle cx="955" cy="230" r="14" fill="#dc2626"/>
+    <text x="955" y="235" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">3</text>
 
     <!-- Flow arrows from Test Files to Runner -->
-    <line x1="300" y1="160" x2="300" y2="190" stroke="#8b5cf6" stroke-width="2"/>
-    <line x1="300" y1="190" x2="620" y2="270" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="220" y1="160" x2="220" y2="175" stroke="#8b5cf6" stroke-width="2"/>
+    <line x1="220" y1="175" x2="340" y2="220" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
 
     <!-- Flow arrow from Dev Server to Runner -->
-    <line x1="1540" y1="160" x2="1540" y2="190" stroke="#8b5cf6" stroke-width="2"/>
-    <line x1="1540" y1="190" x2="1220" y2="270" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="1060" y1="160" x2="1060" y2="175" stroke="#8b5cf6" stroke-width="2"/>
+    <line x1="1060" y1="175" x2="940" y2="220" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
 
     <!-- Row 3: Browser Engines -->
-    <g transform="translate(320, 400)">
+    <g transform="translate(60, 320)">
       <!-- Chrome -->
       <g transform="translate(0, 0)">
-        <rect width="280" height="100" rx="8" fill="#334155" stroke="#22c55e" stroke-width="2"/>
-        <circle cx="50" cy="50" r="25" fill="#4285f4"/>
-        <text x="50" y="55" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">C</text>
-        <text x="170" y="40" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Chromium</text>
-        <text x="170" y="65" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Chrome / Edge</text>
-        <text x="170" y="85" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">Primary</text>
+        <rect width="220" height="80" rx="8" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+        <circle cx="40" cy="40" r="20" fill="#4285f4"/>
+        <text x="40" y="45" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">C</text>
+        <text x="140" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Chromium</text>
+        <text x="140" y="55" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Chrome/Edge</text>
       </g>
       <!-- Firefox -->
-      <g transform="translate(320, 0)">
-        <rect width="280" height="100" rx="8" fill="#334155" stroke="#f97316" stroke-width="2"/>
-        <circle cx="50" cy="50" r="25" fill="#ff7139"/>
-        <text x="50" y="55" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">F</text>
-        <text x="170" y="40" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Firefox</text>
-        <text x="170" y="65" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Gecko Engine</text>
-        <text x="170" y="85" text-anchor="middle" fill="#f97316" font-family="system-ui, sans-serif" font-size="14">Cross-check</text>
+      <g transform="translate(260, 0)">
+        <rect width="220" height="80" rx="8" fill="#334155" stroke="#f97316" stroke-width="2"/>
+        <circle cx="40" cy="40" r="20" fill="#ff7139"/>
+        <text x="40" y="45" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">F</text>
+        <text x="140" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Firefox</text>
+        <text x="140" y="55" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Gecko</text>
       </g>
       <!-- Safari/WebKit -->
-      <g transform="translate(640, 0)">
-        <rect width="280" height="100" rx="8" fill="#334155" stroke="#60a5fa" stroke-width="2"/>
-        <circle cx="50" cy="50" r="25" fill="#0071e3"/>
-        <text x="50" y="55" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">S</text>
-        <text x="170" y="40" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">WebKit</text>
-        <text x="170" y="65" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Safari Engine</text>
-        <text x="170" y="85" text-anchor="middle" fill="#60a5fa" font-family="system-ui, sans-serif" font-size="14">iOS/macOS</text>
+      <g transform="translate(520, 0)">
+        <rect width="220" height="80" rx="8" fill="#334155" stroke="#60a5fa" stroke-width="2"/>
+        <circle cx="40" cy="40" r="20" fill="#0071e3"/>
+        <text x="40" y="45" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">S</text>
+        <text x="140" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">WebKit</text>
+        <text x="140" y="55" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Safari</text>
+      </g>
+      <!-- Mobile Viewport -->
+      <g transform="translate(780, 0)">
+        <rect width="160" height="80" rx="8" fill="#334155" stroke="#d946ef" stroke-width="2"/>
+        <text x="80" y="35" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Mobile</text>
+        <text x="80" y="55" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Pixel 5</text>
       </g>
     </g>
     <!-- Callout ① on Browsers -->
-    <g transform="translate(1260, 450)">
-      <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
-    </g>
+    <circle cx="1020" cy="360" r="14" fill="#dc2626"/>
+    <text x="1020" y="365" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">1</text>
 
     <!-- Flow arrows from Runner to Browsers -->
-    <line x1="920" y1="340" x2="920" y2="380" stroke="#8b5cf6" stroke-width="2"/>
-    <line x1="920" y1="380" x2="460" y2="400" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
-    <line x1="920" y1="380" x2="920" y2="400" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
-    <line x1="920" y1="380" x2="1380" y2="400" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="640" y1="290" x2="640" y2="310" stroke="#8b5cf6" stroke-width="2"/>
+    <line x1="640" y1="310" x2="170" y2="320" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="640" y1="310" x2="430" y2="320" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="640" y1="310" x2="690" y2="320" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
 
     <!-- Row 4: Outputs -->
-    <g transform="translate(320, 560)">
+    <g transform="translate(60, 430)">
       <!-- Reports -->
       <g transform="translate(0, 0)">
-        <rect width="400" height="100" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
-        <text x="200" y="35" text-anchor="middle" fill="#60a5fa" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">HTML Reports</text>
-        <text x="200" y="60" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">playwright-report/</text>
-        <text x="200" y="85" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Pass/Fail status | Timing | Screenshots</text>
+        <rect width="320" height="80" rx="8" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+        <text x="160" y="30" text-anchor="middle" fill="#60a5fa" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">HTML Reports</text>
+        <text x="160" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">playwright-report/</text>
+        <text x="160" y="70" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Pass/Fail | Timing</text>
       </g>
       <!-- Artifacts -->
-      <g transform="translate(520, 0)">
-        <rect width="400" height="100" rx="8" fill="#3f1f1f" stroke="#ef4444" stroke-width="2"/>
-        <text x="200" y="35" text-anchor="middle" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Debug Artifacts</text>
-        <text x="200" y="60" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">test-results/</text>
-        <text x="200" y="85" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Screenshots | Videos | Traces</text>
+      <g transform="translate(360, 0)">
+        <rect width="320" height="80" rx="8" fill="#3f1f1f" stroke="#ef4444" stroke-width="2"/>
+        <text x="160" y="30" text-anchor="middle" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Debug Artifacts</text>
+        <text x="160" y="52" text-anchor="middle" fill="#94a3b8" font-family="monospace" font-size="14">test-results/</text>
+        <text x="160" y="70" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Screenshots | Videos | Traces</text>
+      </g>
+      <!-- CI/CD -->
+      <g transform="translate(720, 0)">
+        <rect width="240" height="80" rx="8" fill="#1f2937" stroke="#22c55e" stroke-width="2"/>
+        <text x="120" y="30" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">GitHub Actions</text>
+        <text x="120" y="52" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">PR triggers test run</text>
+        <text x="120" y="70" text-anchor="middle" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Auto-retry on flakes</text>
       </g>
     </g>
     <!-- Callout ④ on Artifacts -->
-    <g transform="translate(1260, 610)">
-      <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
-    </g>
+    <circle cx="740" cy="470" r="14" fill="#dc2626"/>
+    <text x="740" y="475" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">4</text>
 
     <!-- Flow arrows from Browsers to Outputs -->
-    <line x1="600" y1="500" x2="520" y2="560" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
-    <line x1="1100" y1="500" x2="1040" y2="560" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <line x1="170" y1="400" x2="170" y2="430" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+    <line x1="430" y1="400" x2="530" y2="430" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
 
+    <!-- Active nav state for Docs -->
+    <rect x="580" y="3" width="60" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="610" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) - Content safe area y >= 78 -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Architecture View - y starts at 85 (MOBILE-001 fix: y >= 78) -->
+    <text x="180" y="100" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#ffffff">Test Architecture</text>
+
+    <!-- Test Files -->
+    <rect x="20" y="120" width="150" height="50" rx="4" fill="#334155" stroke="#475569"/>
+    <text x="95" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#ffffff">Test Specs</text>
+    <!-- Callout ② -->
+    <circle cx="185" cy="145" r="12" fill="#dc2626"/>
+    <text x="185" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#fff">2</text>
+
+    <!-- Playwright -->
+    <rect x="200" y="120" width="140" height="50" rx="4" fill="#312e81" stroke="#8b5cf6"/>
+    <text x="270" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#ffffff">Playwright</text>
+    <!-- Callout ③ -->
+    <circle cx="348" cy="145" r="12" fill="#dc2626"/>
+    <text x="348" y="150" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#fff">3</text>
+
+    <!-- Arrow -->
+    <line x1="170" y1="145" x2="200" y2="145" stroke="#8b5cf6" stroke-width="2"/>
+
+    <!-- Browser Grid -->
+    <text x="180" y="195" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#ffffff">Browsers</text>
+
+    <rect x="20" y="210" width="100" height="40" rx="4" fill="#334155" stroke="#22c55e"/>
+    <text x="70" y="235" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#ffffff">Chrome</text>
+
+    <rect x="130" y="210" width="100" height="40" rx="4" fill="#334155" stroke="#f97316"/>
+    <text x="180" y="235" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#ffffff">Firefox</text>
+
+    <rect x="240" y="210" width="100" height="40" rx="4" fill="#334155" stroke="#60a5fa"/>
+    <text x="290" y="235" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#ffffff">Safari</text>
+    <!-- Callout ① -->
+    <circle cx="348" cy="230" r="12" fill="#dc2626"/>
+    <text x="348" y="235" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#fff">1</text>
+
+    <!-- CI/CD Box -->
+    <rect x="20" y="270" width="320" height="70" rx="4" fill="#1f2937" stroke="#22c55e"/>
+    <text x="180" y="295" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#22c55e">GitHub Actions</text>
+    <text x="180" y="318" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#94a3b8">PR → Test → Pass/Fail</text>
+
+    <!-- Test Artifacts -->
+    <text x="180" y="365" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#ffffff">Artifacts</text>
+    <!-- Callout ④ -->
+    <circle cx="250" cy="360" r="12" fill="#dc2626"/>
+    <text x="250" y="365" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#fff">4</text>
+
+    <rect x="20" y="380" width="100" height="40" rx="4" fill="#334155" stroke="#475569"/>
+    <text x="70" y="405" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#94a3b8">Screenshots</text>
+
+    <rect x="130" y="380" width="100" height="40" rx="4" fill="#334155" stroke="#475569"/>
+    <text x="180" y="405" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#94a3b8">Videos</text>
+
+    <rect x="240" y="380" width="100" height="40" rx="4" fill="#334155" stroke="#475569"/>
+    <text x="290" y="405" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#94a3b8">Traces</text>
+
+    <!-- HTML Report -->
+    <rect x="20" y="440" width="320" height="45" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+    <text x="180" y="468" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#60a5fa">HTML Reports</text>
+
+    <!-- User Journeys -->
+    <rect x="20" y="505" width="320" height="60" rx="4" fill="#334155" stroke="#475569"/>
+    <text x="180" y="530" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="bold" fill="#ffffff">User Journeys</text>
+    <text x="180" y="550" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#94a3b8">Auth, Forms, Dashboard</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Active nav state for Docs -->
+    <g transform="translate(180, 664)">
+      <rect width="90" height="56" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M5.625 1.5c-1.036 0-1.875.84-1.875 1.875v17.25c0 1.035.84 1.875 1.875 1.875h12.75c1.035 0 1.875-.84 1.875-1.875V12.75A3.75 3.75 0 0 0 16.5 9h-1.875a1.875 1.875 0 0 1-1.875-1.875V5.25A3.75 3.75 0 0 0 9 1.5H5.625ZM7.5 15a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5h-7.5A.75.75 0 0 1 7.5 15Zm.75 2.25a.75.75 0 0 0 0 1.5H12a.75.75 0 0 0 0-1.5H8.25Z"/>
+        <path d="M12.971 1.816A5.23 5.23 0 0 1 14.25 5.25v1.875c0 .207.168.375.375.375H16.5a5.23 5.23 0 0 1 3.434 1.279 9.768 9.768 0 0 0-6.963-6.963Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+    </g>
   </g>
 
   <!-- ANNOTATION PANEL -->
   <g id="annotations" transform="translate(40, 800)">
-    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
 
     <!-- Column 1: US-001 Cross-Browser Execution -->
     <g transform="translate(20, 20)">

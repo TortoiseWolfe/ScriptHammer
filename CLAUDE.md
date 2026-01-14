@@ -78,6 +78,14 @@ You are the Validator terminal.
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
 
+### Inspector
+```
+You are the Inspector terminal.
+/prep inspector
+
+Skills: /wireframe-inspect, python3 docs/design/wireframes/inspect-wireframes.py
+```
+
 ### Author
 ```
 You are the Author terminal.
@@ -171,6 +179,7 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 | **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
 | **Reviewer** | Analyze screenshots, document issues in `*.issues.md` files per SVG | `NNN-feature/*.issues.md` |
 | **Validator** | Add `_check_*()` methods, manage `GENERAL_ISSUES.md` escalation | `validate-wireframe.py`, `GENERAL_ISSUES.md` |
+| **Inspector** | Cross-SVG consistency checks, pattern enforcement | `inspect-wireframes.py`, `*.issues.md` |
 | **Author** | Blog posts, social media, release notes, workflow documentation | `docs/*.md` |
 | **Tester** | Run Vitest, Playwright, Pa11y, report coverage gaps | `*.test.ts`, `*.spec.ts` |
 | **Implementer** | Convert specs + wireframes into actual code | `src/**/*.tsx` |
@@ -188,12 +197,12 @@ This project uses multiple Claude Code terminals working as a team. Each termina
                         │           ┌─────────────┐
                         │      ┌───▶│ Generator-1 │───┐
 ┌─────────┐             │      │    └─────────────┘   │
-│ Planner │─────────────┼──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator
-│ assigns │             │      │    └─────────────┘   │
-└─────────┘             │      └───▶│ Generator-3 │───┘
-                        │           └─────────────┘
-                        │                 │
-                        └─────────────────┴──────────────────────────────────────────┘
+│ Planner │─────────────┼──────┼───▶│ Generator-2 │───┼───▶ Viewer ───▶ Reviewer ───▶ Validator ───▶ Inspector
+│ assigns │             │      │    └─────────────┘   │                                                  │
+└─────────┘             │      └───▶│ Generator-3 │───┘                                                  │
+                        │           └─────────────┘                                                      │
+                        │                 │                                                              │
+                        └─────────────────┴──────────────────────────────────────────────────────────────┘
                                            (feedback loop)
 
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
@@ -256,6 +265,13 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Maintain `GENERAL_ISSUES.md` with G-XXX entries
 - Run `--check-escalation` to find patterns across features
 - Update `/wireframe` skill rules when adding new checks
+
+**If you are the Inspector terminal:**
+- Focus: Cross-SVG consistency across all features
+- Run `inspect-wireframes.py` to compare structural patterns
+- Check headers, footers, navigation, signatures, titles for consistency
+- Flag oddballs that deviate from majority patterns
+- Log issues to per-SVG `*.issues.md` files with PATTERN_VIOLATION classification
 
 **If you are the Author terminal:**
 - Focus: Documentation and communication

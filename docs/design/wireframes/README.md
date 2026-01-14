@@ -17,6 +17,12 @@ python validate-wireframe.py --all                        # Validate all SVGs
 python validate-wireframe.py --check-escalation           # Find issues to escalate
 ```
 
+### Inspection (Cross-SVG Consistency)
+```bash
+python inspect-wireframes.py --all                        # Check all SVGs for pattern deviations
+python inspect-wireframes.py --report                     # JSON report only
+```
+
 ### Issue Tracking
 - **Auto-logged**: Validator writes issues to `NNN-feature/*.issues.md`
 - **Escalation**: Issues seen in 2+ features promote to `GENERAL_ISSUES.md`

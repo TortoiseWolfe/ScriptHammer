@@ -8,6 +8,7 @@ This file provides guidance for terminals working in the wireframes folder.
 - **Viewer** - Runs hot-reload viewer for preview
 - **Reviewer** - Screenshots and documents issues
 - **Validator** - Maintains validation script and escalation
+- **Inspector** - Cross-SVG consistency checks across all features
 
 ## SVG Wireframe Rules
 
@@ -55,6 +56,10 @@ Reviewer classifies (PATCH vs REGEN)
 Generator fixes based on classification
        ↓
 Repeat until PASS
+       ↓
+Inspector checks cross-SVG consistency
+       ↓
+Pattern violations logged to *.issues.md
 ```
 
 ## Issue Classification
@@ -77,11 +82,36 @@ Repeat until PASS
 python validate-wireframe.py --check-escalation
 ```
 
+## Inspector Checks
+
+The Inspector terminal runs cross-SVG consistency checks after Validator passes:
+
+| Check | Expected Pattern |
+|-------|-----------------|
+| Title position | x=960, y=28 (centered) |
+| Signature position | y=1060, bold |
+| Desktop header | `includes/header-desktop.svg` at y=0 |
+| Desktop footer | `includes/footer-desktop.svg` at y=640 |
+| Mobile header | `includes/header-mobile.svg` at y=0-78 |
+| Mobile footer | `includes/footer-mobile.svg` at y=664 |
+| Desktop mockup | x=40, y=60, 1280×720 |
+| Mobile mockup | x=1360, y=60, 360×720 |
+| Annotation panel | x=40, y=800, 1840×220 |
+| Nav active state | Matches page context |
+
+```bash
+# Run cross-SVG inspection
+python inspect-wireframes.py --all
+```
+
+**Classification**: PATTERN_VIOLATION (for Inspector issues)
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
 | `validate-wireframe.py` | Automated SVG validation (v5.2) |
+| `inspect-wireframes.py` | Cross-SVG consistency checker |
 | `screenshot-wireframes.py` | Screenshot tool (6 images per SVG) |
 | `GENERAL_ISSUES.md` | Recurring mistakes catalog |
 | `NNN-feature/*.issues.md` | Feature-specific issues |
@@ -92,15 +122,15 @@ python validate-wireframe.py --check-escalation
 Valid status values and transitions for `.terminal-status.json`:
 
 ```
-                    ┌──────────────────────────────────┐
-                    │                                  │
-                    ▼                                  │
-planning ──► queued ──► generating ──► validating ──► review ──► approved
-                            │              │            │
-                            │              ▼            │
-                            │           failed         │
-                            │              │            │
-                            └──────────────┴── issues ◄─┘
+                    ┌───────────────────────────────────────────────────────────┐
+                    │                                                           │
+                    ▼                                                           │
+planning ──► queued ──► generating ──► validating ──► review ──► inspecting ──► approved
+                            │              │            │            │
+                            │              ▼            │            │
+                            │           failed         │            │
+                            │              │            │            │
+                            └──────────────┴── issues ◄─┴────────────┘
 ```
 
 | Status | Description | Next States |
@@ -109,7 +139,8 @@ planning ──► queued ──► generating ──► validating ──► re
 | `queued` | In queue, waiting for Generator | `generating` |
 | `generating` | Generator actively working | `validating`, `failed` |
 | `validating` | Validator running checks | `review`, `issues` |
-| `review` | Reviewer analyzing screenshots | `approved`, `issues` |
+| `review` | Reviewer analyzing screenshots | `inspecting`, `issues` |
+| `inspecting` | Inspector checking cross-SVG consistency | `approved`, `issues` |
 | `issues` | Problems found, needs regen | `generating` |
 | `approved` | Passed all checks | (terminal state) |
 | `failed` | Unrecoverable error | (terminal state) |
@@ -118,7 +149,8 @@ planning ──► queued ──► generating ──► validating ──► re
 - Only Manager can transition `planning` → `queued`
 - Only Generator can transition `queued` → `generating`
 - Validator auto-transitions `generating` → `validating` → `review` or `issues`
-- Reviewer transitions `review` → `approved` or `issues`
+- Reviewer transitions `review` → `inspecting` or `issues`
+- Inspector transitions `inspecting` → `approved` or `issues`
 - `issues` always goes back to `generating` (via REGEN queue)
 
 ## Viewer Shortcuts
