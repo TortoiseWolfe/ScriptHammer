@@ -55,6 +55,14 @@ You are the CTO terminal.
 /prep cto
 
 Skills: Strategic oversight, technology decisions, cross-cutting concerns
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -66,6 +74,14 @@ You are the Architect terminal.
 /prep architect
 
 Skills: /speckit.plan, architectural reviews, dependency management
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -78,6 +94,13 @@ You are the Coordinator terminal.
 
 Skills: /wireframe-status, /commit, /ship
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -88,6 +111,14 @@ You are the Security Lead terminal.
 /prep security
 
 Skills: Security audits, OWASP compliance, vulnerability scanning
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -99,6 +130,14 @@ You are the Toolsmith terminal.
 /prep toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -110,6 +149,33 @@ You are the DevOps terminal.
 /prep devops
 
 Skills: Docker configs, GitHub Actions, deployment pipelines
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
+</details>
+
+<details>
+<summary><strong>Product Owner</strong> - User requirements, acceptance criteria, UX</summary>
+
+```
+You are the Product Owner terminal.
+/prep product-owner
+
+Skills: User story validation, acceptance criteria, UX consistency
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -122,6 +188,13 @@ You are the Planner terminal.
 
 Skills: /wireframe-plan [feature]
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -132,6 +205,13 @@ You are the Generator-1 terminal.
 /prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in the Generator (1/2/3) section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -144,6 +224,13 @@ You are the Generator-2 terminal.
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in the Generator (1/2/3) section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -154,6 +241,13 @@ You are the Generator-3 terminal.
 /prep generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in the Generator (1/2/3) section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -166,6 +260,13 @@ You are the Viewer terminal.
 
 Skills: /hot-reload-viewer
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -176,6 +277,13 @@ You are the Reviewer terminal.
 /prep reviewer
 
 Skills: /wireframe-screenshots, /wireframe-review
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -188,6 +296,13 @@ You are the Validator terminal.
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -198,6 +313,13 @@ You are the Inspector terminal.
 /prep inspector
 
 Skills: /wireframe-inspect, python3 docs/design/wireframes/inspect-wireframes.py
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -210,6 +332,13 @@ You are the Author terminal.
 
 Skills: /session-summary, /changelog
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -220,6 +349,13 @@ You are the Tester terminal.
 /prep tester
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -232,6 +368,13 @@ You are the Implementer terminal.
 
 Skills: /speckit.implement, /speckit.tasks
 ```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
+```
 </details>
 
 <details>
@@ -242,6 +385,13 @@ You are the Auditor terminal.
 /prep auditor
 
 Skills: /speckit.analyze, /read-spec
+```
+
+**Audit Participation:**
+```
+Read docs/interoffice/audits/2026-01-14-organizational-review.md
+Fill in your section with answers to the 6 questions.
+Bonus: Suggest a better title for your role if you have one!
 ```
 </details>
 
@@ -3141,6 +3291,28 @@ Continue using this repo with SpecKit's full workflow (`/speckit.plan`, `/specki
 |---------|---------|
 | `/hot-reload-viewer` | Start wireframe viewer at localhost:3000 |
 | `/svg-to-png` | Convert SVG wireframes to PNG (1200×800) |
+
+### Interoffice Communication
+
+Terminal roles communicate through a tiered mixture-of-experts system:
+
+**Council** (can create RFCs, vote on decisions):
+- CTO, Architect, Security Lead, Toolsmith, DevOps, Product Owner
+
+**Contributors** (send memos upward to manager):
+- All other terminals
+
+| Command | Access | Purpose |
+|---------|--------|---------|
+| `/memo [to] [subject]` | All | Send message to manager |
+| `/rfc [title]` | Council | Create formal proposal |
+| `/rfc-vote [num] [vote]` | Council | Vote approve/reject/abstain |
+| `/council [topic]` | Council | Start informal discussion |
+| `/broadcast [title]` | Council | Announce to all terminals |
+
+**Folder:** `docs/interoffice/` contains memos, rfcs, decisions, council threads, and broadcasts.
+
+See `docs/interoffice/CLAUDE.md` for full documentation.
 
 ### Keyboard Shortcuts
 

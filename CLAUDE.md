@@ -12,6 +12,7 @@ You are the CTO terminal.
 /prep cto
 
 Skills: Strategic oversight, technology decisions, cross-cutting concerns
+Council: /rfc, /rfc-vote, /council, /broadcast
 ```
 
 ### Architect
@@ -20,6 +21,7 @@ You are the Architect terminal.
 /prep architect
 
 Skills: /speckit.plan, architectural reviews, dependency management
+Council: /rfc, /rfc-vote, /council, /broadcast
 ```
 
 ### Coordinator
@@ -36,6 +38,7 @@ You are the Security Lead terminal.
 /prep security
 
 Skills: Security audits, OWASP compliance, vulnerability scanning
+Council: /rfc, /rfc-vote, /council, /broadcast
 ```
 
 ### Toolsmith
@@ -44,6 +47,7 @@ You are the Toolsmith terminal.
 /prep toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
+Council: /rfc, /rfc-vote, /council, /broadcast
 ```
 
 ### DevOps
@@ -52,6 +56,16 @@ You are the DevOps terminal.
 /prep devops
 
 Skills: Docker configs, GitHub Actions, deployment pipelines
+Council: /rfc, /rfc-vote, /council, /broadcast
+```
+
+### Product Owner
+```
+You are the Product Owner terminal.
+/prep product-owner
+
+Skills: User story validation, acceptance criteria, UX consistency
+Council: /rfc, /rfc-vote, /council, /broadcast
 ```
 
 ### Planner
@@ -210,6 +224,7 @@ This project uses multiple Claude Code terminals working as a team. Each termina
 | **Security Lead** | Security review, OWASP compliance, vulnerability scanning | Security features, auth flows |
 | **Toolsmith** | Maintain skill files, refactor tools, optimize validator | `~/.claude/commands/*.md`, `validate-wireframe.py` |
 | **DevOps** | CI/CD, Docker configs, deployment pipelines, GitHub Actions | `docker-compose.yml`, `.github/workflows/` |
+| **Product Owner** | User story validation, acceptance criteria, UX consistency | Feature specs, user requirements |
 | **Planner** | Analyze spec, create SVG assignments, hand off to Generators | `features/*/spec.md` |
 | **Generator 1/2/3** | Create SVGs using `/wireframe` skill, fix validation errors (3 parallel) | `NNN-feature/*.svg` |
 | **Viewer** | Run `/hot-reload-viewer`, enable screenshot capture | `index.html`, viewer assets |
@@ -322,6 +337,14 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Configure deployment to GitHub Pages
 - Build optimization and caching
 
+**If you are the Product Owner terminal:**
+- Focus: User-facing requirements and experience
+- Validate user stories align with feature specs
+- Review acceptance criteria for completeness
+- Ensure UX consistency across features
+- Prioritize features from user perspective
+- Bridge gap between technical architecture and user needs
+
 **If you are the Planner terminal:**
 - Focus: Analyzing specs and planning SVG assignments
 - Read feature spec, identify screens needed
@@ -384,6 +407,73 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Use `/speckit.analyze` to check drift
 - Flag inconsistencies between spec, plan, tasks
 - Verify implementation matches wireframes
+
+## Interoffice Communication System
+
+Terminals communicate through a structured mixture-of-experts system with tiered access and consensus-based decision making.
+
+### Terminal Tiers
+
+**Council (RFC authors, voters):**
+| Terminal | Domain |
+|----------|--------|
+| CTO | Strategy, priorities, risk |
+| Architect | System design, patterns, tech stack |
+| Security Lead | Auth, OWASP, compliance |
+| Toolsmith | Skills, commands, automation |
+| DevOps | CI/CD, Docker, deployment |
+| Product Owner | User requirements, acceptance criteria, UX |
+
+**Contributors (memo upward only):**
+| Terminal | Reports To |
+|----------|------------|
+| Coordinator | CTO |
+| Planner, Reviewer, Inspector, Implementer | Architect |
+| Generator 1/2/3, Viewer | Coordinator |
+| Validator | Toolsmith |
+| Tester | DevOps |
+| Author, Auditor | CTO |
+
+### Communication Channels
+
+| Channel | Purpose | Access |
+|---------|---------|--------|
+| `/memo [to] [subject]` | Send message to manager | All terminals |
+| `/rfc [title]` | Create formal proposal | Council only |
+| `/rfc-vote [num] [vote]` | Cast vote on RFC | Council only |
+| `/council [topic]` | Start informal discussion | Council only |
+| `/broadcast [title]` | Announce to all terminals | Council only |
+
+### Folder Structure
+
+```
+docs/interoffice/
+├── memos/          # Contributor → Manager messages
+├── rfcs/           # Formal proposals (Council debates)
+├── decisions/      # Finalized decisions (DEC-XXX)
+├── council/        # Informal discussion threads
+└── broadcast/      # Announcements to all terminals
+```
+
+### RFC Workflow
+
+```
+draft → proposed → review → voting → decided
+                              ↓
+                          rejected
+```
+
+- **Consensus required**: All non-abstaining council members must approve
+- **Dissent logged**: Reject votes are recorded even if overruled
+- **Decision records**: Approved RFCs become DEC-XXX in `decisions/`
+
+### Integration
+
+- `/prep [terminal]` checks memos and broadcasts on startup
+- `/next` shows pending RFCs requiring votes
+- Topic routing maps questions to domain experts
+
+See `docs/interoffice/CLAUDE.md` for full documentation.
 
 ## Commands
 

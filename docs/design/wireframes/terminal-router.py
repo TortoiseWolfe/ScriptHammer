@@ -25,14 +25,34 @@ SCRIPT_DIR = Path(__file__).parent
 STATUS_FILE = SCRIPT_DIR / ".terminal-status.json"
 WIREFRAMES_DIR = SCRIPT_DIR
 IMPLEMENTATION_ORDER = SCRIPT_DIR.parent.parent.parent / "features" / "IMPLEMENTATION_ORDER.md"
+INTEROFFICE_DIR = SCRIPT_DIR.parent.parent / "interoffice"
 
 GENERATORS = ["generator-1", "generator-2", "generator-3"]
 ALL_ROLES = [
     "manager", "assistant-manager", "planner",
     "generator-1", "generator-2", "generator-3",
     "viewer", "reviewer", "validator", "inspector",
-    "author", "tester", "implementer", "auditor"
+    "author", "tester", "implementer", "auditor",
+    "cto", "architect", "security-lead", "toolsmith", "devops", "coordinator",
+    "product-owner"
 ]
+
+# Council members can create RFCs and vote
+COUNCIL_MEMBERS = ["cto", "architect", "security-lead", "toolsmith", "devops", "product-owner"]
+
+# Managers receive memos from contributors
+MEMO_RECIPIENTS = {
+    "cto": "to-cto.md",
+    "architect": "to-architect.md",
+    "security-lead": "to-security-lead.md",
+    "toolsmith": "to-toolsmith.md",
+    "devops": "to-devops.md",
+    "coordinator": "to-coordinator.md",
+    "product-owner": "to-product-owner.md",
+    # Aliases for existing roles
+    "manager": "to-coordinator.md",
+    "assistant-manager": "to-toolsmith.md",
+}
 
 
 @dataclass
@@ -151,6 +171,94 @@ def find_least_loaded_generator(data: Dict) -> Optional[str]:
     return None
 
 
+def count_pending_memos(role: str) -> int:
+    """Count pending memos for a manager role"""
+    if role not in MEMO_RECIPIENTS:
+        return 0
+
+    memo_file = INTEROFFICE_DIR / "memos" / MEMO_RECIPIENTS[role]
+    if not memo_file.exists():
+        return 0
+
+    try:
+        content = memo_file.read_text()
+        # Count memo entries (## YYYY-MM-DD lines before ## Archive)
+        archive_pos = content.find("## Archive")
+        if archive_pos == -1:
+            search_content = content
+        else:
+            search_content = content[:archive_pos]
+
+        # Count date-stamped memo headers
+        import re
+        return len(re.findall(r"^## \d{4}-\d{2}-\d{2}", search_content, re.MULTILINE))
+    except Exception:
+        return 0
+
+
+def count_rfcs_awaiting_vote(role: str) -> int:
+    """Count RFCs in voting state awaiting this council member's vote"""
+    if role not in COUNCIL_MEMBERS and role not in ["manager", "assistant-manager"]:
+        return 0
+
+    rfcs_dir = INTEROFFICE_DIR / "rfcs"
+    if not rfcs_dir.exists():
+        return 0
+
+    count = 0
+    for rfc_file in rfcs_dir.glob("RFC-*.md"):
+        try:
+            content = rfc_file.read_text()
+            # Check if status is voting
+            if "**Status**: voting" not in content:
+                continue
+
+            # Map role to council member name for vote check
+            role_to_stakeholder = {
+                "cto": "CTO",
+                "architect": "Architect",
+                "security-lead": "Security Lead",
+                "toolsmith": "Toolsmith",
+                "devops": "DevOps",
+                "product-owner": "Product Owner",
+                "manager": "CTO",  # Manager acts as CTO for voting
+                "assistant-manager": "Toolsmith",  # Assistant-manager acts as Toolsmith
+            }
+            stakeholder = role_to_stakeholder.get(role, "")
+
+            # Check if this stakeholder's vote is still pending
+            if f"| {stakeholder} | pending |" in content:
+                count += 1
+        except Exception:
+            continue
+
+    return count
+
+
+def get_interoffice_info(role: str) -> Dict[str, Any]:
+    """Get interoffice communication status for a role"""
+    info = {}
+
+    # Check for pending memos (managers only)
+    pending_memos = count_pending_memos(role)
+    if pending_memos > 0:
+        info["PENDING_MEMOS"] = pending_memos
+
+    # Check for RFCs awaiting vote (council members only)
+    rfcs_awaiting = count_rfcs_awaiting_vote(role)
+    if rfcs_awaiting > 0:
+        info["RFCS_AWAITING_VOTE"] = rfcs_awaiting
+
+    # Check for broadcasts (all roles)
+    broadcasts_dir = INTEROFFICE_DIR / "broadcast"
+    if broadcasts_dir.exists():
+        broadcasts = [f for f in broadcasts_dir.glob("*.md") if f.name != ".gitkeep"]
+        if broadcasts:
+            info["BROADCASTS"] = len(broadcasts)
+
+    return info
+
+
 class BaseRouter(ABC):
     """Base class for terminal routers"""
 
@@ -172,10 +280,23 @@ class BaseRouter(ABC):
             "━" * 30,
             f"Status: {result.status}",
             f"Queue:  {result.queue_count} items assigned to you",
-            "",
-            "NEXT ACTION",
-            f"→ {result.next_action}",
         ]
+
+        # Add interoffice communication status
+        interoffice = get_interoffice_info(self.role)
+        if interoffice:
+            lines.append("")
+            lines.append("INTEROFFICE")
+            if "PENDING_MEMOS" in interoffice:
+                lines.append(f"→ {interoffice['PENDING_MEMOS']} pending memo(s) in your inbox")
+            if "RFCS_AWAITING_VOTE" in interoffice:
+                lines.append(f"→ {interoffice['RFCS_AWAITING_VOTE']} RFC(s) awaiting your vote")
+            if "BROADCASTS" in interoffice:
+                lines.append(f"→ {interoffice['BROADCASTS']} broadcast(s) to read")
+
+        lines.append("")
+        lines.append("NEXT ACTION")
+        lines.append(f"→ {result.next_action}")
 
         if result.auto_execute:
             lines.append(f"→ Auto-execute: {result.auto_execute}")
@@ -546,6 +667,278 @@ class AuditorRouter(BaseRouter):
         )
 
 
+class CTORouter(BaseRouter):
+    """Router for CTO terminal - Strategic oversight"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        # Prioritize interoffice tasks
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-cto.md"],
+                extra_info={}
+            )
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Strategic oversight - review IMPLEMENTATION_ORDER.md",
+            auto_execute=None,
+            files=["features/IMPLEMENTATION_ORDER.md"],
+            extra_info={}
+        )
+
+
+class ArchitectRouter(BaseRouter):
+    """Router for Architect terminal - System design"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-architect.md"],
+                extra_info={}
+            )
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Review system architecture - check constitution.md",
+            auto_execute=None,
+            files=[".specify/memory/constitution.md"],
+            extra_info={}
+        )
+
+
+class SecurityLeadRouter(BaseRouter):
+    """Router for Security Lead terminal"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-security-lead.md"],
+                extra_info={}
+            )
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Security review - check auth features",
+            auto_execute=None,
+            files=["features/foundation/003-user-authentication/spec.md"],
+            extra_info={}
+        )
+
+
+class ToolsmithRouter(BaseRouter):
+    """Router for Toolsmith terminal"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-toolsmith.md"],
+                extra_info={}
+            )
+
+        # Check skill files
+        skills_dir = Path.home() / ".claude" / "commands"
+        skill_files = list(skills_dir.glob("*.md")) if skills_dir.exists() else []
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Check skill files for needed updates",
+            auto_execute=None,
+            files=["~/.claude/commands/*.md"],
+            extra_info={"SKILL_COUNT": len(skill_files)}
+        )
+
+
+class DevOpsRouter(BaseRouter):
+    """Router for DevOps terminal"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-devops.md"],
+                extra_info={}
+            )
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Check CI/CD configuration",
+            auto_execute=None,
+            files=["docker-compose.yml", ".github/workflows/"],
+            extra_info={}
+        )
+
+
+class ProductOwnerRouter(BaseRouter):
+    """Router for Product Owner terminal - User requirements and UX"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+
+        if interoffice.get("RFCS_AWAITING_VOTE", 0) > 0:
+            return RouterResult(
+                status="has_rfcs",
+                queue_count=interoffice["RFCS_AWAITING_VOTE"],
+                next_action="Review and vote on pending RFCs",
+                auto_execute=None,
+                files=["docs/interoffice/rfcs/*.md"],
+                extra_info={}
+            )
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-product-owner.md"],
+                extra_info={}
+            )
+
+        return RouterResult(
+            status="idle",
+            queue_count=0,
+            next_action="Review feature specs for user requirements",
+            auto_execute=None,
+            files=["features/*/spec.md"],
+            extra_info={}
+        )
+
+
+class CoordinatorRouter(BaseRouter):
+    """Router for Coordinator terminal"""
+
+    def get_next_action(self) -> RouterResult:
+        interoffice = get_interoffice_info(self.role)
+        counts = count_generator_items(self.data)
+        unassigned = get_unassigned_queue(self.data)
+
+        if interoffice.get("PENDING_MEMOS", 0) > 0:
+            return RouterResult(
+                status="has_memos",
+                queue_count=interoffice["PENDING_MEMOS"],
+                next_action="Review pending memos",
+                auto_execute=None,
+                files=["docs/interoffice/memos/to-coordinator.md"],
+                extra_info={}
+            )
+
+        # Build generator status info
+        gen_status = {}
+        for gen in GENERATORS:
+            terminal = self.data.get("terminals", {}).get(gen, {})
+            gen_status[gen] = {
+                "status": terminal.get("status", "idle"),
+                "items": counts[gen],
+                "feature": terminal.get("feature", "-")
+            }
+
+        if unassigned:
+            idle_gen = find_least_loaded_generator(self.data)
+            if idle_gen and counts[idle_gen] == 0:
+                feature = unassigned[0].feature
+                return RouterResult(
+                    status="coordinating",
+                    queue_count=len(unassigned),
+                    next_action=f"Assign {feature} to {idle_gen}",
+                    auto_execute=f"queue_manager.py claim-feature {feature} {idle_gen}",
+                    files=[".terminal-status.json"],
+                    extra_info={"GENERATOR_STATUS": gen_status}
+                )
+
+        return RouterResult(
+            status="idle",
+            queue_count=len(self.data.get("queue", [])),
+            next_action="Check queue for work to distribute",
+            auto_execute="queue_manager.py summary",
+            files=[".terminal-status.json"],
+            extra_info={"GENERATOR_STATUS": gen_status}
+        )
+
+
 # Router registry
 ROUTERS = {
     "manager": ManagerRouter,
@@ -562,6 +955,14 @@ ROUTERS = {
     "tester": TesterRouter,
     "implementer": ImplementerRouter,
     "auditor": AuditorRouter,
+    # Council members
+    "cto": CTORouter,
+    "architect": ArchitectRouter,
+    "security-lead": SecurityLeadRouter,
+    "toolsmith": ToolsmithRouter,
+    "devops": DevOpsRouter,
+    "product-owner": ProductOwnerRouter,
+    "coordinator": CoordinatorRouter,
 }
 
 
