@@ -3314,6 +3314,27 @@ Terminal roles communicate through a tiered mixture-of-experts system:
 
 See `docs/interoffice/CLAUDE.md` for full documentation.
 
+### Terminal Session Management (tmux)
+
+Manage multiple terminal roles in a persistent session:
+
+```bash
+# Start new session
+tmux new -s scripthammer
+
+# Reattach after detaching or closing terminal
+tmux attach -t scripthammer
+```
+
+**Key bindings** (press `Ctrl+b` first):
+
+| Keys | Action |
+|------|--------|
+| `c` | Create new window |
+| `,` | Rename window |
+| `n` / `p` | Next/previous window |
+| `d` | Detach (session persists) |
+
 ### Keyboard Shortcuts
 
 | Key | Action |
