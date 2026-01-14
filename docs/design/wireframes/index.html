@@ -643,17 +643,17 @@
         <div class="nav-section">
           <h2>001 - WCAG AAA Compliance <span class="shortcut">^3</span></h2>
           <div class="nav-links">
-            <a href="#" data-svg="001-wcag-aa-compliance/01-wcag-compliance-overview.svg">
-              WCAG AAA Compliance Overview
-              <span class="path">Pipeline, Categories, User Stories, Success Criteria</span>
-            </a>
-            <a href="#" data-svg="001-wcag-aa-compliance/02-accessibility-dashboard.svg">
+            <a href="#" data-svg="001-wcag-aa-compliance/01-accessibility-dashboard.svg">
               Accessibility Dashboard
-              <span class="path">Score, Per-Page Breakdown, 90-Day Trends</span>
+              <span class="path">Score, Per-Page Breakdown, Trends, Issues</span>
             </a>
-            <a href="#" data-svg="001-wcag-aa-compliance/03-development-tooling.svg">
-              Development Tooling
-              <span class="path">Console, File Watcher, Storybook, CI Integration</span>
+            <a href="#" data-svg="001-wcag-aa-compliance/02-cicd-pipeline-integration.svg">
+              CI/CD Pipeline Integration
+              <span class="path">Build Status, Violations, Dev Console</span>
+            </a>
+            <a href="#" data-svg="001-wcag-aa-compliance/03-accessibility-controls-overlay.svg">
+              Accessibility Controls
+              <span class="path">Contrast, Keyboard, Touch, Timing</span>
             </a>
           </div>
         </div>
@@ -661,13 +661,17 @@
         <div class="nav-section">
           <h2>002 - Cookie Consent <span class="shortcut">^4</span></h2>
           <div class="nav-links">
-            <a href="#" data-svg="002-cookie-consent/01-consent-modal-flow.svg">
-              Cookie Consent Modal Flow
-              <span class="path">Initial Modal, Manage Preferences, Focus Trap</span>
+            <a href="#" data-svg="002-cookie-consent/01-consent-modal.svg">
+              Initial Consent Modal
+              <span class="path">Accept/Reject/Manage cookie choices</span>
             </a>
-            <a href="#" data-svg="002-cookie-consent/02-privacy-settings-data-rights.svg">
-              Privacy Settings &amp; Data Rights
-              <span class="path">Cookie Categories, Export, Deletion</span>
+            <a href="#" data-svg="002-cookie-consent/02-cookie-preferences-panel.svg">
+              Cookie Preferences Panel
+              <span class="path">Granular category toggles</span>
+            </a>
+            <a href="#" data-svg="002-cookie-consent/03-privacy-settings-page.svg">
+              Privacy Settings Page
+              <span class="path">Data export, deletion, history</span>
             </a>
           </div>
         </div>
@@ -989,12 +993,13 @@
       { path: '000-rls-implementation/01-rls-architecture-overview.svg', title: 'RLS Architecture Overview' },
       { path: '000-rls-implementation/02-rls-policy-patterns.svg', title: 'RLS Policy Patterns' },
       // 001-wcag-aa-compliance
-      { path: '001-wcag-aa-compliance/01-wcag-compliance-overview.svg', title: 'WCAG AAA Compliance Overview' },
-      { path: '001-wcag-aa-compliance/02-accessibility-dashboard.svg', title: 'Accessibility Dashboard' },
-      { path: '001-wcag-aa-compliance/03-development-tooling.svg', title: 'Development Tooling' },
+      { path: '001-wcag-aa-compliance/01-accessibility-dashboard.svg', title: 'Accessibility Dashboard' },
+      { path: '001-wcag-aa-compliance/02-cicd-pipeline-integration.svg', title: 'CI/CD Pipeline Integration' },
+      { path: '001-wcag-aa-compliance/03-accessibility-controls-overlay.svg', title: 'Accessibility Controls' },
       // 002-cookie-consent
-      { path: '002-cookie-consent/01-consent-modal-flow.svg', title: 'Cookie Consent Modal Flow' },
-      { path: '002-cookie-consent/02-privacy-settings-data-rights.svg', title: 'Privacy Settings & Data Rights' },
+      { path: '002-cookie-consent/01-consent-modal.svg', title: 'Cookie Consent - Initial Modal' },
+      { path: '002-cookie-consent/02-cookie-preferences-panel.svg', title: 'Cookie Consent - Preferences Panel' },
+      { path: '002-cookie-consent/03-privacy-settings-page.svg', title: 'Cookie Policy - Privacy Settings' },
       // 003-user-authentication
       { path: '003-user-authentication/01-registration-sign-in.svg', title: 'Registration & Sign In' },
       { path: '003-user-authentication/02-verification-password-reset.svg', title: 'Verification & Password Reset' },
@@ -1169,7 +1174,7 @@
     // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
     // Set to null to start at first wireframe
     // ========================================
-    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal-flow.svg";
+    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal.svg";
 
     // Find wireframe index by path
     function findIndexByPath(path) {
@@ -1675,6 +1680,15 @@
     if (wireframes.length > 0) {
       updateView(findIndexByPath(getInitialPath()));
     }
+
+    // Handle hash changes for screenshot tool navigation
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.slice(1);
+      const index = findIndexByPath(hash);
+      if (index >= 0) {
+        updateView(index);
+      }
+    });
   </script>
 </body>
 </html>

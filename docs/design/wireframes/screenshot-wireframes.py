@@ -45,6 +45,14 @@ except ImportError:
     PLAYWRIGHT_AVAILABLE = False
     print("WARNING: Playwright not installed. Run: pip install playwright && playwright install chromium")
 
+# PIL for resizing overview (Claude API has 2000px limit for multi-image requests)
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    print("WARNING: PIL not installed. Overview images will be full size. Run: pip install Pillow")
+
 # Import validator for auto-validation (handle hyphenated filename)
 import importlib.util
 spec = importlib.util.spec_from_file_location("validate_wireframe", Path(__file__).parent / "validate-wireframe.py")
@@ -152,8 +160,17 @@ def take_screenshots(page: Page, svg_path: Path, output_dir: Path) -> Dict:
     # Overview screenshot at 100% (full viewport)
     overview_path = output_dir / 'overview.png'
     page.screenshot(path=str(overview_path), full_page=False)
+
+    # Resize overview to 1920x1080 (Claude API has 2000px limit for multi-image requests)
+    if PIL_AVAILABLE:
+        img = Image.open(overview_path)
+        img = img.resize((1920, 1080), Image.LANCZOS)
+        img.save(overview_path)
+        print(f"    Saved: overview.png (resized to 1920x1080)")
+    else:
+        print(f"    Saved: overview.png (full size - PIL not available)")
+
     screenshots['overview'] = str(overview_path.relative_to(WIREFRAMES_DIR))
-    print(f"    Saved: overview.png")
 
     # Wait for page to fully stabilize after fitToView animations
     page.wait_for_timeout(500)
