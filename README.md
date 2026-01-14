@@ -3316,24 +3316,80 @@ See `docs/interoffice/CLAUDE.md` for full documentation.
 
 ### Terminal Session Management (tmux)
 
-Manage multiple terminal roles in a persistent session:
+Automate multi-terminal sessions with the launcher script. Each terminal opens with Claude auto-primed for its role.
+
+#### Quick Start - Daily Use
+
+**Wireframe production day:**
+```bash
+./scripts/tmux-session.sh --wireframe
+```
+
+**Strategic planning session:**
+```bash
+./scripts/tmux-session.sh --council
+```
+
+**Code implementation session:**
+```bash
+./scripts/tmux-session.sh --implement
+```
+
+**Quick coordination (just CTO + Coordinator):**
+```bash
+./scripts/tmux-session.sh --coord
+```
+
+**Quarterly audit (all 19 terminals):**
+```bash
+./scripts/tmux-session.sh --all
+```
+
+**Custom mix (pick specific roles):**
+```bash
+./scripts/tmux-session.sh CTO Architect Implementer Tester
+```
+
+#### Reattach to Existing Session
 
 ```bash
-# Start new session
-tmux new -s scripthammer
-
-# Reattach after detaching or closing terminal
 tmux attach -t scripthammer
 ```
 
-**Key bindings** (press `Ctrl+b` first):
+#### Role Groups Reference
+
+| Flag | Terminals | Use Case |
+|------|-----------|----------|
+| `--wireframe` | Planner, Generator1-3, Viewer, Reviewer, Validator, Inspector | SVG production |
+| `--council` | CTO, Architect, Security, Toolsmith, DevOps, ProductOwner | Strategic decisions |
+| `--implement` | Implementer, Tester, Auditor | Code implementation |
+| `--coord` | Coordinator, CTO | Quick coordination |
+| `--all` | All 19 roles | Quarterly audit |
+
+#### Optional: Shell Aliases
+
+Add to `~/.bashrc` for faster access:
+
+```bash
+# ScriptHammer tmux shortcuts
+alias sh-wire='~/repos/000_Mega_Plates/ScriptHammer/scripts/tmux-session.sh --wireframe'
+alias sh-council='~/repos/000_Mega_Plates/ScriptHammer/scripts/tmux-session.sh --council'
+alias sh-impl='~/repos/000_Mega_Plates/ScriptHammer/scripts/tmux-session.sh --implement'
+alias sh-coord='~/repos/000_Mega_Plates/ScriptHammer/scripts/tmux-session.sh --coord'
+alias sh-all='~/repos/000_Mega_Plates/ScriptHammer/scripts/tmux-session.sh --all'
+alias sh-attach='tmux attach -t scripthammer'
+```
+
+Then reload: `source ~/.bashrc`
+
+#### tmux Navigation
 
 | Keys | Action |
 |------|--------|
-| `c` | Create new window |
-| `,` | Rename window |
-| `n` / `p` | Next/previous window |
-| `d` | Detach (session persists) |
+| `Ctrl+b` then `w` | Window list (interactive picker) |
+| `Ctrl+b` then `n` / `p` | Next/previous window |
+| `Ctrl+b` then `0-9` | Jump to window by number |
+| `Ctrl+b` then `d` | Detach (session persists in background) |
 
 ### Keyboard Shortcuts
 
