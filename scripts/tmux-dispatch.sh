@@ -10,28 +10,13 @@ STATUS_FILE="docs/design/wireframes/.terminal-status.json"
 AUDIT_FILE="docs/interoffice/audits/2026-01-14-organizational-review.md"
 PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
 
-# Role to window number mapping (matches tmux-session.sh ALL array order)
-# Note: Operator runs OUTSIDE tmux and is not in this mapping
-#
-# ASSEMBLY LINE ORDER: Strategy → Requirements → Design → Wireframes → Code → Test → Docs → Release
-#
-declare -A WINDOWS=(
-  # STRATEGY & REQUIREMENTS (W0-W2)
-  ["CTO"]=0 ["ProductOwner"]=1 ["BusinessAnalyst"]=2
-  # DESIGN (W3-W5)
-  ["Architect"]=3 ["UXDesigner"]=4 ["UIDesigner"]=5
-  # WIREFRAMES (W6-W13)
-  ["Planner"]=6 ["WireframeGenerator1"]=7 ["WireframeGenerator2"]=8 ["WireframeGenerator3"]=9
-  ["PreviewHost"]=10 ["WireframeQA"]=11 ["Validator"]=12 ["Inspector"]=13
-  # IMPLEMENTATION (W14-W16)
-  ["Developer"]=14 ["Toolsmith"]=15 ["Security"]=16
-  # TESTING (W17-W19)
-  ["TestEngineer"]=17 ["QALead"]=18 ["Auditor"]=19
-  # DOCUMENTATION (W20-W21)
-  ["Author"]=20 ["TechWriter"]=21
-  # RELEASE & OPERATIONS (W22-W25)
-  ["DevOps"]=22 ["DockerCaptain"]=23 ["ReleaseManager"]=24 ["Coordinator"]=25
-)
+# Lookup window by role name (not hardcoded numbers)
+# Windows are named after roles - find them dynamically
+get_window_by_name() {
+  local ROLE="$1"
+  tmux list-windows -t $SESSION -F "#{window_index}:#{window_name}" 2>/dev/null | \
+    grep ":${ROLE}$" | cut -d: -f1
+}
 
 # Check if session exists
 check_session() {
@@ -42,14 +27,14 @@ check_session() {
   fi
 }
 
-# Dispatch a task to a specific role's terminal
+# Dispatch a task to a specific role's terminal (by name, not number)
 dispatch_to() {
   local ROLE="$1"
   local TASK="$2"
-  local WIN="${WINDOWS[$ROLE]}"
+  local WIN=$(get_window_by_name "$ROLE")
 
   if [ -z "$WIN" ]; then
-    echo "  [ERROR] Unknown role: $ROLE"
+    echo "  [ERROR] Window not found for role: $ROLE (is it running?)"
     return 1
   fi
 
