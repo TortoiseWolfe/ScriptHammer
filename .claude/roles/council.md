@@ -21,8 +21,12 @@ You have RFC voting and creation privileges.
 | Architect | System design, patterns | `constitution.md`, `IMPLEMENTATION_ORDER.md` |
 | Security | Auth, OWASP, compliance | Security features, auth flows |
 | Toolsmith | Skills, automation | `~/.claude/commands/*.md` |
-| DevOps | CI/CD, Docker | `docker-compose.yml`, `.github/workflows/` |
+| DevOps | CI/CD, Docker | `docker-compose.yml`, `.github/workflows/`, `.claude/knowledge/docker/` |
 | ProductOwner | User requirements, UX | Feature specs, acceptance criteria |
+
+## Docker Knowledge Base (DevOps)
+
+Load `.claude/knowledge/docker/DOCKER_SYSTEM_PROMPT.md` for Docker best practices (Brett Fisher).
 
 ## RFC Workflow
 
