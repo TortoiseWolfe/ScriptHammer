@@ -198,11 +198,13 @@ for ROLE in "${ROLES[@]:1}"; do
 done
 
 # Phase 1: Launch claude in ALL windows first
-# --permission-mode acceptEdits: auto-accept file edits without prompting
+# --dangerously-skip-permissions: bypass ALL permission checks for autonomous operation
+# CRITICAL: Multi-terminal automation requires full permission bypass
+# Without this, every edit/commit/bash blocks waiting for manual approval
 echo "Starting Claude in ${#ROLES[@]} windows..."
 WINDOW_NUM=0
 for ROLE in "${ROLES[@]}"; do
-  tmux send-keys -t $SESSION:$WINDOW_NUM "claude --permission-mode acceptEdits" Enter
+  tmux send-keys -t $SESSION:$WINDOW_NUM "claude --dangerously-skip-permissions" Enter
   ((WINDOW_NUM++))
 done
 

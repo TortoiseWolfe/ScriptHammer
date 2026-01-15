@@ -16,6 +16,10 @@ This project uses 21 Claude Code terminals in a tmux session. Each terminal has 
 | `implementation.md` | Developer, TestEngineer, Auditor |
 | `support.md` | Coordinator, Author, QALead, TechWriter |
 
+**CRITICAL**: Terminals MUST use `--dangerously-skip-permissions` for autonomous operation.
+Without this flag, every edit/commit/bash blocks waiting for manual approval.
+See `scripts/AUTOMATION.md` for details.
+
 ## Quick Commands
 
 ```bash

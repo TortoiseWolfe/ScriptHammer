@@ -65,17 +65,22 @@ esac
 
 **Problem**: Claude Code waits for user approval on tool calls, blocking automation.
 
-**Solution**: Launch with `--permission-mode acceptEdits`:
+**Solution**: Launch with `--dangerously-skip-permissions`:
 
 ```bash
-# Terminals will auto-accept file edits
-tmux send-keys -t $SESSION:$i "claude --permission-mode acceptEdits" Enter
+# Terminals will auto-accept ALL operations (edits, bash, commits)
+tmux send-keys -t $SESSION:$i "claude --dangerously-skip-permissions" Enter
 ```
+
+**CRITICAL**: Multi-terminal automation REQUIRES `--dangerously-skip-permissions`.
+Using `--permission-mode acceptEdits` only auto-accepts file edits, NOT bash commands or commits.
+This causes terminals to block waiting for manual approval, defeating autonomous operation.
 
 **Available modes**:
 - `default` - Prompts for all tool calls
-- `acceptEdits` - Auto-accepts file edits, prompts for bash
-- `bypassPermissions` - No prompts (use with caution)
+- `acceptEdits` - Auto-accepts file edits ONLY (prompts for bash) - NOT ENOUGH FOR AUTOMATION
+- `bypassPermissions` - Alias for dangerously-skip-permissions
+- `--dangerously-skip-permissions` - Full bypass, REQUIRED for multi-terminal workflows
 
 ### 4. File Contention
 
