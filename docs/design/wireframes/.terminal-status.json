@@ -1,141 +1,196 @@
 {
-  "lastUpdated": "2026-01-15T00:00:00Z",
+  "lastUpdated": "2026-01-15T15:45:00Z",
   "queue": [
     {
       "feature": "000-rls-implementation",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "001-wcag-aa-compliance",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "002-cookie-consent",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "005-security-hardening",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "007-e2e-testing-framework",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "004-mobile-first-design",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "009-user-messaging-system",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "019-google-analytics",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "008-on-the-account",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "012-welcome-message-architecture",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "010-unified-blog-content",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "013-oauth-messaging-password",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "feature": "015-oauth-display-name",
-      "action": "REVIEW",
-      "assignedTo": "wireframe-qa"
-    },
-    {
-      "action": "CREATE_SKILL",
-      "reason": "/status skill",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "action": "CREATE_SKILL",
-      "reason": "/queue skill",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "action": "CREATE_SKILL",
-      "reason": "/review-queue skill",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "action": "CREATE_SKILL",
-      "reason": "/wireframe-fix skill",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "action": "CREATE_SKILL",
-      "reason": "/viewer-status skill",
-      "assignedTo": "toolsmith"
+      "action": "INSPECT",
+      "assignedTo": "Inspector"
     },
     {
       "action": "RFC_VOTE",
       "reason": "RFC-001 (QA Lead Role)",
-      "assignedTo": "council"
+      "assignedTo": "CTO"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "Architect"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "Security"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "Toolsmith"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "DevOps"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "ProductOwner"
     },
     {
       "action": "RFC_VOTE",
       "reason": "RFC-002 (Technical Writer Role)",
-      "assignedTo": "council"
+      "assignedTo": "CTO"
     },
     {
-      "feature": "014-admin-welcome-email-gate",
-      "svg": "01-email-verification-gate.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-2"
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "Architect"
     },
     {
-      "feature": "016-messaging-critical-fixes",
-      "svg": "01-message-input-responsive.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-1"
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "Security"
     },
     {
-      "feature": "016-messaging-critical-fixes",
-      "svg": "02-key-setup-flow.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-1"
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "Toolsmith"
     },
     {
-      "feature": "016-messaging-critical-fixes",
-      "svg": "03-message-error-states.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-1"
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "DevOps"
     },
     {
-      "feature": "017-colorblind-mode",
-      "svg": "01-colorblind-settings.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-3"
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "ProductOwner"
     },
     {
-      "feature": "017-colorblind-mode",
-      "svg": "02-colorblind-preview.svg",
-      "action": "GENERATE",
-      "assignedTo": "generator-3"
+      "feature": "001-wcag-aa-compliance",
+      "action": "REVIEW",
+      "reason": "Generator-1 completed 3 SVGs - title x=960 fix",
+      "assignedTo": "WireframeQA"
+    },
+    {
+      "feature": "004-mobile-first-design",
+      "action": "REVIEW",
+      "reason": "Generator-1 completed 2 SVGs - title x=960 fix",
+      "assignedTo": "WireframeQA"
+    },
+    {
+      "feature": "006-template-fork-experience",
+      "action": "REVIEW",
+      "reason": "Generator-1 completed 2 SVGs - title x=960 fix",
+      "assignedTo": "WireframeQA"
+    },
+    {
+      "feature": "002-cookie-consent",
+      "svg": "01-consent-modal.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator1"
+    },
+    {
+      "feature": "002-cookie-consent",
+      "svg": "02-cookie-preferences-panel.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator1"
+    },
+    {
+      "feature": "002-cookie-consent",
+      "svg": "03-privacy-settings-page.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator1"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "01-registration-sign-in.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator1"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "02-verification-password-reset.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator2"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "03-profile-session-management.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator2"
+    },
+    {
+      "feature": "007-e2e-testing-framework",
+      "svg": "01-test-architecture-diagram.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator2"
+    },
+    {
+      "feature": "009-user-messaging-system",
+      "svg": "01-connection-and-chat.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "009-user-messaging-system",
+      "svg": "02-settings-and-data.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "012-welcome-message-architecture",
+      "svg": "01-user-onboarding-flow.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "013-oauth-messaging-password",
+      "svg": "01-oauth-password-setup.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "013-oauth-messaging-password",
+      "svg": "02-oauth-password-unlock.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "019-google-analytics",
+      "svg": "01-consent-flow.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
+    },
+    {
+      "feature": "019-google-analytics",
+      "svg": "02-analytics-dashboard.svg",
+      "action": "REGEN",
+      "reason": "Title x=700→x=960",
+      "assignedTo": "WireframeGenerator3"
     }
+  ],
+  "completedToday": [
+    "Toolsmith: Fixed /wireframe skill title x=700→x=960, fixed light-theme.svg template",
+    "Toolsmith: Verified /status, /queue, /review-queue, /wireframe-fix, /viewer-status skills exist (5 queue items cleared)",
+    "Toolsmith: Fixed queue role names to match tmux window names",
+    "Inspector: Identified 21 SVGs with title x=700 (should be x=960), queued for REGEN",
+    "WireframeQA: Reviewed 000-rls-implementation - 1 PASS, queued for INSPECT",
+    "Generator-1: Completed 001-wcag-aa-compliance (3 SVGs)",
+    "Generator-1: Completed 004-mobile-first-design (2 SVGs: 01-responsive-navigation, 02-touch-targets-performance)",
+    "Generator-1: Completed 006-template-fork-experience (2 SVGs: 01-service-setup-guidance, 02-rebrand-automation-flow)"
   ]
 }

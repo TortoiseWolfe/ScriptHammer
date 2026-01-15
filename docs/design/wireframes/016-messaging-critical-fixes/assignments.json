@@ -1,28 +1,35 @@
 {
   "feature": "016-messaging-critical-fixes",
-  "plannedAt": "2026-01-14T20:36:46Z",
+  "specPath": "features/auth-oauth/016-messaging-critical-fixes/spec.md",
+  "createdAt": "2026-01-15",
   "svgCount": 3,
   "assignments": [
     {
-      "svg": "01-message-input-responsive.svg",
-      "focus": "Message input visibility across viewports. Shows fixed-bottom input field on mobile portrait/landscape, tablet, and desktop. Input remains visible when scrolling message history. Demonstrates proper spacing and keyboard-safe positioning.",
-      "userStories": [],
-      "requirements": ["FR-001", "FR-002", "FR-003"],
-      "mode": "new"
+      "svgName": "01-message-input-visibility.svg",
+      "focus": "Viewport comparison showing message input fixed at bottom across mobile portrait, mobile landscape, and desktop views. Demonstrate scrollable message area with persistent input field.",
+      "linkedRequirements": ["FR-001", "FR-002", "FR-003"],
+      "linkedStories": ["US-1"],
+      "successCriteria": ["SC-001"],
+      "mode": "new",
+      "notes": "Show side-by-side device frames with varying message counts to prove input stays visible"
     },
     {
-      "svg": "02-key-setup-flow.svg",
-      "focus": "Full-page key setup for first-time OAuth users. Shows password + confirm fields, 'Save this password' warning at 3 points (before, during, after), password manager-friendly form structure. Distinguishes setup mode from unlock mode.",
-      "userStories": [],
-      "requirements": ["FR-004", "FR-005", "FR-006", "FR-007", "FR-008", "FR-009", "FR-010", "FR-011"],
-      "mode": "new"
+      "svgName": "02-oauth-setup-flow.svg",
+      "focus": "Full-page OAuth messaging setup with password and confirm fields. Show 'Save this password' warning placements (above password, below confirm, after success). Include password manager form attributes visualization.",
+      "linkedRequirements": ["FR-004", "FR-005", "FR-006", "FR-007", "FR-008", "FR-009", "FR-010", "FR-011"],
+      "linkedStories": ["US-2", "US-3"],
+      "successCriteria": ["SC-002", "SC-003", "SC-006"],
+      "mode": "new",
+      "notes": "Emphasize this is full-page NOT modal. Show the three warning placements clearly numbered."
     },
     {
-      "svg": "03-message-error-states.svg",
-      "focus": "Undecryptable message handling and participant name resolution. Shows lock icon for encrypted messages user cannot decrypt, tooltip on hover/focus, explanatory text. Also shows 'Deleted User' and 'Unknown User' name states with visual indicators.",
-      "userStories": [],
-      "requirements": ["FR-012", "FR-013", "FR-014", "FR-015", "FR-016", "FR-017", "FR-018", "FR-019"],
-      "mode": "new"
+      "svgName": "03-conversation-error-states.svg",
+      "focus": "Message decryption failure states with lock icons and tooltips. Participant name resolution showing display name, username fallback, 'Deleted User', and 'Unknown User' states.",
+      "linkedRequirements": ["FR-012", "FR-013", "FR-014", "FR-015", "FR-016", "FR-017", "FR-018", "FR-019"],
+      "linkedStories": ["US-4", "US-5"],
+      "successCriteria": ["SC-004", "SC-005"],
+      "mode": "new",
+      "notes": "Show conversation with mixed message states - some decrypted, some showing lock. Include header name resolution examples."
     }
   ]
 }

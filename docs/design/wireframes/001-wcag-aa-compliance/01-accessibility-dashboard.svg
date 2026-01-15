@@ -11,7 +11,7 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- CENTERED TITLE -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
         font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
     WCAG AAA COMPLIANCE - ACCESSIBILITY DASHBOARD
   </text>

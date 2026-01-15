@@ -10,7 +10,7 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- Title -->
-  <text x="700" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION - REGISTRATION AND SIGN IN</text>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION - REGISTRATION AND SIGN IN</text>
 
   <!-- Section Labels -->
   <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>

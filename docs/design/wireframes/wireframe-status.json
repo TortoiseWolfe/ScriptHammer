@@ -1,8 +1,8 @@
 {
   "000-rls-implementation": {
-    "status": "review",
+    "status": "inspecting",
     "svgs": {
-      "01-policy-architecture.svg": "draft"
+      "01-policy-architecture.svg": "pass"
     },
     "notes": "Generated 2026-01-14 by Generator-1. Dark theme policy architecture diagram showing security roles, RLS policies, database tables, and access flows.",
     "validation": {
