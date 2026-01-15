@@ -45,6 +45,7 @@
 | G-040 | Unquoted or malformed XML attributes | All attributes must be properly quoted: `y="60"` not `y='60,'` | XML Syntax Rules |
 | G-041 | Wrong SVG height attribute | Must be `height="1080"`, NOT `height="1920"` | SVG Header Rules |
 | G-042 | Missing header/footer include references | Use `<use href="includes/header-desktop.svg#desktop-header"/>` etc. | Include References |
+| G-043 | Wrong signature format | Must be `NNN:NN | Feature Name | ScriptHammer`, NOT `ScriptHammer v0.1 - ...` | Signature Format |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -447,6 +448,7 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-15 | G-040 | XML-004 seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
 | 2026-01-15 | G-041 | SVG-003 (wrong height=1920) seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
 | 2026-01-15 | G-042 | HDR-001 (missing includes) seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
+| 2026-01-15 | G-043 | Wrong signature format (e.g., "ScriptHammer v0.1") seen across multiple features |
 
 ---
 

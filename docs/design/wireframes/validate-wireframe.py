@@ -847,7 +847,7 @@ class WireframeValidator:
                     continue
 
     def _check_signature(self):
-        """SIGNATURE-001/002/003: Signature must be 18px+, bold, and left-aligned."""
+        """SIGNATURE-001/002/003/004: Signature must be 18px+, bold, left-aligned, correct format."""
         # Find signature (y > 1040)
         sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*'
         match = re.search(sig_pattern, self.svg_content)
@@ -885,6 +885,20 @@ class WireframeValidator:
                     severity="ERROR",
                     code="SIGNATURE-003",
                     message="Signature must NOT use text-anchor=\"middle\" - use left-alignment at x=40"
+                ))
+        # Check signature format (SIGNATURE-004)
+        # Find the text content of signature element
+        sig_text_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*>([^<]+)</text>'
+        text_match = re.search(sig_text_pattern, self.svg_content)
+        if text_match:
+            sig_text = text_match.group(2).strip()
+            # Must match format: NNN:NN | Feature Name | ScriptHammer
+            valid_format = re.match(r'^\d{3}:\d{2}\s*\|\s*.+\s*\|\s*ScriptHammer$', sig_text)
+            if not valid_format:
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="SIGNATURE-004",
+                    message=f"Signature format wrong: '{sig_text[:40]}...' - must be 'NNN:NN | Feature Name | ScriptHammer'"
                 ))
 
     def _check_annotation_spacing(self):

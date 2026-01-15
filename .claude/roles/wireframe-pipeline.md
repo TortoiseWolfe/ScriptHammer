@@ -21,6 +21,31 @@ Planner → Generators (3 parallel) → PreviewHost → WireframeQA → Validato
 | Validator | Run validation, manage escalation | `validate-wireframe.py` |
 | Inspector | Cross-SVG consistency checks | `inspect-wireframes.py` |
 
+## WireframeQA Visual Review Checklist
+
+When reviewing screenshots, check for these issues that automated validation may miss:
+
+### SIGNATURE BLOCK (Critical)
+1. **LEFT-ALIGNED**: Must be `x="40"`, NOT centered (no `text-anchor="middle"`)
+2. **FORMAT**: `NNN:NN | Feature Name | ScriptHammer` (e.g., `022:01 | Web3Forms Integration | ScriptHammer`)
+3. **STYLING**: 18px bold, `fill="#374151"`
+
+```xml
+<!-- CORRECT -->
+<text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">022:01 | Web3Forms Integration | ScriptHammer</text>
+
+<!-- WRONG - centered -->
+<text x="960" y="1060" text-anchor="middle" ...>
+```
+
+### Other Visual Checks
+- Title centered at top (`x="960"`, `text-anchor="middle"`)
+- Desktop mockup visible at x=40, y=60
+- Mobile mockup visible at x=1360, y=60
+- Annotation panel at bottom (y=800+)
+- No overlapping elements
+- All text readable (≥14px)
+
 ## SVG Rules
 
 - Canvas: `viewBox="0 0 1920 1080"`
