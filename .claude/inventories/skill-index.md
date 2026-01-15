@@ -101,3 +101,68 @@ Generated: 2026-01-15 | Refresh: `/refresh-inventories`
 | /plan | Generate implementation plan |
 | /implement | Execute implementation |
 | /tasks | Generate tasks.md |
+
+## Automation Scripts (scripts/)
+
+CLI tools for validation, scaffolding, and automation. Run with `python scripts/<name>.py`.
+
+### Validation Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| validate-tasks.py | Task format validation | `--fix`, `--check-deps`, `--json` |
+| validate-contracts.py | Contract validation | `--json`, `--summary` |
+| validate-wireframe.py | SVG wireframe validation | `--json`, `--report` |
+
+### Scaffolding Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| generate-component.py | 5-file Constitution pattern | `--with-props`, `--dry-run` |
+| generate-ignores.py | Multi-stack ignore files | `--detect`, `--verify`, `--all` |
+| scaffold-checklist.py | Feature checklist scaffolder | `--dry-run`, `--json` |
+| scaffold-test.py | Test file scaffolder | `--dry-run`, `--json` |
+
+### SpecKit Automation
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| extract-spec.py | Spec extraction utility | `--json`, `--summary` |
+| fill-plan.py | Plan template filler | `--dry-run`, `--json` |
+| parse-data-model.py | Data model parser | `--json`, `--summary` |
+
+### Build & Status Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| build-commit.py | Automated build and commit | `--dry-run`, `--json` |
+| project-status.py | Project health dashboard | `--json`, `--summary` |
+| queue-status.py | Task queue status | `--json`, `--summary` |
+| priority-calculator.py | Task priority scoring | `--json`, `--summary` |
+| stale-finder.py | Find stale artifacts | `--days`, `--json` |
+
+### Wireframe Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| inspect-wireframes.py | Cross-SVG consistency | `--all`, `--report` |
+| dispatch-precompute.py | Precompute wireframe context | `--json` |
+
+### Council & Comms Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| council-agenda.py | Generate council agenda | `--json`, `--summary` |
+| memo-router.py | Route memos to recipients | `--json` |
+| broadcast-sender.py | Send broadcasts | `--dry-run`, `--json` |
+| escalation-check.py | Check escalation status | `--json`, `--summary` |
+
+### Analysis Scripts
+
+| Script | Description | Key Flags |
+|--------|-------------|-----------|
+| constitution-check.py | Constitution compliance | `--json`, `--summary` |
+| dependency-graph.py | Feature dependency graph | `--json`, `--dot` |
+| feature-context.py | Feature context loader | `--json`, `--summary` |
+| audit-template.py | Audit report generator | `--json`, `--summary` |
+| completion-log.py | Completion tracking | `--json`, `--summary` |
