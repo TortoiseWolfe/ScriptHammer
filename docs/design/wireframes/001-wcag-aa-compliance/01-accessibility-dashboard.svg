@@ -240,19 +240,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">compliance status at a glance.</text>
       <a href="#US-009">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-009</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-009</text>
       </a>
       <a href="#FR-032">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-032</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-032</text>
       </a>
       <a href="#FR-033">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-033</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-033</text>
       </a>
       <a href="#SC-001">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-001</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-001</text>
       </a>
     </g>
 
@@ -265,19 +265,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">count for targeted remediation.</text>
       <a href="#US-001">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-001</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-001</text>
       </a>
       <a href="#FR-033">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-033</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-033</text>
       </a>
       <a href="#FR-035">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-035</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-035</text>
       </a>
       <a href="#SC-008">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-008</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-008</text>
       </a>
     </g>
 
@@ -290,15 +290,15 @@
       <text x="40" y="52" fill="#374151" font-size="14">to measure improvement progress.</text>
       <a href="#US-008">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-008</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-008</text>
       </a>
       <a href="#FR-034">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-034</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-034</text>
       </a>
       <a href="#SC-010">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-010</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-010</text>
       </a>
     </g>
 
@@ -311,15 +311,15 @@
       <text x="40" y="52" fill="#374151" font-size="14">and actionable remediation steps.</text>
       <a href="#US-002">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-002</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text>
       </a>
       <a href="#FR-035">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-035</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-035</text>
       </a>
       <a href="#SC-002">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-002</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-002</text>
       </a>
     </g>
   </g>

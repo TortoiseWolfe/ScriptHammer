@@ -10,7 +10,7 @@
 
 | Stakeholder | Vote | Date |
 |-------------|------|------|
-| CTO | pending | - |
+| CTO | **approve** | 2026-01-15 |
 | Architect | **approve** | 2026-01-15 |
 | Security Lead | **approve** | 2026-01-15 |
 | Toolsmith | pending | - |
@@ -176,6 +176,18 @@ Both proposals are architecturally sound:
 - Supabase SDK v2.0+ defaults to PKCE - minimal config change required
 
 Implementation impact is correctly assessed as minimal. The spec changes formalize what should be default behavior, enabling audit verification. Strongly support.
+
+### CTO (2026-01-15) - Vote: APPROVE
+
+Both enhancements are table stakes for a modern auth system:
+
+1. **Session invalidation on password change** - Users expect this. It's a trust signal. Failing to implement would be a UX regression compared to every major platform.
+
+2. **PKCE** - Our static site deployment model (GitHub Pages) makes this critical. We have no backend to guard authorization codes. PKCE is the only defense against code interception.
+
+The fact that Supabase SDK handles both natively is fortunate. We're formalizing requirements, not adding implementation burden.
+
+Approved. Fast-track recommended given low effort and clear security benefit.
 
 ## Dissent Log
 

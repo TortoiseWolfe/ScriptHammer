@@ -318,19 +318,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">7:1 contrast ratio throughout.</text>
       <a href="#US-002">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-002</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text>
       </a>
       <a href="#FR-006">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-006</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-006</text>
       </a>
       <a href="#FR-009">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-009</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-009</text>
       </a>
       <a href="#SC-002">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-002</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-002</text>
       </a>
     </g>
 
@@ -343,19 +343,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">full keyboard access to all features.</text>
       <a href="#US-003">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-003</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-003</text>
       </a>
       <a href="#FR-011">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-011</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-011</text>
       </a>
       <a href="#FR-015">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-015</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-015</text>
       </a>
       <a href="#SC-004">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-004</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-004</text>
       </a>
     </g>
 
@@ -368,19 +368,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">I need 44px minimum touch targets.</text>
       <a href="#US-004">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-004</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-004</text>
       </a>
       <a href="#FR-016">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-016</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-016</text>
       </a>
       <a href="#FR-018">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-018</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-018</text>
       </a>
       <a href="#SC-003">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-003</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-003</text>
       </a>
     </g>
 
@@ -393,19 +393,19 @@
       <text x="40" y="52" fill="#374151" font-size="14">need no time limits on any task.</text>
       <a href="#US-006">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-006</text>
+        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-006</text>
       </a>
       <a href="#FR-024">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-024</text>
+        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-024</text>
       </a>
       <a href="#FR-025">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-025</text>
+        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-025</text>
       </a>
       <a href="#SC-006">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-006</text>
+        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-006</text>
       </a>
     </g>
   </g>

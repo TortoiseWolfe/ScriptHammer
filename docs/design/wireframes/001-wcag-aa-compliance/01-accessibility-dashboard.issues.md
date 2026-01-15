@@ -11,23 +11,24 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 2 |
+| Open | 0 |
+| Resolved | 2 |
 
 ---
 
-## Open Issues (2026-01-13 Review)
+## Resolved Issues (2026-01-15)
 
 ### Font Issues
 
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| F-01 | Font size 11.0px below minimum 14px: 'Warn' | FONT-001 | PATCH |
+| ID | Issue | Code | Resolution |
+|----|-------|------|------------|
+| F-01 | Font size 11px below minimum 14px: 'Warn' | FONT-001 | FIXED - 14 elements changed from 12px to 14px |
 
 ### User Story Issues
 
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| U-01 | Only 1 User Story badges found - need at least 3 User Storie... | US-002 | REGENERATE |
+| ID | Issue | Code | Resolution |
+|----|-------|------|------------|
+| U-01 | Only 1 User Story badges found | US-002 | STALE - SVG has 4 user stories (US-009, US-001, US-008, US-002) |
 
 ---
 

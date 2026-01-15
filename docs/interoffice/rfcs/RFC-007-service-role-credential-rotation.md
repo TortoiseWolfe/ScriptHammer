@@ -10,7 +10,7 @@
 
 | Stakeholder | Vote | Date |
 |-------------|------|------|
-| CTO | pending | - |
+| CTO | **approve** | 2026-01-15 |
 | Architect | pending | - |
 | Security Lead | **approve** | 2026-01-15 |
 | Toolsmith | pending | - |
@@ -217,6 +217,20 @@ Quarterly rotation balances security (90-day max exposure) with operational burd
 The runbook ensures rotation is repeatable and testable. Zero-downtime rotation is achievable because Supabase supports multiple active keys.
 
 I recommend approval. This is a low-effort, high-impact security improvement.
+
+### CTO (2026-01-15) - Vote: APPROVE
+
+This is fundamental security hygiene that should have been in the original spec.
+
+1. **Service role is the keys to the kingdom** - It bypasses all RLS. A leaked credential is a complete data breach. Rotation limits blast radius.
+
+2. **Quarterly is the right cadence** - Monthly is excessive overhead for our scale. Annual is negligent. 90-day rotation is industry standard (SOC 2, PCI-DSS).
+
+3. **Runbook is essential** - Documented procedures ensure rotation happens correctly under pressure. Emergency rotation during an incident is not the time to improvise.
+
+4. **Zero-downtime rotation** - The approach (multiple active keys) is sound. No excuse not to implement.
+
+Approved. Add to P0 scope since it affects Feature 000 (RLS).
 
 ## Dissent Log
 

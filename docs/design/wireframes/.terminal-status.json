@@ -1,19 +1,25 @@
 {
-  "lastUpdated": "2026-01-15T19:30:00Z",
+  "lastUpdated": "2026-01-15T21:00:00Z",
   "wireframeStatus": "approved",
   "queue": [
+    {
+      "feature": "016-messaging-critical-fixes",
+      "action": "REVIEW",
+      "reason": "Generator-2 completed 3 SVGs - ready for review",
+      "assignedTo": "reviewer"
+    },
+    {
+      "feature": "021-geolocation-map",
+      "action": "REVIEW",
+      "reason": "Generator-2 completed 2 SVGs - ready for review",
+      "assignedTo": "reviewer"
+    },
     {
       "feature": "024-payment-integration",
       "svg": null,
       "action": "PLAN",
       "reason": "P1 Critical - blocks 4 downstream features (038-041), no wireframes exist",
       "assignedTo": "planner"
-    },
-    {
-      "feature": "017-colorblind-mode",
-      "action": "REVIEW",
-      "reason": "Generator-3 completed 2 SVGs - ready for review",
-      "assignedTo": "reviewer"
     },
     {
       "feature": "022-web3forms-integration",
@@ -43,6 +49,9 @@
     "Validator: Cleaned 11 stale issue files, escalation check shows 0 candidates",
     "Validator: All 30 SVGs PASS validation",
     "Inspector: All 39 SVGs PASS cross-SVG consistency check",
-    "Validator: ALL WIREFRAMES APPROVED - validation and inspection complete"
+    "Validator: ALL WIREFRAMES APPROVED - validation and inspection complete",
+    "Generator-2: Completed 016-messaging-critical-fixes (3 SVGs: 01-message-input-visibility, 02-oauth-setup-flow, 03-conversation-error-states)",
+    "Validator: Reviewed 017-colorblind-mode - 2 SVGs PASS validation and inspection, APPROVED",
+    "Generator-2: Completed 021-geolocation-map (2 SVGs: 01-map-interface-permission, 02-markers-and-accessibility)"
   ]
 }
