@@ -1,72 +1,60 @@
-# Developer Audit: Repetitive Coding Patterns
+# Developer Audit: Boilerplate & Scaffolding Patterns
 
 **Date**: 2026-01-15
-**Author**: Auditor
-**Scope**: `~/.claude/commands/*.md` (35 files) + `.claude/commands/*.md` (11 files)
-**Focus**: Boilerplate generation, template expansion, code scaffolding
+**Author**: Developer Terminal
+**Scope**: `~/.claude/commands/*.md` (65 files) + `.claude/commands/*.md` (11 files)
+**Focus**: Boilerplate generation, template expansion, code scaffolding, component generation
 
 ## Executive Summary
 
-Reviewed 46 skill files for repetitive coding patterns that could be automated with Python scripts. Identified **6 high-priority** and **4 medium-priority** candidates. Scripts would reduce token usage, improve consistency, and enable component reuse across projects.
+Reviewed 76 skill files from the Developer perspective, focusing on code generation patterns that consume tokens during implementation work. Identified **6 high-priority** and **4 medium-priority** candidates for automation. Primary finding: the Constitution-mandated 5-file component pattern has no generator, causing repetitive boilerplate creation.
 
-## Already Established Patterns (Reference)
+## Reference: Already Scripted Patterns
 
-| Pattern | Implementation | Scope |
-|---------|---------------|-------|
-| Ignore file patterns | Embedded in `speckit.implement.md` | Per-project |
-| 5-file component | Constitution principle | Required |
-| Checklist format | `CHK###` pattern in `speckit.checklist.md` | Per-feature |
+| Pattern | Script | Location |
+|---------|--------|----------|
+| SVG validation | `validate-wireframe.py` | `docs/design/wireframes/` |
+| Cross-SVG consistency | `inspect-wireframes.py` | `docs/design/wireframes/` |
+| SVG screenshots | `screenshot-wireframes.py` | `docs/design/wireframes/` |
+
+These demonstrate the target pattern: **prompt defines workflow, script does deterministic work**.
 
 ---
 
 ## High Priority Candidates
 
-### 1. 5-File Component Generator → `generate-component.py`
+### 1. Component Generator → `generate-component.py`
 
-**Current**: Constitution mandates 5-file pattern but no generator exists. LLM creates each file manually.
+**Source**: Constitution (lines 7-13) mandates 5-file pattern with no generator.
 
-**Pattern** (from constitution):
-```
-ComponentName/
-├── index.tsx           # Re-exports
-├── ComponentName.tsx   # Implementation
-├── ComponentName.test.tsx          # Unit tests
-├── ComponentName.stories.tsx       # Storybook
-└── ComponentName.accessibility.test.tsx  # Pa11y
-```
+**Constitution Requirement**:
+> "Every component MUST follow the 5-file pattern: index.tsx, Component.tsx, Component.test.tsx, Component.stories.tsx, and Component.accessibility.test.tsx."
+
+**Current State**: LLM manually creates 5 files per component, repeating same boilerplate.
 
 **Script Opportunity**:
 ```bash
 python generate-component.py Button --path src/components/atoms
-python generate-component.py UserCard --path src/components/molecules --with-props "name:string,avatar:string"
+python generate-component.py UserCard --path src/components/molecules
 python generate-component.py --dry-run LoginForm
+python generate-component.py --validate src/components/  # Check existing
+```
+
+**Template Files**:
+```
+ComponentName/
+├── index.tsx                           # Re-exports
+├── ComponentName.tsx                   # Implementation
+├── ComponentName.test.tsx              # Vitest unit tests
+├── ComponentName.stories.tsx           # Storybook
+└── ComponentName.accessibility.test.tsx # Pa11y a11y tests
 ```
 
 **Why Script**:
-- Constitution-mandated pattern = 100% predictable structure
-- LLM spends tokens recreating same boilerplate every time
-- Consistency across components guaranteed
-- Enables pre-commit hook validation
-
-**Template Content**:
-```typescript
-// index.tsx template
-export { default } from './[COMPONENT_NAME]'
-export type { [COMPONENT_NAME]Props } from './[COMPONENT_NAME]'
-
-// Component.tsx template
-import type { FC } from 'react'
-
-export interface [COMPONENT_NAME]Props {
-  // Props here
-}
-
-export const [COMPONENT_NAME]: FC<[COMPONENT_NAME]Props> = (props) => {
-  return <div data-testid="[component-name]">...</div>
-}
-
-export default [COMPONENT_NAME]
-```
+- Constitution-mandated = 100% predictable structure
+- Each component consumes ~500 tokens in boilerplate
+- Enables CI validation of component structure
+- `pnpm run generate:component` referenced in constitution but doesn't exist
 
 **Estimated Effort**: 3-4 hours
 
@@ -74,76 +62,111 @@ export default [COMPONENT_NAME]
 
 ### 2. Ignore File Generator → `generate-ignores.py`
 
-**Current**: `speckit.implement.md` lines 58-99 contain ~40 lines of language/tool patterns embedded in prompt.
+**Source**: `speckit.implement.md` (lines 77-98) embeds 22 lines of language patterns.
 
-**Current Pattern** (from `speckit.implement.md`):
+**Current Embedded Patterns**:
 ```text
-**Node.js**: node_modules/, dist/, build/, *.log, .env*
-**Python**: __pycache__/, *.pyc, .venv/, venv/, dist/
-**Java**: target/, *.class, *.jar, .gradle/, build/
-... (15+ language patterns)
+Node.js: node_modules/, dist/, build/, *.log, .env*
+Python: __pycache__/, *.pyc, .venv/, venv/, dist/
+Java: target/, *.class, *.jar, .gradle/, build/
+Go: *.exe, *.test, vendor/, *.out
+Rust: target/, debug/, release/, *.rs.bk
+... (12+ more languages)
 ```
 
 **Script Opportunity**:
 ```bash
-python generate-ignores.py --detect           # Auto-detect tech stack
+python generate-ignores.py --detect           # Auto-detect from files
 python generate-ignores.py --stack node,docker
 python generate-ignores.py --gitignore --dockerignore --eslintignore
-python generate-ignores.py --verify           # Check existing files
+python generate-ignores.py --verify           # Validate existing files
 ```
 
 **Why Script**:
-- Tech stack detection is deterministic (file pattern matching)
-- Same patterns repeated across every project setup
-- Claude's own `/implement` skill embeds these as static text
-- Reduces ~40 prompt lines to single function call
+- Tech detection is file-pattern matching (deterministic)
+- Same 22 lines repeated in every project setup
+- Reduces prompt size significantly
+- Enables consistent ignore patterns across projects
 
 **Estimated Effort**: 2-3 hours
 
 ---
 
-### 3. Task ID Validator → `validate-tasks.py`
+### 3. Task Format Validator → `validate-tasks.py`
 
-**Current**: `speckit.tasks.md` enforces strict task format but validation is manual.
+**Source**: `speckit.tasks.md` (lines 73-104) defines strict format rules.
 
 **Required Format**:
 ```text
 - [ ] T001 [P] [US1] Description with file path
-      │     │    │
-      │     │    └── Story label (required for story phases)
-      │     └── Parallel marker (optional)
-      └── Sequential ID (required)
 ```
+
+**Format Rules** (from speckit.tasks.md):
+1. Checkbox: ALWAYS start with `- [ ]`
+2. Task ID: Sequential `T###`
+3. [P] marker: Only if parallelizable
+4. [Story] label: Required in user story phases
+5. Description: Must include file path
 
 **Script Opportunity**:
 ```bash
 python validate-tasks.py tasks.md             # Validate format
-python validate-tasks.py tasks.md --fix       # Auto-fix IDs
-python validate-tasks.py tasks.md --renumber  # Renumber all tasks
+python validate-tasks.py tasks.md --fix       # Auto-renumber IDs
+python validate-tasks.py tasks.md --coverage  # Check story coverage
 python validate-tasks.py --check-deps         # Verify dependencies
 ```
 
 **Why Script**:
-- Format validation is regex-based (deterministic)
-- ID renumbering after edits is tedious
-- Dependency checking is graph traversal
-- Currently LLM parses and validates manually
-
-**Validation Rules**:
-- Checkbox present: `- [ ]` or `- [x]`
-- ID format: `T###` sequential
-- Story label: `[US#]` for story phases only
-- File path: Required for implementation tasks
+- Validation is regex-based (deterministic)
+- Currently LLM validates manually each time
+- Renumbering after edits is tedious
+- Could integrate with CI
 
 **Estimated Effort**: 2-3 hours
 
 ---
 
-### 4. Checklist Scaffolder → `scaffold-checklist.py`
+### 4. Spec Section Extractor → `extract-spec.py`
 
-**Current**: `speckit.checklist.md` (294 lines) generates checklists with extensive category templates.
+**Source**: Multiple skills parse spec.md for same sections.
 
-**Standard Categories** (from prompt):
+**Files Parsing spec.md**:
+- `speckit.plan.md` - Extracts user stories, requirements
+- `speckit.tasks.md` - Extracts user stories with priorities
+- `speckit.implement.md` - Reads for context
+- `speckit.analyze.md` - Parses for consistency check
+
+**Common Extractions**:
+- User stories with priorities (P0, P1, P2)
+- Functional requirements (FR-###)
+- Non-functional requirements (NFR-###)
+- Acceptance criteria
+- Edge cases
+
+**Script Opportunity**:
+```bash
+python extract-spec.py spec.md --user-stories  # JSON list
+python extract-spec.py spec.md --requirements  # FR/NFR list
+python extract-spec.py spec.md --json          # Full structured output
+python extract-spec.py spec.md --summary       # One-line counts
+```
+
+**Why Script**:
+- Markdown parsing is deterministic
+- Same extraction duplicated in 4+ skills
+- JSON output enables script chaining
+- Reduces token usage across all SpecKit commands
+
+**Estimated Effort**: 3-4 hours
+
+---
+
+### 5. Checklist Scaffolder → `scaffold-checklist.py`
+
+**Source**: `speckit.checklist.md` (lines 106-116) defines standard categories.
+
+**Standard Categories**:
+```text
 - Requirement Completeness
 - Requirement Clarity
 - Requirement Consistency
@@ -152,52 +175,23 @@ python validate-tasks.py --check-deps         # Verify dependencies
 - Edge Case Coverage
 - Non-Functional Requirements
 - Dependencies & Assumptions
+```
+
+**Item Format**: `- [ ] CHK### - Question [Quality, Spec §X]`
 
 **Script Opportunity**:
 ```bash
-python scaffold-checklist.py --type ux         # UX-focused checklist
+python scaffold-checklist.py --type ux         # UX checklist
 python scaffold-checklist.py --type api        # API checklist
 python scaffold-checklist.py --type security   # Security checklist
 python scaffold-checklist.py --from spec.md    # Extract from spec
-python scaffold-checklist.py --template custom.json
 ```
 
 **Why Script**:
 - Category structure is predetermined
-- Item format is fixed: `- [ ] CHK### - Question [Quality, Spec §X]`
-- LLM spends tokens generating same structure repeatedly
-- Custom templates could be JSON-defined
-
-**Estimated Effort**: 3-4 hours
-
----
-
-### 5. Spec Section Extractor → `extract-spec.py`
-
-**Current**: Multiple skills (`speckit.plan`, `speckit.tasks`, `speckit.implement`) all parse spec.md for the same sections.
-
-**Common Extractions**:
-- User stories with priorities (P0, P1, P2)
-- Functional requirements (FR-###)
-- Non-functional requirements (NFR-###)
-- Key entities
-- Edge cases
-- Acceptance criteria
-
-**Script Opportunity**:
-```bash
-python extract-spec.py spec.md --user-stories  # Extract user stories
-python extract-spec.py spec.md --requirements  # FR/NFR list
-python extract-spec.py spec.md --entities      # Key entities
-python extract-spec.py spec.md --json          # Full structured output
-python extract-spec.py spec.md --summary       # One-line counts
-```
-
-**Why Script**:
-- Section parsing uses consistent markdown patterns
-- Same extraction logic duplicated across 4+ skills
-- JSON output enables downstream script chaining
-- Reduces token usage for every SpecKit command
+- Item numbering is sequential
+- Reduces token usage for standard structure
+- Templates could be JSON-defined
 
 **Estimated Effort**: 3-4 hours
 
@@ -205,19 +199,20 @@ python extract-spec.py spec.md --summary       # One-line counts
 
 ### 6. Test File Scaffolder → `scaffold-test.py`
 
-**Current**: Tests created manually following TDD approach. Same boilerplate for every test file.
+**Source**: Constitution (lines 15-20) mandates TDD approach.
+
+**Constitution Requirement**:
+> "Tests MUST be written before implementation following RED-GREEN-REFACTOR cycle."
 
 **Common Test Patterns**:
 ```typescript
-// Unit test boilerplate
+// Vitest unit test boilerplate
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { ComponentName } from './ComponentName'
 
 describe('ComponentName', () => {
-  beforeEach(() => { ... })
-
-  it('should render correctly', () => { ... })
-  it('should handle user interaction', () => { ... })
+  beforeEach(() => { /* setup */ })
+  it('should render correctly', () => { /* test */ })
 })
 ```
 
@@ -226,14 +221,14 @@ describe('ComponentName', () => {
 python scaffold-test.py Button --type unit
 python scaffold-test.py UserService --type integration
 python scaffold-test.py LoginForm --type e2e --framework playwright
-python scaffold-test.py --from data-model.md  # Generate entity tests
+python scaffold-test.py --from data-model.md  # Entity tests
 ```
 
 **Why Script**:
 - Test structure is predictable per type
 - Import statements follow project conventions
-- Mock setup follows consistent patterns
-- Reduces "red" phase boilerplate in TDD
+- Reduces "red" phase boilerplate
+- Integrates with `generate-component.py`
 
 **Estimated Effort**: 4-5 hours
 
@@ -241,61 +236,13 @@ python scaffold-test.py --from data-model.md  # Generate entity tests
 
 ## Medium Priority Candidates
 
-### 7. Commit Message Builder → `build-commit.py`
+### 7. Data Model Parser → `parse-data-model.py`
 
-**Current**: `commit.md` skill enforces conventional commits with standard footer.
-
-**Standard Footer**:
-```text
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
-
-**Script Opportunity**:
-```bash
-python build-commit.py --type feat --scope auth --message "Add OAuth support"
-python build-commit.py --from-staged          # Analyze staged files
-python build-commit.py --interactive          # Prompt for details
-```
-
-**Partial Script Candidate**: Message content needs LLM, but format/footer is deterministic.
-
-**Estimated Effort**: 1-2 hours
-
----
-
-### 8. Plan Template Filler → `fill-plan.py`
-
-**Current**: `speckit.plan.md` fills template with tech context, constitution check, project structure.
-
-**Template Sections**:
-- Technical Context (language, deps, storage, testing)
-- Constitution Check (6 principles)
-- Project Structure (tree diagrams)
-- Complexity Tracking
-
-**Script Opportunity**:
-```bash
-python fill-plan.py --tech-context package.json  # Extract from package
-python fill-plan.py --constitution-check         # Generate compliance table
-python fill-plan.py --structure-detect           # Generate tree from codebase
-```
-
-**Why Partial**: Tech detection deterministic; architecture decisions need LLM.
-
-**Estimated Effort**: 2-3 hours
-
----
-
-### 9. Data Model Parser → `parse-data-model.py`
-
-**Current**: `data-model.md` files manually created; entities extracted by LLM in multiple skills.
+**Source**: `data-model.md` parsed by multiple skills.
 
 **Script Opportunity**:
 ```bash
 python parse-data-model.py data-model.md --entities    # List entities
-python parse-data-model.py data-model.md --relations   # Relationships
 python parse-data-model.py data-model.md --typescript  # Generate types
 python parse-data-model.py data-model.md --sql         # Generate DDL
 ```
@@ -303,27 +250,65 @@ python parse-data-model.py data-model.md --sql         # Generate DDL
 **Why Script**:
 - Entity extraction is pattern matching
 - Type generation is templated
-- Same parsing in `speckit.tasks`, `speckit.implement`
+- Used by `speckit.tasks`, `speckit.implement`
 
 **Estimated Effort**: 3-4 hours
 
 ---
 
-### 10. Contract Validator → `validate-contracts.py`
+### 8. Plan Template Filler → `fill-plan.py`
 
-**Current**: `contracts/` folder contains OpenAPI specs, manually validated.
+**Source**: `speckit.plan.md` fills template sections.
+
+**Deterministic Sections**:
+- Technical Context (from package.json)
+- Constitution Check (6 principles table)
+- Project Structure (tree from codebase)
 
 **Script Opportunity**:
 ```bash
-python validate-contracts.py contracts/auth-api.yaml  # Validate spec
-python validate-contracts.py --coverage spec.md       # Check FR coverage
-python validate-contracts.py --generate-tests         # Stub test files
+python fill-plan.py --tech-context package.json
+python fill-plan.py --constitution-check
+python fill-plan.py --structure-detect
 ```
 
-**Why Script**:
-- OpenAPI validation is well-defined
-- Coverage checking is matching exercise
-- Test stub generation is templated
+**Partial Automation**: Architecture decisions still need LLM.
+
+**Estimated Effort**: 2-3 hours
+
+---
+
+### 9. Commit Message Builder → `build-commit.py`
+
+**Source**: `commit.md` enforces conventional commits format.
+
+**Standard Footer**:
+```text
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+**Script Opportunity**:
+```bash
+python build-commit.py --type feat --scope auth --message "Add OAuth"
+python build-commit.py --from-staged  # Analyze staged files for type
+```
+
+**Partial Automation**: Message content needs LLM, format is deterministic.
+
+**Estimated Effort**: 1-2 hours
+
+---
+
+### 10. Contract Validator → `validate-contracts.py`
+
+**Source**: `contracts/` folder contains API specs.
+
+**Script Opportunity**:
+```bash
+python validate-contracts.py contracts/*.yaml  # Validate OpenAPI
+python validate-contracts.py --coverage spec.md  # Check FR coverage
+python validate-contracts.py --generate-stubs    # Stub test files
+```
 
 **Estimated Effort**: 3-4 hours
 
@@ -336,62 +321,71 @@ python validate-contracts.py --generate-tests         # Stub test files
 | `speckit.specify` | Creative spec writing from natural language |
 | `speckit.clarify` | Interactive requirement refinement |
 | `speckit.analyze` | Semantic consistency analysis |
-| `code-review` | Security/quality assessment needs reasoning |
+| `code-review` | Security assessment needs reasoning |
 | `wireframe.md` | SVG generation is creative |
+| `/council`, `/memo` | Interactive communication |
 
 ---
 
 ## Implementation Priority
 
-| Priority | Script | Impact | Effort | Dependencies |
+| Priority | Script | Impact | Effort | Constitution |
 |----------|--------|--------|--------|--------------|
-| 1 | `generate-component.py` | High (Constitution compliance) | 3-4h | None |
-| 2 | `generate-ignores.py` | High (Every project setup) | 2-3h | None |
-| 3 | `extract-spec.py` | High (Used by 4+ skills) | 3-4h | None |
-| 4 | `validate-tasks.py` | Medium (Task management) | 2-3h | None |
-| 5 | `scaffold-checklist.py` | Medium (Checklist creation) | 3-4h | None |
-| 6 | `scaffold-test.py` | Medium (TDD workflow) | 4-5h | `generate-component.py` |
-| 7 | `parse-data-model.py` | Low (Occasional use) | 3-4h | None |
-| 8 | `fill-plan.py` | Low (Partial automation) | 2-3h | `extract-spec.py` |
-| 9 | `build-commit.py` | Low (Simple pattern) | 1-2h | None |
-| 10 | `validate-contracts.py` | Low (OpenAPI-specific) | 3-4h | None |
+| 1 | `generate-component.py` | High | 3-4h | **Required** (Principle I) |
+| 2 | `generate-ignores.py` | High | 2-3h | Supports Principle IV |
+| 3 | `extract-spec.py` | High | 3-4h | Supports Principle III |
+| 4 | `validate-tasks.py` | Medium | 2-3h | Supports Principle III |
+| 5 | `scaffold-test.py` | Medium | 4-5h | **Required** (Principle II) |
+| 6 | `scaffold-checklist.py` | Medium | 3-4h | Supports Principle III |
+| 7 | `parse-data-model.py` | Low | 3-4h | - |
+| 8 | `fill-plan.py` | Low | 2-3h | - |
+| 9 | `build-commit.py` | Low | 1-2h | - |
+| 10 | `validate-contracts.py` | Low | 3-4h | - |
 
 **Total Estimated Effort**: 28-36 hours
 
 ---
 
-## Pattern Analysis Summary
+## Pattern Analysis
 
-| Category | Skill Files | Lines of Patterns | Script Opportunity |
-|----------|-------------|-------------------|-------------------|
-| Boilerplate Generation | 3 | ~150 lines | `generate-*` scripts |
-| Template Expansion | 4 | ~200 lines | `fill-*`, `scaffold-*` scripts |
-| Code Scaffolding | 2 | ~100 lines | `generate-component.py` |
-| Validation/Parsing | 3 | ~120 lines | `validate-*`, `extract-*` scripts |
+| Category | Source Files | Lines Embedded | Script Target |
+|----------|-------------|----------------|---------------|
+| Component Structure | constitution.md | 7 lines | `generate-component.py` |
+| Ignore Patterns | speckit.implement.md | 22 lines | `generate-ignores.py` |
+| Task Format | speckit.tasks.md | 32 lines | `validate-tasks.py` |
+| Checklist Categories | speckit.checklist.md | 10 lines | `scaffold-checklist.py` |
+| Spec Parsing | 4 skill files | ~60 lines each | `extract-spec.py` |
+| Test Boilerplate | constitution.md | 6 lines | `scaffold-test.py` |
+
+**Total Embedded Patterns**: ~570 lines across 10 files
 
 ---
 
 ## Recommended Next Steps
 
-1. **Immediate**: Create `generate-component.py` - Constitution compliance
-2. **This Sprint**: Add `generate-ignores.py` - Removes 40 lines from `speckit.implement.md`
-3. **Next Sprint**: `extract-spec.py` - Shared utility for all SpecKit commands
-4. **Ongoing**: Remaining scripts as capacity allows
+1. **Immediate**: Create `generate-component.py`
+   - Constitution mandates it but doesn't exist
+   - Highest impact on daily development
+   - Enables CI validation
+
+2. **This Sprint**: Add `generate-ignores.py`
+   - Removes 22 lines from `speckit.implement.md`
+   - Every project setup benefits
+
+3. **Next Sprint**: `extract-spec.py` + `validate-tasks.py`
+   - Shared utilities reduce token usage
+   - Enable downstream script chaining
 
 ---
 
-## Integration with Existing Scripts
+## Script Interface Standard
 
-New scripts should follow patterns established in:
-- `validate-wireframe.py` - JSON/summary output modes
-- `inspect-wireframes.py` - `--all`, `--report` flags
-- `screenshot-wireframes.py` - Per-file processing
+Follow patterns from existing scripts:
 
-**Standard Interface Pattern**:
 ```python
 #!/usr/bin/env python3
 """
-[Tool Name] - [One-line description]
+[Tool Name] - [Description]
 
 Usage:
     python tool.py [args]         # Standard output
@@ -424,69 +418,12 @@ if __name__ == '__main__':
 
 ## Conclusion
 
-6 high-priority scripts would eliminate ~450 lines of repetitive patterns from skill prompts and ensure consistency across the 5-file component pattern (constitution requirement). The `generate-component.py` script is highest priority as it enforces a constitutional mandate.
+From a Developer perspective, the highest-impact script is `generate-component.py` because:
+1. Constitution mandates the 5-file pattern
+2. No generator currently exists (despite being referenced)
+3. Every component creation consumes ~500 tokens in boilerplate
+4. CI validation depends on consistent structure
 
-Recommend prioritizing `generate-component.py` and `generate-ignores.py` for immediate implementation.
+Second priority is `generate-ignores.py` to remove 22 lines of embedded patterns from `speckit.implement.md`.
 
----
-
-## Addendum: Developer Session - 000-RLS Implementation Status
-
-**Date**: 2026-01-15 (continued)
-**Role**: Developer
-
-### Next Implementation Step for 000-rls-implementation
-
-**Status**: 48/60 tasks complete. 12 tasks require manual Supabase project setup.
-
-| Task ID | Description | Blocker |
-|---------|-------------|---------|
-| T014 | Apply migration via Supabase Dashboard SQL Editor | Requires Supabase project |
-| T021 | Apply updated migration (US1 policies) | Requires Supabase project |
-| T022 | Verify tests pass for user isolation | Requires running tests |
-| T028 | Apply updated migration (US2 policies) | Requires Supabase project |
-| T029 | Verify tests pass for profile self-management | Requires running tests |
-| T037 | Verify tests pass for service role operations | Requires running tests |
-| T044 | Verify tests pass for anonymous restrictions | Requires running tests |
-| T053 | Apply updated migration (US5 policies) | Requires Supabase project |
-| T054 | Verify tests pass for audit immutability | Requires running tests |
-| T057 | Run full RLS test suite | Requires Supabase project |
-| T059 | Performance test: verify <10ms policy latency | Requires Supabase project |
-| T060 | Security review checklist completion | Requires security review |
-
-**Recommended Next Step**: Create Supabase project via dashboard, then:
-```bash
-# 1. Copy migration to Dashboard SQL Editor
-cat supabase/migrations/00000000000000_rls_foundation.sql
-
-# 2. Configure .env.local with Supabase credentials
-# (copy from .env.example, fill in values)
-
-# 3. Run test suite
-npm run test -- tests/rls/
-```
-
-### Additional Pattern Candidate: RLS Policy Validation
-
-From `speckit.tasks.md` and `supabase/migrations/`:
-
-**Currently Interpreted Dynamically**:
-- Policy naming convention: `{table}_{operation}_{scope}` (e.g., `profiles_select_own`)
-- RLS USING clause patterns: `auth.uid() = id` for ownership
-- Policy coverage verification per user story
-
-**Should Be Codified As**: `validate-rls-policies.py`
-```python
-POLICY_PATTERN = r'^(?P<table>\w+)_(?P<op>select|insert|update|delete)_(?P<scope>own|all|none)$'
-OWNERSHIP_PATTERNS = {
-    'profiles': 'id = auth.uid()',
-    'audit_logs': 'user_id = auth.uid()',
-}
-
-def validate_policy_naming(policy_name):
-    match = re.match(POLICY_PATTERN, policy_name)
-    if not match:
-        return f"Invalid naming: {policy_name}"
-```
-
-**TASK COMPLETE**
+**Recommendation**: Escalate `generate-component.py` to Toolsmith for immediate implementation.

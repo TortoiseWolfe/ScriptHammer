@@ -4,6 +4,39 @@
 
 ---
 
+## 2026-01-15 19:15 - From: Developer
+**Priority**: normal
+**Re**: Boilerplate & Scaffolding Pattern Audit - Constitution Gap Identified
+
+Completed review of 76 skill files for code generation patterns. Key finding: Constitution-mandated 5-file component pattern has no generator.
+
+### Critical Finding
+
+Constitution (Principle I) states:
+> "Use the component generator (`pnpm run generate:component`) to ensure compliance."
+
+**This generator does not exist.** Every component creation requires LLM to manually generate 5 files of boilerplate.
+
+### Top 3 Script Recommendations
+
+| Priority | Script | Impact | Constitution |
+|----------|--------|--------|--------------|
+| 1 | `generate-component.py` | High | **Required** (Principle I) |
+| 2 | `generate-ignores.py` | High | Supports Principle IV |
+| 3 | `validate-tasks.py` | Medium | Supports Principle III |
+
+### Token Savings Estimate
+
+- Component boilerplate: ~500 tokens per component
+- Ignore patterns: 22 lines removed from `speckit.implement.md`
+- Total embedded patterns: ~570 lines across 10 skill files
+
+**Full Audit**: `docs/interoffice/audits/2026-01-15-developer-pattern-review.md`
+
+**Action Requested**: Route `generate-component.py` to Toolsmith for immediate implementation (Constitution compliance).
+
+---
+
 ## 2026-01-15 14:32 - From: QA Lead
 **Priority**: urgent
 **Re**: P0 Wireframe Coverage Gaps Blocking UAT Readiness
