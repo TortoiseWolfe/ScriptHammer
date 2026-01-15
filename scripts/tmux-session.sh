@@ -28,97 +28,102 @@ COLOR_BASE="colour236"       # Dark gray (status bar bg)
 # Role definitions with primers
 declare -A PRIMERS=(
   ["CTO"]="You are the CTO terminal.
-/prep cto
+/prime cto
 
 Skills: Strategic oversight, technology decisions, cross-cutting concerns
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["Architect"]="You are the Architect terminal.
-/prep architect
+/prime architect
 
 Skills: /speckit.plan, architectural reviews, dependency management
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["Coordinator"]="You are the Coordinator terminal.
-/prep coordinator
+/prime coordinator
 
 Skills: /wireframe-status, /commit, /ship"
   ["Security"]="You are the Security Lead terminal.
-/prep security
+/prime security
 
 Skills: Security audits, OWASP compliance, vulnerability scanning
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["Toolsmith"]="You are the Toolsmith terminal.
-/prep toolsmith
+/prime toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["DevOps"]="You are the DevOps terminal.
-/prep devops
+/prime devops
 
 Skills: Docker configs, GitHub Actions, deployment pipelines
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["ProductOwner"]="You are the Product Owner terminal.
-/prep product-owner
+/prime product-owner
 
 Skills: User story validation, acceptance criteria, UX consistency
 Council: /rfc, /rfc-vote, /council, /broadcast"
   ["Planner"]="You are the Planner terminal.
-/prep planner
+/prime planner
 
 Skills: /wireframe-plan [feature]"
   ["WireframeGenerator1"]="You are the Wireframe Generator-1 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]"
   ["WireframeGenerator2"]="You are the Wireframe Generator-2 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]"
   ["WireframeGenerator3"]="You are the Wireframe Generator-3 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]"
   ["PreviewHost"]="You are the Preview Host terminal.
-/prep preview-host
+/prime preview-host
 
 Skills: /hot-reload-viewer"
   ["WireframeQA"]="You are the Wireframe QA terminal.
-/prep wireframe-qa
+/prime wireframe-qa
 
 Skills: /wireframe-screenshots, /wireframe-review"
   ["Validator"]="You are the Validator terminal.
-/prep validator
+/prime validator
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation"
   ["Inspector"]="You are the Inspector terminal.
-/prep inspector
+/prime inspector
 
 Skills: /wireframe-inspect, python3 docs/design/wireframes/inspect-wireframes.py"
   ["Author"]="You are the Author terminal.
-/prep author
+/prime author
 
 Skills: /session-summary, /changelog"
   ["TestEngineer"]="You are the Test Engineer terminal.
-/prep test-engineer
+/prime test-engineer
 
 Skills: /test, /test-components, /test-a11y, /test-hooks"
   ["Developer"]="You are the Developer terminal.
-/prep developer
+/prime developer
 
 Skills: /speckit.implement, /speckit.tasks"
   ["Auditor"]="You are the Auditor terminal.
-/prep auditor
+/prime auditor
 
 Skills: /speckit.analyze, /read-spec"
   ["QALead"]="You are the QA Lead terminal.
-/prep qa-lead
+/prime qa-lead
 
 Skills: Process compliance, acceptance criteria verification, UAT coordination
 Reports to: Architect"
   ["TechWriter"]="You are the Technical Writer terminal.
-/prep tech-writer
+/prime tech-writer
 
 Skills: User documentation, API docs, tutorials, developer guides
 Reports to: CTO"
+  ["DockerCaptain"]="You are the Docker Captain terminal.
+/prime docker-captain
+
+Skills: docker compose, container logs, health checks, resource monitoring
+Reports to: DevOps"
 )
 
 # Role groups
@@ -126,7 +131,7 @@ COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner)
 WIREFRAME=(Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector)
 IMPLEMENT=(Developer TestEngineer Auditor)
 COORD=(Coordinator CTO)
-ALL=(CTO Architect Coordinator Security Toolsmith DevOps ProductOwner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Author TestEngineer Developer Auditor QALead TechWriter)
+ALL=(CTO Architect Coordinator Security Toolsmith DevOps ProductOwner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Author TestEngineer Developer Auditor QALead TechWriter DockerCaptain)
 
 # Parse arguments
 ROLES=()
@@ -140,7 +145,7 @@ case "${1:-}" in
     echo "Usage: $0 [--all|--council|--wireframe|--implement|--coord|ROLE...] [--audit]"
     echo ""
     echo "Groups:"
-    echo "  --all        All 21 terminals"
+    echo "  --all        All 22 terminals"
     echo "  --council    CTO, Architect, Security, Toolsmith, DevOps, ProductOwner"
     echo "  --wireframe  Planner, WireframeGenerators, PreviewHost, WireframeQA, Validator, Inspector"
     echo "  --implement  Developer, TestEngineer, Auditor"
@@ -152,9 +157,9 @@ case "${1:-}" in
     echo "Individual roles: CTO, Architect, Coordinator, Security, Toolsmith, DevOps,"
     echo "  ProductOwner, Planner, WireframeGenerator1, WireframeGenerator2, WireframeGenerator3,"
     echo "  PreviewHost, WireframeQA, Validator, Inspector, Author, TestEngineer, Developer,"
-    echo "  Auditor, QALead, TechWriter"
+    echo "  Auditor, QALead, TechWriter, DockerCaptain"
     echo ""
-    echo "Note: Operator runs OUTSIDE tmux. Use 'claude' then '/prep operator'."
+    echo "Note: Operator runs OUTSIDE tmux. Use 'claude' then '/prime operator'."
     exit 0
     ;;
   *)          ROLES=("$@") ;;

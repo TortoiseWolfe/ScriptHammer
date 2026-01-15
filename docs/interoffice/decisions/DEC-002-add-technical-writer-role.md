@@ -66,7 +66,7 @@ None recorded.
 - [ ] Add Technical Writer Terminal Primer to CLAUDE.md
 - [ ] Update Contributors reporting hierarchy (under Architect)
 - [ ] Add Technical Writer to documentation workflow
-- [ ] Create `/prep tech-writer` skill
+- [x] Create `/prime tech-writer` skill
 - [ ] Create `/api-doc` skill
 - [ ] Create `/data-model` skill
 - [ ] Create `/integration-guide` skill

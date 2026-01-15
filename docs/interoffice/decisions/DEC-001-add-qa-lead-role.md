@@ -59,7 +59,7 @@ None recorded.
 - [ ] Add QA Lead Terminal Primer to CLAUDE.md
 - [ ] Update Contributors reporting hierarchy (under DevOps)
 - [ ] Add QA Lead to workflow sequence
-- [ ] Create `/prep qa-lead` skill
+- [x] Create `/prime qa-lead` skill
 - [ ] Create `/acceptance-check` skill
 - [ ] Create `/manual-test` skill
 - [ ] Create `/browser-test` skill

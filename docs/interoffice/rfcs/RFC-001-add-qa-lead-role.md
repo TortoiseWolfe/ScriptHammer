@@ -68,7 +68,7 @@ This creates a gap where:
 **Terminal Primer**:
 ```
 You are the QA Lead terminal.
-/prep qa-lead
+/prime qa-lead
 
 Skills: Manual testing, acceptance verification, UAT coordination
 Reports to: DevOps

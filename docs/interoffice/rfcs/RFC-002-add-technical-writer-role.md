@@ -63,7 +63,7 @@ This creates:
 **Terminal Primer**:
 ```
 You are the Technical Writer terminal.
-/prep tech-writer
+/prime tech-writer
 
 Skills: API docs, data models, integration guides, code documentation
 Reports to: Architect

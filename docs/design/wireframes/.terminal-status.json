@@ -1,335 +1,141 @@
 {
-  "lastUpdated": "2026-01-14T20:37:06Z",
-  "terminals": {
-    "cto": {
-      "status": "active",
-      "feature": null,
-      "task": "RFC-001/002 creation for QA Lead and Technical Writer roles"
-    },
-    "architect": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "coordinator": {
-      "status": "active",
-      "feature": null,
-      "task": "Queue management - tracking audit action items and wireframe reviews"
-    },
-    "security-lead": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "toolsmith": {
-      "status": "queued",
-      "feature": null,
-      "task": "Quick-win skills from audit: /status, /queue, /review-queue, /wireframe-fix, /viewer-status"
-    },
-    "devops": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "product-owner": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "wireframe-generator-1": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "wireframe-generator-2": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "wireframe-generator-3": {
-      "status": "idle",
-      "feature": "015-oauth-display-name",
-      "task": "Completed 1 SVG (01-profile-population-flow.svg) - queued for review"
-    },
-    "preview-host": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "wireframe-qa": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "validator": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "inspector": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "author": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "test-engineer": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "developer": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "auditor": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "planner": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "qa-lead": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    },
-    "tech-writer": {
-      "status": "idle",
-      "feature": null,
-      "task": null
-    }
-  },
+  "lastUpdated": "2026-01-15T00:00:00Z",
   "queue": [
     {
       "feature": "000-rls-implementation",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-1 completed 1 SVG (dark theme architecture) - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "001-wcag-aa-compliance",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-1 completed 3 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "002-cookie-consent",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 3 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "005-security-hardening",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-1 completed 3 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "007-e2e-testing-framework",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 2 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "004-mobile-first-design",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-2 completed 2 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "009-user-messaging-system",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 2 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "019-google-analytics",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-2 completed 2 SVGs - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "008-on-the-account",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-1 completed 1 SVG (avatar upload flow) - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "012-welcome-message-architecture",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 1 SVG (user onboarding flow) - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "010-unified-blog-content",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-1 completed 2 SVGs (editor-and-preview, conflict-resolution) - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
-      "feature": null,
-      "svg": null,
-      "action": "CREATE_SKILL",
-      "reason": "Audit Action #1: Create /status skill for project health dashboard",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "CREATE_SKILL",
-      "reason": "Audit Action #2: Create /queue skill for task management",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "CREATE_SKILL",
-      "reason": "Audit Action #3: Create /review-queue skill for wireframe-qa backlog visibility",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "CREATE_SKILL",
-      "reason": "Audit Action #4: Create /wireframe-fix skill for Generator issue context loading",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "CREATE_SKILL",
-      "reason": "Audit Action #5: Create /viewer-status skill for Preview Host health check",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "RFC_VOTE",
-      "reason": "Audit Action #6: Vote on RFC-001 (QA Lead Role)",
-      "assignedTo": "council"
-    },
-    {
-      "feature": null,
-      "svg": null,
-      "action": "RFC_VOTE",
-      "reason": "Audit Action #7: Vote on RFC-002 (Technical Writer Role)",
-      "assignedTo": "council"
-    },
-    {
       "feature": "013-oauth-messaging-password",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 2 SVGs (oauth-password-setup, oauth-password-unlock) - ready for review",
       "assignedTo": "wireframe-qa"
     },
     {
       "feature": "015-oauth-display-name",
-      "svg": null,
       "action": "REVIEW",
-      "reason": "Wireframe-Generator-3 completed 1 SVG (profile-population-flow - DARK theme) - ready for review",
       "assignedTo": "wireframe-qa"
+    },
+    {
+      "action": "CREATE_SKILL",
+      "reason": "/status skill",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "action": "CREATE_SKILL",
+      "reason": "/queue skill",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "action": "CREATE_SKILL",
+      "reason": "/review-queue skill",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "action": "CREATE_SKILL",
+      "reason": "/wireframe-fix skill",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "action": "CREATE_SKILL",
+      "reason": "/viewer-status skill",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-001 (QA Lead Role)",
+      "assignedTo": "council"
+    },
+    {
+      "action": "RFC_VOTE",
+      "reason": "RFC-002 (Technical Writer Role)",
+      "assignedTo": "council"
     },
     {
       "feature": "014-admin-welcome-email-gate",
       "svg": "01-email-verification-gate.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:15",
       "assignedTo": "generator-2"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "01-message-input-responsive.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:37",
       "assignedTo": "generator-1"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "02-key-setup-flow.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:37",
       "assignedTo": "generator-1"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "03-message-error-states.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:37",
       "assignedTo": "generator-1"
     },
     {
       "feature": "017-colorblind-mode",
       "svg": "01-colorblind-settings.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:37",
       "assignedTo": "generator-3"
     },
     {
       "feature": "017-colorblind-mode",
       "svg": "02-colorblind-preview.svg",
       "action": "GENERATE",
-      "reason": "Added by queue_manager at 20:37",
       "assignedTo": "generator-3"
     }
-  ],
-  "completedToday": [
-    "Coordinator: Completed organizational audit response (17/17 terminals)",
-    "CTO: Consolidated audit findings - 12 action items, 2 RFCs created",
-    "Coordinator: Updated queue with audit action items",
-    "Manager: Clean slate - deleted all SVGs except 000-landing-page",
-    "Manager: Assigned 000-landing-page to wireframe-generator-1",
-    "Manager: Assigned 003-user-authentication to planner for wireframe planning",
-    "Planner: Completed wireframe plan for 003-user-authentication (4 SVGs)",
-    "Manager: Assigned 003-user-authentication (4 SVGs) to wireframe-generator-2",
-    "Manager: Assigned 007-e2e-testing-framework to planner (for wireframe-generator-3)",
-    "Manager: Removed 000-landing-page from queue (already passes v5 validation)",
-    "Manager: Assigned 006-component-template to planner (for wireframe-generator-1)",
-    "Planner: Completed wireframe plan for 005-security-hardening (3 SVGs)",
-    "Manager: Assigned 005-security-hardening (3 SVGs) to wireframe-generator-1",
-    "Planner: Completed wireframe plan for 007-e2e-testing-framework (2 SVGs)",
-    "Wireframe-Generator-2: Completed 003-user-authentication (3 SVGs: registration, verification, profile)",
-    "Planner: Completed wireframe plan for 006-template-fork-experience (2 SVGs)",
-    "Planner: Assigned 006-template-fork-experience (2 SVGs) to wireframe-generator-2",
-    "Wireframe-Generator-2: Completed 006-template-fork-experience (2 SVGs: service-setup-guidance, rebrand-automation-flow)",
-    "Manager: Assigned 002-cookie-consent to planner for wireframe planning",
-    "Manager: Assigned 001-wcag-aa-compliance to planner (for wireframe-generator-2)",
-    "Wireframe-Generator-1: Completed 005-security-hardening (3 SVGs: security-ux-enhancements, session-timeout-warning, security-audit-dashboard)",
-    "Planner: Completed wireframe plan for 002-cookie-consent (3 SVGs: consent-modal, cookie-preferences-panel, privacy-settings-page)",
-    "Planner: Completed wireframe plan for 001-wcag-aa-compliance (3 SVGs: accessibility-dashboard, cicd-pipeline-integration, accessibility-controls-overlay)",
-    "Manager: Assigned 002-cookie-consent (3 SVGs) to wireframe-generator-2",
-    "Wireframe-Generator-3: Completed 007-e2e-testing-framework (2 SVGs: test-architecture-diagram, cicd-pipeline-flow)",
-    "Wireframe-Generator-1: Completed 001-wcag-aa-compliance (3 SVGs: accessibility-dashboard, cicd-pipeline-integration, accessibility-controls-overlay)",
-    "Wireframe-Generator-3: Self-assigned 002-cookie-consent (3 SVGs)",
-    "Wireframe-Generator-3: Completed 002-cookie-consent (3 SVGs: consent-modal, cookie-preferences-panel, privacy-settings-page)",
-    "Operator: Updated terminal names per RFC-003 (viewer\u2192preview-host, reviewer\u2192wireframe-qa, tester\u2192test-engineer, implementer\u2192developer, generator-N\u2192wireframe-generator-N)",
-    "Operator: Added missing terminals (product-owner, qa-lead, tech-writer) per RFC-001, RFC-002",
-    "Wireframe-Generator-2: Completed 004-mobile-first-design (2 SVGs: responsive-navigation, touch-targets-performance)",
-    "Wireframe-Generator-1: Completed 000-rls-implementation (1 SVG: policy-architecture) - DARK theme architecture diagram",
-    "Wireframe-Generator-3: Completed 009-user-messaging-system (2 SVGs: connection-and-chat, settings-and-data)",
-    "Wireframe-Generator-2: Completed 019-google-analytics (2 SVGs: consent-flow, analytics-dashboard)",
-    "Wireframe-Generator-1: Completed 008-on-the-account (1 SVG: avatar-upload-flow)",
-    "Wireframe-Generator-3: Completed 012-welcome-message-architecture (1 SVG: user-onboarding-flow)",
-    "Wireframe-Generator-1: Completed 010-unified-blog-content (2 SVGs: editor-and-preview, conflict-resolution)",
-    "Wireframe-Generator-3: Completed 013-oauth-messaging-password (2 SVGs: oauth-password-setup, oauth-password-unlock)",
-    "Wireframe-Generator-3: Completed 015-oauth-display-name (1 SVG: profile-population-flow - DARK theme)"
   ]
 }

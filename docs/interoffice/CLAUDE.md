@@ -182,7 +182,7 @@ Message body.
 
 ## Integration with Existing Systems
 
-- **`/prep [terminal]`**: Checks memos and broadcasts on startup
+- **`/prime [terminal]`**: Checks memos and broadcasts on startup
 - **`/next`**: Shows pending RFCs requiring votes
 - **`.terminal-status.json`**: Task queue (unchanged)
 - **`GENERAL_ISSUES.md`**: Wireframe issues (unchanged)

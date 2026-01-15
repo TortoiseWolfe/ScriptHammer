@@ -32,7 +32,7 @@ for i in $(tmux list-windows -t $SESSION -F '#I'); do
       PROMPT="Please complete the organizational audit. Read $AUDIT_FILE, find your section (### $WIN_NAME), and fill in all 7 questions:
 
 1. Role Understanding - How do you understand your responsibilities?
-2. Context Assessment - Is the /prep context adequate?
+2. Context Assessment - Is the /prime context adequate?
 3. Tooling Adequacy - Are your skills and tools sufficient?
 4. Key Dependencies - Which other roles do you depend on?
 5. Suggestions - Improvements to tools, processes, or workflows?

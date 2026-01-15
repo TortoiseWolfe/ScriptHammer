@@ -12,7 +12,7 @@
 
 ## Terminal Primers
 
-Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prep`.
+Copy a block to prime a new terminal. Each primer auto-loads focused context via `/prime`.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -23,7 +23,7 @@ Copy a block to prime a new terminal. Each primer auto-loads focused context via
                     manages via tmux send-keys
                               │
 ┌─────────────────────────────▼───────────────────────────────┐
-│  TMUX SESSION "scripthammer" (19 windows)                   │
+│  TMUX SESSION "scripthammer" (20 windows)                   │
 │                                                             │
 │                        ┌─────────────┐                      │
 │                        │     CTO     │  ◄── Strategic       │
@@ -55,7 +55,7 @@ Copy a block to prime a new terminal. Each primer auto-loads focused context via
 
 ```
 You are the CTO terminal.
-/prep cto
+/prime cto
 
 Skills: Strategic oversight, technology decisions, cross-cutting concerns
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -74,7 +74,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Architect terminal.
-/prep architect
+/prime architect
 
 Skills: /speckit.plan, architectural reviews, dependency management
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -93,7 +93,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Coordinator terminal.
-/prep coordinator
+/prime coordinator
 
 Skills: /wireframe-status, /commit, /ship
 ```
@@ -111,7 +111,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Security Lead terminal.
-/prep security
+/prime security
 
 Skills: Security audits, OWASP compliance, vulnerability scanning
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -130,7 +130,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Toolsmith terminal.
-/prep toolsmith
+/prime toolsmith
 
 Skills: Edit skill files in ~/.claude/commands/ and .claude/commands/
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -149,7 +149,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the DevOps terminal.
-/prep devops
+/prime devops
 
 Skills: Docker configs, GitHub Actions, deployment pipelines
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -168,7 +168,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Product Owner terminal.
-/prep product-owner
+/prime product-owner
 
 Skills: User story validation, acceptance criteria, UX consistency
 Council: /rfc, /rfc-vote, /council, /broadcast
@@ -187,7 +187,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Planner terminal.
-/prep planner
+/prime planner
 
 Skills: /wireframe-plan [feature]
 ```
@@ -205,7 +205,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Wireframe Generator-1 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -223,7 +223,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Wireframe Generator-2 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -241,7 +241,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Wireframe Generator-3 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 
 Skills: /wireframe-prep [feature], /wireframe [feature]
 ```
@@ -259,7 +259,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Preview Host terminal.
-/prep preview-host
+/prime preview-host
 
 Skills: /hot-reload-viewer
 ```
@@ -277,7 +277,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Wireframe QA terminal.
-/prep wireframe-qa
+/prime wireframe-qa
 
 Skills: /wireframe-screenshots, /wireframe-review
 ```
@@ -295,7 +295,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Validator terminal.
-/prep validator
+/prime validator
 
 Skills: python3 docs/design/wireframes/validate-wireframe.py --check-escalation
 ```
@@ -313,7 +313,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Inspector terminal.
-/prep inspector
+/prime inspector
 
 Skills: /wireframe-inspect, python3 docs/design/wireframes/inspect-wireframes.py
 ```
@@ -331,7 +331,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Author terminal.
-/prep author
+/prime author
 
 Skills: /session-summary, /changelog
 ```
@@ -349,7 +349,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Test Engineer terminal.
-/prep test-engineer
+/prime test-engineer
 
 Skills: /test, /test-components, /test-a11y, /test-hooks
 ```
@@ -367,7 +367,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Developer terminal.
-/prep developer
+/prime developer
 
 Skills: /speckit.implement, /speckit.tasks
 ```
@@ -385,7 +385,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the Auditor terminal.
-/prep auditor
+/prime auditor
 
 Skills: /speckit.analyze, /read-spec
 ```
@@ -403,7 +403,7 @@ Bonus: Suggest a better title for your role if you have one!
 
 ```
 You are the QA Lead terminal.
-/prep qa-lead
+/prime qa-lead
 
 Skills: Process compliance, acceptance criteria verification, UAT coordination
 Reports to: Architect
@@ -421,7 +421,7 @@ Reports to: Architect
 
 ```
 You are the Technical Writer terminal.
-/prep tech-writer
+/prime tech-writer
 
 Skills: User documentation, API docs, tutorials, developer guides
 Reports to: CTO
@@ -440,7 +440,21 @@ Reports to: CTO
 ```
 You are the Operator terminal - the meta-orchestrator.
 
-You run OUTSIDE the tmux session, managing 21 worker terminals INSIDE it.
+You run OUTSIDE the tmux session, managing 20 worker terminals INSIDE it.
+
+## Dispatch Methods
+
+| Method | Runs Where | Use Case |
+|--------|------------|----------|
+| Task subagents | Inside your session | Quick dispatch, status checks, lightweight tasks |
+| tmux send-keys | In tmux terminals | Full context work, role-specific tasks |
+
+**Subagents** spawn within your Claude session and complete autonomously.
+Use them for broadcasting instructions, checking status, or coordinating.
+They don't consume tmux windows.
+
+**tmux terminals** are separate Claude instances with persistent role context.
+Use them for deep work requiring full role knowledge.
 
 ## Quick Start
 
@@ -456,10 +470,13 @@ You run OUTSIDE the tmux session, managing 21 worker terminals INSIDE it.
 ./scripts/tmux-dispatch.sh --tasks   # Audit items
 ./scripts/tmux-dispatch.sh --queue   # Wireframe queue
 
-# 4. Monitor
-tmux capture-pane -t scripthammer:4 -p | tail -30
+# 4. Monitor specific terminal
+tmux capture-pane -t scripthammer:4 -p | tail -30  # Toolsmith
 
-# 5. Attach to observe
+# 5. Check container health (optional)
+tmux capture-pane -t scripthammer:20 -p | tail -10  # DockerCaptain
+
+# 6. Attach to observe
 tmux attach -t scripthammer
 ```
 
@@ -499,6 +516,24 @@ ls -la docs/interoffice/memos/
 2. Update session data file
 3. tmux kill-session -t scripthammer
 ```
+</details>
+
+<details>
+<summary><strong>Docker Captain</strong> - Container management and health monitoring</summary>
+
+```
+You are the Docker Captain terminal.
+/prime docker-captain
+
+Skills: docker compose, container logs, health checks, resource monitoring
+Reports to: DevOps
+```
+
+**Container Focus:**
+- Monitor wireframe-viewer container health
+- Check container logs for errors
+- Restart stuck services
+- Resource usage monitoring
 </details>
 
 ---

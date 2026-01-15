@@ -24,67 +24,67 @@ declare -A WINDOWS=(
 # These are designed to preserve recovered context by requesting minimal response
 declare -A PRIMERS=(
   ["CTO"]="You are the CTO terminal.
-/prep cto
+/prime cto
 Respond only: Ready."
   ["Architect"]="You are the Architect terminal.
-/prep architect
+/prime architect
 Respond only: Ready."
   ["Coordinator"]="You are the Coordinator terminal.
-/prep coordinator
+/prime coordinator
 Respond only: Ready."
   ["Security"]="You are the Security Lead terminal.
-/prep security
+/prime security
 Respond only: Ready."
   ["Toolsmith"]="You are the Toolsmith terminal.
-/prep toolsmith
+/prime toolsmith
 Respond only: Ready."
   ["DevOps"]="You are the DevOps terminal.
-/prep devops
+/prime devops
 Respond only: Ready."
   ["ProductOwner"]="You are the Product Owner terminal.
-/prep product-owner
+/prime product-owner
 Respond only: Ready."
   ["Planner"]="You are the Planner terminal.
-/prep planner
+/prime planner
 Respond only: Ready."
   ["WireframeGenerator1"]="You are the Wireframe Generator-1 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 Respond only: Ready."
   ["WireframeGenerator2"]="You are the Wireframe Generator-2 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 Respond only: Ready."
   ["WireframeGenerator3"]="You are the Wireframe Generator-3 terminal.
-/prep wireframe-generator
+/prime wireframe-generator
 Respond only: Ready."
   ["PreviewHost"]="You are the Preview Host terminal.
-/prep preview-host
+/prime preview-host
 Respond only: Ready."
   ["WireframeQA"]="You are the Wireframe QA terminal.
-/prep wireframe-qa
+/prime wireframe-qa
 Respond only: Ready."
   ["Validator"]="You are the Validator terminal.
-/prep validator
+/prime validator
 Respond only: Ready."
   ["Inspector"]="You are the Inspector terminal.
-/prep inspector
+/prime inspector
 Respond only: Ready."
   ["Author"]="You are the Author terminal.
-/prep author
+/prime author
 Respond only: Ready."
   ["TestEngineer"]="You are the Test Engineer terminal.
-/prep test-engineer
+/prime test-engineer
 Respond only: Ready."
   ["Developer"]="You are the Developer terminal.
-/prep developer
+/prime developer
 Respond only: Ready."
   ["Auditor"]="You are the Auditor terminal.
-/prep auditor
+/prime auditor
 Respond only: Ready."
   ["QALead"]="You are the QA Lead terminal.
-/prep qa-lead
+/prime qa-lead
 Respond only: Ready."
   ["TechWriter"]="You are the Technical Writer terminal.
-/prep tech-writer
+/prime tech-writer
 Respond only: Ready."
 )
 
