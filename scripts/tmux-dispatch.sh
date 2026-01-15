@@ -122,6 +122,8 @@ Build the skills assigned to Toolsmith (no RFC required):
 Start with /status since it's most requested by multiple roles.
 Create each skill in .claude/commands/, test it, commit with descriptive message.
 
+IMPORTANT: Write your progress/findings to docs/interoffice/audits/$(date +%Y-%m-%d)-toolsmith-skills.md
+
 Reply: SKILL COMPLETE [name] after each one."
 
   # DevOps CI/CD work
@@ -135,6 +137,9 @@ Priority items:
 3. Configure Docker health checks
 
 Start with pre-commit hooks (most impact on code quality).
+
+IMPORTANT: Write your progress/findings to docs/interoffice/audits/$(date +%Y-%m-%d)-devops-infrastructure.md
+
 Reply: TASK COMPLETE [item] after each."
 
   # Security scanning
@@ -148,6 +153,9 @@ Priority items:
 3. Review auth flows in feature specs
 
 Start with /security-audit skill.
+
+IMPORTANT: Write your progress/findings to docs/interoffice/audits/$(date +%Y-%m-%d)-security-review.md
+
 Reply: TASK COMPLETE [item] after each."
 
   echo ""

@@ -373,12 +373,27 @@ cat docs/design/wireframes/.terminal-status.json | jq .terminals  # View all
 cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 ```
 
+**PERSISTENCE RULE (ALL TERMINALS):**
+Terminal output is ephemeral - lost when context clears. When you produce analysis, recommendations, or findings:
+- **WRITE to file**: `docs/interoffice/audits/YYYY-MM-DD-[terminal]-[topic].md`
+- **Or use**: `/log [summary]` for quick persistence
+- **Never just print** - valuable work disappears
+
+**NOTIFICATION RULE (ALL TERMINALS):**
+When your findings have action items for another terminal:
+1. Write audit to file (persistence)
+2. Notify via `/log [summary] --notify [target]` (adds memo to their inbox)
+3. Target sees memo on next `/prep`
+
+For **urgent** items, ask Operator to dispatch via tmux for immediate notification.
+
 **If you are the CTO terminal:**
 - Focus: Strategic oversight and technology decisions
 - Make high-level project direction decisions
 - Technology stack choices and cross-cutting concerns
 - Risk assessment and mitigation
 - Cross-feature coordination and prioritization
+- **WRITE findings to**: `docs/interoffice/audits/YYYY-MM-DD-cto-[topic].md`
 
 **If you are the Architect terminal:**
 - Focus: System design and component patterns
@@ -386,6 +401,7 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Review technical approaches before implementation
 - Manage feature dependencies in `IMPLEMENTATION_ORDER.md`
 - Design data models and API contracts
+- **WRITE audits to**: `docs/interoffice/audits/YYYY-MM-DD-architect-[topic].md`
 
 **If you are the Coordinator terminal:**
 - Focus: Coordination and documentation
@@ -400,6 +416,7 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - OWASP Top 10 compliance checks
 - Dependency vulnerability scanning
 - Auth flow and secrets management review
+- **WRITE audits to**: `docs/interoffice/audits/YYYY-MM-DD-security-[topic].md`
 
 **If you are the Toolsmith terminal:**
 - Focus: Skill files and tool maintenance
@@ -486,6 +503,7 @@ cat docs/design/wireframes/.terminal-status.json | jq .queue      # View queue
 - Use `/speckit.analyze` to check drift
 - Flag inconsistencies between spec, plan, tasks
 - Verify implementation matches wireframes
+- **WRITE audits to**: `docs/interoffice/audits/YYYY-MM-DD-auditor-[topic].md`
 
 **If you are the QA Lead terminal:**
 - Focus: Process compliance and acceptance criteria

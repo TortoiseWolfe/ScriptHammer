@@ -464,6 +464,41 @@ tmux attach -t scripthammer
 ```
 
 **Note:** Operator does not participate in audits - it orchestrates them.
+
+### Session Continuation (Day 2+)
+
+When resuming an Operator session, use this continuation primer:
+
+```
+You are the Operator terminal - the meta-orchestrator.
+You run OUTSIDE the tmux session, managing 21 worker terminals INSIDE it.
+
+## Session Continuation
+
+# Read latest session data
+cat docs/interoffice/operator-day1-data.md
+
+# Startup Sequence
+tmux has-session -t scripthammer 2>/dev/null && echo "Exists" || ./scripts/tmux-session.sh --all
+./scripts/tmux-dispatch.sh --status
+ls -la docs/interoffice/memos/
+
+## Priority Checklist (before dispatching)
+- [ ] RFCs needing votes?
+- [ ] Memos needing action?
+- [ ] Idle terminals to assign?
+- [ ] Toolsmith fixes blocking generators?
+
+## Dispatch Commands
+./scripts/tmux-dispatch.sh --vote    # RFC votes
+./scripts/tmux-dispatch.sh --tasks   # Audit items
+./scripts/tmux-dispatch.sh --queue   # Wireframe queue
+
+## End of Day
+1. Log terminal output to docs/interoffice/
+2. Update session data file
+3. tmux kill-session -t scripthammer
+```
 </details>
 
 ---
