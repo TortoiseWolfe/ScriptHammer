@@ -9,6 +9,15 @@ Options:
   --staged                 Scan only staged git files (pre-commit mode)
   --json                   Output as JSON
   --summary                One-line pass/fail for CI
+  --no-allowlist           Ignore .secrets-allowlist file
+
+Allowlist:
+  Create .secrets-allowlist in project root to ignore false positives.
+  Format: one entry per line, supports:
+    - file:scripts/secrets-scan.py     # Ignore entire file
+    - line:scripts/secrets-scan.py:59  # Ignore specific line
+    - pattern:test-users               # Ignore files matching pattern
+    - # comments start with hash
 
 Examples:
   python3 scripts/secrets-scan.py                    # Full codebase scan
@@ -116,6 +125,65 @@ SENSITIVE_FILES = [
     'secrets.json',
 ]
 
+# Global allowlist (loaded at runtime)
+ALLOWLIST = {
+    'files': set(),      # Files to ignore entirely
+    'lines': set(),      # file:line pairs to ignore
+    'patterns': set(),   # Patterns to ignore in file paths
+}
+
+
+def load_allowlist(root: Path) -> Dict:
+    """Load .secrets-allowlist file"""
+    allowlist = {
+        'files': set(),
+        'lines': set(),
+        'patterns': set(),
+    }
+
+    allowlist_file = root / '.secrets-allowlist'
+    if not allowlist_file.exists():
+        return allowlist
+
+    for line in allowlist_file.read_text().strip().split('\n'):
+        line = line.strip()
+        # Skip comments and empty lines
+        if not line or line.startswith('#'):
+            continue
+
+        if line.startswith('file:'):
+            allowlist['files'].add(line[5:].strip())
+        elif line.startswith('line:'):
+            allowlist['lines'].add(line[5:].strip())
+        elif line.startswith('pattern:'):
+            allowlist['patterns'].add(line[8:].strip())
+        else:
+            # Default: treat as file pattern
+            allowlist['patterns'].add(line)
+
+    return allowlist
+
+
+def is_allowlisted(filepath: str, line_num: int = 0) -> bool:
+    """Check if file or file:line is in allowlist"""
+    # Normalize path
+    rel_path = filepath.replace(str(PROJECT_ROOT) + '/', '')
+
+    # Check file allowlist
+    if rel_path in ALLOWLIST['files']:
+        return True
+
+    # Check line allowlist
+    if f"{rel_path}:{line_num}" in ALLOWLIST['lines']:
+        return True
+
+    # Check pattern allowlist
+    for pattern in ALLOWLIST['patterns']:
+        if pattern in rel_path:
+            return True
+
+    return False
+
 
 def should_skip_file(filepath: str) -> bool:
     """Check if file should be skipped"""
@@ -157,6 +225,10 @@ def scan_file(filepath: Path) -> List[Dict]:
                 if is_false_positive(line):
                     continue
 
+                # Check allowlist
+                if is_allowlisted(str(filepath), line_num):
+                    continue
+
                 # Extract matched text (truncate for safety)
                 matched_text = match.group()
                 if len(matched_text) > 50:
@@ -181,7 +253,7 @@ def check_sensitive_files(root: Path) -> List[Dict]:
         if '*' in pattern:
             # Glob pattern
             for match in root.rglob(pattern):
-                if not should_skip_file(str(match)):
+                if not should_skip_file(str(match)) and not is_allowlisted(str(match)):
                     findings.append({
                         'file': str(match),
                         'line': 0,
@@ -192,7 +264,7 @@ def check_sensitive_files(root: Path) -> List[Dict]:
         else:
             # Exact file
             target = root / pattern
-            if target.exists():
+            if target.exists() and not is_allowlisted(str(target)):
                 findings.append({
                     'file': str(target),
                     'line': 0,
@@ -314,8 +386,15 @@ def main():
                        help="Output as JSON")
     parser.add_argument("--summary", action="store_true",
                        help="One-line summary")
+    parser.add_argument("--no-allowlist", action="store_true",
+                       help="Ignore .secrets-allowlist file")
 
     args = parser.parse_args()
+
+    # Load allowlist
+    global ALLOWLIST
+    if not args.no_allowlist:
+        ALLOWLIST = load_allowlist(PROJECT_ROOT)
 
     # Determine scan scope
     if args.staged:
