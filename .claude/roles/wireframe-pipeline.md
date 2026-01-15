@@ -29,6 +29,25 @@ Planner → Generators (3 parallel) → PreviewHost → WireframeQA → Validato
 - Panel color: `#e8d4b8` (never `#ffffff`)
 - Touch targets: 44px minimum
 
+## MANDATORY SVG HEADER
+
+**COPY THIS EXACTLY** - do not type from memory (G-040, G-041, G-042):
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">FEATURE - PAGE</text>
+```
+
+**Critical**: `height="1080"` NOT `height="1920"`. All attributes must use `"` quotes, no trailing commas.
+
 ## Issue Classification
 
 | Type | Examples | Action |

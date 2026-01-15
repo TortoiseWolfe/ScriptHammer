@@ -42,6 +42,9 @@
 | G-037 | Annotation narrative text too light/small | Use 16px bold for titles, 14px regular for narrative, high contrast | Annotation Readability |
 | G-038 | Signature text not bold | Signature MUST have `font-weight="bold"` or `font-weight:bold` in style | Signature Block (validator: SIGNATURE-002) |
 | G-039 | Navigation shows no active page indicator | Desktop AND mobile nav must highlight current page with `#8b5cf6` fill | Active Navigation State |
+| G-040 | Unquoted or malformed XML attributes | All attributes must be properly quoted: `y="60"` not `y='60,'` | XML Syntax Rules |
+| G-041 | Wrong SVG height attribute | Must be `height="1080"`, NOT `height="1920"` | SVG Header Rules |
+| G-042 | Missing header/footer include references | Use `<use href="includes/header-desktop.svg#desktop-header"/>` etc. | Include References |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -53,12 +56,72 @@
 Before writing ANY SVG:
 
 - [ ] Read this file (GENERAL_ISSUES.md)
+- [ ] **COPY THE MANDATORY SVG HEADER** (see section below) - do NOT type from memory
 - [ ] Check Light Theme palette: `#e8d4b8`, `#dcc8a8`, `#f5f0e6` - NOT `#ffffff`
 - [ ] Open include files and prepare to copy EXACT paths
 - [ ] Calculate vertical space distribution BEFORE placing elements
 - [ ] Plan arrow positions to match the elements they reference
 - [ ] Identify clear areas for annotation boxes
 - [ ] Navigation active state: Highlight current page in BOTH desktop nav AND mobile footer
+- [ ] Verify all XML attributes are properly quoted (no trailing commas, proper `"` quotes)
+
+---
+
+## MANDATORY SVG HEADER (G-040, G-041, G-042)
+
+**COPY THIS EXACTLY** - do not type from memory:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">FEATURE NAME - PAGE TITLE</text>
+```
+
+### Critical Rules
+
+| Rule | Wrong | Correct |
+|------|-------|---------|
+| G-040 | `y='60,'` or `y=60` | `y="60"` |
+| G-041 | `height="1920"` | `height="1080"` |
+| G-042 | No `<use href="includes/..."/>` | Include header/footer references |
+
+### Include References Template
+
+```xml
+<!-- Desktop viewport (x=40, y=60, 1280x720) -->
+<g id="desktop" transform="translate(40, 60)">
+  <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+  <!-- Content here -->
+  <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+</g>
+
+<!-- Mobile viewport (x=1360, y=60, 360x720) -->
+<g id="mobile" transform="translate(1360, 60)">
+  <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+  <!-- Content here (y >= 78) -->
+  <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+</g>
+
+<!-- Annotation panel (x=40, y=800, 1840x220) -->
+<g id="annotations" transform="translate(40, 800)">
+  <!-- Annotation content here -->
+</g>
+
+<!-- Signature -->
+<text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">NNN:NN | Feature Name | ScriptHammer</text>
+</svg>
+```
 
 ---
 
@@ -381,6 +444,9 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-12 | G-037 | 002:01 review - annotation text too small/light to read |
 | 2026-01-13 | G-038 | ESCALATED - SIGNATURE-002 seen in 000-landing-page, 000-rls-implementation, 001-wcag-aa-compliance |
 | 2026-01-13 | G-039 | ESCALATED - NAV-001 seen in 003-user-authentication/01 and 003-user-authentication/02 |
+| 2026-01-15 | G-040 | XML-004 seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
+| 2026-01-15 | G-041 | SVG-003 (wrong height=1920) seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
+| 2026-01-15 | G-042 | HDR-001 (missing includes) seen in 022-web3forms-integration/01 and 022-web3forms-integration/02 |
 
 ---
 
