@@ -1,6 +1,6 @@
 # RFC-004: CI Wireframe Validation Enforcement Timeline
 
-**Status**: draft
+**Status**: decided
 **Author**: DevOps
 **Created**: 2026-01-15
 **Target Decision**: 2026-01-22
@@ -9,12 +9,12 @@
 
 | Stakeholder | Vote | Date |
 |-------------|------|------|
-| CTO | pending | - |
-| Architect | pending | - |
-| Security Lead | pending | - |
-| Toolsmith | pending | - |
-| DevOps | pending | - |
-| Product Owner | pending | - |
+| CTO | approve | 2026-01-15 |
+| Architect | approve | 2026-01-15 |
+| Security Lead | approve | 2026-01-15 |
+| Toolsmith | approve | 2026-01-15 |
+| DevOps | approve | 2026-01-15 |
+| Product Owner | approve | 2026-01-15 |
 
 **Required**: All non-abstaining stakeholders must approve
 
@@ -271,6 +271,6 @@ If approved, the following work is required:
 
 ## Decision Record
 
-**Decided**: (pending)
-**Outcome**: (pending)
-**Decision ID**: DEC-004 (if approved)
+**Decided**: 2026-01-15
+**Outcome**: approved
+**Decision ID**: DEC-004
