@@ -44,12 +44,72 @@ jobs:
       # Note: Validator uses stdlib xml.etree.ElementTree, no external deps needed
 
       - name: Validate all wireframes
-        run: python docs/design/wireframes/validate-wireframe.py --all
+        id: validate
+        run: |
+          set +e
+          OUTPUT=$(python docs/design/wireframes/validate-wireframe.py --all 2>&1)
+          EXIT_CODE=$?
+          echo "$OUTPUT"
+          # Count issues for PR comment
+          ERROR_COUNT=$(echo "$OUTPUT" | grep -c "ERROR" || echo "0")
+          WARNING_COUNT=$(echo "$OUTPUT" | grep -c "WARNING" || echo "0")
+          echo "error_count=$ERROR_COUNT" >> $GITHUB_OUTPUT
+          echo "warning_count=$WARNING_COUNT" >> $GITHUB_OUTPUT
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          exit $EXIT_CODE
         # Enforcement timeline:
         # - Planning phase (current): continue-on-error=true, validation runs but doesn't block
-        # - Transition phase: Add issue counts to PR comments
+        # - Transition phase: Add issue counts to PR comments (implemented below)
         # - Enforcement phase: Remove continue-on-error to block PRs with errors
         continue-on-error: true
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const errorCount = '${{ steps.validate.outputs.error_count }}';
+            const warningCount = '${{ steps.validate.outputs.warning_count }}';
+            const exitCode = '${{ steps.validate.outputs.exit_code }}';
+
+            let status = '✅ All wireframes valid';
+            if (exitCode !== '0') {
+              status = `⚠️ Wireframe validation: ${errorCount} errors, ${warningCount} warnings`;
+            }
+
+            const body = `### SVG Wireframe Validation
+
+            ${status}
+
+            > **Phase 2:** Wireframe validation is non-blocking. PR comments enabled.
+            > See [RFC-004](docs/interoffice/rfcs/RFC-004-ci-wireframe-validation-enforcement.md) for enforcement timeline.`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('SVG Wireframe Validation')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body.trim()
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body.trim()
+              });
+            }
 
   yaml-lint:
     name: YAML Lint
