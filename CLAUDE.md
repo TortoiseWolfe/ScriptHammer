@@ -9,13 +9,13 @@ ScriptHammer is a **planning template** for AI-assisted development. It contains
 This project uses 26 Claude Code terminals in a tmux session arranged in **assembly line order**:
 
 ```
-STRATEGY (W0-2):    CTO → ProductOwner → BusinessAnalyst
-DESIGN (W3-5):      Architect → UXDesigner → UIDesigner
-WIREFRAMES (W6-13): Planner → Generators 1-3 → PreviewHost → WireframeQA → Validator → Inspector
-CODE (W14-16):      Developer → Toolsmith → Security
-TEST (W17-19):      TestEngineer → QALead → Auditor
-DOCS (W20-21):      Author → TechWriter
-RELEASE (W22-25):   DevOps → DockerCaptain → ReleaseManager → Coordinator
+STRATEGY:    CTO → ProductOwner → BusinessAnalyst
+DESIGN:      Architect → UXDesigner → UIDesigner
+WIREFRAMES:  Planner → Generators 1-3 → PreviewHost → WireframeQA → Validator → Inspector
+CODE:        Developer → Toolsmith → Security
+TEST:        TestEngineer → QALead → Auditor
+DOCS:        Author → TechWriter
+RELEASE:     DevOps → DockerCaptain → ReleaseManager → Coordinator
 ```
 
 See `.claude/roles/` for role-specific context:

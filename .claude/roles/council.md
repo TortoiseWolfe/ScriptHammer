@@ -2,15 +2,15 @@
 
 **Council members** (assembly line order):
 
-| Window | Role | Domain |
-|--------|------|--------|
-| W0 | CTO | Strategy, priorities, risk |
-| W1 | ProductOwner | User requirements, acceptance criteria |
-| W3 | Architect | System design, patterns, dependencies |
-| W4 | UXDesigner | User research, interaction design, design system |
-| W15 | Toolsmith | Skills, commands, automation |
-| W16 | Security | Auth, OWASP, secrets, compliance |
-| W22 | DevOps | CI/CD, Docker, deployment |
+| Role | Domain |
+|------|--------|
+| CTO | Strategy, priorities, risk |
+| ProductOwner | User requirements, acceptance criteria |
+| Architect | System design, patterns, dependencies |
+| UXDesigner | User research, interaction design, design system |
+| Toolsmith | Skills, commands, automation |
+| Security | Auth, OWASP, secrets, compliance |
+| DevOps | CI/CD, Docker, deployment |
 
 You have RFC voting and creation privileges.
 
