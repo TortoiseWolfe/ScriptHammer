@@ -109,29 +109,40 @@ def extract_structure(svg_path: Path) -> SVGStructure:
         svg_name=svg_name
     )
 
-    # Extract title (y < 40, text-anchor="middle")
-    title_match = re.search(
-        r'<text[^>]*text-anchor=["\']middle["\'][^>]*y=["\']?(\d+)["\']?[^>]*>([^<]+)</text>',
-        content[:3000]
+    # Extract title (y < 50, text-anchor="middle")
+    # Find ALL centered text elements and filter to those with y < 50
+    # This handles multiline elements and varying attribute order
+    text_elements = re.findall(
+        r'<text([^>]*)>([\s\S]*?)</text>',
+        content[:5000]
     )
-    if not title_match:
-        title_match = re.search(
-            r'<text[^>]*y=["\']?(\d+)["\']?[^>]*text-anchor=["\']middle["\'][^>]*>([^<]+)</text>',
-            content[:3000]
-        )
 
-    if title_match:
-        y = int(title_match.group(1))
-        if y < 50:
-            # Find x position
-            x_match = re.search(r'x=["\']?(\d+)', title_match.group(0))
-            x = int(x_match.group(1)) if x_match else None
-            structure.title = StructuralElement(
-                element_type='title',
-                x=x,
-                y=y,
-                text_anchor='middle'
-            )
+    for attrs, text_content in text_elements:
+        # Check for text-anchor="middle"
+        if 'text-anchor="middle"' not in attrs and "text-anchor='middle'" not in attrs:
+            continue
+
+        # Extract y position
+        y_match = re.search(r'y=["\']?(\d+)', attrs)
+        if not y_match:
+            continue
+        y = int(y_match.group(1))
+
+        # Only consider elements with y < 50 (title area)
+        if y >= 50:
+            continue
+
+        # Extract x position
+        x_match = re.search(r'x=["\']?(\d+)', attrs)
+        x = int(x_match.group(1)) if x_match else None
+
+        structure.title = StructuralElement(
+            element_type='title',
+            x=x,
+            y=y,
+            text_anchor='middle'
+        )
+        break  # Found the title, stop searching
 
     # Extract signature (y > 1040)
     sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*'
