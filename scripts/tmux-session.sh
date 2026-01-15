@@ -209,9 +209,23 @@ for ROLE in "${ROLES[@]}"; do
 done
 
 # Phase 2: Wait for Claude to fully initialize in all windows
-INIT_DELAY=2
+INIT_DELAY=3
 echo "Waiting ${INIT_DELAY}s for Claude to initialize..."
 sleep $INIT_DELAY
+
+# Phase 2.5: Auto-accept bypass permissions consent dialog
+# The --dangerously-skip-permissions flag shows a one-time consent dialog
+# Dialog has "No, exit" selected by default - we send Down+Enter to select "Yes"
+echo "Accepting bypass permissions consent..."
+WINDOW_NUM=0
+for ROLE in "${ROLES[@]}"; do
+  tmux send-keys -t $SESSION:$WINDOW_NUM Down Enter
+  sleep 0.15
+  ((WINDOW_NUM++))
+done
+
+# Wait for consent to process
+sleep 2
 
 # Phase 3: Send primers to all windows
 echo "Sending role primers..."
