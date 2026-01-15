@@ -1,9 +1,13 @@
 {
   "000-rls-implementation": {
-    "status": "draft",
+    "status": "review",
     "svgs": {
-      "01-rls-architecture-overview.svg": "draft",
-      "02-rls-policy-patterns.svg": "draft"
+      "01-policy-architecture.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-1. Dark theme policy architecture diagram showing security roles, RLS policies, database tables, and access flows.",
+    "validation": {
+      "svg01_errors": 0,
+      "review_date": "2026-01-14"
     }
   },
   "001-wcag-aa-compliance": {
@@ -52,16 +56,16 @@
     }
   },
   "004-mobile-first-design": {
-    "status": "reviewed",
+    "status": "draft",
     "svgs": {
-      "01-mobile-viewport-layouts.svg": "pass",
-      "02-performance-testing.svg": "pass"
+      "01-responsive-navigation.svg": "draft",
+      "02-touch-targets-performance.svg": "draft"
     },
-    "notes": "Generated 2026-01-12. Both wireframes pass validator (0 errors). Mobile viewport layouts showing 320-428px frames with touch targets. Performance testing showing Core Web Vitals dashboard.",
+    "notes": "Regenerated 2026-01-14 by Generator-2. 2 SVGs: responsive navigation (viewport-safe nav, readable content) and touch targets/performance (44px targets, Core Web Vitals). All pass validator (0 errors).",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-12"
+      "review_date": "2026-01-14"
     }
   },
   "005-security-hardening": {
@@ -103,6 +107,104 @@
       "svg01_errors": 0,
       "svg02_errors": 0,
       "review_date": "2026-01-13"
+    }
+  },
+  "008-on-the-account": {
+    "status": "review",
+    "svgs": {
+      "01-avatar-upload-flow.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-1. Avatar upload flow showing upload, crop, replace, and remove capabilities with accessibility compliance. Desktop shows Account Settings with avatar panel, crop interface, and file requirements. Mobile shows responsive avatar management.",
+    "validation": {
+      "svg01_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "009-user-messaging-system": {
+    "status": "draft",
+    "svgs": {
+      "01-connection-and-chat.svg": "draft",
+      "02-settings-and-data.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-3. Connection & Chat shows friend requests, encrypted messaging, real-time delivery, edit/delete. Settings & Data shows offline queue, virtual scrolling, GDPR export/deletion, accessibility settings.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "010-unified-blog-content": {
+    "status": "review",
+    "svgs": {
+      "01-editor-and-preview.svg": "draft",
+      "02-conflict-resolution.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-1. Editor & Preview shows MDX editor with live preview, hot reload, offline sync status. Conflict Resolution shows three-way merge UI with accept/reject actions and migration status.",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "011-group-chats": {
+    "status": "draft",
+    "svgs": {
+      "01-group-creation-messaging.svg": "draft",
+      "02-member-management.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-2. 2 SVGs: group creation/messaging (create group, sender attribution, typing indicators, stacked avatars) and member management (add/remove members, ownership transfer, history restriction). All pass validator (0 errors).",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "012-welcome-message-architecture": {
+    "status": "draft",
+    "svgs": {
+      "01-user-onboarding-flow.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-3. Light theme UX wireframe showing welcome message flow, E2E encryption status, idempotency indicator. Covers all 3 User Stories and 14 FRs/SCs.",
+    "validation": {
+      "svg01_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "013-oauth-messaging-password": {
+    "status": "draft",
+    "svgs": {
+      "01-oauth-password-setup.svg": "draft",
+      "02-oauth-password-unlock.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-3. 2 SVGs: OAuth password setup (create messaging password for new OAuth users with confirm field, strength indicator) and OAuth password unlock (single field unlock for returning OAuth users). All pass validator (0 errors).",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "015-oauth-display-name": {
+    "status": "draft",
+    "svgs": {
+      "01-profile-population-flow.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-3. DARK theme architecture diagram showing OAuth metadata extraction, fallback cascade (full name → username → email prefix → Anonymous User), profile population, and migration tool. Passes validator (0 errors).",
+    "validation": {
+      "svg01_errors": 0,
+      "review_date": "2026-01-14"
+    }
+  },
+  "019-google-analytics": {
+    "status": "draft",
+    "svgs": {
+      "01-consent-flow.svg": "draft",
+      "02-analytics-dashboard.svg": "draft"
+    },
+    "notes": "Generated 2026-01-14 by Generator-2. 2 SVGs: consent flow (permission settings, consent status, page tracking) and analytics dashboard (Web Vitals, custom events, GA4 status, graceful degradation). All pass validator (0 errors).",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "review_date": "2026-01-14"
     }
   }
 }

@@ -1949,7 +1949,8 @@ def main():
     # Standard validation mode
     if sys.argv[1] == '--all':
         svg_files = list(wireframes_dir.glob('**/*.svg'))
-        svg_files = [f for f in svg_files if 'includes' not in str(f)]
+        # Exclude includes/ (reusable components) and templates/ (starter templates)
+        svg_files = [f for f in svg_files if 'includes' not in str(f) and 'templates' not in str(f)]
     else:
         svg_path = wireframes_dir / sys.argv[1]
         if not svg_path.exists():

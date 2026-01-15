@@ -18,6 +18,11 @@
   - Implementer → Developer
   - Coordinator → kept
   - Auditor → kept
+- [x] `/status` skill created (2026-01-14) - `~/.claude/commands/status.md`
+- [x] `/queue` skill created (2026-01-14) - `~/.claude/commands/queue.md`
+- [x] `/review-queue` skill created (2026-01-14) - `~/.claude/commands/review-queue.md`
+- [x] `/wireframe-fix` skill created (2026-01-14) - `~/.claude/commands/wireframe-fix.md`
+- [x] `/security-audit` skill created (2026-01-14) - `~/.claude/commands/security-audit.md`
 
 ---
 
@@ -28,10 +33,6 @@
 
 | # | Skill | Purpose | Priority |
 |---|-------|---------|----------|
-| 1 | `/status` | Project health dashboard: feature completion, pending RFCs, queue depth | HIGH |
-| 2 | `/queue` | Task queue management: add/remove/list items in `.terminal-status.json` | HIGH |
-| 3 | `/review-queue` | Show SVGs awaiting review with age/timestamps | MEDIUM |
-| 4 | `/wireframe-fix [svg]` | Auto-load `*.issues.md` context before regeneration | MEDIUM |
 | 5 | `/viewer-status` | Health check: confirm container running, return URL | LOW |
 
 ---
@@ -40,7 +41,6 @@
 
 | # | Item | Owner | Priority | Notes |
 |---|------|-------|----------|-------|
-| 8 | `/security-audit` skill | Security Lead + Toolsmith | MEDIUM | OWASP Top 10 checklist |
 | 9 | `patterns.json` baseline | Inspector + Toolsmith | LOW | Machine-readable pattern standards |
 | 10 | Component generator | Toolsmith + DevOps | HIGH | `pnpm run generate:component` - blocks implementation |
 | 11 | Test infrastructure | Test Engineer + DevOps | HIGH | vitest.config.ts, playwright.config.ts - blocks implementation |

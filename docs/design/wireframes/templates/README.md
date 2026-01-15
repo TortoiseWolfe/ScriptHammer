@@ -2,11 +2,45 @@
 
 ## When to Use
 
-Run theme analysis to get recommendations:
+### Feature Type Classification
+
+| Feature Type | Theme | What to Generate |
+|--------------|-------|------------------|
+| **Frontend** | LIGHT | Desktop + Mobile wireframes showing UI screens |
+| **Backend** | DARK | Architecture/flow diagrams showing system design |
+| **Hybrid** | BOTH | Light wireframes for UI + Dark diagrams for backend |
+
+### Decision Guide
+
+**Frontend Features (LIGHT theme):**
+- User-facing screens: forms, modals, dashboards, settings pages
+- User Stories describe interactions: "As a user, I can see/click/enter..."
+- Responsive design required (desktop + mobile layouts)
+- Examples: User Profile, Cookie Consent, Blog Posts, Account Settings
+
+**Backend Features (DARK theme):**
+- Infrastructure/system features with no direct UI
+- User Stories describe system behavior: "The system enforces/validates..."
+- Security policies, data flows, API integrations
+- Examples: RLS Policies, OAuth Flow, CSRF Protection, CI/CD Pipeline
+
+**Hybrid Features (BOTH themes):**
+- Features with backend logic AND user-facing dashboards
+- Analytics: Dark (data pipeline architecture) + Light (analytics dashboard UI)
+- Payments: Dark (Stripe integration flow) + Light (checkout screens)
+- Admin Tools: Dark (permission system) + Light (admin interface)
+
+### Theme Analysis Tool
+
+Run theme analysis to get automated recommendations:
 
 ```bash
 python3 docs/design/wireframes/validate-wireframe.py --analyze-themes [spec.md]
 ```
+
+This outputs JSON classifying each User Story as `light` or `dark` based on keywords.
+
+### Quick Reference
 
 | Theme | Use For | Layout |
 |-------|---------|--------|

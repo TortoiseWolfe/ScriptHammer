@@ -281,6 +281,21 @@ General principle: Names should be distinctive within the organization. I prefer
 
 **Rationale**: As DevOps, I favor minimal churn in operational workflows. Only rename where clarity significantly improves: Test Engineer (reflects infrastructure depth), Preview Host (clearer than Viewer), Developer (industry standard). Keep pipeline roles (Generator, Reviewer) short since we run 3 parallel generators.
 
+### Product Owner (2026-01-14)
+
+**My votes:**
+| Role | Choice | Rationale |
+|------|--------|-----------|
+| Tester | b (Test Engineer) | TDD methodology per constitution requires technical depth |
+| Viewer | c (Preview Host) | User-friendly language, clear purpose for stakeholders |
+| Coordinator | a (Coordinator) | Simple and generic is fine for orchestration role |
+| Generator | b (Wireframe Generator) | Descriptive name helps onboarding and role clarity |
+| Reviewer | b (Wireframe QA) | Aligns with new QA Lead role, clarifies quality focus |
+| Implementer | b (Developer) | Industry-standard term improves external communication |
+| Auditor | a (Auditor) | Current name is clear enough in context |
+
+**Rationale**: From a user/stakeholder perspective, names should be immediately understandable without needing org chart context. Industry-standard terms (Developer, QA) improve communication with external parties. Descriptive names (Wireframe Generator, Preview Host) help new team members understand scope quickly.
+
 ---
 
 ## Results

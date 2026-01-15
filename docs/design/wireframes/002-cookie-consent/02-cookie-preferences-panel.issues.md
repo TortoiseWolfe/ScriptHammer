@@ -55,3 +55,16 @@
 - Annotation panel has good traceability coverage (US-002, US-003, US-004)
 
 **Overall Assessment:** Excellent cookie preferences panel. Validator callout count appears incorrect - manual count shows 4 callouts.
+
+**Re-validation (2026-01-14):** Current validator run shows 0 errors. A-01 issue is stale. Title at x=700 (should be x=960).
+
+**QA Review (2026-01-14):** Visual inspection confirms:
+- Desktop: 4 cookie categories (Necessary/Functional/Analytics/Marketing) with proper toggle styling
+- Toggle colors: ON=#22c55e (green), OFF=#6b7280 (gray), knob positioning correct
+- Necessary category shown as always-on
+- Cancel and Save Preferences buttons properly styled
+- Mobile: Same categories with condensed layout, "Toggle categories above..." instruction
+- 4 callouts with traceability (US-002, US-003, US-004 + FR-xxx + SC-xxx)
+- Title position: CONFIRMED at x=700 (should be x=960)
+
+**Status:** NEEDS REGENERATE for title position

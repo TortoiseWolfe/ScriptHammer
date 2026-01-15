@@ -41,15 +41,15 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install lxml
-        run: pip install lxml
+      # Note: Validator uses stdlib xml.etree.ElementTree, no external deps needed
 
       - name: Validate all wireframes
-        run: |
-          python docs/design/wireframes/validate-wireframe.py \
-            docs/design/wireframes/**/*.svg \
-            --report-only
-        continue-on-error: true  # Report issues but don't fail build during planning phase
+        run: python docs/design/wireframes/validate-wireframe.py --all
+        # Enforcement timeline:
+        # - Planning phase (current): continue-on-error=true, validation runs but doesn't block
+        # - Transition phase: Add issue counts to PR comments
+        # - Enforcement phase: Remove continue-on-error to block PRs with errors
+        continue-on-error: true
 
   yaml-lint:
     name: YAML Lint
