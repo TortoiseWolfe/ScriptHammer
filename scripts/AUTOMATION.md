@@ -2,6 +2,20 @@
 
 Lessons learned from automating multi-terminal workflows with tmux and Claude Code.
 
+## CRITICAL: Git Remote Rules
+
+**NEVER change the git remote URL.** It MUST remain SSH:
+```
+origin  git@github.com:TortoiseWolfe/ScriptHammer.git
+```
+
+**NEVER run `git push`** - Only the Operator has SSH access.
+
+If a terminal accidentally changes to HTTPS, fix immediately:
+```bash
+git remote set-url origin git@github.com:TortoiseWolfe/ScriptHammer.git
+```
+
 ## Known Edge Cases
 
 ### 1. Boundary Position Bug
