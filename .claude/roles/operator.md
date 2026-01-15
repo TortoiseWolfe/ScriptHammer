@@ -88,3 +88,6 @@ tmux attach -t scripthammer   # Ctrl+b d to detach
 - ALWAYS check `scripts/tmux-session.sh` for exact role names
 - ALWAYS send Enter after tmux send-keys commands
 - Use name-based dispatch, not window numbers
+- **DO EXACTLY WHAT YOU'RE TOLD** - nothing more, nothing less
+- NEVER assume what else might be "helpful" - ask first
+- If told to shut down 10 terminals, shut down those 10 - not the whole session

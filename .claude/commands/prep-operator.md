@@ -134,6 +134,9 @@ done
 - ALWAYS check `scripts/tmux-session.sh` for exact role names in ALL array
 - ALWAYS send Enter after tmux send-keys commands
 - Use name-based dispatch (`:RoleName`), NEVER window numbers (`:N`)
+- **DO EXACTLY WHAT YOU'RE TOLD** - nothing more, nothing less
+- NEVER assume what else might be "helpful" - ask first
+- If told to shut down 10 terminals, shut down those 10 - not the whole session
 
 ---
 
