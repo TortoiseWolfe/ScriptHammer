@@ -248,7 +248,7 @@ Require Validator terminal to approve PRs manually.
 
 If approved, the following work is required:
 
-- [ ] **Toolsmith**: Add `--json` and `--summary` flags to `validate-wireframe.py`
+- [x] **Toolsmith**: Add `--json` and `--summary` flags to `validate-wireframe.py` *(done: v5.3, commit 41d5c4d)*
 - [ ] **DevOps**: Update `ci.yml` with PR comment workflow (Phase 2)
 - [ ] **Coordinator**: Track Phase 2 exit criteria in `.terminal-status.json`
 - [ ] **Generators**: Resolve validation issues to achieve 100% pass rate
@@ -259,7 +259,81 @@ If approved, the following work is required:
 
 ## Discussion Thread
 
-*Council members: Add your thoughts below*
+### DevOps (2026-01-15)
+
+**Vote: APPROVE**
+
+As the author and original decision-maker, I acknowledge the `continue-on-error: true` setting should have been formally reviewed. This RFC corrects that oversight.
+
+Key points:
+1. **Criteria-based progression is correct** - Calendar-based deadlines don't account for actual readiness. The measurable thresholds (≥80% pass rate, <50 issues) give us flexibility while ensuring quality gates are meaningful.
+2. **PR comments in Phase 2 increase visibility** - Currently validation results are buried in GitHub Actions logs. Surfacing them directly on PRs will drive accountability.
+3. **Exception process is necessary** - Some edge cases need documented escape hatches. Quarterly Architect review prevents exception abuse.
+
+---
+
+### CTO (2026-01-15)
+
+**Vote: APPROVE**
+
+This RFC addresses a process gap I should have caught during the org audit. Infrastructure decisions affecting multiple terminals warrant formal review.
+
+1. **Formalizing ad-hoc decisions sets good precedent** - Undocumented decisions become technical debt.
+2. **Phase 2 exit criteria are appropriate** - Requiring CTO sign-off before enforcement ensures strategic alignment.
+3. **Implementation phase trigger is smart** - Tying enforcement to `src/` folder creation ensures wireframes are locked down before code references them.
+
+Note: The ≥40 SVG threshold may need adjustment. Recommend treating it as guidance rather than hard requirement.
+
+---
+
+### Architect (2026-01-15)
+
+**Vote: APPROVE**
+
+From an architectural perspective, this RFC follows sound principles:
+
+1. **Progressive enforcement is correct** - Shifting from soft-fail to hard-fail mirrors schema migrations: warn first, then enforce.
+2. **Measurable criteria enable automation** - Exit criteria can be computed programmatically for future automation.
+3. **Exception process preserves flexibility** - The `*.exception.md` pattern balances flexibility with accountability.
+
+Suggestion: Add `--check-exceptions` flag to verify exceptions are still valid.
+
+---
+
+### Security Lead (2026-01-15)
+
+**Vote: APPROVE**
+
+1. **Quality gates are security controls** - Validation checks include accessibility requirements with compliance implications.
+2. **Criteria-based progression reduces risk** - Time-based deadlines create pressure to bypass controls.
+3. **Exception audit trail is important** - Documentation for deviations with quarterly review.
+
+Note: Ensure `validation.json` doesn't leak sensitive information.
+
+---
+
+### Toolsmith (2026-01-15)
+
+**Vote: APPROVE**
+
+Implementation assessment:
+1. **`--json` flag is straightforward** - ~50 lines of Python to expose existing pass/fail counts.
+2. **`--summary` flag adds value** - Helps Generators quickly assess progress.
+3. **Exception handling needs design** - Will create spec before implementing comment detection.
+
+Estimate: 2-3 sessions for full implementation.
+
+---
+
+### Product Owner (2026-01-15)
+
+**Vote: APPROVE**
+
+1. **Wireframe validation ensures spec compliance** - Enforcement means users see consistent, accessible interfaces.
+2. **Phase 2 visibility helps prioritization** - PR comments help understand which features have issues.
+3. **100% pass rate before implementation is correct** - Catching problems at wireframe stage is cheaper.
+
+Suggestion: Add Product Owner to quarterly exception review alongside Architect.
 
 ---
 
