@@ -248,11 +248,12 @@ Require Validator terminal to approve PRs manually.
 
 If approved, the following work is required:
 
-- [ ] **Toolsmith**: Add `--json` and `--summary` flags to `validate-wireframe.py`
-- [ ] **DevOps**: Update `ci.yml` with PR comment workflow (Phase 2)
+- [x] **Toolsmith**: Add `--json` and `--summary` flags to `validate-wireframe.py` *(done: v5.3)*
+- [x] **DevOps**: Update `ci.yml` with PR comment workflow (Phase 2) *(done: commit 056dddd)*
 - [ ] **Coordinator**: Track Phase 2 exit criteria in `.terminal-status.json`
-- [ ] **Generators**: Resolve validation issues to achieve 100% pass rate
-- [ ] **DevOps**: Remove `continue-on-error` when Phase 3 criteria met
+- [x] **Generators**: Resolve validation issues to achieve 100% pass rate *(done: 35/35 SVGs pass)*
+- [ ] **DevOps**: Remove `continue-on-error` when Phase 3 criteria met *(blocked: awaiting CTO sign-off + src/ folder)*
+- [ ] **Author**: Document enforcement policy in project README
 - [ ] **Author**: Document enforcement policy in project README
 
 ---
