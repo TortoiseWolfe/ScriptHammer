@@ -11,7 +11,7 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 52 |
+| Open | 54 |
 
 ---
 
@@ -27,6 +27,8 @@
 | X-04 | height attribute should be '1080', got '1920' | SVG-003 | REGENERATE |
 | X-05 | Signature font too small (14px) - use 18px | SIGNATURE-001 | REGENERATE |
 | X-06 | Signature must be bold | SIGNATURE-002 | REGENERATE |
+| X-07 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | REGENERATE |
+| X-08 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | REGENERATE |
 
 ### Header/Footer Issues
 
@@ -110,7 +112,8 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| signature_not_bold | font-weight="bold" | not bold | PATTERN_VIOLATION |
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "Generator1 | 022-web3forms-integration | 01-con..." | PATTERN_VIOLATION |
 | desktop_header_missing | includes/header-desktop.svg#desktop-header | not found | PATTERN_VIOLATION |
 | desktop_footer_missing | includes/footer-desktop.svg#site-footer | not found | PATTERN_VIOLATION |
 | mobile_header_missing | includes/header-mobile.svg#mobile-header-group | not found | PATTERN_VIOLATION |

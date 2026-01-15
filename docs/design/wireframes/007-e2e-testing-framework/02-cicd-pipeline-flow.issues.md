@@ -34,8 +34,8 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| mobile_mockup_x | x=1360 | x=1920 | PATTERN_VIOLATION |
-| mobile_x_oddball | majority pattern: 1360 | this SVG: 1920 | PATTERN_VIOLATION |
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer v0.1 - E2E Testing CI/CD Pipeline ..." | PATTERN_VIOLATION |
 
 ## Reviewer Notes (2026-01-14)
 

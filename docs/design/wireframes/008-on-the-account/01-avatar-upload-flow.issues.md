@@ -80,5 +80,4 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| annotation_panel_y | y=800 | y=870 | PATTERN_VIOLATION |
-| annotation_y_oddball | majority pattern: 800 | this SVG: 870 | PATTERN_VIOLATION |
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |

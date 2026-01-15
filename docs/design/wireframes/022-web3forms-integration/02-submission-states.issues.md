@@ -142,7 +142,8 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| signature_not_bold | font-weight="bold" | not bold | PATTERN_VIOLATION |
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "Generator1 | 022-web3forms-integration | 02-sub..." | PATTERN_VIOLATION |
 | desktop_header_missing | includes/header-desktop.svg#desktop-header | not found | PATTERN_VIOLATION |
 | desktop_footer_missing | includes/footer-desktop.svg#site-footer | not found | PATTERN_VIOLATION |
 | mobile_header_missing | includes/header-mobile.svg#mobile-header-group | not found | PATTERN_VIOLATION |

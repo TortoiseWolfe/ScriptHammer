@@ -42,3 +42,10 @@
 - Cleaned up 2026-01-15 by Validator terminal
 - Re-validation confirms 0 errors
 - Run validator to refresh: `python validate-wireframe.py 014-admin-welcome-email-gate/01-verification-gate.svg`
+
+## Inspector Issues (2026-01-15)
+
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer Wireframe v5 - 014-admin-welcome-e..." | PATTERN_VIOLATION |

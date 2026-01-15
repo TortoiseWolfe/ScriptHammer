@@ -6,8 +6,8 @@
 
 ---
 
-## Inspector Issues (2026-01-14)
+## Inspector Issues (2026-01-15)
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| title_x_position | x=960 | x=700 | PATTERN_VIOLATION |
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |

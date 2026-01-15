@@ -8,6 +8,8 @@ Runs AFTER validate-wireframe.py passes to check patterns across all SVGs.
 Checks for:
 - Title position consistency (x=960, y=28)
 - Signature position consistency (y=1060, bold)
+- Signature alignment consistency (x=40, left-aligned)
+- Signature format consistency (NNN:NN | Feature Name | ScriptHammer)
 - Header/footer include consistency
 - Desktop/mobile mockup positioning
 - Annotation panel positioning
@@ -33,7 +35,13 @@ from typing import Dict, List, Optional, Set
 
 EXPECTED = {
     'title': {'x': 960, 'y': 28, 'anchor': 'middle'},
-    'signature': {'y': 1060, 'bold': True},
+    'signature': {
+        'x': 40,
+        'y': 1060,
+        'bold': True,
+        'anchor': None,  # x=40 = left-aligned, no text-anchor
+        'format': r'^[0-9]{3}:[0-9]{2} \| .+ \| ScriptHammer$',  # NNN:NN | Feature Name | ScriptHammer
+    },
     'desktop_mockup': {'x': 40, 'y': 60, 'width': 1280, 'height': 720},
     'mobile_mockup': {'x': 1360, 'y': 60, 'width': 360, 'height': 720},
     'annotation_panel': {'x': 40, 'y': 800, 'width': 1840, 'height': 220},
@@ -62,6 +70,7 @@ class StructuralElement:
     text_anchor: Optional[str] = None
     bold: bool = False
     href: Optional[str] = None
+    text: Optional[str] = None  # Text content (for signature format validation)
 
 
 @dataclass
@@ -144,19 +153,28 @@ def extract_structure(svg_path: Path) -> SVGStructure:
         )
         break  # Found the title, stop searching
 
-    # Extract signature (y > 1040)
-    sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*'
+    # Extract signature (y > 1040) - capture both element attributes and text content
+    sig_pattern = r'<text([^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*)>([\s\S]*?)</text>'
     sig_match = re.search(sig_pattern, content)
     if sig_match:
-        sig_element = sig_match.group()
-        y_match = re.search(r'y=["\']?(\d+)', sig_element)
-        x_match = re.search(r'x=["\']?(\d+)', sig_element)
-        bold = 'font-weight="bold"' in sig_element or 'font-weight:bold' in sig_element
+        sig_attrs = sig_match.group(1)
+        sig_text = sig_match.group(3).strip()
+        # Clean up text content (remove extra whitespace, newlines)
+        sig_text = ' '.join(sig_text.split())
+
+        y_match = re.search(r'y=["\']?(\d+)', sig_attrs)
+        x_match = re.search(r'x=["\']?(\d+)', sig_attrs)
+        bold = 'font-weight="bold"' in sig_attrs or 'font-weight:bold' in sig_attrs or 'font-weight="700"' in sig_attrs
+        # Check for text-anchor (centered signatures use text-anchor="middle")
+        anchor_match = re.search(r'text-anchor=["\']([^"\']+)["\']', sig_attrs)
+        text_anchor = anchor_match.group(1) if anchor_match else None
         structure.signature = StructuralElement(
             element_type='signature',
             x=int(x_match.group(1)) if x_match else None,
             y=int(y_match.group(1)) if y_match else None,
-            bold=bold
+            text_anchor=text_anchor,
+            bold=bold,
+            text=sig_text
         )
 
     # Extract header/footer includes
@@ -260,7 +278,7 @@ def check_patterns(structures: List[SVGStructure]) -> List[PatternViolation]:
                 actual='no title found'
             ))
 
-        # Check signature position and bold
+        # Check signature position, alignment, and bold
         if structure.signature:
             if structure.signature.y and abs(structure.signature.y - EXPECTED['signature']['y']) > POSITION_TOLERANCE:
                 violations.append(PatternViolation(
@@ -276,6 +294,36 @@ def check_patterns(structures: List[SVGStructure]) -> List[PatternViolation]:
                     expected='font-weight="bold"',
                     actual='not bold'
                 ))
+            # Check signature alignment - should be left-aligned (x=40, no text-anchor)
+            # Centered signatures have x=960 and text-anchor="middle"
+            is_centered = (
+                structure.signature.text_anchor == 'middle' or
+                (structure.signature.x and structure.signature.x > 100)  # x > 100 indicates not left-aligned
+            )
+            if is_centered:
+                actual_desc = f"x={structure.signature.x}"
+                if structure.signature.text_anchor:
+                    actual_desc += f", text-anchor=\"{structure.signature.text_anchor}\""
+                violations.append(PatternViolation(
+                    svg_path=structure.path,
+                    check='signature_alignment',
+                    expected='x="40" (left-aligned)',
+                    actual=actual_desc
+                ))
+            # Check signature format - must be "NNN:NN | Feature Name | ScriptHammer"
+            if structure.signature.text:
+                format_pattern = EXPECTED['signature']['format']
+                if not re.match(format_pattern, structure.signature.text):
+                    # Truncate long signatures for display
+                    actual_text = structure.signature.text
+                    if len(actual_text) > 50:
+                        actual_text = actual_text[:47] + "..."
+                    violations.append(PatternViolation(
+                        svg_path=structure.path,
+                        check='signature_format',
+                        expected='NNN:NN | Feature Name | ScriptHammer',
+                        actual=f'"{actual_text}"'
+                    ))
         else:
             violations.append(PatternViolation(
                 svg_path=structure.path,
@@ -518,10 +566,10 @@ def main():
 
     wireframes_dir = Path(__file__).parent
 
-    # Collect SVG files
+    # Collect SVG files (exclude includes/ and templates/)
     if sys.argv[1] == '--all' or sys.argv[1] == '--report':
         svg_files = list(wireframes_dir.glob('**/*.svg'))
-        svg_files = [f for f in svg_files if 'includes' not in str(f)]
+        svg_files = [f for f in svg_files if 'includes' not in str(f) and 'templates' not in str(f)]
     else:
         svg_path = wireframes_dir / sys.argv[1]
         if not svg_path.exists():
