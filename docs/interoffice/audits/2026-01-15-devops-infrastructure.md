@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-15
 **Role:** DevOps
-**Status:** In Progress
+**Status:** Complete
 
 ## Executive Summary
 
@@ -59,17 +59,24 @@ pre-commit install --hook-type commit-msg
 
 ## 2. GitHub Actions
 
-### Current State: OPERATIONAL
+### Current State: OPERATIONAL + ENHANCED
 
 `.github/workflows/ci.yml` runs on PRs and pushes to main.
 
-| Job | Status | Blocking |
-|-----|--------|----------|
-| lint | Active | Yes |
-| validate-wireframes | Active | No (`continue-on-error: true`) |
-| yaml-lint | Active | Yes |
-| markdown-lint | Active | Yes |
-| shellcheck | Active | Yes |
+| Job | Status | Blocking | Enhancement |
+|-----|--------|----------|-------------|
+| lint | Active | Yes | - |
+| validate-wireframes | Active | No | PR comment with issue counts |
+| yaml-lint | Active | Yes | - |
+| markdown-lint | Active | Yes | - |
+| shellcheck | Active | Yes | - |
+
+### Enhancement: PR Comments (Transition Phase)
+
+Added automated PR comments for wireframe validation showing:
+- Error and warning counts
+- Link to enforcement timeline documentation
+- Updates existing comment on re-runs (no spam)
 
 ### Missing Workflows
 
@@ -81,9 +88,10 @@ pre-commit install --hook-type commit-msg
 
 ### Assessment
 
-- CI covers all current file types
-- Wireframe validation intentionally non-blocking (planning phase)
-- Ready for enforcement when specs stabilize
+- [x] CI covers all current file types
+- [x] Wireframe validation intentionally non-blocking (planning phase)
+- [x] PR comments implemented for transition phase visibility
+- [ ] Ready for enforcement when specs stabilize
 
 ---
 
@@ -162,12 +170,18 @@ Move to enforcement when:
 
 ## Summary
 
-| Task | Status | Next Action |
-|------|--------|-------------|
-| Pre-commit hooks | Configured | Document installation |
-| GitHub Actions | Operational | Add test.yml after code exists |
-| Docker health checks | N/A | Template ready in knowledge base |
-| CI enforcement | Documented | Await RFC-004 for formalization |
+| Task | Status | Changes Made |
+|------|--------|--------------|
+| Pre-commit hooks | Complete | Added conventional-pre-commit hook |
+| GitHub Actions | Complete | Added PR comment for wireframe validation |
+| Docker health checks | N/A | Patterns documented (no app code yet) |
+| CI enforcement | Documented | Timeline in section 4, awaiting RFC-004 |
+
+## Files Modified
+
+- `.pre-commit-config.yaml` - Added conventional commits hook
+- `.github/workflows/ci.yml` - Added PR comment step for wireframe validation
+- `.claude/inventories/workflow-status.md` - Updated status to reflect transition phase
 
 ---
 
