@@ -6,15 +6,16 @@ ScriptHammer is a **planning template** for AI-assisted development. It contains
 
 ## Multi-Terminal Workflow
 
-This project uses 21 Claude Code terminals in a tmux session. Each terminal has a specialized role. See `.claude/roles/` for role-specific context:
+This project uses 25 Claude Code terminals in a tmux session. Each terminal has a specialized role. See `.claude/roles/` for role-specific context:
 
 | File | Roles |
 |------|-------|
 | `operator.md` | Operator (runs outside tmux) |
-| `council.md` | CTO, Architect, Security, Toolsmith, DevOps, ProductOwner |
+| `council.md` | CTO, Architect, Security, Toolsmith, DevOps, ProductOwner, UXDesigner |
+| `design.md` | UIDesigner |
 | `wireframe-pipeline.md` | Planner, Generators 1-3, PreviewHost, WireframeQA, Validator, Inspector |
-| `implementation.md` | Developer, TestEngineer, Auditor |
-| `support.md` | Coordinator, Author, QALead, TechWriter |
+| `implementation.md` | Developer, TestEngineer, Auditor, ReleaseManager |
+| `support.md` | Coordinator, Author, QALead, TechWriter, BusinessAnalyst |
 
 **CRITICAL**: Terminals MUST use `--dangerously-skip-permissions` for autonomous operation.
 Without this flag, every edit/commit/bash blocks waiting for manual approval.

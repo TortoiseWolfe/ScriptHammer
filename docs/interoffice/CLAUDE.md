@@ -15,7 +15,8 @@ Council members can create RFCs, vote on decisions, and initiate council discuss
 | Security Lead | Auth, OWASP, secrets, compliance |
 | Toolsmith | Skills, commands, automation |
 | DevOps | CI/CD, Docker, deployment, infrastructure |
-| Product Owner | User requirements, acceptance criteria, UX |
+| Product Owner | User requirements, acceptance criteria |
+| UX Designer | User research, interaction design, design system governance |
 
 ### Contributors (Memo Upward Only)
 
@@ -36,6 +37,9 @@ Contributors send memos to their manager. Cannot create RFCs directly.
 | Auditor | CTO |
 | QA Lead | Architect |
 | Technical Writer | CTO |
+| UI Designer | Architect |
+| Business Analyst | Product Owner |
+| Release Manager | DevOps |
 
 ## Folder Structure
 
@@ -60,7 +64,11 @@ Route topics to the appropriate expert:
 | Skills, commands, tooling | Toolsmith |
 | CI/CD, Docker, deployment | DevOps |
 | Strategic, prioritization, risk | CTO |
-| User requirements, UX, acceptance criteria | Product Owner |
+| User requirements, acceptance criteria | Product Owner |
+| User research, interaction design, design system | UX Designer |
+| Visual design, colors, typography | UI Designer (via Architect) |
+| Requirements detail, stakeholder comms | Business Analyst (via Product Owner) |
+| Releases, versioning, changelog | Release Manager (via DevOps) |
 
 ## RFC State Machine
 
@@ -117,6 +125,7 @@ draft ──────► proposed ──────► review ────�
 | Toolsmith | pending | - |
 | DevOps | pending | - |
 | Product Owner | pending | - |
+| UX Designer | pending | - |
 
 **Required**: All non-abstaining stakeholders must approve
 
@@ -161,7 +170,7 @@ Message body.
 
 ## Consensus Rules
 
-1. All 6 council members are stakeholders on every RFC
+1. All 7 council members are stakeholders on every RFC
 2. A stakeholder may vote: `approve`, `reject`, or `abstain`
 3. **Consensus** = all non-abstaining votes are `approve`
 4. A single `reject` blocks the RFC

@@ -14,11 +14,12 @@ PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
 # Note: Operator runs OUTSIDE tmux and is not in this mapping
 declare -A WINDOWS=(
   ["CTO"]=0 ["Architect"]=1 ["Coordinator"]=2 ["Security"]=3
-  ["Toolsmith"]=4 ["DevOps"]=5 ["ProductOwner"]=6 ["Planner"]=7
-  ["WireframeGenerator1"]=8 ["WireframeGenerator2"]=9 ["WireframeGenerator3"]=10 ["PreviewHost"]=11
-  ["WireframeQA"]=12 ["Validator"]=13 ["Inspector"]=14 ["Author"]=15
-  ["TestEngineer"]=16 ["Developer"]=17 ["Auditor"]=18
-  ["QALead"]=19 ["TechWriter"]=20
+  ["Toolsmith"]=4 ["DevOps"]=5 ["ProductOwner"]=6 ["UXDesigner"]=7
+  ["Planner"]=8 ["WireframeGenerator1"]=9 ["WireframeGenerator2"]=10 ["WireframeGenerator3"]=11
+  ["PreviewHost"]=12 ["WireframeQA"]=13 ["Validator"]=14 ["Inspector"]=15
+  ["Author"]=16 ["TestEngineer"]=17 ["Developer"]=18 ["Auditor"]=19
+  ["QALead"]=20 ["TechWriter"]=21 ["DockerCaptain"]=22
+  ["UIDesigner"]=23 ["BusinessAnalyst"]=24 ["ReleaseManager"]=25
 )
 
 # Check if session exists
@@ -82,7 +83,7 @@ dispatch_votes() {
   done
   echo ""
 
-  COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner)
+  COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner UXDesigner)
 
   for ROLE in "${COUNCIL[@]}"; do
     PROMPT="Review and vote on pending RFCs:
@@ -277,7 +278,7 @@ case "${1:-}" in
     echo "Dispatches work to running scripthammer tmux terminals."
     echo ""
     echo "Commands:"
-    echo "  --vote    Dispatch RFC votes to council (6 terminals)"
+    echo "  --vote    Dispatch RFC votes to council (7 terminals)"
     echo "  --tasks   Dispatch audit action items to assigned owners"
     echo "  --queue   Process items from .terminal-status.json"
     echo "  --all     Run all dispatchers in sequence"

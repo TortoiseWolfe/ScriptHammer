@@ -1,6 +1,6 @@
 # Implementation Terminal Context
 
-**Implementation roles**: Developer, TestEngineer, Auditor
+**Implementation roles**: Developer, TestEngineer, Auditor, ReleaseManager
 
 ## Role Responsibilities
 
@@ -9,6 +9,7 @@
 | Developer | Convert specs + wireframes to code | `/speckit.implement`, `/speckit.tasks` |
 | TestEngineer | Run tests, report coverage | `/test`, `/test-components`, `/test-a11y` |
 | Auditor | Cross-artifact consistency | `/speckit.analyze`, `/read-spec` |
+| ReleaseManager | Versioning, changelog, release coordination | `/release-prep`, `/changelog-update`, `/release-notes` |
 
 ## SpecKit Workflow
 

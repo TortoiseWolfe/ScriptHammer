@@ -22,6 +22,7 @@ set -- "${FILTERED_ARGS[@]}"
 COLOR_COUNCIL="colour229"    # Pale Gold #ffffaf
 COLOR_WIREFRAME="colour159"  # Pale Cyan #afffff
 COLOR_IMPLEMENT="colour225"  # Pale Pink #ffd7ff
+COLOR_DESIGN="colour183"     # Pale Lavender #d7afff
 COLOR_SUPPORT="colour254"    # Pale Gray #e4e4e4
 COLOR_BASE="colour236"       # Dark gray (status bar bg)
 
@@ -124,14 +125,36 @@ Reports to: CTO"
 
 Skills: docker compose, container logs, health checks, resource monitoring
 Reports to: DevOps"
+  ["UXDesigner"]="You are the UX Designer terminal.
+/prime ux-designer
+
+Skills: User research, interaction design, design system governance
+Council: /rfc, /rfc-vote, /council, /broadcast"
+  ["UIDesigner"]="You are the UI Designer terminal.
+/prime ui-designer
+
+Skills: /style-guide, /color-review, /asset-spec
+Reports to: Architect"
+  ["BusinessAnalyst"]="You are the Business Analyst terminal.
+/prime business-analyst
+
+Skills: /requirements, /acceptance-criteria, /stakeholder-map
+Reports to: ProductOwner"
+  ["ReleaseManager"]="You are the Release Manager terminal.
+/prime release-manager
+
+Skills: /release-prep, /changelog-update, /release-notes
+Reports to: DevOps"
 )
 
 # Role groups
-COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner)
+COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner UXDesigner)
 WIREFRAME=(Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector)
-IMPLEMENT=(Developer TestEngineer Auditor)
+IMPLEMENT=(Developer TestEngineer Auditor ReleaseManager)
+DESIGN=(UIDesigner)
+SUPPORT=(Coordinator Author QALead TechWriter BusinessAnalyst)
 COORD=(Coordinator CTO)
-ALL=(CTO Architect Coordinator Security Toolsmith DevOps ProductOwner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Author TestEngineer Developer Auditor QALead TechWriter DockerCaptain)
+ALL=(CTO Architect Coordinator Security Toolsmith DevOps ProductOwner UXDesigner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Author TestEngineer Developer Auditor QALead TechWriter DockerCaptain UIDesigner BusinessAnalyst ReleaseManager)
 
 # Parse arguments
 ROLES=()
@@ -140,24 +163,29 @@ case "${1:-}" in
   --council)  ROLES=("${COUNCIL[@]}") ;;
   --wireframe) ROLES=("${WIREFRAME[@]}") ;;
   --implement) ROLES=("${IMPLEMENT[@]}") ;;
+  --design)   ROLES=("${DESIGN[@]}") ;;
+  --support)  ROLES=("${SUPPORT[@]}") ;;
   --coord)    ROLES=("${COORD[@]}") ;;
   "")
-    echo "Usage: $0 [--all|--council|--wireframe|--implement|--coord|ROLE...] [--audit]"
+    echo "Usage: $0 [--all|--council|--wireframe|--implement|--design|--support|--coord|ROLE...] [--audit]"
     echo ""
     echo "Groups:"
-    echo "  --all        All 22 terminals"
-    echo "  --council    CTO, Architect, Security, Toolsmith, DevOps, ProductOwner"
+    echo "  --all        All 26 terminals"
+    echo "  --council    CTO, Architect, Security, Toolsmith, DevOps, ProductOwner, UXDesigner"
     echo "  --wireframe  Planner, WireframeGenerators, PreviewHost, WireframeQA, Validator, Inspector"
-    echo "  --implement  Developer, TestEngineer, Auditor"
+    echo "  --implement  Developer, TestEngineer, Auditor, ReleaseManager"
+    echo "  --design     UIDesigner"
+    echo "  --support    Coordinator, Author, QALead, TechWriter, BusinessAnalyst"
     echo "  --coord      Coordinator, CTO"
     echo ""
     echo "Options:"
     echo "  --audit      Broadcast 7-question survey to all terminals after launch"
     echo ""
     echo "Individual roles: CTO, Architect, Coordinator, Security, Toolsmith, DevOps,"
-    echo "  ProductOwner, Planner, WireframeGenerator1, WireframeGenerator2, WireframeGenerator3,"
-    echo "  PreviewHost, WireframeQA, Validator, Inspector, Author, TestEngineer, Developer,"
-    echo "  Auditor, QALead, TechWriter, DockerCaptain"
+    echo "  ProductOwner, UXDesigner, Planner, WireframeGenerator1, WireframeGenerator2,"
+    echo "  WireframeGenerator3, PreviewHost, WireframeQA, Validator, Inspector, Author,"
+    echo "  TestEngineer, Developer, Auditor, QALead, TechWriter, DockerCaptain, UIDesigner,"
+    echo "  BusinessAnalyst, ReleaseManager"
     echo ""
     echo "Note: Operator runs OUTSIDE tmux. Use 'claude' then '/prime operator'."
     exit 0
@@ -185,8 +213,8 @@ tmux set-hook -t $SESSION session-window-changed "run-shell '$SCRIPT_DIR/tmux-ro
 # Window list - ALL windows show group color as BACKGROUND (consistent)
 # Current window: ">" prefix, Non-current: space prefix
 # All use black text on pastel backgrounds for readability
-tmux set-option -t $SESSION window-status-current-format "#{?#{||:#{m:CTO,#W},#{||:#{m:Architect,#W},#{||:#{m:Security,#W},#{||:#{m:Toolsmith,#W},#{||:#{m:DevOps,#W},#{m:ProductOwner,#W}}}}}},#[bg=$COLOR_COUNCIL],#{?#{||:#{m:Planner,#W},#{||:#{m:WireframeGenerator*,#W},#{||:#{m:PreviewHost,#W},#{||:#{m:WireframeQA,#W},#{||:#{m:Validator,#W},#{m:Inspector,#W}}}}}},#[bg=$COLOR_WIREFRAME],#{?#{||:#{m:Developer,#W},#{||:#{m:TestEngineer,#W},#{m:Auditor,#W}}},#[bg=$COLOR_IMPLEMENT],#[bg=$COLOR_SUPPORT]}}}#[fg=black,bold]>#W "
-tmux set-option -t $SESSION window-status-format "#{?#{||:#{m:CTO,#W},#{||:#{m:Architect,#W},#{||:#{m:Security,#W},#{||:#{m:Toolsmith,#W},#{||:#{m:DevOps,#W},#{m:ProductOwner,#W}}}}}},#[bg=$COLOR_COUNCIL],#{?#{||:#{m:Planner,#W},#{||:#{m:WireframeGenerator*,#W},#{||:#{m:PreviewHost,#W},#{||:#{m:WireframeQA,#W},#{||:#{m:Validator,#W},#{m:Inspector,#W}}}}}},#[bg=$COLOR_WIREFRAME],#{?#{||:#{m:Developer,#W},#{||:#{m:TestEngineer,#W},#{m:Auditor,#W}}},#[bg=$COLOR_IMPLEMENT],#[bg=$COLOR_SUPPORT]}}}#[fg=black] #W "
+tmux set-option -t $SESSION window-status-current-format "#{?#{||:#{m:CTO,#W},#{||:#{m:Architect,#W},#{||:#{m:Security,#W},#{||:#{m:Toolsmith,#W},#{||:#{m:DevOps,#W},#{||:#{m:ProductOwner,#W},#{m:UXDesigner,#W}}}}}}},#[bg=$COLOR_COUNCIL],#{?#{||:#{m:Planner,#W},#{||:#{m:WireframeGenerator*,#W},#{||:#{m:PreviewHost,#W},#{||:#{m:WireframeQA,#W},#{||:#{m:Validator,#W},#{m:Inspector,#W}}}}}},#[bg=$COLOR_WIREFRAME],#{?#{||:#{m:Developer,#W},#{||:#{m:TestEngineer,#W},#{||:#{m:Auditor,#W},#{m:ReleaseManager,#W}}}},#[bg=$COLOR_IMPLEMENT],#{?#{m:UIDesigner,#W},#[bg=$COLOR_DESIGN],#[bg=$COLOR_SUPPORT]}}}}#[fg=black,bold]>#W "
+tmux set-option -t $SESSION window-status-format "#{?#{||:#{m:CTO,#W},#{||:#{m:Architect,#W},#{||:#{m:Security,#W},#{||:#{m:Toolsmith,#W},#{||:#{m:DevOps,#W},#{||:#{m:ProductOwner,#W},#{m:UXDesigner,#W}}}}}}},#[bg=$COLOR_COUNCIL],#{?#{||:#{m:Planner,#W},#{||:#{m:WireframeGenerator*,#W},#{||:#{m:PreviewHost,#W},#{||:#{m:WireframeQA,#W},#{||:#{m:Validator,#W},#{m:Inspector,#W}}}}}},#[bg=$COLOR_WIREFRAME],#{?#{||:#{m:Developer,#W},#{||:#{m:TestEngineer,#W},#{||:#{m:Auditor,#W},#{m:ReleaseManager,#W}}}},#[bg=$COLOR_IMPLEMENT],#{?#{m:UIDesigner,#W},#[bg=$COLOR_DESIGN],#[bg=$COLOR_SUPPORT]}}}}#[fg=black] #W "
 tmux set-option -t $SESSION window-status-separator " "
 
 # Initialize status-right for first window

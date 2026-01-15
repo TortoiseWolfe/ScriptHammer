@@ -1,6 +1,6 @@
 # Council Terminal Context
 
-**Council members**: CTO, Architect, Security, Toolsmith, DevOps, ProductOwner
+**Council members**: CTO, Architect, Security, Toolsmith, DevOps, ProductOwner, UXDesigner
 
 You have RFC voting and creation privileges.
 
@@ -23,6 +23,7 @@ You have RFC voting and creation privileges.
 | Toolsmith | Skills, automation | `~/.claude/commands/*.md` |
 | DevOps | CI/CD, Docker | `docker-compose.yml`, `.github/workflows/`, `.claude/knowledge/docker/` |
 | ProductOwner | User requirements, UX | Feature specs, acceptance criteria |
+| UXDesigner | User research, interaction design, design system | Wireframes, personas, design patterns |
 
 ## Docker Knowledge Base (DevOps)
 
