@@ -55,6 +55,26 @@ docs/design/wireframes/014-admin-welcome-email-gate/01-verification-gate.issues.
 docs/design/wireframes/019-google-analytics/01-consent-flow.issues.md
 ```
 
+## Cleanup Completed (2026-01-15)
+
+Cleaned 11 stale issue files:
+
+| Feature | File | Issues Resolved |
+|---------|------|-----------------|
+| 002-cookie-consent | 03-privacy-settings-page | 1 (false positive) |
+| 003-user-authentication | 01-registration-sign-in | 1 |
+| 004-mobile-first-design | 01-responsive-navigation | 6 (false positives) |
+| 005-security-hardening | 02-session-timeout-warning | 1 (false positive) |
+| 006-template-fork-experience | 01-service-setup-guidance | 1 |
+| 009-user-messaging-system | 01-connection-and-chat | 5 |
+| 009-user-messaging-system | 02-settings-and-data | 1 |
+| 013-oauth-messaging-password | 01-oauth-password-setup | 14 |
+| 014-admin-welcome-email-gate | 01-verification-gate | 3 |
+| 019-google-analytics | 01-consent-flow | 1 |
+| templates | dark-theme | text cleanup |
+
+**Post-cleanup verification**: `--check-escalation` now shows 0 candidates.
+
 ## Conclusion
 
-Escalation mechanism working correctly. Issues detected in multiple features are already documented in GENERAL_ISSUES.md. Primary action: clean up stale issue files and improve MODAL-001 validator logic.
+Escalation mechanism working correctly. All stale issues cleaned. No new G-XXX entries needed.
