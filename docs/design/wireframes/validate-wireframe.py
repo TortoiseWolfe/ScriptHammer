@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v5.2
+SVG Wireframe Validator v5.3
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
 All checks are errors - either it passes or it fails. No ambiguous warnings.
 
+NEW in v5.3: Added --json and --summary output modes for CI integration (RFC-004).
 NEW in v5.2: Added G-036 (badge containment) and G-037 (annotation text readability) checks.
 NEW in v5.1: Added MOBILE-001 check for mobile content overlapping header (G-034).
 NEW in v5.0: Auto-logs issues to feature-specific .issues.md files.
@@ -16,8 +17,10 @@ Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
 
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
-    python validate-wireframe.py --all  # Validate all SVGs
-    python validate-wireframe.py --check-escalation  # Check for patterns to escalate
+    python validate-wireframe.py --all              # Validate all SVGs
+    python validate-wireframe.py --all --json       # JSON output for CI
+    python validate-wireframe.py --all --summary    # One-line summary for PR comments
+    python validate-wireframe.py --check-escalation # Check for patterns to escalate
 """
 
 import bisect
@@ -1896,21 +1899,39 @@ def main():
     if len(sys.argv) < 2:
         print("Usage: python validate-wireframe.py <svg-file-or-dir>")
         print("       python validate-wireframe.py --all")
+        print("       python validate-wireframe.py --all --json")
+        print("       python validate-wireframe.py --all --summary")
         print("       python validate-wireframe.py --check-escalation")
         print("       python validate-wireframe.py --analyze-themes <spec.md>")
+        print("")
+        print("Options:")
+        print("  --json      Output validation results as JSON (for CI parsing)")
+        print("  --summary   Output one-line pass/fail summary (for PR comments)")
         sys.exit(1)
+
+    # Parse output format flags
+    output_json = '--json' in sys.argv
+    output_summary = '--summary' in sys.argv
+
+    # Remove flags from argv for path processing
+    args = [a for a in sys.argv[1:] if a not in ('--json', '--summary')]
 
     wireframes_dir = Path(__file__).parent
     logger = IssueLogger(wireframes_dir)
 
+    # Ensure we have at least one argument after flag removal
+    if not args:
+        print("ERROR: No input specified. Use --all or provide an SVG path.")
+        sys.exit(1)
+
     # Handle theme analysis mode
-    if sys.argv[1] == '--analyze-themes':
-        if len(sys.argv) < 3:
+    if args[0] == '--analyze-themes':
+        if len(args) < 2:
             print("ERROR: --analyze-themes requires a spec.md path")
             print("Usage: python validate-wireframe.py --analyze-themes features/.../spec.md")
             sys.exit(1)
 
-        spec_path = Path(sys.argv[2])
+        spec_path = Path(args[1])
         if not spec_path.is_absolute():
             # Try relative to wireframes dir, then cwd
             if (wireframes_dir / spec_path).exists():
@@ -1926,7 +1947,7 @@ def main():
         sys.exit(0)
 
     # Handle escalation check mode
-    if sys.argv[1] == '--check-escalation':
+    if args[0] == '--check-escalation':
         print(f"\n{'='*60}")
         print("CHECKING FOR ESCALATION CANDIDATES")
         print('='*60)
@@ -1947,23 +1968,27 @@ def main():
         sys.exit(0)
 
     # Standard validation mode
-    if sys.argv[1] == '--all':
+    if args[0] == '--all':
         svg_files = list(wireframes_dir.glob('**/*.svg'))
         # Exclude includes/ (reusable components) and templates/ (starter templates)
         svg_files = [f for f in svg_files if 'includes' not in str(f) and 'templates' not in str(f)]
     else:
-        svg_path = wireframes_dir / sys.argv[1]
+        svg_path = wireframes_dir / args[0]
         if not svg_path.exists():
             print(f"ERROR: File not found: {svg_path}")
             sys.exit(1)
         svg_files = [svg_path]
 
     total_errors = 0
+    passed_files = 0
+    failed_files = 0
+    all_issues: List[Dict] = []  # For JSON output
 
     for svg_file in svg_files:
-        print(f"\n{'='*60}")
-        print(f"Validating: {svg_file.relative_to(wireframes_dir)}")
-        print('='*60)
+        if not output_json and not output_summary:
+            print(f"\n{'='*60}")
+            print(f"Validating: {svg_file.relative_to(wireframes_dir)}")
+            print('='*60)
 
         validator = WireframeValidator(svg_file)
         issues = validator.validate()
@@ -1971,28 +1996,61 @@ def main():
         errors = [i for i in issues if i.severity == "ERROR"]
 
         if not issues:
-            print("PASS - No issues found")
+            passed_files += 1
+            if not output_json and not output_summary:
+                print("PASS - No issues found")
         else:
-            for issue in issues:
-                line_info = f" (line {issue.line})" if issue.line else ""
-                print(f"  ERROR [{issue.code}]{line_info}: {issue.message}")
+            failed_files += 1
+            if not output_json and not output_summary:
+                for issue in issues:
+                    line_info = f" (line {issue.line})" if issue.line else ""
+                    print(f"  ERROR [{issue.code}]{line_info}: {issue.message}")
 
-            print(f"\n  {len(errors)} errors")
+                print(f"\n  {len(errors)} errors")
 
-            # Auto-log issues to feature-specific file
-            logger.log_issues(svg_file, issues)
+            # Auto-log issues to feature-specific file (unless JSON/summary mode)
+            if not output_json and not output_summary:
+                logger.log_issues(svg_file, issues)
+
+            # Collect issues for JSON output
+            if output_json:
+                for issue in issues:
+                    all_issues.append({
+                        "file": str(svg_file.relative_to(wireframes_dir)),
+                        "severity": issue.severity,
+                        "code": issue.code,
+                        "message": issue.message,
+                        "line": issue.line
+                    })
 
         total_errors += len(errors)
 
-    print(f"\n{'='*60}")
-    print(f"TOTAL: {total_errors} errors across {len(svg_files)} files")
-
-    if total_errors > 0:
-        print("STATUS: FAIL")
-        sys.exit(1)
+    # Output results based on format
+    if output_json:
+        # JSON output for CI parsing
+        result = {
+            "passed": passed_files,
+            "failed": failed_files,
+            "total_files": len(svg_files),
+            "total_issues": total_errors,
+            "issues": all_issues
+        }
+        print(json.dumps(result, indent=2))
+    elif output_summary:
+        # One-line summary for PR comments
+        status = "PASS" if total_errors == 0 else "FAIL"
+        print(f"Wireframe Validation: {status} | {passed_files}/{len(svg_files)} passed | {total_errors} issues")
     else:
-        print("STATUS: PASS")
-        sys.exit(0)
+        # Standard verbose output
+        print(f"\n{'='*60}")
+        print(f"TOTAL: {total_errors} errors across {len(svg_files)} files")
+
+        if total_errors > 0:
+            print("STATUS: FAIL")
+        else:
+            print("STATUS: PASS")
+
+    sys.exit(1 if total_errors > 0 else 0)
 
 
 if __name__ == '__main__':
