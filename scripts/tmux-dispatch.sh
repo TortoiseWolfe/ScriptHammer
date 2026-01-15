@@ -12,14 +12,25 @@ PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
 
 # Role to window number mapping (matches tmux-session.sh ALL array order)
 # Note: Operator runs OUTSIDE tmux and is not in this mapping
+#
+# ASSEMBLY LINE ORDER: Strategy → Requirements → Design → Wireframes → Code → Test → Docs → Release
+#
 declare -A WINDOWS=(
-  ["CTO"]=0 ["Architect"]=1 ["Coordinator"]=2 ["Security"]=3
-  ["Toolsmith"]=4 ["DevOps"]=5 ["ProductOwner"]=6 ["UXDesigner"]=7
-  ["Planner"]=8 ["WireframeGenerator1"]=9 ["WireframeGenerator2"]=10 ["WireframeGenerator3"]=11
-  ["PreviewHost"]=12 ["WireframeQA"]=13 ["Validator"]=14 ["Inspector"]=15
-  ["Author"]=16 ["TestEngineer"]=17 ["Developer"]=18 ["Auditor"]=19
-  ["QALead"]=20 ["TechWriter"]=21 ["DockerCaptain"]=22
-  ["UIDesigner"]=23 ["BusinessAnalyst"]=24 ["ReleaseManager"]=25
+  # STRATEGY & REQUIREMENTS (W0-W2)
+  ["CTO"]=0 ["ProductOwner"]=1 ["BusinessAnalyst"]=2
+  # DESIGN (W3-W5)
+  ["Architect"]=3 ["UXDesigner"]=4 ["UIDesigner"]=5
+  # WIREFRAMES (W6-W13)
+  ["Planner"]=6 ["WireframeGenerator1"]=7 ["WireframeGenerator2"]=8 ["WireframeGenerator3"]=9
+  ["PreviewHost"]=10 ["WireframeQA"]=11 ["Validator"]=12 ["Inspector"]=13
+  # IMPLEMENTATION (W14-W16)
+  ["Developer"]=14 ["Toolsmith"]=15 ["Security"]=16
+  # TESTING (W17-W19)
+  ["TestEngineer"]=17 ["QALead"]=18 ["Auditor"]=19
+  # DOCUMENTATION (W20-W21)
+  ["Author"]=20 ["TechWriter"]=21
+  # RELEASE & OPERATIONS (W22-W25)
+  ["DevOps"]=22 ["DockerCaptain"]=23 ["ReleaseManager"]=24 ["Coordinator"]=25
 )
 
 # Check if session exists
@@ -83,7 +94,8 @@ dispatch_votes() {
   done
   echo ""
 
-  COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner UXDesigner)
+  # Council members (per .claude/roles/council.md)
+  COUNCIL=(CTO ProductOwner Architect UXDesigner Toolsmith Security DevOps)
 
   for ROLE in "${COUNCIL[@]}"; do
     PROMPT="Review and vote on pending RFCs:

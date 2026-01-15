@@ -148,13 +148,16 @@ Reports to: DevOps"
 )
 
 # Role groups
-COUNCIL=(CTO Architect Security Toolsmith DevOps ProductOwner UXDesigner)
+# ASSEMBLY LINE ORDER: Strategy → Requirements → Design → Wireframes → Code → Test → Docs → Release
+COUNCIL=(CTO ProductOwner Architect UXDesigner Toolsmith Security DevOps)
 WIREFRAME=(Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector)
-IMPLEMENT=(Developer TestEngineer Auditor ReleaseManager)
-DESIGN=(UIDesigner)
-SUPPORT=(Coordinator Author QALead TechWriter BusinessAnalyst)
+IMPLEMENT=(Developer Toolsmith Security TestEngineer QALead Auditor)
+DESIGN=(UXDesigner UIDesigner)
+SUPPORT=(Author TechWriter Coordinator)
 COORD=(Coordinator CTO)
-ALL=(CTO Architect Coordinator Security Toolsmith DevOps ProductOwner UXDesigner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Author TestEngineer Developer Auditor QALead TechWriter DockerCaptain UIDesigner BusinessAnalyst ReleaseManager)
+RELEASE=(DevOps DockerCaptain ReleaseManager)
+# ALL follows assembly line: Strategy(0-2) → Design(3-5) → Wireframes(6-13) → Code(14-16) → Test(17-19) → Docs(20-21) → Release(22-25)
+ALL=(CTO ProductOwner BusinessAnalyst Architect UXDesigner UIDesigner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Developer Toolsmith Security TestEngineer QALead Auditor Author TechWriter DevOps DockerCaptain ReleaseManager Coordinator)
 
 # Parse arguments
 ROLES=()
