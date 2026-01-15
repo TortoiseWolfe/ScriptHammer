@@ -214,11 +214,11 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Create Group Chat</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user, I need to create group conversations with 2-200 members</text>
       <text x="40" y="52" fill="#374151" font-size="14">for multi-person discussions. Optional group names auto-generate if empty.</text>
-      <a href="#US-001"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-001</text></a>
-      <a href="#FR-001"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-001</text></a>
-      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-018</text></a>
-      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-019</text></a>
-      <a href="#SC-001"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-001</text></a>
+      <a href="#US-001"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-019</text></a>
+      <a href="#SC-001"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-001</text></a>
     </g>
 
     <!-- Annotation Group 2 - Send/Receive Messages (US-002) -->
@@ -228,11 +228,11 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Send/Receive Group Messages</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a group member, I need encrypted messaging with sender attribution.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Each message shows sender name and avatar for clear identification.</text>
-      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-002</text></a>
-      <a href="#FR-002"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-002</text></a>
-      <a href="#FR-016"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-016</text></a>
-      <a href="#FR-021"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-021</text></a>
-      <a href="#SC-004"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-004</text></a>
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-002"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-016"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-021"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-021</text></a>
+      <a href="#SC-004"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-004</text></a>
     </g>
 
     <!-- Annotation Group 3 - Typing Indicators -->
@@ -242,8 +242,8 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Multi-User Typing Indicators</text>
       <text x="40" y="34" fill="#374151" font-size="14">Real-time typing indicators show all currently active members.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Displays stacked avatars and names of who is composing messages.</text>
-      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-002</text></a>
-      <a href="#FR-021"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-021</text></a>
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-021"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-021</text></a>
     </g>
 
     <!-- Annotation Group 4 - Add Members (US-003) -->
@@ -253,10 +253,10 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Add Members to Group</text>
       <text x="40" y="34" fill="#374151" font-size="14">Any member can add connections. Stacked avatars show group identity.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Key rotation ensures new members can't read pre-join messages.</text>
-      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-003</text></a>
-      <a href="#FR-004"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-004</text></a>
-      <a href="#FR-009"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-009</text></a>
-      <a href="#SC-003"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-003</text></a>
+      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-004"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-004</text></a>
+      <a href="#FR-009"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#SC-003"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-003</text></a>
     </g>
   </g>
 

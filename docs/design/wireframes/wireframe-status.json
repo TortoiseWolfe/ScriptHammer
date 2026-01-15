@@ -194,6 +194,21 @@
       "review_date": "2026-01-14"
     }
   },
+  "016-messaging-critical-fixes": {
+    "status": "draft",
+    "svgs": {
+      "01-message-input-visibility.svg": "draft",
+      "02-oauth-setup-flow.svg": "draft",
+      "03-conversation-error-states.svg": "draft"
+    },
+    "notes": "Generated 2026-01-15 by Generator-2. 3 SVGs: message input visibility (fixed input across viewports), OAuth setup flow (full-page password setup with warnings), conversation error states (decryption failures, name resolution). All pass validator (0 errors).",
+    "validation": {
+      "svg01_errors": 0,
+      "svg02_errors": 0,
+      "svg03_errors": 0,
+      "review_date": "2026-01-15"
+    }
+  },
   "019-google-analytics": {
     "status": "inspecting",
     "svgs": {

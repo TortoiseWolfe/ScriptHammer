@@ -246,10 +246,10 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Upgrade 1-to-1 to Group</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user, I need to add people to a DM to create a group discussion.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Original participants retain full message history after upgrade.</text>
-      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-004</text></a>
-      <a href="#FR-015"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-015</text></a>
-      <a href="#FR-024"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-024</text></a>
-      <a href="#SC-005"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-005</text></a>
+      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-015"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-015</text></a>
+      <a href="#FR-024"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-024</text></a>
+      <a href="#SC-005"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-005</text></a>
     </g>
 
     <!-- Annotation Group 2 - Remove/Leave (US-005) -->
@@ -259,10 +259,10 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Remove Member / Leave Group</text>
       <text x="40" y="34" fill="#374151" font-size="14">Owner can remove members; any member can leave voluntarily.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Key rotation ensures removed members can't decrypt new messages.</text>
-      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-010"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-010</text></a>
-      <a href="#FR-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-011</text></a>
-      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">SC-006</text></a>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-010"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#FR-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-006</text></a>
     </g>
 
     <!-- Annotation Group 3 - Ownership Transfer -->
@@ -272,10 +272,10 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Ownership Transfer</text>
       <text x="40" y="34" fill="#374151" font-size="14">Owner must transfer ownership before leaving the group.</text>
       <text x="40" y="52" fill="#374151" font-size="14">Owner can also delete the entire group if needed.</text>
-      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-012"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-012</text></a>
-      <a href="#FR-013"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-013</text></a>
-      <a href="#FR-014"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-014</text></a>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-012"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#FR-014"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-014</text></a>
     </g>
 
     <!-- Annotation Group 4 - View Group Info (US-006) -->
@@ -285,10 +285,10 @@
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">View Group Info / History</text>
       <text x="40" y="34" fill="#374151" font-size="14">Members see group metadata and member list with roles.</text>
       <text x="40" y="52" fill="#374151" font-size="14">New members see placeholder text for pre-join messages.</text>
-      <a href="#US-006"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="12" text-anchor="middle">US-006</text></a>
-      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-017</text></a>
-      <a href="#FR-022"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-022</text></a>
-      <a href="#FR-023"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="12" text-anchor="middle">FR-023</text></a>
+      <a href="#US-006"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-006</text></a>
+      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-022"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-022</text></a>
+      <a href="#FR-023"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-023</text></a>
     </g>
   </g>
 

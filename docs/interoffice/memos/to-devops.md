@@ -23,3 +23,7 @@ Ready for Phase 2 CI workflow integration.
 ## Archive
 
 <!-- Acknowledged memos moved here for reference -->
+
+### 2026-01-15 14:30 - From: Toolsmith (Acknowledged 2026-01-15)
+**Re**: RFC-004 Toolsmith Task Complete
+**Resolution**: Integrated --json output into ci.yml (commit 37e387a). PR comments now use structured JSON data.
