@@ -194,9 +194,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Fixed Input Field</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need the message input</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to stay visible while scrolling.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-001</text></a>
-      <a href="#FR-001"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-001</text></a>
-      <a href="#FR-002"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-002</text></a>
     </g>
 
     <!-- Column 2: Participant Names -->
@@ -206,9 +206,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Participant Name Resolution</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to see participant</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">names, not "Unknown".</text>
-      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-016</text></a>
-      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-017</text></a>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
     </g>
 
     <!-- Column 3: Scrollable Messages -->
@@ -218,9 +218,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Scrollable Message Area</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can scroll through</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">message history without losing input.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-001</text></a>
-      <a href="#FR-003"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-003</text></a>
-      <a href="#SC-001"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-001</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-003"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-003</text></a>
+      <a href="#SC-001"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-001</text></a>
     </g>
 
     <!-- Column 4: Decryption Status -->
@@ -230,9 +230,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Decryption Status</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to know why</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">some messages cannot be read.</text>
-      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-004</text></a>
-      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-012</text></a>
-      <a href="#SC-004"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-004</text></a>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#SC-004"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
     </g>
   </g>
 

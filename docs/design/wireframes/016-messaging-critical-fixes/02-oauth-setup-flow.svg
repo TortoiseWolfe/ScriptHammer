@@ -198,10 +198,10 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Full-Page Setup Flow</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As an OAuth user with no encryption keys,</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I see a dedicated full-page setup.</text>
-      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-002</text></a>
-      <a href="#FR-004"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-004</text></a>
-      <a href="#FR-005"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-005</text></a>
-      <a href="#SC-002"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-002</text></a>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-004"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-004</text></a>
+      <a href="#FR-005"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-005</text></a>
+      <a href="#SC-002"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-002</text></a>
     </g>
 
     <!-- Column 2: Password Warning Placements -->
@@ -211,9 +211,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Password Warning Points</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">"Save this password" warning shown at</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">three points: above, below, and success.</text>
-      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-002</text></a>
-      <a href="#FR-010"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-010</text></a>
-      <a href="#SC-006"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-006</text></a>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-010"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-006"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-006</text></a>
     </g>
 
     <!-- Column 3: Password Manager Integration -->
@@ -223,10 +223,10 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Password Manager Integration</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Form includes proper attributes so</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">password managers can save credentials.</text>
-      <a href="#US-003"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-003</text></a>
-      <a href="#FR-009"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-009</text></a>
-      <a href="#FR-011"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-011</text></a>
-      <a href="#SC-003"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-003</text></a>
+      <a href="#US-003"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-011"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-003"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-003</text></a>
     </g>
 
     <!-- Column 4: Post-Setup Access -->
@@ -236,9 +236,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Post-Setup Access</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">After setup, user can send/receive</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">encrypted messages immediately.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-001</text></a>
-      <a href="#FR-007"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-007</text></a>
-      <a href="#FR-008"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-007"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-008</text></a>
     </g>
   </g>
 

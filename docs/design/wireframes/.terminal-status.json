@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-15T18:20:26Z",
+  "lastUpdated": "2026-01-15T19:27:32.408169+00:00",
   "wireframeStatus": "approved",
   "queue": [
     {
@@ -34,35 +34,126 @@
       "feature": "tooling-automation",
       "svg": null,
       "action": "SCRIPT",
-      "reason": "P1 - project-status.py: Replace /status prompt with Python dashboard",
+      "reason": "Architect: rfc-consensus.py - RFC vote aggregation and consensus detection",
       "assignedTo": "toolsmith"
     },
     {
       "feature": "tooling-automation",
       "svg": null,
       "action": "SCRIPT",
-      "reason": "P1 - review-queue.py: Replace /review-queue prompt with age calculator",
+      "reason": "Architect: dependency-graph.py - Feature dependency resolution",
       "assignedTo": "toolsmith"
     },
     {
       "feature": "tooling-automation",
       "svg": null,
       "action": "SCRIPT",
-      "reason": "P1 - secrets-scan.py: Regex-based secret detection for CI hooks",
+      "reason": "Architect: feature-context.py - Load feature context for terminals",
       "assignedTo": "toolsmith"
     },
     {
       "feature": "tooling-automation",
       "svg": null,
       "action": "SCRIPT",
-      "reason": "P2 - refresh-inventories.py: Feature/skill index generation",
+      "reason": "Architect: dispatch-precompute.py - Terminal dispatch pre-computation",
       "assignedTo": "toolsmith"
     },
     {
       "feature": "tooling-automation",
       "svg": null,
       "action": "SCRIPT",
-      "reason": "P2 - rfc-status.py: RFC voting status parser",
+      "reason": "Architect: constitution-check.py - Constitution compliance validation",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Architect: svg-autofix.py - SVG structural fixes (highest daily savings)",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Architect: build-inventory.py - Spec inventory builder",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Architect: audit-template.py - Audit template generator",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: generate-component.py - 5-file component generator",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: generate-ignores.py - Ignore file generator",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: validate-tasks.py - Task ID validator",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: scaffold-checklist.py - Checklist scaffolder",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: extract-spec.py - Spec section extractor (shared by 4+ skills)",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: scaffold-test.py - Test file scaffolder",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: build-commit.py - Commit message builder",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: fill-plan.py - Plan template filler",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: parse-data-model.py - Data model parser",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "Developer: validate-contracts.py - Contract validator",
       "assignedTo": "toolsmith"
     }
   ],
@@ -92,6 +183,9 @@
     "Generator-2: Completed 021-geolocation-map (2 SVGs: 01-map-interface-permission, 02-markers-and-accessibility)",
     "Validator: Reviewed 016-messaging-critical-fixes - 3 SVGs PASS validation and inspection, APPROVED",
     "Validator: Reviewed 021-geolocation-map - 2 SVGs PASS validation and inspection, APPROVED",
-    "Operator: Dispatched 5 SCRIPT tasks to Toolsmith (project-status.py, review-queue.py, secrets-scan.py, refresh-inventories.py, rfc-status.py)"
+    "Operator: Dispatched 5 SCRIPT tasks to Toolsmith (project-status.py, review-queue.py, secrets-scan.py, refresh-inventories.py, rfc-status.py)",
+    "Toolsmith: Completed 5 SCRIPT tasks - project-status.py (444 LOC), review-queue.py (384 LOC), secrets-scan.py (416 LOC), refresh-inventories.py (498 LOC), queue-status.py (345 LOC)",
+    "Operator: Queued 18 SCRIPT tasks for Toolsmith (8 from Architect audit, 10 from Developer audit)",
+    "Toolsmith: Created 16/18 scripts (6,156 LOC). Optional: skill-usage.py, session-tracker.py not created - low priority per architect audit"
   ]
 }

@@ -244,10 +244,10 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Decryption Failure</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, when a message cannot be</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">decrypted, I see a lock icon with text.</text>
-      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-004</text></a>
-      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-012</text></a>
-      <a href="#FR-013"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-013</text></a>
-      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-004</text></a>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
     </g>
 
     <!-- Column 2: Conversation View -->
@@ -257,9 +257,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Conversation View</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can scroll through messages</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">while tooltip/input stays accessible.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-001</text></a>
-      <a href="#FR-014"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-014</text></a>
-      <a href="#FR-015"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-015</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-014"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-014</text></a>
+      <a href="#FR-015"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-015</text></a>
     </g>
 
     <!-- Column 3: Name Resolution -->
@@ -269,10 +269,10 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Name Resolution</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I see participant's display</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">name (or username as fallback).</text>
-      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-016</text></a>
-      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-017</text></a>
-      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-005</text></a>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
     </g>
 
     <!-- Column 4: Special States -->
@@ -282,9 +282,9 @@
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Special User States</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Deleted accounts show "Deleted User",</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">missing profiles show "Unknown User".</text>
-      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-018"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-018</text></a>
-      <a href="#FR-019"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-019</text></a>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-018"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-019</text></a>
     </g>
   </g>
 

@@ -1,0 +1,438 @@
+openapi: 3.1.0
+info:
+  title: User Authentication API
+  description: |
+    Authentication and authorization endpoints for ScriptHammer.
+    All endpoints are powered by Supabase Auth.
+  version: 1.0.0
+  contact:
+    name: ScriptHammer Team
+
+servers:
+  - url: https://{project-ref}.supabase.co
+    description: Supabase API
+    variables:
+      project-ref:
+        default: your-project-ref
+        description: Supabase project reference
+
+tags:
+  - name: Authentication
+    description: Sign up, sign in, sign out operations
+  - name: OAuth
+    description: OAuth provider authentication
+  - name: Password
+    description: Password management operations
+  - name: Profile
+    description: User profile management
+  - name: Session
+    description: Session management operations
+
+paths:
+  /auth/v1/signup:
+    post:
+      tags: [Authentication]
+      summary: Create new user account
+      description: Register a new user with email and password (FR-001)
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User email address
+                password:
+                  type: string
+                  minLength: 8
+                  description: Password (8+ chars, uppercase, lowercase, number, special)
+                data:
+                  type: object
+                  properties:
+                    display_name:
+                      type: string
+                      description: Optional display name
+      responses:
+        '200':
+          description: User created, verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid email format or weak password
+        '422':
+          description: Email already registered
+
+  /auth/v1/token?grant_type=password:
+    post:
+      tags: [Authentication]
+      summary: Sign in with email and password
+      description: Authenticate user and create session (FR-006)
+      operationId: signInWithPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                gotrue_meta_security:
+                  type: object
+                  properties:
+                    captcha_token:
+                      type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: Invalid credentials or rate limited
+
+  /auth/v1/authorize:
+    get:
+      tags: [OAuth]
+      summary: Initiate OAuth flow
+      description: Redirect to OAuth provider for authentication (FR-007, FR-008)
+      operationId: authorizeOAuth
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [github, google]
+        - name: redirect_to
+          in: query
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+
+  /auth/v1/callback:
+    get:
+      tags: [OAuth]
+      summary: OAuth callback handler
+      description: Handle OAuth provider callback and exchange code for session
+      operationId: oauthCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to application with session
+
+  /auth/v1/logout:
+    post:
+      tags: [Authentication]
+      summary: Sign out user
+      description: Terminate current session (FR-009)
+      operationId: signOut
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Session terminated
+        '401':
+          description: Not authenticated
+
+  /auth/v1/recover:
+    post:
+      tags: [Password]
+      summary: Request password reset
+      description: Send password reset email (FR-010)
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset email sent (always returns success for security)
+
+  /auth/v1/user:
+    get:
+      tags: [Profile]
+      summary: Get current user
+      description: Retrieve authenticated user's information (FR-024)
+      operationId: getUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+    put:
+      tags: [Profile]
+      summary: Update user
+      description: Update user email or password (FR-025, FR-026)
+      operationId: updateUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                data:
+                  type: object
+                  description: User metadata updates
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+
+  /auth/v1/token?grant_type=refresh_token:
+    post:
+      tags: [Session]
+      summary: Refresh access token
+      description: Exchange refresh token for new access token (FR-015)
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        '200':
+          description: New tokens issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '400':
+          description: Invalid or expired refresh token
+
+  /rest/v1/profiles:
+    get:
+      tags: [Profile]
+      summary: Get user profile
+      description: Retrieve user profile data
+      operationId: getProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by user ID (eq.{uuid})
+      responses:
+        '200':
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+
+    patch:
+      tags: [Profile]
+      summary: Update user profile
+      description: Update profile fields (FR-025)
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Filter by user ID (eq.{uuid})
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated
+        '401':
+          description: Not authenticated
+        '403':
+          description: Cannot update other user's profile
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        email_confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_sign_in_at:
+          type: string
+          format: date-time
+          nullable: true
+        app_metadata:
+          type: object
+        user_metadata:
+          type: object
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          nullable: true
+        username:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfileUpdate:
+      type: object
+      properties:
+        display_name:
+          type: string
+          maxLength: 100
+        username:
+          type: string
+          maxLength: 50
+          pattern: '^[a-z0-9-]{3,50}$'
+        avatar_url:
+          type: string
+          format: uri
+        bio:
+          type: string
+          maxLength: 500
+
+    Session:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [bearer]
+        expires_in:
+          type: integer
+        expires_at:
+          type: integer
+        refresh_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        session:
+          $ref: '#/components/schemas/Session'
+          nullable: true
+
+    SessionResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        expires_in:
+          type: integer
+        expires_at:
+          type: integer
+        refresh_token:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        error_description:
+          type: string
+        message:
+          type: string

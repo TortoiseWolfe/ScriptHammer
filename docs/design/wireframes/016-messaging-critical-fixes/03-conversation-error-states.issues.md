@@ -23,6 +23,12 @@
 |----|-------|------------|
 | U-01 | Only 2 User Story badges | FIXED - proper coverage |
 
+### Font Issues
+
+| ID | Issue | Resolution |
+|----|-------|------------|
+| (untracked) | 14 elements at font-size 12px | FIXED 2026-01-15 - all changed to 14px |
+
 ---
 
 ## Notes

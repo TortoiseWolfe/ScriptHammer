@@ -23,6 +23,12 @@
 |----|-------|------------|
 | M-01 | Modal detected but no overlay | FIXED - proper structure |
 
+### Font Issues
+
+| ID | Issue | Resolution |
+|----|-------|------------|
+| (untracked) | 14 elements at font-size 12px | FIXED 2026-01-15 - all changed to 14px |
+
 ---
 
 ## Notes
