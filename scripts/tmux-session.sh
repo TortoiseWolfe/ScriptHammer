@@ -156,6 +156,7 @@ DESIGN=(UXDesigner UIDesigner)
 SUPPORT=(Author TechWriter Coordinator)
 COORD=(Coordinator CTO)
 RELEASE=(DevOps DockerCaptain ReleaseManager)
+QC=(PreviewHost WireframeQA Validator Inspector Auditor)
 # ALL follows assembly line: Strategy(0-2) → Design(3-5) → Wireframes(6-13) → Code(14-16) → Test(17-19) → Docs(20-21) → Release(22-25)
 ALL=(CTO ProductOwner BusinessAnalyst Architect UXDesigner UIDesigner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Developer Toolsmith Security TestEngineer QALead Auditor Author TechWriter DevOps DockerCaptain ReleaseManager Coordinator)
 
@@ -169,8 +170,9 @@ case "${1:-}" in
   --design)   ROLES=("${DESIGN[@]}") ;;
   --support)  ROLES=("${SUPPORT[@]}") ;;
   --coord)    ROLES=("${COORD[@]}") ;;
+  --qc)       ROLES=("${QC[@]}") ;;
   "")
-    echo "Usage: $0 [--all|--council|--wireframe|--implement|--design|--support|--coord|ROLE...] [--audit]"
+    echo "Usage: $0 [--all|--council|--wireframe|--implement|--design|--support|--coord|--qc|ROLE...] [--audit]"
     echo ""
     echo "Groups:"
     echo "  --all        All 26 terminals"
@@ -180,6 +182,7 @@ case "${1:-}" in
     echo "  --design     UIDesigner"
     echo "  --support    Coordinator, Author, QALead, TechWriter, BusinessAnalyst"
     echo "  --coord      Coordinator, CTO"
+    echo "  --qc         PreviewHost, WireframeQA, Validator, Inspector, Auditor"
     echo ""
     echo "Options:"
     echo "  --audit      Broadcast 7-question survey to all terminals after launch"
