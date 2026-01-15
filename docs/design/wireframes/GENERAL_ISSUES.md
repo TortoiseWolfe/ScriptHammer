@@ -30,7 +30,7 @@
 | G-021 | Footer hidden behind modal overlay | Place footer `<use>` AFTER modal content in SVG order (SVG paints in order) | SVG Paint Order |
 | G-022 | Missing canvas background gradient | Canvas MUST have `#c7ddf5` → `#b8d4f0` gradient, not solid parchment | Background Gradient |
 | G-024 | Missing title block | MUST have centered title at y=28: "FEATURE - PAGE NAME" | Title Block |
-| G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at y=1060, 18px bold | Signature Block |
+| G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at x=40, y=1060, 18px bold, LEFT-ALIGNED | Signature Block |
 | G-026 | No numbered callouts on mockups | Red circles ①②③④ MUST appear ON mockup UI elements | v4 Callout System (validator: ANN-002, G-026) |
 | G-030 | Annotation groups clustered instead of distributed | Use 4-column grid: x=20, 470, 920, 1370. One group per column. | Annotation Column Distribution |
 | G-031 | Callout circle placed ON TOP of UI element | Place callout 10-20px ADJACENT to element, never covering it | Callout Placement |
@@ -118,8 +118,8 @@ Before writing ANY SVG:
   <!-- Annotation content here -->
 </g>
 
-<!-- Signature -->
-<text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">NNN:NN | Feature Name | ScriptHammer</text>
+<!-- Signature (LEFT-ALIGNED at x=40, NOT centered) -->
+<text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">NNN:NN | Feature Name | ScriptHammer</text>
 </svg>
 ```
 

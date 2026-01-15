@@ -847,7 +847,7 @@ class WireframeValidator:
                     continue
 
     def _check_signature(self):
-        """SIGNATURE-001/002: Signature must be 18px+ and bold."""
+        """SIGNATURE-001/002/003: Signature must be 18px+, bold, and left-aligned."""
         # Find signature (y > 1040)
         sig_pattern = r'<text[^>]*y=["\']?(10[4-9]\d|1[1-9]\d\d)["\']?[^>]*'
         match = re.search(sig_pattern, self.svg_content)
@@ -869,6 +869,22 @@ class WireframeValidator:
                     severity="ERROR",
                     code="SIGNATURE-002",
                     message="Signature must be bold"
+                ))
+            # Check for left-alignment (x="40", NOT centered)
+            x_match = re.search(r'\bx=["\']?(\d+)', sig_element)
+            if x_match:
+                x_pos = int(x_match.group(1))
+                if x_pos != 40:
+                    self.issues.append(Issue(
+                        severity="ERROR",
+                        code="SIGNATURE-003",
+                        message=f"Signature must be left-aligned at x=40, got x={x_pos}"
+                    ))
+            if 'text-anchor="middle"' in sig_element or 'text-anchor:middle' in sig_element:
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="SIGNATURE-003",
+                    message="Signature must NOT use text-anchor=\"middle\" - use left-alignment at x=40"
                 ))
 
     def _check_annotation_spacing(self):

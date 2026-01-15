@@ -48,6 +48,11 @@ Planner → Generators (3 parallel) → PreviewHost → WireframeQA → Validato
 
 **Critical**: `height="1080"` NOT `height="1920"`. All attributes must use `"` quotes, no trailing commas.
 
+**Signature**: Must be LEFT-ALIGNED at `x="40"`, NOT centered. No `text-anchor="middle"`.
+```xml
+<text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">NNN:NN | Feature | ScriptHammer</text>
+```
+
 ## Issue Classification
 
 | Type | Examples | Action |
