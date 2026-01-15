@@ -13,9 +13,9 @@
 | CTO | **approve** | 2026-01-15 |
 | Architect | **approve** | 2026-01-15 |
 | Security Lead | **approve** | 2026-01-15 |
-| Toolsmith | pending | - |
-| DevOps | pending | - |
-| ProductOwner | pending | - |
+| Toolsmith | **approve** | 2026-01-15 |
+| DevOps | **approve** | 2026-01-15 |
+| ProductOwner | **approve** | 2026-01-15 |
 
 **Votes**: approve | reject | abstain
 **Required for Decision**: All non-abstaining stakeholders must approve

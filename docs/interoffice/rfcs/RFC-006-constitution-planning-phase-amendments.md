@@ -1,6 +1,6 @@
 # RFC-006: Constitution Planning Phase Amendments
 
-**Status**: proposed
+**Status**: decided
 **Author**: Architect
 **Created**: 2026-01-15
 **Target Decision**: 2026-01-17
@@ -9,12 +9,12 @@
 
 | Stakeholder | Vote | Date |
 |-------------|------|------|
-| CTO | pending | - |
-| Architect | pending | - |
-| Security Lead | pending | - |
-| Toolsmith | pending | - |
-| DevOps | pending | - |
-| Product Owner | pending | - |
+| CTO | approve | 2026-01-15 |
+| Architect | approve | 2026-01-15 |
+| Security Lead | approve | 2026-01-15 |
+| Toolsmith | approve | 2026-01-15 |
+| DevOps | approve | 2026-01-15 |
+| Product Owner | approve | 2026-01-15 |
 
 **Votes**: approve | reject | abstain
 **Required for Decision**: All non-abstaining stakeholders must approve
@@ -383,6 +383,79 @@ I recommend council approval to unblock implementation planning while maintainin
 
 ---
 
+### CTO (2026-01-15)
+
+**Vote: APPROVE**
+
+This RFC addresses a critical governance gap. The constitution should reflect reality while preserving our target state.
+
+Key observations:
+1. **Honest documentation prevents confusion** - New contributors deserve accurate expectations
+2. **Phased activation is pragmatic** - We don't need full infrastructure for planning work
+3. **Prerequisites before implementation is correct** - Foundation must exist before building
+
+The dependency chain (docker-compose → generator → CI → package.json → constitution amendment) is well-ordered.
+
+---
+
+### Security Lead (2026-01-15)
+
+**Vote: APPROVE**
+
+From a security perspective:
+
+1. **Constitution integrity matters** - False enforcement claims create a false sense of security
+2. **Planning phase exception is reasonable** - Python pre-commit tools are low-risk for spec work
+3. **Docker-first remains the goal** - Once implementation begins, container isolation is mandatory
+
+Note: The "planning phase tools" exception should be narrowly scoped. Only pre-commit hooks and wireframe viewer qualify.
+
+---
+
+### Toolsmith (2026-01-15)
+
+**Vote: APPROVE**
+
+Implementation assessment for my deliverables:
+
+1. **Component generator is achievable** - Will scaffold 5-file pattern with proper templates
+2. **2 sessions estimate is realistic** - Template files + validation logic + CLI wrapper
+3. **TypeScript generator preferred** - Aligns with project stack
+
+Will begin work immediately upon RFC decision.
+
+---
+
+### DevOps (2026-01-15)
+
+**Vote: APPROVE**
+
+Infrastructure work breakdown:
+
+1. **Root docker-compose.yml** - 1 session, straightforward
+2. **CI activation jobs** - 1 session, `hashFiles()` conditionals are well-documented
+3. **Package.json setup** - 1 session, standard Next.js configuration
+
+Total: 3 sessions of DevOps work before implementation can begin. Reasonable.
+
+Note: CI jobs use native runners until we have a containerized pipeline. This is acceptable for Phase 2.
+
+---
+
+### Product Owner (2026-01-15)
+
+**Vote: APPROVE**
+
+From a product perspective:
+
+1. **Unblocking implementation is critical** - P0 features are approved (RFC-005), we need infrastructure
+2. **Constitution amendments preserve intent** - We're not weakening standards, just acknowledging reality
+3. **Clear dependency chain helps planning** - I can communicate timeline to stakeholders
+
+Suggestion: Add "infrastructure sprint" milestone to track these prerequisites.
+
+---
+
 ## Dissent Log
 
 | Stakeholder | Objection | Response |
@@ -393,6 +466,6 @@ I recommend council approval to unblock implementation planning while maintainin
 
 ## Decision Record
 
-**Decided**: -
-**Outcome**: -
-**Decision ID**: -
+**Decided**: 2026-01-15
+**Outcome**: approved
+**Decision ID**: DEC-006

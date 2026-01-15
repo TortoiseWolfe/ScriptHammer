@@ -1,35 +1,31 @@
 {
   "feature": "016-messaging-critical-fixes",
-  "specPath": "features/auth-oauth/016-messaging-critical-fixes/spec.md",
-  "createdAt": "2026-01-15",
+  "plannedAt": "2026-01-15T16:49:15Z",
   "svgCount": 3,
   "assignments": [
     {
-      "svgName": "01-message-input-visibility.svg",
-      "focus": "Viewport comparison showing message input fixed at bottom across mobile portrait, mobile landscape, and desktop views. Demonstrate scrollable message area with persistent input field.",
-      "linkedRequirements": ["FR-001", "FR-002", "FR-003"],
-      "linkedStories": ["US-1"],
-      "successCriteria": ["SC-001"],
-      "mode": "new",
-      "notes": "Show side-by-side device frames with varying message counts to prove input stays visible"
+      "svg": "01-input-visibility.svg",
+      "focus": "Message input always visible across viewport sizes. Desktop (1280x720) and Mobile (360x720) showing conversation with input fixed at bottom. Portrait/landscape variations in annotation panel.",
+      "userStories": ["US-001"],
+      "requirements": ["FR-001", "FR-002", "FR-003"],
+      "criteria": ["SC-001"],
+      "mode": "new"
     },
     {
-      "svgName": "02-oauth-setup-flow.svg",
-      "focus": "Full-page OAuth messaging setup with password and confirm fields. Show 'Save this password' warning placements (above password, below confirm, after success). Include password manager form attributes visualization.",
-      "linkedRequirements": ["FR-004", "FR-005", "FR-006", "FR-007", "FR-008", "FR-009", "FR-010", "FR-011"],
-      "linkedStories": ["US-2", "US-3"],
-      "successCriteria": ["SC-002", "SC-003", "SC-006"],
-      "mode": "new",
-      "notes": "Emphasize this is full-page NOT modal. Show the three warning placements clearly numbered."
+      "svg": "02-oauth-setup-flow.svg",
+      "focus": "Full-page OAuth setup (not modal) with password + confirm fields. Show 'Save this password' warnings at 3 locations. Password manager form attributes highlighted. Contrast with returning user modal.",
+      "userStories": ["US-002", "US-003"],
+      "requirements": ["FR-004", "FR-005", "FR-006", "FR-007", "FR-008", "FR-009", "FR-010", "FR-011"],
+      "criteria": ["SC-002", "SC-003", "SC-006"],
+      "mode": "new"
     },
     {
-      "svgName": "03-conversation-error-states.svg",
-      "focus": "Message decryption failure states with lock icons and tooltips. Participant name resolution showing display name, username fallback, 'Deleted User', and 'Unknown User' states.",
-      "linkedRequirements": ["FR-012", "FR-013", "FR-014", "FR-015", "FR-016", "FR-017", "FR-018", "FR-019"],
-      "linkedStories": ["US-4", "US-5"],
-      "successCriteria": ["SC-004", "SC-005"],
-      "mode": "new",
-      "notes": "Show conversation with mixed message states - some decrypted, some showing lock. Include header name resolution examples."
+      "svg": "03-error-states-names.svg",
+      "focus": "Decryption failure UX: lock icon with explanatory text and tooltip. Participant name resolution: display name vs username vs 'Deleted User' vs 'Unknown User'. Show multiple undecryptable messages individually.",
+      "userStories": ["US-004", "US-005"],
+      "requirements": ["FR-012", "FR-013", "FR-014", "FR-015", "FR-016", "FR-017", "FR-018", "FR-019"],
+      "criteria": ["SC-004", "SC-005"],
+      "mode": "new"
     }
   ]
 }
