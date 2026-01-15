@@ -199,6 +199,6 @@ Approved. Fast-track recommended given low effort and clear security benefit.
 
 **Decided**: 2026-01-15
 **Outcome**: APPROVED (6-0 unanimous)
-**Decision ID**: DEC-006
+**Decision ID**: DEC-007
 
 Session invalidation on password change (FR-034-036) and PKCE requirement (FR-048-051) approved. Update Feature 003 and 005 specs accordingly.
