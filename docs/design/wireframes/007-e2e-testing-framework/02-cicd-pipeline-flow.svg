@@ -32,7 +32,7 @@
     <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
   </g>
-  <g id="mobile" transform="translate(1920, 60)" opacity="0">
+  <g id="mobile" transform="translate(1360, 60)" opacity="0">
     <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
     <rect x="0" y="78" width="360" height="1" fill="none"/>
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>

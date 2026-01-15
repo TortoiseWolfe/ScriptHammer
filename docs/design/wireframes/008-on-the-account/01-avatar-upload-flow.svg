@@ -161,7 +161,7 @@
   </g>
 
   <!-- ANNOTATION PANEL -->
-  <g id="annotations" transform="translate(40, 870)">
+  <g id="annotations" transform="translate(40, 800)">
     <rect width="1840" height="150" rx="8" fill="#f5f0e6"/>
     <!-- Column 1 -->
     <g transform="translate(20, 20)">
