@@ -8,38 +8,39 @@ This folder enables structured communication between terminal roles using a mixt
 
 Council members can create RFCs, vote on decisions, and initiate council discussions.
 
-| Terminal | Domain Authority |
-|----------|------------------|
-| CTO | Strategy, priorities, risk, cross-cutting concerns |
-| Architect | System design, patterns, dependencies, tech stack |
-| Security Lead | Auth, OWASP, secrets, compliance |
-| Toolsmith | Skills, commands, automation |
-| DevOps | CI/CD, Docker, deployment, infrastructure |
-| Product Owner | User requirements, acceptance criteria |
-| UX Designer | User research, interaction design, design system governance |
+| Window | Terminal | Domain Authority |
+|--------|----------|------------------|
+| W0 | CTO | Strategy, priorities, risk, cross-cutting concerns |
+| W1 | Product Owner | User requirements, acceptance criteria |
+| W3 | Architect | System design, patterns, dependencies, tech stack |
+| W4 | UX Designer | User research, interaction design, design system governance |
+| W15 | Toolsmith | Skills, commands, automation |
+| W16 | Security | Auth, OWASP, secrets, compliance |
+| W22 | DevOps | CI/CD, Docker, deployment, infrastructure |
 
 ### Contributors (Memo Upward Only)
 
 Contributors send memos to their manager. Cannot create RFCs directly.
 
-| Terminal | Reports To |
-|----------|------------|
-| Coordinator | CTO |
-| Planner | Architect |
-| WireframeGenerator 1/2/3 | Coordinator |
-| PreviewHost | Coordinator |
-| WireframeQA | Architect |
-| Validator | Toolsmith |
-| Inspector | Architect |
-| Author | CTO |
-| TestEngineer | DevOps |
-| Developer | Architect |
-| Auditor | CTO |
-| QA Lead | Architect |
-| Technical Writer | CTO |
-| UI Designer | Architect |
-| Business Analyst | Product Owner |
-| Release Manager | DevOps |
+| Window | Terminal | Reports To |
+|--------|----------|------------|
+| W2 | BusinessAnalyst | ProductOwner |
+| W5 | UIDesigner | Architect |
+| W6 | Planner | Architect |
+| W7-9 | WireframeGenerator 1/2/3 | Planner |
+| W10 | PreviewHost | Planner |
+| W11 | WireframeQA | Architect |
+| W12 | Validator | Toolsmith |
+| W13 | Inspector | Architect |
+| W14 | Developer | Architect |
+| W17 | TestEngineer | QALead |
+| W18 | QALead | Architect |
+| W19 | Auditor | CTO |
+| W20 | Author | CTO |
+| W21 | TechWriter | CTO |
+| W23 | DockerCaptain | DevOps |
+| W24 | ReleaseManager | DevOps |
+| W25 | Coordinator | CTO |
 
 ## Folder Structure
 

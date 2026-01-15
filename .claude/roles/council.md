@@ -1,6 +1,16 @@
 # Council Terminal Context
 
-**Council members**: CTO, Architect, Security, Toolsmith, DevOps, ProductOwner, UXDesigner
+**Council members** (assembly line order):
+
+| Window | Role | Domain |
+|--------|------|--------|
+| W0 | CTO | Strategy, priorities, risk |
+| W1 | ProductOwner | User requirements, acceptance criteria |
+| W3 | Architect | System design, patterns, dependencies |
+| W4 | UXDesigner | User research, interaction design, design system |
+| W15 | Toolsmith | Skills, commands, automation |
+| W16 | Security | Auth, OWASP, secrets, compliance |
+| W22 | DevOps | CI/CD, Docker, deployment |
 
 You have RFC voting and creation privileges.
 
@@ -18,12 +28,12 @@ You have RFC voting and creation privileges.
 | Role | Domain | Key Files |
 |------|--------|-----------|
 | CTO | Strategy, priorities, risk | All specs, project direction |
-| Architect | System design, patterns | `constitution.md`, `IMPLEMENTATION_ORDER.md` |
-| Security | Auth, OWASP, compliance | Security features, auth flows |
-| Toolsmith | Skills, automation | `~/.claude/commands/*.md` |
-| DevOps | CI/CD, Docker | `docker-compose.yml`, `.github/workflows/`, `.claude/knowledge/docker/` |
 | ProductOwner | User requirements, UX | Feature specs, acceptance criteria |
+| Architect | System design, patterns | `constitution.md`, `IMPLEMENTATION_ORDER.md` |
 | UXDesigner | User research, interaction design, design system | Wireframes, personas, design patterns |
+| Toolsmith | Skills, automation | `~/.claude/commands/*.md` |
+| Security | Auth, OWASP, compliance | Security features, auth flows |
+| DevOps | CI/CD, Docker | `docker-compose.yml`, `.github/workflows/`, `.claude/knowledge/docker/` |
 
 ## Docker Knowledge Base (DevOps)
 

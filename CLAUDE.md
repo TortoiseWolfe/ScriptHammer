@@ -6,16 +6,29 @@ ScriptHammer is a **planning template** for AI-assisted development. It contains
 
 ## Multi-Terminal Workflow
 
-This project uses 25 Claude Code terminals in a tmux session. Each terminal has a specialized role. See `.claude/roles/` for role-specific context:
+This project uses 26 Claude Code terminals in a tmux session arranged in **assembly line order**:
+
+```
+STRATEGY (W0-2):    CTO → ProductOwner → BusinessAnalyst
+DESIGN (W3-5):      Architect → UXDesigner → UIDesigner
+WIREFRAMES (W6-13): Planner → Generators 1-3 → PreviewHost → WireframeQA → Validator → Inspector
+CODE (W14-16):      Developer → Toolsmith → Security
+TEST (W17-19):      TestEngineer → QALead → Auditor
+DOCS (W20-21):      Author → TechWriter
+RELEASE (W22-25):   DevOps → DockerCaptain → ReleaseManager → Coordinator
+```
+
+See `.claude/roles/` for role-specific context:
 
 | File | Roles |
 |------|-------|
 | `operator.md` | Operator (runs outside tmux) |
-| `council.md` | CTO, Architect, Security, Toolsmith, DevOps, ProductOwner, UXDesigner |
+| `council.md` | CTO, ProductOwner, Architect, UXDesigner, Toolsmith, Security, DevOps |
 | `design.md` | UIDesigner |
 | `wireframe-pipeline.md` | Planner, Generators 1-3, PreviewHost, WireframeQA, Validator, Inspector |
-| `implementation.md` | Developer, TestEngineer, Auditor, ReleaseManager |
-| `support.md` | Coordinator, Author, QALead, TechWriter, BusinessAnalyst |
+| `implementation.md` | Developer, TestEngineer, QALead, Auditor |
+| `support.md` | Author, TechWriter, BusinessAnalyst, Coordinator |
+| `release.md` | DevOps, DockerCaptain, ReleaseManager |
 
 **CRITICAL**: Terminals MUST use `--dangerously-skip-permissions` for autonomous operation.
 Without this flag, every edit/commit/bash blocks waiting for manual approval.
