@@ -1,6 +1,6 @@
 # RFC-005: P0 Features Ready for Implementation
 
-**Status**: voting
+**Status**: decided
 **Author**: Product Owner
 **Created**: 2026-01-15
 **Target Decision**: 2026-01-16
@@ -149,6 +149,6 @@ Approved. Proceed with `/speckit.plan` for 000-RLS immediately upon consensus.
 
 ## Decision Record
 
-**Decided**: -
-**Outcome**: -
-**Decision ID**: -
+**Decided**: 2026-01-15
+**Outcome**: approved
+**Decision ID**: DEC-005

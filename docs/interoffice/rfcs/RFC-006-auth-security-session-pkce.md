@@ -1,6 +1,6 @@
 # RFC-006: Auth Security Enhancements - Session Invalidation and PKCE
 
-**Status**: voting
+**Status**: decided
 **Author**: Security Lead
 **Created**: 2026-01-15
 **Target Decision**: 2026-01-17
@@ -197,6 +197,8 @@ Approved. Fast-track recommended given low effort and clear security benefit.
 
 ## Decision Record
 
-**Decided**: -
-**Outcome**: -
-**Decision ID**: -
+**Decided**: 2026-01-15
+**Outcome**: APPROVED (6-0 unanimous)
+**Decision ID**: DEC-006
+
+Session invalidation on password change (FR-034-036) and PKCE requirement (FR-048-051) approved. Update Feature 003 and 005 specs accordingly.

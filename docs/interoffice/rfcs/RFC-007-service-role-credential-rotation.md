@@ -1,6 +1,6 @@
 # RFC-007: Service Role Credential Rotation Policy
 
-**Status**: voting
+**Status**: decided
 **Author**: Security Lead
 **Created**: 2026-01-15
 **Target Decision**: 2026-01-17
@@ -240,6 +240,8 @@ Approved. Add to P0 scope since it affects Feature 000 (RLS).
 
 ## Decision Record
 
-**Decided**: -
-**Outcome**: -
-**Decision ID**: -
+**Decided**: 2026-01-15
+**Outcome**: APPROVED (6-0 unanimous)
+**Decision ID**: DEC-007
+
+Service role credential rotation policy (NFR-014-018) approved. Create rotation runbook at `docs/runbooks/service-role-rotation.md`. Add to P0 scope.
