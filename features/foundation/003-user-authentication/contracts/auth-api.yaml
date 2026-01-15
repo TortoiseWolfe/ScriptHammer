@@ -1,0 +1,823 @@
+openapi: 3.0.3
+info:
+  title: ScriptHammer Authentication API
+  description: |
+    Authentication and authorization endpoints for ScriptHammer.
+    Implements Supabase Auth with email/password and OAuth providers.
+
+    Author: Architect
+    Feature: 003-user-authentication
+  version: 1.0.0
+  contact:
+    name: ScriptHammer Team
+
+servers:
+  - url: https://{project-ref}.supabase.co/auth/v1
+    description: Supabase Auth API
+    variables:
+      project-ref:
+        default: your-project-ref
+        description: Supabase project reference
+
+tags:
+  - name: Registration
+    description: Account creation and email verification (US-1)
+  - name: Authentication
+    description: Sign in and sign out (US-2, US-4)
+  - name: Password
+    description: Password reset and change (US-3)
+  - name: Session
+    description: Session management (US-5)
+  - name: OAuth
+    description: Third-party authentication (US-4)
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Registration
+      summary: Register new user with email/password
+      description: |
+        Creates a new user account with email and password.
+        Sends verification email upon success.
+
+        User Story: US-1 (Email/Password Registration)
+        Requirements: FR-001, FR-002, FR-003, FR-004, FR-005
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: user@example.com
+              password: SecureP@ss123
+              data:
+                display_name: John Doe
+      responses:
+        '201':
+          description: User created successfully, verification email sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request (weak password, invalid email format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                weak_password:
+                  summary: Password too weak
+                  value:
+                    error: weak_password
+                    error_description: Password must be at least 8 characters with uppercase, lowercase, number, and special character
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    error: invalid_email
+                    error_description: Please provide a valid email address
+        '422':
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: user_already_exists
+                error_description: Email already registered. Please sign in or reset password.
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in with email/password
+      description: |
+        Authenticates user with email and password credentials.
+        Returns access and refresh tokens on success.
+
+        User Story: US-2 (User Sign In)
+        Requirements: FR-006, FR-012, FR-013, FR-014, FR-016
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: user@example.com
+              password: SecureP@ss123
+              remember_me: true
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_credentials
+                error_description: Invalid email or password
+        '429':
+          description: Too many failed attempts (rate limited)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: too_many_requests
+                error_description: Too many login attempts. Please try again in 15 minutes.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Seconds until rate limit resets
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Sign out and terminate session
+      description: |
+        Terminates the current user session and invalidates tokens.
+
+        User Story: US-2 (User Sign In - sign out flow)
+        Requirements: FR-009
+      operationId: logoutUser
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Successfully signed out
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/reset-password:
+    post:
+      tags:
+        - Password
+      summary: Request password reset email
+      description: |
+        Sends a password reset link to the specified email address.
+        Link expires after 1 hour.
+
+        User Story: US-3 (Password Reset)
+        Requirements: FR-010, FR-011
+      operationId: requestPasswordReset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequest'
+            example:
+              email: user@example.com
+      responses:
+        '200':
+          description: Password reset email sent (returns success even if email not found for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: If an account exists with this email, a password reset link has been sent.
+        '429':
+          description: Too many reset requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/update-password:
+    post:
+      tags:
+        - Password
+      summary: Update password with reset token
+      description: |
+        Sets a new password using a valid reset token from email link.
+
+        User Story: US-3 (Password Reset)
+        Requirements: FR-010, FR-011
+      operationId: updatePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '200':
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_token
+                error_description: Link expired. Please request a new password reset.
+
+  /auth/verify-email:
+    post:
+      tags:
+        - Registration
+      summary: Verify email address with token
+      description: |
+        Confirms user email address using verification token from email link.
+        Token expires after 24 hours.
+
+        User Story: US-1 (Email/Password Registration), US-7 (Unverified User Handling)
+        Requirements: FR-004, FR-005, FR-018
+      operationId: verifyEmail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: Email verified successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid or expired verification token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                expired:
+                  summary: Token expired
+                  value:
+                    error: expired_token
+                    error_description: Link expired. Please request a new verification email.
+                invalid:
+                  summary: Invalid token
+                  value:
+                    error: invalid_token
+                    error_description: Invalid verification link.
+
+  /auth/resend-verification:
+    post:
+      tags:
+        - Registration
+      summary: Resend email verification
+      description: |
+        Sends a new verification email to the user.
+
+        User Story: US-7 (Unverified User Handling)
+        Requirements: FR-004, FR-005
+      operationId: resendVerification
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Verification email sent successfully.
+        '400':
+          description: Email already verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: already_verified
+                error_description: Email is already verified.
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/session:
+    get:
+      tags:
+        - Session
+      summary: Get current session information
+      description: |
+        Returns the current user session and profile information.
+        Used to validate authentication state on protected routes.
+
+        User Story: US-5 (Protected Route Access)
+        Requirements: FR-012, FR-015, FR-017
+      operationId: getSession
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Session is valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          description: No valid session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: session_expired
+                error_description: Session expired. Please sign in again.
+
+  /auth/refresh:
+    post:
+      tags:
+        - Session
+      summary: Refresh access token
+      description: |
+        Exchanges a refresh token for a new access token.
+
+        User Story: US-2 (User Sign In)
+        Requirements: FR-015
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/sessions:
+    get:
+      tags:
+        - Session
+      summary: List all active sessions
+      description: |
+        Returns all active sessions for the current user.
+
+        User Story: US-6 (Profile Management)
+        Requirements: FR-029
+      operationId: listSessions
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of active sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionListResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/sessions/{session_id}:
+    delete:
+      tags:
+        - Session
+      summary: Revoke a specific session
+      description: |
+        Terminates a specific session by ID.
+
+        User Story: US-6 (Profile Management)
+        Requirements: FR-030
+      operationId: revokeSession
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Session ID to revoke
+      responses:
+        '204':
+          description: Session revoked successfully
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/oauth/authorize:
+    get:
+      tags:
+        - OAuth
+      summary: Initiate OAuth authorization flow
+      description: |
+        Redirects user to OAuth provider for authorization.
+
+        User Story: US-4 (OAuth Sign In)
+        Requirements: FR-007, FR-008
+      operationId: oauthAuthorize
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [github, google]
+          description: OAuth provider name
+        - name: redirect_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: URL to redirect after authentication
+        - name: scopes
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Space-separated list of OAuth scopes
+      responses:
+        '302':
+          description: Redirect to OAuth provider
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: OAuth provider authorization URL
+        '400':
+          description: Invalid provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: invalid_provider
+                error_description: Unsupported OAuth provider
+
+  /auth/oauth/callback:
+    get:
+      tags:
+        - OAuth
+      summary: OAuth callback endpoint
+      description: |
+        Handles OAuth provider callback with authorization code.
+        Exchanges code for tokens and creates/updates user account.
+
+        User Story: US-4 (OAuth Sign In)
+        Requirements: FR-007, FR-008
+      operationId: oauthCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from OAuth provider
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: State parameter for CSRF protection
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Error code if authorization failed
+        - name: error_description
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Error description if authorization failed
+      responses:
+        '302':
+          description: Redirect to application with tokens
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: Application redirect URL with tokens in fragment
+        '400':
+          description: OAuth error or invalid state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                provider_unavailable:
+                  summary: Provider unavailable
+                  value:
+                    error: provider_error
+                    error_description: Unable to connect to GitHub. Please try again or use email/password.
+                authorization_denied:
+                  summary: User denied authorization
+                  value:
+                    error: access_denied
+                    error_description: Authorization was denied by the user.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from login or OAuth flow
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: |
+            Password with minimum 8 characters including:
+            - At least one uppercase letter
+            - At least one lowercase letter
+            - At least one number
+            - At least one special character
+          example: SecureP@ss123
+        data:
+          type: object
+          description: Optional user metadata
+          properties:
+            display_name:
+              type: string
+              description: User display name
+              example: John Doe
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User password
+          example: SecureP@ss123
+        remember_me:
+          type: boolean
+          default: false
+          description: |
+            If true, session expires after 30 days.
+            If false, session expires after 7 days.
+
+    PasswordResetRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address for password reset
+          example: user@example.com
+
+    UpdatePasswordRequest:
+      type: object
+      required:
+        - token
+        - password
+      properties:
+        token:
+          type: string
+          description: Password reset token from email link
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: New password (same requirements as registration)
+          example: NewSecureP@ss456
+
+    VerifyEmailRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: Email verification token from email link
+        type:
+          type: string
+          enum: [signup, email_change]
+          default: signup
+          description: Type of verification
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token from previous authentication
+
+    AuthResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT access token
+        token_type:
+          type: string
+          enum: [bearer]
+          example: bearer
+        expires_in:
+          type: integer
+          description: Token expiration time in seconds
+          example: 3600
+        expires_at:
+          type: integer
+          format: int64
+          description: Token expiration timestamp (Unix epoch)
+        refresh_token:
+          type: string
+          description: Refresh token for obtaining new access tokens
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+        email:
+          type: string
+          format: email
+          description: User email address
+        email_confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Email verification timestamp (null if unverified)
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+        last_sign_in_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last successful sign-in timestamp
+        app_metadata:
+          type: object
+          description: Application-level metadata (providers, roles)
+          properties:
+            provider:
+              type: string
+              description: Authentication provider (email, github, google)
+            providers:
+              type: array
+              items:
+                type: string
+              description: All linked authentication providers
+        user_metadata:
+          type: object
+          description: User-editable metadata
+          properties:
+            display_name:
+              type: string
+              description: User display name
+            avatar_url:
+              type: string
+              format: uri
+              description: Profile avatar URL
+
+    SessionResponse:
+      type: object
+      properties:
+        session:
+          type: object
+          properties:
+            access_token:
+              type: string
+              description: Current access token
+            expires_at:
+              type: integer
+              format: int64
+              description: Token expiration timestamp
+            expires_in:
+              type: integer
+              description: Seconds until token expires
+        user:
+          $ref: '#/components/schemas/User'
+
+    SessionListResponse:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionInfo'
+
+    SessionInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Session identifier
+        created_at:
+          type: string
+          format: date-time
+          description: Session creation time
+        updated_at:
+          type: string
+          format: date-time
+          description: Last activity time
+        user_agent:
+          type: string
+          description: Browser/client user agent
+        ip:
+          type: string
+          description: IP address of session
+        is_current:
+          type: boolean
+          description: Whether this is the current session
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - error_description
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: invalid_credentials
+        error_description:
+          type: string
+          description: Human-readable error message
+          example: Invalid email or password
+        status_code:
+          type: integer
+          description: HTTP status code
+          example: 400
