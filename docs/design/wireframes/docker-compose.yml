@@ -1,6 +1,6 @@
 services:
   viewer:
-    image: node:20-alpine
+    image: node:22-bookworm-slim
     ports:
       - "3000:3000"
     volumes:
@@ -8,7 +8,7 @@ services:
     working_dir: /app
     command: npx live-server --port=3000 --host=0.0.0.0
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000', r => r.statusCode === 200 ? process.exit(0) : process.exit(1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 3
