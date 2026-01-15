@@ -112,18 +112,68 @@ console.log(data); // Should contain exactly 1 profile (User A's)
 - Check: Run `SELECT * FROM public.audit_logs;` as service role
 - Check: Trigger exists in Database > Triggers
 
+## Step 5: Run Automated Tests
+
+Execute the RLS test suite:
+
+```bash
+# Run all RLS tests
+npm run test -- tests/rls/
+
+# Run specific test file
+npm run test -- tests/rls/user-isolation.test.ts
+```
+
+**Test Coverage**:
+- `user-isolation.test.ts` - User data isolation (US1, US2)
+- `service-role.test.ts` - Service role operations (US3)
+- `anonymous-access.test.ts` - Anonymous restrictions (US4)
+- `audit-immutability.test.ts` - Audit log protection (US5)
+
+## Service Role Usage Pattern
+
+For backend operations that need to bypass RLS:
+
+```typescript
+import { createServiceRoleClient } from '@/lib/supabase/server';
+
+// In an Edge Function or server-side code only
+export async function adminOperation() {
+  const supabase = createServiceRoleClient();
+
+  // This bypasses all RLS policies
+  const { data } = await supabase.from('profiles').select('*');
+
+  // Log the operation for audit trail
+  await supabase.from('audit_logs').insert({
+    event_type: 'profile.updated',
+    details: { operation: 'admin_read' }
+  });
+
+  return data;
+}
+```
+
+**Security Rules**:
+- Never import `createServiceRoleClient` in client components
+- Always log service role operations
+- Use for legitimate backend needs only
+
 ## Next Steps
 
 After verifying RLS foundation:
 
-1. Run `/speckit.tasks` to generate implementation tasks
-2. Write RLS test suite (`tests/rls/`)
+1. Run RLS test suite: `npm run test -- tests/rls/`
+2. Review test results - all 5 user stories should pass
 3. Proceed to Feature 003 (User Authentication)
 
 ## Files Reference
 
 | File | Purpose |
 |------|---------|
-| `contracts/rls-policies.sql` | All RLS policies (idempotent) |
+| `supabase/migrations/00000000000000_rls_foundation.sql` | All RLS policies (idempotent) |
+| `supabase/seed.sql` | Verification queries and manual test steps |
+| `contracts/rls-policies.sql` | Contract definitions (source of truth) |
 | `data-model.md` | Entity definitions |
 | `research.md` | Design decisions |
+| `tests/rls/*.test.ts` | Automated RLS tests |

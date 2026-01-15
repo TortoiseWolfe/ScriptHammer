@@ -19,12 +19,12 @@
 
 **Purpose**: Project initialization and Supabase client setup
 
-- [ ] T001 Create Supabase project structure in supabase/
-- [ ] T002 [P] Create Supabase browser client in src/lib/supabase/client.ts
-- [ ] T003 [P] Create Supabase server client in src/lib/supabase/server.ts
-- [ ] T004 [P] Create auth middleware in src/lib/supabase/middleware.ts
-- [ ] T005 [P] Create test user factory in tests/fixtures/test-users.ts
-- [ ] T006 Configure environment variables in .env.example
+- [x] T001 Create Supabase project structure in supabase/
+- [x] T002 [P] Create Supabase browser client in src/lib/supabase/client.ts
+- [x] T003 [P] Create Supabase server client in src/lib/supabase/server.ts
+- [x] T004 [P] Create auth middleware in src/lib/supabase/middleware.ts
+- [x] T005 [P] Create test user factory in tests/fixtures/test-users.ts
+- [x] T006 Configure environment variables in .env.example
 
 ---
 
@@ -34,15 +34,15 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T007 Create profiles table schema in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T008 Create audit_logs table schema in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T009 Enable RLS on profiles table in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T010 Enable RLS on audit_logs table in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T011 [P] Create performance indexes in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T012 [P] Create handle_new_user() trigger function in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T013 [P] Create handle_updated_at() trigger function in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T014 Apply migration via Supabase Dashboard SQL Editor
-- [ ] T015 Generate TypeScript types in src/types/database.ts using Supabase CLI
+- [x] T007 Create profiles table schema in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T008 Create audit_logs table schema in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T009 Enable RLS on profiles table in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T010 Enable RLS on audit_logs table in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T011 [P] Create performance indexes in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T012 [P] Create handle_new_user() trigger function in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T013 [P] Create handle_updated_at() trigger function in supabase/migrations/00000000000000_rls_foundation.sql
+- [ ] T014 Apply migration via Supabase Dashboard SQL Editor (MANUAL - requires Supabase project)
+- [x] T015 Generate TypeScript types in src/types/database.ts using Supabase CLI
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 
@@ -58,16 +58,16 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T016 [P] [US1] Create user isolation test suite skeleton in tests/rls/user-isolation.test.ts
-- [ ] T017 [P] [US1] Add test: authenticated user can query own profile in tests/rls/user-isolation.test.ts
-- [ ] T018 [P] [US1] Add test: authenticated user cannot query other user's profile in tests/rls/user-isolation.test.ts
-- [ ] T019 [P] [US1] Add test: unauthenticated user cannot query any profiles in tests/rls/user-isolation.test.ts
+- [x] T016 [P] [US1] Create user isolation test suite skeleton in tests/rls/user-isolation.test.ts
+- [x] T017 [P] [US1] Add test: authenticated user can query own profile in tests/rls/user-isolation.test.ts
+- [x] T018 [P] [US1] Add test: authenticated user cannot query other user's profile in tests/rls/user-isolation.test.ts
+- [x] T019 [P] [US1] Add test: unauthenticated user cannot query any profiles in tests/rls/user-isolation.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T020 [US1] Create profiles_select_own policy (SELECT, authenticated, id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T021 [US1] Apply updated migration via Supabase Dashboard
-- [ ] T022 [US1] Verify tests pass for user isolation
+- [x] T020 [US1] Create profiles_select_own policy (SELECT, authenticated, id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
+- [ ] T021 [US1] Apply updated migration via Supabase Dashboard (MANUAL - requires Supabase project)
+- [ ] T022 [US1] Verify tests pass for user isolation (MANUAL - requires running tests)
 
 **Checkpoint**: User data isolation is verified - users can only see their own profile
 
@@ -81,16 +81,16 @@
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] Add test: profile owner can update display_name in tests/rls/user-isolation.test.ts
-- [ ] T024 [P] [US2] Add test: profile owner can update bio in tests/rls/user-isolation.test.ts
-- [ ] T025 [P] [US2] Add test: non-owner cannot update another user's profile in tests/rls/user-isolation.test.ts
-- [ ] T026 [P] [US2] Add test: update returns error (not silent fail) for non-owner in tests/rls/user-isolation.test.ts
+- [x] T023 [P] [US2] Add test: profile owner can update display_name in tests/rls/user-isolation.test.ts
+- [x] T024 [P] [US2] Add test: profile owner can update bio in tests/rls/user-isolation.test.ts
+- [x] T025 [P] [US2] Add test: non-owner cannot update another user's profile in tests/rls/user-isolation.test.ts
+- [x] T026 [P] [US2] Add test: update returns error (not silent fail) for non-owner in tests/rls/user-isolation.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T027 [US2] Create profiles_update_own policy (UPDATE, authenticated, id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T028 [US2] Apply updated migration via Supabase Dashboard
-- [ ] T029 [US2] Verify tests pass for profile self-management
+- [x] T027 [US2] Create profiles_update_own policy (UPDATE, authenticated, id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
+- [ ] T028 [US2] Apply updated migration via Supabase Dashboard (MANUAL - requires Supabase project)
+- [ ] T029 [US2] Verify tests pass for profile self-management (MANUAL - requires running tests)
 
 **Checkpoint**: Profile ownership is enforced - only owners can modify their profiles
 
@@ -104,17 +104,17 @@
 
 ### Tests for User Story 3
 
-- [ ] T030 [P] [US3] Create service role test suite in tests/rls/service-role.test.ts
-- [ ] T031 [P] [US3] Add test: service role can SELECT all profiles in tests/rls/service-role.test.ts
-- [ ] T032 [P] [US3] Add test: service role can INSERT audit_logs in tests/rls/service-role.test.ts
-- [ ] T033 [P] [US3] Add test: service role can UPDATE any profile in tests/rls/service-role.test.ts
-- [ ] T034 [P] [US3] Add test: authenticated user cannot INSERT to audit_logs in tests/rls/service-role.test.ts
+- [x] T030 [P] [US3] Create service role test suite in tests/rls/service-role.test.ts
+- [x] T031 [P] [US3] Add test: service role can SELECT all profiles in tests/rls/service-role.test.ts
+- [x] T032 [P] [US3] Add test: service role can INSERT audit_logs in tests/rls/service-role.test.ts
+- [x] T033 [P] [US3] Add test: service role can UPDATE any profile in tests/rls/service-role.test.ts
+- [x] T034 [P] [US3] Add test: authenticated user cannot INSERT to audit_logs in tests/rls/service-role.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T035 [US3] Verify service_role bypasses RLS by default (no policy needed)
-- [ ] T036 [US3] Document service role usage pattern in specs/000-rls-implementation/quickstart.md
-- [ ] T037 [US3] Verify tests pass for service role operations
+- [x] T035 [US3] Verify service_role bypasses RLS by default (no policy needed)
+- [x] T036 [US3] Document service role usage pattern in specs/000-rls-implementation/quickstart.md
+- [ ] T037 [US3] Verify tests pass for service role operations (MANUAL - requires running tests)
 
 **Checkpoint**: Service role can perform backend operations across all users
 
@@ -128,16 +128,16 @@
 
 ### Tests for User Story 4
 
-- [ ] T038 [P] [US4] Create anonymous access test suite in tests/rls/anonymous-access.test.ts
-- [ ] T039 [P] [US4] Add test: anon user cannot SELECT from profiles in tests/rls/anonymous-access.test.ts
-- [ ] T040 [P] [US4] Add test: anon user cannot INSERT to profiles in tests/rls/anonymous-access.test.ts
-- [ ] T041 [P] [US4] Add test: anon user cannot SELECT from audit_logs in tests/rls/anonymous-access.test.ts
-- [ ] T042 [P] [US4] Add test: anon user enumeration attempt returns zero results in tests/rls/anonymous-access.test.ts
+- [x] T038 [P] [US4] Create anonymous access test suite in tests/rls/anonymous-access.test.ts
+- [x] T039 [P] [US4] Add test: anon user cannot SELECT from profiles in tests/rls/anonymous-access.test.ts
+- [x] T040 [P] [US4] Add test: anon user cannot INSERT to profiles in tests/rls/anonymous-access.test.ts
+- [x] T041 [P] [US4] Add test: anon user cannot SELECT from audit_logs in tests/rls/anonymous-access.test.ts
+- [x] T042 [P] [US4] Add test: anon user enumeration attempt returns zero results in tests/rls/anonymous-access.test.ts
 
 ### Implementation for User Story 4
 
-- [ ] T043 [US4] Verify no anon policies exist (default deny)
-- [ ] T044 [US4] Verify tests pass for anonymous restrictions
+- [x] T043 [US4] Verify no anon policies exist (default deny)
+- [ ] T044 [US4] Verify tests pass for anonymous restrictions (MANUAL - requires running tests)
 
 **Checkpoint**: Anonymous users have no access to protected tables
 
@@ -151,19 +151,19 @@
 
 ### Tests for User Story 5
 
-- [ ] T045 [P] [US5] Create audit immutability test suite in tests/rls/audit-immutability.test.ts
-- [ ] T046 [P] [US5] Add test: authenticated user can SELECT own audit entries in tests/rls/audit-immutability.test.ts
-- [ ] T047 [P] [US5] Add test: authenticated user cannot SELECT other user's audit entries in tests/rls/audit-immutability.test.ts
-- [ ] T048 [P] [US5] Add test: authenticated user cannot UPDATE audit_logs in tests/rls/audit-immutability.test.ts
-- [ ] T049 [P] [US5] Add test: authenticated user cannot DELETE from audit_logs in tests/rls/audit-immutability.test.ts
-- [ ] T050 [P] [US5] Add test: service role INSERT creates audit entry in tests/rls/audit-immutability.test.ts
+- [x] T045 [P] [US5] Create audit immutability test suite in tests/rls/audit-immutability.test.ts
+- [x] T046 [P] [US5] Add test: authenticated user can SELECT own audit entries in tests/rls/audit-immutability.test.ts
+- [x] T047 [P] [US5] Add test: authenticated user cannot SELECT other user's audit entries in tests/rls/audit-immutability.test.ts
+- [x] T048 [P] [US5] Add test: authenticated user cannot UPDATE audit_logs in tests/rls/audit-immutability.test.ts
+- [x] T049 [P] [US5] Add test: authenticated user cannot DELETE from audit_logs in tests/rls/audit-immutability.test.ts
+- [x] T050 [P] [US5] Add test: service role INSERT creates audit entry in tests/rls/audit-immutability.test.ts
 
 ### Implementation for User Story 5
 
-- [ ] T051 [US5] Create audit_logs_select_own policy (SELECT, authenticated, user_id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
-- [ ] T052 [US5] Verify no UPDATE/DELETE policies exist for audit_logs (immutability)
-- [ ] T053 [US5] Apply updated migration via Supabase Dashboard
-- [ ] T054 [US5] Verify tests pass for audit immutability
+- [x] T051 [US5] Create audit_logs_select_own policy (SELECT, authenticated, user_id = auth.uid()) in supabase/migrations/00000000000000_rls_foundation.sql
+- [x] T052 [US5] Verify no UPDATE/DELETE policies exist for audit_logs (immutability)
+- [ ] T053 [US5] Apply updated migration via Supabase Dashboard (MANUAL - requires Supabase project)
+- [ ] T054 [US5] Verify tests pass for audit immutability (MANUAL - requires running tests)
 
 **Checkpoint**: Audit logs are immutable and owner-scoped for SELECT
 
@@ -173,12 +173,12 @@
 
 **Purpose**: Documentation, validation, and final cleanup
 
-- [ ] T055 [P] Update quickstart.md with verification queries in specs/000-rls-implementation/quickstart.md
-- [ ] T056 [P] Create seed data for manual testing in supabase/seed.sql
-- [ ] T057 Run full RLS test suite and verify 100% pass rate
-- [ ] T058 Document RLS pattern templates in specs/000-rls-implementation/research.md
-- [ ] T059 [P] Performance test: verify <10ms policy latency (SC-004)
-- [ ] T060 Security review checklist completion
+- [x] T055 [P] Update quickstart.md with verification queries in specs/000-rls-implementation/quickstart.md
+- [x] T056 [P] Create seed data for manual testing in supabase/seed.sql
+- [ ] T057 Run full RLS test suite and verify 100% pass rate (MANUAL - requires Supabase project)
+- [x] T058 Document RLS pattern templates in specs/000-rls-implementation/research.md
+- [ ] T059 [P] Performance test: verify <10ms policy latency (SC-004) (MANUAL - requires Supabase project)
+- [ ] T060 Security review checklist completion (MANUAL - requires security review)
 
 ---
 
