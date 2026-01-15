@@ -7,65 +7,65 @@
     "notes": "Generated 2026-01-14 by Generator-1. Dark theme policy architecture diagram showing security roles, RLS policies, database tables, and access flows.",
     "validation": {
       "svg01_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   },
   "001-wcag-aa-compliance": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-accessibility-dashboard.svg": "draft",
-      "02-cicd-pipeline-integration.svg": "draft",
-      "03-accessibility-controls-overlay.svg": "draft"
+      "01-accessibility-dashboard.svg": "pass",
+      "02-cicd-pipeline-integration.svg": "pass",
+      "03-accessibility-controls-overlay.svg": "pass"
     },
-    "notes": "Generated 2026-01-13 by Generator-1. Dashboard shows compliance score, per-page breakdown, trends. CI/CD shows build status, violations, dev console. Controls shows accessibility settings panel.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Dashboard shows compliance score, per-page breakdown, trends. CI/CD shows build status, violations, dev console. Controls shows accessibility settings panel.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
       "svg03_errors": 0,
-      "review_date": "2026-01-13"
+      "review_date": "2026-01-15"
     }
   },
   "002-cookie-consent": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-consent-modal.svg": "draft",
-      "02-cookie-preferences-panel.svg": "draft",
-      "03-privacy-settings-page.svg": "draft"
+      "01-consent-modal.svg": "pass",
+      "02-cookie-preferences-panel.svg": "pass",
+      "03-privacy-settings-page.svg": "pass"
     },
-    "notes": "Regenerated 2026-01-13 by Generator-3. 3 SVGs: consent modal, preferences panel, privacy settings. All pass validator (0 errors).",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. 3 SVGs: consent modal, preferences panel, privacy settings. All pass validator (0 errors).",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
       "svg03_errors": 0,
-      "review_date": "2026-01-13"
+      "review_date": "2026-01-15"
     }
   },
   "003-user-authentication": {
-    "status": "reviewed",
+    "status": "inspecting",
     "svgs": {
       "01-registration-sign-in.svg": "pass",
       "02-verification-password-reset.svg": "pass",
       "03-profile-session-management.svg": "pass"
     },
-    "notes": "Regenerated 2026-01-12 with v5 skill. All 3 wireframes pass validator (0 errors). Registration/Sign-in shows forms with OAuth. Verification shows email and password reset flows. Profile shows session management.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Registration/Sign-in shows forms with OAuth. Verification shows email and password reset flows. Profile shows session management.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
       "svg03_errors": 0,
-      "review_date": "2026-01-12"
+      "review_date": "2026-01-15"
     }
   },
   "004-mobile-first-design": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-responsive-navigation.svg": "draft",
-      "02-touch-targets-performance.svg": "draft"
+      "01-responsive-navigation.svg": "pass",
+      "02-touch-targets-performance.svg": "pass"
     },
-    "notes": "Regenerated 2026-01-14 by Generator-2. 2 SVGs: responsive navigation (viewport-safe nav, readable content) and touch targets/performance (44px targets, Core Web Vitals). All pass validator (0 errors).",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Responsive navigation and touch targets/performance (44px targets, Core Web Vitals). All pass validator (0 errors).",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   },
   "005-security-hardening": {
@@ -84,29 +84,29 @@
     }
   },
   "006-template-fork-experience": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
       "01-service-setup-guidance.svg": "pass",
       "02-rebrand-automation-flow.svg": "pass"
     },
-    "notes": "Generated 2026-01-13. Both wireframes pass validator (0 errors). Service setup guidance shows dashboard with status indicators and quick actions. Rebrand automation flow shows CLI workflow with config updates.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Service setup guidance shows dashboard with status indicators and quick actions. Rebrand automation flow shows CLI workflow with config updates.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-13"
+      "review_date": "2026-01-15"
     }
   },
   "007-e2e-testing-framework": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
       "01-test-architecture-diagram.svg": "pass",
       "02-cicd-pipeline-flow.svg": "pass"
     },
-    "notes": "Generated 2026-01-13. Test architecture diagram shows Playwright framework with browser engines and outputs. CI/CD pipeline flow shows GitHub Actions workflow with parallel browser matrix, retry logic, and artifact collection.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Test architecture diagram shows Playwright framework with browser engines and outputs. CI/CD pipeline flow shows GitHub Actions workflow with parallel browser matrix, retry logic, and artifact collection.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-13"
+      "review_date": "2026-01-15"
     }
   },
   "008-on-the-account": {
@@ -121,16 +121,16 @@
     }
   },
   "009-user-messaging-system": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-connection-and-chat.svg": "draft",
-      "02-settings-and-data.svg": "draft"
+      "01-connection-and-chat.svg": "pass",
+      "02-settings-and-data.svg": "pass"
     },
-    "notes": "Generated 2026-01-14 by Generator-3. Connection & Chat shows friend requests, encrypted messaging, real-time delivery, edit/delete. Settings & Data shows offline queue, virtual scrolling, GDPR export/deletion, accessibility settings.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Connection & Chat shows friend requests, encrypted messaging, real-time delivery, edit/delete. Settings & Data shows offline queue, virtual scrolling, GDPR export/deletion, accessibility settings.",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   },
   "010-unified-blog-content": {
@@ -160,27 +160,27 @@
     }
   },
   "012-welcome-message-architecture": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-user-onboarding-flow.svg": "draft"
+      "01-user-onboarding-flow.svg": "pass"
     },
-    "notes": "Generated 2026-01-14 by Generator-3. Light theme UX wireframe showing welcome message flow, E2E encryption status, idempotency indicator. Covers all 3 User Stories and 14 FRs/SCs.",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. Light theme UX wireframe showing welcome message flow, E2E encryption status, idempotency indicator. Covers all 3 User Stories and 14 FRs/SCs.",
     "validation": {
       "svg01_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   },
   "013-oauth-messaging-password": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-oauth-password-setup.svg": "draft",
-      "02-oauth-password-unlock.svg": "draft"
+      "01-oauth-password-setup.svg": "pass",
+      "02-oauth-password-unlock.svg": "pass"
     },
-    "notes": "Generated 2026-01-14 by Generator-3. 2 SVGs: OAuth password setup (create messaging password for new OAuth users with confirm field, strength indicator) and OAuth password unlock (single field unlock for returning OAuth users). All pass validator (0 errors).",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. 2 SVGs: OAuth password setup (create messaging password for new OAuth users with confirm field, strength indicator) and OAuth password unlock (single field unlock for returning OAuth users). All pass validator (0 errors).",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   },
   "015-oauth-display-name": {
@@ -195,16 +195,16 @@
     }
   },
   "019-google-analytics": {
-    "status": "draft",
+    "status": "inspecting",
     "svgs": {
-      "01-consent-flow.svg": "draft",
-      "02-analytics-dashboard.svg": "draft"
+      "01-consent-flow.svg": "pass",
+      "02-analytics-dashboard.svg": "pass"
     },
-    "notes": "Generated 2026-01-14 by Generator-2. 2 SVGs: consent flow (permission settings, consent status, page tracking) and analytics dashboard (Web Vitals, custom events, GA4 status, graceful degradation). All pass validator (0 errors).",
+    "notes": "Regenerated 2026-01-15 with title x=960 fix. 2 SVGs: consent flow (permission settings, consent status, page tracking) and analytics dashboard (Web Vitals, custom events, GA4 status, graceful degradation). All pass validator (0 errors).",
     "validation": {
       "svg01_errors": 0,
       "svg02_errors": 0,
-      "review_date": "2026-01-14"
+      "review_date": "2026-01-15"
     }
   }
 }
