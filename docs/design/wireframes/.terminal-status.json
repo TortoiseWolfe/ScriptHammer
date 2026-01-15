@@ -1,13 +1,7 @@
 {
-  "lastUpdated": "2026-01-15T20:30:00Z",
+  "lastUpdated": "2026-01-15T18:20:26Z",
   "wireframeStatus": "approved",
   "queue": [
-    {
-      "feature": "021-geolocation-map",
-      "action": "REVIEW",
-      "reason": "Generator-2 completed 2 SVGs - ready for review",
-      "assignedTo": "reviewer"
-    },
     {
       "feature": "024-payment-integration",
       "svg": null,
@@ -21,6 +15,55 @@
       "action": "PLAN",
       "reason": "P3 - contact form UI needed for Tier 5",
       "assignedTo": "planner"
+    },
+    {
+      "feature": "022-web3forms-integration",
+      "svg": "01-contact-form-ui.svg",
+      "action": "GENERATE",
+      "reason": "Added by queue_manager at 17:02",
+      "assignedTo": "generator-1"
+    },
+    {
+      "feature": "022-web3forms-integration",
+      "svg": "02-submission-states.svg",
+      "action": "GENERATE",
+      "reason": "Added by queue_manager at 17:02",
+      "assignedTo": "generator-1"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "P1 - project-status.py: Replace /status prompt with Python dashboard",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "P1 - review-queue.py: Replace /review-queue prompt with age calculator",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "P1 - secrets-scan.py: Regex-based secret detection for CI hooks",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "P2 - refresh-inventories.py: Feature/skill index generation",
+      "assignedTo": "toolsmith"
+    },
+    {
+      "feature": "tooling-automation",
+      "svg": null,
+      "action": "SCRIPT",
+      "reason": "P2 - rfc-status.py: RFC voting status parser",
+      "assignedTo": "toolsmith"
     }
   ],
   "completedToday": [
@@ -47,6 +90,8 @@
     "Generator-2: Completed 016-messaging-critical-fixes (3 SVGs: 01-message-input-visibility, 02-oauth-setup-flow, 03-conversation-error-states)",
     "Validator: Reviewed 017-colorblind-mode - 2 SVGs PASS validation and inspection, APPROVED",
     "Generator-2: Completed 021-geolocation-map (2 SVGs: 01-map-interface-permission, 02-markers-and-accessibility)",
-    "Validator: Reviewed 016-messaging-critical-fixes - 3 SVGs PASS validation and inspection, APPROVED"
+    "Validator: Reviewed 016-messaging-critical-fixes - 3 SVGs PASS validation and inspection, APPROVED",
+    "Validator: Reviewed 021-geolocation-map - 2 SVGs PASS validation and inspection, APPROVED",
+    "Operator: Dispatched 5 SCRIPT tasks to Toolsmith (project-status.py, review-queue.py, secrets-scan.py, refresh-inventories.py, rfc-status.py)"
   ]
 }
