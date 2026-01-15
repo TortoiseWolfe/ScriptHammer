@@ -5,7 +5,7 @@
 #   docker compose build review
 #   docker compose run review 002
 
-FROM mcr.microsoft.com/playwright/python:v1.48.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.57.0-noble
 
 # Install Node.js for live-server
 RUN apt-get update && apt-get install -y \
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g live-server
 
 # Install Playwright Python package - MUST match base image version
-RUN pip install playwright==1.48.0
+RUN pip install playwright==1.57.0
 
 # Set working directory
 WORKDIR /wireframes
