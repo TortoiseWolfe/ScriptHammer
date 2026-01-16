@@ -37,10 +37,10 @@
     <text x="90" y="130" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#92400e">Setup Required</text>
     <text x="90" y="155" font-family="system-ui, sans-serif" font-size="14" fill="#78350f">Configure your Supabase project to enable authentication and database features.</text>
     <rect x="1020" y="115" width="180" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="1110" y="143" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">Configure Services</text>
+    <text x="1110" y="143" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">Configure Services</text>
     <!-- Callout 1 -->
     <circle cx="50" cy="140" r="14" fill="#dc2626"/>
-    <text x="50" y="145" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+    <text x="50" y="145" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
 
     <!-- Service Status Cards Row -->
     <g transform="translate(60, 200)">
@@ -48,18 +48,18 @@
       <rect x="0" y="0" width="270" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="20" y="35" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Authentication</text>
       <rect x="20" y="50" width="80" height="26" rx="4" fill="#f59e0b"/>
-      <text x="60" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PENDING</text>
+      <text x="60" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">PENDING</text>
       <text x="20" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Supabase Auth not configured.</text>
       <text x="20" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Using mock auth for dev.</text>
       <!-- Callout 2 - positioned right of Auth status badge -->
       <circle cx="115" cy="63" r="14" fill="#dc2626"/>
-      <text x="115" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+      <text x="115" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
 
       <!-- Database Card -->
       <rect x="290" y="0" width="270" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="310" y="35" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Database</text>
       <rect x="310" y="50" width="80" height="26" rx="4" fill="#22c55e"/>
-      <text x="350" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">ACTIVE</text>
+      <text x="350" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">ACTIVE</text>
       <text x="310" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Connected to Supabase.</text>
       <text x="310" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">RLS policies enabled.</text>
 
@@ -67,7 +67,7 @@
       <rect x="580" y="0" width="270" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="600" y="35" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Storage</text>
       <rect x="600" y="50" width="80" height="26" rx="4" fill="#f59e0b"/>
-      <text x="640" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PENDING</text>
+      <text x="640" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">PENDING</text>
       <text x="600" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Bucket not configured.</text>
       <text x="600" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">File uploads disabled.</text>
 
@@ -75,7 +75,7 @@
       <rect x="870" y="0" width="270" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="890" y="35" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Analytics</text>
       <rect x="890" y="50" width="80" height="26" rx="4" fill="#6b7280"/>
-      <text x="930" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">OPTIONAL</text>
+      <text x="930" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">OPTIONAL</text>
       <text x="890" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Not configured.</text>
       <text x="890" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Enable for usage tracking.</text>
     </g>
@@ -86,10 +86,10 @@
     <!-- Action Buttons Row -->
     <g transform="translate(60, 420)">
       <rect x="0" y="0" width="200" height="50" rx="6" fill="#8b5cf6"/>
-      <text x="100" y="31" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">Run Rebrand CLI</text>
+      <text x="100" y="31" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">Run Rebrand CLI</text>
       <!-- Callout 3 -->
       <circle cx="215" cy="25" r="14" fill="#dc2626"/>
-      <text x="215" y="30" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+      <text x="215" y="30" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
 
       <rect x="230" y="0" width="200" height="50" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
       <text x="330" y="31" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151" text-anchor="middle">View Documentation</text>
@@ -106,7 +106,7 @@
     <text x="80" y="610" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Node: v20.x (devcontainer)</text>
     <!-- Callout 4 -->
     <circle cx="48" cy="560" r="14" fill="#dc2626"/>
-    <text x="48" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+    <text x="48" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
 
     <!-- Deployment Status Panel -->
     <rect x="640" y="500" width="580" height="120" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
@@ -133,33 +133,33 @@
     <text x="25" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#78350f">Configure services to continue</text>
     <!-- Mobile Callout 1 -->
     <circle cx="330" cy="145" r="14" fill="#dc2626"/>
-    <text x="330" y="150" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+    <text x="330" y="150" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
 
     <!-- Service Status List -->
     <rect x="15" y="190" width="330" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="25" y="215" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Auth</text>
     <rect x="70" y="202" width="70" height="22" rx="4" fill="#f59e0b"/>
-    <text x="105" y="218" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PENDING</text>
+    <text x="105" y="218" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">PENDING</text>
     <!-- Mobile Callout 2 -->
     <circle cx="330" cy="215" r="14" fill="#dc2626"/>
-    <text x="330" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+    <text x="330" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
 
     <rect x="15" y="250" width="330" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="25" y="275" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Database</text>
     <rect x="100" y="262" width="60" height="22" rx="4" fill="#22c55e"/>
-    <text x="130" y="278" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">ACTIVE</text>
+    <text x="130" y="278" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">ACTIVE</text>
 
     <rect x="15" y="310" width="330" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="25" y="335" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Storage</text>
     <rect x="85" y="322" width="70" height="22" rx="4" fill="#f59e0b"/>
-    <text x="120" y="338" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">PENDING</text>
+    <text x="120" y="338" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">PENDING</text>
 
     <!-- Quick Action Button -->
     <rect x="15" y="380" width="330" height="50" rx="6" fill="#8b5cf6"/>
-    <text x="180" y="411" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">Configure Services</text>
+    <text x="180" y="411" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">Configure Services</text>
     <!-- Mobile Callout 3 -->
     <circle cx="330" cy="405" r="14" fill="#dc2626"/>
-    <text x="330" y="410" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+    <text x="330" y="410" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
 
     <!-- Environment Info -->
     <rect x="15" y="450" width="330" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
@@ -168,7 +168,7 @@
     <text x="25" y="520" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Git: Configured</text>
     <!-- Mobile Callout 4 -->
     <circle cx="330" cy="490" r="14" fill="#dc2626"/>
-    <text x="330" y="495" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+    <text x="330" y="495" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
 
     <!-- Deployment Status -->
     <rect x="15" y="545" width="330" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
@@ -186,81 +186,79 @@
     <!-- Column 1: US-005 Graceful Degradation -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Graceful Degradation</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">As a user, I see guidance when services are not configured.</text>
-      <a href="#US-005"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-005</text></a>
-      <a href="#FR-017"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-017</text></a>
-      <a href="#FR-018"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-018</text></a>
-      <a href="#SC-005"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">SC-005</text></a>
+      <a href="#US-005"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-005</text></a>
+      <a href="#FR-017"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-018"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-018</text></a>
+      <a href="#SC-005"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-005</text></a>
     </g>
 
     <!-- Column 2: US-001 Automated Rebranding -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Service Status Indicators</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Visual status for each external service connection.</text>
-      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-001</text></a>
-      <a href="#FR-005"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-005</text></a>
-      <a href="#FR-006"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-006</text></a>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#FR-005"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-005</text></a>
+      <a href="#FR-006"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-006</text></a>
     </g>
 
     <!-- Column 3: US-001 Rebrand CLI -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Automated Rebranding</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Single command transforms fork to branded project.</text>
-      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-001</text></a>
-      <a href="#FR-001"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-001</text></a>
-      <a href="#FR-002"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-002</text></a>
-      <a href="#FR-003"><rect x="223" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-003</text></a>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="223" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-003</text></a>
     </g>
 
     <!-- Column 4: US-004 Dev Environment -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Dev Environment</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Git commands work inside containers seamlessly.</text>
-      <a href="#US-004"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-004</text></a>
-      <a href="#FR-012"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-012</text></a>
-      <a href="#FR-013"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-013</text></a>
+      <a href="#US-004"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-013</text></a>
     </g>
 
     <!-- Row 2: US-003 Deployment -->
     <g transform="translate(20, 90)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">5</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">5</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Deployment Works Automatically</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Auto-detect base path and deploy without manual config.</text>
-      <a href="#US-003"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-003</text></a>
-      <a href="#FR-009"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-009</text></a>
-      <a href="#FR-010"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-010</text></a>
-      <a href="#SC-003"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">SC-003</text></a>
+      <a href="#US-003"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-010"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-003"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-003</text></a>
     </g>
 
     <!-- Row 2 Column 2: US-002 Tests -->
     <g transform="translate(470, 90)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle">6</text>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">6</text>
       <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Tests Pass Without Services</text>
       <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Comprehensive mocks enable testing without externals.</text>
-      <a href="#US-002"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">US-002</text></a>
-      <a href="#FR-007"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-007</text></a>
-      <a href="#FR-008"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">FR-008</text></a>
-      <a href="#SC-001"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#ffffff" text-anchor="middle">SC-001</text></a>
+      <a href="#US-002"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-002</text></a>
+      <a href="#FR-007"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-001"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-001</text></a>
     </g>
   </g>
 
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">environment setup | service configuration | rebrand automation</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">environment setup | service configuration | rebrand automation</text>
 
 
   <!-- SIGNATURE -->

@@ -29,7 +29,7 @@
 
     <!-- Skip Link (visible on focus) -->
     <rect x="40" y="55" width="180" height="36" rx="4" fill="#8b5cf6" stroke="#6b21a8" stroke-width="3"/>
-    <text x="130" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Skip to main content</text>
+    <text x="130" y="79" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Skip to main content</text>
 
     <!-- Page Title -->
     <text x="640" y="100" text-anchor="middle" font-family="system-ui, sans-serif"
@@ -46,7 +46,7 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">High Contrast Mode</text>
         <rect x="260" y="12" width="52" height="26" rx="13" fill="#22c55e"/>
-        <circle cx="299" cy="25" r="10" fill="#fff"/>
+        <circle cx="299" cy="25" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Focus Indicator Style -->
@@ -54,7 +54,7 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Focus Indicator</text>
         <rect x="220" y="10" width="110" height="30" rx="4" fill="#8b5cf6"/>
-        <text x="275" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Bold Ring</text>
+        <text x="275" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Bold Ring</text>
       </g>
 
       <!-- Contrast Ratio Display -->
@@ -68,7 +68,7 @@
     <!-- Callout ① - RIGHT of visual settings -->
     <g class="callout" transform="translate(436, 250)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Keyboard Navigation Panel (right top) -->
@@ -82,7 +82,7 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Keyboard Shortcuts</text>
         <rect x="260" y="12" width="52" height="26" rx="13" fill="#22c55e"/>
-        <circle cx="299" cy="25" r="10" fill="#fff"/>
+        <circle cx="299" cy="25" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Skip Links Toggle -->
@@ -90,13 +90,13 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Skip Links Visible</text>
         <rect x="260" y="12" width="52" height="26" rx="13" fill="#22c55e"/>
-        <circle cx="299" cy="25" r="10" fill="#fff"/>
+        <circle cx="299" cy="25" r="10" fill="#e8d4b8"/>
       </g>
     </g>
     <!-- Callout ② - RIGHT of keyboard panel -->
     <g class="callout" transform="translate(856, 220)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Touch Target Demo Panel (right bottom) -->
@@ -108,7 +108,7 @@
       <!-- Demo buttons showing proper sizing -->
       <g transform="translate(20, 50)">
         <rect width="100" height="44" rx="4" fill="#8b5cf6"/>
-        <text x="50" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Button</text>
+        <text x="50" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Button</text>
         <rect x="120" y="0" width="44" height="44" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
         <text x="142" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#8b5cf6">+</text>
         <rect x="184" y="0" width="44" height="44" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
@@ -118,7 +118,7 @@
     <!-- Callout ③ - RIGHT of touch target -->
     <g class="callout" transform="translate(856, 410)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Timing and Animation Panel (bottom left) -->
@@ -132,7 +132,7 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Pause Animations</text>
         <rect x="260" y="12" width="52" height="26" rx="13" fill="#22c55e"/>
-        <circle cx="299" cy="25" r="10" fill="#fff"/>
+        <circle cx="299" cy="25" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- No Time Limits -->
@@ -140,13 +140,13 @@
         <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
         <text x="15" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">No Session Timeout</text>
         <rect x="260" y="12" width="52" height="26" rx="13" fill="#22c55e"/>
-        <circle cx="299" cy="25" r="10" fill="#fff"/>
+        <circle cx="299" cy="25" r="10" fill="#e8d4b8"/>
       </g>
     </g>
     <!-- Callout ④ - RIGHT of timing panel -->
     <g class="callout" transform="translate(436, 490)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Reading Level Panel (bottom right) -->
@@ -182,12 +182,12 @@
 
       <!-- Save Button -->
       <rect x="20" y="290" width="150" height="44" rx="4" fill="#8b5cf6"/>
-      <text x="95" y="317" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Save Settings</text>
+      <text x="95" y="317" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Save Settings</text>
     </g>
 
     <!-- Active nav state for Account (settings page) -->
     <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
 
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
   </g>
@@ -211,7 +211,7 @@
         <rect width="300" height="28" rx="4" fill="#f5f0e6"/>
         <text x="10" y="19" font-family="system-ui, sans-serif" font-size="14" fill="#374151">High Contrast</text>
         <rect x="230" y="3" width="44" height="22" rx="11" fill="#22c55e"/>
-        <circle cx="261" cy="14" r="8" fill="#fff"/>
+        <circle cx="261" cy="14" r="8" fill="#e8d4b8"/>
       </g>
       <g transform="translate(10, 72)">
         <rect width="300" height="28" rx="4" fill="#f5f0e6"/>
@@ -222,7 +222,7 @@
     <!-- Callout ① on mobile -->
     <g class="callout" transform="translate(344, 175)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Mobile Keyboard Settings -->
@@ -235,13 +235,13 @@
         <rect width="300" height="28" rx="4" fill="#f5f0e6"/>
         <text x="10" y="19" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Skip Links</text>
         <rect x="230" y="3" width="44" height="22" rx="11" fill="#22c55e"/>
-        <circle cx="261" cy="14" r="8" fill="#fff"/>
+        <circle cx="261" cy="14" r="8" fill="#e8d4b8"/>
       </g>
     </g>
     <!-- Callout ② on mobile -->
     <g class="callout" transform="translate(344, 290)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Mobile Touch Targets -->
@@ -252,7 +252,7 @@
 
       <g transform="translate(10, 38)">
         <rect width="80" height="32" rx="4" fill="#8b5cf6"/>
-        <text x="40" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Tap</text>
+        <text x="40" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Tap</text>
         <rect x="100" y="0" width="44" height="32" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
         <text x="122" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#8b5cf6">+</text>
         <rect x="154" y="0" width="44" height="32" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
@@ -262,7 +262,7 @@
     <!-- Callout ③ on mobile -->
     <g class="callout" transform="translate(344, 390)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Mobile Timing -->
@@ -275,33 +275,33 @@
         <rect width="300" height="28" rx="4" fill="#f5f0e6"/>
         <text x="10" y="19" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Pause Animations</text>
         <rect x="230" y="3" width="44" height="22" rx="11" fill="#22c55e"/>
-        <circle cx="261" cy="14" r="8" fill="#fff"/>
+        <circle cx="261" cy="14" r="8" fill="#e8d4b8"/>
       </g>
       <g transform="translate(10, 72)">
         <rect width="300" height="28" rx="4" fill="#f5f0e6"/>
         <text x="10" y="19" font-family="system-ui, sans-serif" font-size="14" fill="#374151">No Timeout</text>
         <rect x="230" y="3" width="44" height="22" rx="11" fill="#22c55e"/>
-        <circle cx="261" cy="14" r="8" fill="#fff"/>
+        <circle cx="261" cy="14" r="8" fill="#e8d4b8"/>
       </g>
     </g>
     <!-- Callout ④ on mobile -->
     <g class="callout" transform="translate(344, 505)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mobile Save Button -->
     <g transform="translate(20, 580)">
       <rect width="320" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
       <rect x="10" y="10" width="140" height="40" rx="4" fill="#8b5cf6"/>
-      <text x="80" y="36" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Save</text>
+      <text x="80" y="36" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Save</text>
     </g>
 
     <!-- Mobile footer with active Account tab -->
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
     <g transform="translate(270, 664)">
       <rect width="90" height="56" rx="0" fill="#8b5cf6"/>
-      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
     </g>
   </g>
 
@@ -312,100 +312,100 @@
     <!-- Group ① - Column 1 -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">AAA Contrast and Visual</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user with low vision, I need</text>
       <text x="40" y="52" fill="#374151" font-size="14">7:1 contrast ratio throughout.</text>
       <a href="#US-002">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text>
       </a>
       <a href="#FR-006">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-006</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-006</text>
       </a>
       <a href="#FR-009">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-009</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-009</text>
       </a>
       <a href="#SC-002">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-002</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-002</text>
       </a>
     </g>
 
     <!-- Group ② - Column 2 -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Keyboard Navigation</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user without a mouse, I need</text>
       <text x="40" y="52" fill="#374151" font-size="14">full keyboard access to all features.</text>
       <a href="#US-003">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-003</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text>
       </a>
       <a href="#FR-011">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-011</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-011</text>
       </a>
       <a href="#FR-015">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-015</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-015</text>
       </a>
       <a href="#SC-004">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-004</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-004</text>
       </a>
     </g>
 
     <!-- Group ③ - Column 3 -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Touch Target Sizing</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user with motor impairments,</text>
       <text x="40" y="52" fill="#374151" font-size="14">I need 44px minimum touch targets.</text>
       <a href="#US-004">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-004</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-004</text>
       </a>
       <a href="#FR-016">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-016</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-016</text>
       </a>
       <a href="#FR-018">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-018</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-018</text>
       </a>
       <a href="#SC-003">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-003</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-003</text>
       </a>
     </g>
 
     <!-- Group ④ - Column 4 -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Timing and Cognitive</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a user needing extra time, I</text>
       <text x="40" y="52" fill="#374151" font-size="14">need no time limits on any task.</text>
       <a href="#US-006">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-006</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-006</text>
       </a>
       <a href="#FR-024">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-024</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-024</text>
       </a>
       <a href="#FR-025">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-025</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-025</text>
       </a>
       <a href="#SC-006">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-006</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-006</text>
       </a>
     </g>
   </g>
@@ -413,10 +413,8 @@
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">WCAG 2.1 | 4.5:1 contrast | focus indicators | screen readers</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WCAG 2.1 | 4.5:1 contrast | focus indicators | screen readers</text>
 
 
   <!-- SIGNATURE -->

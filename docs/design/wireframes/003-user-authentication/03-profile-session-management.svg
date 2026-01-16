@@ -26,7 +26,7 @@
 
     <!-- Active nav state for Account -->
     <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
 
     <!-- Main content - Two column layout -->
     <!-- Left column: Profile Settings -->
@@ -54,7 +54,7 @@
 
       <!-- Save button -->
       <rect x="30" y="310" width="520" height="44" fill="#8b5cf6" rx="6"/>
-      <text x="290" y="338" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Save Changes</text>
+      <text x="290" y="338" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Changes</text>
 
       <!-- Divider -->
       <line x1="30" y1="380" x2="550" y2="380" stroke="#b8a080" stroke-width="1"/>
@@ -72,7 +72,7 @@
     <!-- Callout 1 - Profile fields -->
     <g class="callout">
       <circle cx="640" cy="220" r="14" fill="#dc2626"/>
-      <text x="640" y="225" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="640" y="225" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Right column: Active Sessions -->
@@ -116,19 +116,19 @@
     <!-- Callout 2 - Session management -->
     <g class="callout">
       <circle cx="1260" cy="140" r="14" fill="#dc2626"/>
-      <text x="1260" y="145" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="1260" y="145" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Callout 3 - Delete account -->
     <g class="callout">
       <circle cx="640" cy="530" r="14" fill="#dc2626"/>
-      <text x="640" y="535" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="640" y="535" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Callout 4 - Revoke sessions -->
     <g class="callout">
       <circle cx="1260" cy="300" r="14" fill="#dc2626"/>
-      <text x="1260" y="305" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="1260" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Footer -->
@@ -159,7 +159,7 @@
 
     <!-- Save button -->
     <rect x="20" y="350" width="320" height="44" fill="#8b5cf6" rx="6"/>
-    <text x="180" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Save Changes</text>
+    <text x="180" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Changes</text>
 
     <!-- Menu items -->
     <rect x="20" y="415" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
@@ -174,17 +174,17 @@
     <!-- Mobile callouts -->
     <g class="callout">
       <circle cx="345" cy="310" r="14" fill="#dc2626"/>
-      <text x="345" y="315" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="345" y="315" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <g class="callout">
       <circle cx="345" cy="495" r="14" fill="#dc2626"/>
-      <text x="345" y="500" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="345" y="500" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <g class="callout">
       <circle cx="345" cy="548" r="14" fill="#dc2626"/>
-      <text x="345" y="553" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="345" y="553" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Mobile footer nav -->
@@ -193,7 +193,7 @@
     <!-- Active state for Account tab -->
     <g transform="translate(270, 664)">
       <rect width="90" height="56" rx="0" fill="#8b5cf6"/>
-      <text x="45" y="44" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
     </g>
   </g>
 
@@ -205,72 +205,71 @@
     <!-- Column 1 (x=20): Profile Management -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Profile Management</text>
       <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a registered user, I need to manage</text>
       <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">my profile and account settings.</text>
 
       <!-- Badges row 1 -->
-      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#ffffff" font-size="12" text-anchor="middle">US-006</text></a>
-      <a href="#FR-024"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-024</text></a>
-      <a href="#FR-025"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-025</text></a>
+      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-024"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-024</text></a>
+      <a href="#FR-025"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-025</text></a>
     </g>
 
     <!-- Column 2 (x=470): Session Management -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Management</text>
       <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Users can view all active sessions</text>
       <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and revoke any of them.</text>
 
       <!-- Badges -->
-      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#ffffff" font-size="12" text-anchor="middle">US-002</text></a>
-      <a href="#FR-029"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-029</text></a>
-      <a href="#FR-030"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-030</text></a>
-      <a href="#SC-008"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#ffffff" font-size="12" text-anchor="middle">SC-008</text></a>
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-029"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-029</text></a>
+      <a href="#FR-030"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-030</text></a>
+      <a href="#SC-008"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-008</text></a>
     </g>
 
     <!-- Column 3 (x=920): Account Deletion -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Account Deletion</text>
       <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">User can delete their account,</text>
       <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">cascading all data including payments.</text>
 
       <!-- Badges -->
-      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#ffffff" font-size="12" text-anchor="middle">US-006</text></a>
-      <a href="#FR-027"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-027</text></a>
-      <a href="#FR-028"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-028</text></a>
+      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-027"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-027</text></a>
+      <a href="#FR-028"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-028</text></a>
     </g>
 
     <!-- Column 4 (x=1370): Security and Audit -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Security Controls</text>
       <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Password changes and all auth events</text>
       <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">are logged for compliance.</text>
 
       <!-- Badges -->
-      <a href="#US-005"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#ffffff" font-size="12" text-anchor="middle">US-005</text></a>
-      <a href="#FR-026"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-026</text></a>
-      <a href="#FR-031"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#ffffff" font-size="12" text-anchor="middle">FR-031</text></a>
-      <a href="#SC-007"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#ffffff" font-size="12" text-anchor="middle">SC-007</text></a>
+      <a href="#US-005"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#FR-026"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-026</text></a>
+      <a href="#FR-031"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-031</text></a>
+      <a href="#SC-007"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-007</text></a>
     </g>
   </g>
 
   <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Supabase Auth | OAuth providers | session management | password reset</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Supabase Auth | OAuth providers | session management | password reset</text>
 
   <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">003:03 | User Authentication | ScriptHammer</text>
 </svg>

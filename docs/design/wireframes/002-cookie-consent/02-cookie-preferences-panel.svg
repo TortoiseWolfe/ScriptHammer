@@ -55,7 +55,7 @@
               font-size="14" fill="#6b7280">Always enabled</text>
         <!-- Toggle (disabled, ON state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#22c55e" opacity="0.6"/>
-        <circle cx="496" cy="39" r="12" fill="#ffffff"/>
+        <circle cx="496" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 2: Functional -->
@@ -69,7 +69,7 @@
               font-size="14" fill="#6b7280">Remembers your preferences</text>
         <!-- Toggle (ON state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#22c55e"/>
-        <circle cx="496" cy="39" r="12" fill="#ffffff"/>
+        <circle cx="496" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 3: Analytics -->
@@ -83,7 +83,7 @@
               font-size="14" fill="#6b7280">Anonymous usage data</text>
         <!-- Toggle (OFF state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
-        <circle cx="474" cy="39" r="12" fill="#ffffff"/>
+        <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 4: Marketing -->
@@ -97,7 +97,7 @@
               font-size="14" fill="#6b7280">Third-party tracking</text>
         <!-- Toggle (OFF state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
-        <circle cx="474" cy="39" r="12" fill="#ffffff"/>
+        <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
       <!-- Action buttons -->
@@ -106,29 +106,29 @@
             font-size="16" font-weight="600" fill="#374151">Cancel</text>
       <rect x="310" y="455" width="260" height="44" rx="6" fill="#8b5cf6"/>
       <text x="440" y="483" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="16" font-weight="600" fill="#ffffff">Save Preferences</text>
+            font-size="16" font-weight="600" fill="#e8d4b8">Save Preferences</text>
     </g>
 
     <!-- Desktop callout circles -->
     <g class="callout">
       <circle cx="960" cy="219" r="14" fill="#dc2626"/>
       <text x="960" y="224" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">1</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
     </g>
     <g class="callout">
       <circle cx="960" cy="309" r="14" fill="#dc2626"/>
       <text x="960" y="314" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">2</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
     </g>
     <g class="callout">
       <circle cx="960" cy="555" r="14" fill="#dc2626"/>
       <text x="960" y="560" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">3</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
     </g>
     <g class="callout">
       <circle cx="960" cy="150" r="14" fill="#dc2626"/>
       <text x="960" y="155" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">4</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
     </g>
 
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
@@ -160,7 +160,7 @@
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#6b7280">Always on</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#22c55e" opacity="0.6"/>
-        <circle cx="272" cy="30" r="10" fill="#ffffff"/>
+        <circle cx="272" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 2: Functional -->
@@ -173,7 +173,7 @@
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#6b7280">Personalization</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#22c55e"/>
-        <circle cx="272" cy="30" r="10" fill="#ffffff"/>
+        <circle cx="272" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 3: Analytics -->
@@ -186,7 +186,7 @@
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#6b7280">Anonymous data</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
-        <circle cx="252" cy="30" r="10" fill="#ffffff"/>
+        <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Category 4: Marketing -->
@@ -199,7 +199,7 @@
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#6b7280">Third-party</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
-        <circle cx="252" cy="30" r="10" fill="#ffffff"/>
+        <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Description text -->
@@ -211,7 +211,7 @@
       <!-- Buttons (stacked) -->
       <rect x="15" y="405" width="300" height="44" rx="6" fill="#8b5cf6"/>
       <text x="165" y="433" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="600" fill="#ffffff">Save Preferences</text>
+            font-size="14" font-weight="600" fill="#e8d4b8">Save Preferences</text>
       <rect x="15" y="460" width="300" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
       <text x="165" y="486" text-anchor="middle" font-family="system-ui, sans-serif"
             font-size="14" font-weight="600" fill="#374151">Cancel</text>
@@ -221,22 +221,22 @@
     <g class="callout">
       <circle cx="335" cy="172" r="14" fill="#dc2626"/>
       <text x="335" y="177" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">1</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
     </g>
     <g class="callout">
       <circle cx="335" cy="247" r="14" fill="#dc2626"/>
       <text x="335" y="252" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">2</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
     </g>
     <g class="callout">
       <circle cx="335" cy="540" r="14" fill="#dc2626"/>
       <text x="335" y="545" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">3</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
     </g>
     <g class="callout">
       <circle cx="335" cy="118" r="14" fill="#dc2626"/>
       <text x="335" y="123" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">4</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
     </g>
 
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
@@ -250,7 +250,7 @@
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
       <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">1</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
       <text x="40" y="18" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold" fill="#1f2937">Granular Cookie Control</text>
       <text x="40" y="38" font-family="system-ui, sans-serif"
@@ -260,32 +260,32 @@
       <a href="#US-002">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
         <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">US-002</text>
+              font-size="11" fill="#e8d4b8">US-002</text>
       </a>
       <a href="#FR-005">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-005</text>
+              font-size="11" fill="#e8d4b8">FR-005</text>
       </a>
       <a href="#FR-006">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-006</text>
+              font-size="11" fill="#e8d4b8">FR-006</text>
       </a>
       <a href="#FR-007">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-007</text>
+              font-size="11" fill="#e8d4b8">FR-007</text>
       </a>
       <a href="#FR-008">
         <rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="311" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-008</text>
+              font-size="11" fill="#e8d4b8">FR-008</text>
       </a>
       <a href="#SC-002">
         <rect x="345" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
         <text x="372" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">SC-002</text>
+              font-size="11" fill="#e8d4b8">SC-002</text>
       </a>
     </g>
 
@@ -293,7 +293,7 @@
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
       <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">2</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
       <text x="40" y="18" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold" fill="#1f2937">Preference Persistence</text>
       <text x="40" y="38" font-family="system-ui, sans-serif"
@@ -303,17 +303,17 @@
       <a href="#US-003">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
         <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">US-003</text>
+              font-size="11" fill="#e8d4b8">US-003</text>
       </a>
       <a href="#FR-009">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-009</text>
+              font-size="11" fill="#e8d4b8">FR-009</text>
       </a>
       <a href="#SC-003">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
         <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">SC-003</text>
+              font-size="11" fill="#e8d4b8">SC-003</text>
       </a>
     </g>
 
@@ -321,7 +321,7 @@
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
       <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">3</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
       <text x="40" y="18" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold" fill="#1f2937">Update Preferences</text>
       <text x="40" y="38" font-family="system-ui, sans-serif"
@@ -331,22 +331,22 @@
       <a href="#US-004">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
         <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">US-004</text>
+              font-size="11" fill="#e8d4b8">US-004</text>
       </a>
       <a href="#FR-010">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-010</text>
+              font-size="11" fill="#e8d4b8">FR-010</text>
       </a>
       <a href="#FR-012">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-012</text>
+              font-size="11" fill="#e8d4b8">FR-012</text>
       </a>
       <a href="#SC-004">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
         <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">SC-004</text>
+              font-size="11" fill="#e8d4b8">SC-004</text>
       </a>
     </g>
 
@@ -354,7 +354,7 @@
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
       <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
-            font-size="14" font-weight="bold" fill="#fff">4</text>
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
       <text x="40" y="18" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold" fill="#1f2937">Modal Accessibility</text>
       <text x="40" y="38" font-family="system-ui, sans-serif"
@@ -364,22 +364,22 @@
       <a href="#FR-022">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-022</text>
+              font-size="11" fill="#e8d4b8">FR-022</text>
       </a>
       <a href="#FR-023">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-023</text>
+              font-size="11" fill="#e8d4b8">FR-023</text>
       </a>
       <a href="#FR-024">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
         <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">FR-024</text>
+              font-size="11" fill="#e8d4b8">FR-024</text>
       </a>
       <a href="#SC-006">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
         <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
-              font-size="11" fill="#fff">SC-006</text>
+              font-size="11" fill="#e8d4b8">SC-006</text>
       </a>
     </g>
   </g>
@@ -387,10 +387,8 @@
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">GDPR compliance | consent management | cookie categories | preference storage</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR compliance | consent management | cookie categories | preference storage</text>
 
 
   <!-- SIGNATURE -->

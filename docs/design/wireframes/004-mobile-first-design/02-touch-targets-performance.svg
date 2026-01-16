@@ -29,7 +29,7 @@
 
     <!-- Navigation active state overlay for Features -->
     <rect x="480" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="520" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+    <text x="520" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
 
     <!-- Touch Target Demonstration Panel -->
     <g transform="translate(60, 70)">
@@ -43,7 +43,7 @@
 
       <!-- Primary button 44px height -->
       <rect x="20" y="85" width="120" height="44" rx="6" fill="#8b5cf6"/>
-      <text x="80" y="113" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
+      <text x="80" y="113" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
 
       <!-- 8px gap -->
       <rect x="148" y="85" width="120" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
@@ -67,18 +67,18 @@
 
       <!-- Checkbox row -->
       <rect x="20" y="300" width="24" height="24" rx="4" fill="#8b5cf6"/>
-      <text x="20" y="315" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">✓</text>
+      <text x="20" y="315" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">✓</text>
       <text x="54" y="318" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Remember me</text>
 
       <!-- Toggle switch -->
       <text x="20" y="370" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Enable notifications</text>
       <rect x="200" y="352" width="52" height="28" rx="14" fill="#22c55e"/>
-      <circle cx="238" cy="366" r="12" fill="#ffffff"/>
+      <circle cx="238" cy="366" r="12" fill="#e8d4b8"/>
 
       <!-- Toggle OFF state -->
       <text x="20" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Dark mode</text>
       <rect x="200" y="402" width="52" height="28" rx="14" fill="#6b7280"/>
-      <circle cx="214" cy="416" r="12" fill="#ffffff"/>
+      <circle cx="214" cy="416" r="12" fill="#e8d4b8"/>
 
       <!-- No hover dependency note -->
       <rect x="20" y="460" width="520" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
@@ -137,25 +137,25 @@
     <!-- Callout 1 on touch targets -->
     <g transform="translate(430, 115)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Callout 2 on form controls -->
     <g transform="translate(380, 310)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Callout 3 on performance panel -->
     <g transform="translate(1240, 115)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Callout 4 on page weight -->
     <g transform="translate(1240, 520)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
@@ -174,7 +174,7 @@
 
     <!-- Mobile buttons 44px height -->
     <rect x="28" y="130" width="140" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="98" y="158" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
+    <text x="98" y="158" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
 
     <rect x="180" y="130" width="140" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
     <text x="250" y="158" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Secondary</text>
@@ -187,7 +187,7 @@
     <!-- Toggle switches -->
     <text x="28" y="290" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Notifications</text>
     <rect x="250" y="272" width="52" height="28" rx="14" fill="#22c55e"/>
-    <circle cx="288" cy="286" r="12" fill="#ffffff"/>
+    <circle cx="288" cy="286" r="12" fill="#e8d4b8"/>
 
     <!-- Performance Section -->
     <text x="28" y="345" fill="#1f2937" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Performance</text>
@@ -220,31 +220,31 @@
     <!-- Callout 1 on buttons -->
     <g transform="translate(330, 152)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Callout 2 on form -->
     <g transform="translate(330, 255)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Callout 3 on metrics -->
     <g transform="translate(330, 390)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Callout 4 on page weight -->
     <g transform="translate(330, 460)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mobile footer with active state -->
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
     <rect x="90" y="664" width="90" height="56" fill="#8b5cf6"/>
-    <text x="135" y="702" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+    <text x="135" y="702" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
   </g>
 
   <!-- ANNOTATION PANEL -->
@@ -254,64 +254,64 @@
     <!-- Group 1 - Touch-Friendly Interactions, Column 1 -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
 
       <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Touch-Friendly Interactions</text>
       <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">All interactive elements meet 44x44px minimum touch target</text>
       <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">size with 8px spacing between adjacent controls.</text>
 
-      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="11" text-anchor="middle">US-003</text></a>
-      <a href="#FR-020"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-020</text></a>
-      <a href="#FR-021"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-021</text></a>
-      <a href="#SC-002"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-002</text></a>
-      <a href="#SC-003"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-003</text></a>
+      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-003</text></a>
+      <a href="#FR-020"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-020</text></a>
+      <a href="#FR-021"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-021</text></a>
+      <a href="#SC-002"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-002</text></a>
+      <a href="#SC-003"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-003</text></a>
     </g>
 
     <!-- Group 2 - Consistent Mobile Experience, Column 2 -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
 
       <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Consistent Mobile Experience</text>
       <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Purpose-built mobile layouts. Landscape orientation</text>
       <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">maintains mobile styles. Supports 200% zoom.</text>
 
-      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="11" text-anchor="middle">US-004</text></a>
-      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-017</text></a>
-      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-018</text></a>
-      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-019</text></a>
-      <a href="#FR-022"><rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-022</text></a>
+      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-004</text></a>
+      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-019</text></a>
+      <a href="#FR-022"><rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-022</text></a>
     </g>
 
     <!-- Group 3 - Performance on Mobile Networks, Column 3 -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
 
       <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Performance on Mobile Networks</text>
       <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Fast page loads on 3G/4G. LCP under 2.5s,</text>
       <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">FID under 100ms, CLS below 0.1.</text>
 
-      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="11" text-anchor="middle">US-005</text></a>
-      <a href="#FR-023"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-023</text></a>
-      <a href="#SC-005"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-005</text></a>
-      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-006</text></a>
-      <a href="#SC-007"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-007</text></a>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-005</text></a>
+      <a href="#FR-023"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-023</text></a>
+      <a href="#SC-005"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-005</text></a>
+      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-006</text></a>
+      <a href="#SC-007"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-007</text></a>
     </g>
 
     <!-- Group 4 - Page Weight Budget, Column 4 -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
 
       <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Page Weight Budget</text>
       <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total page under 1MB, critical content under 500KB.</text>
       <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">TTI under 5 seconds on simulated 3G.</text>
 
-      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="11" text-anchor="middle">US-005</text></a>
-      <a href="#FR-024"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="11" text-anchor="middle">FR-024</text></a>
-      <a href="#SC-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-011</text></a>
-      <a href="#SC-012"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="11" text-anchor="middle">SC-012</text></a>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-005</text></a>
+      <a href="#FR-024"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-024</text></a>
+      <a href="#SC-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-011</text></a>
+      <a href="#SC-012"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-012</text></a>
     </g>
 
     <!-- Key concepts row -->

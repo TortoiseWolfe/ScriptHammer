@@ -46,7 +46,7 @@
     <!-- Callout ① - RIGHT of score panel -->
     <g class="callout" transform="translate(856, 190)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Per-Page Breakdown (left column) -->
@@ -84,7 +84,7 @@
     <!-- Callout ② - RIGHT of page breakdown -->
     <g class="callout" transform="translate(636, 440)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Historical Trends (right column) -->
@@ -103,7 +103,7 @@
     <!-- Callout ③ - RIGHT of trends -->
     <g class="callout" transform="translate(1256, 370)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Issue Drill-Down (bottom right) -->
@@ -116,21 +116,21 @@
       <g transform="translate(20, 45)">
         <rect width="540" height="50" rx="4" fill="#f5f0e6"/>
         <rect x="10" y="12" width="60" height="26" rx="4" fill="#f59e0b"/>
-        <text x="40" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Warning</text>
+        <text x="40" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Warning</text>
         <text x="85" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Contrast ratio 6.8:1 on button hover state</text>
         <rect x="440" y="10" width="90" height="30" rx="4" fill="#8b5cf6"/>
-        <text x="485" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Fix Now</text>
+        <text x="485" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Fix Now</text>
       </g>
     </g>
     <!-- Callout ④ - RIGHT of issues -->
     <g class="callout" transform="translate(1256, 520)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Active nav state for Docs (this is a dashboard page) -->
     <rect x="580" y="3" width="60" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="610" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+    <text x="610" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
 
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
   </g>
@@ -155,7 +155,7 @@
     <!-- Callout ① on mobile -->
     <g class="callout" transform="translate(340, 170)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Mobile Page List -->
@@ -183,7 +183,7 @@
     <!-- Callout ② on mobile -->
     <g class="callout" transform="translate(340, 340)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Mobile Trend Summary -->
@@ -199,7 +199,7 @@
     <!-- Callout ③ on mobile -->
     <g class="callout" transform="translate(340, 500)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Mobile Active Issues -->
@@ -209,13 +209,13 @@
             font-size="14" font-weight="bold" fill="#374151">Issues</text>
       <rect x="10" y="40" width="280" height="30" rx="4" fill="#f5f0e6"/>
       <rect x="15" y="45" width="60" height="20" rx="4" fill="#f59e0b"/>
-      <text x="45" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff">Warn</text>
+      <text x="45" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Warn</text>
       <text x="75" y="60" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Contrast ratio...</text>
     </g>
     <!-- Callout ④ on mobile -->
     <g class="callout" transform="translate(340, 600)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mobile footer with active Docs tab -->
@@ -223,7 +223,7 @@
     <!-- Active state for Docs tab (3rd position) -->
     <g transform="translate(180, 664)">
       <rect width="90" height="56" fill="#8b5cf6"/>
-      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
     </g>
   </g>
 
@@ -234,92 +234,92 @@
     <!-- Group ① - Column 1 -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Compliance Overview</text>
       <text x="40" y="34" fill="#374151" font-size="14">As a stakeholder, I need to see overall</text>
       <text x="40" y="52" fill="#374151" font-size="14">compliance status at a glance.</text>
       <a href="#US-009">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-009</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-009</text>
       </a>
       <a href="#FR-032">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-032</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-032</text>
       </a>
       <a href="#FR-033">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-033</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-033</text>
       </a>
       <a href="#SC-001">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-001</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text>
       </a>
     </g>
 
     <!-- Group ② - Column 2 -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Per-Page Breakdown</text>
       <text x="40" y="34" fill="#374151" font-size="14">Each page shows its score and issue</text>
       <text x="40" y="52" fill="#374151" font-size="14">count for targeted remediation.</text>
       <a href="#US-001">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-001</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text>
       </a>
       <a href="#FR-033">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-033</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-033</text>
       </a>
       <a href="#FR-035">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-035</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-035</text>
       </a>
       <a href="#SC-008">
         <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-008</text>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-008</text>
       </a>
     </g>
 
     <!-- Group ③ - Column 3 -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Historical Trends</text>
       <text x="40" y="34" fill="#374151" font-size="14">Track compliance changes over time</text>
       <text x="40" y="52" fill="#374151" font-size="14">to measure improvement progress.</text>
       <a href="#US-008">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-008</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-008</text>
       </a>
       <a href="#FR-034">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-034</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-034</text>
       </a>
       <a href="#SC-010">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-010</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-010</text>
       </a>
     </g>
 
     <!-- Group ④ - Column 4 -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
       <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Issue Drill-Down</text>
       <text x="40" y="34" fill="#374151" font-size="14">View specific violations with severity</text>
       <text x="40" y="52" fill="#374151" font-size="14">and actionable remediation steps.</text>
       <a href="#US-002">
         <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
-        <text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text>
       </a>
       <a href="#FR-035">
         <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
-        <text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-035</text>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-035</text>
       </a>
       <a href="#SC-002">
         <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
-        <text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-002</text>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-002</text>
       </a>
     </g>
   </g>
@@ -327,10 +327,8 @@
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">WCAG 2.1 | 4.5:1 contrast | focus indicators | screen readers</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WCAG 2.1 | 4.5:1 contrast | focus indicators | screen readers</text>
 
 
   <!-- SIGNATURE -->
