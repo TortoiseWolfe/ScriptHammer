@@ -480,6 +480,24 @@ tmux capture-pane -t scripthammer:20 -p | tail -10  # DockerCaptain
 tmux attach -t scripthammer
 ```
 
+## Terminal Context Management
+
+| Context Level | Action |
+|---------------|--------|
+| > 30% | Leave alone - terminal is healthy |
+| < 30% | Let task finish, then `/clear` + `/prime` |
+
+**DO NOT** use `/compact`. Refresh with `/clear` then `/prime`.
+
+## Dispatch Workflow (Wireframes)
+
+```
+Operator → Planner → Generators  ✓ CORRECT
+Operator → Generators directly   ✗ WRONG
+```
+
+Kick Planner with `/queue-check`, not generators directly.
+
 **Note:** Operator does not participate in audits - it orchestrates them.
 
 ### Session Continuation (Day 2+)

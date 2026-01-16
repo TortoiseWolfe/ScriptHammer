@@ -92,8 +92,53 @@ This file contains unpushed commits, patch queues, and priority items.
 4. Re-dispatch to stuck/idle terminals
 5. Escalate blockers to user
 
-## Lesson Learned (2026-01-15)
+## Terminal Context Management
 
+### Threshold Rules
+| Context Level | Action |
+|---------------|--------|
+| > 30% | **Leave alone** - terminal is healthy |
+| < 30% | Let current task finish, then refresh |
+
+### Refresh Procedure
+1. Wait for terminal to complete current task (don't interrupt)
+2. Send `/clear` to reset context
+3. Send `/prime` to reload role context
+
+```bash
+# Example: Refresh a terminal after task completes
+tmux send-keys -t scripthammer:RoleName "/clear" Enter
+sleep 2
+tmux send-keys -t scripthammer:RoleName "/prime" Enter
+```
+
+**DO NOT** use `/compact` - use `/clear` + `/prime` instead.
+
+## Dispatch Workflow
+
+### Correct: Through Planner (for wireframes)
+```
+Operator → Planner → Generators
+```
+- Kick Planner with `/queue-check` or `/dispatch`
+- Planner creates dispatch memos in `docs/interoffice/memos/`
+- Generators read their memos via `/next`
+
+### Incorrect: Direct to Generators
+```
+Operator → Generators  ❌ WRONG
+```
+- Don't send `/wireframe-focused` directly to generators
+- Don't bypass the Planner's coordination role
+
+## Lessons Learned
+
+### 2026-01-16
+- Context threshold is 30%, not 40% - don't be aggressive
+- Let terminals finish current task before refresh
+- Dispatch wireframe work through Planner, not directly to Generators
+
+### 2026-01-15
 - NEVER use shortcodes or assumed role names
 - ALWAYS check `scripts/tmux-session.sh` for exact role names
 - ALWAYS send Enter after tmux send-keys commands
