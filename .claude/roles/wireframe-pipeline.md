@@ -18,8 +18,27 @@ Planner → Generators (3 parallel) → PreviewHost → WireframeQA → Validato
 | Generator 1/2/3 | Create SVGs, fix validation errors | `/wireframe [feature]` |
 | PreviewHost | Run viewer for screenshots | `/hot-reload-viewer` |
 | WireframeQA | Screenshot and document issues | `/wireframe-screenshots` |
-| Validator | Run validation, manage escalation | `validate-wireframe.py` |
-| Inspector | Cross-SVG consistency checks | `inspect-wireframes.py` |
+| Validator | Run validation, log to .issues.md | `validate-wireframe.py` |
+| Inspector | Cross-SVG consistency, log findings | `inspect-wireframes.py` |
+
+## Role Boundaries (CRITICAL)
+
+**WHO CAN EDIT WHAT:**
+
+| Role | CAN Edit | CANNOT Edit |
+|------|----------|-------------|
+| Generator | SVGs only | Scripts, GENERAL_ISSUES.md |
+| Validator | .issues.md files only | SVGs, scripts, GENERAL_ISSUES.md |
+| Inspector | .issues.md files, audit reports only | SVGs, scripts, GENERAL_ISSUES.md, validate-wireframe.py |
+| WireframeQA | .issues.md files, audit reports only | SVGs, scripts |
+| Toolsmith | Scripts, skill files | SVGs |
+
+**ESCALATION ONLY - DO NOT FIX:**
+- Inspector finds a bug in validate-wireframe.py → LOG it, tell Toolsmith
+- Validator sees wrong spec in GENERAL_ISSUES.md → LOG it, tell Architect
+- WireframeQA finds pattern issue → LOG it, recommend escalation to GENERAL_ISSUES.md
+
+**The only role that fixes SVGs is Generator.**
 
 ## WireframeQA Visual Review Checklist
 
