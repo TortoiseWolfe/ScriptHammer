@@ -69,4 +69,57 @@ The validator flagged MODAL-001 because it detected modal-related content, but t
 - Warning icon uses amber (#f59e0b)
 - Title position: x=960 CORRECT
 
-**Status:** APPROVED - Ready for Inspector
+**Status:** ~~APPROVED~~ → SPEC-ORDER issue (see Batch 004 review)
+
+## WireframeQA Batch 004 Review (2026-01-15)
+
+**PNG Source:** `overviews_004/005-security-hardening_02-session-timeout-warning_overview.png`
+**Reviewer:** WireframeQA Terminal (Operator QC)
+
+### New Issue Found
+
+| ID | Issue | Classification | Escalation |
+|----|-------|----------------|------------|
+| SO-01 | Callout order doesn't match visual left-to-right UX flow | SPEC-ORDER | **Technical Writer** |
+
+### SO-01: User Story Order Mismatch
+
+**Current annotation panel order:**
+```
+[1] Session Timeout Warning → points to RIGHT panel (Timeout Warning - last in flow)
+[2] Remember Me Option → points to LEFT panel (Sign In - first in flow)
+[3] Session Activity → points to MIDDLE panel (Session Active)
+[4] Session Recovery → points to MIDDLE panel (Sign Out button)
+```
+
+**Visual UX flow (left to right = chronological):**
+```
+LEFT:   Sign In form [callout 2] → User signs in with Remember Me option
+MIDDLE: Session Active [callouts 3,4] → User has active session, can sign out
+RIGHT:  Timeout Warning [callout 1] → Session about to expire, user chooses action
+```
+
+**Expected order (matching UX flow):**
+```
+[1] Remember Me Option (Sign In - entry point)
+[2] Session Activity (active session state)
+[3] Session Timeout Warning (warning appears near expiry)
+[4] Session Recovery (user takes action: stay in or sign out)
+```
+
+**UX Rationale:**
+- Three-panel layout represents CHRONOLOGICAL flow: Sign In → Active → Timeout
+- Callout 1 (Timeout Warning) is the END of the session lifecycle, not the beginning
+- Users read left-to-right; callout order should match this scanning pattern
+- Current order places the final state (timeout) first, creating confusion
+
+**Action Required:**
+1. Technical Writer to reorder user stories in spec:
+   - Move US-009 (Session Timeout Warning) from position 1 to position 3
+   - Move US-003 (Remember Me Option) from position 2 to position 1
+   - Keep US-009 (Session Activity) and US-010 (Session Recovery) as positions 2 and 4
+2. After spec update, regenerate wireframe with corrected callout order
+
+**Pattern Note:** This is the same SPEC-ORDER issue seen in:
+- 000-landing-page/01-landing-page.issues.md (SO-01)
+- 005-security-hardening/01-security-ux-enhancements.issues.md (SO-01)

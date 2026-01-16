@@ -32,7 +32,10 @@
 
 ## Inspector Issues (2026-01-15)
 
-**PASS** - No pattern violations found after script fix. Title verified at x=960, y=28 (line 14).
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
 
 ## Reviewer Notes (2026-01-14)
 
@@ -65,3 +68,40 @@
 - Title position: CONFIRMED at x=700 (should be x=960)
 
 **Status:** NEEDS REGENERATE for title position
+
+## WireframeQA Batch 004 Review (2026-01-15)
+
+**PNG Source:** `overviews_004/002-cookie-consent_02-cookie-preferences-panel_overview.png`
+**Reviewer:** WireframeQA Terminal (Operator QC)
+
+### New Issue Found
+
+| ID | Issue | Classification | Priority |
+|----|-------|----------------|----------|
+| C-01 | Callout 4 marker at TOP of UI, should be at BOTTOM | PATCH | Low |
+
+### C-01: Callout Order Mismatch
+
+**Problem:** The red callout circle "4" (Modal Accessibility) is visually positioned at the TOP of the cookie preferences modal, but accessibility features are a cross-cutting concern that should appear at the END of the visual reading flow.
+
+**Current callout marker positions (top to bottom):**
+```
+Desktop:  [4] at top → [1] → [2] → [3] at bottom (Save button)
+Mobile:   [4] at top → [1] → [2] → [3] at bottom
+```
+
+**Expected visual flow (top to bottom):**
+```
+Desktop:  [1] → [2] → [3] → [4] at bottom
+Mobile:   [1] → [2] → [3] → [4] at bottom
+```
+
+**UX Rationale:** Users read top-to-bottom. Callout numbers should follow visual scanning order:
+1. Granular Cookie Control (the toggle options)
+2. Preference Persistence (remembering choices)
+3. Update Preferences (save button action)
+4. Modal Accessibility (keyboard/screen reader - cross-cutting, annotate last)
+
+**Fix:** Move callout 4 circle from top of modal to bottom (near Cancel/Save area), or reposition annotation line to point to modal container's bottom edge.
+
+**Classification:** PATCH - same data, just repositioned callout marker

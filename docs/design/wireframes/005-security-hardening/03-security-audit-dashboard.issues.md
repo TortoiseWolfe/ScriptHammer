@@ -6,11 +6,12 @@
 
 ---
 
-## Inspector Issues (2026-01-14)
+## Inspector Issues (2026-01-15)
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| title_x_oddball | majority pattern: 700 | this SVG: 960 | PATTERN_VIOLATION |
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
 
 ## Reviewer Notes (2026-01-14)
 

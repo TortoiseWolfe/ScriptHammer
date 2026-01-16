@@ -46,6 +46,10 @@ When reviewing screenshots, check for these issues that automated validation may
 - No overlapping elements
 - All text readable (≥14px)
 
+### FOOTER/NAV CORNERS (G-044)
+- Desktop footer container has `rx="4-8"` (rounded corners)
+- Mobile bottom nav bar has `rx="4-8"` (rounded corners)
+
 ## SVG Rules
 
 - Canvas: `viewBox="0 0 1920 1080"`

@@ -1,47 +1,10 @@
-# Issues: 01-oauth-password-setup.svg
+# Issues: 02-oauth-password-unlock.svg
 
 **Feature:** 013-oauth-messaging-password
-**SVG:** 01-oauth-password-setup.svg
+**SVG:** 02-oauth-password-unlock.svg
 **Last Review:** 2026-01-15
-**Validator:** v5.2
 
 ---
-
-## Summary
-
-| Status | Count |
-|--------|-------|
-| Open | 0 |
-
----
-
-## Resolved Issues (2026-01-15)
-
-### Font Issues
-
-| ID | Issue | Code | Resolution |
-|----|-------|------|------------|
-| F-01 to F-12 | Font sizes below 14px | FONT-001 | FIXED - all text meets minimum size |
-
-### User Story Issues
-
-| ID | Issue | Code | Resolution |
-|----|-------|------|------------|
-| U-01 | Only 1 User Story badge | US-002 | FIXED - proper user story coverage |
-
-### Modal Issues
-
-| ID | Issue | Resolution |
-|----|-------|------------|
-| M-01 | Light-colored overlay | FIXED - proper dark overlay |
-
----
-
-## Notes
-
-- Cleaned up 2026-01-15 by Validator terminal
-- Re-validation confirms 0 errors
-- Run validator to refresh: `python validate-wireframe.py 013-oauth-messaging-password/01-oauth-password-setup.svg`
 
 ## Inspector Issues (2026-01-15)
 
@@ -58,12 +21,12 @@
 | V-02 | Desktop nav: "Features" highlighted instead of "Account" | G-039 | REGENERATE |
 | V-03 | Mobile footer: "Features" tab active instead of "Account" | G-039 | REGENERATE |
 
-**Note**: OAuth password setup is an auth-related page; per G-039 page-to-nav mapping, "Account" should be the active nav item.
+**Note**: OAuth unlock messages is an auth-related page; per G-039 page-to-nav mapping, "Account" should be the active nav item.
 
 ## Inspector Batch 003 Review (2026-01-15)
 
 **Confirmed Issues:**
-- Signature: Correct format "013:01 | OAuth Messaging Password | ScriptHammer" - PASS
+- Signature: Correct format "013:02 | OAuth Messaging Password | ScriptHammer" - PASS
 - Nav Active State: "Features" highlighted but should be "Account" (G-039 violation)
 - Both desktop and mobile nav show wrong active item
 

@@ -539,6 +539,40 @@ Reports to: DevOps
 ---
 
 <details>
+<summary><h2>📸 PNG Batch QC (Visual Review)</h2></summary>
+
+**What is PNG QC?**
+
+The human (turtle_wolfe) takes screenshots of wireframes and hand-annotates them with visual markers:
+- **Blue arrows** — Desktop-to-mobile callout mapping
+- **Circled numbers** — Verified callouts
+- **"?" marks** — Missing or wrong callouts
+- **Hand-drawn numbers** — Where callouts SHOULD be
+
+**Why PNGs instead of just validators?**
+
+Validators check SVG source code. PNG review catches VISUAL issues that validators miss — how wireframes actually look when rendered.
+
+**Batch Folders:**
+```
+docs/design/wireframes/png/overviews_XXX/
+```
+
+**Workflow:**
+1. Prime as QC-Operator: `/prime qc-operator`
+2. Check QC terminal health (WireframeQA, Validator, Inspector, Auditor)
+3. Dispatch batch to ALL terminals (each reviews every PNG)
+4. Monitor progress, clear/prime terminals below 30%
+
+**Documentation:**
+- Role: `.claude/roles/qc-operator.md`
+- Workflow: `docs/interoffice/workflows/png-batch-qc.md`
+
+</details>
+
+---
+
+<details>
 <summary><h2>🔍 Wireframe Review Commands (46 features)</h2></summary>
 
 **Legend:** 🔍 **Pending** | 🟢 *Pass* | 🔴 `Regen` | ✅ ~~Done~~

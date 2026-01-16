@@ -23,13 +23,12 @@
 |----|-------|------------|
 | M-01 | Modal detected but no dimmed background overlay | FALSE POSITIVE - settings page, not modal |
 
-### Inspector Issues (Resolved 2026-01-15)
+### Inspector Issues (2026-01-15)
 
-| Check | Issue | Resolution |
-|-------|-------|------------|
-| title_x_position | x=700 instead of x=960 | FIXED - title now at x=960 |
-
----
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
 
 ## Notes
 
@@ -71,3 +70,23 @@ The validator flagged MODAL-001 because it detected modal-related text ("Modal d
 - Title position: CONFIRMED at x=700 (should be x=960)
 
 **Status:** NEEDS REGENERATE for title position
+
+## WireframeQA Batch 003 Review (2026-01-15)
+
+**PNG Source:** `overviews_003/002-cookie-consent_03-privacy-settings-page_overview.png`
+**Reviewer:** WireframeQA Terminal
+
+### Visual Inspection Summary
+| Check | Status |
+|-------|--------|
+| Signature left-aligned (x=40) | PASS |
+| Signature format "002:03 \| Cookie Policy \| ScriptHammer" | PASS |
+| Title centered | PASS (visually centered) |
+| Desktop mockup position | PASS |
+| Mobile mockup position | PASS |
+| Annotation panel (4 callouts) | PASS |
+| GDPR features (Export/Delete) | PASS |
+| Destructive button (#ef4444) | PASS |
+| Approval history | PASS |
+
+**Status:** APPROVED pending known PATTERN_VIOLATIONs (footer corners)

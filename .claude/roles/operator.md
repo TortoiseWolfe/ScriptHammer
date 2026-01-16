@@ -66,10 +66,20 @@ tmux capture-pane -t scripthammer:Toolsmith -p | tail -30
 tmux attach -t scripthammer   # Ctrl+b d to detach
 ```
 
+## Session Startup
+
+**First:** Read the day 3 continuation file for pending work:
+```bash
+cat docs/interoffice/operator-day3-data.md
+```
+
+This file contains unpushed commits, patch queues, and priority items.
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
+| `docs/interoffice/operator-day3-data.md` | Session continuation context |
 | `docs/design/wireframes/.terminal-status.json` | Queue and terminal status |
 | `docs/interoffice/rfcs/` | Pending RFCs |
 | `scripts/tmux-dispatch.sh` | Work dispatcher |

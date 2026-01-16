@@ -49,3 +49,10 @@
 - Cleaned up 2026-01-15 by Validator terminal
 - Re-validation confirms 0 errors
 - Run validator to refresh: `python validate-wireframe.py 017-colorblind-mode/01-accessibility-settings.svg`
+
+## Inspector Issues (2026-01-15)
+
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |

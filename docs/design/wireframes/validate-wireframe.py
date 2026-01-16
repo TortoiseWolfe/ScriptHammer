@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Validator v5.3
+SVG Wireframe Validator v5.4
 
 Programmatically checks wireframe SVGs against ScriptHammer standards.
 All checks are errors - either it passes or it fails. No ambiguous warnings.
 
+NEW in v5.4: Added G-044 (footer/nav rounded corners) check.
 NEW in v5.3: Added --json and --summary output modes for CI integration (RFC-004).
 NEW in v5.2: Added G-036 (badge containment) and G-037 (annotation text readability) checks.
 NEW in v5.1: Added MOBILE-001 check for mobile content overlapping header (G-034).
@@ -13,7 +14,7 @@ Issues only escalate to GENERAL_ISSUES.md when seen in 2+ features.
 
 Checks: XML syntax, SVG structure, colors, fonts, headers, modals, callouts,
         annotations, title, signature, background gradient, paint order, mobile safe area,
-        badge containment, annotation text readability.
+        badge containment, annotation text readability, footer/nav rounded corners.
 
 Usage:
     python validate-wireframe.py 002-cookie-consent/01-consent-modal-flow.svg
@@ -317,6 +318,9 @@ class WireframeValidator:
         # v9 checks (G-036, G-037 - 2026-01-12)
         self._check_badge_containment()
         self._check_annotation_text_readability()
+
+        # v10 checks (G-044 - 2026-01-15)
+        self._check_footer_nav_corners()
 
         return self.issues
 
@@ -1560,6 +1564,44 @@ class WireframeValidator:
                     severity="ERROR",
                     code="G-037",
                     message=f"Annotation text uses light color {fill}: '{text_content}...' - use #374151 or darker",
+                    line=line_num
+                ))
+
+    def _check_footer_nav_corners(self):
+        """G-044: Footer and bottom nav containers must have rounded corners (rx).
+
+        Checks for rect elements in footer/nav areas that are missing rx attribute.
+        Both desktop footer and mobile bottom nav should have rx="4-8".
+        """
+        # Find desktop footer rects (within desktop mockup, y near bottom ~640-720 relative to desktop group)
+        # Desktop group is at transform="translate(40, 60)" so absolute y would be 700-780
+        # Look for rects with large width (footer-like) in the y=640-780 range
+        desktop_footer_pattern = r'<rect[^>]*\by=["\']?(6[4-9]\d|7[0-7]\d)["\']?[^>]*width=["\']?(1[0-2]\d\d)["\']?[^>]*'
+        for match in re.finditer(desktop_footer_pattern, self.svg_content):
+            rect_element = match.group(0)
+            # Check if rx attribute is present
+            if 'rx=' not in rect_element:
+                line_num = self._get_line_number(match.start())
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-044",
+                    message="Desktop footer missing rounded corners - add rx=\"4\" or rx=\"8\"",
+                    line=line_num
+                ))
+
+        # Find mobile bottom nav rects (within mobile mockup area x >= 1360)
+        # Mobile nav is at bottom of 720px viewport, so y ~= 664-720
+        # Look for nav bar pattern: rect at bottom of mobile with width ~360
+        mobile_nav_pattern = r'<rect[^>]*\by=["\']?(66[4-9]|6[7-9]\d|7[0-1]\d)["\']?[^>]*width=["\']?(3[4-6]\d)["\']?[^>]*'
+        for match in re.finditer(mobile_nav_pattern, self.svg_content):
+            rect_element = match.group(0)
+            # Check if rx attribute is present
+            if 'rx=' not in rect_element:
+                line_num = self._get_line_number(match.start())
+                self.issues.append(Issue(
+                    severity="ERROR",
+                    code="G-044",
+                    message="Mobile bottom nav missing rounded corners - add rx=\"4\" or rx=\"8\"",
                     line=line_num
                 ))
 
