@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-01-15T21:35:00.000000+00:00",
+  "lastUpdated": "2026-01-15T22:15:00.000000+00:00",
   "wireframeStatus": "issues",
   "queue": [
     {
@@ -14,6 +14,118 @@
       "svg": "02-submission-states.svg",
       "action": "REGEN",
       "reason": "84 errors: SVG-003, HDR-001, ANN-001, BTN-001, G-001 (forbidden color #e5e7eb), 67 FONT-001",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "01-registration-sign-in.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "02-verification-password-reset.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "003-user-authentication",
+      "svg": "03-profile-session-management.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "007-e2e-testing-framework",
+      "svg": "02-cicd-pipeline-flow.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "008-on-the-account",
+      "svg": "01-avatar-upload-flow.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003 + G-044: signature x=960→x=40; footer line 103 add rx=8; mobile nav line 135 add rx=8",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "010-unified-blog-content",
+      "svg": "01-editor-and-preview.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004 + G-044: signature x=960→x=40, format '010:01 | Unified Blog Content | ScriptHammer'; footer line 139 add rx=8",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "010-unified-blog-content",
+      "svg": "02-conflict-resolution.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004 + G-044: signature x=960→x=40, format '010:02 | Unified Blog Content | ScriptHammer'; footer line 161 add rx=8",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "011-group-chats",
+      "svg": "01-group-creation-messaging.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "011-group-chats",
+      "svg": "02-member-management.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003: x=960→x=40, remove text-anchor=middle",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "014-admin-welcome-email-gate",
+      "svg": "01-verification-gate.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004 + G-044: signature x=960→x=40, format '014:01 | Admin Welcome Email Gate | ScriptHammer'; footer line 94 add rx=8",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "014-admin-welcome-email-gate",
+      "svg": "02-admin-setup-process.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004 + G-044: signature x=960→x=40, format '014:02 | Admin Welcome Email Gate | ScriptHammer'; footer line 145 add rx=8",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "016-messaging-critical-fixes",
+      "svg": "01-message-input-visibility.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004: x=960→x=40, format '016:01 | Messaging Critical Fixes | ScriptHammer'",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "016-messaging-critical-fixes",
+      "svg": "02-oauth-setup-flow.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004: x=960→x=40, format '016:02 | Messaging Critical Fixes | ScriptHammer'",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "016-messaging-critical-fixes",
+      "svg": "03-conversation-error-states.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004: x=960→x=40, format '016:03 | Messaging Critical Fixes | ScriptHammer'",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "021-geolocation-map",
+      "svg": "01-map-interface-permission.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004: x=960→x=40, format '021:01 | Geolocation Map | ScriptHammer'",
+      "assignedTo": "generator"
+    },
+    {
+      "feature": "021-geolocation-map",
+      "svg": "02-markers-and-accessibility.svg",
+      "action": "PATCH",
+      "reason": "SIGNATURE-003/004: x=960→x=40, format '021:02 | Geolocation Map | ScriptHammer'",
       "assignedTo": "generator"
     },
     {
@@ -183,6 +295,8 @@
     "Toolsmith: Completed 5 SCRIPT tasks - project-status.py (444 LOC), review-queue.py (384 LOC), secrets-scan.py (416 LOC), refresh-inventories.py (498 LOC), queue-status.py (345 LOC)",
     "Operator: Queued 18 SCRIPT tasks for Toolsmith (8 from Architect audit, 10 from Developer audit)",
     "Toolsmith: Created 16/18 scripts (6,156 LOC). Optional: skill-usage.py, session-tracker.py not created - low priority per architect audit",
-    "Validator: 022-web3forms-integration FAIL - 2 SVGs, 136 errors total (structural issues), queued for REGEN"
+    "Validator: 022-web3forms-integration FAIL - 2 SVGs, 136 errors total (structural issues), queued for REGEN",
+    "Validator: Full sweep with new checks - 27/45 PASS, 18 FAIL (SIGNATURE-003/004, G-044)",
+    "Validator: Dispatched 16 PATCH tasks to generators (signature alignment + format + footer corners)"
   ]
 }
