@@ -485,7 +485,7 @@ tmux attach -t scripthammer
 | Context Level | Action |
 |---------------|--------|
 | > 30% | Leave alone - terminal is healthy |
-| < 30% | Let task finish, then `/clear` + `/prime [role]` |
+| ≤ 30% | Let task finish, then `/clear` + `/prime [role]` |
 
 **DO NOT** use `/compact`. Refresh with `/clear` then `/prime [role]`.
 

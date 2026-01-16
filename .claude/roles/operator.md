@@ -98,7 +98,7 @@ This file contains unpushed commits, patch queues, and priority items.
 | Context Level | Action |
 |---------------|--------|
 | > 30% | **Leave alone** - terminal is healthy |
-| < 30% | Let current task finish, then refresh |
+| ≤ 30% | Let current task finish, then refresh |
 
 ### Refresh Procedure
 1. Wait for terminal to complete current task (don't interrupt)
