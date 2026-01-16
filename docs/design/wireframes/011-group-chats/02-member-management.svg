@@ -293,5 +293,11 @@
   </g>
 
   <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">011:02 | Group Chats | ScriptHammer</text>
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">group creation | member management | admin roles | message threading</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">011:02 | Group Chats | ScriptHammer</text>
 </svg>

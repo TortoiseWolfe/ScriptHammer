@@ -2,7 +2,7 @@
 
 **Feature:** 007-e2e-testing-framework
 **SVG:** 02-cicd-pipeline-flow.svg
-**Last Review:** 2026-01-15
+**Last Review:** 2026-01-16
 **Validator:** v5.0
 
 ---
@@ -11,19 +11,23 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 3 |
+| Open | 2 |
 
 ---
 
-## Open Issues (2026-01-15 Review)
+## Open Issues (2026-01-16 Review)
 
 ### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | REGENERATE |
-| X-02 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | REGENERATE |
-| X-03 | Signature format wrong: 'ScriptHammer v0.1 - E2E Testing CI/... | SIGNATURE-004 | REGENERATE |
+| X-01 | Signature format wrong: 'ScriptHammer v0.1 - E2E Testing CI/... | SIGNATURE-004 | REGENERATE |
+
+### Annotation Issues
+
+| ID | Issue | Code | Classification |
+|----|-------|------|----------------|
+| A-01 | Annotation text uses light color #6b7280: 'Playwright | CI/C... | G-037 | REGENERATE |
 
 ---
 

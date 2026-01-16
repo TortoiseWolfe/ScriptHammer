@@ -320,6 +320,15 @@
     </g>
   </g>
 
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Playwright | CI/CD pipeline | test coverage | visual regression</text>
+
+
   <!-- SIGNATURE -->
   <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
         font-size="18" font-weight="bold">

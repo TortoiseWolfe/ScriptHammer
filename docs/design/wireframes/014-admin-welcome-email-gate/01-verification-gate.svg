@@ -91,7 +91,7 @@
     <text x="1110" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#166534">You bypass this gate automatically.</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/>
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
 
     <!-- Callout 4: Status -->
     <circle cx="640" cy="695" r="16" fill="#dc2626"/>
@@ -230,7 +230,13 @@
   </g>
 
   <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Verification Gate</text>
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">email verification | admin approval | user activation</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Verification Gate</text>
 
   <!-- Hidden Includes for HDR-001 Compliance (placed after modal content for G-021) -->
   <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">

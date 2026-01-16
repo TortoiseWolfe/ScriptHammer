@@ -6,9 +6,10 @@
     {
       "svg": "01-test-architecture-diagram.svg",
       "focus": "Architectural diagram showing test spec files, fixtures, Playwright browsers (Chrome/Firefox/Safari), report generation, and artifact storage",
-      "userStories": ["US-1", "US-2", "US-7"],
-      "requirements": ["FR-001", "FR-002", "FR-003", "FR-004", "FR-008", "FR-009", "FR-010", "FR-011", "FR-012"],
-      "mode": "new"
+      "userStories": ["US-2", "US-1", "US-6", "US-7"],
+      "requirements": ["FR-001", "FR-002", "FR-003", "FR-004", "FR-008", "FR-009", "FR-010", "FR-011", "FR-012", "FR-013", "FR-014", "FR-015", "FR-016"],
+      "mode": "new",
+      "specOrderFix": "2026-01-16 - Reordered to match architecture data flow: User Journey Testing (specs) → Cross-Browser Execution (browsers) → CI/CD Integration (GitHub Actions) → Test Debugging (artifacts)"
     },
     {
       "svg": "02-cicd-pipeline-flow.svg",

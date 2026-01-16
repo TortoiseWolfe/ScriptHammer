@@ -30,7 +30,7 @@
 | G-021 | Footer hidden behind modal overlay | Place footer `<use>` AFTER modal content in SVG order (SVG paints in order) | SVG Paint Order |
 | G-022 | Missing canvas background gradient | Canvas MUST have `#c7ddf5` → `#b8d4f0` gradient, not solid parchment | Background Gradient |
 | G-024 | Missing title block | MUST have centered title at y=28: "FEATURE - PAGE NAME" | Title Block |
-| G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at x=40, y=1060, 18px bold, LEFT-ALIGNED | Signature Block |
+| G-025 | Missing signature block | MUST have "NNN:NN \| Feature \| ScriptHammer" at x=40, y=1060, 18px bold, LEFT-ALIGNED | Signature Block (validator: SIGNATURE-003, SIGNATURE-004) |
 | G-026 | No numbered callouts on mockups | Red circles ①②③④ MUST appear ON mockup UI elements | v4 Callout System (validator: ANN-002, G-026) |
 | G-030 | Annotation groups clustered instead of distributed | Use 4-column grid: x=20, 470, 920, 1370. One group per column. | Annotation Column Distribution |
 | G-031 | Callout circle placed ON TOP of UI element | Place callout 10-20px ADJACENT to element, never covering it | Callout Placement |
@@ -49,6 +49,7 @@
 | G-044 | Footer/nav bar missing rounded corners | Footer and bottom nav containers must have `rx="4-8"` | Footer/Nav Corner Standards |
 | G-045 | Mobile active state missing icon | Active tab overlay must include white-filled icon path, not just text | Mobile Active State Template |
 | G-046 | Corner tab active state uses rect | Home/Account active overlays must use `<path>` for rounded corners, not `<rect>` | Mobile Active State Template |
+| G-047 | Annotation panel bottom row inconsistent | Use consistent label ("Key Concepts:" preferred), y=730 with 20px gaps above/below | Annotation Bottom Row Standards |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -68,6 +69,7 @@ Before writing ANY SVG:
 - [ ] Identify clear areas for annotation boxes
 - [ ] Navigation active state: Highlight current page in BOTH desktop nav AND mobile footer
 - [ ] Verify all XML attributes are properly quoted (no trailing commas, proper `"` quotes)
+- [ ] Key Concepts row: Use "Key Concepts:" label at y=730 with proper spacing (G-047)
 
 ---
 
@@ -455,6 +457,8 @@ Check for collisions in the LAYOUT PLAN phase, not after generating SVG.
 | 2026-01-15 | G-044 | Footer/nav missing rounded corners seen in 002, 003, 010, 013, 019 |
 | 2026-01-15 | G-045 | Mobile active state missing icon seen in 003-user-authentication (all 3 SVGs) |
 | 2026-01-15 | G-046 | Corner tab uses rect instead of path seen in 003-user-authentication (all 3 SVGs) |
+| 2026-01-15 | G-025 | Added validator codes SIGNATURE-003 (x=960 instead of x=40) and SIGNATURE-004 (text-anchor=middle) - seen in 9+ features |
+| 2026-01-16 | G-047 | Annotation bottom row inconsistent - different labels (Key Concepts vs Additional Requirements), cramped spacing - seen in 5/5 batch 006 wireframes |
 
 ---
 
@@ -1023,3 +1027,67 @@ Copy these EXACTLY for active tab overlays:
 - [ ] Corner tabs (Home, Account) use `<path>` not `<rect>`
 - [ ] Icon path copied from include file with `fill="#fff"`
 - [ ] Text: `fill="#fff"`, `font-weight="600"`
+
+---
+
+## Annotation Bottom Row Standards (G-047)
+
+**Problem**: The row below user stories (above signature) is inconsistent across wireframes - different labels, cramped spacing, and sometimes missing entirely.
+
+### Observed Inconsistencies (Batch 006 QC)
+
+| Wireframe | Label Used | Spacing | Notes |
+|-----------|------------|---------|-------|
+| 004-01 responsive-navigation | Key Concepts: | ❌ Cramped | Hand-drawn arrows obscuring |
+| 004-02 touch-targets | Key Concepts: | ❌ Cramped | Hand-drawn underline |
+| 012-01 user-onboarding | Additional Requirements: | ❌ Cramped | Different label! |
+| 019-01 consent-flow | Key Concepts: | ❌ Cramped | Hand-drawn arrows |
+| 019-02 analytics-dashboard | Key Concepts: | ❌ Cramped | Hand-drawn arrows |
+
+### Rule
+
+**Use "Key Concepts:" consistently with proper spacing:**
+
+1. **Label**: Always use "Key Concepts:" (not "Additional Requirements:")
+2. **Y-position**: y=730 (20px below user story badges which end around y=710)
+3. **Signature gap**: 20px minimum between Key Concepts row and signature at y=1060
+4. **Content**: Pipe-separated list of technical terms relevant to the wireframe
+
+### Annotation Panel Layout
+
+```
+y=600  ┌─────────────────────────────────────────────────────────┐
+       │ ① User Story 1        ② User Story 2                    │
+       │ Narrative text...     Narrative text...                 │
+       │ [US-001] [FR-001]     [US-002] [FR-002]                  │
+y=690  │                                                         │
+       │ ③ User Story 3        ④ User Story 4                    │
+       │ Narrative text...     Narrative text...                 │
+       │ [US-003] [SC-001]     [US-004] [SC-002]                  │
+y=710  └─────────────────────────────────────────────────────────┘
+                              ↓ 20px gap
+y=730  Key Concepts: term1 | term2 | term3 | term4 | term5
+                              ↓ remaining space
+y=1060 NNN:NN | Feature Name | ScriptHammer
+```
+
+### SVG Implementation
+
+```xml
+<!-- Key Concepts row - positioned with proper spacing -->
+<g transform="translate(40, 730)">
+  <text font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">
+    Key Concepts:
+  </text>
+  <text x="110" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">
+    44x44px touch targets | 8px spacing | responsive images | semantic HTML | ARIA labels
+  </text>
+</g>
+
+<!-- Signature - LEFT-ALIGNED at x=40 -->
+<text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">004:01 | Mobile-First Design | ScriptHammer</text>
+```
+
+### Additional Issues Found
+
+All 5 batch 006 wireframes also have **hand-drawn arrows/lines** in the annotation panel area. These should be removed - callout connections should use clean SVG elements or omitted entirely if not needed.

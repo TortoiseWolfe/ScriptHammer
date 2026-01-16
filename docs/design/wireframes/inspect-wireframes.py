@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Inspector v1.2
+SVG Wireframe Inspector v1.4
 
 Cross-SVG consistency checker for ScriptHammer wireframes.
 Runs AFTER validate-wireframe.py passes to check patterns across all SVGs.
 
+NEW in v1.4: Fixed G-044 to recognize <use> include files (footer/nav have proper corners via <path>).
+             Fixed G-044 to check mobile active state overlays for rx attribute.
+             Added G-047 "Additional Requirements" label detection (should be "Key Concepts").
+NEW in v1.3: Added G-047 (Key Concepts row) check.
 NEW in v1.2: Added mobile active state checks (icon + corner tabs).
 NEW in v1.1: Added G-044 (footer/nav rounded corners) check.
 
@@ -17,9 +21,11 @@ Checks for:
 - Desktop/mobile mockup positioning
 - Annotation panel positioning
 - Navigation active states
-- Footer/nav rounded corners (G-044)
+- Footer/nav rounded corners (G-044) - includes and active overlays
 - Mobile active state icon presence (G-045)
 - Mobile corner tab shape (G-046)
+- Key Concepts row presence at y=730 (G-047)
+- Wrong label detection: "Additional Requirements" should be "Key Concepts"
 
 Usage:
     python inspect-wireframes.py --all           # Inspect all SVGs
@@ -55,6 +61,11 @@ EXPECTED = {
     'desktop_footer': 'includes/footer-desktop.svg#site-footer',
     'mobile_header': 'includes/header-mobile.svg#mobile-header-group',
     'mobile_footer': 'includes/footer-mobile.svg#mobile-bottom-nav',
+    'key_concepts': {
+        'y': 940,  # Annotation panel (y=800) + inner offset (y=140) = 940
+        'tolerance': 50,  # ±50px for y position (allows variation in layout)
+        'gap_to_signature': 120,  # Expected gap: 1060 - 940 = 120px
+    },
 }
 
 # Tolerance for position checks (pixels)
@@ -95,11 +106,18 @@ class SVGStructure:
     mobile_mockup: Optional[StructuralElement] = None
     annotation_panel: Optional[StructuralElement] = None
     nav_active_page: Optional[str] = None
-    desktop_footer_has_rx: bool = False  # G-044: rounded corners
-    mobile_nav_has_rx: bool = False  # G-044: rounded corners
+    # G-044: Footer/nav corners - now checks includes OR inline elements
+    desktop_footer_uses_include: bool = False  # Uses <use href="includes/footer-desktop.svg">
+    desktop_footer_has_rx: bool = False  # Has inline <rect> with rx attribute
+    mobile_nav_uses_include: bool = False  # Uses <use href="includes/footer-mobile.svg">
+    mobile_nav_has_rx: bool = False  # Has inline <rect> with rx attribute
+    mobile_active_overlay_has_rx: bool = True  # Active state overlay rect has rx (middle tabs)
     mobile_active_has_icon: bool = False  # G-045: active state includes icon path
     mobile_active_corner_uses_path: bool = True  # G-046: corner tabs use <path> not <rect>
     mobile_active_detected: bool = False  # Whether we found a mobile active state overlay
+    has_key_concepts: bool = False  # G-047: Key Concepts row exists
+    has_wrong_label: bool = False  # G-047: Uses "Additional Requirements" instead of "Key Concepts"
+    key_concepts_y: Optional[float] = None  # G-047: Y position of Key Concepts row
     issues: List[str] = field(default_factory=list)
 
 
@@ -254,19 +272,54 @@ def extract_structure(svg_path: Path) -> SVGStructure:
             break
 
     # G-044: Check for rounded corners on footer/nav
-    # Desktop footer: rect with large width (1000+) in footer area (y ~640-780)
-    desktop_footer_pattern = r'<rect[^>]*\by=["\']?(6[4-9]\d|7[0-7]\d)["\']?[^>]*width=["\']?(1[0-2]\d\d)["\']?[^>]*'
-    for match in re.finditer(desktop_footer_pattern, content):
-        if 'rx=' in match.group(0):
-            structure.desktop_footer_has_rx = True
-            break
+    # Include files (footer-desktop.svg, footer-mobile.svg) already have proper corners via <path>
+    # So if using includes, the check passes. Only check inline rects if no include used.
 
-    # Mobile nav: rect with width ~360 at bottom (y ~664-720)
-    mobile_nav_pattern = r'<rect[^>]*\by=["\']?(66[4-9]|6[7-9]\d|7[0-1]\d)["\']?[^>]*width=["\']?(3[4-6]\d)["\']?[^>]*'
-    for match in re.finditer(mobile_nav_pattern, content):
-        if 'rx=' in match.group(0):
-            structure.mobile_nav_has_rx = True
-            break
+    # Check for desktop footer include
+    if re.search(r'<use[^>]*href=["\']includes/footer-desktop\.svg', content):
+        structure.desktop_footer_uses_include = True
+
+    # Check for mobile nav include
+    if re.search(r'<use[^>]*href=["\']includes/footer-mobile\.svg', content):
+        structure.mobile_nav_uses_include = True
+
+    # Fallback: check inline rects only if not using includes
+    if not structure.desktop_footer_uses_include:
+        # Desktop footer: rect with large width (1000+) in footer area (y ~640-780)
+        desktop_footer_pattern = r'<rect[^>]*\by=["\']?(6[4-9]\d|7[0-7]\d)["\']?[^>]*width=["\']?(1[0-2]\d\d)["\']?[^>]*'
+        for match in re.finditer(desktop_footer_pattern, content):
+            if 'rx=' in match.group(0):
+                structure.desktop_footer_has_rx = True
+                break
+
+    if not structure.mobile_nav_uses_include:
+        # Mobile nav: rect with width ~360 at bottom (y ~664-720)
+        mobile_nav_pattern = r'<rect[^>]*\by=["\']?(66[4-9]|6[7-9]\d|7[0-1]\d)["\']?[^>]*width=["\']?(3[4-6]\d)["\']?[^>]*'
+        for match in re.finditer(mobile_nav_pattern, content):
+            if 'rx=' in match.group(0):
+                structure.mobile_nav_has_rx = True
+                break
+
+    # G-044: Check mobile active state overlays for rx attribute
+    # Look for active state rects in mobile nav area (y=664) with purple fill (#8b5cf6)
+    # Direct rect pattern: <rect x="X" y="664" width="90" height="56" fill="#8b5cf6">
+    # where X is 0, 90, 180, or 270 for the four tabs
+    direct_active_pattern = r'<rect[^>]*x=["\']?(\d+)["\']?[^>]*y=["\']?664["\']?[^>]*fill=["\']#8b5cf6["\']?'
+    for match in re.finditer(direct_active_pattern, content):
+        rect_element = match.group(0)
+        x_pos = int(match.group(1))
+
+        # Found a direct active overlay - mark as detected
+        structure.mobile_active_detected = True
+
+        # Check for rx attribute on middle tabs (x=90 or x=180)
+        # Corner tabs (x=0 or x=270) should use <path>, not <rect>
+        if x_pos in [90, 180]:
+            if 'rx=' not in rect_element:
+                structure.mobile_active_overlay_has_rx = False
+        elif x_pos in [0, 270]:
+            # Corner tab using direct rect - this is a G-046 violation (should use path)
+            structure.mobile_active_corner_uses_path = False
 
     # G-045 & G-046: Check mobile active state overlay
     # Look for active state overlays in mobile section (translate near y=664 for bottom nav)
@@ -300,6 +353,42 @@ def extract_structure(svg_path: Path) -> SVGStructure:
 
             if uses_rect and not uses_path:
                 structure.mobile_active_corner_uses_path = False
+
+    # G-047: Check for Key Concepts row
+    # Key Concepts is typically in annotation panel with nested transforms
+    # Standard structure: annotation panel at y=800, Key Concepts row at y=140 offset
+    # Absolute position: y = 800 + 140 = 940
+
+    # Simple presence check - look for "Key Concepts" text anywhere
+    if re.search(r'[Kk]ey\s*[Cc]oncepts\s*:', content):
+        structure.has_key_concepts = True
+
+        # Find the immediate parent group transform for Key Concepts
+        # Pattern: <g transform="translate(X, Y)">...Key Concepts (within ~500 chars)
+        # Search for translate directly before Key Concepts text
+        kc_parent_pattern = r'<g[^>]*transform=["\']translate\(\s*\d+\s*,\s*(\d+)\s*\)["\'][^>]*>\s*(?:<[^>]+>\s*){0,5}[^<]*[Kk]ey\s*[Cc]oncepts'
+        kc_parent_match = re.search(kc_parent_pattern, content)
+        if kc_parent_match:
+            inner_y = int(kc_parent_match.group(1))
+            # Key Concepts is inside annotation panel (y=800) with inner offset
+            # Absolute y = 800 + inner_y
+            structure.key_concepts_y = 800 + inner_y
+
+        # Also check for direct y attribute on text element (less common)
+        if not structure.key_concepts_y:
+            direct_pattern = r'<text[^>]*y=["\']?(\d+)["\']?[^>]*>[^<]*[Kk]ey\s*[Cc]oncepts'
+            direct_match = re.search(direct_pattern, content)
+            if direct_match:
+                structure.key_concepts_y = int(direct_match.group(1))
+
+    # G-047: Check for wrong label - "Additional Requirements" should be "Key Concepts"
+    if re.search(r'[Aa]dditional\s*[Rr]equirements\s*:', content):
+        structure.has_wrong_label = True
+        # If they have "Additional Requirements" but not "Key Concepts", still mark as missing Key Concepts
+        if not structure.has_key_concepts:
+            # The wrong label exists, so there IS a bottom row, just with wrong text
+            # We'll report both issues: wrong label AND missing Key Concepts
+            pass
 
     return structure
 
@@ -478,19 +567,31 @@ def check_patterns(structures: List[SVGStructure]) -> List[PatternViolation]:
                 ))
 
         # G-044: Check footer/nav rounded corners
-        if not structure.desktop_footer_has_rx:
+        # Desktop footer: uses include (which has proper <path> corners) OR inline rect with rx
+        if not structure.desktop_footer_uses_include and not structure.desktop_footer_has_rx:
             violations.append(PatternViolation(
                 svg_path=structure.path,
                 check='footer_nav_corners',
-                expected='desktop footer has rx="4-8"',
-                actual='desktop footer missing rx attribute'
+                expected='desktop footer via include OR inline rect with rx="4-8"',
+                actual='desktop footer missing rounded corners'
             ))
-        if not structure.mobile_nav_has_rx:
+
+        # Mobile nav: uses include (which has proper <path> corners) OR inline rect with rx
+        if not structure.mobile_nav_uses_include and not structure.mobile_nav_has_rx:
             violations.append(PatternViolation(
                 svg_path=structure.path,
                 check='footer_nav_corners',
-                expected='mobile nav has rx="4-8"',
-                actual='mobile nav missing rx attribute'
+                expected='mobile nav via include OR inline rect with rx="4-8"',
+                actual='mobile nav missing rounded corners'
+            ))
+
+        # Mobile active state overlay (middle tabs) should have rx for consistency
+        if structure.mobile_active_detected and not structure.mobile_active_overlay_has_rx:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='mobile_active_overlay_corners',
+                expected='mobile active state rect (middle tabs) has rx="8"',
+                actual='mobile active state rect missing rx attribute'
             ))
 
         # G-045: Check mobile active state has icon
@@ -511,6 +612,34 @@ def check_patterns(structures: List[SVGStructure]) -> List[PatternViolation]:
                 check='mobile_active_corner_shape',
                 expected='corner tabs (Home/Account) use <path> with rounded corner',
                 actual='corner tab uses <rect> (missing rounded corner)'
+            ))
+
+        # G-047: Check for Key Concepts row
+        exp_kc = EXPECTED['key_concepts']
+        if not structure.has_key_concepts:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='key_concepts_missing',
+                expected=f'Key Concepts row at y≈{exp_kc["y"]}',
+                actual='Key Concepts row not found'
+            ))
+        elif structure.key_concepts_y:
+            # Check y position is within tolerance
+            if abs(structure.key_concepts_y - exp_kc['y']) > exp_kc['tolerance']:
+                violations.append(PatternViolation(
+                    svg_path=structure.path,
+                    check='key_concepts_position',
+                    expected=f'y={exp_kc["y"]} (±{exp_kc["tolerance"]}px)',
+                    actual=f'y={structure.key_concepts_y}'
+                ))
+
+        # G-047: Check for wrong label (Additional Requirements instead of Key Concepts)
+        if structure.has_wrong_label:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='key_concepts_wrong_label',
+                expected='Label: "Key Concepts:"',
+                actual='Label: "Additional Requirements:" (wrong - use "Key Concepts:")'
             ))
 
     return violations

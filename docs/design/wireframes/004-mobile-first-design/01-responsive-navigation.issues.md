@@ -83,12 +83,12 @@ The validator appears to be reporting issues from a previous version of this SVG
 
 **Overall Assessment:** Good wireframe demonstrating mobile-first navigation principles. Only issue is title positioning - needs regeneration to change x=700 to x=960.
 
-## Inspector Issues (2026-01-15 Batch 003)
+## Inspector Issues (2026-01-16)
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
-| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
+| mobile_active_overlay_corners | mobile active state rect (middle tabs) has rx="8" | mobile active state rect missing rx attribute | PATTERN_VIOLATION |
+| mobile_active_icon_missing | mobile active state includes white icon path | active state has text only, no icon | PATTERN_VIOLATION |
 
 ## Visual Review (2026-01-15)
 

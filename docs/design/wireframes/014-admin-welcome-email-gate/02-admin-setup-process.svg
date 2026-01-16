@@ -142,7 +142,7 @@
     <text x="680" y="635" font-family="monospace" font-size="14" fill="#22c55e">[DONE] Admin setup complete (idempotent)</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/>
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
     <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Setup completed at: 2026-01-14 19:30:00 UTC</text>
     <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Status: Ready</text>
   </g>
@@ -284,7 +284,13 @@
   </g>
 
   <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Admin Setup Process</text>
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">email verification | admin approval | user activation</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Admin Setup Process</text>
 
   <!-- Hidden Includes for HDR-001 Compliance (placed at end) -->
   <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">

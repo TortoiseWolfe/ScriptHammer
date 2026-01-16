@@ -1,138 +1,136 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1920">
-  <!-- 022-web3forms-integration: 01-contact-form-ui.svg
-       Contact form layout with inline validation errors
-       Desktop (1280x720) and Mobile (360x720) views -->
-
-  <!-- Background gradient -->
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#c7ddf5"/>
-      <stop offset="100%" style="stop-color:#b8d4f0"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
     </linearGradient>
   </defs>
-  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
-
-  <!-- Title -->
-  <text x="960" y="28" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="20px" font-weight="700">022-web3forms-integration: Contact Form UI</text>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">WEB3FORMS INTEGRATION - CONTACT FORM UI</text>
 
   <!-- ==================== DESKTOP VIEW (x=40, y=60, 1280x720) ==================== -->
-  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="15px" font-weight="bold">DESKTOP (1280×720)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">DESKTOP (1280×720)</text>
 
   <!-- Desktop container -->
   <rect x="40" y="60" width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
 
   <!-- Desktop Header -->
   <g transform="translate(40, 60)">
-    <path d="M 8 0 L 1272 0 A 8 8 0 0 1 1280 8 L 1280 50 L 0 50 L 0 8 A 8 8 0 0 1 8 0 Z" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect width="1280" height="50" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <rect x="15" y="10" width="30" height="30" rx="4" fill="#8b5cf6"/>
-    <text x="55" y="32" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16px" font-weight="700">ScriptHammer</text>
+    <text x="55" y="32" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">ScriptHammer</text>
     <g transform="translate(400, 3)">
-      <g><rect x="0" width="70" height="44" rx="4" fill="transparent"/><text x="35" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Home</text></g>
-      <g><rect x="80" width="90" height="44" rx="4" fill="transparent"/><text x="125" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Features</text></g>
-      <g><rect x="180" width="70" height="44" rx="4" fill="transparent"/><text x="215" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Docs</text></g>
-      <g><rect x="260" width="80" height="44" rx="4" fill="#8b5cf6" opacity="0.2"/><text x="300" y="28" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">Contact</text></g>
+      <rect x="0" width="70" height="44" rx="4" fill="#e8d4b8"/>
+      <text x="35" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Home</text>
+      <rect x="80" width="90" height="44" rx="4" fill="#e8d4b8"/>
+      <text x="125" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Features</text>
+      <rect x="180" width="70" height="44" rx="4" fill="#e8d4b8"/>
+      <text x="215" y="28" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Docs</text>
+      <rect x="260" width="80" height="44" rx="4" fill="#8b5cf6" opacity="0.2"/>
+      <text x="300" y="28" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Contact</text>
     </g>
     <g transform="translate(1100, 3)">
-      <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
-      <g transform="translate(10, 10)"><path fill="#1a1a2e" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z"/></g>
-      <rect x="54" y="0" width="44" height="44" rx="4" fill="transparent"/>
-      <g transform="translate(64, 10)"><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M11.0779 2.25C10.1613 2.25 9.37909 2.91265 9.22841 3.81675L9.04974 4.88873C9.02959 5.00964 8.93542 5.1498 8.75311 5.23747C8.40905 5.40292 8.07967 5.5938 7.7674 5.8076C7.60091 5.92159 7.43259 5.9332 7.31769 5.89015L6.29851 5.50833C5.44019 5.18678 4.4752 5.53289 4.01692 6.32666L3.09493 7.92358C2.63665 8.71736 2.8194 9.72611 3.52704 10.3087L4.36756 11.0006C4.46219 11.0785 4.53629 11.2298 4.52119 11.4307C4.50706 11.6188 4.49988 11.8086 4.49988 12C4.49988 12.1915 4.50707 12.3814 4.52121 12.5695C4.53632 12.7704 4.46221 12.9217 4.36758 12.9996L3.52704 13.6916C2.8194 14.2741 2.63665 15.2829 3.09493 16.0767L4.01692 17.6736C4.4752 18.4674 5.44019 18.8135 6.29851 18.4919L7.31791 18.11C7.43281 18.067 7.60113 18.0786 7.76761 18.1925C8.07982 18.4063 8.40913 18.5971 8.75311 18.7625C8.93542 18.8502 9.02959 18.9904 9.04974 19.1113L9.22841 20.1832C9.37909 21.0874 10.1613 21.75 11.0779 21.75H12.9219C13.8384 21.75 14.6207 21.0874 14.7713 20.1832L14.95 19.1113C14.9702 18.9904 15.0643 18.8502 15.2466 18.7625C15.5907 18.5971 15.9201 18.4062 16.2324 18.1924C16.3988 18.0784 16.5672 18.0668 16.6821 18.1098L17.7012 18.4917C18.5596 18.8132 19.5246 18.4671 19.9828 17.6733L20.9048 16.0764C21.3631 15.2826 21.1804 14.2739 20.4727 13.6913L19.6322 12.9994C19.5376 12.9215 19.4635 12.7702 19.4786 12.5693C19.4927 12.3812 19.4999 12.1914 19.4999 12C19.4999 11.8085 19.4927 11.6186 19.4785 11.4305C19.4634 11.2296 19.5375 11.0783 19.6322 11.0004L20.4727 10.3084C21.1804 9.72587 21.3631 8.71711 20.9048 7.92334L19.9828 6.32642C19.5246 5.53264 18.5596 5.18654 17.7012 5.50809L16.6818 5.89C16.5669 5.93304 16.3986 5.92144 16.2321 5.80746C15.9199 5.59371 15.5906 5.40289 15.2466 5.23747C15.0643 5.1498 14.9702 5.00964 14.95 4.88873L14.7713 3.81675C14.6207 2.91265 13.8384 2.25 12.9219 2.25H11.0779ZM12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25C9.92893 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92893 15.75 12 15.75Z"/></g>
+      <rect x="0" y="0" width="44" height="44" rx="4" fill="#e8d4b8"/>
+      <circle cx="22" cy="22" r="8" fill="none" stroke="#1a1a2e" stroke-width="2"/>
+      <rect x="54" y="0" width="44" height="44" rx="4" fill="#e8d4b8"/>
+      <circle cx="76" cy="22" r="10" fill="none" stroke="#1a1a2e" stroke-width="2"/>
       <circle cx="130" cy="22" r="16" fill="#8b5cf6"/>
-      <text x="130" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px">U</text>
+      <text x="130" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14">U</text>
     </g>
   </g>
 
   <!-- Desktop Content Area -->
   <g transform="translate(40, 110)">
     <!-- Page heading -->
-    <text x="640" y="40" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="28px" font-weight="800">Contact Us</text>
-    <text x="640" y="70" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="16px">Have a question? We'd love to hear from you.</text>
+    <text x="640" y="40" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="28" font-weight="bold">Contact Us</text>
+    <text x="640" y="70" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="16">Have a question? We'd love to hear from you.</text>
 
     <!-- Form Card -->
     <rect x="340" y="100" width="600" height="480" rx="8" fill="#f5ebe0" stroke="#d4c4a8"/>
 
     <!-- Name Field [1] -->
     <g transform="translate(380, 130)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Name *</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Name *</text>
       <rect x="0" y="10" width="520" height="48" rx="6" fill="#fff" stroke="#8b5cf6" stroke-width="2"/>
-      <text x="16" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="16px">John Doe</text>
+      <text x="16" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="16">John Doe</text>
       <!-- Focus indicator ring -->
       <rect x="-2" y="8" width="524" height="52" rx="8" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4,2" opacity="0.5"/>
     </g>
     <!-- Callout 1 -->
     <circle cx="920" cy="270" r="14" fill="#6d28d9"/>
-    <text x="920" y="275" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="12px" font-weight="700">1</text>
+    <text x="920" y="275" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">1</text>
 
     <!-- Email Field [2] with validation error -->
     <g transform="translate(380, 210)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Email *</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Email *</text>
       <rect x="0" y="10" width="520" height="48" rx="6" fill="#fff" stroke="#ef4444" stroke-width="2"/>
-      <text x="16" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="16px">invalid-email</text>
+      <text x="16" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="16">invalid-email</text>
       <!-- Error icon -->
       <g transform="translate(486, 24)">
         <circle cx="12" cy="12" r="10" fill="#ef4444"/>
-        <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">!</text>
+        <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">!</text>
       </g>
       <!-- Inline error message -->
-      <text x="0" y="75" fill="#ef4444" font-family="system-ui, sans-serif" font-size="13px" font-weight="500">Please enter a valid email address</text>
+      <text x="0" y="75" fill="#ef4444" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Please enter a valid email address</text>
     </g>
     <!-- Callout 2 -->
     <circle cx="920" cy="355" r="14" fill="#6d28d9"/>
-    <text x="920" y="360" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="12px" font-weight="700">2</text>
+    <text x="920" y="360" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">2</text>
 
-    <!-- Subject Field [3] -->
+    <!-- Subject Field -->
     <g transform="translate(380, 310)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Subject</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Subject</text>
       <rect x="0" y="10" width="520" height="48" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16px">What's this about?</text>
+      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16">What's this about?</text>
     </g>
 
-    <!-- Message Field [4] with character count -->
+    <!-- Message Field [3] with character count -->
     <g transform="translate(380, 390)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Message * (min 10 characters)</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Message * (min 10 characters)</text>
       <rect x="0" y="10" width="520" height="100" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="40" fill="#374151" font-family="system-ui, sans-serif" font-size="16px">Hi there</text>
+      <text x="16" y="40" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Hi there</text>
       <!-- Character count warning -->
-      <text x="520" y="125" text-anchor="end" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="12px" font-weight="500">8/10 min</text>
+      <text x="520" y="125" text-anchor="end" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="14" font-weight="500">8/10 min</text>
     </g>
     <!-- Callout 3 -->
     <circle cx="920" cy="460" r="14" fill="#6d28d9"/>
-    <text x="920" y="465" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="12px" font-weight="700">3</text>
+    <text x="920" y="465" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">3</text>
 
     <!-- Submit Button [4] -->
     <g transform="translate(380, 530)">
       <rect x="0" y="0" width="520" height="48" rx="6" fill="#3b82f6"/>
-      <text x="260" y="31" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="16px" font-weight="600">Send Message</text>
+      <text x="260" y="31" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Send Message</text>
     </g>
     <!-- Callout 4 -->
     <circle cx="920" cy="564" r="14" fill="#6d28d9"/>
-    <text x="920" y="569" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="12px" font-weight="700">4</text>
+    <text x="920" y="569" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">4</text>
   </g>
 
   <!-- Desktop Footer -->
   <g transform="translate(40, 700)">
-    <path d="M 0 0 L 1280 0 L 1280 72 A 8 8 0 0 1 1272 80 L 8 80 A 8 8 0 0 1 0 72 Z" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect width="1280" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <g transform="translate(20, 20)">
       <rect x="0" y="0" width="24" height="24" rx="4" fill="#8b5cf6"/>
-      <text x="34" y="18" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">ScriptHammer</text>
-      <text x="0" y="45" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Product planning template</text>
+      <text x="34" y="18" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">ScriptHammer</text>
+      <text x="0" y="45" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Product planning template</text>
     </g>
     <g transform="translate(450, 25)">
-      <text x="0" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Features</text>
-      <text x="80" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Documentation</text>
-      <text x="200" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">GitHub</text>
-      <text x="270" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Privacy</text>
-      <text x="330" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Terms</text>
-      <text x="0" y="25" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Built with Next.js 15, Supabase, and Tailwind CSS</text>
+      <text x="0" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Features</text>
+      <text x="80" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Documentation</text>
+      <text x="200" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">GitHub</text>
+      <text x="270" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Privacy</text>
+      <text x="330" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">Terms</text>
+      <text x="0" y="25" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Built with Next.js 15, Supabase, and Tailwind CSS</text>
     </g>
-    <g transform="translate(1260, 30)">
-      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px" text-anchor="end">© ScriptHammer 2026</text>
-      <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px" text-anchor="end">MIT License</text>
+    <g transform="translate(1100, 30)">
+      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14" text-anchor="start">© ScriptHammer 2026</text>
+      <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14" text-anchor="start">MIT License</text>
     </g>
   </g>
 
   <!-- ==================== MOBILE VIEW (x=1360, y=60, 360x720) ==================== -->
-  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15px" font-weight="bold">MOBILE (360×720)</text>
+  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE (360×720)</text>
 
   <!-- Mobile container -->
   <rect x="1360" y="60" width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
@@ -140,26 +138,29 @@
   <!-- Mobile Status Bar + Header -->
   <g transform="translate(1360, 60)">
     <!-- Status bar -->
-    <path d="M 24 0 L 336 0 A 24 24 0 0 1 360 24 L 360 28 L 0 28 L 0 24 A 24 24 0 0 1 24 0 Z" fill="#dcc8a8"/>
-    <text x="20" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">9:41</text>
-    <g transform="translate(280, 4)">
-      <g transform="translate(0, 0) scale(0.667)"><path fill="#1a1a2e" d="M5.636 4.575a.75.75 0 0 1 0 1.061 9 9 0 0 0 0 12.728.75.75 0 1 1-1.06 1.06c-4.101-4.1-4.101-10.748 0-14.849a.75.75 0 0 1 1.06 0Zm12.728 0a.75.75 0 0 1 1.06 0c4.101 4.1 4.101 10.75 0 14.85a.75.75 0 1 1-1.06-1.061 9 9 0 0 0 0-12.728.75.75 0 0 1 0-1.06ZM7.757 6.697a.75.75 0 0 1 0 1.06 6 6 0 0 0 0 8.486.75.75 0 0 1-1.06 1.06 7.5 7.5 0 0 1 0-10.606.75.75 0 0 1 1.06 0Zm8.486 0a.75.75 0 0 1 1.06 0 7.5 7.5 0 0 1 0 10.606.75.75 0 0 1-1.06-1.06 6 6 0 0 0 0-8.486.75.75 0 0 1 0-1.06ZM9.879 8.818a.75.75 0 0 1 0 1.06 3 3 0 0 0 0 4.243.75.75 0 1 1-1.061 1.061 4.5 4.5 0 0 1 0-6.364.75.75 0 0 1 1.06 0Zm4.242 0a.75.75 0 0 1 1.061 0 4.5 4.5 0 0 1 0 6.364.75.75 0 0 1-1.06-1.06 3 3 0 0 0 0-4.243.75.75 0 0 1 0-1.061ZM10.875 12a1.125 1.125 0 1 1 2.25 0 1.125 1.125 0 0 1-2.25 0Z"/></g>
-      <g transform="translate(20, 0) scale(0.667)"><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M.75 9.75a3 3 0 0 1 3-3h15a3 3 0 0 1 3 3v.038c.856.173 1.5.93 1.5 1.837v.75c0 .907-.644 1.664-1.5 1.838v.037a3 3 0 0 1-3 3h-15a3 3 0 0 1-3-3v-4.5Zm3-1.5a1.5 1.5 0 0 0-1.5 1.5v4.5a1.5 1.5 0 0 0 1.5 1.5h15a1.5 1.5 0 0 0 1.5-1.5v-4.5a1.5 1.5 0 0 0-1.5-1.5h-15Z"/><path fill="#1a1a2e" d="M3 10.5a.75.75 0 0 1 .75-.75h13.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-.75.75H3.75a.75.75 0 0 1-.75-.75v-3Z"/></g>
+    <rect width="360" height="28" rx="24" fill="#dcc8a8"/>
+    <text x="20" y="18" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">9:41</text>
+    <g transform="translate(300, 8)">
+      <rect width="16" height="10" rx="2" fill="none" stroke="#1a1a2e" stroke-width="1.5"/>
+      <rect x="16" y="3" width="2" height="4" fill="#1a1a2e"/>
+      <rect x="2" y="2" width="10" height="6" fill="#1a1a2e"/>
     </g>
     <!-- Header bar -->
     <g transform="translate(0, 28)">
       <rect width="360" height="50" fill="#dcc8a8" stroke="#b8a080"/>
-      <rect x="3" y="3" width="44" height="44" rx="4" fill="transparent"/>
-      <g transform="translate(13, 13)"><path fill="#2d3748" fill-rule="evenodd" clip-rule="evenodd" d="M3 6.75A.75.75 0 0 1 3.75 6h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 6.75ZM3 12a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 12Zm0 5.25a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75Z"/></g>
-      <rect x="55" y="10" width="24" height="24" rx="4" fill="#8b5cf6"/>
-      <text x="85" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">ScriptHammer</text>
-      <g transform="translate(220, 3)">
-        <rect x="0" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <g transform="translate(10, 10)"><path fill="#1a1a2e" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z"/></g>
-        <rect x="44" y="0" width="44" height="44" rx="4" fill="transparent"/>
-        <g transform="translate(54, 10)"><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M11.0779 2.25C10.1613 2.25 9.37909 2.91265 9.22841 3.81675L9.04974 4.88873C9.02959 5.00964 8.93542 5.1498 8.75311 5.23747C8.40905 5.40292 8.07967 5.5938 7.7674 5.8076C7.60091 5.92159 7.43259 5.9332 7.31769 5.89015L6.29851 5.50833C5.44019 5.18678 4.4752 5.53289 4.01692 6.32666L3.09493 7.92358C2.63665 8.71736 2.8194 9.72611 3.52704 10.3087L4.36756 11.0006C4.46219 11.0785 4.53629 11.2298 4.52119 11.4307C4.50706 11.6188 4.49988 11.8086 4.49988 12C4.49988 12.1915 4.50707 12.3814 4.52121 12.5695C4.53632 12.7704 4.46221 12.9217 4.36758 12.9996L3.52704 13.6916C2.8194 14.2741 2.63665 15.2829 3.09493 16.0767L4.01692 17.6736C4.4752 18.4674 5.44019 18.8135 6.29851 18.4919L7.31791 18.11C7.43281 18.067 7.60113 18.0786 7.76761 18.1925C8.07982 18.4063 8.40913 18.5971 8.75311 18.7625C8.93542 18.8502 9.02959 18.9904 9.04974 19.1113L9.22841 20.1832C9.37909 21.0874 10.1613 21.75 11.0779 21.75H12.9219C13.8384 21.75 14.6207 21.0874 14.7713 20.1832L14.95 19.1113C14.9702 18.9904 15.0643 18.8502 15.2466 18.7625C15.5907 18.5971 15.9201 18.4062 16.2324 18.1924C16.3988 18.0784 16.5672 18.0668 16.6821 18.1098L17.7012 18.4917C18.5596 18.8132 19.5246 18.4671 19.9828 17.6733L20.9048 16.0764C21.3631 15.2826 21.1804 14.2739 20.4727 13.6913L19.6322 12.9994C19.5376 12.9215 19.4635 12.7702 19.4786 12.5693C19.4927 12.3812 19.4999 12.1914 19.4999 12C19.4999 11.8085 19.4927 11.6186 19.4785 11.4305C19.4634 11.2296 19.5375 11.0783 19.6322 11.0004L20.4727 10.3084C21.1804 9.72587 21.3631 8.71711 20.9048 7.92334L19.9828 6.32642C19.5246 5.53264 18.5596 5.18654 17.7012 5.50809L16.6818 5.89C16.5669 5.93304 16.3986 5.92144 16.2321 5.80746C15.9199 5.59371 15.5906 5.40289 15.2466 5.23747C15.0643 5.1498 14.9702 5.00964 14.95 4.88873L14.7713 3.81675C14.6207 2.91265 13.8384 2.25 12.9219 2.25H11.0779ZM12 15.75C14.0711 15.75 15.75 14.0711 15.75 12C15.75 9.92893 14.0711 8.25 12 8.25C9.92893 8.25 8.25 9.92893 8.25 12C8.25 14.0711 9.92893 15.75 12 15.75Z"/></g>
-        <circle cx="110" cy="22" r="14" fill="#8b5cf6"/>
-        <text x="110" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14px">U</text>
+      <rect x="3" y="3" width="44" height="44" rx="4" fill="#e8d4b8"/>
+      <g transform="translate(15, 15)">
+        <rect width="20" height="2" fill="#2d3748"/>
+        <rect y="7" width="20" height="2" fill="#2d3748"/>
+        <rect y="14" width="20" height="2" fill="#2d3748"/>
+      </g>
+      <rect x="55" y="13" width="24" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="85" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="500">ScriptHammer</text>
+      <g transform="translate(264, 3)">
+        <rect x="0" y="0" width="44" height="44" rx="4" fill="#e8d4b8"/>
+        <circle cx="22" cy="22" r="8" fill="none" stroke="#1a1a2e" stroke-width="2"/>
+        <circle cx="70" cy="22" r="14" fill="#8b5cf6"/>
+        <text x="70" y="27" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14">U</text>
       </g>
     </g>
   </g>
@@ -167,159 +168,165 @@
   <!-- Mobile Content -->
   <g transform="translate(1360, 138)">
     <!-- Page title -->
-    <text x="180" y="30" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="22px" font-weight="800">Contact Us</text>
-    <text x="180" y="52" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Have a question?</text>
+    <text x="180" y="30" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="22" font-weight="bold">Contact Us</text>
+    <text x="180" y="52" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Have a question?</text>
 
     <!-- Mobile Form (stacked, full-width) -->
     <!-- Name Field [5] -->
     <g transform="translate(16, 75)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Name *</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Name *</text>
       <rect x="0" y="10" width="328" height="48" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16px">Your name</text>
+      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16">Your name</text>
     </g>
     <!-- Callout 5 -->
-    <circle cx="16" cy="122" r="12" fill="#6d28d9"/>
-    <text x="16" y="127" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">5</text>
+    <circle cx="16" cy="122" r="14" fill="#6d28d9"/>
+    <text x="16" y="127" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">5</text>
 
-    <!-- Email Field [6] -->
+    <!-- Email Field -->
     <g transform="translate(16, 150)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Email *</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Email *</text>
       <rect x="0" y="10" width="328" height="48" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16px">your@email.com</text>
+      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16">your@email.com</text>
     </g>
 
     <!-- Subject Field -->
     <g transform="translate(16, 225)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Subject</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Subject</text>
       <rect x="0" y="10" width="328" height="48" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16px">Optional subject</text>
+      <text x="16" y="42" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16">Optional subject</text>
     </g>
 
     <!-- Message Field [6] -->
     <g transform="translate(16, 300)">
-      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Message *</text>
+      <text x="0" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Message *</text>
       <rect x="0" y="10" width="328" height="120" rx="6" fill="#fff" stroke="#d1d5db" stroke-width="1"/>
-      <text x="16" y="40" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16px">Your message (min 10 chars)</text>
-      <text x="328" y="145" text-anchor="end" fill="#6b7280" font-family="system-ui, sans-serif" font-size="12px">0/10 min</text>
+      <text x="16" y="40" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="16">Your message (min 10 chars)</text>
+      <text x="328" y="145" text-anchor="end" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">0/10 min</text>
     </g>
     <!-- Callout 6 -->
-    <circle cx="16" cy="385" r="12" fill="#6d28d9"/>
-    <text x="16" y="390" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">6</text>
+    <circle cx="16" cy="385" r="14" fill="#6d28d9"/>
+    <text x="16" y="390" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">6</text>
 
     <!-- Submit Button -->
     <g transform="translate(16, 450)">
       <rect x="0" y="0" width="328" height="48" rx="6" fill="#3b82f6"/>
-      <text x="164" y="31" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="16px" font-weight="600">Send Message</text>
+      <text x="164" y="31" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Send Message</text>
     </g>
   </g>
 
   <!-- Mobile Bottom Nav -->
   <g transform="translate(1360, 724)">
-    <path d="M 0 0 L 360 0 L 360 32 A 24 24 0 0 1 336 56 L 24 56 A 24 24 0 0 1 0 32 Z" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect width="360" height="56" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <g transform="translate(0, 0)">
-      <path d="M 0 0 L 90 0 L 90 56 L 24 56 A 24 24 0 0 1 0 32 L 0 0 Z" fill="transparent"/>
-      <g transform="translate(33, 6)"><path fill="#1a1a2e" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/><path fill="#1a1a2e" d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/></g>
-      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Home</text>
+      <rect width="90" height="56" rx="8" fill="#e8d4b8"/>
+      <g transform="translate(33, 8)">
+        <path fill="#1a1a2e" d="M12 3L4 9v12h5v-7h6v7h5V9L12 3z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Home</text>
     </g>
     <g transform="translate(90, 0)">
-      <rect width="90" height="56" fill="transparent"/>
-      <g transform="translate(33, 6)"><path fill="#1a1a2e" d="M14.6152 1.59492C14.9164 1.76287 15.0643 2.1146 14.9736 2.44734L12.9819 9.75H20.25C20.5486 9.75 20.8188 9.92718 20.9378 10.2011C21.0569 10.475 21.0021 10.7934 20.7983 11.0117L10.2983 22.2617C10.063 22.5139 9.68601 22.573 9.38478 22.4051C9.08354 22.2371 8.93567 21.8854 9.02641 21.5527L11.018 14.25H3.74999C3.45134 14.25 3.18115 14.0728 3.06213 13.7989C2.9431 13.525 2.99792 13.2066 3.20169 12.9883L13.7017 1.73826C13.937 1.48613 14.314 1.42698 14.6152 1.59492Z"/></g>
-      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Features</text>
+      <rect width="90" height="56" fill="#e8d4b8"/>
+      <g transform="translate(33, 8)">
+        <path fill="#1a1a2e" d="M13 3L4 14h7v7h4v-7h7L13 3z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Features</text>
     </g>
     <g transform="translate(180, 0)">
-      <rect width="90" height="56" fill="transparent"/>
-      <g transform="translate(33, 6)"><path fill="#1a1a2e" d="M5.625 1.5C4.58947 1.5 3.75 2.33947 3.75 3.375V20.625C3.75 21.6605 4.58947 22.5 5.625 22.5H18.375C19.4105 22.5 20.25 21.6605 20.25 20.625V12.75C20.25 10.6789 18.5711 9 16.5 9H14.625C13.5895 9 12.75 8.16053 12.75 7.125V5.25C12.75 3.17893 11.0711 1.5 9 1.5H5.625ZM7.5 15C7.5 14.5858 7.83579 14.25 8.25 14.25H15.75C16.1642 14.25 16.5 14.5858 16.5 15C16.5 15.4142 16.1642 15.75 15.75 15.75H8.25C7.83579 15.75 7.5 15.4142 7.5 15ZM8.25 17.25C7.83579 17.25 7.5 17.5858 7.5 18C7.5 18.4142 7.83579 18.75 8.25 18.75H12C12.4142 18.75 12.75 18.4142 12.75 18C12.75 17.5858 12.4142 17.25 12 17.25H8.25Z"/><path fill="#1a1a2e" d="M12.9712 1.8159C13.768 2.73648 14.25 3.93695 14.25 5.25V7.125C14.25 7.33211 14.4179 7.5 14.625 7.5H16.5C17.8131 7.5 19.0135 7.98204 19.9341 8.77881C19.0462 5.37988 16.3701 2.70377 12.9712 1.8159Z"/></g>
-      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Docs</text>
+      <rect width="90" height="56" fill="#e8d4b8"/>
+      <g transform="translate(33, 8)">
+        <path fill="#1a1a2e" d="M6 2a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6H6zm7 1.5L18.5 9H13V3.5z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Docs</text>
     </g>
     <g transform="translate(270, 0)">
-      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="transparent"/>
-      <g transform="translate(33, 6)"><path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/></g>
-      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Account</text>
+      <rect width="90" height="56" rx="8" fill="#e8d4b8"/>
+      <g transform="translate(33, 8)">
+        <circle cx="12" cy="8" r="4" fill="#1a1a2e"/>
+        <path fill="#1a1a2e" d="M12 14c-4 0-8 2-8 4v2h16v-2c0-2-4-4-8-4z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Account</text>
     </g>
   </g>
 
   <!-- ==================== ANNOTATION PANEL (x=40, y=800, 1840x220) ==================== -->
-  <rect x="40" y="800" width="1840" height="220" rx="8" fill="#f5ebe0" stroke="#d4c4a8"/>
+  <rect id="annotations" x="40" y="800" width="1840" height="220" rx="8" fill="#f5ebe0" stroke="#d4c4a8"/>
 
   <!-- Annotation Title -->
-  <text x="60" y="830" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16px" font-weight="700">Annotations: Contact Form UI</text>
+  <text x="60" y="830" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Annotations: Contact Form UI</text>
 
   <!-- Column 1 -->
   <g transform="translate(60, 850)">
     <g>
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">1</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Name Field</text>
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">1</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Name Field</text>
     </g>
-    <text x="32" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Required field with min 2 character validation.</text>
-    <text x="32" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Visible focus ring for a11y compliance.</text>
-    <text x="32" y="72" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">aria-required="true" attribute.</text>
+    <text x="36" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Required field with min 2 char validation.</text>
+    <text x="36" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Visible focus ring for a11y compliance.</text>
 
-    <g transform="translate(0, 90)">
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">2</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Email Field (Error State)</text>
+    <g transform="translate(0, 70)">
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">2</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Email Field (Error State)</text>
     </g>
-    <text x="32" y="128" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Red border + icon indicates validation error.</text>
-    <text x="32" y="145" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Inline error message below field.</text>
-    <text x="32" y="162" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">aria-invalid="true" and aria-describedby.</text>
+    <text x="36" y="108" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Red border + icon indicates validation error.</text>
+    <text x="36" y="125" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Inline error message below field.</text>
   </g>
 
   <!-- Column 2 -->
   <g transform="translate(460, 850)">
     <g>
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">3</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Message Field</text>
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">3</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Message Field</text>
     </g>
-    <text x="32" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Textarea with min 10 character requirement.</text>
-    <text x="32" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Live character counter shows progress.</text>
-    <text x="32" y="72" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Warning color (amber) when below minimum.</text>
+    <text x="36" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Textarea with min 10 character requirement.</text>
+    <text x="36" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Live character counter shows progress.</text>
 
-    <g transform="translate(0, 90)">
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">4</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Submit Button</text>
+    <g transform="translate(0, 70)">
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">4</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Submit Button</text>
     </g>
-    <text x="32" y="128" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Primary action button, full-width on mobile.</text>
-    <text x="32" y="145" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Disabled state when form invalid.</text>
-    <text x="32" y="162" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">48px height meets touch target requirements.</text>
+    <text x="36" y="108" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Primary action button, full-width on mobile.</text>
+    <text x="36" y="125" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">48px height meets touch target requirements.</text>
   </g>
 
   <!-- Column 3 -->
   <g transform="translate(860, 850)">
     <g>
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">5</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Mobile Form Layout</text>
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">5</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Mobile Form Layout</text>
     </g>
-    <text x="32" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Stacked single-column layout for mobile.</text>
-    <text x="32" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Full-width inputs (328px with 16px margins).</text>
-    <text x="32" y="72" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Touch-optimized 48px input heights.</text>
+    <text x="36" y="38" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Stacked single-column layout for mobile.</text>
+    <text x="36" y="55" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Full-width inputs (328px with 16px margins).</text>
 
-    <g transform="translate(0, 90)">
-      <circle cx="12" cy="12" r="12" fill="#6d28d9"/>
-      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11px" font-weight="700">6</text>
-      <text x="32" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Mobile Message Field</text>
+    <g transform="translate(0, 70)">
+      <circle cx="12" cy="12" r="14" fill="#6d28d9"/>
+      <text x="12" y="17" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">6</text>
+      <text x="36" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Mobile Message Field</text>
     </g>
-    <text x="32" y="128" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Taller textarea (120px) for message input.</text>
-    <text x="32" y="145" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Character counter in bottom-right corner.</text>
-    <text x="32" y="162" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">Scrollable when content exceeds height.</text>
+    <text x="36" y="108" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Taller textarea (120px) for message input.</text>
+    <text x="36" y="125" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Character counter in bottom-right corner.</text>
   </g>
 
   <!-- Column 4 - Requirements -->
   <g transform="translate(1260, 850)">
-    <text x="0" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">Requirements Covered</text>
-    <text x="0" y="42" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">FR-001: Web3Forms API integration</text>
-    <text x="0" y="59" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">FR-006/007/008: Name, email, message fields</text>
-    <text x="0" y="76" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">FR-009/010: Inline validation errors</text>
-    <text x="0" y="93" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">FR-020: Proper labels for all fields</text>
-    <text x="0" y="110" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">FR-021: Focus indicators visible</text>
-
-    <text x="0" y="140" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14px" font-weight="600">A11y Compliance</text>
-    <text x="0" y="162" fill="#4b5563" font-family="system-ui, sans-serif" font-size="13px">WCAG AA: 4.5:1 contrast, 44px touch targets</text>
+    <text x="0" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Requirements Covered</text>
+    <text x="0" y="42" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">FR-001: Web3Forms API integration</text>
+    <text x="0" y="59" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">FR-006/007/008: Name, email, message</text>
+    <text x="0" y="76" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">FR-009/010: Inline validation errors</text>
+    <text x="0" y="93" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">FR-020: Proper labels for all fields</text>
+    <text x="0" y="110" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">FR-021: Focus indicators visible</text>
   </g>
 
-  <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">Generator1 | 022-web3forms-integration | 01-contact-form-ui.svg</text>
+  <!-- Key Concepts Row -->
+  <g transform="translate(60, 940)">
+    <text x="0" y="17" fill="#2d3748" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Key Concepts:</text>
+    <text x="110" y="17" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">Web3Forms serverless API • Inline validation • WCAG AA 4.5:1 contrast • 44px touch targets • aria-invalid/describedby</text>
+  </g>
+
+  <!-- Signature (LEFT-ALIGNED at x=40, 18px bold) -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">022:01 | Web3Forms Integration | ScriptHammer</text>
 </svg>

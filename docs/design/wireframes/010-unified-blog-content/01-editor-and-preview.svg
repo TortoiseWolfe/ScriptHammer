@@ -136,7 +136,7 @@
     <text x="740" y="251" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/>
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
     <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Last saved: 2 seconds ago</text>
     <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">All changes synced</text>
 
@@ -283,5 +283,11 @@
   </g>
 
   <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Editor and Preview</text>
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">MDX editor | conflict resolution | autosave | version history</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Editor and Preview</text>
 </svg>

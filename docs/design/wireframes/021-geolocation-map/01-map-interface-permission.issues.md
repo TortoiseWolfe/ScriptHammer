@@ -39,3 +39,11 @@
 | V-01 | Nav active state shows "Features" - CORRECT for geolocation feature pages | G-039 | OK |
 
 **Note**: Geolocation map is a feature; "Features" nav active is correct. Signature issues (X-01 to X-03) already logged are the primary blockers requiring REGENERATE.
+
+## Inspector Issues (2026-01-16)
+
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer v0.1 - Map Interface Permission Fl..." | PATTERN_VIOLATION |
+| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |

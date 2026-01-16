@@ -22,10 +22,11 @@
     {
       "svg": "03-error-states-names.svg",
       "focus": "Decryption failure UX: lock icon with explanatory text and tooltip. Participant name resolution: display name vs username vs 'Deleted User' vs 'Unknown User'. Show multiple undecryptable messages individually.",
-      "userStories": ["US-004", "US-005"],
+      "userStories": ["US-005", "US-004"],
       "requirements": ["FR-012", "FR-013", "FR-014", "FR-015", "FR-016", "FR-017", "FR-018", "FR-019"],
       "criteria": ["SC-004", "SC-005"],
-      "mode": "new"
+      "mode": "new",
+      "specOrderFix": "2026-01-16 - Reordered to match visual UI layout: Name Resolution (header/top) → Decryption Failure (messages/middle)"
     }
   ]
 }

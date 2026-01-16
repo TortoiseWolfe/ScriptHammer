@@ -100,7 +100,7 @@
     <circle cx="1260" cy="290" r="14" fill="#dc2626"/>
     <text x="1260" y="296" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">4</text>
 
-    <rect y="670" width="1280" height="50" fill="#1a1a2e"/>
+    <rect y="670" width="1280" height="50" fill="#1a1a2e"/ rx="8">
     <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">2026 ScriptHammer - Privacy - Terms - Contact</text>
   </g>
 
@@ -132,7 +132,7 @@
       <text x="30" y="505" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Upload within 5 seconds</text>
       <a href="#SC-001"><rect x="250" y="488" width="60" height="22" rx="4" fill="#ea580c"/><text x="280" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">SC-001</text></a>
     </g>
-    <rect y="664" width="360" height="56" fill="#1a1a2e"/>
+    <rect y="664" width="360" height="56" fill="#1a1a2e"/ rx="8">
     <text x="45" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
     <text x="135" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
     <text x="225" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
@@ -221,5 +221,14 @@
     </g>
   </g>
 
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">008:01 | User Avatar Upload | ScriptHammer</text>
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">avatar upload | image processing | storage bucket | profile updates</text>
+
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">008:01 | User Avatar Upload | ScriptHammer</text>
 </svg>

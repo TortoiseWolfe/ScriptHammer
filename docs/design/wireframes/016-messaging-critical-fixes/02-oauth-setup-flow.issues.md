@@ -39,3 +39,11 @@
 | V-01 | Nav shows "Features" but OAuth setup could warrant "Account" active | G-039 | REVIEW |
 
 **Note**: OAuth setup flow straddles Features (messaging) and Account (auth). Current "Features" active is acceptable but "Account" may be more appropriate. Signature issues (X-01 to X-03) are primary blockers.
+
+## Inspector Issues (2026-01-16)
+
+| Check | Expected | Actual | Classification |
+|-------|----------|--------|----------------|
+| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer v0.1 - OAuth Setup Flow - 016-mess..." | PATTERN_VIOLATION |
+| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |

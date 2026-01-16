@@ -31,12 +31,12 @@
 - Re-validation confirms 0 errors
 - Run validator to refresh: `python validate-wireframe.py 019-google-analytics/01-consent-flow.svg`
 
-## Inspector Issues (2026-01-15)
+## Inspector Issues (2026-01-16)
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
-| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
+| mobile_active_icon_missing | mobile active state includes white icon path | active state has text only, no icon | PATTERN_VIOLATION |
+| mobile_active_corner_shape | corner tabs (Home/Account) use <path> with rounded corner | corner tab uses <rect> (missing rounded corner) | PATTERN_VIOLATION |
 
 ## Visual Review (2026-01-15 Auditor)
 

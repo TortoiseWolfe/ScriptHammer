@@ -2,7 +2,7 @@
 
 **Feature:** 014-admin-welcome-email-gate
 **SVG:** 01-verification-gate.svg
-**Last Review:** 2026-01-15
+**Last Review:** 2026-01-16
 **Validator:** v5.0
 
 ---
@@ -11,20 +11,17 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 4 |
+| Open | 1 |
 
 ---
 
-## Open Issues (2026-01-15 Review)
+## Open Issues (2026-01-16 Review)
 
 ### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | REGENERATE |
-| X-02 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | REGENERATE |
-| X-03 | Signature format wrong: 'ScriptHammer Wireframe v5 - 014-adm... | SIGNATURE-004 | REGENERATE |
-| X-04 | Desktop footer missing rounded corners - add rx="4" or rx="8... | G-044 | REGENERATE |
+| X-01 | Failed to parse SVG: not well-formed (invalid token): line 9... | PARSE | REGENERATE |
 
 ---
 

@@ -158,7 +158,7 @@
     <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/>
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
     <rect x="20" y="682" width="140" height="28" rx="4" fill="#6b7280"/>
     <text x="90" y="701" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#faf8f5">Cancel</text>
     <rect x="180" y="682" width="200" height="28" rx="4" fill="#22c55e"/>
@@ -288,5 +288,11 @@
   </g>
 
   <!-- Signature -->
-  <text x="960" y="1060" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Conflict Resolution</text>
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+
+  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">MDX editor | conflict resolution | autosave | version history</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Conflict Resolution</text>
 </svg>

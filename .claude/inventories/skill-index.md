@@ -1,6 +1,6 @@
 # Skill Index
 
-Generated: 2026-01-15 | Refresh: `/refresh-inventories`
+Generated: 2026-01-16 | Refresh: `/refresh-inventories`
 
 ## Workflow Skills
 
@@ -136,6 +136,7 @@ CLI tools for validation, scaffolding, and automation. Run with `python scripts/
 | Script | Description | Key Flags |
 |--------|-------------|-----------|
 | build-commit.py | Automated build and commit | `--dry-run`, `--json` |
+| build-inventory.py | Spec inventory builder | `--json`, `--summary`, `--incomplete` |
 | project-status.py | Project health dashboard | `--json`, `--summary` |
 | queue-status.py | Task queue status | `--json`, `--summary` |
 | priority-calculator.py | Task priority scoring | `--json`, `--summary` |

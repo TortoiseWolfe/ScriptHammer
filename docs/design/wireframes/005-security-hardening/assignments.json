@@ -6,16 +6,18 @@
     {
       "svg": "01-security-ux-enhancements.svg",
       "focus": "Password strength indicator with real-time feedback, email validation error states, and brute force lockout countdown UI",
-      "userStories": ["US-3", "US-7", "US-8"],
+      "userStories": ["US-7", "US-8", "US-3"],
       "requirements": ["FR-012", "FR-021", "FR-022", "FR-023", "FR-024", "FR-034", "FR-035", "FR-036", "FR-037"],
-      "mode": "new"
+      "mode": "new",
+      "specOrderFix": "2026-01-16 - Reordered to match visual flow: Email Validation (top) → Password Strength (middle) → Brute Force Prevention (bottom/lockout)"
     },
     {
       "svg": "02-session-timeout-warning.svg",
       "focus": "Session timeout warning modal with countdown, stay signed in button, and automatic sign-out flow",
-      "userStories": ["US-9", "US-10"],
+      "userStories": ["US-3", "US-9", "US-10"],
       "requirements": ["FR-029", "FR-030", "FR-031", "FR-032", "FR-033", "FR-036"],
-      "mode": "new"
+      "mode": "new",
+      "specOrderFix": "2026-01-16 - Reordered to match chronological session flow: Remember Me Option (sign in) → Session Activity (active) → Timeout Warning (expiry)"
     },
     {
       "svg": "03-security-audit-dashboard.svg",
