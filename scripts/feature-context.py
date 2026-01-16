@@ -29,6 +29,7 @@ Examples:
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -41,6 +42,7 @@ PROJECT_ROOT = SCRIPT_DIR.parent
 FEATURES_DIR = PROJECT_ROOT / "features"
 WIREFRAMES_DIR = PROJECT_ROOT / "docs" / "design" / "wireframes"
 IMPL_ORDER_FILE = FEATURES_DIR / "IMPLEMENTATION_ORDER.md"
+CACHE_DIR = PROJECT_ROOT / ".cache" / "feature-context"
 
 # Feature categories (subdirectories)
 CATEGORIES = [
@@ -276,8 +278,101 @@ def get_dependencies(feature_num: str) -> dict:
     return deps
 
 
-def build_feature_context(feature_id: str) -> dict:
-    """Build complete feature context"""
+def get_cache_path(feature_num: str) -> Path:
+    """Get cache file path for a feature"""
+    return CACHE_DIR / f"{feature_num}.json"
+
+
+def get_source_mtime(feature_dir: Path, feature_num: str) -> float:
+    """Get newest mtime from all source files for cache invalidation"""
+    mtimes = []
+
+    # Check spec.md
+    spec_file = feature_dir / "spec" / "spec.md"
+    if spec_file.exists():
+        mtimes.append(spec_file.stat().st_mtime)
+
+    # Check feature file
+    for f in feature_dir.glob("*_feature.md"):
+        mtimes.append(f.stat().st_mtime)
+
+    # Check IMPLEMENTATION_ORDER.md
+    if IMPL_ORDER_FILE.exists():
+        mtimes.append(IMPL_ORDER_FILE.stat().st_mtime)
+
+    # Check wireframe directory
+    wf_dir = None
+    for d in WIREFRAMES_DIR.iterdir():
+        if d.is_dir() and d.name.startswith(f"{feature_num}-"):
+            wf_dir = d
+            break
+
+    if wf_dir:
+        for f in wf_dir.glob("*.svg"):
+            mtimes.append(f.stat().st_mtime)
+        for f in wf_dir.glob("*.issues.md"):
+            mtimes.append(f.stat().st_mtime)
+
+    return max(mtimes) if mtimes else 0
+
+
+def is_cache_valid(cache_path: Path, feature_dir: Path, feature_num: str) -> bool:
+    """Check if cache is still valid (source files haven't changed)"""
+    if not cache_path.exists():
+        return False
+
+    cache_mtime = cache_path.stat().st_mtime
+    source_mtime = get_source_mtime(feature_dir, feature_num)
+
+    return cache_mtime > source_mtime
+
+
+def load_from_cache(feature_num: str) -> dict:
+    """Load feature context from cache if valid"""
+    cache_path = get_cache_path(feature_num)
+    if not cache_path.exists():
+        return None
+
+    try:
+        with open(cache_path, "r") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return None
+
+
+def save_to_cache(feature_num: str, context: dict) -> None:
+    """Save feature context to cache"""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    cache_path = get_cache_path(feature_num)
+
+    try:
+        with open(cache_path, "w") as f:
+            json.dump(context, f, indent=2)
+    except IOError as e:
+        print(f"Warning: Could not write cache: {e}", file=sys.stderr)
+
+
+def clear_cache(feature_num: str = None) -> int:
+    """Clear cache for a feature or all features"""
+    if not CACHE_DIR.exists():
+        return 0
+
+    cleared = 0
+    if feature_num:
+        cache_path = get_cache_path(feature_num)
+        if cache_path.exists():
+            cache_path.unlink()
+            cleared = 1
+    else:
+        for cache_file in CACHE_DIR.glob("*.json"):
+            cache_file.unlink()
+            cleared += 1
+
+    return cleared
+
+
+def build_feature_context(feature_id: str, use_cache: bool = True) -> dict:
+    """Build complete feature context (with caching)"""
     feature_dir, category = find_feature_dir(feature_id)
 
     if not feature_dir:
@@ -285,6 +380,15 @@ def build_feature_context(feature_id: str) -> dict:
 
     # Extract feature number from directory name
     feature_num = feature_dir.name.split('-')[0].zfill(3)
+
+    # Check cache first
+    if use_cache:
+        cache_path = get_cache_path(feature_num)
+        if is_cache_valid(cache_path, feature_dir, feature_num):
+            cached = load_from_cache(feature_num)
+            if cached:
+                cached["_from_cache"] = True
+                return cached
 
     context = {
         "feature_id": feature_num,
@@ -323,6 +427,11 @@ def build_feature_context(feature_id: str) -> dict:
 
     # Get dependencies
     context["dependencies"] = get_dependencies(feature_num)
+
+    # Save to cache for next time
+    if use_cache:
+        save_to_cache(feature_num, context)
+        context["_from_cache"] = False
 
     return context
 
@@ -388,13 +497,16 @@ def search_features(term: str) -> list:
 
 # Command handlers
 
-def cmd_context(feature_id: str, args):
+def cmd_context(feature_id: str, args, use_cache: bool = True):
     """Load feature context"""
-    context = build_feature_context(feature_id)
+    context = build_feature_context(feature_id, use_cache=use_cache)
 
     if not context:
         print(f"Error: Feature '{feature_id}' not found", file=sys.stderr)
         sys.exit(1)
+
+    # Show cache status in text output
+    from_cache = context.pop("_from_cache", None)
 
     # Filter output based on flags
     output = context
@@ -412,7 +524,8 @@ def cmd_context(feature_id: str, args):
         print(json.dumps(output, indent=2))
     else:
         # Text format
-        print(f"Feature: {context['feature_name']}")
+        cache_note = " (cached)" if from_cache else " (fresh)" if from_cache is not None else ""
+        print(f"Feature: {context['feature_name']}{cache_note}")
         print(f"Category: {context['category']}")
         print(f"Path: {context['path']}")
         print()
@@ -511,7 +624,18 @@ def main():
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--summary", action="store_true", help="One-line summary")
 
+    # Cache control
+    parser.add_argument("--no-cache", action="store_true", help="Skip cache, parse fresh")
+    parser.add_argument("--clear-cache", action="store_true", help="Clear cache (all or specific feature)")
+
     args = parser.parse_args()
+
+    # Handle cache clear
+    if args.clear_cache:
+        feature_num = args.command if args.command not in ["list", "search"] else None
+        cleared = clear_cache(feature_num)
+        print(f"Cleared {cleared} cache file(s)")
+        return
 
     # Handle summary
     if args.summary:
@@ -528,7 +652,7 @@ def main():
         cmd_search(args.args[0], args)
     else:
         # Assume it's a feature identifier
-        cmd_context(args.command, args)
+        cmd_context(args.command, args, use_cache=not args.no_cache)
 
 
 if __name__ == "__main__":

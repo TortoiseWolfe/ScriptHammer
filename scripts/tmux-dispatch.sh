@@ -9,6 +9,9 @@ SESSION="scripthammer"
 STATUS_FILE="docs/design/wireframes/.terminal-status.json"
 AUDIT_FILE="docs/interoffice/audits/2026-01-14-organizational-review.md"
 PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
+PRECOMPUTE_SCRIPT="$PROJECT_DIR/scripts/dispatch-precompute.py"
+PRECOMPUTE_CACHE="/tmp/dispatch-precompute-$(date +%Y-%m-%d).json"
+USE_PRECOMPUTE=true
 
 # Lookup window by role name (not hardcoded numbers)
 # Windows are named after roles - find them dynamically
@@ -25,6 +28,86 @@ check_session() {
     echo "Run './scripts/tmux-session.sh --all' first."
     exit 1
   fi
+}
+
+# Precompute task assignments (reduces ~500 token prompts to ~50 tokens)
+precompute_tasks() {
+  local DATE="${1:-$(date +%Y-%m-%d)}"
+
+  if [ "$USE_PRECOMPUTE" != "true" ]; then
+    return 1
+  fi
+
+  if [ ! -f "$PRECOMPUTE_SCRIPT" ]; then
+    echo "  [WARN] Precompute script not found: $PRECOMPUTE_SCRIPT"
+    return 1
+  fi
+
+  echo "  Pre-computing task assignments for $DATE..."
+  python3 "$PRECOMPUTE_SCRIPT" audit "$DATE" --json > "$PRECOMPUTE_CACHE" 2>/dev/null
+
+  if [ $? -ne 0 ] || [ ! -s "$PRECOMPUTE_CACHE" ]; then
+    echo "  [WARN] Precompute failed, falling back to verbose prompts"
+    rm -f "$PRECOMPUTE_CACHE"
+    return 1
+  fi
+
+  echo "  [OK] Task assignments cached to $PRECOMPUTE_CACHE"
+  return 0
+}
+
+# Get tasks for a specific role from precomputed cache
+get_precomputed_tasks() {
+  local ROLE="$1"
+  local ROLE_LOWER=$(echo "$ROLE" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g')
+
+  if [ ! -f "$PRECOMPUTE_CACHE" ]; then
+    return 1
+  fi
+
+  # Extract tasks for this role from the JSON cache
+  python3 "$PRECOMPUTE_SCRIPT" for "$ROLE_LOWER" --json 2>/dev/null
+}
+
+# Build minimal prompt from precomputed tasks (reduces ~500 to ~50 tokens)
+build_minimal_prompt() {
+  local ROLE="$1"
+  local TASKS_JSON=$(get_precomputed_tasks "$ROLE")
+
+  if [ -z "$TASKS_JSON" ] || [ "$TASKS_JSON" = "[]" ]; then
+    echo ""
+    return
+  fi
+
+  # Count tasks
+  local TASK_COUNT=$(echo "$TASKS_JSON" | jq length 2>/dev/null || echo "0")
+
+  if [ "$TASK_COUNT" -eq 0 ]; then
+    echo ""
+    return
+  fi
+
+  # Build minimal prompt - just the task descriptions
+  local TASK_LIST=$(echo "$TASKS_JSON" | jq -r '.[].description' 2>/dev/null | head -5)
+
+  echo "You have $TASK_COUNT pending task(s):
+
+$TASK_LIST
+
+Reply DONE when complete."
+}
+
+# Dispatch precomputed task to a role (minimal token usage)
+dispatch_precomputed() {
+  local ROLE="$1"
+  local MINIMAL_PROMPT=$(build_minimal_prompt "$ROLE")
+
+  if [ -z "$MINIMAL_PROMPT" ]; then
+    echo "  [$ROLE] No tasks assigned"
+    return 0
+  fi
+
+  dispatch_to "$ROLE" "$MINIMAL_PROMPT"
 }
 
 # Dispatch a task to a specific role's terminal (by name, not number)
@@ -244,7 +327,47 @@ show_status() {
   fi
 }
 
+# --precomputed: Dispatch using precomputed task assignments (minimal tokens)
+dispatch_precomputed_all() {
+  echo "Dispatching using precomputed task assignments..."
+  echo ""
+
+  # Precompute once for all terminals
+  if ! precompute_tasks; then
+    echo "  [ERROR] Precompute failed. Use --tasks for verbose fallback."
+    return 1
+  fi
+
+  echo ""
+
+  # All terminal roles that can receive tasks
+  TERMINALS=(
+    "CTO" "ProductOwner" "Architect" "UXDesigner" "Toolsmith" "Security" "DevOps"
+    "Planner" "Generator-1" "Generator-2" "Generator-3"
+    "Validator" "Inspector" "WireframeQA"
+    "Developer" "TestEngineer" "QALead" "Auditor"
+    "Author" "TechWriter" "Coordinator"
+  )
+
+  local DISPATCHED=0
+  for ROLE in "${TERMINALS[@]}"; do
+    dispatch_precomputed "$ROLE" && ((DISPATCHED++))
+  done
+
+  echo ""
+  echo "Precomputed dispatch complete. Sent to $DISPATCHED terminals."
+  echo "Token savings: ~$(( (500 - 50) * DISPATCHED )) tokens vs verbose dispatch"
+}
+
 # Main
+# Handle --no-precompute flag
+for arg in "$@"; do
+  if [ "$arg" = "--no-precompute" ]; then
+    USE_PRECOMPUTE=false
+    echo "[INFO] Precompute disabled, using verbose prompts"
+  fi
+done
+
 case "${1:-}" in
   --vote)
     check_session
@@ -258,11 +381,21 @@ case "${1:-}" in
     check_session
     dispatch_queue
     ;;
+  --precomputed)
+    check_session
+    dispatch_precomputed_all
+    ;;
   --all)
     check_session
-    dispatch_votes
-    echo ""
-    dispatch_tasks
+    # Use precomputed if available, fall back to verbose
+    if [ "$USE_PRECOMPUTE" = "true" ] && precompute_tasks; then
+      echo ""
+      dispatch_precomputed_all
+    else
+      dispatch_votes
+      echo ""
+      dispatch_tasks
+    fi
     echo ""
     dispatch_queue
     ;;
@@ -270,22 +403,30 @@ case "${1:-}" in
     show_status
     ;;
   *)
-    echo "Usage: $0 [--vote|--tasks|--queue|--all|--status]"
+    echo "Usage: $0 [--vote|--tasks|--queue|--precomputed|--all|--status] [--no-precompute]"
     echo ""
     echo "Dispatches work to running scripthammer tmux terminals."
     echo ""
     echo "Commands:"
-    echo "  --vote    Dispatch RFC votes to council (7 terminals)"
-    echo "  --tasks   Dispatch audit action items to assigned owners"
-    echo "  --queue   Process items from .terminal-status.json"
-    echo "  --all     Run all dispatchers in sequence"
-    echo "  --status  Show current dispatcher state"
+    echo "  --vote        Dispatch RFC votes to council (7 terminals)"
+    echo "  --tasks       Dispatch audit action items to assigned owners (verbose)"
+    echo "  --queue       Process items from .terminal-status.json"
+    echo "  --precomputed Dispatch using pre-computed task assignments (minimal tokens)"
+    echo "  --all         Run all dispatchers (prefers precomputed if available)"
+    echo "  --status      Show current dispatcher state"
+    echo ""
+    echo "Flags:"
+    echo "  --no-precompute  Disable precomputation, use verbose prompts"
     echo ""
     echo "Examples:"
-    echo "  $0 --vote          # Get council to vote on pending RFCs"
-    echo "  $0 --tasks         # Send audit action items to Toolsmith, DevOps, Security"
-    echo "  $0 --queue         # Process wireframe review queue"
-    echo "  $0 --all           # Do everything"
+    echo "  $0 --precomputed          # Efficient dispatch (~50 tokens per terminal)"
+    echo "  $0 --tasks                # Verbose dispatch (~500 tokens per terminal)"
+    echo "  $0 --all                  # Auto-select best method"
+    echo "  $0 --all --no-precompute  # Force verbose dispatch"
+    echo ""
+    echo "Token Savings:"
+    echo "  Precomputed mode reduces dispatch from ~500 to ~50 tokens per terminal."
+    echo "  For 26 terminals, that's ~11,700 tokens saved per dispatch cycle."
     echo ""
     echo "Prerequisites:"
     echo "  1. Run ./scripts/tmux-session.sh --all first"
