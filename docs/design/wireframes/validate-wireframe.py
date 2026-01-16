@@ -1161,6 +1161,7 @@ class WireframeValidator:
         # Find the closing </g> of the annotation group (handle nested groups)
         depth = 1  # We start inside the annotation <g>
         pos = 0
+        annotation_group = None  # Initialize to handle early break
         # Skip past the opening <g> tag
         first_gt = annotation_section.find('>')
         if first_gt == -1:
@@ -1186,6 +1187,10 @@ class WireframeValidator:
         else:
             # Fallback to first 5000 chars if parsing fails
             annotation_group = annotation_section[:5000]
+
+        # If annotation_group wasn't assigned (malformed SVG), skip containment check
+        if annotation_group is None:
+            return
 
         # Check for elements with positions beyond bounds
         x_pattern = r'x=["\']?(\d+)["\']?'
