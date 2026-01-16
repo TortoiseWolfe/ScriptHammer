@@ -1076,8 +1076,8 @@ y=1060 NNN:NN | Feature Name | ScriptHammer
 ### SVG Implementation
 
 ```xml
-<!-- Key Concepts row - positioned with proper spacing -->
-<g transform="translate(40, 730)">
+<!-- Key Concepts row - at y=940 (inside annotation panel) -->
+<g transform="translate(40, 940)">
   <text font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">
     Key Concepts:
   </text>
@@ -1086,7 +1086,7 @@ y=1060 NNN:NN | Feature Name | ScriptHammer
   </text>
 </g>
 
-<!-- Signature - LEFT-ALIGNED at x=40 -->
+<!-- Signature - LEFT-ALIGNED at x=40, 120px below Key Concepts -->
 <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">004:01 | Mobile-First Design | ScriptHammer</text>
 ```
 
