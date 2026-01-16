@@ -485,9 +485,11 @@ tmux attach -t scripthammer
 | Context Level | Action |
 |---------------|--------|
 | > 30% | Leave alone - terminal is healthy |
-| < 30% | Let task finish, then `/clear` + `/prime` |
+| < 30% | Let task finish, then `/clear` + `/prime [role]` |
 
-**DO NOT** use `/compact`. Refresh with `/clear` then `/prime`.
+**DO NOT** use `/compact`. Refresh with `/clear` then `/prime [role]`.
+
+Prime roles: `wireframe-generator`, `planner`, `wireframe-qa`, `validator`, `inspector`
 
 ## Dispatch Workflow (Wireframes)
 

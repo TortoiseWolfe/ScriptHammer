@@ -103,14 +103,23 @@ This file contains unpushed commits, patch queues, and priority items.
 ### Refresh Procedure
 1. Wait for terminal to complete current task (don't interrupt)
 2. Send `/clear` to reset context
-3. Send `/prime` to reload role context
+3. Send `/prime [role]` to reload role context
 
 ```bash
-# Example: Refresh a terminal after task completes
-tmux send-keys -t scripthammer:RoleName "/clear" Enter
+# Example: Refresh Generator-1 after task completes
+tmux send-keys -t scripthammer:WireframeGenerator1 "/clear" Enter
 sleep 2
-tmux send-keys -t scripthammer:RoleName "/prime" Enter
+tmux send-keys -t scripthammer:WireframeGenerator1 "/prime wireframe-generator" Enter
 ```
+
+### Prime Role Names
+| Terminal | Prime Command |
+|----------|---------------|
+| Generators 1-3 | `/prime wireframe-generator` |
+| Planner | `/prime planner` |
+| WireframeQA | `/prime wireframe-qa` |
+| Validator | `/prime validator` |
+| Inspector | `/prime inspector` |
 
 **DO NOT** use `/compact` - use `/clear` + `/prime` instead.
 
