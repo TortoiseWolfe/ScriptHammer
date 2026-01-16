@@ -13,7 +13,7 @@
 | Scripts Built | 33 (12,601 LOC) |
 | Scripts Integrated | ~8 (~24%) |
 | Estimated Token Savings | 100,000+/day |
-| Integration Tasks | 8 (7 complete) |
+| Integration Tasks | 8 (8 complete) ✓ |
 
 ---
 
@@ -183,9 +183,14 @@
 **Token Savings**: ~2,000/day
 
 **Integration Steps**:
-- [ ] Test `audit-template.py toolsmith skills`
-- [ ] Update `/prime` to offer audit template generation
-- [ ] Standardize audit format across all terminals
+- [x] Test `audit-template.py toolsmith skills`
+- [x] Update `/prime` to offer audit template generation
+- [x] Standardize audit format across all terminals
+
+**Acceptance Criteria**:
+- [x] `/prime [role] --audit <topic>` generates template
+- [x] Available templates documented by role
+- [x] Audit format standard documented for all terminals
 
 ---
 
@@ -210,7 +215,7 @@ tmux send-keys -t scripthammer:Toolsmith Enter
 | 5. dependency-graph → speckit.plan | **complete** | Toolsmith | 2026-01-16 |
 | 6. constitution-check → speckit.analyze | **complete** | Toolsmith | 2026-01-16 |
 | 7. terminal-health → status | **complete** | Toolsmith | 2026-01-16 |
-| 8. audit-template → prime | pending | Toolsmith | - |
+| 8. audit-template → prime | **complete** | Toolsmith | 2026-01-16 |
 
 ---
 

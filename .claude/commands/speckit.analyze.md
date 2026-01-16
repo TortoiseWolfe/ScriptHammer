@@ -33,6 +33,23 @@ Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --inclu
 Abort with an error message if any required file is missing (instruct the user to run missing prerequisite command).
 For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
 
+### 1.5. Run Constitution Check Script (Automated)
+
+**Before any manual analysis**, run the constitution compliance script to get deterministic structural checks:
+
+```bash
+python3 scripts/constitution-check.py check FEATURE_DIR --json
+```
+
+Parse the JSON output and extract:
+- `overall_score`: Constitution compliance percentage
+- `issues[]`: Array of principle violations (each has `principle` and `issue`)
+- `principles{}`: Per-principle pass/fail details
+
+**Store these results** for inclusion in the final report under "Constitution Alignment Issues". These are CRITICAL severity findings that the AI does not need to re-analyze.
+
+If the script fails or is not available, fall back to manual constitution analysis in step 4.D.
+
 ### 2. Load Artifacts (Progressive Disclosure)
 
 Load only the minimal necessary context from each artifact:
@@ -93,10 +110,14 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - User stories missing acceptance criteria alignment
 - Tasks referencing files or components not defined in spec/plan
 
-#### D. Constitution Alignment
+#### D. Constitution Alignment (Semantic Only)
 
-- Any requirement or plan element conflicting with a MUST principle
-- Missing mandated sections or quality gates from constitution
+**Note**: Structural constitution checks (missing files, file patterns) are already handled by `constitution-check.py` in step 1.5. Include those script results directly in the report.
+
+AI analysis here focuses on **semantic** constitution issues only:
+- Requirements or plan elements conflicting with a MUST principle's intent
+- Logical contradictions with constitution guidance
+- Quality gate requirements not reflected in acceptance criteria
 
 #### E. Coverage Gaps
 
@@ -137,18 +158,28 @@ Output a Markdown report (no file writes) with the following structure:
 | Requirement Key | Has Task? | Task IDs | Notes |
 |-----------------|-----------|----------|-------|
 
-**Constitution Alignment Issues:** (if any)
+**Constitution Alignment Issues:**
+
+From `constitution-check.py` (structural):
+| Principle | Issue | Severity |
+|-----------|-------|----------|
+| (include all issues from script JSON) | | CRITICAL |
+
+From semantic analysis (if any):
+| Issue | Location | Severity |
+|-------|----------|----------|
 
 **Unmapped Tasks:** (if any)
 
 **Metrics:**
 
+- Constitution Score (from script): X%
 - Total Requirements
 - Total Tasks
 - Coverage % (requirements with >=1 task)
 - Ambiguity Count
 - Duplication Count
-- Critical Issues Count
+- Critical Issues Count (script + semantic)
 
 ### 7. Provide Next Actions
 
