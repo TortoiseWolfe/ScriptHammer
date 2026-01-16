@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Inspector v1.0
+SVG Wireframe Inspector v1.2
 
 Cross-SVG consistency checker for ScriptHammer wireframes.
 Runs AFTER validate-wireframe.py passes to check patterns across all SVGs.
+
+NEW in v1.2: Added mobile active state checks (icon + corner tabs).
+NEW in v1.1: Added G-044 (footer/nav rounded corners) check.
 
 Checks for:
 - Title position consistency (x=960, y=28)
@@ -14,6 +17,9 @@ Checks for:
 - Desktop/mobile mockup positioning
 - Annotation panel positioning
 - Navigation active states
+- Footer/nav rounded corners (G-044)
+- Mobile active state icon presence (G-045)
+- Mobile corner tab shape (G-046)
 
 Usage:
     python inspect-wireframes.py --all           # Inspect all SVGs
@@ -89,6 +95,11 @@ class SVGStructure:
     mobile_mockup: Optional[StructuralElement] = None
     annotation_panel: Optional[StructuralElement] = None
     nav_active_page: Optional[str] = None
+    desktop_footer_has_rx: bool = False  # G-044: rounded corners
+    mobile_nav_has_rx: bool = False  # G-044: rounded corners
+    mobile_active_has_icon: bool = False  # G-045: active state includes icon path
+    mobile_active_corner_uses_path: bool = True  # G-046: corner tabs use <path> not <rect>
+    mobile_active_detected: bool = False  # Whether we found a mobile active state overlay
     issues: List[str] = field(default_factory=list)
 
 
@@ -241,6 +252,54 @@ def extract_structure(svg_path: Path) -> SVGStructure:
         if any(kw in svg_lower for kw in keywords):
             structure.nav_active_page = page
             break
+
+    # G-044: Check for rounded corners on footer/nav
+    # Desktop footer: rect with large width (1000+) in footer area (y ~640-780)
+    desktop_footer_pattern = r'<rect[^>]*\by=["\']?(6[4-9]\d|7[0-7]\d)["\']?[^>]*width=["\']?(1[0-2]\d\d)["\']?[^>]*'
+    for match in re.finditer(desktop_footer_pattern, content):
+        if 'rx=' in match.group(0):
+            structure.desktop_footer_has_rx = True
+            break
+
+    # Mobile nav: rect with width ~360 at bottom (y ~664-720)
+    mobile_nav_pattern = r'<rect[^>]*\by=["\']?(66[4-9]|6[7-9]\d|7[0-1]\d)["\']?[^>]*width=["\']?(3[4-6]\d)["\']?[^>]*'
+    for match in re.finditer(mobile_nav_pattern, content):
+        if 'rx=' in match.group(0):
+            structure.mobile_nav_has_rx = True
+            break
+
+    # G-045 & G-046: Check mobile active state overlay
+    # Look for active state overlays in mobile section (translate near y=664 for bottom nav)
+    # Pattern: <g transform="translate(X, 664)"> where X is 0, 90, 180, or 270
+    mobile_active_pattern = r'<g[^>]*transform=["\']translate\(\s*(\d+)\s*,\s*664\s*\)["\'][^>]*>([\s\S]*?)</g>'
+    mobile_active_matches = list(re.finditer(mobile_active_pattern, content))
+
+    for match in mobile_active_matches:
+        x_pos = int(match.group(1))
+        overlay_content = match.group(2)
+
+        # Check if this looks like an active state (has fill="#8b5cf6" purple)
+        if 'fill="#8b5cf6"' not in overlay_content:
+            continue
+
+        structure.mobile_active_detected = True
+
+        # G-045: Check for icon path in overlay (white-filled path)
+        # Icon paths have fill="#fff" or fill="#ffffff" or fill="white"
+        icon_pattern = r'<path[^>]*fill=["\']#fff(?:fff)?["\']'
+        if re.search(icon_pattern, overlay_content):
+            structure.mobile_active_has_icon = True
+
+        # G-046: Check corner tabs (x=0 for Home, x=270 for Account)
+        # Corner tabs should use <path> element, not <rect>
+        is_corner_tab = x_pos in [0, 270]
+        if is_corner_tab:
+            # Check if using rect instead of path for the background
+            uses_rect = '<rect' in overlay_content and 'width="90"' in overlay_content
+            uses_path = '<path' in overlay_content and ('M 0 0 L 90' in overlay_content or 'M0 0L90' in overlay_content)
+
+            if uses_rect and not uses_path:
+                structure.mobile_active_corner_uses_path = False
 
     return structure
 
@@ -417,6 +476,42 @@ def check_patterns(structures: List[SVGStructure]) -> List[PatternViolation]:
                     expected=f"y={exp['y']}",
                     actual=f"y={structure.annotation_panel.y}"
                 ))
+
+        # G-044: Check footer/nav rounded corners
+        if not structure.desktop_footer_has_rx:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='footer_nav_corners',
+                expected='desktop footer has rx="4-8"',
+                actual='desktop footer missing rx attribute'
+            ))
+        if not structure.mobile_nav_has_rx:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='footer_nav_corners',
+                expected='mobile nav has rx="4-8"',
+                actual='mobile nav missing rx attribute'
+            ))
+
+        # G-045: Check mobile active state has icon
+        # Only check if we detected a mobile active state overlay
+        if structure.mobile_active_detected and not structure.mobile_active_has_icon:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='mobile_active_icon_missing',
+                expected='mobile active state includes white icon path',
+                actual='active state has text only, no icon'
+            ))
+
+        # G-046: Check corner tabs use path not rect
+        # Only check if we detected a mobile active state overlay
+        if structure.mobile_active_detected and not structure.mobile_active_corner_uses_path:
+            violations.append(PatternViolation(
+                svg_path=structure.path,
+                check='mobile_active_corner_shape',
+                expected='corner tabs (Home/Account) use <path> with rounded corner',
+                actual='corner tab uses <rect> (missing rounded corner)'
+            ))
 
     return violations
 
