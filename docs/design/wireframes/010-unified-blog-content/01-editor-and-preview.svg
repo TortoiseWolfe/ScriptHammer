@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <title>010 Unified Blog Content - Editor and Preview</title>
 
@@ -11,7 +12,7 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- Wireframe Title -->
-  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#e8d4b8">010 Unified Blog Content - Editor and Preview</text>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">UNIFIED BLOG CONTENT - EDITOR AND PREVIEW</text>
 
   <!-- Hidden Includes for HDR-001 Compliance -->
   <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">
@@ -72,12 +73,12 @@
 
     <!-- Editor Content Area -->
     <rect x="20" y="174" width="600" height="476" rx="4" fill="#faf8f5" stroke="#dcc8a8" stroke-width="1"/>
-    <text x="30" y="200" font-family="monospace" font-size="14" fill="#6b7280">---</text>
+    <text x="30" y="200" font-family="monospace" font-size="14" fill="#374151">---</text>
     <text x="30" y="220" font-family="monospace" font-size="14" fill="#3b82f6">title:</text>
     <text x="80" y="220" font-family="monospace" font-size="14" fill="#22c55e">"Getting Started with ScriptHammer"</text>
     <text x="30" y="240" font-family="monospace" font-size="14" fill="#3b82f6">date:</text>
     <text x="80" y="240" font-family="monospace" font-size="14" fill="#22c55e">"2026-01-14"</text>
-    <text x="30" y="260" font-family="monospace" font-size="14" fill="#6b7280">---</text>
+    <text x="30" y="260" font-family="monospace" font-size="14" fill="#374151">---</text>
     <text x="30" y="290" font-family="monospace" font-size="14" fill="#1a1a2e"># Introduction</text>
     <text x="30" y="320" font-family="monospace" font-size="14" fill="#1a1a2e">Welcome to **ScriptHammer**, your</text>
     <text x="30" y="340" font-family="monospace" font-size="14" fill="#1a1a2e">AI-powered development companion.</text>
@@ -111,13 +112,13 @@
     <rect x="670" y="146" width="140" height="200" rx="4" fill="#f5f0e6"/>
     <text x="680" y="168" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Contents</text>
     <text x="690" y="192" font-family="system-ui, sans-serif" font-size="14" fill="#3b82f6">Introduction</text>
-    <text x="690" y="216" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Quick Start</text>
-    <text x="690" y="240" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Configuration</text>
-    <text x="690" y="264" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Advanced</text>
+    <text x="690" y="216" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Quick Start</text>
+    <text x="690" y="240" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Configuration</text>
+    <text x="690" y="264" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Advanced</text>
 
     <!-- Rendered Blog Content -->
     <text x="830" y="180" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="#1a1a2e">Getting Started with ScriptHammer</text>
-    <text x="830" y="210" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">January 14, 2026</text>
+    <text x="830" y="210" font-family="system-ui, sans-serif" font-size="14" fill="#374151">January 14, 2026</text>
 
     <text x="830" y="250" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">Introduction</text>
     <text x="830" y="280" font-family="Georgia, serif" font-size="16" fill="#1a1a2e">Welcome to ScriptHammer, your AI-powered</text>
@@ -136,7 +137,7 @@
     <text x="740" y="251" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
     <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Last saved: 2 seconds ago</text>
     <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">All changes synced</text>
 
@@ -174,7 +175,7 @@
     <!-- Article Header -->
     <text x="35" y="155" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">Getting Started with</text>
     <text x="35" y="178" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer</text>
-    <text x="35" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">January 14, 2026</text>
+    <text x="35" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">January 14, 2026</text>
 
     <!-- Offline Badge -->
     <g transform="translate(230, 135)">
@@ -196,24 +197,24 @@
     <text x="115" y="380" font-family="monospace" font-size="14" fill="#22c55e">'dark'</text>
 
     <!-- Pull to Sync Hint -->
-    <text x="180" y="450" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Pull down to sync</text>
-    <text x="180" y="475" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#6b7280">↓</text>
+    <text x="180" y="450" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Pull down to sync</text>
+    <text x="180" y="475" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#374151">↓</text>
 
     <!-- Reading Progress -->
     <rect x="35" y="620" width="280" height="4" rx="2" fill="#dcc8a8"/>
     <rect x="35" y="620" width="100" height="4" rx="2" fill="#3b82f6"/>
-    <text x="35" y="645" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">35% read</text>
+    <text x="35" y="645" font-family="system-ui, sans-serif" font-size="14" fill="#374151">35% read</text>
 
     <!-- Bottom Navigation -->
     <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
     <g transform="translate(60, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Home</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Home</text>
     </g>
     <g transform="translate(160, 675)">
       <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6">Blog</text>
     </g>
     <g transform="translate(250, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Profile</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Profile</text>
     </g>
   </g>
 
@@ -282,12 +283,10 @@
     </g>
   </g>
 
-  <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MDX editor | conflict resolution | autosave | version history</text>
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">MDX editor | conflict resolution | autosave | version history</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Editor and Preview</text>
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">010:01 | Unified Blog Content | ScriptHammer</text>
 </svg>

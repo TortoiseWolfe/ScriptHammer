@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <title>014 Admin Welcome Email Gate - Verification Gate</title>
 
@@ -11,7 +12,7 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- Wireframe Title -->
-  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1a1a2e">014 Admin Welcome Email Gate - Verification Gate</text>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">ADMIN WELCOME EMAIL GATE - VERIFICATION GATE</text>
 
   <!-- DESKTOP (16:9) -->
   <text x="40" y="52" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">DESKTOP (16:9)</text>
@@ -40,11 +41,11 @@
 
     <!-- Sidebar placeholder -->
     <rect x="10" y="90" width="280" height="570" rx="4" fill="#b8c4d0"/>
-    <text x="150" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Conversations</text>
+    <text x="150" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Conversations</text>
 
     <!-- Chat area placeholder -->
     <rect x="300" y="90" width="970" height="570" rx="4" fill="#b8c4d0"/>
-    <text x="785" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#6b7280">Chat content blocked</text>
+    <text x="785" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#374151">Chat content blocked</text>
 
     <!-- Modal Overlay -->
     <rect x="0" y="80" width="1280" height="590" fill="#000000" opacity="0.6"/>
@@ -78,7 +79,7 @@
     <text x="640" y="480" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#faf8f5">Resend Verification Email</text>
 
     <!-- Help Text -->
-    <text x="640" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Check your inbox or spam folder</text>
+    <text x="640" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Check your inbox or spam folder</text>
 
     <!-- Callout 3: OAuth Bypass Indicator -->
     <circle cx="1100" cy="130" r="16" fill="#dc2626"/>
@@ -91,7 +92,7 @@
     <text x="1110" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#166534">You bypass this gate automatically.</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
 
     <!-- Callout 4: Status -->
     <circle cx="640" cy="695" r="16" fill="#dc2626"/>
@@ -132,16 +133,16 @@
     <text x="180" y="315" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">Required</text>
 
     <!-- Description -->
-    <text x="180" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Your email has not been</text>
-    <text x="180" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">verified. Please check your</text>
-    <text x="180" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">inbox to continue.</text>
+    <text x="180" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Your email has not been</text>
+    <text x="180" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">verified. Please check your</text>
+    <text x="180" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">inbox to continue.</text>
 
     <!-- Resend Button -->
     <rect x="40" y="440" width="280" height="52" rx="8" fill="#3b82f6"/>
     <text x="180" y="472" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#faf8f5">Resend Verification</text>
 
     <!-- Help Text -->
-    <text x="180" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Check spam folder</text>
+    <text x="180" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Check spam folder</text>
 
     <!-- OAuth Bypass Note -->
     <rect x="40" y="550" width="280" height="60" rx="8" fill="#dcfce7"/>
@@ -151,13 +152,13 @@
     <!-- Bottom Navigation -->
     <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
     <g transform="translate(60, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Home</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Home</text>
     </g>
     <g transform="translate(160, 675)">
       <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f59e0b">Messages</text>
     </g>
     <g transform="translate(250, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Profile</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Profile</text>
     </g>
   </g>
 
@@ -229,14 +230,12 @@
     </g>
   </g>
 
-  <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">email verification | admin approval | user activation</text>
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">email verification | admin approval | user activation</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Verification Gate</text>
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">014:01 | Admin Welcome Email Gate | ScriptHammer</text>
 
   <!-- Hidden Includes for HDR-001 Compliance (placed after modal content for G-021) -->
   <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">

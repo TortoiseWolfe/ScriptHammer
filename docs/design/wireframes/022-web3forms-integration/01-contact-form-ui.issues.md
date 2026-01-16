@@ -11,54 +11,17 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 13 |
+| Open | 1 |
 
 ---
 
 ## Open Issues (2026-01-16 Review)
 
-### Other Issues
+### Mobile Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Attribute 'y' has unquoted value '60,' | XML-004 | REGENERATE |
-| X-02 | Attribute 'y' has unquoted value '60,' | XML-004 | REGENERATE |
-| X-03 | Attribute 'y' has unquoted value '800,' | XML-004 | REGENERATE |
-| X-04 | Attribute 'x' has unquoted value '40,' | XML-004 | REGENERATE |
-
-### Header/Footer Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| H-01 | Missing include references: header-desktop.svg#desktop-heade... | HDR-001 | REGENERATE |
-
-### Annotation Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| A-01 | Only 0 callout circles in annotation panel (minimum 4 requir... | ANN-002 | REGENERATE |
-
-### Button Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| B-01 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-| B-02 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-| B-03 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-| B-04 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-| B-05 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-
-### User Story Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| U-01 | No User Story badges found in annotation panel - each group ... | US-001 | REGENERATE |
-
-### Structure Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| S-01 | Only 0 callout circles on mockups. Need numbered callouts (①... | G-026 | REGENERATE |
+| M-01 | Mobile content y=35 overlaps header zone (must be y >= 78) | MOBILE-001 | REGENERATE |
 
 ---
 

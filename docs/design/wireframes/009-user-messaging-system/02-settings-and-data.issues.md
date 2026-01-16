@@ -17,11 +17,11 @@
 
 ## Open Issues (2026-01-16 Review)
 
-### Annotation Issues
+### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| A-01 | Annotation text uses light color #6b7280: 'real-time messagi... | G-037 | REGENERATE |
+| X-01 | Attribute 'y' has unquoted value '940' | XML-004 | REGENERATE |
 
 ---
 

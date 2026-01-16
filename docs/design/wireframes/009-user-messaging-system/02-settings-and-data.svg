@@ -43,7 +43,7 @@
 
     <!-- Offline Queue Status -->
     <rect x="120" y="215" width="200" height="28" rx="4" fill="#f5f0e6"/>
-    <text x="135" y="234" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">0 messages in queue</text>
+    <text x="135" y="234" fill="#374151" font-family="system-ui, sans-serif" font-size="14">0 messages in queue</text>
 
     <!-- Callout ① - Offline Queue -->
     <circle cx="615" cy="175" r="14" fill="#dc2626"/>
@@ -52,8 +52,8 @@
     <!-- Message History Section -->
     <rect x="620" y="130" width="500" height="120" rx="6" fill="#dcc8a8"/>
     <text x="640" y="160" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Message History</text>
-    <text x="640" y="185" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Total conversations: 24</text>
-    <text x="640" y="205" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Total messages: 1,847</text>
+    <text x="640" y="185" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total conversations: 24</text>
+    <text x="640" y="205" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total messages: 1,847</text>
 
     <!-- Scroll to Top Button -->
     <rect x="640" y="218" width="140" height="28" rx="4" fill="#8b5cf6"/>
@@ -66,7 +66,7 @@
     <!-- GDPR Data Section -->
     <rect x="100" y="270" width="500" height="180" rx="6" fill="#dcc8a8"/>
     <text x="120" y="300" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Data Management (GDPR)</text>
-    <text x="120" y="325" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Export or delete your messaging data</text>
+    <text x="120" y="325" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Export or delete your messaging data</text>
 
     <!-- Export Data Button -->
     <rect x="120" y="345" width="180" height="40" rx="6" fill="#8b5cf6"/>
@@ -76,7 +76,7 @@
     <rect x="320" y="345" width="180" height="40" rx="6" fill="#dc2626"/>
     <text x="410" y="371" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Delete Account</text>
 
-    <text x="120" y="420" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Export includes all conversations in decrypted format.</text>
+    <text x="120" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Export includes all conversations in decrypted format.</text>
     <text x="120" y="440" fill="#dc2626" font-family="system-ui, sans-serif" font-size="14">Delete permanently removes all your data.</text>
 
     <!-- Callout ③ - GDPR -->
@@ -99,7 +99,7 @@
 
     <!-- High Contrast Mode Toggle -->
     <text x="640" y="415" fill="#374151" font-family="system-ui, sans-serif" font-size="14">High contrast mode</text>
-    <rect x="1020" y="400" width="50" height="26" rx="13" fill="#6b7280"/>
+    <rect x="1020" y="400" width="50" height="26" rx="13" fill="#374151"/>
     <circle cx="1033" cy="413" r="10" fill="#ffffff"/>
 
     <!-- Callout ④ - Accessibility -->
@@ -160,7 +160,7 @@
     <!-- Message History Card -->
     <rect x="15" y="230" width="330" height="80" rx="8" fill="#f5f0e6"/>
     <text x="30" y="255" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Message History</text>
-    <text x="30" y="280" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">24 conversations, 1,847 messages</text>
+    <text x="30" y="280" fill="#374151" font-family="system-ui, sans-serif" font-size="14">24 conversations, 1,847 messages</text>
     <rect x="220" y="250" width="110" height="28" rx="4" fill="#8b5cf6"/>
     <text x="275" y="269" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Load More</text>
 
@@ -171,7 +171,7 @@
     <!-- Data Management Card -->
     <rect x="15" y="320" width="330" height="130" rx="8" fill="#f5f0e6"/>
     <text x="30" y="345" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Data Management</text>
-    <text x="30" y="370" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">GDPR data export and deletion</text>
+    <text x="30" y="370" fill="#374151" font-family="system-ui, sans-serif" font-size="14">GDPR data export and deletion</text>
 
     <!-- Export Button -->
     <rect x="30" y="390" width="145" height="40" rx="6" fill="#8b5cf6"/>
@@ -210,9 +210,12 @@
     <rect x="270" y="605" width="50" height="26" rx="13" fill="#22c55e"/>
     <circle cx="307" cy="618" r="10" fill="#ffffff"/>
 
-    <!-- Mobile Footer Active State - Account -->
+    <!-- Mobile Footer Active State - Account (G-045: includes icon, G-046: uses path for rounded corner) -->
     <g transform="translate(270, 664)">
       <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
       <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
     </g>
 
@@ -280,12 +283,8 @@
   </g>
 
   <!-- Key Concepts Row (G-047) -->
-
-
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">real-time messaging | WebSocket | conversation threads | notifications</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">real-time messaging | WebSocket | conversation threads | notifications</text>
 
 
   <!-- SIGNATURE -->

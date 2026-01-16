@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <title>010 Unified Blog Content - Conflict Resolution</title>
 
@@ -76,13 +77,13 @@
 
     <!-- Base Panel -->
     <rect x="440" y="136" width="400" height="340" rx="4" fill="#faf8f5" stroke="#6b7280" stroke-width="2"/>
-    <rect x="440" y="136" width="400" height="30" fill="#6b7280" rx="4"/>
+    <rect x="440" y="136" width="400" height="30" fill="#374151" rx="4"/>
     <text x="450" y="156" font-family="monospace" font-size="14" fill="#faf8f5">Original version</text>
 
     <!-- Base Content -->
     <text x="450" y="186" font-family="monospace" font-size="14" fill="#1a1a2e"># Getting Started</text>
     <text x="450" y="210" font-family="monospace" font-size="14" fill="#1a1a2e">Welcome to **ScriptHammer**!</text>
-    <text x="450" y="240" font-family="monospace" font-size="14" fill="#6b7280">(No content here)</text>
+    <text x="450" y="240" font-family="monospace" font-size="14" fill="#374151">(No content here)</text>
     <text x="450" y="310" font-family="monospace" font-size="14" fill="#1a1a2e">## Installation</text>
     <text x="450" y="334" font-family="monospace" font-size="14" fill="#1a1a2e">Run the following command:</text>
 
@@ -158,8 +159,8 @@
     <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
-    <rect x="20" y="682" width="140" height="28" rx="4" fill="#6b7280"/>
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
+    <rect x="20" y="682" width="140" height="28" rx="4" fill="#374151"/>
     <text x="90" y="701" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#faf8f5">Cancel</text>
     <rect x="180" y="682" width="200" height="28" rx="4" fill="#22c55e"/>
     <text x="280" y="701" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">Save Resolution</text>
@@ -190,14 +191,14 @@
 
     <!-- Alert Message -->
     <text x="180" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">Content Conflict Detected</text>
-    <text x="180" y="280" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Your local changes conflict with</text>
-    <text x="180" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">remote updates.</text>
+    <text x="180" y="280" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Your local changes conflict with</text>
+    <text x="180" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">remote updates.</text>
 
     <!-- Resolve Options -->
     <rect x="40" y="330" width="280" height="44" rx="8" fill="#3b82f6"/>
     <text x="180" y="357" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">Resolve on Desktop</text>
 
-    <rect x="40" y="384" width="280" height="44" rx="8" fill="#6b7280"/>
+    <rect x="40" y="384" width="280" height="44" rx="8" fill="#374151"/>
     <text x="180" y="411" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">Keep My Version</text>
 
     <!-- Affected Files -->
@@ -213,13 +214,13 @@
     <!-- Bottom Navigation -->
     <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
     <g transform="translate(60, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Home</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Home</text>
     </g>
     <g transform="translate(160, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Blog</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Blog</text>
     </g>
     <g transform="translate(250, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Profile</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Profile</text>
     </g>
   </g>
 
@@ -287,12 +288,10 @@
     </g>
   </g>
 
-  <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MDX editor | conflict resolution | autosave | version history</text>
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">MDX editor | conflict resolution | autosave | version history</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 010-unified-blog-content - Conflict Resolution</text>
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">010:02 | Unified Blog Content | ScriptHammer</text>
 </svg>

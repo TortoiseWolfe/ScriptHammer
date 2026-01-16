@@ -13,7 +13,7 @@
 
   <!-- CENTERED TITLE -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="700" fill="#374151" letter-spacing="1">
+        font-size="20" font-weight="bold" fill="#1f2937">
     MESSAGING UX - OAUTH SETUP FLOW
   </text>
 
@@ -39,12 +39,12 @@
 
     <!-- Title -->
     <text x="640" y="165" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="22" font-weight="700">Set Up Encrypted Messaging</text>
-    <text x="640" y="195" text-anchor="middle" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Create a password to secure your private conversations</text>
+    <text x="640" y="195" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Create a password to secure your private conversations</text>
 
     <!-- Callout 1: Full-page setup -->
     <g transform="translate(1000, 120)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Warning 1: Above password field -->
@@ -54,7 +54,7 @@
     <!-- Callout 2: Warning placement 1 -->
     <g transform="translate(960, 240)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Password field -->
@@ -65,7 +65,7 @@
     <!-- Callout 3: Password manager attributes -->
     <g transform="translate(960, 322)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Form attributes hint -->
@@ -84,17 +84,17 @@
     <!-- Callout 2 (repeated for second warning) -->
     <g transform="translate(960, 490)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Submit button -->
     <rect x="340" y="530" width="600" height="50" rx="8" fill="#8b5cf6"/>
-    <text x="640" y="562" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Create Encryption Keys</text>
+    <text x="640" y="562" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Create Encryption Keys</text>
 
     <!-- Callout 4: Mode detection -->
     <g transform="translate(960, 555)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mode indicator -->
@@ -120,12 +120,12 @@
 
     <!-- Mobile title -->
     <text x="180" y="160" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="700">Set Up Encrypted Messaging</text>
-    <text x="180" y="180" text-anchor="middle" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">Create a secure password</text>
+    <text x="180" y="180" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Create a secure password</text>
 
     <!-- Callout 1 mobile -->
     <g transform="translate(355, 140)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Mobile warning 1 -->
@@ -135,7 +135,7 @@
     <!-- Callout 2 mobile -->
     <g transform="translate(355, 217)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Mobile password field -->
@@ -146,7 +146,7 @@
     <!-- Callout 3 mobile -->
     <g transform="translate(355, 292)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Mobile confirm password -->
@@ -162,17 +162,17 @@
     <!-- Callout 2 mobile (second warning) -->
     <g transform="translate(355, 435)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Mobile submit -->
     <rect x="25" y="475" width="310" height="50" rx="8" fill="#8b5cf6"/>
-    <text x="180" y="505" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Create Encryption Keys</text>
+    <text x="180" y="505" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Create Encryption Keys</text>
 
     <!-- Callout 4 mobile -->
     <g transform="translate(355, 500)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mobile mode indicator -->
@@ -194,62 +194,58 @@
     <!-- Column 1: Full-Page Setup -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Full-Page Setup Flow</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As an OAuth user with no encryption keys,</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I see a dedicated full-page setup.</text>
-      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
-      <a href="#FR-004"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-004</text></a>
-      <a href="#FR-005"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-005</text></a>
-      <a href="#SC-002"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-002</text></a>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-004"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-004</text></a>
+      <a href="#FR-005"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-005</text></a>
+      <a href="#SC-002"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-002</text></a>
     </g>
 
     <!-- Column 2: Password Warning Placements -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Password Warning Points</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">"Save this password" warning shown at</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">three points: above, below, and success.</text>
-      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
-      <a href="#FR-010"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-010</text></a>
-      <a href="#SC-006"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-006</text></a>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-010"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-006"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-006</text></a>
     </g>
 
     <!-- Column 3: Password Manager Integration -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Password Manager Integration</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Form includes proper attributes so</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">password managers can save credentials.</text>
-      <a href="#US-003"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-003</text></a>
-      <a href="#FR-009"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-009</text></a>
-      <a href="#FR-011"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-011</text></a>
-      <a href="#SC-003"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-003</text></a>
+      <a href="#US-003"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-011"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-003"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-003</text></a>
     </g>
 
     <!-- Column 4: Post-Setup Access -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Post-Setup Access</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">After setup, user can send/receive</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">encrypted messages immediately.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
-      <a href="#FR-007"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-007</text></a>
-      <a href="#FR-008"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-008</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-007"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-008</text></a>
     </g>
   </g>
 
   <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">message input | conversation view | error states | OAuth setup</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#64748b">
-    ScriptHammer v0.1 - OAuth Setup Flow - 016-messaging-critical-fixes
-  </text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">message input | conversation view | error states | OAuth setup</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">016:02 | Messaging Critical Fixes | ScriptHammer</text>
 </svg>

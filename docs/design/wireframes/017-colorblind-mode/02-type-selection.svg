@@ -13,7 +13,7 @@
 
   <!-- CENTERED TITLE -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+        font-size="20" font-weight="bold" fill="#1f2937">
     COLORBLIND MODE - TYPE SELECTION
   </text>
 
@@ -32,7 +32,7 @@
 
     <!-- Active nav state for Account -->
     <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Account</text>
 
     <!-- Main content area -->
@@ -61,11 +61,11 @@
 
         <!-- Type 3: Deuteranopia (selected) -->
         <rect x="0" y="116" width="360" height="52" rx="6" fill="#8b5cf6" stroke="#8b5cf6"/>
-        <text x="16" y="140" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="16" y="140" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Deuteranopia</text>
         <text x="16" y="158" fill="#e0d4ff" font-family="system-ui, sans-serif"
               font-size="14">Green-blind (1% of males)</text>
-        <text x="320" y="145" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="320" y="145" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="bold">✓</text>
 
         <!-- Type 4: Deuteranomaly -->
@@ -114,7 +114,7 @@
 
       <!-- Performance indicator -->
       <rect x="580" y="16" width="180" height="32" rx="6" fill="#22c55e"/>
-      <text x="670" y="38" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="670" y="38" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14" font-weight="600">Render: &lt; 10ms</text>
 
       <!-- Before Panel -->
@@ -125,11 +125,11 @@
 
         <!-- Original color buttons -->
         <rect x="20" y="50" width="150" height="40" rx="6" fill="#22c55e"/>
-        <text x="95" y="76" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="95" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Success</text>
 
         <rect x="190" y="50" width="150" height="40" rx="6" fill="#ef4444"/>
-        <text x="265" y="76" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="265" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Error</text>
 
         <rect x="20" y="100" width="150" height="40" rx="6" fill="#eab308"/>
@@ -137,7 +137,7 @@
               font-size="14" font-weight="600">Warning</text>
 
         <rect x="190" y="100" width="150" height="40" rx="6" fill="#3b82f6"/>
-        <text x="265" y="126" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="265" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Info</text>
 
         <!-- Color swatches -->
@@ -158,19 +158,19 @@
 
         <!-- Optimized color buttons -->
         <rect x="20" y="50" width="150" height="40" rx="6" fill="#009988"/>
-        <text x="95" y="76" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="95" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Success</text>
 
         <rect x="190" y="50" width="150" height="40" rx="6" fill="#CC3311"/>
-        <text x="265" y="76" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="265" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Error</text>
 
         <rect x="20" y="100" width="150" height="40" rx="6" fill="#EE7733"/>
-        <text x="95" y="126" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="95" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Warning</text>
 
         <rect x="190" y="100" width="150" height="40" rx="6" fill="#0077BB"/>
-        <text x="265" y="126" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="265" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="14" font-weight="600">Info</text>
 
         <!-- Optimized color swatches -->
@@ -196,7 +196,7 @@
 
         <!-- Apply button -->
         <rect x="0" y="100" width="200" height="48" rx="8" fill="#8b5cf6"/>
-        <text x="100" y="130" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+        <text x="100" y="130" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
               font-size="16" font-weight="600">Apply Changes</text>
 
         <!-- Reset button -->
@@ -209,22 +209,22 @@
     <!-- Desktop Callouts -->
     <g class="callout" transform="translate(444, 250)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <g class="callout" transform="translate(820, 250)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <g class="callout" transform="translate(1224, 140)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <g class="callout" transform="translate(1224, 98)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Footer -->
@@ -256,11 +256,11 @@
 
       <!-- Deuteranopia (selected) -->
       <rect x="0" y="56" width="312" height="48" rx="6" fill="#8b5cf6"/>
-      <text x="12" y="78" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="12" y="78" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14" font-weight="600">Deuteranopia</text>
       <text x="12" y="96" fill="#e0d4ff" font-family="system-ui, sans-serif"
             font-size="14">Green-blind</text>
-      <text x="280" y="84" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="280" y="84" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">✓</text>
 
       <!-- Tritanopia -->
@@ -289,43 +289,43 @@
             font-size="14" font-weight="600">Preview:</text>
 
       <rect x="0" y="312" width="150" height="36" rx="6" fill="#009988"/>
-      <text x="75" y="336" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="75" y="336" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14">Success</text>
 
       <rect x="160" y="312" width="150" height="36" rx="6" fill="#CC3311"/>
-      <text x="235" y="336" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="235" y="336" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14">Error</text>
 
       <!-- Performance badge -->
       <rect x="80" y="370" width="150" height="28" rx="14" fill="#22c55e"/>
-      <text x="155" y="390" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+      <text x="155" y="390" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14">&lt; 10ms render</text>
     </g>
 
     <!-- Apply button -->
     <rect x="16" y="605" width="328" height="48" rx="8" fill="#8b5cf6"/>
-    <text x="180" y="635" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="180" y="635" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="16" font-weight="600">Apply Selection</text>
 
     <!-- Mobile Callouts -->
     <g class="callout" transform="translate(344, 195)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <g class="callout" transform="translate(344, 475)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <g class="callout" transform="translate(344, 555)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <g class="callout" transform="translate(180, 555)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Footer with active Account tab -->
@@ -334,9 +334,9 @@
     <g transform="translate(270, 664)">
       <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
       <g transform="translate(33, 6)">
-        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
       </g>
-      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif"
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14" font-weight="600">Account</text>
     </g>
   </g>
@@ -348,7 +348,7 @@
     <!-- Column 1: Type Selection -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Type Selection</text>
@@ -361,19 +361,19 @@
 
       <!-- Badges -->
       <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
 
       <a href="#FR-001"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-001</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-001</text></a>
 
       <a href="#SC-001"><rect x="162" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">SC-001</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text></a>
     </g>
 
     <!-- Column 2: Color Palette Preview -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Color Palette Preview</text>
@@ -386,19 +386,19 @@
 
       <!-- Badges -->
       <a href="#US-002"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text></a>
 
       <a href="#FR-002"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-002</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-002</text></a>
 
       <a href="#FR-004"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-004</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-004</text></a>
     </g>
 
     <!-- Column 3: Before/After Comparison -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Before/After Comparison</text>
@@ -411,16 +411,16 @@
 
       <!-- Badges -->
       <a href="#US-003"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-003</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
 
       <a href="#FR-008"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-008</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-008</text></a>
     </g>
 
     <!-- Column 4: Performance Indicator -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Performance Indicator</text>
@@ -433,23 +433,21 @@
 
       <!-- Badges -->
       <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
 
       <a href="#FR-006"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-006</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-006</text></a>
 
       <a href="#SC-005"><rect x="162" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">SC-005</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-005</text></a>
     </g>
   </g>
 
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">accessibility settings | color blindness | contrast modes | visual preferences</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">accessibility settings | color blindness | contrast modes | visual preferences</text>
 
 
   <!-- SIGNATURE -->

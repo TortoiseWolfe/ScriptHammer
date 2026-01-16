@@ -56,12 +56,12 @@
       <g transform="translate(20, 80)">
         <text x="0" y="14" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Analytics</text>
-        <rect x="160" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
+        <rect x="160" y="0" width="36" height="20" rx="10" fill="#374151"/>
         <circle cx="170" cy="10" r="8" fill="#e8d4b8"/>
 
         <text x="220" y="14" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Marketing</text>
-        <rect x="380" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
+        <rect x="380" y="0" width="36" height="20" rx="10" fill="#374151"/>
         <circle cx="390" cy="10" r="8" fill="#e8d4b8"/>
       </g>
 
@@ -72,7 +72,7 @@
 
       <!-- Last updated -->
       <text x="20" y="185" font-family="system-ui, sans-serif"
-            font-size="14" fill="#6b7280">Last updated: Jan 10, 2026 at 3:42 PM</text>
+            font-size="14" fill="#374151">Last updated: Jan 10, 2026 at 3:42 PM</text>
 
       <!-- Approval History Card -->
       <rect y="220" width="560" height="180" rx="8" fill="#f5f0e6" stroke="#b8a080"/>

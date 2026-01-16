@@ -74,7 +74,7 @@
       <!-- Analytics Card -->
       <rect x="870" y="0" width="270" height="160" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
       <text x="890" y="35" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Analytics</text>
-      <rect x="890" y="50" width="80" height="26" rx="4" fill="#6b7280"/>
+      <rect x="890" y="50" width="80" height="26" rx="4" fill="#374151"/>
       <text x="930" y="68" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">OPTIONAL</text>
       <text x="890" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Not configured.</text>
       <text x="890" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Enable for usage tracking.</text>

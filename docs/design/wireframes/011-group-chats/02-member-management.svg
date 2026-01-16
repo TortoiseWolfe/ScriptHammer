@@ -31,7 +31,7 @@
     <circle cx="60" cy="132" r="16" fill="#f59e0b"/>
     <text x="60" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
     <text x="90" y="128" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
-    <text x="90" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Online</text>
+    <text x="90" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Online</text>
 
     <!-- Add People Button -->
     <rect x="320" y="118" width="80" height="28" rx="4" fill="#8b5cf6"/>
@@ -48,7 +48,7 @@
 
     <!-- Arrow indicating upgrade -->
     <text x="220" y="320" font-family="system-ui, sans-serif" font-size="32" fill="#8b5cf6">→</text>
-    <text x="155" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Upgrade to Group</text>
+    <text x="155" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Upgrade to Group</text>
 
     <!-- Right: Group Info Panel -->
     <rect x="440" y="70" width="420" height="630" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
@@ -60,7 +60,7 @@
     <circle cx="495" cy="140" r="18" fill="#22c55e" stroke="#dcc8a8" stroke-width="2"/>
     <circle cx="510" cy="140" r="18" fill="#3b82f6" stroke="#dcc8a8" stroke-width="2"/>
     <text x="540" y="135" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Project Team</text>
-    <text x="540" y="152" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">5 members</text>
+    <text x="540" y="152" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
     <rect x="780" y="122" width="60" height="28" rx="4" fill="#8b5cf6"/>
     <text x="810" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Edit</text>
 
@@ -77,7 +77,7 @@
       <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
       <rect x="85" y="6" width="55" height="22" rx="3" fill="#8b5cf6"/>
       <text x="112" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Owner</text>
-      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Can manage group</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Can manage group</text>
     </g>
 
     <!-- Member 2 -->
@@ -86,7 +86,7 @@
       <circle cx="30" cy="25" r="18" fill="#22c55e"/>
       <text x="30" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
       <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex Chen</text>
-      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Member since Jan 10</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
       <rect x="310" y="11" width="80" height="28" rx="4" fill="#ef4444"/>
       <text x="350" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
     </g>
@@ -97,7 +97,7 @@
       <circle cx="30" cy="25" r="18" fill="#f59e0b"/>
       <text x="30" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
       <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
-      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Member since Jan 10</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
       <rect x="310" y="11" width="80" height="28" rx="4" fill="#ef4444"/>
       <text x="350" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
     </g>
@@ -123,15 +123,15 @@
     <circle cx="920" cy="132" r="16" fill="#3b82f6"/>
     <text x="920" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">M</text>
     <text x="950" y="128" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Mike Brown</text>
-    <text x="950" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Joined today</text>
+    <text x="950" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Joined today</text>
 
     <!-- Pre-join messages (hidden) -->
     <g transform="translate(900, 170)">
       <rect x="0" y="0" width="340" height="44" rx="6" fill="#dcc8a8" opacity="0.5"/>
-      <text x="20" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280" font-style="italic">[Message before you joined]</text>
+      <text x="20" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#374151" font-style="italic">[Message before you joined]</text>
 
       <rect x="0" y="55" width="340" height="44" rx="6" fill="#dcc8a8" opacity="0.5"/>
-      <text x="20" y="82" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280" font-style="italic">[Message before you joined]</text>
+      <text x="20" y="82" font-family="system-ui, sans-serif" font-size="14" fill="#374151" font-style="italic">[Message before you joined]</text>
 
       <!-- Visible messages after join -->
       <rect x="0" y="120" width="340" height="32" rx="6" fill="#22c55e" opacity="0.2"/>
@@ -184,7 +184,7 @@
       <circle cx="38" cy="20" r="18" fill="#22c55e" stroke="#e8d4b8" stroke-width="2"/>
       <circle cx="56" cy="20" r="18" fill="#3b82f6" stroke="#e8d4b8" stroke-width="2"/>
       <text x="90" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Project Team</text>
-      <text x="90" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">5 members</text>
+      <text x="90" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
     </g>
 
     <!-- Member List -->
@@ -198,7 +198,7 @@
       <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
       <rect x="80" y="4" width="55" height="22" rx="3" fill="#8b5cf6"/>
       <text x="107" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Owner</text>
-      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Can manage group</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Can manage group</text>
     </g>
 
     <!-- Member 2 -->
@@ -207,7 +207,7 @@
       <circle cx="28" cy="22" r="16" fill="#22c55e"/>
       <text x="28" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
       <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex Chen</text>
-      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Member since Jan 10</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
       <rect x="270" y="8" width="60" height="28" rx="4" fill="#ef4444"/>
       <text x="300" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
     </g>
@@ -218,7 +218,7 @@
       <circle cx="28" cy="22" r="16" fill="#f59e0b"/>
       <text x="28" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
       <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
-      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Member since Jan 10</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
     </g>
 
     <!-- Action Buttons -->
@@ -294,10 +294,9 @@
 
   <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">group creation | member management | admin roles | message threading</text>
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">group creation | member management | admin roles | message threading</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">011:02 | Group Chats | ScriptHammer</text>
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">011:02 | Group Chats | ScriptHammer</text>
 </svg>

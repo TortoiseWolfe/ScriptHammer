@@ -24,7 +24,7 @@
 
   <!-- CENTERED TITLE -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="700" fill="#94a3b8" letter-spacing="1">
+        font-size="20" font-weight="bold" fill="#1f2937">
     OAUTH DISPLAY NAME - PROFILE POPULATION FLOW
   </text>
 
@@ -70,7 +70,7 @@
 
       <!-- Callout 1 -->
       <circle cx="180" cy="80" r="14" fill="#dc2626"/>
-      <text x="180" y="85" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">1</text>
+      <text x="180" y="85" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">1</text>
     </g>
 
     <!-- Arrow: Providers to Callback -->
@@ -80,8 +80,8 @@
     <!-- OAUTH CALLBACK HANDLER -->
     <g transform="translate(420, 110)">
       <rect width="200" height="140" rx="8" fill="#334155" stroke="#475569"/>
-      <text x="100" y="35" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">OAuth Callback</text>
-      <text x="100" y="55" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">Handler</text>
+      <text x="100" y="35" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">OAuth Callback</text>
+      <text x="100" y="55" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">Handler</text>
       <line x1="20" y1="70" x2="180" y2="70" stroke="#475569"/>
       <text x="100" y="95" text-anchor="middle" fill="#94a3b8" font-size="14">Extracts metadata</text>
       <text x="100" y="115" text-anchor="middle" fill="#94a3b8" font-size="14">Triggers population</text>
@@ -100,27 +100,27 @@
       <g transform="translate(20, 60)">
         <rect width="240" height="35" rx="4" fill="#334155"/>
         <text x="20" y="23" fill="#22c55e" font-size="14" font-weight="bold">1.</text>
-        <text x="45" y="23" fill="#ffffff" font-size="14">full_name (Google)</text>
+        <text x="45" y="23" fill="#e8d4b8" font-size="14">full_name (Google)</text>
       </g>
       <g transform="translate(20, 105)">
         <rect width="240" height="35" rx="4" fill="#334155"/>
         <text x="20" y="23" fill="#f59e0b" font-size="14" font-weight="bold">2.</text>
-        <text x="45" y="23" fill="#ffffff" font-size="14">username (GitHub)</text>
+        <text x="45" y="23" fill="#e8d4b8" font-size="14">username (GitHub)</text>
       </g>
       <g transform="translate(20, 150)">
         <rect width="240" height="35" rx="4" fill="#334155"/>
         <text x="20" y="23" fill="#f97316" font-size="14" font-weight="bold">3.</text>
-        <text x="45" y="23" fill="#ffffff" font-size="14">email prefix</text>
+        <text x="45" y="23" fill="#e8d4b8" font-size="14">email prefix</text>
       </g>
       <g transform="translate(20, 195)">
         <rect width="240" height="35" rx="4" fill="#334155"/>
         <text x="20" y="23" fill="#ef4444" font-size="14" font-weight="bold">4.</text>
-        <text x="45" y="23" fill="#ffffff" font-size="14">"Anonymous User"</text>
+        <text x="45" y="23" fill="#e8d4b8" font-size="14">"Anonymous User"</text>
       </g>
 
       <!-- Callout 2 -->
       <circle cx="300" cy="140" r="14" fill="#dc2626"/>
-      <text x="300" y="145" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">2</text>
+      <text x="300" y="145" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">2</text>
     </g>
 
     <!-- Arrow: Fallback to Profile -->
@@ -130,7 +130,7 @@
     <!-- PROFILE SERVICE -->
     <g transform="translate(1180, 100)">
       <rect width="220" height="160" rx="8" fill="#334155" stroke="#475569"/>
-      <text x="110" y="35" text-anchor="middle" fill="#ffffff" font-size="16" font-weight="bold">Profile Service</text>
+      <text x="110" y="35" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">Profile Service</text>
       <line x1="20" y1="50" x2="200" y2="50" stroke="#475569"/>
       <text x="110" y="80" text-anchor="middle" fill="#94a3b8" font-size="14">Updates user profile</text>
       <text x="110" y="100" text-anchor="middle" fill="#94a3b8" font-size="14">display_name</text>
@@ -139,7 +139,7 @@
 
       <!-- Callout 3 -->
       <circle cx="240" cy="80" r="14" fill="#dc2626"/>
-      <text x="240" y="85" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">3</text>
+      <text x="240" y="85" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">3</text>
     </g>
 
     <!-- Arrow: Profile to Database -->
@@ -152,7 +152,7 @@
       <line x1="0" y1="15" x2="0" y2="65" stroke="#475569"/>
       <line x1="120" y1="15" x2="120" y2="65" stroke="#475569"/>
       <ellipse cx="60" cy="65" rx="60" ry="15" fill="#334155" stroke="#475569"/>
-      <text x="60" y="45" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">profiles</text>
+      <text x="60" y="45" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">profiles</text>
     </g>
 
     <!-- MIGRATION TOOL (Bottom section) -->
@@ -163,7 +163,7 @@
       <!-- Migration Components -->
       <g transform="translate(20, 50)">
         <rect width="140" height="60" rx="6" fill="#334155" stroke="#475569"/>
-        <text x="70" y="25" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">Query Users</text>
+        <text x="70" y="25" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">Query Users</text>
         <text x="70" y="45" text-anchor="middle" fill="#94a3b8" font-size="14">empty names</text>
       </g>
 
@@ -171,7 +171,7 @@
 
       <g transform="translate(240, 50)">
         <rect width="140" height="60" rx="6" fill="#334155" stroke="#475569"/>
-        <text x="70" y="25" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">Fetch Metadata</text>
+        <text x="70" y="25" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">Fetch Metadata</text>
         <text x="70" y="45" text-anchor="middle" fill="#94a3b8" font-size="14">from provider</text>
       </g>
 
@@ -184,7 +184,7 @@
 
       <!-- Callout 4 -->
       <circle cx="520" cy="80" r="14" fill="#dc2626"/>
-      <text x="520" y="85" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">4</text>
+      <text x="520" y="85" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">4</text>
     </g>
 
     <!-- Success Criteria Box -->
@@ -236,69 +236,64 @@
     <!-- Group 1: OAuth Metadata Extraction -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">1</text>
-      <text x="40" y="19" fill="#ffffff" font-size="16" font-weight="bold">OAuth Metadata Extraction</text>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">1</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="16" font-weight="bold">OAuth Metadata Extraction</text>
       <text x="40" y="40" fill="#94a3b8" font-size="14">First sign-in extracts display_name and avatar</text>
       <text x="40" y="58" fill="#94a3b8" font-size="14">from OAuth provider metadata (Google/GitHub).</text>
-      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-001</text></a>
-      <a href="#FR-001"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-001</text></a>
-      <a href="#FR-005"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-005</text></a>
-      <a href="#SC-001"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#ffffff" font-size="12">SC-001</text></a>
+      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-001</text></a>
+      <a href="#FR-005"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-005</text></a>
+      <a href="#SC-001"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">SC-001</text></a>
     </g>
 
     <!-- Group 2: Fallback Cascade -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">2</text>
-      <text x="40" y="19" fill="#ffffff" font-size="16" font-weight="bold">Fallback Cascade</text>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">2</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="16" font-weight="bold">Fallback Cascade</text>
       <text x="40" y="40" fill="#94a3b8" font-size="14">Name resolution: full_name first, then username,</text>
       <text x="40" y="58" fill="#94a3b8" font-size="14">then email prefix, finally "Anonymous User".</text>
-      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-001</text></a>
-      <a href="#US-002"><rect x="101" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-002</text></a>
-      <a href="#FR-002"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-002</text></a>
-      <a href="#SC-003"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#ffffff" font-size="12">SC-003</text></a>
+      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-001</text></a>
+      <a href="#US-002"><rect x="101" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-002</text></a>
+      <a href="#FR-002"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-002</text></a>
+      <a href="#SC-003"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">SC-003</text></a>
     </g>
 
     <!-- Group 3: Profile Population -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">3</text>
-      <text x="40" y="19" fill="#ffffff" font-size="16" font-weight="bold">Profile Population</text>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">3</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="16" font-weight="bold">Profile Population</text>
       <text x="40" y="40" fill="#94a3b8" font-size="14">Updates profile BEFORE redirect. Only populates</text>
       <text x="40" y="58" fill="#94a3b8" font-size="14">empty values - never overwrites existing data.</text>
-      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-001</text></a>
-      <a href="#US-003"><rect x="101" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-003</text></a>
-      <a href="#FR-003"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-003</text></a>
-      <a href="#FR-004"><rect x="223" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-004</text></a>
-      <a href="#SC-005"><rect x="284" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="83" text-anchor="middle" fill="#ffffff" font-size="12">SC-005</text></a>
+      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-001</text></a>
+      <a href="#US-003"><rect x="101" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-003</text></a>
+      <a href="#FR-003"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-003</text></a>
+      <a href="#FR-004"><rect x="223" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-004</text></a>
+      <a href="#SC-005"><rect x="284" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">SC-005</text></a>
     </g>
 
     <!-- Group 4: Migration Tool -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">4</text>
-      <text x="40" y="19" fill="#ffffff" font-size="16" font-weight="bold">Migration Tool</text>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">4</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="16" font-weight="bold">Migration Tool</text>
       <text x="40" y="40" fill="#94a3b8" font-size="14">One-time batch update for existing OAuth users</text>
       <text x="40" y="58" fill="#94a3b8" font-size="14">with empty display names. Idempotent, reversible.</text>
-      <a href="#US-002"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#ffffff" font-size="12">US-002</text></a>
-      <a href="#FR-007"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-007</text></a>
-      <a href="#FR-008"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#ffffff" font-size="12">FR-008</text></a>
-      <a href="#SC-002"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#ffffff" font-size="12">SC-002</text></a>
+      <a href="#US-002"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">US-002</text></a>
+      <a href="#FR-007"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-007</text></a>
+      <a href="#FR-008"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">FR-008</text></a>
+      <a href="#SC-002"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="83" text-anchor="middle" fill="#e8d4b8" font-size="12">SC-002</text></a>
     </g>
   </g>
 
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">OAuth profile | display name | profile population | user metadata</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OAuth profile | display name | profile population | user metadata</text>
 
 
   <!-- SIGNATURE -->
-  <text x="40" y="1060" fill="#94a3b8" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="bold">
-    015:01 | OAuth Display Name | ScriptHammer
-  </text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">015:01 | OAuth Display Name | ScriptHammer</text>
 </svg>

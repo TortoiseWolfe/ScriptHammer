@@ -13,7 +13,7 @@
 
   <!-- CENTERED TITLE -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+        font-size="20" font-weight="bold" fill="#1f2937">
     COLORBLIND MODE - ACCESSIBILITY SETTINGS
   </text>
 
@@ -32,7 +32,7 @@
 
     <!-- Active nav state for Account -->
     <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
-    <text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Account</text>
 
     <!-- Main content area -->
@@ -71,7 +71,7 @@
         <text x="16" y="70" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Enable Patterns</text>
         <!-- Toggle ON -->
         <rect x="320" y="52" width="56" height="28" rx="14" fill="#22c55e"/>
-        <circle cx="362" cy="66" r="10" fill="#ffffff"/>
+        <circle cx="362" cy="66" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Simulation Mode Section -->
@@ -85,8 +85,8 @@
         <rect x="0" y="40" width="400" height="48" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
         <text x="16" y="70" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Enable Simulation</text>
         <!-- Toggle OFF -->
-        <rect x="320" y="52" width="56" height="28" rx="14" fill="#6b7280"/>
-        <circle cx="334" cy="66" r="10" fill="#ffffff"/>
+        <rect x="320" y="52" width="56" height="28" rx="14" fill="#374151"/>
+        <circle cx="334" cy="66" r="10" fill="#e8d4b8"/>
       </g>
 
       <!-- Preview Panel -->
@@ -100,22 +100,22 @@
         <g transform="translate(20, 50)">
           <!-- Success state with pattern -->
           <rect x="0" y="0" width="200" height="44" rx="6" fill="#009988"/>
-          <text x="100" y="28" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="100" y="28" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14" font-weight="600">Success Button</text>
 
           <!-- Warning state -->
           <rect x="220" y="0" width="200" height="44" rx="6" fill="#EE7733"/>
-          <text x="320" y="28" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="320" y="28" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14" font-weight="600">Warning</text>
 
           <!-- Error state -->
           <rect x="0" y="60" width="200" height="44" rx="6" fill="#CC3311"/>
-          <text x="100" y="88" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="100" y="88" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14" font-weight="600">Error</text>
 
           <!-- Info state -->
           <rect x="220" y="60" width="200" height="44" rx="6" fill="#0077BB"/>
-          <text x="320" y="88" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="320" y="88" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14" font-weight="600">Info</text>
 
           <!-- Sample badges -->
@@ -123,15 +123,15 @@
                 font-size="14" font-weight="600">Status Badges:</text>
 
           <rect x="0" y="160" width="90" height="28" rx="4" fill="#009988"/>
-          <text x="45" y="180" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="45" y="180" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14">Active</text>
 
           <rect x="100" y="160" width="90" height="28" rx="4" fill="#EE7733"/>
-          <text x="145" y="180" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="145" y="180" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14">Pending</text>
 
           <rect x="200" y="160" width="90" height="28" rx="4" fill="#CC3311"/>
-          <text x="245" y="180" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+          <text x="245" y="180" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
                 font-size="14">Error</text>
 
           <!-- Theme compatibility note -->
@@ -149,25 +149,25 @@
     <!-- Callout 1: Colorblind Type Dropdown -->
     <g class="callout" transform="translate(584, 268)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Callout 2: Pattern Overlay Toggle -->
     <g class="callout" transform="translate(584, 398)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Callout 3: Simulation Mode Toggle -->
     <g class="callout" transform="translate(584, 518)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Callout 4: Live Preview Area -->
     <g class="callout" transform="translate(1104, 300)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Footer -->
@@ -200,7 +200,7 @@
     <text x="28" y="248" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Enable Patterns</text>
     <!-- Toggle ON -->
     <rect x="276" y="228" width="52" height="26" rx="13" fill="#22c55e"/>
-    <circle cx="315" cy="241" r="9" fill="#ffffff"/>
+    <circle cx="315" cy="241" r="9" fill="#e8d4b8"/>
 
     <!-- Simulation Mode -->
     <text x="16" y="290" fill="#374151" font-family="system-ui, sans-serif"
@@ -208,8 +208,8 @@
     <rect x="16" y="300" width="328" height="44" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="28" y="328" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Enable Simulation</text>
     <!-- Toggle OFF -->
-    <rect x="276" y="308" width="52" height="26" rx="13" fill="#6b7280"/>
-    <circle cx="289" cy="321" r="9" fill="#ffffff"/>
+    <rect x="276" y="308" width="52" height="26" rx="13" fill="#374151"/>
+    <circle cx="289" cy="321" r="9" fill="#e8d4b8"/>
 
     <!-- Preview -->
     <text x="16" y="370" fill="#374151" font-family="system-ui, sans-serif"
@@ -218,32 +218,32 @@
 
     <!-- Sample buttons -->
     <rect x="28" y="400" width="148" height="40" rx="6" fill="#009988"/>
-    <text x="102" y="426" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="102" y="426" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Success</text>
 
     <rect x="184" y="400" width="148" height="40" rx="6" fill="#EE7733"/>
-    <text x="258" y="426" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="258" y="426" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Warning</text>
 
     <rect x="28" y="450" width="148" height="40" rx="6" fill="#CC3311"/>
-    <text x="102" y="476" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="102" y="476" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Error</text>
 
     <rect x="184" y="450" width="148" height="40" rx="6" fill="#0077BB"/>
-    <text x="258" y="476" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="258" y="476" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14" font-weight="600">Info</text>
 
     <!-- Badges -->
     <rect x="28" y="510" width="90" height="28" rx="4" fill="#009988"/>
-    <text x="73" y="530" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="73" y="530" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14">Active</text>
 
     <rect x="126" y="510" width="90" height="28" rx="4" fill="#EE7733"/>
-    <text x="171" y="530" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="171" y="530" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14">Pending</text>
 
     <rect x="224" y="510" width="90" height="28" rx="4" fill="#CC3311"/>
-    <text x="269" y="530" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif"
+    <text x="269" y="530" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
           font-size="14">Error</text>
 
     <text x="28" y="570" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14">
@@ -253,22 +253,22 @@
     <!-- Mobile Callouts -->
     <g class="callout" transform="translate(344, 162)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <g class="callout" transform="translate(344, 242)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <g class="callout" transform="translate(344, 322)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <g class="callout" transform="translate(344, 490)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Footer with active Account tab -->
@@ -277,9 +277,9 @@
     <g transform="translate(270, 664)">
       <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
       <g transform="translate(33, 6)">
-        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
       </g>
-      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif"
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
             font-size="14" font-weight="600">Account</text>
     </g>
   </g>
@@ -291,7 +291,7 @@
     <!-- Column 1: Enable Colorblind Filter -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Enable Colorblind Filter</text>
@@ -304,29 +304,29 @@
 
       <!-- Badges -->
       <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
 
       <a href="#FR-001"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-001</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-001</text></a>
 
       <a href="#FR-002"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-002</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-002</text></a>
 
       <a href="#FR-005"><rect x="223" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="250" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-005</text></a>
+      <text x="250" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-005</text></a>
 
       <!-- Row 2 badges -->
       <a href="#SC-001"><rect x="40" y="96" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="67" y="111" fill="#fff" font-size="14" text-anchor="middle">SC-001</text></a>
+      <text x="67" y="111" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text></a>
 
       <a href="#SC-004"><rect x="101" y="96" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="128" y="111" fill="#fff" font-size="14" text-anchor="middle">SC-004</text></a>
+      <text x="128" y="111" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-004</text></a>
     </g>
 
     <!-- Column 2: Enable Pattern Overlays -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Enable Pattern Overlays</text>
@@ -339,19 +339,19 @@
 
       <!-- Badges -->
       <a href="#US-002"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text></a>
 
       <a href="#FR-003"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-003</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-003</text></a>
 
       <a href="#SC-002"><rect x="162" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">SC-002</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-002</text></a>
     </g>
 
     <!-- Column 3: Simulation Mode -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Simulation Mode</text>
@@ -364,16 +364,16 @@
 
       <!-- Badges -->
       <a href="#US-003"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-003</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
 
       <a href="#FR-008"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-008</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-008</text></a>
     </g>
 
     <!-- Column 4: Theme Compatibility -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
 
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
             font-size="14" font-weight="bold">Theme Compatibility</text>
@@ -386,29 +386,27 @@
 
       <!-- Badges -->
       <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
-      <text x="67" y="83" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
 
       <a href="#FR-004"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="128" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-004</text></a>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-004</text></a>
 
       <a href="#FR-006"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
-      <text x="189" y="83" fill="#fff" font-size="14" text-anchor="middle">FR-006</text></a>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-006</text></a>
 
       <a href="#SC-003"><rect x="223" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="250" y="83" fill="#fff" font-size="14" text-anchor="middle">SC-003</text></a>
+      <text x="250" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-003</text></a>
 
       <a href="#SC-005"><rect x="284" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
-      <text x="311" y="83" fill="#fff" font-size="14" text-anchor="middle">SC-005</text></a>
+      <text x="311" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-005</text></a>
     </g>
   </g>
 
   <!-- Key Concepts Row (G-047) -->
 
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">accessibility settings | color blindness | contrast modes | visual preferences</text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">accessibility settings | color blindness | contrast modes | visual preferences</text>
 
 
   <!-- SIGNATURE -->

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
   <title>014 Admin Welcome Email Gate - Admin Setup Process</title>
 
@@ -11,7 +12,7 @@
   <rect width="1920" height="1080" fill="url(#bg)"/>
 
   <!-- Wireframe Title -->
-  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1a1a2e">014 Admin Welcome Email Gate - Admin Setup Process</text>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">ADMIN WELCOME EMAIL GATE - ADMIN SETUP PROCESS</text>
 
   <!-- DESKTOP (16:9) -->
   <text x="40" y="52" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">DESKTOP (16:9)</text>
@@ -66,8 +67,8 @@
       <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Public Key Stored for Feature 012</text>
     </g>
     <g transform="translate(40, 330)">
-      <circle cx="10" cy="10" r="10" fill="#6b7280"/>
-      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Private Key Discarded (not needed)</text>
+      <circle cx="10" cy="10" r="10" fill="#374151"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Private Key Discarded (not needed)</text>
     </g>
 
     <!-- Callout 2: Key Generation Panel -->
@@ -142,7 +143,7 @@
     <text x="680" y="635" font-family="monospace" font-size="14" fill="#22c55e">[DONE] Admin setup complete (idempotent)</text>
 
     <!-- Status Bar -->
-    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8"/ rx="8">
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
     <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Setup completed at: 2026-01-14 19:30:00 UTC</text>
     <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Status: Ready</text>
   </g>
@@ -199,19 +200,19 @@
 
     <!-- Timestamp -->
     <rect x="20" y="540" width="320" height="60" rx="8" fill="#f5f0e6"/>
-    <text x="180" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Last run:</text>
+    <text x="180" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Last run:</text>
     <text x="180" y="588" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">2026-01-14 19:30:00 UTC</text>
 
     <!-- Bottom Navigation -->
     <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
     <g transform="translate(60, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Users</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Users</text>
     </g>
     <g transform="translate(160, 675)">
       <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6">Admin</text>
     </g>
     <g transform="translate(250, 675)">
-      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Settings</text>
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Settings</text>
     </g>
   </g>
 
@@ -283,14 +284,12 @@
     </g>
   </g>
 
-  <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">email verification | admin approval | user activation</text>
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">email verification | admin approval | user activation</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer Wireframe v5 - 014-admin-welcome-email-gate - Admin Setup Process</text>
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">014:02 | Admin Welcome Email Gate | ScriptHammer</text>
 
   <!-- Hidden Includes for HDR-001 Compliance (placed at end) -->
   <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">

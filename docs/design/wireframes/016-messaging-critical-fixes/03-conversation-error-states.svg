@@ -13,7 +13,7 @@
 
   <!-- CENTERED TITLE -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
-        font-size="18" font-weight="700" fill="#374151" letter-spacing="1">
+        font-size="20" font-weight="bold" fill="#1f2937">
     MESSAGING UX - ERROR STATES
   </text>
 
@@ -34,12 +34,12 @@
     <!-- Name resolution examples in header -->
     <text x="40" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Conversation with: </text>
     <text x="175" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Jane Smith</text>
-    <text x="270" y="82" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">(Display Name)</text>
+    <text x="270" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14">(Display Name)</text>
 
     <!-- Callout 3: Name resolution -->
     <g transform="translate(400, 82)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Additional name state examples -->
@@ -52,7 +52,7 @@
     <!-- Callout 4: Special states -->
     <g transform="translate(900, 82)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <rect x="920" y="68" width="180" height="30" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
@@ -69,7 +69,7 @@
 
     <g transform="translate(40, 210)">
       <rect x="780" y="0" width="380" height="50" rx="8" fill="#8b5cf6"/>
-      <text x="795" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Pretty good! Working on a new project.</text>
+      <text x="795" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pretty good! Working on a new project.</text>
     </g>
 
     <!-- Encrypted/undecryptable message with lock icon -->
@@ -87,14 +87,14 @@
     <!-- Callout 1: Decryption failure -->
     <g transform="translate(510, 310)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Tooltip showing on hover -->
     <g transform="translate(550, 280)">
       <rect x="0" y="0" width="350" height="70" rx="6" fill="#1f2937"/>
       <polygon points="0,35 -10,25 -10,45" fill="#1f2937"/>
-      <text x="15" y="25" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
+      <text x="15" y="25" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
       <text x="15" y="45" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">This message was encrypted with keys</text>
       <text x="15" y="62" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">that have since been revoked.</text>
     </g>
@@ -102,7 +102,7 @@
     <!-- Callout 2: Tooltip -->
     <g transform="translate(920, 315)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Another encrypted message -->
@@ -118,7 +118,7 @@
     <!-- Normal messages continue -->
     <g transform="translate(40, 440)">
       <rect x="800" y="0" width="360" height="50" rx="8" fill="#8b5cf6"/>
-      <text x="815" y="30" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Sure, let me know if you need help!</text>
+      <text x="815" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sure, let me know if you need help!</text>
     </g>
 
     <!-- Message input -->
@@ -126,7 +126,7 @@
     <rect x="35" y="580" width="1090" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="50" y="605" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Type a message...</text>
     <rect x="1140" y="580" width="105" height="40" rx="6" fill="#8b5cf6"/>
-    <text x="1192" y="605" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+    <text x="1192" y="605" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
 
     <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
   </g>
@@ -139,12 +139,12 @@
     <!-- Mobile conversation header -->
     <rect x="10" y="85" width="340" height="45" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="25" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Jane Smith</text>
-    <text x="120" y="108" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">(Display)</text>
+    <text x="120" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14">(Display)</text>
 
     <!-- Callout 3 mobile -->
     <g transform="translate(200, 107)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
     </g>
 
     <!-- Special name states mobile -->
@@ -154,7 +154,7 @@
     <!-- Callout 4 mobile -->
     <g transform="translate(355, 107)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
     </g>
 
     <!-- Mobile message area -->
@@ -168,7 +168,7 @@
 
     <g transform="translate(20, 205)">
       <rect x="110" y="0" width="200" height="40" rx="8" fill="#8b5cf6"/>
-      <text x="120" y="26" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Pretty good!</text>
+      <text x="120" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pretty good!</text>
     </g>
 
     <!-- Encrypted message mobile -->
@@ -185,20 +185,20 @@
     <!-- Callout 1 mobile -->
     <g transform="translate(310, 287)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
     </g>
 
     <!-- Mobile tooltip preview -->
     <g transform="translate(20, 325)">
       <rect x="0" y="0" width="260" height="50" rx="6" fill="#1f2937"/>
-      <text x="10" y="20" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
+      <text x="10" y="20" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
       <text x="10" y="40" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">Keys were revoked.</text>
     </g>
 
     <!-- Callout 2 mobile -->
     <g transform="translate(290, 350)">
       <circle r="14" fill="#dc2626"/>
-      <text y="5" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
     </g>
 
     <!-- Another encrypted message mobile -->
@@ -214,7 +214,7 @@
     <!-- Normal mobile message -->
     <g transform="translate(20, 445)">
       <rect x="100" y="0" width="210" height="40" rx="8" fill="#8b5cf6"/>
-      <text x="110" y="26" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Let me know if help!</text>
+      <text x="110" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Let me know if help!</text>
     </g>
 
     <!-- Unknown user example mobile -->
@@ -228,7 +228,7 @@
     <rect x="20" y="598" width="240" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="30" y="625" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Message...</text>
     <rect x="270" y="598" width="70" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="305" y="625" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+    <text x="305" y="625" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
 
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
   </g>
@@ -240,62 +240,58 @@
     <!-- Column 1: Decryption Failure -->
     <g transform="translate(20, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Decryption Failure</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, when a message cannot be</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">decrypted, I see a lock icon with text.</text>
-      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
-      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
-      <a href="#FR-013"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-013</text></a>
-      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
     </g>
 
     <!-- Column 2: Conversation View -->
     <g transform="translate(470, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Conversation View</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can scroll through messages</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">while tooltip/input stays accessible.</text>
-      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
-      <a href="#FR-014"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-014</text></a>
-      <a href="#FR-015"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-015</text></a>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-014"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-014</text></a>
+      <a href="#FR-015"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-015</text></a>
     </g>
 
     <!-- Column 3: Name Resolution -->
     <g transform="translate(920, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Name Resolution</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I see participant's display</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">name (or username as fallback).</text>
-      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
-      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
-      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
-      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
     </g>
 
     <!-- Column 4: Special States -->
     <g transform="translate(1370, 20)">
       <circle cx="14" cy="14" r="14" fill="#dc2626"/>
-      <text x="14" y="19" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
       <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Special User States</text>
       <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Deleted accounts show "Deleted User",</text>
       <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">missing profiles show "Unknown User".</text>
-      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
-      <a href="#FR-018"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-018</text></a>
-      <a href="#FR-019"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#fff" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-019</text></a>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-018"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-019</text></a>
     </g>
   </g>
 
   <!-- Signature -->
   <!-- Key Concepts Row (G-047) -->
 
-  <text x="40" y="730" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-
-  <text x="140" y="730" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">message input | conversation view | error states | OAuth setup</text>
-
-  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#64748b">
-    ScriptHammer v0.1 - Conversation Error States - 016-messaging-critical-fixes
-  </text>
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">message input | conversation view | error states | OAuth setup</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">016:03 | Messaging Critical Fixes | ScriptHammer</text>
 </svg>

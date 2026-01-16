@@ -52,7 +52,7 @@
         <text x="20" y="48" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Required for basic site functionality</text>
         <text x="20" y="66" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Always enabled</text>
+              font-size="14" fill="#374151">Always enabled</text>
         <!-- Toggle (disabled, ON state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#22c55e" opacity="0.6"/>
         <circle cx="496" cy="39" r="12" fill="#e8d4b8"/>
@@ -66,7 +66,7 @@
         <text x="20" y="48" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Enhanced features and personalization</text>
         <text x="20" y="66" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Remembers your preferences</text>
+              font-size="14" fill="#374151">Remembers your preferences</text>
         <!-- Toggle (ON state) -->
         <rect x="460" y="25" width="50" height="28" rx="14" fill="#22c55e"/>
         <circle cx="496" cy="39" r="12" fill="#e8d4b8"/>
@@ -80,9 +80,9 @@
         <text x="20" y="48" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Help us understand usage patterns</text>
         <text x="20" y="66" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Anonymous usage data</text>
+              font-size="14" fill="#374151">Anonymous usage data</text>
         <!-- Toggle (OFF state) -->
-        <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
+        <rect x="460" y="25" width="50" height="28" rx="14" fill="#374151"/>
         <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
@@ -94,9 +94,9 @@
         <text x="20" y="48" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Used to show relevant advertisements</text>
         <text x="20" y="66" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Third-party tracking</text>
+              font-size="14" fill="#374151">Third-party tracking</text>
         <!-- Toggle (OFF state) -->
-        <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
+        <rect x="460" y="25" width="50" height="28" rx="14" fill="#374151"/>
         <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
@@ -158,7 +158,7 @@
         <text x="12" y="40" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Required for site function</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Always on</text>
+              font-size="14" fill="#374151">Always on</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#22c55e" opacity="0.6"/>
         <circle cx="272" cy="30" r="10" fill="#e8d4b8"/>
       </g>
@@ -171,7 +171,7 @@
         <text x="12" y="40" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Enhanced features</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Personalization</text>
+              font-size="14" fill="#374151">Personalization</text>
         <rect x="240" y="18" width="44" height="24" rx="12" fill="#22c55e"/>
         <circle cx="272" cy="30" r="10" fill="#e8d4b8"/>
       </g>
@@ -184,8 +184,8 @@
         <text x="12" y="40" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Usage patterns</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Anonymous data</text>
-        <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
+              font-size="14" fill="#374151">Anonymous data</text>
+        <rect x="240" y="18" width="44" height="24" rx="12" fill="#374151"/>
         <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
@@ -197,8 +197,8 @@
         <text x="12" y="40" font-family="system-ui, sans-serif"
               font-size="14" fill="#4b5563">Relevant ads</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
-              font-size="14" fill="#6b7280">Third-party</text>
-        <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
+              font-size="14" fill="#374151">Third-party</text>
+        <rect x="240" y="18" width="44" height="24" rx="12" fill="#374151"/>
         <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 

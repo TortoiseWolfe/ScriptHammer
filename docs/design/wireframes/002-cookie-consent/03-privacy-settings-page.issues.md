@@ -11,7 +11,7 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 2 |
+| Open | 1 |
 
 ---
 
@@ -22,12 +22,6 @@
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
 | M-01 | Modal detected but no dimmed background overlay found (use s... | MODAL-001 | REGENERATE |
-
-### Annotation Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| A-01 | Annotation text uses light color #6b7280: 'GDPR compliance |... | G-037 | REGENERATE |
 
 ---
 

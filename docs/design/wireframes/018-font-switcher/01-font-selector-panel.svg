@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">FONT SWITCHER - FONT SELECTOR PANEL</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" fill="#e8d4b8" rx="8"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Features -->
+    <rect x="480" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="520" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+
+    <!-- Page Title -->
+    <text x="640" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">Accessibility Settings</text>
+    <text x="640" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Customize your reading experience</text>
+
+    <!-- Left Panel: Font Selection Menu -->
+    <g transform="translate(40, 140)">
+      <rect width="580" height="480" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel Header -->
+      <text x="290" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Font Family Selection</text>
+      <text x="290" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Choose a font that works best for you</text>
+
+      <!-- Font Option 1: System Default (Selected) -->
+      <g transform="translate(20, 80)">
+        <rect width="540" height="56" fill="#8b5cf6" rx="6" stroke="#7c3aed" stroke-width="2"/>
+        <text x="20" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">System Default</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Uses your device's native fonts</text>
+        <circle cx="510" cy="28" r="12" fill="#22c55e"/>
+        <text x="510" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">✓</text>
+      </g>
+
+      <!-- Font Option 2: Screen-Optimized Sans -->
+      <g transform="translate(20, 145)">
+        <rect width="540" height="56" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+        <text x="20" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="500" fill="#374151">Screen-Optimized Sans</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Optimized for digital screens</text>
+      </g>
+
+      <!-- Font Option 3: Dyslexia-Friendly (A11Y Badge) -->
+      <g transform="translate(20, 210)">
+        <rect width="540" height="56" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+        <text x="20" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="500" fill="#374151">Dyslexia-Friendly</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Designed for dyslexic readers</text>
+        <rect x="400" y="14" width="70" height="24" rx="4" fill="#0891b2"/>
+        <text x="435" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+        <rect x="478" y="14" width="50" height="24" rx="4" fill="#22c55e"/>
+        <text x="503" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">P0</text>
+      </g>
+
+      <!-- Font Option 4: High-Readability (A11Y Badge) -->
+      <g transform="translate(20, 275)">
+        <rect width="540" height="56" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+        <text x="20" y="28" font-family="system-ui, sans-serif" font-size="16" font-weight="500" fill="#374151">High-Readability</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Maximum character distinction</text>
+        <rect x="400" y="14" width="70" height="24" rx="4" fill="#0891b2"/>
+        <text x="435" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+      </g>
+
+      <!-- Font Option 5: Serif -->
+      <g transform="translate(20, 340)">
+        <rect width="540" height="56" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+        <text x="20" y="28" font-family="Georgia, serif" font-size="16" font-weight="500" fill="#374151">Serif</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Traditional long-form reading</text>
+      </g>
+
+      <!-- Font Option 6: Monospace -->
+      <g transform="translate(20, 405)">
+        <rect width="540" height="56" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+        <text x="20" y="28" font-family="monospace" font-size="16" font-weight="500" fill="#374151">Monospace</text>
+        <text x="20" y="46" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Code and technical content</text>
+      </g>
+    </g>
+
+    <!-- Callout ① - Font selection list -->
+    <g class="callout">
+      <circle cx="640" cy="300" r="14" fill="#dc2626"/>
+      <text x="640" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Right Panel: Live Preview -->
+    <g transform="translate(660, 140)">
+      <rect width="580" height="480" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Preview Header -->
+      <text x="290" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Live Preview</text>
+      <text x="290" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">See how text appears with your selection</text>
+
+      <!-- Preview Content Area -->
+      <rect x="20" y="75" width="540" height="300" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Preview Heading -->
+      <text x="40" y="110" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">Welcome to ScriptHammer</text>
+
+      <!-- Preview Subheading -->
+      <text x="40" y="140" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#374151">Build Better Apps Faster</text>
+
+      <!-- Preview Body Text -->
+      <text x="40" y="175" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">ScriptHammer is a complete product planning template</text>
+      <text x="40" y="195" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">with 46 feature specifications and interactive SVG</text>
+      <text x="40" y="215" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">wireframes for AI-assisted development.</text>
+
+      <!-- Preview Small Text -->
+      <text x="40" y="255" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">This preview updates instantly when you select a font.</text>
+      <text x="40" y="275" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">No page reload required.</text>
+
+      <!-- Preview Button Sample -->
+      <rect x="40" y="300" width="160" height="44" fill="#8b5cf6" rx="6"/>
+      <text x="120" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Sample Button</text>
+
+      <rect x="220" y="300" width="160" height="44" fill="#f5f0e6" rx="6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="300" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Outlined</text>
+
+      <!-- Preview Code Sample -->
+      <rect x="40" y="360" width="200" height="30" fill="#1f2937" rx="4"/>
+      <text x="50" y="380" font-family="monospace" font-size="14" fill="#22c55e">const theme = 'dark';</text>
+
+      <!-- Accessibility Info Box -->
+      <rect x="20" y="400" width="540" height="60" fill="#d1fae5" rx="6" stroke="#22c55e" stroke-width="1"/>
+      <text x="40" y="425" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#166534">Accessibility Features</text>
+      <text x="40" y="445" font-family="system-ui, sans-serif" font-size="14" fill="#166534">Font changes apply instantly • Persists across sessions • Theme compatible</text>
+    </g>
+
+    <!-- Callout ② - Live preview panel -->
+    <g class="callout">
+      <circle cx="1260" cy="300" r="14" fill="#dc2626"/>
+      <text x="1260" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout ③ - A11Y badges -->
+    <g class="callout">
+      <circle cx="640" cy="380" r="14" fill="#dc2626"/>
+      <text x="640" y="385" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout ④ - Preview interaction -->
+    <g class="callout">
+      <circle cx="1260" cy="500" r="14" fill="#dc2626"/>
+      <text x="1260" y="505" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" fill="#e8d4b8" rx="24"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Font Settings</text>
+
+    <!-- Current Selection Info -->
+    <rect x="20" y="125" width="320" height="50" fill="#d1fae5" rx="6" stroke="#22c55e" stroke-width="1"/>
+    <text x="30" y="148" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#166534">Current: System Default</text>
+    <text x="30" y="166" font-family="system-ui, sans-serif" font-size="14" fill="#166534">Changes apply instantly</text>
+
+    <!-- Font Option 1 (Selected) -->
+    <rect x="20" y="185" width="320" height="50" fill="#8b5cf6" rx="6"/>
+    <text x="30" y="210" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">System Default</text>
+    <text x="30" y="228" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Device native fonts</text>
+    <circle cx="310" cy="210" r="10" fill="#22c55e"/>
+    <text x="310" y="214" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">✓</text>
+
+    <!-- Font Option 2 -->
+    <rect x="20" y="245" width="320" height="50" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="30" y="270" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Screen-Optimized Sans</text>
+    <text x="30" y="288" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Digital screen optimized</text>
+
+    <!-- Font Option 3 (A11Y) -->
+    <rect x="20" y="305" width="320" height="50" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="30" y="330" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Dyslexia-Friendly</text>
+    <rect x="260" y="317" width="60" height="22" rx="4" fill="#0891b2"/>
+    <text x="290" y="332" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+
+    <!-- Font Option 4 (A11Y) -->
+    <rect x="20" y="365" width="320" height="50" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="30" y="390" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">High-Readability</text>
+    <rect x="260" y="377" width="60" height="22" rx="4" fill="#0891b2"/>
+    <text x="290" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+
+    <!-- Font Option 5 -->
+    <rect x="20" y="425" width="320" height="50" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="30" y="450" font-family="Georgia, serif" font-size="14" font-weight="500" fill="#374151">Serif</text>
+    <text x="30" y="468" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Long-form reading</text>
+
+    <!-- Font Option 6 -->
+    <rect x="20" y="485" width="320" height="50" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="30" y="510" font-family="monospace" font-size="14" font-weight="500" fill="#374151">Monospace</text>
+    <text x="30" y="528" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Code and technical</text>
+
+    <!-- Reset Button -->
+    <rect x="20" y="550" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="578" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Reset to Default</text>
+
+    <!-- Mobile Callouts -->
+    <g class="callout">
+      <circle cx="345" cy="210" r="14" fill="#dc2626"/>
+      <text x="345" y="215" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="340" r="14" fill="#dc2626"/>
+      <text x="345" y="345" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active state for Features tab -->
+    <g transform="translate(90, 664)">
+      <rect width="90" height="56" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" d="M14.6152 1.59492C14.9164 1.76287 15.0643 2.1146 14.9736 2.44734L12.9819 9.75H20.25C20.5486 9.75 20.8188 9.92718 20.9378 10.2011C21.0569 10.475 21.0021 10.7934 20.7983 11.0117L10.2983 22.2617C10.063 22.5139 9.68601 22.573 9.38478 22.4051C9.08354 22.2371 8.93567 21.8854 9.02641 21.5527L11.018 14.25H3.74999C3.45134 14.25 3.18115 14.0728 3.06213 13.7989C2.9431 13.525 2.99792 13.2066 3.20169 12.9883L13.7017 1.73826C13.937 1.48613 14.314 1.42698 14.6152 1.59492Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1: US-001 Select Font Family -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Select Font Family</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user who prefers a specific font,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I need to select from available options.</text>
+
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-005"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-005</text></a>
+      <a href="#FR-009"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-009</text></a>
+      <a href="#SC-001"><rect x="40" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 2: US-004 Font Preview -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Font Preview</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user choosing a font, I need to</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">preview how each font looks.</text>
+
+      <a href="#US-004"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-004</text></a>
+      <a href="#FR-010"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-006"><rect x="162" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 3: US-003 Accessibility Fonts -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accessibility Fonts</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user with dyslexia, I need special</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">fonts that improve my reading.</text>
+
+      <a href="#US-003"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-003</text></a>
+      <a href="#FR-002"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-011"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-005"><rect x="40" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 4: US-005 Theme Compatibility -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Theme Compatibility</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user who customized theme and font,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I need them to work together.</text>
+
+      <a href="#US-005"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#FR-013"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-013</text></a>
+      <a href="#FR-014"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-014</text></a>
+      <a href="#SC-004"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-004</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">font selection | accessibility fonts | live preview | localStorage persistence | theme compatibility</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">018:01 | Font Switcher | ScriptHammer</text>
+</svg>

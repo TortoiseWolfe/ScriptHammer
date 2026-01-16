@@ -63,7 +63,7 @@
       <!-- Text input 44px height -->
       <text x="20" y="230" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Email Address</text>
       <rect x="20" y="240" width="280" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
-      <text x="30" y="268" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
+      <text x="30" y="268" fill="#374151" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
 
       <!-- Checkbox row -->
       <rect x="20" y="300" width="24" height="24" rx="4" fill="#8b5cf6"/>
@@ -77,7 +77,7 @@
 
       <!-- Toggle OFF state -->
       <text x="20" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Dark mode</text>
-      <rect x="200" y="402" width="52" height="28" rx="14" fill="#6b7280"/>
+      <rect x="200" y="402" width="52" height="28" rx="14" fill="#374151"/>
       <circle cx="214" cy="416" r="12" fill="#e8d4b8"/>
 
       <!-- No hover dependency note -->
@@ -182,7 +182,7 @@
     <!-- Form input -->
     <text x="28" y="205" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Email</text>
     <rect x="28" y="215" width="292" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="38" y="243" fill="#6b7280" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
+    <text x="38" y="243" fill="#374151" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
 
     <!-- Toggle switches -->
     <text x="28" y="290" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Notifications</text>

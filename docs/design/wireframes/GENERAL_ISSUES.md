@@ -49,7 +49,7 @@
 | G-044 | Footer/nav bar missing rounded corners | Footer and bottom nav containers must have `rx="4-8"` | Footer/Nav Corner Standards |
 | G-045 | Mobile active state missing icon | Active tab overlay must include white-filled icon path, not just text | Mobile Active State Template |
 | G-046 | Corner tab active state uses rect | Home/Account active overlays must use `<path>` for rounded corners, not `<rect>` | Mobile Active State Template |
-| G-047 | Annotation panel bottom row inconsistent | Use consistent label ("Key Concepts:" preferred), y=940 absolute (annotation panel y=800 + offset 140), leaving room for user stories above | Annotation Bottom Row Standards |
+| G-047 | Key Concepts raw text at panel edge (no margin) | Wrap in container rect (like User Stories): rect at x=40, text at x=60 (20px internal margin). Use "Key Concepts:" label. 🔴 REGEN | Annotation Bottom Row Standards |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -69,7 +69,7 @@ Before writing ANY SVG:
 - [ ] Identify clear areas for annotation boxes
 - [ ] Navigation active state: Highlight current page in BOTH desktop nav AND mobile footer
 - [ ] Verify all XML attributes are properly quoted (no trailing commas, proper `"` quotes)
-- [ ] Key Concepts row: Use "Key Concepts:" label at y=940 (inside annotation panel), leaving room for user stories above (G-047)
+- [ ] Key Concepts: Wrap in container rect (like User Stories), text at x=60 with 20px internal margin (G-047)
 
 ---
 
@@ -1032,7 +1032,25 @@ Copy these EXACTLY for active tab overlays:
 
 ## Annotation Bottom Row Standards (G-047)
 
-**Problem**: The row below user stories (above signature) is inconsistent across wireframes - different labels, cramped spacing, and sometimes missing entirely.
+**Problem**: The row below user stories (above signature) is inconsistent across wireframes - different labels, cramped spacing, and sometimes missing entirely. Additionally, Key Concepts at x=40 puts raw text at the exact panel edge with no internal margin.
+
+### Root Cause: Missing Container Pattern
+
+User story boxes have container rects that provide visual padding. Key Concepts is rendered as raw text without this container, causing:
+- Text flush against panel edge (no margin)
+- Visual inconsistency with other content sections
+- Poor readability
+
+### Architectural Decision (2026-01-16)
+
+**Use container rect pattern for Key Concepts** - same as User Story boxes.
+
+| Approach | Decision |
+|----------|----------|
+| Option 1: Move x from 40 to 60 | ❌ Rejected - inconsistent pattern |
+| Option 2: Wrap in container rect | ✅ **Approved** - matches User Stories |
+
+**Rationale**: One pattern is easier to maintain. Container rects create clear content groupings.
 
 ### Observed Inconsistencies (Batch 006 QC)
 
@@ -1046,13 +1064,34 @@ Copy these EXACTLY for active tab overlays:
 
 ### Rule
 
-**Use "Key Concepts:" consistently with proper spacing:**
+**Use "Key Concepts:" consistently with container rect and proper spacing:**
 
-1. **Label**: Always use "Key Concepts:" (not "Additional Requirements:")
-2. **Y-position**: y=940 absolute (inside annotation panel at y=800, with +140 offset)
-3. **User stories**: Above Key Concepts, leaving breathing room
-4. **Signature gap**: 120px to signature at y=1060
-5. **Content**: Pipe-separated list of technical terms relevant to the wireframe
+1. **Container rect**: Wrap Key Concepts in a rect (like User Stories)
+2. **Container position**: x=40 (panel-aligned), y=920
+3. **Text position**: x=60 (20px internal margin from container edge)
+4. **Label**: Always use "Key Concepts:" (not "Additional Requirements:")
+5. **Y-position**: Text at y=950 (inside container)
+6. **User stories**: Above Key Concepts, leaving breathing room
+7. **Signature gap**: 80px from container bottom to signature at y=1060
+8. **Content**: Pipe-separated list of technical terms relevant to the wireframe
+
+### Container Styling Rules
+
+| Property | Value | Notes |
+|----------|-------|-------|
+| Container x | 40 | Panel-aligned |
+| Container y | 920 | Below user stories |
+| Container width | 600 (adjustable) | Fits content |
+| Container height | 60 | Single row |
+| Container rx | 8 | Rounded corners (matches others) |
+| Container fill | #e8d4b8 | Panel color |
+| Container stroke | #c9b896 | Subtle border |
+| Text x offset | 20 | Internal margin |
+| Text y offset | 35 | Vertically centered |
+
+### Classification
+
+**🔴 REGENERATE** - Adding container rects is a structural change, not patchable.
 
 ### Annotation Panel Layout
 
@@ -1065,28 +1104,40 @@ y=880  │                                                         │
        │ ③ User Story 3        ④ User Story 4                    │
        │ Narrative text...     Narrative text...                 │
        │ [US-003] [SC-001]     [US-004] [SC-002]                  │
-y=920  │─────────────────────────────────────────────────────────│
-       │                       ↓ breathing room for user stories │
-y=940  │ Key Concepts: term1 | term2 | term3 | term4 | term5     │
+y=920  │┌───────────────────────────────────────────────────────┐│ Key Concepts Container
+       ││  Key Concepts: term1 | term2 | term3 | term4 | term5  ││ ← 20px internal margin
+y=980  │└───────────────────────────────────────────────────────┘│
 y=1020 └─────────────────────────────────────────────────────────┘ Annotation Panel End
                               ↓ remaining space
 y=1060 NNN:NN | Feature Name | ScriptHammer
 ```
 
-### SVG Implementation
+### SVG Implementation (Container Pattern)
 
+**Before (raw text at panel edge - WRONG):**
 ```xml
-<!-- Key Concepts row - at y=940 (inside annotation panel) -->
-<g transform="translate(40, 940)">
-  <text font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">
+<text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+<text x="150" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">term1 | term2</text>
+```
+
+**After (container rect pattern - CORRECT):**
+```xml
+<!-- Key Concepts container - matches User Story box pattern -->
+<g transform="translate(40, 920)">
+  <!-- Container rect with same styling as User Story boxes -->
+  <rect x="0" y="0" width="600" height="60" rx="8"
+        fill="#e8d4b8" stroke="#c9b896" stroke-width="1"/>
+
+  <!-- Text content with 20px internal margin -->
+  <text x="20" y="35" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">
     Key Concepts:
   </text>
-  <text x="110" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">
-    44x44px touch targets | 8px spacing | responsive images | semantic HTML | ARIA labels
+  <text x="130" y="35" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">
+    44x44px touch targets | 8px spacing | responsive images | semantic HTML
   </text>
 </g>
 
-<!-- Signature - LEFT-ALIGNED at x=40, 120px below Key Concepts -->
+<!-- Signature - LEFT-ALIGNED at x=40, below Key Concepts container -->
 <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">004:01 | Mobile-First Design | ScriptHammer</text>
 ```
 

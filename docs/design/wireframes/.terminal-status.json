@@ -1,97 +1,20 @@
 {
-  "lastUpdated": "2026-01-16T00:30:00.000000+00:00",
+  "lastUpdated": "2026-01-16T21:40:00.000000+00:00",
   "wireframeStatus": "issues",
   "queue": [
     {
-      "feature": "008-on-the-account",
-      "svg": "01-avatar-upload-flow.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 12/22 batch04: REGEN (z-index callout 3, no mobile callouts), SPEC-ORDER (swap 1/2). Flag TechWriter first.",
-      "assignedTo": "reviewer"
+      "feature": "018-font-switcher",
+      "svg": "01-font-selector-panel.svg",
+      "action": "GENERATE",
+      "reason": "Font selection menu with 6 font options, accessibility labels, live preview (US-1,3,4, FR-001-012)",
+      "assignedTo": "generator-1"
     },
     {
-      "feature": "009-user-messaging-system",
-      "svg": "01-connection-and-chat.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 13/22 batch04: REGEN (mobile missing callout 1). DESIGN-GAP: ESCALATE TO COUNCIL - social discovery gap.",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "009-user-messaging-system",
-      "svg": "02-settings-and-data.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 14/22 batch04: PATCH (z-index - callouts behind containers, redraw last).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "010-unified-blog-content",
-      "svg": "01-editor-and-preview.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 15/22 batch04: REGEN (callouts missing throughout desktop AND mobile).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "010-unified-blog-content",
-      "svg": "02-conflict-resolution.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 16/22 batch04: REGEN (callouts missing both sides + structural issues).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "011-group-chats",
-      "svg": "01-group-creation-messaging.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 17/22 batch04: REGEN (mobile missing callouts), SPEC-ORDER (desktop wrong order). Flag UX/UI.",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "011-group-chats",
-      "svg": "02-member-management.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 18/22 batch04: REGEN (mobile missing callouts), PATCH (column gap in annotation panel).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "012-welcome-message-architecture",
-      "svg": "01-user-onboarding-flow.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 19/22 batch04: REGEN (mobile missing callout 3), PATCH (Additional Requirements row too high), SPEC-ORDER (mobile callout 2 wrong position). Flag UI/UX/TechWriter.",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "016-messaging-critical-fixes",
-      "svg": "01-message-input-visibility.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 20/22 batch04: SPEC-ORDER (user story sequence doesn't match UX flow).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "016-messaging-critical-fixes",
-      "svg": "03-conversation-error-states.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 21/22 batch04: SPEC-ORDER (user story sequence doesn't match UX flow).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "021-geolocation-map",
-      "svg": "02-markers-and-accessibility.svg",
-      "action": "PNG_QC",
-      "reason": "PNG 22/22 batch04: REGEN (mobile missing callouts 1 and 3).",
-      "assignedTo": "reviewer"
-    },
-    {
-      "feature": "022-web3forms-integration",
-      "svg": "01-contact-form-ui.svg",
-      "action": "REGEN",
-      "reason": "52 errors: SVG-003 (wrong height), HDR-001 (missing includes), ANN-001 (no annotation panel), BTN-001 (transparent fills), 40 FONT-001",
-      "assignedTo": "generator"
-    },
-    {
-      "feature": "022-web3forms-integration",
-      "svg": "02-submission-states.svg",
-      "action": "REGEN",
-      "reason": "84 errors: SVG-003, HDR-001, ANN-001, BTN-001, G-001 (forbidden color #e5e7eb), 67 FONT-001",
-      "assignedTo": "generator"
+      "feature": "018-font-switcher",
+      "svg": "02-font-applied-comparison.svg",
+      "action": "GENERATE",
+      "reason": "Font applied to content, persistence indicator, theme compatibility matrix (US-2,5, FR-005-016)",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "024-payment-integration",
@@ -115,417 +38,287 @@
       "assignedTo": "generator-3"
     },
     {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: rfc-consensus.py - RFC vote aggregation and consensus detection",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: dependency-graph.py - Feature dependency resolution",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: feature-context.py - Load feature context for terminals",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: dispatch-precompute.py - Terminal dispatch pre-computation",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: constitution-check.py - Constitution compliance validation",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: svg-autofix.py - SVG structural fixes (highest daily savings)",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: build-inventory.py - Spec inventory builder",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Architect: audit-template.py - Audit template generator",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: generate-component.py - 5-file component generator",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: generate-ignores.py - Ignore file generator",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: validate-tasks.py - Task ID validator",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: scaffold-checklist.py - Checklist scaffolder",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: extract-spec.py - Spec section extractor (shared by 4+ skills)",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: scaffold-test.py - Test file scaffolder",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: build-commit.py - Commit message builder",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: fill-plan.py - Plan template filler",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: parse-data-model.py - Data model parser",
-      "assignedTo": "toolsmith"
-    },
-    {
-      "feature": "tooling-automation",
-      "svg": null,
-      "action": "SCRIPT",
-      "reason": "Developer: validate-contracts.py - Contract validator",
-      "assignedTo": "toolsmith"
-    },
-    {
       "feature": "003-user-authentication",
       "svg": "01-registration-sign-in.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003: x=960→40 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "003-user-authentication",
       "svg": "02-verification-password-reset.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003: x=960→40 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "003-user-authentication",
       "svg": "03-profile-session-management.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003: x=960→40 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "007-e2e-testing-framework",
       "svg": "02-cicd-pipeline-flow.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003: x=960→40 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "008-on-the-account",
       "svg": "01-avatar-upload-flow.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003 + G-044: signature x=960\u2192x=40; footer line 103 add rx=8; mobile nav line 135 add rx=8 + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003 + G-044 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "010-unified-blog-content",
       "svg": "01-editor-and-preview.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004 + G-044: signature x=960\u2192x=40, format '010:01 | Unified Blog Content | ScriptHammer'; footer line 139 add rx=8 + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-044 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "010-unified-blog-content",
       "svg": "02-conflict-resolution.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004 + G-044: signature x=960\u2192x=40, format '010:02 | Unified Blog Content | ScriptHammer'; footer line 161 add rx=8 + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-044 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "011-group-chats",
       "svg": "01-group-creation-messaging.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "011-group-chats",
       "svg": "02-member-management.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003: x=960\u2192x=40, remove text-anchor=middle + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-2"
+    },
+    {
+      "feature": "012-welcome-message-architecture",
+      "svg": "01-user-onboarding-flow.svg",
+      "action": "PATCH",
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "014-admin-welcome-email-gate",
       "svg": "01-verification-gate.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004 + G-044: signature x=960\u2192x=40, format '014:01 | Admin Welcome Email Gate | ScriptHammer'; footer line 94 add rx=8 + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-044 + key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "014-admin-welcome-email-gate",
       "svg": "02-admin-setup-process.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004 + G-044: signature x=960\u2192x=40, format '014:02 | Admin Welcome Email Gate | ScriptHammer'; footer line 145 add rx=8 + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-044 + key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "01-message-input-visibility.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004: x=960\u2192x=40, format '016:01 | Messaging Critical Fixes | ScriptHammer' + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "02-oauth-setup-flow.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004: x=960\u2192x=40, format '016:02 | Messaging Critical Fixes | ScriptHammer' + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "03-conversation-error-states.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004: x=960\u2192x=40, format '016:03 | Messaging Critical Fixes | ScriptHammer' + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + G-037 + key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "021-geolocation-map",
       "svg": "01-map-interface-permission.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004: x=960\u2192x=40, format '021:01 | Geolocation Map | ScriptHammer' + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "021-geolocation-map",
       "svg": "02-markers-and-accessibility.svg",
       "action": "PATCH",
-      "reason": "SIGNATURE-003/004: x=960\u2192x=40, format '021:02 | Geolocation Map | ScriptHammer' + G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "SIGNATURE-003/004 + key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "000-landing-page",
       "svg": "01-landing-page.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "000-rls-implementation",
       "svg": "01-policy-architecture.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "001-wcag-aa-compliance",
       "svg": "01-accessibility-dashboard.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "001-wcag-aa-compliance",
       "svg": "02-cicd-pipeline-integration.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "001-wcag-aa-compliance",
       "svg": "03-accessibility-controls-overlay.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "002-cookie-consent",
       "svg": "01-consent-modal.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "002-cookie-consent",
       "svg": "02-cookie-preferences-panel.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "002-cookie-consent",
       "svg": "03-privacy-settings-page.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "005-security-hardening",
       "svg": "01-security-ux-enhancements.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "005-security-hardening",
       "svg": "02-session-timeout-warning.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "005-security-hardening",
       "svg": "03-security-audit-dashboard.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "006-template-fork-experience",
       "svg": "01-service-setup-guidance.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "006-template-fork-experience",
       "svg": "02-rebrand-automation-flow.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "007-e2e-testing-framework",
       "svg": "01-test-architecture-diagram.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-1"
     },
     {
       "feature": "009-user-messaging-system",
       "svg": "01-connection-and-chat.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "009-user-messaging-system",
       "svg": "02-settings-and-data.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "013-oauth-messaging-password",
       "svg": "01-oauth-password-setup.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "013-oauth-messaging-password",
       "svg": "02-oauth-password-unlock.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-2"
     },
     {
       "feature": "015-oauth-display-name",
       "svg": "01-profile-population-flow.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "016-messaging-critical-fixes",
       "svg": "01-conversation-view.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "017-colorblind-mode",
       "svg": "01-accessibility-settings.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-3"
     },
     {
       "feature": "017-colorblind-mode",
       "svg": "02-type-selection.svg",
       "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
-    },
-    {
-      "feature": "022-web3forms-integration",
-      "svg": "01-contact-form-ui.svg",
-      "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
-    },
-    {
-      "feature": "022-web3forms-integration",
-      "svg": "02-submission-states.svg",
-      "action": "PATCH",
-      "reason": "G-047: Add Key Concepts row at y=730",
-      "assignedTo": "generator"
+      "reason": "G-037: #6b7280→#374151, key_concepts y→940",
+      "assignedTo": "generator-3"
     }
   ],
   "completedToday": [
+    "Generator-3: Completed 022-web3forms-integration REGEN (2 SVGs: 01-contact-form-ui, 02-submission-states) - passes validator v5.0",
+    "Planner: DISPATCH Generator-2 → 012-014 (5 PATCH: 012-welcome, 013-oauth-password, 014-admin-gate)",
+    "Planner: DISPATCH Generator-3 → 022-web3forms (2 REGEN: wrong content, full regeneration)",
     "Generator-1: Completed 022-web3forms-integration (2 SVGs: 01-contact-form-ui, 02-submission-states)",
     "Operator: Deleted premature files (test specs, contracts, quickstart) - wrong phase",
     "Operator: Fixed Developer pattern review authorship (was Auditor)",
-    "Toolsmith: Fixed /wireframe skill title x=700\u2192x=960, fixed light-theme.svg template",
+    "Toolsmith: Fixed /wireframe skill title x=700→x=960, fixed light-theme.svg template",
     "Toolsmith: Verified /status, /queue, /review-queue, /wireframe-fix, /viewer-status skills exist (5 queue items cleared)",
     "Inspector: Identified 21 SVGs with title x=700 (should be x=960), queued for REGEN",
     "WireframeQA: Reviewed 000-rls-implementation - 1 PASS, queued for INSPECT",
@@ -536,8 +329,8 @@
     "Operator: Fixed permission bypass issue - all terminals now use --dangerously-skip-permissions",
     "Operator: Removed stale RFC_VOTE entries (RFC-001, RFC-002 already decided)",
     "Inspector: Batch inspection complete - 37 SVGs, 11 features (000,001,002,003,004,006,007,009,012,013,019), 4 violations in 2 files",
-    "Generator-1: PATCH 008-on-the-account/01-avatar-upload-flow.svg (annotation y=870\u2192800)",
-    "Generator-2: PATCH 007-e2e-testing-framework/02-cicd-pipeline-flow.svg (mobile x=1920\u21921360)",
+    "Generator-1: PATCH 008-on-the-account/01-avatar-upload-flow.svg (annotation y=870→800)",
+    "Generator-2: PATCH 007-e2e-testing-framework/02-cicd-pipeline-flow.svg (mobile x=1920→1360)",
     "Inspector: Re-inspection PASS - 37 SVGs, 0 violations, all patterns consistent",
     "Architect: Dispatched 3 PLAN tasks for P0 wireframe gaps (024, 017, 022)",
     "Generator-3: Completed 017-colorblind-mode (2 SVGs: 01-accessibility-settings, 02-type-selection)",
@@ -556,6 +349,9 @@
     "Toolsmith: Created 16/18 scripts (6,156 LOC). Optional: skill-usage.py, session-tracker.py not created - low priority per architect audit",
     "Validator: 022-web3forms-integration FAIL - 2 SVGs, 136 errors total (structural issues), queued for REGEN",
     "Validator: Full sweep with new checks - 27/45 PASS, 18 FAIL (SIGNATURE-003/004, G-044)",
-    "Validator: Dispatched 16 PATCH tasks to generators (signature alignment + format + footer corners)"
+    "Validator: Dispatched 16 PATCH tasks to generators (signature alignment + format + footer corners)",
+    "WireframeQA: Reviewed 022-web3forms-integration - 2 REGEN (CRITICAL: wrong content - both SVGs show Landing Page instead of Contact Form)",
+    "WireframeQA: Reviewed 022-web3forms-integration - 2 REGEN (CRITICAL: wrong content - both SVGs show Landing Page instead of Contact Form)",
+    "Coordinator: Removed 29 stale queue entries (11 PNG_QC batch04, 18 SCRIPT completed by Toolsmith)"
   ]
 }
