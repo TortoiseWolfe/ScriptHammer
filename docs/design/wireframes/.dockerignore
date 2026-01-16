@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# Output artifacts
+png/
+*.png
+
+# Documentation
+*.md
+!README.md
+
+# Docker files (don't copy into image)
+Dockerfile*
+docker-compose*
+compose.yaml
+.dockerignore
+
+# Development
+node_modules
+npm-debug.log
+.env*
+
+# Python
+__pycache__
+*.pyc
+.pytest_cache
+
+# IDE
+.vscode
+.idea

@@ -1,32 +1,33 @@
+# syntax=docker/dockerfile:1
+
 # Wireframe Review Docker Image
-# Self-contained: live-server + Playwright + Python validator
-#
 # Usage:
 #   docker compose build review
 #   docker compose run review 002
 
 FROM mcr.microsoft.com/playwright/python:v1.57.0-noble
 
-# Install Node.js for live-server
-RUN apt-get update && apt-get install -y \
+# Install Node.js + live-server, clean up in same layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     nodejs \
     npm \
+    tini \
+    && npm install -g live-server \
+    && npm cache clean --force \
     && rm -rf /var/lib/apt/lists/*
 
-# Install live-server globally
-RUN npm install -g live-server
-
 # Install Playwright Python package - MUST match base image version
-RUN pip install playwright==1.57.0
+RUN pip install --no-cache-dir playwright==1.57.0
 
-# Set working directory
+# Create non-root user for running the app
+RUN useradd -m -s /bin/bash reviewer
+USER reviewer
+
 WORKDIR /wireframes
 
-# Copy wireframe files (will be overridden by volume mount in dev)
-COPY . .
+# Copy with correct ownership (will be overridden by volume mount in dev)
+COPY --chown=reviewer:reviewer . .
 
-# Entrypoint runs the screenshot script
-ENTRYPOINT ["python3", "screenshot-wireframes.py"]
-
-# Default command (feature number)
+# Use tini for proper signal handling
+ENTRYPOINT ["/usr/bin/tini", "--", "python3", "screenshot-wireframes.py"]
 CMD ["--help"]
