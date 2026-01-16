@@ -3,10 +3,13 @@
 **Created**: 2026-01-14
 **Source**: [2026-01-14-organizational-review.md](./2026-01-14-organizational-review.md)
 **Status**: In Progress
+**Last Updated**: 2026-01-16
 
 ---
 
 ## Completed
+
+### Phase 1: RFCs & Skills (2026-01-14)
 
 - [x] RFC-001: Add QA Lead Role → DEC-001 (approved)
 - [x] RFC-002: Add Technical Writer Role → DEC-002 (approved)
@@ -24,6 +27,42 @@
 - [x] `/wireframe-fix` skill created (2026-01-14) - `~/.claude/commands/wireframe-fix.md`
 - [x] `/security-audit` skill created (2026-01-14) - `~/.claude/commands/security-audit.md`
 
+### Phase 2: Automation Scripts (2026-01-15)
+
+- [x] 33 Python scripts created (12,601 LOC total) - see [toolsmith-script-completion.md](./2026-01-15-toolsmith-script-completion.md)
+- [x] `generate-component.py` created - component scaffold generator
+- [x] `svg-autofix.py` created - deterministic SVG fixes
+- [x] `rfc-consensus.py` created - RFC vote aggregation
+- [x] `feature-context.py` created - feature context caching
+- [x] `dispatch-precompute.py` created - task pre-computation
+- [x] `dependency-graph.py` created - feature dependency resolution
+
+### Phase 3: Wireframe Standards (2026-01-16)
+
+- [x] Council vote 7/7 APPROVED (G-044, G-047, SIGNATURE-003 standards)
+- [x] Batch patches applied to 41 SVGs
+- [x] G-047 spec corrected: y=940 (inside annotation panel)
+
+---
+
+## Outstanding: Script Integration (HIGH PRIORITY)
+
+**Problem**: 33 scripts built (12,601 LOC) but only ~15% integrated into skills.
+**Impact**: ~100,000 tokens/day wasted on operations scripts could handle.
+**Owner**: Toolsmith
+**Tracking**: [2026-01-16-script-integration-tasks.md](./2026-01-16-script-integration-tasks.md)
+
+| # | Integration | Script | Skill to Update | Token Savings | Priority |
+|---|-------------|--------|-----------------|---------------|----------|
+| 1 | SVG autofix | `svg-autofix.py` | `/wireframe-fix` | ~40,000/day | P0 |
+| 2 | Dispatch precompute | `dispatch-precompute.py` | `tmux-dispatch.sh` | ~40,000/dispatch | P0 |
+| 3 | RFC consensus | `rfc-consensus.py` | `/rfc-vote` | ~17,500/cycle | P1 |
+| 4 | Feature context | `feature-context.py` | `/wireframe-prep`, `/speckit.plan` | ~10,000/day | P1 |
+| 5 | Dependency graph | `dependency-graph.py` | `/speckit.plan`, `/speckit.tasks` | ~16,000/day | P1 |
+| 6 | Constitution check | `constitution-check.py` | `/speckit.analyze` | ~5,000/day | P2 |
+| 7 | Terminal health | `terminal-health.py` | `/status` | ~2,000/day | P2 |
+| 8 | Audit template | `audit-template.py` | New skill or `/prime` | ~2,000/day | P2 |
+
 ---
 
 ## Outstanding: Quick-Win Skills
@@ -31,19 +70,19 @@
 **Owner**: Toolsmith
 **RFC Required**: No
 
-| # | Skill | Purpose | Priority |
-|---|-------|---------|----------|
-| 5 | `/viewer-status` | Health check: confirm container running, return URL | LOW |
+| # | Skill | Purpose | Priority | Status |
+|---|-------|---------|----------|--------|
+| 5 | `/viewer-status` | Health check: confirm container running, return URL | LOW | Exists (check if working) |
 
 ---
 
 ## Outstanding: Other Action Items
 
-| # | Item | Owner | Priority | Notes |
-|---|------|-------|----------|-------|
-| 9 | `patterns.json` baseline | Inspector + Toolsmith | LOW | Machine-readable pattern standards |
-| 10 | Component generator | Toolsmith + DevOps | HIGH | `pnpm run generate:component` - blocks implementation |
-| 11 | Test infrastructure | Test Engineer + DevOps | HIGH | vitest.config.ts, playwright.config.ts - blocks implementation |
+| # | Item | Owner | Priority | Status |
+|---|------|-------|----------|--------|
+| 9 | `patterns.json` baseline | Inspector + Toolsmith | LOW | Not started |
+| 10 | Component generator | Toolsmith + DevOps | HIGH | ✅ `generate-component.py` exists - needs `pnpm` wrapper |
+| 11 | Test infrastructure | Test Engineer + DevOps | HIGH | ❌ BLOCKED - no vitest.config.ts |
 
 ---
 
@@ -72,17 +111,24 @@ Most roles said context is "adequate" but enhancements would reduce manual file 
 These items **must** be completed before the implementation phase can begin:
 
 1. **Component generator** (Action #10)
-   - Constitution references `pnpm run generate:component` but it doesn't exist
-   - Needed to enforce 5-file component pattern
+   - ✅ `generate-component.py` exists (scripts/)
+   - ⚠️ Needs `pnpm run generate:component` wrapper in package.json
+   - Status: **90% complete**
 
 2. **Test infrastructure** (Action #11)
-   - No vitest.config.ts or playwright.config.ts
+   - ❌ No vitest.config.ts or playwright.config.ts
    - Blocks TDD workflow per constitution
+   - Status: **NOT STARTED**
 
 3. **Wireframe completion**
-   - 24 SVGs exist across 7 features
-   - 39 features still need wireframes
-   - Implementation depends on visual reference
+   - ✅ 46 SVGs exist across 11 features (was 24 across 7)
+   - 35 features still need wireframes
+   - Status: **~25% complete**
+
+4. **Script integration** (NEW - Action #12)
+   - ❌ 33 scripts built but only ~15% integrated
+   - Blocking efficient multi-terminal operations
+   - Status: **READY TO START**
 
 ---
 
