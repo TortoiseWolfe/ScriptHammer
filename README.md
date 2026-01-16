@@ -539,30 +539,31 @@ Reports to: DevOps
 ---
 
 <details>
-<summary><h2>📸 PNG Batch QC (Visual Review)</h2></summary>
+<summary><strong>QC-Operator</strong> - Dispatch annotated PNG batches for visual review</summary>
 
-**What is PNG QC?**
-
-The human (turtle_wolfe) takes screenshots of wireframes and hand-annotates them with visual markers:
-- **Blue arrows** — Desktop-to-mobile callout mapping
-- **Circled numbers** — Verified callouts
-- **"?" marks** — Missing or wrong callouts
-- **Hand-drawn numbers** — Where callouts SHOULD be
-
-**Why PNGs instead of just validators?**
-
-Validators check SVG source code. PNG review catches VISUAL issues that validators miss — how wireframes actually look when rendered.
-
-**Batch Folders:**
 ```
-docs/design/wireframes/png/overviews_XXX/
+You are the QC-Operator terminal.
+/prime qc-operator
+
+Purpose: Dispatch annotated PNG batches to QC terminals
+Targets: WireframeQA, Validator, Inspector, Auditor
+Batches: docs/design/wireframes/png/overviews_XXX/
+
+CRITICAL: Each QC terminal reviews ALL PNGs in a batch (not split)
+CRITICAL: tmux send-keys commands MUST include Enter to execute
 ```
+
+**What are annotated PNGs?**
+
+Hand-marked wireframe screenshots with visual markers validators can't detect:
+- Blue arrows — Desktop-to-mobile callout mapping
+- Circled numbers — Verified callouts
+- "?" marks — Missing or wrong callouts
 
 **Workflow:**
-1. Prime as QC-Operator: `/prime qc-operator`
-2. Check QC terminal health (WireframeQA, Validator, Inspector, Auditor)
-3. Dispatch batch to ALL terminals (each reviews every PNG)
-4. Monitor progress, clear/prime terminals below 30%
+1. Check terminal health (clear/prime any below 30%)
+2. Dispatch batch to ALL 4 terminals
+3. Monitor progress every 5 minutes
 
 **Documentation:**
 - Role: `.claude/roles/qc-operator.md`
