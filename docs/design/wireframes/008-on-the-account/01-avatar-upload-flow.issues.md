@@ -2,7 +2,7 @@
 
 **Feature:** 008-on-the-account
 **SVG:** 01-avatar-upload-flow.svg
-**Last Review:** 2026-01-14
+**Last Review:** 2026-01-15
 **Validator:** v5.0
 
 ---
@@ -11,63 +11,20 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 42 |
+| Open | 4 |
 
 ---
 
-## Open Issues (2026-01-14 Review)
+## Open Issues (2026-01-15 Review)
 
 ### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Badge 'FR-019' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-02 | Badge 'FR-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-03 | Badge 'FR-021' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-04 | Badge 'FR-006' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-05 | Badge 'FR-007' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-06 | Badge 'FR-016' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-07 | Badge 'FR-002' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-08 | Badge 'FR-003' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-09 | Badge 'FR-008' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-10 | Badge 'FR-023' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-11 | Badge 'FR-026' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-12 | Badge 'FR-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-13 | Badge 'FR-006' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-14 | Badge 'SC-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-15 | Badge 'FR-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-16 | Badge 'FR-006' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-17 | Badge 'FR-016' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-18 | Badge 'FR-019' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-19 | Badge 'FR-021' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-20 | Badge 'SC-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-21 | Badge 'SC-004' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-22 | Badge 'US-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-23 | Badge 'FR-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-24 | Badge 'FR-006' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-25 | Badge 'FR-015' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-26 | Badge 'SC-001' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-27 | Badge 'SC-002' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-28 | Badge 'US-002' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-29 | Badge 'FR-012' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-30 | Badge 'FR-013' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-31 | Badge 'SC-005' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-32 | Badge 'US-003' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-33 | Badge 'FR-019' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-34 | Badge 'FR-021' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-35 | Badge 'FR-022' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-36 | Badge 'SC-003' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-37 | Badge 'FR-023' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-38 | Badge 'FR-026' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-39 | Badge 'FR-016' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-40 | Badge 'FR-027' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-| X-41 | Badge 'SC-004' is not clickable (wrap in <a href='...'>) | LINK-001 | REGENERATE |
-
-### Layout Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| L-01 | Annotation panel clips into signature area (ends at y=1030, ... | LAYOUT-002 | REGENERATE |
+| X-01 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | PATCH |
+| X-02 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | PATCH |
+| X-03 | Desktop footer (line 103) missing rounded corners - add rx="8" | G-044 | PATCH |
+| X-04 | Mobile bottom nav (line 135) missing rounded corners - add rx="8" | G-044 | PATCH |
 
 ---
 
@@ -81,3 +38,5 @@
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
 | signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |

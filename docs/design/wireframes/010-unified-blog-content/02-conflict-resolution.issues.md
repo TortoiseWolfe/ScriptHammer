@@ -2,7 +2,7 @@
 
 **Feature:** 010-unified-blog-content
 **SVG:** 02-conflict-resolution.svg
-**Last Review:** 2026-01-14
+**Last Review:** 2026-01-15
 **Validator:** v5.0
 
 ---
@@ -11,23 +11,20 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 2 |
+| Open | 4 |
 
 ---
 
-## Open Issues (2026-01-14 Review)
+## Open Issues (2026-01-15 Review)
 
-### Button Issues
-
-| ID | Issue | Code | Classification |
-|----|-------|------|----------------|
-| B-01 | Button uses panel background color (#e8d4b8) - use solid fil... | BTN-001 | REGENERATE |
-
-### User Story Issues
+### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| U-01 | Only 2 User Story badges found - need at least 3 User Storie... | US-002 | REGENERATE |
+| X-01 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | PATCH |
+| X-02 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | PATCH |
+| X-03 | Signature format wrong: 'ScriptHammer Wireframe v5 - 010-uni... | SIGNATURE-004 | PATCH |
+| X-04 | Desktop footer (line 161) missing rounded corners - add rx="8" | G-044 | PATCH |
 
 ---
 
@@ -42,3 +39,5 @@
 |-------|----------|--------|----------------|
 | signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
 | signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer Wireframe v5 - 010-unified-blog-co..." | PATTERN_VIOLATION |
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |

@@ -2,7 +2,7 @@
 
 **Feature:** 010-unified-blog-content
 **SVG:** 01-editor-and-preview.svg
-**Last Review:** 2026-01-14
+**Last Review:** 2026-01-15
 **Validator:** v5.0
 
 ---
@@ -11,17 +11,20 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 1 |
+| Open | 4 |
 
 ---
 
-## Open Issues (2026-01-14 Review)
+## Open Issues (2026-01-15 Review)
 
-### Structure Issues
+### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| S-01 | Background gradient defined but not used. Add fill="url(#bg)... | G-022 | REGENERATE |
+| X-01 | Signature must be left-aligned at x=40, got x=960 | SIGNATURE-003 | PATCH |
+| X-02 | Signature must NOT use text-anchor="middle" - use left-align... | SIGNATURE-003 | PATCH |
+| X-03 | Signature format wrong: 'ScriptHammer Wireframe v5 - 010-uni... | SIGNATURE-004 | PATCH |
+| X-04 | Desktop footer (line 139) missing rounded corners - add rx="8" | G-044 | PATCH |
 
 ---
 
@@ -36,3 +39,5 @@
 |-------|----------|--------|----------------|
 | signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
 | signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer Wireframe v5 - 010-unified-blog-co..." | PATTERN_VIOLATION |
+| footer_nav_corners | desktop footer has rx="4-8" | desktop footer missing rx attribute | PATTERN_VIOLATION |
+| footer_nav_corners | mobile nav has rx="4-8" | mobile nav missing rx attribute | PATTERN_VIOLATION |
