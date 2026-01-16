@@ -45,23 +45,22 @@
 
 ---
 
-## Outstanding: Script Integration (HIGH PRIORITY)
+## Completed: Script Integration (2026-01-16)
 
-**Problem**: 33 scripts built (12,601 LOC) but only ~15% integrated into skills.
-**Impact**: ~100,000 tokens/day wasted on operations scripts could handle.
+**Result**: All 8 integrations complete. ~100,000 tokens/day savings achieved.
 **Owner**: Toolsmith
 **Tracking**: [2026-01-16-script-integration-tasks.md](./2026-01-16-script-integration-tasks.md)
 
-| # | Integration | Script | Skill to Update | Token Savings | Priority |
-|---|-------------|--------|-----------------|---------------|----------|
-| 1 | SVG autofix | `svg-autofix.py` | `/wireframe-fix` | ~40,000/day | P0 |
-| 2 | Dispatch precompute | `dispatch-precompute.py` | `tmux-dispatch.sh` | ~40,000/dispatch | P0 |
-| 3 | RFC consensus | `rfc-consensus.py` | `/rfc-vote` | ~17,500/cycle | P1 |
-| 4 | Feature context | `feature-context.py` | `/wireframe-prep`, `/speckit.plan` | ~10,000/day | P1 |
-| 5 | Dependency graph | `dependency-graph.py` | `/speckit.plan`, `/speckit.tasks` | ~16,000/day | P1 |
-| 6 | Constitution check | `constitution-check.py` | `/speckit.analyze` | ~5,000/day | P2 |
-| 7 | Terminal health | `terminal-health.py` | `/status` | ~2,000/day | P2 |
-| 8 | Audit template | `audit-template.py` | New skill or `/prime` | ~2,000/day | P2 |
+| # | Integration | Script | Skill Updated | Token Savings | Status |
+|---|-------------|--------|---------------|---------------|--------|
+| 1 | SVG autofix | `svg-autofix.py` | `/wireframe-fix` | ~40,000/day | ✅ |
+| 2 | Dispatch precompute | `dispatch-precompute.py` | `tmux-dispatch.sh` | ~40,000/dispatch | ✅ |
+| 3 | RFC consensus | `rfc-consensus.py` | `/rfc-vote` | ~17,500/cycle | ✅ |
+| 4 | Feature context | `feature-context.py` | `/wireframe-prep`, `/speckit.plan` | ~10,000/day | ✅ |
+| 5 | Dependency graph | `dependency-graph.py` | `/speckit.plan`, `/speckit.tasks` | ~16,000/day | ✅ |
+| 6 | Constitution check | `constitution-check.py` | `/speckit.analyze` | ~5,000/day | ✅ |
+| 7 | Terminal health | `terminal-health.py` | `/status` | ~2,000/day | ✅ |
+| 8 | Audit template | `audit-template.py` | `/prime` | ~2,000/day | ✅ |
 
 ---
 
@@ -81,7 +80,7 @@
 | # | Item | Owner | Priority | Status |
 |---|------|-------|----------|--------|
 | 9 | `patterns.json` baseline | Inspector + Toolsmith | LOW | Not started |
-| 10 | Component generator | Toolsmith + DevOps | HIGH | ✅ `generate-component.py` exists - needs `pnpm` wrapper |
+| 10 | Component generator | Toolsmith + DevOps | HIGH | ✅ COMPLETE - `pnpm run generate:component` available |
 | 11 | Test infrastructure | Test Engineer + DevOps | HIGH | ❌ BLOCKED - no vitest.config.ts |
 
 ---
@@ -112,8 +111,8 @@ These items **must** be completed before the implementation phase can begin:
 
 1. **Component generator** (Action #10)
    - ✅ `generate-component.py` exists (scripts/)
-   - ⚠️ Needs `pnpm run generate:component` wrapper in package.json
-   - Status: **90% complete**
+   - ✅ `pnpm run generate:component` wrapper added to root package.json
+   - Status: **COMPLETE**
 
 2. **Test infrastructure** (Action #11)
    - ❌ No vitest.config.ts or playwright.config.ts
@@ -125,10 +124,10 @@ These items **must** be completed before the implementation phase can begin:
    - 35 features still need wireframes
    - Status: **~25% complete**
 
-4. **Script integration** (NEW - Action #12)
-   - ❌ 33 scripts built but only ~15% integrated
-   - Blocking efficient multi-terminal operations
-   - Status: **READY TO START**
+4. **Script integration** (Action #12)
+   - ✅ 8/8 integrations complete
+   - ~100,000 tokens/day savings achieved
+   - Status: **COMPLETE**
 
 ---
 
