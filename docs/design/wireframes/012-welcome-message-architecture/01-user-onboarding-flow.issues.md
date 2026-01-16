@@ -64,7 +64,6 @@
 |-------|----------|--------|----------------|
 | mobile_active_overlay_corners | mobile active state rect (middle tabs) has rx="8" | mobile active state rect missing rx attribute | PATTERN_VIOLATION |
 | mobile_active_icon_missing | mobile active state includes white icon path | active state has text only, no icon | PATTERN_VIOLATION |
-| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |
 | key_concepts_wrong_label | Label: "Key Concepts:" | Label: "Additional Requirements:" (wrong - use "Key Concepts:") | PATTERN_VIOLATION |
 
 ## Visual Review (2026-01-15)

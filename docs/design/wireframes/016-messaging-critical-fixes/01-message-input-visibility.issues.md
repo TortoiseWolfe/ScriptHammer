@@ -36,11 +36,7 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
 | signature_format | NNN:NN | Feature Name | ScriptHammer | "ScriptHammer v0.1 - Messaging UX Input Visibili..." | PATTERN_VIOLATION |
-| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |
-
----
 
 ## Technical Writer Assessment (2026-01-16)
 

@@ -49,7 +49,7 @@
 | G-044 | Footer/nav bar missing rounded corners | Footer and bottom nav containers must have `rx="4-8"` | Footer/Nav Corner Standards |
 | G-045 | Mobile active state missing icon | Active tab overlay must include white-filled icon path, not just text | Mobile Active State Template |
 | G-046 | Corner tab active state uses rect | Home/Account active overlays must use `<path>` for rounded corners, not `<rect>` | Mobile Active State Template |
-| G-047 | Annotation panel bottom row inconsistent | Use consistent label ("Key Concepts:" preferred), y=730 with 20px gaps above/below | Annotation Bottom Row Standards |
+| G-047 | Annotation panel bottom row inconsistent | Use consistent label ("Key Concepts:" preferred), y=940 absolute (annotation panel y=800 + offset 140), leaving room for user stories above | Annotation Bottom Row Standards |
 
 <!-- DEMOTED: G-019, G-023, G-027, G-028, G-029 moved to feature-specific issues (002-cookie-consent/01.issues.md)
      These have only been observed once. Promote back if seen in 2+ features. -->
@@ -69,7 +69,7 @@ Before writing ANY SVG:
 - [ ] Identify clear areas for annotation boxes
 - [ ] Navigation active state: Highlight current page in BOTH desktop nav AND mobile footer
 - [ ] Verify all XML attributes are properly quoted (no trailing commas, proper `"` quotes)
-- [ ] Key Concepts row: Use "Key Concepts:" label at y=730 with proper spacing (G-047)
+- [ ] Key Concepts row: Use "Key Concepts:" label at y=940 (inside annotation panel), leaving room for user stories above (G-047)
 
 ---
 
@@ -1049,24 +1049,26 @@ Copy these EXACTLY for active tab overlays:
 **Use "Key Concepts:" consistently with proper spacing:**
 
 1. **Label**: Always use "Key Concepts:" (not "Additional Requirements:")
-2. **Y-position**: y=730 (20px below user story badges which end around y=710)
-3. **Signature gap**: 20px minimum between Key Concepts row and signature at y=1060
-4. **Content**: Pipe-separated list of technical terms relevant to the wireframe
+2. **Y-position**: y=940 absolute (inside annotation panel at y=800, with +140 offset)
+3. **User stories**: Above Key Concepts, leaving breathing room
+4. **Signature gap**: 120px to signature at y=1060
+5. **Content**: Pipe-separated list of technical terms relevant to the wireframe
 
 ### Annotation Panel Layout
 
 ```
-y=600  ┌─────────────────────────────────────────────────────────┐
+y=800  ┌─────────────────────────────────────────────────────────┐ Annotation Panel Start
        │ ① User Story 1        ② User Story 2                    │
        │ Narrative text...     Narrative text...                 │
        │ [US-001] [FR-001]     [US-002] [FR-002]                  │
-y=690  │                                                         │
+y=880  │                                                         │
        │ ③ User Story 3        ④ User Story 4                    │
        │ Narrative text...     Narrative text...                 │
        │ [US-003] [SC-001]     [US-004] [SC-002]                  │
-y=710  └─────────────────────────────────────────────────────────┘
-                              ↓ 20px gap
-y=730  Key Concepts: term1 | term2 | term3 | term4 | term5
+y=920  │─────────────────────────────────────────────────────────│
+       │                       ↓ breathing room for user stories │
+y=940  │ Key Concepts: term1 | term2 | term3 | term4 | term5     │
+y=1020 └─────────────────────────────────────────────────────────┘ Annotation Panel End
                               ↓ remaining space
 y=1060 NNN:NN | Feature Name | ScriptHammer
 ```

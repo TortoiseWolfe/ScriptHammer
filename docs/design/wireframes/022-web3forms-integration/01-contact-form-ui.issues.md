@@ -113,12 +113,10 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| signature_alignment | x="40" (left-aligned) | x=960, text-anchor="middle" | PATTERN_VIOLATION |
-| signature_format | NNN:NN | Feature Name | ScriptHammer | "Generator1 | 022-web3forms-integration | 01-con..." | PATTERN_VIOLATION |
 | desktop_header_missing | includes/header-desktop.svg#desktop-header | not found | PATTERN_VIOLATION |
 | desktop_footer_missing | includes/footer-desktop.svg#site-footer | not found | PATTERN_VIOLATION |
 | mobile_header_missing | includes/header-mobile.svg#mobile-header-group | not found | PATTERN_VIOLATION |
 | mobile_footer_missing | includes/footer-mobile.svg#mobile-bottom-nav | not found | PATTERN_VIOLATION |
 | footer_nav_corners | desktop footer via include OR inline rect with rx="4-8" | desktop footer missing rounded corners | PATTERN_VIOLATION |
 | footer_nav_corners | mobile nav via include OR inline rect with rx="4-8" | mobile nav missing rounded corners | PATTERN_VIOLATION |
-| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |
+| key_concepts_position | y=730 (±50px) | y=940 | PATTERN_VIOLATION |

@@ -10,4 +10,4 @@
 
 | Check | Expected | Actual | Classification |
 |-------|----------|--------|----------------|
-| key_concepts_missing | Key Concepts row at y≈940 | Key Concepts row not found | PATTERN_VIOLATION |
+| key_concepts_position | y=940 (±50px) | y=730 | PATTERN_VIOLATION |

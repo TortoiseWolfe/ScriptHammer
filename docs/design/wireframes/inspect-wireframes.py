@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-SVG Wireframe Inspector v1.4
+SVG Wireframe Inspector v1.5
 
 Cross-SVG consistency checker for ScriptHammer wireframes.
 Runs AFTER validate-wireframe.py passes to check patterns across all SVGs.
 
+NEW in v1.5: G-047 key_concepts_position - expects y=940 (inside annotation panel, below user stories).
+             REVERTED from y=730 (was outside panel). Escalated to Architect for review.
 NEW in v1.4: Fixed G-044 to recognize <use> include files (footer/nav have proper corners via <path>).
              Fixed G-044 to check mobile active state overlays for rx attribute.
              Added G-047 "Additional Requirements" label detection (should be "Key Concepts").
@@ -24,7 +26,7 @@ Checks for:
 - Footer/nav rounded corners (G-044) - includes and active overlays
 - Mobile active state icon presence (G-045)
 - Mobile corner tab shape (G-046)
-- Key Concepts row presence at y=730 (G-047)
+- Key Concepts row presence at y=940 (G-047) - inside annotation panel, below user stories
 - Wrong label detection: "Additional Requirements" should be "Key Concepts"
 
 Usage:
@@ -62,9 +64,9 @@ EXPECTED = {
     'mobile_header': 'includes/header-mobile.svg#mobile-header-group',
     'mobile_footer': 'includes/footer-mobile.svg#mobile-bottom-nav',
     'key_concepts': {
-        'y': 940,  # Annotation panel (y=800) + inner offset (y=140) = 940
+        'y': 940,  # Per G-047: Key Concepts row at y=940 (inside annotation panel at y=800, offset +140)
         'tolerance': 50,  # ±50px for y position (allows variation in layout)
-        'gap_to_signature': 120,  # Expected gap: 1060 - 940 = 120px
+        'gap_to_signature': 120,  # Expected gap: 1060 - 940 = 120px (room for signature below)
     },
 }
 
@@ -355,9 +357,8 @@ def extract_structure(svg_path: Path) -> SVGStructure:
                 structure.mobile_active_corner_uses_path = False
 
     # G-047: Check for Key Concepts row
-    # Key Concepts is typically in annotation panel with nested transforms
-    # Standard structure: annotation panel at y=800, Key Concepts row at y=140 offset
-    # Absolute position: y = 800 + 140 = 940
+    # Per G-047: Key Concepts should be at absolute y=730 (not nested in annotation panel)
+    # Formats: <g transform="translate(40, 730)">...Key Concepts... OR <text y="730">Key Concepts:...
 
     # Simple presence check - look for "Key Concepts" text anywhere
     if re.search(r'[Kk]ey\s*[Cc]oncepts\s*:', content):
@@ -365,14 +366,12 @@ def extract_structure(svg_path: Path) -> SVGStructure:
 
         # Find the immediate parent group transform for Key Concepts
         # Pattern: <g transform="translate(X, Y)">...Key Concepts (within ~500 chars)
-        # Search for translate directly before Key Concepts text
+        # The Y value IS the absolute position (not nested inside annotation panel)
         kc_parent_pattern = r'<g[^>]*transform=["\']translate\(\s*\d+\s*,\s*(\d+)\s*\)["\'][^>]*>\s*(?:<[^>]+>\s*){0,5}[^<]*[Kk]ey\s*[Cc]oncepts'
         kc_parent_match = re.search(kc_parent_pattern, content)
         if kc_parent_match:
-            inner_y = int(kc_parent_match.group(1))
-            # Key Concepts is inside annotation panel (y=800) with inner offset
-            # Absolute y = 800 + inner_y
-            structure.key_concepts_y = 800 + inner_y
+            # The transform y IS the absolute position
+            structure.key_concepts_y = int(kc_parent_match.group(1))
 
         # Also check for direct y attribute on text element (less common)
         if not structure.key_concepts_y:
