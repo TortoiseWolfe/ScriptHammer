@@ -12,7 +12,7 @@
 |-------|----------|--------|----------------|
 | mobile_active_overlay_corners | mobile active state rect (middle tabs) has rx="8" | mobile active state rect missing rx attribute | PATTERN_VIOLATION |
 | mobile_active_icon_missing | mobile active state includes white icon path | active state has text only, no icon | PATTERN_VIOLATION |
-| key_concepts_position | y=730 (±50px) | y=140 | PATTERN_VIOLATION |
+| key_concepts_position | y=940 (±50px) | y=140 | PATTERN_VIOLATION |
 
 ## Reviewer Notes (2026-01-14)
 
