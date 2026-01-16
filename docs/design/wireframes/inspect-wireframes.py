@@ -6,7 +6,7 @@ Cross-SVG consistency checker for ScriptHammer wireframes.
 Runs AFTER validate-wireframe.py passes to check patterns across all SVGs.
 
 NEW in v1.5: G-047 key_concepts_position - expects y=940 (inside annotation panel, below user stories).
-             REVERTED from y=730 (was outside panel). Escalated to Architect for review.
+             CONFIRMED by Architect (2026-01-16): y=730 was outside panel boundary.
 NEW in v1.4: Fixed G-044 to recognize <use> include files (footer/nav have proper corners via <path>).
              Fixed G-044 to check mobile active state overlays for rx attribute.
              Added G-047 "Additional Requirements" label detection (should be "Key Concepts").
@@ -357,8 +357,8 @@ def extract_structure(svg_path: Path) -> SVGStructure:
                 structure.mobile_active_corner_uses_path = False
 
     # G-047: Check for Key Concepts row
-    # Per G-047: Key Concepts should be at absolute y=730 (not nested in annotation panel)
-    # Formats: <g transform="translate(40, 730)">...Key Concepts... OR <text y="730">Key Concepts:...
+    # Per G-047: Key Concepts should be at y=940 (inside annotation panel at y=800, +140 offset)
+    # Formats: <g transform="translate(40, 940)">...Key Concepts... OR <text y="940">Key Concepts:...
 
     # Simple presence check - look for "Key Concepts" text anywhere
     if re.search(r'[Kk]ey\s*[Cc]oncepts\s*:', content):
