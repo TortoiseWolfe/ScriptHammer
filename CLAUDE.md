@@ -29,6 +29,17 @@ See `.claude/roles/` for role-specific context:
 | `implementation.md` | Developer, TestEngineer, QALead, Auditor |
 | `support.md` | Author, TechWriter, BusinessAnalyst, Coordinator |
 | `release.md` | DevOps, DockerCaptain, ReleaseManager |
+| `stw-liaison.md` | StW-Liaison (client operator for SpokeToWork) |
+
+### Client Liaisons
+
+For external client projects, specialized **Liaison Operators** manage separate tmux sessions:
+
+| Client | Code | Liaison | Session | Script |
+|--------|------|---------|---------|--------|
+| SpokeToWork | StW | StW-Liaison | `stw` | `./scripts/client-session.sh --client stw --all` |
+
+Client Liaisons run outside their session (like the main Operator) and coordinate with Council for decisions.
 
 **CRITICAL**: Terminals MUST use `--dangerously-skip-permissions` for autonomous operation.
 Without this flag, every edit/commit/bash blocks waiting for manual approval.
