@@ -2,6 +2,7 @@
 
 **Date**: 2026-01-16
 **Role**: StW-Liaison (SpokeToWork Client Operator)
+**Status**: Role setup COMPLETE - Ready for session launch
 
 ## What Was Done
 
@@ -13,6 +14,8 @@
 ### Files Updated
 - `.env.example` - Added `STW_*` client data variables
 - `CLAUDE.md` - Added Client Liaisons section
+- `README.md` - Added StW-Liaison primer with `/prime stw-liaison`
+- `~/.claude/commands/prime.md` - Added `stw-liaison` to valid roles
 - Plan file at `~/.claude/plans/majestic-plotting-storm.md`
 
 ## Next Steps (In Order)
