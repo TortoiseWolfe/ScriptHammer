@@ -82,7 +82,7 @@
         <text x="20" y="66" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Anonymous usage data</text>
         <!-- Toggle (OFF state) -->
-        <rect x="460" y="25" width="50" height="28" rx="14" fill="#374151"/>
+        <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
         <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
@@ -96,7 +96,7 @@
         <text x="20" y="66" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Third-party tracking</text>
         <!-- Toggle (OFF state) -->
-        <rect x="460" y="25" width="50" height="28" rx="14" fill="#374151"/>
+        <rect x="460" y="25" width="50" height="28" rx="14" fill="#6b7280"/>
         <circle cx="474" cy="39" r="12" fill="#e8d4b8"/>
       </g>
 
@@ -185,7 +185,7 @@
               font-size="14" fill="#4b5563">Usage patterns</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Anonymous data</text>
-        <rect x="240" y="18" width="44" height="24" rx="12" fill="#374151"/>
+        <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
         <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 
@@ -198,7 +198,7 @@
               font-size="14" fill="#4b5563">Relevant ads</text>
         <text x="12" y="56" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Third-party</text>
-        <rect x="240" y="18" width="44" height="24" rx="12" fill="#374151"/>
+        <rect x="240" y="18" width="44" height="24" rx="12" fill="#6b7280"/>
         <circle cx="252" cy="30" r="10" fill="#e8d4b8"/>
       </g>
 

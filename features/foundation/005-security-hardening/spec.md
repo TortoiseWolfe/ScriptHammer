@@ -7,41 +7,45 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Payment Data Isolation (Priority: P0)
+<!-- User stories reordered per UX_FLOW_ORDER.md (2026-01-16):
+     UX-visible stories follow form top-to-bottom flow: Email → Password → Lockout → Recovery
+     Backend stories grouped by priority -->
 
-As a user with payment history, I need my payment data to be completely isolated from other users so that my financial information cannot be accessed by anyone else.
+### User Story 1 - Email Validation (Priority: P1) [UX: Form Field 1]
 
-**Why this priority**: Payment data leakage is a critical security and compliance violation. Without proper user association, data can leak between accounts, violating privacy and financial regulations.
+As a user signing up, I need my email address to be properly validated so that I can receive account communications and recover my account if needed.
 
-**Independent Test**: Can be tested by creating payment data for User A, then attempting to access it as User B and verifying access is denied.
+**Why this priority**: Invalid emails prevent account recovery and enable abuse. Proper validation improves account quality while warning about potentially problematic addresses.
 
-**Acceptance Scenarios**:
-
-1. **Given** I am User A with payment history, **When** User B signs in, **Then** User B cannot see or access any of my payment data
-2. **Given** I create a payment, **When** the system stores it, **Then** it is permanently associated with my user account only
-3. **Given** I view my payment history, **When** results are displayed, **Then** only payments belonging to my account are shown
-4. **Given** an unauthenticated request attempts to access payments, **When** the system processes it, **Then** the request is rejected
-
----
-
-### User Story 2 - OAuth Account Protection (Priority: P0)
-
-As a user signing in with a third-party provider, I need the authentication flow to verify that the callback belongs to my browser session so that attackers cannot hijack my account.
-
-**Why this priority**: OAuth hijacking (CSRF) allows attackers to gain unauthorized access to victim accounts. This is a critical vulnerability that must be prevented.
-
-**Independent Test**: Can be tested by initiating an OAuth flow, then attempting to complete it in a different browser session and verifying the callback is rejected.
+**Independent Test**: Can be tested by submitting various valid and invalid email formats and verifying appropriate acceptance or rejection.
 
 **Acceptance Scenarios**:
 
-1. **Given** an attacker initiates an OAuth flow, **When** they try to redirect the authorization to a victim's browser, **Then** the victim's account is NOT compromised
-2. **Given** I sign in with a third-party provider, **When** the callback completes, **Then** the system verifies the request originated from my browser session
-3. **Given** someone tries to replay an authorization code, **When** they submit it, **Then** the system rejects it as already used
-4. **Given** the session verification fails, **When** the callback is processed, **Then** authentication is denied with a clear error
+1. **Given** I enter an email without a valid domain extension, **When** I submit, **Then** the email is rejected with a clear error
+2. **Given** I enter an email with invalid formatting, **When** I submit, **Then** the email is rejected
+3. **Given** I enter an email from a temporary/disposable service, **When** I submit, **Then** I see a warning but can proceed
+4. **Given** I enter a valid email, **When** I submit, **Then** the email is accepted and normalized
 
 ---
 
-### User Story 3 - Brute Force Attack Prevention (Priority: P0)
+### User Story 2 - Password Strength Guidance (Priority: P2) [UX: Form Field 2]
+
+As a user creating a password, I need real-time feedback on password strength so that I can create a secure password without frustration.
+
+**Why this priority**: Users often choose weak passwords without understanding requirements. Visual feedback improves security awareness and reduces weak passwords.
+
+**Independent Test**: Can be tested by typing various passwords and verifying strength indicator updates appropriately.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am creating a password, **When** I type, **Then** I see real-time strength feedback (weak/medium/strong)
+2. **Given** my password is weak, **When** I view the form, **Then** I see clear requirements to improve it
+3. **Given** I create a strong password, **When** the system validates it, **Then** I receive positive confirmation
+4. **Given** I create a weak password, **When** I submit, **Then** the form educates me but does not block submission
+
+---
+
+### User Story 3 - Brute Force Attack Prevention (Priority: P0) [UX: Failure State]
 
 As a user, I need the system to prevent attackers from guessing my password by blocking repeated failed attempts server-side so that my account remains secure regardless of attacker behavior.
 
@@ -59,7 +63,58 @@ As a user, I need the system to prevent attackers from guessing my password by b
 
 ---
 
-### User Story 4 - CSRF Protection (Priority: P0)
+### User Story 4 - Authentication Error Recovery (Priority: P2) [UX: Recovery Link]
+
+As a user experiencing authentication failures, I need clear error messages and recovery options so that I am not left confused or stuck.
+
+**Why this priority**: Poor error handling leaves users frustrated and increases support burden. Clear recovery paths improve user experience.
+
+**Independent Test**: Can be tested by triggering various authentication failures and verifying helpful error messages and recovery options appear.
+
+**Acceptance Scenarios**:
+
+1. **Given** the OAuth provider is unavailable, **When** I try to sign in, **Then** I see a clear error and can retry or use alternative methods
+2. **Given** email delivery fails during sign-up, **When** I am notified, **Then** I can request a new verification email
+3. **Given** a payment status update fails, **When** the system retries, **Then** I eventually see the correct status
+4. **Given** any authentication error occurs, **When** I view the error, **Then** I understand what happened and what to do next
+
+---
+
+### User Story 5 - Payment Data Isolation (Priority: P0) [Backend]
+
+As a user with payment history, I need my payment data to be completely isolated from other users so that my financial information cannot be accessed by anyone else.
+
+**Why this priority**: Payment data leakage is a critical security and compliance violation. Without proper user association, data can leak between accounts, violating privacy and financial regulations.
+
+**Independent Test**: Can be tested by creating payment data for User A, then attempting to access it as User B and verifying access is denied.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am User A with payment history, **When** User B signs in, **Then** User B cannot see or access any of my payment data
+2. **Given** I create a payment, **When** the system stores it, **Then** it is permanently associated with my user account only
+3. **Given** I view my payment history, **When** results are displayed, **Then** only payments belonging to my account are shown
+4. **Given** an unauthenticated request attempts to access payments, **When** the system processes it, **Then** the request is rejected
+
+---
+
+### User Story 6 - OAuth Account Protection (Priority: P0) [Backend]
+
+As a user signing in with a third-party provider, I need the authentication flow to verify that the callback belongs to my browser session so that attackers cannot hijack my account.
+
+**Why this priority**: OAuth hijacking (CSRF) allows attackers to gain unauthorized access to victim accounts. This is a critical vulnerability that must be prevented.
+
+**Independent Test**: Can be tested by initiating an OAuth flow, then attempting to complete it in a different browser session and verifying the callback is rejected.
+
+**Acceptance Scenarios**:
+
+1. **Given** an attacker initiates an OAuth flow, **When** they try to redirect the authorization to a victim's browser, **Then** the victim's account is NOT compromised
+2. **Given** I sign in with a third-party provider, **When** the callback completes, **Then** the system verifies the request originated from my browser session
+3. **Given** someone tries to replay an authorization code, **When** they submit it, **Then** the system rejects it as already used
+4. **Given** the session verification fails, **When** the callback is processed, **Then** authentication is denied with a clear error
+
+---
+
+### User Story 7 - CSRF Protection (Priority: P0) [Backend]
 
 As a user, I need all state-changing operations to be protected against cross-site request forgery so that malicious websites cannot trick me into performing unwanted actions.
 
@@ -76,7 +131,7 @@ As a user, I need all state-changing operations to be protected against cross-si
 
 ---
 
-### User Story 5 - Malicious Data Prevention (Priority: P1)
+### User Story 8 - Malicious Data Prevention (Priority: P1) [Backend]
 
 As a system operator, I need user-submitted data to be validated against injection attacks so that malicious content cannot compromise system security or stability.
 
@@ -93,7 +148,7 @@ As a system operator, I need user-submitted data to be validated against injecti
 
 ---
 
-### User Story 6 - Security Audit Trail (Priority: P1)
+### User Story 9 - Security Audit Trail (Priority: P1) [Backend]
 
 As a security administrator, I need all authentication events to be logged with sufficient detail so that I can investigate security incidents and meet compliance requirements.
 
@@ -111,41 +166,7 @@ As a security administrator, I need all authentication events to be logged with 
 
 ---
 
-### User Story 7 - Email Validation (Priority: P1)
-
-As a user signing up, I need my email address to be properly validated so that I can receive account communications and recover my account if needed.
-
-**Why this priority**: Invalid emails prevent account recovery and enable abuse. Proper validation improves account quality while warning about potentially problematic addresses.
-
-**Independent Test**: Can be tested by submitting various valid and invalid email formats and verifying appropriate acceptance or rejection.
-
-**Acceptance Scenarios**:
-
-1. **Given** I enter an email without a valid domain extension, **When** I submit, **Then** the email is rejected with a clear error
-2. **Given** I enter an email with invalid formatting, **When** I submit, **Then** the email is rejected
-3. **Given** I enter an email from a temporary/disposable service, **When** I submit, **Then** I see a warning but can proceed
-4. **Given** I enter a valid email, **When** I submit, **Then** the email is accepted and normalized
-
----
-
-### User Story 8 - Password Strength Guidance (Priority: P2)
-
-As a user creating a password, I need real-time feedback on password strength so that I can create a secure password without frustration.
-
-**Why this priority**: Users often choose weak passwords without understanding requirements. Visual feedback improves security awareness and reduces weak passwords.
-
-**Independent Test**: Can be tested by typing various passwords and verifying strength indicator updates appropriately.
-
-**Acceptance Scenarios**:
-
-1. **Given** I am creating a password, **When** I type, **Then** I see real-time strength feedback (weak/medium/strong)
-2. **Given** my password is weak, **When** I view the form, **Then** I see clear requirements to improve it
-3. **Given** I create a strong password, **When** the system validates it, **Then** I receive positive confirmation
-4. **Given** I create a weak password, **When** I submit, **Then** the form educates me but does not block submission
-
----
-
-### User Story 9 - Session Timeout (Priority: P2)
+### User Story 10 - Session Timeout (Priority: P2) [See: 02-session-timeout-warning.svg]
 
 As a user, I need my session to automatically expire after inactivity so that if I leave my device unattended, my account is protected.
 
@@ -163,24 +184,7 @@ As a user, I need my session to automatically expire after inactivity so that if
 
 ---
 
-### User Story 10 - Authentication Error Recovery (Priority: P2)
-
-As a user experiencing authentication failures, I need clear error messages and recovery options so that I am not left confused or stuck.
-
-**Why this priority**: Poor error handling leaves users frustrated and increases support burden. Clear recovery paths improve user experience.
-
-**Independent Test**: Can be tested by triggering various authentication failures and verifying helpful error messages and recovery options appear.
-
-**Acceptance Scenarios**:
-
-1. **Given** the OAuth provider is unavailable, **When** I try to sign in, **Then** I see a clear error and can retry or use alternative methods
-2. **Given** email delivery fails during sign-up, **When** I am notified, **Then** I can request a new verification email
-3. **Given** a payment status update fails, **When** the system retries, **Then** I eventually see the correct status
-4. **Given** any authentication error occurs, **When** I view the error, **Then** I understand what happened and what to do next
-
----
-
-### User Story 11 - Pre-commit Secret Detection (Priority: P1)
+### User Story 11 - Pre-commit Secret Detection (Priority: P1) [Dev Workflow]
 
 As a developer, I need all my commits to be automatically scanned for accidentally included secrets so that credentials never reach the repository and become difficult to remove.
 

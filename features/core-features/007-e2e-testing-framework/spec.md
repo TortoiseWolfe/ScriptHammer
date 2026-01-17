@@ -7,23 +7,10 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Cross-Browser Test Execution (Priority: P0)
+<!-- User stories reordered per UX_FLOW_ORDER.md (2026-01-16):
+     Follows pipeline flow: Write Tests → Orchestrate → Execute → Debug -->
 
-As a developer, I need to run E2E tests across Chrome, Firefox, and Safari so that I can ensure the application works consistently for all users regardless of their browser choice.
-
-**Why this priority**: Cross-browser compatibility is the core purpose of E2E testing. Without this, the framework provides no value over unit tests.
-
-**Independent Test**: Can be fully tested by running `test:e2e` command and verifying tests execute in all three browser engines. Delivers cross-browser validation.
-
-**Acceptance Scenarios**:
-
-1. **Given** E2E tests exist, **When** I run the test command, **Then** tests execute in Chrome, Firefox, and Safari
-2. **Given** tests are running, **When** a test fails in one browser, **Then** the failure is clearly attributed to that specific browser
-3. **Given** I want faster feedback, **When** I run tests locally, **Then** I can target a single browser using a flag
-
----
-
-### User Story 2 - Critical User Journey Testing (Priority: P0)
+### User Story 1 - Critical User Journey Testing (Priority: P0) [Pipeline: Input]
 
 As a developer, I need to test complete user workflows (not just individual components) so that I can catch integration issues that unit tests miss.
 
@@ -39,55 +26,7 @@ As a developer, I need to test complete user workflows (not just individual comp
 
 ---
 
-### User Story 3 - Theme Switching Validation (Priority: P1)
-
-As a developer, I need to test that theme switching works correctly and persists across page reloads so that users have a consistent visual experience.
-
-**Why this priority**: Theme switching is a key UX feature that must work across browsers and persist correctly.
-
-**Independent Test**: Can be fully tested by switching themes, reloading, and verifying persistence. Delivers theme reliability validation.
-
-**Acceptance Scenarios**:
-
-1. **Given** I am on any page, **When** I switch to a different theme, **Then** the theme is applied immediately
-2. **Given** I have selected a theme, **When** I reload the page, **Then** my theme choice persists
-3. **Given** I am testing themes, **When** I switch themes, **Then** all UI elements reflect the new theme colors
-
----
-
-### User Story 4 - PWA Feature Testing (Priority: P1)
-
-As a developer, I need to test PWA capabilities including service worker registration and offline functionality so that the app works reliably as an installable application.
-
-**Why this priority**: PWA features cannot be tested with unit tests and require real browser behavior validation.
-
-**Independent Test**: Can be fully tested by verifying service worker registration and testing offline mode. Delivers PWA quality assurance.
-
-**Acceptance Scenarios**:
-
-1. **Given** I am on the homepage, **When** the page loads, **Then** the service worker is registered
-2. **Given** the PWA manifest exists, **When** I inspect it, **Then** it has correct name, icons, and display mode
-3. **Given** I have visited pages while online, **When** I go offline and reload, **Then** cached pages still display
-
----
-
-### User Story 5 - Accessibility Testing (Priority: P1)
-
-As a developer, I need to test that keyboard navigation and screen reader landmarks work correctly so that the application is usable by people with disabilities.
-
-**Why this priority**: Accessibility is a constitutional requirement (WCAG AA) and E2E tests can validate real keyboard/focus behavior.
-
-**Independent Test**: Can be fully tested by tabbing through the application and verifying focus order. Delivers accessibility validation.
-
-**Acceptance Scenarios**:
-
-1. **Given** I am using keyboard navigation, **When** I press Tab, **Then** focus moves in a logical order
-2. **Given** focus is on an interactive element, **When** I press Enter or Space, **Then** the element activates
-3. **Given** a modal is open, **When** I press Escape, **Then** the modal closes and focus returns
-
----
-
-### User Story 6 - CI/CD Integration (Priority: P0)
+### User Story 2 - CI/CD Integration (Priority: P0) [Pipeline: Orchestration]
 
 As a developer, I need E2E tests to run automatically on pull requests so that regressions are caught before merge.
 
@@ -103,7 +42,23 @@ As a developer, I need E2E tests to run automatically on pull requests so that r
 
 ---
 
-### User Story 7 - Test Debugging (Priority: P2)
+### User Story 3 - Cross-Browser Test Execution (Priority: P0) [Pipeline: Execution]
+
+As a developer, I need to run E2E tests across Chrome, Firefox, and Safari so that I can ensure the application works consistently for all users regardless of their browser choice.
+
+**Why this priority**: Cross-browser compatibility is the core purpose of E2E testing. Without this, the framework provides no value over unit tests.
+
+**Independent Test**: Can be fully tested by running `test:e2e` command and verifying tests execute in all three browser engines. Delivers cross-browser validation.
+
+**Acceptance Scenarios**:
+
+1. **Given** E2E tests exist, **When** I run the test command, **Then** tests execute in Chrome, Firefox, and Safari
+2. **Given** tests are running, **When** a test fails in one browser, **Then** the failure is clearly attributed to that specific browser
+3. **Given** I want faster feedback, **When** I run tests locally, **Then** I can target a single browser using a flag
+
+---
+
+### User Story 4 - Test Debugging (Priority: P2) [Pipeline: Output]
 
 As a developer, I need tools to debug failing tests (traces, screenshots, video) so that I can quickly identify and fix issues.
 
@@ -116,6 +71,54 @@ As a developer, I need tools to debug failing tests (traces, screenshots, video)
 1. **Given** a test fails, **When** I view the report, **Then** I see a screenshot of the failure state
 2. **Given** a test fails in CI, **When** I download artifacts, **Then** I get video and trace files
 3. **Given** I want to debug locally, **When** I run with debug flag, **Then** I get step-by-step execution with browser DevTools
+
+---
+
+### User Story 5 - Theme Switching Validation (Priority: P1)
+
+As a developer, I need to test that theme switching works correctly and persists across page reloads so that users have a consistent visual experience.
+
+**Why this priority**: Theme switching is a key UX feature that must work across browsers and persist correctly.
+
+**Independent Test**: Can be fully tested by switching themes, reloading, and verifying persistence. Delivers theme reliability validation.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am on any page, **When** I switch to a different theme, **Then** the theme is applied immediately
+2. **Given** I have selected a theme, **When** I reload the page, **Then** my theme choice persists
+3. **Given** I am testing themes, **When** I switch themes, **Then** all UI elements reflect the new theme colors
+
+---
+
+### User Story 6 - PWA Feature Testing (Priority: P1)
+
+As a developer, I need to test PWA capabilities including service worker registration and offline functionality so that the app works reliably as an installable application.
+
+**Why this priority**: PWA features cannot be tested with unit tests and require real browser behavior validation.
+
+**Independent Test**: Can be fully tested by verifying service worker registration and testing offline mode. Delivers PWA quality assurance.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am on the homepage, **When** the page loads, **Then** the service worker is registered
+2. **Given** the PWA manifest exists, **When** I inspect it, **Then** it has correct name, icons, and display mode
+3. **Given** I have visited pages while online, **When** I go offline and reload, **Then** cached pages still display
+
+---
+
+### User Story 7 - Accessibility Testing (Priority: P1)
+
+As a developer, I need to test that keyboard navigation and screen reader landmarks work correctly so that the application is usable by people with disabilities.
+
+**Why this priority**: Accessibility is a constitutional requirement (WCAG AA) and E2E tests can validate real keyboard/focus behavior.
+
+**Independent Test**: Can be fully tested by tabbing through the application and verifying focus order. Delivers accessibility validation.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am using keyboard navigation, **When** I press Tab, **Then** focus moves in a logical order
+2. **Given** focus is on an interactive element, **When** I press Enter or Space, **Then** the element activates
+3. **Given** a modal is open, **When** I press Escape, **Then** the modal closes and focus returns
 
 ---
 

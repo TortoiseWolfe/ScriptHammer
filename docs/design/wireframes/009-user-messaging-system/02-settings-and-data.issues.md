@@ -21,7 +21,7 @@
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| X-01 | Attribute 'y' has unquoted value '940' | XML-004 | REGENERATE |
+| X-01 | Toggle has wrong color '#374151' (must be #6b7280 OFF or #22... | G-015 | REGENERATE |
 
 ---
 

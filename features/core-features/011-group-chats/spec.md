@@ -17,7 +17,10 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Create Group Chat (Priority: P1)
+<!-- User stories reordered per UX_FLOW_ORDER.md (2026-01-16):
+     Follows UX discovery pattern: Create → See Identity → Message → Manage -->
+
+### User Story 1 - Create Group Chat (Priority: P1) [UX: Entry Point]
 
 As a user, I need to create a group conversation with multiple friends so that we can discuss topics together instead of sending individual messages.
 
@@ -33,23 +36,7 @@ As a user, I need to create a group conversation with multiple friends so that w
 
 ---
 
-### User Story 2 - Send/Receive Group Messages (Priority: P1)
-
-As a user in a group, I need to send and receive encrypted messages that all group members can read.
-
-**Why this priority**: Core messaging functionality - the primary purpose of group chats.
-
-**Independent Test**: Can be tested by having 3 users in a group where each sends a message and all members can read all messages with correct sender attribution.
-
-**Acceptance Scenarios**:
-
-1. **Given** a user in a group chat, **When** they send a message, **Then** all group members receive and can decrypt the message
-2. **Given** a group conversation, **When** viewing messages, **Then** each message displays the sender's name and avatar
-3. **Given** a group with active members, **When** multiple users type simultaneously, **Then** typing indicators show all currently typing members
-
----
-
-### User Story 3 - Add Members to Group (Priority: P2)
+### User Story 2 - Add Members to Group (Priority: P2) [UX: Group Identity]
 
 As a group member, I need to invite additional users to join the conversation so that the group can grow organically.
 
@@ -62,6 +49,22 @@ As a group member, I need to invite additional users to join the conversation so
 1. **Given** a group member, **When** they click "Add Members" and select a connection, **Then** the connection is added to the group
 2. **Given** a newly added member, **When** they open the group conversation, **Then** they can only see messages sent after their join date (no pre-join history)
 3. **Given** a member is added, **When** the group key rotates, **Then** the new member receives the new key and existing members' keys are updated
+
+---
+
+### User Story 3 - Send/Receive Group Messages (Priority: P1) [UX: Core Function]
+
+As a user in a group, I need to send and receive encrypted messages that all group members can read.
+
+**Why this priority**: Core messaging functionality - the primary purpose of group chats.
+
+**Independent Test**: Can be tested by having 3 users in a group where each sends a message and all members can read all messages with correct sender attribution.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user in a group chat, **When** they send a message, **Then** all group members receive and can decrypt the message
+2. **Given** a group conversation, **When** viewing messages, **Then** each message displays the sender's name and avatar
+3. **Given** a group with active members, **When** multiple users type simultaneously, **Then** typing indicators show all currently typing members
 
 ---
 

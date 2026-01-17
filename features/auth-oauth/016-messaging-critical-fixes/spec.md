@@ -9,7 +9,43 @@
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Message Input Always Visible (Priority: P1)
+<!-- User stories reordered per UX_FLOW_ORDER.md (2026-01-16):
+     Follows visual hierarchy: Header → Messages → Decryption → Input
+     OAuth setup stories (different wireframe) follow the UX-visible ones -->
+
+### User Story 1 - Participant Name Resolution (Priority: P3) [UX: Header]
+
+As a user viewing a conversation, I need to see the actual participant's name, not "Unknown".
+
+**Why this priority**: Basic usability - "Unknown" is confusing and unprofessional.
+
+**Independent Test**: Can be tested by viewing a conversation with a known user and verifying their display name appears correctly.
+
+**Acceptance Scenarios**:
+
+1. **Given** a conversation with a valid user, **When** viewing the header, **Then** the user's name is displayed correctly
+2. **Given** a participant with a display name set, **When** viewing, **Then** the display name is shown (preferred over username)
+3. **Given** a participant whose account was deleted, **When** viewing, **Then** "Deleted User" is shown (not generic "Unknown")
+
+---
+
+### User Story 2 - Decryption Failure Explanation (Priority: P2) [UX: Message Area]
+
+As a user viewing a conversation, when a message cannot be decrypted, I need to understand why and what (if anything) I can do.
+
+**Why this priority**: Reduces confusion and support requests when messages show as errors.
+
+**Independent Test**: Can be tested by viewing a message encrypted with revoked keys and verifying helpful explanation appears.
+
+**Acceptance Scenarios**:
+
+1. **Given** a message encrypted with old/revoked keys, **When** user views it, **Then** they see a lock icon with "Encrypted with previous keys" text
+2. **Given** multiple undecryptable messages, **When** displayed, **Then** each shows the lock icon individually (not one generic error)
+3. **Given** a decryption failure indicator, **When** user hovers or focuses on it, **Then** a tooltip explains the situation
+
+---
+
+### User Story 3 - Message Input Always Visible (Priority: P1) [UX: Fixed Bottom]
 
 As a user viewing a conversation, the message input field must be visible at all times regardless of device or message count.
 
@@ -25,7 +61,7 @@ As a user viewing a conversation, the message input field must be visible at all
 
 ---
 
-### User Story 2 - OAuth User Full-Page Setup Flow (Priority: P1)
+### User Story 4 - OAuth User Full-Page Setup Flow (Priority: P1) [See: 02-oauth-setup-flow.svg]
 
 As a first-time OAuth user accessing messaging, I need a dedicated setup page (not a modal) that clearly explains I'm creating a new messaging password, with password manager integration.
 
@@ -42,7 +78,7 @@ As a first-time OAuth user accessing messaging, I need a dedicated setup page (n
 
 ---
 
-### User Story 3 - Password Manager Integration (Priority: P2)
+### User Story 5 - Password Manager Integration (Priority: P2) [See: 02-oauth-setup-flow.svg]
 
 As a user setting up messaging encryption, my password manager should detect the form and offer to save the credentials.
 
@@ -55,38 +91,6 @@ As a user setting up messaging encryption, my password manager should detect the
 1. **Given** a user on the setup page, **When** they enter a password, **Then** their browser/password manager offers to save credentials
 2. **Given** the setup form, **When** rendered, **Then** it includes proper form attributes that password managers recognize
 3. **Given** a user who completes setup, **When** they return later, **Then** password manager can autofill their messaging password
-
----
-
-### User Story 4 - Decryption Failure Explanation (Priority: P2)
-
-As a user viewing a conversation, when a message cannot be decrypted, I need to understand why and what (if anything) I can do.
-
-**Why this priority**: Reduces confusion and support requests when messages show as errors.
-
-**Independent Test**: Can be tested by viewing a message encrypted with revoked keys and verifying helpful explanation appears.
-
-**Acceptance Scenarios**:
-
-1. **Given** a message encrypted with old/revoked keys, **When** user views it, **Then** they see a lock icon with "Encrypted with previous keys" text
-2. **Given** multiple undecryptable messages, **When** displayed, **Then** each shows the lock icon individually (not one generic error)
-3. **Given** a decryption failure indicator, **When** user hovers or focuses on it, **Then** a tooltip explains the situation
-
----
-
-### User Story 5 - Participant Name Resolution (Priority: P3)
-
-As a user viewing a conversation, I need to see the actual participant's name, not "Unknown".
-
-**Why this priority**: Basic usability - "Unknown" is confusing and unprofessional.
-
-**Independent Test**: Can be tested by viewing a conversation with a known user and verifying their display name appears correctly.
-
-**Acceptance Scenarios**:
-
-1. **Given** a conversation with a valid user, **When** viewing the header, **Then** the user's name is displayed correctly
-2. **Given** a participant with a display name set, **When** viewing, **Then** the display name is shown (preferred over username)
-3. **Given** a participant whose account was deleted, **When** viewing, **Then** "Deleted User" is shown (not generic "Unknown")
 
 ---
 

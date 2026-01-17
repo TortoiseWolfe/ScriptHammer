@@ -18,28 +18,33 @@ Re-validation of all 45 SVGs completed per your dispatch.
 
 | Metric | Value |
 |--------|-------|
-| PASS | 44 |
-| FAIL | 1 |
-| Total | 45 |
-| Pass Rate | 97.8% |
+| PASS | 45 |
+| FAIL | 5 |
+| Total | 50 |
+| Issues | 8 |
+| Pass Rate | 90% |
 
 ---
 
-## Failing SVG (Requires Generator Action)
+## Failing SVGs (Require Generator Action)
 
-| Feature | SVG | Issue |
-|---------|-----|-------|
-| 002-cookie-consent | 03-privacy-settings-page.svg | MODAL-001: No dimmed background overlay |
+| Feature | SVG | Issue | Classification |
+|---------|-----|-------|----------------|
+| 002-cookie-consent | 02-cookie-preferences-panel.svg | G-015 x4 (toggle color) | PATCH |
+| 002-cookie-consent | 03-privacy-settings-page.svg | MODAL-001 (no overlay) | REGENERATE |
+| 004-mobile-first-design | 02-touch-targets-performance.svg | G-015 (toggle color) | PATCH |
+| 009-user-messaging-system | 02-settings-and-data.svg | G-015 (toggle color) | PATCH |
+| 017-colorblind-mode | 01-accessibility-settings.svg | G-015 (toggle color) | PATCH |
 
-**Classification**: REGENERATE
+**G-015 Fix**: Change toggle color from `#374151` to `#6b7280` (OFF state)
 
-**Recommendation**: Queue to Generator for modal overlay fix.
+**MODAL-001 Fix**: Add semi-transparent dark rect behind modal
 
 ---
 
-## All Other SVGs: APPROVED
+## Passing SVGs: APPROVED
 
-44 SVGs passed validation with 0 open issues. Their .issues.md files have been updated to reflect APPROVED status.
+45 SVGs passed validation with 0 open issues. Their .issues.md files have been updated to reflect APPROVED status.
 
 ---
 

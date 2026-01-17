@@ -8,26 +8,38 @@
 
 ## Executive Summary
 
-Re-validated all 45 SVGs per Planner CRITICAL dispatch. Results show dramatic improvement from previous state.
+Re-validated all 50 SVGs per Planner CRITICAL dispatch.
 
 | Metric | Value |
 |--------|-------|
-| Total SVGs | 45 |
-| PASS (0 issues) | 44 |
-| FAIL (issues remain) | 1 |
-| Pass Rate | 97.8% |
+| Total SVGs | 50 |
+| PASS (0 issues) | 45 |
+| FAIL (issues remain) | 5 |
+| Total Issues | 8 |
+| Pass Rate | 90% |
 
 ---
 
-## Failing SVG
+## Failing SVGs
 
-| Feature | SVG | Issue Code | Issue | Classification |
+| Feature | SVG | Issue Code | Count | Classification |
 |---------|-----|------------|-------|----------------|
-| 002-cookie-consent | 03-privacy-settings-page.svg | MODAL-001 | Modal detected but no dimmed background overlay | REGENERATE |
+| 002-cookie-consent | 02-cookie-preferences-panel.svg | G-015 | 4 | PATCH |
+| 002-cookie-consent | 03-privacy-settings-page.svg | MODAL-001 | 1 | REGENERATE |
+| 004-mobile-first-design | 02-touch-targets-performance.svg | G-015 | 1 | PATCH |
+| 009-user-messaging-system | 02-settings-and-data.svg | G-015 | 1 | PATCH |
+| 017-colorblind-mode | 01-accessibility-settings.svg | G-015 | 1 | PATCH |
+
+### Issue Details
+
+**G-015** (7 occurrences): Toggle has wrong color `#374151` - must be `#6b7280` (OFF) or `#22c55e` (ON)
+
+**MODAL-001** (1 occurrence): Modal detected but no dimmed background overlay
 
 ### Action Required
 
-Generator must add semi-transparent dark rect behind modal overlay in `002-cookie-consent/03-privacy-settings-page.svg`.
+1. **PATCH**: Fix toggle colors in 4 SVGs (change `#374151` to `#6b7280` for OFF state)
+2. **REGENERATE**: Add modal overlay in `002-cookie-consent/03-privacy-settings-page.svg`
 
 ---
 

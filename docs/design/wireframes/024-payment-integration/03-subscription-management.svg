@@ -1,0 +1,310 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">PAYMENT INTEGRATION - SUBSCRIPTION MANAGEMENT</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <!-- Desktop viewport background -->
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8"/>
+
+    <!-- Header -->
+    <rect width="1280" height="50" fill="#1a1a2e"/>
+    <text x="30" y="32" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#e8d4b8">ScriptHammer</text>
+    <text x="400" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="480" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="580" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <rect x="660" y="8" width="80" height="34" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Account</text>
+
+    <!-- Page Title -->
+    <text x="640" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#374151">Subscription Management</text>
+    <text x="640" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#4b5563">Choose a plan that works for you</text>
+
+    <!-- Plan Cards Container -->
+    <!-- Monthly Plan Card -->
+    <g transform="translate(140, 160)">
+      <rect width="450" height="280" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+      <text x="225" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#374151">Monthly Plan</text>
+
+      <!-- Price -->
+      <text x="225" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="bold" fill="#8b5cf6">$9.99</text>
+      <text x="225" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#4b5563">per month</text>
+
+      <!-- Features list -->
+      <text x="40" y="150" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; All premium features</text>
+      <text x="40" y="175" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; Cancel anytime</text>
+      <text x="40" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; Priority support</text>
+
+      <!-- Select button -->
+      <rect x="75" y="220" width="300" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="225" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#8b5cf6">Select Monthly</text>
+    </g>
+
+    <!-- Yearly Plan Card (Recommended) -->
+    <g transform="translate(640, 160)">
+      <rect width="450" height="280" rx="8" fill="#dcc8a8" stroke="#22c55e" stroke-width="3"/>
+
+      <!-- Best Value Badge -->
+      <rect x="150" y="-15" width="150" height="30" rx="15" fill="#22c55e"/>
+      <text x="225" y="6" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">BEST VALUE</text>
+
+      <text x="225" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#374151">Yearly Plan</text>
+
+      <!-- Price -->
+      <text x="225" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="bold" fill="#22c55e">$99.99</text>
+      <text x="225" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#4b5563">per year (Save $19.89!)</text>
+
+      <!-- Features list -->
+      <text x="40" y="150" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; All premium features</text>
+      <text x="40" y="175" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; 2 months free</text>
+      <text x="40" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; Priority support</text>
+
+      <!-- Select button -->
+      <rect x="75" y="220" width="300" height="44" rx="6" fill="#22c55e"/>
+      <text x="225" y="248" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Select Yearly</text>
+    </g>
+
+    <!-- Current Subscription Status Panel -->
+    <g transform="translate(140, 470)">
+      <rect width="950" height="150" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Status indicator -->
+      <rect x="20" y="20" width="100" height="28" rx="14" fill="#22c55e"/>
+      <text x="70" y="39" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">ACTIVE</text>
+
+      <text x="140" y="40" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">Current Plan: Monthly</text>
+
+      <!-- Subscription details -->
+      <text x="20" y="75" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Next billing date: February 15, 2026</text>
+      <text x="20" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Payment method: Visa ending in 4242</text>
+
+      <!-- Retry policy notice -->
+      <rect x="500" y="20" width="430" height="70" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+      <text x="715" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Payment issues? We auto-retry on days 1, 3, 7</text>
+      <text x="715" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">with a 7-day grace period before cancellation.</text>
+
+      <!-- Action buttons -->
+      <rect x="500" y="100" width="200" height="36" rx="4" fill="#8b5cf6"/>
+      <text x="600" y="124" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Update Payment</text>
+
+      <rect x="720" y="100" width="200" height="36" rx="4" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+      <text x="820" y="124" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#dc2626">Cancel Subscription</text>
+    </g>
+
+    <!-- Callout 1 - Plan Cards -->
+    <g class="callout">
+      <circle cx="610" cy="300" r="14" fill="#dc2626"/>
+      <text x="610" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 - Status Panel -->
+    <g class="callout">
+      <circle cx="1110" cy="505" r="14" fill="#dc2626"/>
+      <text x="1110" y="510" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 - Retry Policy -->
+    <g class="callout">
+      <circle cx="1110" cy="560" r="14" fill="#dc2626"/>
+      <text x="1110" y="565" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 - Cancel Button -->
+    <g class="callout">
+      <circle cx="1110" cy="590" r="14" fill="#dc2626"/>
+      <text x="1110" y="595" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <rect y="670" width="1280" height="50" fill="#1a1a2e" rx="8"/>
+    <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">2026 ScriptHammer - Privacy - Terms - Contact</text>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <!-- Mobile frame -->
+    <rect width="360" height="720" rx="24" fill="#e8d4b8"/>
+
+    <!-- Mobile status bar -->
+    <rect width="360" height="24" fill="#1a1a2e"/>
+    <text x="20" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">9:41</text>
+    <text x="330" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">100%</text>
+
+    <!-- Mobile header -->
+    <rect y="24" width="360" height="54" fill="#1a1a2e"/>
+    <text x="180" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Subscriptions</text>
+
+    <!-- Mobile content (y >= 78) -->
+    <g transform="translate(0, 78)">
+      <!-- Page subtitle -->
+      <text x="180" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Choose your plan</text>
+
+      <!-- Current Status Badge -->
+      <rect x="120" y="45" width="120" height="28" rx="14" fill="#22c55e"/>
+      <text x="180" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">ACTIVE</text>
+
+      <!-- Monthly Plan Card (stacked) -->
+      <g transform="translate(20, 85)">
+        <rect width="320" height="140" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+        <text x="20" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Monthly Plan</text>
+        <text x="250" y="30" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#8b5cf6">$9.99</text>
+        <text x="250" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">/month</text>
+        <text x="20" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; All features &#x2713; Cancel anytime</text>
+        <rect x="20" y="90" width="280" height="40" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="160" y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Select</text>
+      </g>
+
+      <!-- Yearly Plan Card (stacked) -->
+      <g transform="translate(20, 240)">
+        <rect width="320" height="140" rx="8" fill="#dcc8a8" stroke="#22c55e" stroke-width="3"/>
+        <!-- Best Value Badge -->
+        <rect x="100" y="-12" width="120" height="24" rx="12" fill="#22c55e"/>
+        <text x="160" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">SAVE</text>
+        <text x="20" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Yearly Plan</text>
+        <text x="250" y="30" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#22c55e">$99.99</text>
+        <text x="250" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">/year</text>
+        <text x="20" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#374151">&#x2713; Save $19.89 &#x2713; 2 months free</text>
+        <rect x="20" y="90" width="280" height="40" rx="4" fill="#22c55e"/>
+        <text x="160" y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Select</text>
+      </g>
+
+      <!-- Retry Policy Notice -->
+      <g transform="translate(20, 400)">
+        <rect width="320" height="70" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+        <text x="160" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Auto-retry: days 1, 3, 7</text>
+        <text x="160" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Grace period: 7 days</text>
+      </g>
+
+      <!-- Action Buttons -->
+      <rect x="20" y="485" width="320" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="180" y="513" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Update Payment Method</text>
+
+      <rect x="20" y="540" width="320" height="44" rx="6" fill="#fee2e2" stroke="#ef4444" stroke-width="1"/>
+      <text x="180" y="568" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#dc2626">Cancel Subscription</text>
+    </g>
+
+    <!-- Mobile Callouts -->
+    <g class="callout">
+      <circle cx="345" cy="230" r="14" fill="#dc2626"/>
+      <text x="345" y="235" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="135" r="14" fill="#dc2626"/>
+      <text x="345" y="140" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="510" r="14" fill="#dc2626"/>
+      <text x="345" y="515" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="615" r="14" fill="#dc2626"/>
+      <text x="345" y="620" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Mobile footer nav -->
+    <rect y="664" width="360" height="56" fill="#1a1a2e" rx="8"/>
+    <text x="45" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="135" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="225" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <!-- Active state for Account tab -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <text x="45" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Account</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <!-- Annotation panel background -->
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1: Plan Selection -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Plan Selection</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can choose between</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">monthly or yearly subscription plans.</text>
+
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-006"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-007"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-007</text></a>
+    </g>
+
+    <!-- Column 2: Subscription Status -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Subscription Status</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Current plan status, next billing date,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and payment method on file displayed.</text>
+
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-008"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-008</text></a>
+      <a href="#FR-009"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-009</text></a>
+    </g>
+
+    <!-- Column 3: Retry Policy -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Auto-Retry Policy</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Failed payments auto-retry on days 1, 3, 7</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">with 7-day grace period before cancellation.</text>
+
+      <!-- Badges -->
+      <a href="#US-003"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-014"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-014</text></a>
+      <a href="#FR-015"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-015</text></a>
+    </g>
+
+    <!-- Column 4: Cancellation -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Subscription Cancellation</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Auto-cancel after grace period exhausted.</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">User can also manually cancel anytime.</text>
+
+      <!-- Badges -->
+      <a href="#US-004"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-016"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#SC-001"><rect x="162" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="79" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="150" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">subscription tiers | recurring billing | auto-retry | grace period | payment webhook verification</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">024:03 | Payment Integration | ScriptHammer</text>
+
+  <!-- Include compliance (at end) -->
+  <g id="include-refs" transform="translate(-9999, -9999)" opacity="0">
+    <use href="includes/header-desktop.svg#desktop-header"/>
+    <use href="includes/footer-desktop.svg#site-footer"/>
+    <use href="includes/header-mobile.svg#mobile-header-group"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav"/>
+  </g>
+</svg>

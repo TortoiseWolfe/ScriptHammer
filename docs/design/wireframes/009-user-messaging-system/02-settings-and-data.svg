@@ -99,7 +99,7 @@
 
     <!-- High Contrast Mode Toggle -->
     <text x="640" y="415" fill="#374151" font-family="system-ui, sans-serif" font-size="14">High contrast mode</text>
-    <rect x="1020" y="400" width="50" height="26" rx="13" fill="#374151"/>
+    <rect x="1020" y="400" width="50" height="26" rx="13" fill="#6b7280"/>
     <circle cx="1033" cy="413" r="10" fill="#ffffff"/>
 
     <!-- Callout ④ - Accessibility -->

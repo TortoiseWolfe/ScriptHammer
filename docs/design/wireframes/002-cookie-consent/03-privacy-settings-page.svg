@@ -56,12 +56,12 @@
       <g transform="translate(20, 80)">
         <text x="0" y="14" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Analytics</text>
-        <rect x="160" y="0" width="36" height="20" rx="10" fill="#374151"/>
+        <rect x="160" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
         <circle cx="170" cy="10" r="8" fill="#e8d4b8"/>
 
         <text x="220" y="14" font-family="system-ui, sans-serif"
               font-size="14" fill="#374151">Marketing</text>
-        <rect x="380" y="0" width="36" height="20" rx="10" fill="#374151"/>
+        <rect x="380" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
         <circle cx="390" cy="10" r="8" fill="#e8d4b8"/>
       </g>
 
@@ -383,7 +383,7 @@
 
 
   <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
-  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR compliance | consent management | cookie categories | preference storage</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR compliance | preference management | cookie categories | data rights</text>
 
 
   <!-- SIGNATURE -->

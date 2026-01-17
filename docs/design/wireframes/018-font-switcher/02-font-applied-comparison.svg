@@ -49,7 +49,7 @@
         <!-- Code Block -->
         <rect x="0" y="145" width="550" height="60" fill="#1f2937" rx="4"/>
         <text x="15" y="168" font-family="monospace" font-size="14" fill="#22c55e">// Install dependencies</text>
-        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install && npm run dev</text>
+        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install &amp;&amp; npm run dev</text>
 
         <!-- List Items -->
         <text x="0" y="230" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Key Features:</text>
@@ -97,7 +97,7 @@
         <!-- Code Block -->
         <rect x="0" y="145" width="550" height="60" fill="#1f2937" rx="4"/>
         <text x="15" y="168" font-family="monospace" font-size="14" fill="#22c55e">// Install dependencies</text>
-        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install && npm run dev</text>
+        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install &amp;&amp; npm run dev</text>
 
         <!-- List Items -->
         <text x="0" y="230" font-family="Comic Sans MS, cursive" font-size="14" fill="#374151" letter-spacing="0.5">Key Features:</text>

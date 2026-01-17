@@ -11,17 +11,18 @@
 
 | Status | Count |
 |--------|-------|
-| Open | 1 |
+| Open | 2 |
 
 ---
 
 ## Open Issues (2026-01-16 Review)
 
-### Annotation Issues
+### Other Issues
 
 | ID | Issue | Code | Classification |
 |----|-------|------|----------------|
-| A-01 | Annotation text uses light color #6b7280: 'GDPR compliance |... | G-037 | REGENERATE |
+| X-01 | Toggle has wrong color '#374151' (must be #6b7280 OFF or #22... | G-015 | REGENERATE |
+| X-02 | Toggle has wrong color '#374151' (must be #6b7280 OFF or #22... | G-015 | REGENERATE |
 
 ---
 
