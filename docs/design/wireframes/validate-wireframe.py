@@ -966,12 +966,44 @@ class WireframeValidator:
         A modal should have a semi-transparent DARK overlay behind it to dim the
         background content. Using the same light color (e.g., parchment) with
         opacity is not a proper modal overlay - it should be dark grey/black.
-        """
-        # Look for modal-like structures: centered panels with "modal", "dialog", or "consent" nearby
-        modal_indicators = ['modal', 'dialog', 'consent', 'Cookie Preferences', 'Privacy Preferences']
-        has_modal = any(indicator.lower() in self.svg_content.lower() for indicator in modal_indicators)
 
-        if not has_modal:
+        MODAL-001 FIX (2026-01-16): Added PAGE vs MODAL detection to prevent
+        false positives on settings pages that contain modal-related keywords.
+        """
+        # STEP 1: Check if this is a PAGE, not a modal
+        # Pages have these indicators in the title or filename
+        page_indicators = ['settings', 'dashboard', 'policy', 'page', 'profile', 'account', 'management']
+        svg_lower = self.svg_content.lower()
+        filename_lower = str(self.svg_path).lower() if self.svg_path else ''
+
+        # Check title text (first 500 chars typically contains the centered title)
+        title_section = svg_lower[:2000]
+        is_page = any(indicator in filename_lower for indicator in page_indicators)
+
+        # Check for page title patterns like "PRIVACY SETTINGS" or "ACCOUNT MANAGEMENT"
+        if not is_page:
+            for indicator in page_indicators:
+                # Look for indicator in title context (near y="28" which is the title position)
+                if f'>{indicator}' in title_section or f' {indicator}' in title_section:
+                    is_page = True
+                    break
+
+        # Additional page indicator: has footer include (modals don't have footers)
+        has_footer = 'footer-desktop.svg' in svg_lower or 'footer-mobile.svg' in svg_lower
+
+        # STEP 2: Look for modal-like structures
+        modal_indicators = ['modal', 'dialog', 'consent', 'Cookie Preferences', 'Privacy Preferences']
+        has_modal_keyword = any(indicator.lower() in svg_lower for indicator in modal_indicators)
+
+        # Strong modal indicator: title contains "MODAL" or "DIALOG"
+        is_explicit_modal = 'modal' in title_section or 'dialog' in title_section
+
+        # If it's a page (not an explicit modal), skip the modal overlay check
+        # Pages can have modal-related content (like "cookie consent settings") without being modals
+        if is_page and not is_explicit_modal:
+            return  # This is a page, not a modal - skip overlay check
+
+        if not has_modal_keyword:
             return  # No modal to check
 
         # Check for DARK overlay: must be a dark color with transparency
