@@ -36,7 +36,19 @@ See `scripts/AUTOMATION.md` for details.
 
 ## Git Rules
 
-**DO NOT PUSH** - Only the Operator (turtle_wolfe) has SSH access to push.
+### TERMINALS: COMMIT ONLY - NEVER PUSH
+
+**Pushing is NOT your job.** Only the Operator (turtle_wolfe) has SSH access to push.
+
+| Action | Allowed? |
+|--------|----------|
+| `git add` | YES |
+| `git commit` | YES |
+| `git push` | **NO - NEVER** |
+| `git push origin` | **NO - NEVER** |
+| Asking to push | **NO - NEVER** |
+
+**Stay in your lane.** Commit your work and move on. The Operator handles all pushes.
 
 **NEVER change the git remote URL.** It MUST remain SSH:
 ```
@@ -47,8 +59,6 @@ If you see HTTPS (`https://github.com/...`), fix it immediately:
 ```bash
 git remote set-url origin git@github.com:TortoiseWolfe/ScriptHammer.git
 ```
-
-Terminals may commit freely but NEVER push.
 
 ## Quick Commands
 
