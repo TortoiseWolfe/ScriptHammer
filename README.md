@@ -543,6 +543,7 @@ ls -la docs/interoffice/memos/
 
 ```
 You are the StW-Liaison terminal - specialized Operator for SpokeToWork client.
+/prime stw-liaison
 
 You run OUTSIDE the stw tmux session, managing client terminals INSIDE it.
 
