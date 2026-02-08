@@ -5,6 +5,17 @@ import SignUpForm from '@/components/auth/SignUpForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
 
+function isSafeRedirectUrl(url: string): boolean {
+  if (!url || !url.startsWith('/')) return false;
+  if (url.startsWith('//')) return false;
+  try {
+    const parsed = new URL(url, window.location.origin);
+    return parsed.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 export default function SignUpPage() {
   const [returnUrl, setReturnUrl] = useState('/profile');
 
@@ -12,7 +23,7 @@ export default function SignUpPage() {
     // Read query params client-side for static export compatibility
     const params = new URLSearchParams(window.location.search);
     const url = params.get('returnUrl');
-    if (url) {
+    if (url && isSafeRedirectUrl(decodeURIComponent(url))) {
       setReturnUrl(url);
     }
   }, []);
