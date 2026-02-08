@@ -2,7 +2,7 @@
 
 **Feature ID**: 016
 **Category**: auth-oauth
-**Source**: ScriptHammer_v_001/specs/006-feature-006-critical
+**Source**: ScriptHammer/specs/006-feature-006-critical
 **Status**: Ready for SpecKit
 **Depends on**: 013-oauth-messaging-password
 

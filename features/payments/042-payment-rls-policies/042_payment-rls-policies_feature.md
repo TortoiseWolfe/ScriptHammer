@@ -2,7 +2,7 @@
 
 **Feature ID**: 042
 **Category**: payments
-**Source**: ScriptHammer_v_001 README (SPEC-058)
+**Source**: ScriptHammer README (SPEC-058)
 **Status**: Ready for SpecKit
 
 ## Description

@@ -2,7 +2,7 @@
 
 **Feature ID**: 013
 **Category**: auth-oauth
-**Source**: ScriptHammer_v_001/specs/001-oauth-messaging-password
+**Source**: ScriptHammer/specs/001-oauth-messaging-password
 **Status**: Ready for SpecKit
 **Extended by**: 016-messaging-critical-fixes
 

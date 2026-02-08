@@ -2,7 +2,7 @@
 
 **Feature ID**: 026
 **Category**: integrations
-**Source**: ScriptHammer_v_001/docs/specs/037-unified-messaging-sidebar
+**Source**: ScriptHammer/docs/specs/037-unified-messaging-sidebar
 **Status**: Ready for SpecKit
 
 ## Description

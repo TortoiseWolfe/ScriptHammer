@@ -2,7 +2,7 @@
 
 **Feature ID**: 014
 **Category**: auth-oauth
-**Source**: ScriptHammer_v_001/specs/002-feature-002-admin
+**Source**: ScriptHammer/specs/002-feature-002-admin
 **Status**: Ready for SpecKit
 **Extends**: 012-welcome-message-architecture
 

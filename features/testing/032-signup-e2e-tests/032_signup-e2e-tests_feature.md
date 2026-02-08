@@ -2,7 +2,7 @@
 
 **Feature ID**: 032
 **Category**: testing
-**Source**: ScriptHammer_v_001/docs/specs/027-signup-e2e-tests
+**Source**: ScriptHammer/docs/specs/027-signup-e2e-tests
 **Status**: Ready for SpecKit (Completed in v_001)
 
 ## Description

@@ -2,7 +2,7 @@
 
 **Feature ID**: 044
 **Category**: code-quality
-**Source**: ScriptHammer_v_001 README (SPEC-060)
+**Source**: ScriptHammer README (SPEC-060)
 **Status**: Ready for SpecKit
 **Depends on**: 019-analytics-consent
 

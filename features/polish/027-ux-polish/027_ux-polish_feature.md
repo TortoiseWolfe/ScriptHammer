@@ -2,7 +2,7 @@
 
 **Feature ID**: 027
 **Category**: polish
-**Source**: ScriptHammer_v_001/specs/008-feature-008-ux
+**Source**: ScriptHammer/specs/008-feature-008-ux
 **Status**: Ready for SpecKit
 
 ## Description

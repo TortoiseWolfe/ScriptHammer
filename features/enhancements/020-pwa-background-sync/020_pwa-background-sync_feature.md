@@ -2,7 +2,7 @@
 
 **Feature ID**: 020
 **Category**: enhancements
-**Source**: ScriptHammer_v_001/docs/specs/011-pwa-background-sync
+**Source**: ScriptHammer/docs/specs/011-pwa-background-sync
 **Status**: Ready for SpecKit (Completed in v_001)
 
 ## Description

@@ -2,7 +2,7 @@
 
 **Feature ID**: 043
 **Category**: core-features
-**Source**: ScriptHammer_v_001 README (SPEC-049)
+**Source**: ScriptHammer README (SPEC-049)
 **Status**: Ready for SpecKit
 **Depends on**: 009-user-messaging-system
 

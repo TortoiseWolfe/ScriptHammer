@@ -2,7 +2,7 @@
 
 **Feature ID**: 031
 **Category**: testing
-**Source**: ScriptHammer_v_001/docs/specs/026-standardize-test-users
+**Source**: ScriptHammer/docs/specs/026-standardize-test-users
 **Status**: Ready for SpecKit (Completed in v_001)
 
 ## Description

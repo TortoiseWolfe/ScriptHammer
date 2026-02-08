@@ -2,7 +2,7 @@
 
 **Feature ID**: 029
 **Category**: polish
-**Source**: ScriptHammer_v_001/docs/specs/020-seo-editorial-assistant
+**Source**: ScriptHammer/docs/specs/020-seo-editorial-assistant
 **Status**: Ready for SpecKit
 
 ## Description

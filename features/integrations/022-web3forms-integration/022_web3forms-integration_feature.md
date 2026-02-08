@@ -2,7 +2,7 @@
 
 **Feature ID**: 022
 **Category**: integrations
-**Source**: ScriptHammer_v_001/docs/specs/009-web3forms-integration
+**Source**: ScriptHammer/docs/specs/009-web3forms-integration
 **Status**: Ready for SpecKit (Completed in v_001)
 
 ## Description

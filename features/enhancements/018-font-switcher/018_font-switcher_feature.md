@@ -2,7 +2,7 @@
 
 **Feature ID**: 018
 **Category**: enhancements
-**Source**: ScriptHammer_v_001/docs/specs/006-font-switcher
+**Source**: ScriptHammer/docs/specs/006-font-switcher
 **Status**: Ready for SpecKit (Completed in v_001)
 
 ## Description

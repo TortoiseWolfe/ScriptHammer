@@ -2,7 +2,7 @@
 
 **Feature ID**: 030
 **Category**: polish
-**Source**: ScriptHammer_v_001/docs/specs/013-calendar-integration
+**Source**: ScriptHammer/docs/specs/013-calendar-integration
 **Status**: Ready for SpecKit
 
 ## Description

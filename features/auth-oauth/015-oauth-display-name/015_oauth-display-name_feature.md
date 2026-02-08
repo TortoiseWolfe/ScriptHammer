@@ -2,7 +2,7 @@
 
 **Feature ID**: 015
 **Category**: auth-oauth
-**Source**: ScriptHammer_v_001/specs/004-feature-oauth-ux
+**Source**: ScriptHammer/specs/004-feature-oauth-ux
 **Status**: Ready for SpecKit
 
 ## Description

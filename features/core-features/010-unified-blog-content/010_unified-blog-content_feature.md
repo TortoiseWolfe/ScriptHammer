@@ -4,7 +4,7 @@
 **Category**: core-features
 **Priority**: P2
 **Status**: Draft
-**Source**: Migrated from ScriptHammer_v_001 docs/specs/021
+**Source**: Migrated from ScriptHammer docs/specs/021
 
 ---
 
