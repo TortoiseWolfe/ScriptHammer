@@ -1,0 +1,61 @@
+{
+  "session": "scripthammer",
+  "terminals": {
+    "cto": 0,
+    "product-owner": 1,
+    "business-analyst": 2,
+    "architect": 3,
+    "ux-designer": 4,
+    "ui-designer": 5,
+    "planner": 6,
+    "generator-1": 7,
+    "generator-2": 8,
+    "generator-3": 9,
+    "preview-host": 10,
+    "wireframe-qa": 11,
+    "validator": 12,
+    "inspector": 13,
+    "developer": 14,
+    "toolsmith": 15,
+    "security": 16,
+    "test-engineer": 17,
+    "qa-lead": 18,
+    "auditor": 19,
+    "author": 20,
+    "tech-writer": 21,
+    "devops": 22,
+    "docker-captain": 23,
+    "release-manager": 24,
+    "coordinator": 25
+  },
+  "groups": {
+    "all-generators": ["generator-1", "generator-2", "generator-3"],
+    "qc": ["preview-host", "wireframe-qa", "validator", "inspector"],
+    "council": [
+      "cto",
+      "architect",
+      "security",
+      "toolsmith",
+      "devops",
+      "product-owner",
+      "ux-designer"
+    ],
+    "wireframe": [
+      "planner",
+      "generator-1",
+      "generator-2",
+      "generator-3",
+      "preview-host",
+      "wireframe-qa",
+      "validator",
+      "inspector"
+    ]
+  },
+  "aliases": {
+    "gen1": "generator-1",
+    "gen2": "generator-2",
+    "gen3": "generator-3",
+    "qa": "wireframe-qa",
+    "preview": "preview-host"
+  }
+}
