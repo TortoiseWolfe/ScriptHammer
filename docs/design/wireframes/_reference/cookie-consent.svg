@@ -1,0 +1,382 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="900" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">COOKIE CONSENT &amp; GDPR COMPLIANCE</text>
+
+  <!-- ==================== SECTION 1: Cookie Banner (First Visit) ==================== -->
+
+  <!-- Banner Panel -->
+  <rect x="40" y="50" width="540" height="280" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="60" y="75" class="heading">Cookie Consent Banner</text>
+  <text x="220" y="75" class="text-muted">(First Visit)</text>
+
+  <!-- Page background representation -->
+  <rect x="60" y="95" width="500" height="180" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+  <rect x="80" y="115" width="120" height="8" rx="2" fill="#334155"/>
+  <rect x="80" y="130" width="200" height="6" rx="2" fill="#334155" opacity="0.6"/>
+  <rect x="80" y="143" width="180" height="6" rx="2" fill="#334155" opacity="0.6"/>
+  <rect x="80" y="165" width="140" height="80" rx="4" fill="#334155"/>
+  <rect x="240" y="165" width="140" height="80" rx="4" fill="#334155"/>
+  <rect x="400" y="165" width="140" height="80" rx="4" fill="#334155"/>
+
+  <!-- Cookie banner overlay -->
+  <rect x="60" y="200" width="500" height="75" rx="6" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <rect x="60" y="200" width="500" height="3" rx="2" fill="url(#accentGrad)"/>
+
+  <!-- Cookie icon -->
+  <circle cx="85" cy="237" r="12" fill="#8b5cf6" opacity="0.2"/>
+  <text x="85" y="241" text-anchor="middle" font-size="14">🍪</text>
+
+  <!-- Banner text -->
+  <text x="110" y="225" fill="#fff" font-size="12" font-weight="bold">We use cookies</text>
+  <text x="110" y="240" fill="#94a3b8" font-size="10">We use cookies to enhance your experience. By continuing,</text>
+  <text x="110" y="252" fill="#94a3b8" font-size="10">you agree to our cookie policy.</text>
+
+  <!-- Banner buttons -->
+  <rect x="380" y="215" width="80" height="26" rx="4" fill="#8b5cf6"/>
+  <text x="420" y="232" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">Accept All</text>
+
+  <rect x="470" y="215" width="80" height="26" rx="4" fill="transparent" stroke="#475569"/>
+  <text x="510" y="232" text-anchor="middle" fill="#94a3b8" font-size="10">Customize</text>
+
+  <text x="380" y="262" fill="#8b5cf6" font-size="9" text-decoration="underline">Cookie Policy</text>
+  <text x="455" y="262" fill="#8b5cf6" font-size="9" text-decoration="underline">Privacy Policy</text>
+
+  <!-- Annotation -->
+  <text x="60" y="295" class="annotation">• Non-blocking overlay at bottom of page</text>
+  <text x="60" y="308" class="annotation">• Links to policy pages required by GDPR</text>
+  <text x="60" y="321" class="annotation">• Persists until user makes choice</text>
+
+  <!-- ==================== SECTION 2: Consent Modal (Detailed) ==================== -->
+
+  <!-- Modal Panel -->
+  <rect x="600" y="50" width="560" height="380" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="620" y="75" class="heading">Cookie Preferences Modal</text>
+
+  <!-- Modal window -->
+  <rect x="620" y="95" width="520" height="320" rx="8" fill="#0f172a" stroke="#8b5cf6" stroke-width="1"/>
+
+  <!-- Modal header -->
+  <rect x="620" y="95" width="520" height="40" rx="8" fill="#334155"/>
+  <rect x="620" y="127" width="520" height="8" fill="#334155"/>
+  <text x="640" y="120" fill="#fff" font-size="13" font-weight="bold">Cookie Preferences</text>
+  <!-- Close button -->
+  <circle cx="1115" cy="115" r="10" fill="#475569"/>
+  <text x="1115" y="119" text-anchor="middle" fill="#94a3b8" font-size="12">×</text>
+
+  <!-- Cookie categories -->
+  <!-- Necessary (always on) -->
+  <rect x="640" y="150" width="480" height="50" rx="4" fill="#1e293b"/>
+  <text x="660" y="170" fill="#fff" font-size="11" font-weight="bold">Necessary Cookies</text>
+  <text x="660" y="185" fill="#64748b" font-size="9">Required for basic site functionality. Cannot be disabled.</text>
+  <!-- Always on toggle -->
+  <rect x="1060" y="162" width="40" height="20" rx="10" fill="#22c55e" opacity="0.3"/>
+  <circle cx="1090" cy="172" r="7" fill="#22c55e"/>
+  <text x="1010" y="176" fill="#64748b" font-size="8">Always On</text>
+
+  <!-- Functional -->
+  <rect x="640" y="205" width="480" height="50" rx="4" fill="#1e293b"/>
+  <text x="660" y="225" fill="#fff" font-size="11" font-weight="bold">Functional Cookies</text>
+  <text x="660" y="240" fill="#64748b" font-size="9">Remember theme, language, and preferences.</text>
+  <!-- Toggle on -->
+  <rect x="1060" y="217" width="40" height="20" rx="10" fill="#8b5cf6"/>
+  <circle cx="1090" cy="227" r="7" fill="#fff"/>
+
+  <!-- Analytics -->
+  <rect x="640" y="260" width="480" height="50" rx="4" fill="#1e293b"/>
+  <text x="660" y="280" fill="#fff" font-size="11" font-weight="bold">Analytics Cookies</text>
+  <text x="660" y="295" fill="#64748b" font-size="9">Help us understand how visitors use the site (Google Analytics).</text>
+  <!-- Toggle off -->
+  <rect x="1060" y="272" width="40" height="20" rx="10" fill="#475569"/>
+  <circle cx="1070" cy="282" r="7" fill="#94a3b8"/>
+
+  <!-- Marketing -->
+  <rect x="640" y="315" width="480" height="50" rx="4" fill="#1e293b"/>
+  <text x="660" y="335" fill="#fff" font-size="11" font-weight="bold">Marketing Cookies</text>
+  <text x="660" y="350" fill="#64748b" font-size="9">Used for advertising and remarketing (future feature).</text>
+  <!-- Toggle off -->
+  <rect x="1060" y="327" width="40" height="20" rx="10" fill="#475569"/>
+  <circle cx="1070" cy="337" r="7" fill="#94a3b8"/>
+
+  <!-- Modal footer -->
+  <rect x="640" y="370" width="480" height="40" rx="4" fill="#1e293b"/>
+  <rect x="660" y="378" width="100" height="26" rx="4" fill="#475569"/>
+  <text x="710" y="395" text-anchor="middle" fill="#94a3b8" font-size="10">Reject All</text>
+
+  <rect x="770" y="378" width="100" height="26" rx="4" fill="#475569"/>
+  <text x="820" y="395" text-anchor="middle" fill="#94a3b8" font-size="10">Accept All</text>
+
+  <rect x="1000" y="378" width="100" height="26" rx="4" fill="#8b5cf6"/>
+  <text x="1050" y="395" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">Save Preferences</text>
+
+  <!-- ==================== SECTION 3: Privacy Controls Page ==================== -->
+
+  <!-- Privacy Controls Panel -->
+  <rect x="40" y="345" width="540" height="290" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="60" y="370" class="heading">Privacy Controls (Settings Page)</text>
+
+  <!-- Settings page mock -->
+  <rect x="60" y="390" width="500" height="230" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+
+  <!-- Page header -->
+  <text x="80" y="415" fill="#fff" font-size="14" font-weight="bold">Privacy &amp; Data</text>
+  <text x="80" y="432" fill="#64748b" font-size="10">Manage your privacy preferences and data</text>
+
+  <!-- Current consent status -->
+  <rect x="80" y="450" width="230" height="80" rx="4" fill="#1e293b"/>
+  <text x="95" y="470" fill="#94a3b8" font-size="10">Current Consent Status</text>
+
+  <rect x="95" y="480" width="8" height="8" rx="2" fill="#22c55e"/>
+  <text x="110" y="488" fill="#cbd5e1" font-size="9">Necessary</text>
+
+  <rect x="165" y="480" width="8" height="8" rx="2" fill="#22c55e"/>
+  <text x="180" y="488" fill="#cbd5e1" font-size="9">Functional</text>
+
+  <rect x="95" y="500" width="8" height="8" rx="2" fill="#ef4444"/>
+  <text x="110" y="508" fill="#cbd5e1" font-size="9">Analytics</text>
+
+  <rect x="165" y="500" width="8" height="8" rx="2" fill="#ef4444"/>
+  <text x="180" y="508" fill="#cbd5e1" font-size="9">Marketing</text>
+
+  <rect x="95" y="515" width="80" height="10" rx="2" fill="#334155"/>
+  <text x="95" y="535" fill="#64748b" font-size="8">Updated: Dec 28, 2025</text>
+
+  <!-- Update preferences button -->
+  <rect x="320" y="450" width="220" height="80" rx="4" fill="#1e293b"/>
+  <text x="335" y="470" fill="#94a3b8" font-size="10">Cookie Preferences</text>
+  <rect x="335" y="485" width="140" height="28" rx="4" fill="#8b5cf6"/>
+  <text x="405" y="503" text-anchor="middle" fill="#fff" font-size="10">Update Preferences</text>
+
+  <!-- Data management section -->
+  <rect x="80" y="545" width="230" height="65" rx="4" fill="#1e293b"/>
+  <text x="95" y="565" fill="#94a3b8" font-size="10">Export Your Data</text>
+  <text x="95" y="580" fill="#64748b" font-size="8">Download all data we have about you</text>
+  <rect x="95" y="588" width="100" height="16" rx="3" fill="#334155"/>
+  <text x="145" y="599" text-anchor="middle" fill="#8b5cf6" font-size="9">Download JSON</text>
+
+  <!-- Delete data section -->
+  <rect x="320" y="545" width="220" height="65" rx="4" fill="#1e293b"/>
+  <text x="335" y="565" fill="#94a3b8" font-size="10">Delete Your Data</text>
+  <text x="335" y="580" fill="#64748b" font-size="8">Request deletion of all your data</text>
+  <rect x="335" y="588" width="100" height="16" rx="3" fill="#ef4444" opacity="0.2" stroke="#ef4444" stroke-width="0.5"/>
+  <text x="385" y="599" text-anchor="middle" fill="#ef4444" font-size="9">Request Deletion</text>
+
+  <!-- ==================== SECTION 4: GDPR Compliance Indicators ==================== -->
+
+  <!-- GDPR Panel -->
+  <rect x="600" y="450" width="280" height="185" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="620" y="475" class="heading">GDPR Compliance</text>
+
+  <!-- Compliance checklist -->
+  <rect x="620" y="490" width="240" height="130" rx="4" fill="#0f172a"/>
+
+  <rect x="635" y="505" width="14" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <path d="M638 512 L641 515 L648 508" stroke="#22c55e" stroke-width="1.5" fill="none"/>
+  <text x="658" y="516" fill="#cbd5e1" font-size="10">Explicit opt-in required</text>
+
+  <rect x="635" y="528" width="14" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <path d="M638 535 L641 538 L648 531" stroke="#22c55e" stroke-width="1.5" fill="none"/>
+  <text x="658" y="539" fill="#cbd5e1" font-size="10">Granular consent controls</text>
+
+  <rect x="635" y="551" width="14" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <path d="M638 558 L641 561 L648 554" stroke="#22c55e" stroke-width="1.5" fill="none"/>
+  <text x="658" y="562" fill="#cbd5e1" font-size="10">Easy consent withdrawal</text>
+
+  <rect x="635" y="574" width="14" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <path d="M638 581 L641 584 L648 577" stroke="#22c55e" stroke-width="1.5" fill="none"/>
+  <text x="658" y="585" fill="#cbd5e1" font-size="10">Data export (portability)</text>
+
+  <rect x="635" y="597" width="14" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <path d="M638 604 L641 607 L648 600" stroke="#22c55e" stroke-width="1.5" fill="none"/>
+  <text x="658" y="608" fill="#cbd5e1" font-size="10">Right to deletion</text>
+
+  <!-- ==================== SECTION 5: Data Export Preview ==================== -->
+
+  <!-- Export Panel -->
+  <rect x="900" y="450" width="260" height="185" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="920" y="475" class="heading">Data Export Format</text>
+
+  <!-- JSON preview -->
+  <rect x="920" y="490" width="220" height="130" rx="4" fill="#0f172a"/>
+  <text x="930" y="508" fill="#d946ef" font-family="monospace" font-size="9">{</text>
+  <text x="940" y="521" fill="#94a3b8" font-family="monospace" font-size="9">"timestamp": "2025-12-28",</text>
+  <text x="940" y="534" fill="#94a3b8" font-family="monospace" font-size="9">"consent": {</text>
+  <text x="950" y="547" fill="#22c55e" font-family="monospace" font-size="9">"necessary": true,</text>
+  <text x="950" y="560" fill="#22c55e" font-family="monospace" font-size="9">"functional": true,</text>
+  <text x="950" y="573" fill="#ef4444" font-family="monospace" font-size="9">"analytics": false</text>
+  <text x="940" y="586" fill="#94a3b8" font-family="monospace" font-size="9">},</text>
+  <text x="940" y="599" fill="#94a3b8" font-family="monospace" font-size="9">"preferences": {...}</text>
+  <text x="930" y="612" fill="#d946ef" font-family="monospace" font-size="9">}</text>
+
+  <!-- ==================== SECTION 6: Mobile Cookie Banner ==================== -->
+
+  <!-- Mobile Frame -->
+  <rect x="40" y="655" width="180" height="230" rx="20" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+  <rect x="90" y="660" width="80" height="4" rx="2" fill="#334155"/>
+
+  <!-- Mobile content -->
+  <rect x="50" y="675" width="160" height="130" fill="#1e293b"/>
+  <rect x="60" y="685" width="100" height="6" rx="2" fill="#334155"/>
+  <rect x="60" y="700" width="130" height="4" rx="2" fill="#334155" opacity="0.6"/>
+  <rect x="60" y="712" width="60" height="50" rx="3" fill="#334155"/>
+  <rect x="130" y="712" width="60" height="50" rx="3" fill="#334155"/>
+
+  <!-- Mobile cookie banner (bottom sheet style) -->
+  <rect x="50" y="775" width="160" height="100" rx="8" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <rect x="95" y="780" width="40" height="3" rx="2" fill="#475569"/>
+
+  <text x="65" y="800" fill="#fff" font-size="9" font-weight="bold">Cookie Consent</text>
+  <text x="65" y="815" fill="#64748b" font-size="7">We use cookies to improve</text>
+  <text x="65" y="825" fill="#64748b" font-size="7">your experience.</text>
+
+  <rect x="65" y="835" width="60" height="20" rx="3" fill="#8b5cf6"/>
+  <text x="95" y="849" text-anchor="middle" fill="#fff" font-size="8">Accept</text>
+
+  <rect x="135" y="835" width="60" height="20" rx="3" fill="#334155"/>
+  <text x="165" y="849" text-anchor="middle" fill="#94a3b8" font-size="8">Settings</text>
+
+  <!-- Mobile label -->
+  <text x="130" y="890" text-anchor="middle" class="annotation">Mobile Bottom Sheet</text>
+
+  <!-- ==================== SECTION 7: Consent State Management ==================== -->
+
+  <!-- State Management Panel -->
+  <rect x="240" y="655" width="340" height="230" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="260" y="680" class="heading">Consent State Flow</text>
+
+  <!-- Flow diagram -->
+  <rect x="260" y="700" width="80" height="35" rx="4" fill="#0f172a" stroke="#475569"/>
+  <text x="300" y="722" text-anchor="middle" fill="#cbd5e1" font-size="9">First Visit</text>
+
+  <path d="M340 717 L370 717" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+  <rect x="375" y="700" width="80" height="35" rx="4" fill="#0f172a" stroke="#8b5cf6"/>
+  <text x="415" y="722" text-anchor="middle" fill="#8b5cf6" font-size="9">Show Banner</text>
+
+  <path d="M455 717 L485 717" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <rect x="490" y="700" width="70" height="35" rx="4" fill="#0f172a" stroke="#475569"/>
+  <text x="525" y="722" text-anchor="middle" fill="#cbd5e1" font-size="9">User Choice</text>
+
+  <!-- Branches -->
+  <path d="M525 735 L525 755" stroke="#8b5cf6" stroke-width="1" fill="none"/>
+  <path d="M340 755 L525 755" stroke="#8b5cf6" stroke-width="1" fill="none"/>
+
+  <!-- Accept All branch -->
+  <path d="M340 755 L340 780" stroke="#22c55e" stroke-width="1" fill="none"/>
+  <rect x="290" y="780" width="100" height="30" rx="4" fill="#22c55e" opacity="0.1" stroke="#22c55e"/>
+  <text x="340" y="800" text-anchor="middle" fill="#22c55e" font-size="9">Accept All</text>
+
+  <!-- Reject All branch -->
+  <path d="M415 755 L415 780" stroke="#ef4444" stroke-width="1" fill="none"/>
+  <rect x="365" y="780" width="100" height="30" rx="4" fill="#ef4444" opacity="0.1" stroke="#ef4444"/>
+  <text x="415" y="800" text-anchor="middle" fill="#ef4444" font-size="9">Reject All</text>
+
+  <!-- Custom branch -->
+  <path d="M490 755 L490 780" stroke="#8b5cf6" stroke-width="1" fill="none"/>
+  <rect x="440" y="780" width="100" height="30" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6"/>
+  <text x="490" y="800" text-anchor="middle" fill="#8b5cf6" font-size="9">Customize</text>
+
+  <!-- localStorage -->
+  <path d="M340 810 L340 830 L415 830 L415 840" stroke="#475569" stroke-width="1" fill="none"/>
+  <path d="M490 810 L490 830 L415 830" stroke="#475569" stroke-width="1" fill="none"/>
+
+  <rect x="350" y="840" width="130" height="28" rx="4" fill="#334155"/>
+  <text x="415" y="858" text-anchor="middle" fill="#94a3b8" font-size="9">localStorage.setItem()</text>
+
+  <!-- ==================== SECTION 8: Implementation Details ==================== -->
+
+  <!-- Implementation Panel -->
+  <rect x="600" y="655" width="560" height="230" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="620" y="680" class="heading">Implementation Details</text>
+
+  <!-- ConsentContext code -->
+  <rect x="620" y="695" width="250" height="175" rx="4" fill="#0f172a"/>
+  <text x="630" y="712" fill="#64748b" font-size="9">ConsentContext.tsx</text>
+
+  <text x="630" y="732" fill="#d946ef" font-family="monospace" font-size="9">interface</text>
+  <text x="680" y="732" fill="#22c55e" font-family="monospace" font-size="9">ConsentState</text>
+  <text x="760" y="732" fill="#94a3b8" font-family="monospace" font-size="9">{</text>
+
+  <text x="640" y="747" fill="#8b5cf6" font-family="monospace" font-size="9">necessary:</text>
+  <text x="720" y="747" fill="#d946ef" font-family="monospace" font-size="9">boolean</text>
+
+  <text x="640" y="762" fill="#8b5cf6" font-family="monospace" font-size="9">functional:</text>
+  <text x="720" y="762" fill="#d946ef" font-family="monospace" font-size="9">boolean</text>
+
+  <text x="640" y="777" fill="#8b5cf6" font-family="monospace" font-size="9">analytics:</text>
+  <text x="720" y="777" fill="#d946ef" font-family="monospace" font-size="9">boolean</text>
+
+  <text x="640" y="792" fill="#8b5cf6" font-family="monospace" font-size="9">marketing:</text>
+  <text x="720" y="792" fill="#d946ef" font-family="monospace" font-size="9">boolean</text>
+
+  <text x="640" y="807" fill="#8b5cf6" font-family="monospace" font-size="9">timestamp:</text>
+  <text x="720" y="807" fill="#d946ef" font-family="monospace" font-size="9">number</text>
+
+  <text x="640" y="822" fill="#8b5cf6" font-family="monospace" font-size="9">version:</text>
+  <text x="710" y="822" fill="#22c55e" font-family="monospace" font-size="9">"1.0.0"</text>
+
+  <text x="630" y="837" fill="#94a3b8" font-family="monospace" font-size="9">}</text>
+
+  <!-- Cookie categories -->
+  <rect x="890" y="695" width="250" height="90" rx="4" fill="#0f172a"/>
+  <text x="900" y="712" fill="#64748b" font-size="9">Cookie Categories</text>
+
+  <rect x="905" y="722" width="12" height="12" rx="2" fill="#22c55e"/>
+  <text x="925" y="732" fill="#cbd5e1" font-size="10">NECESSARY - Auth tokens, CSRF</text>
+
+  <rect x="905" y="742" width="12" height="12" rx="2" fill="#3b82f6"/>
+  <text x="925" y="752" fill="#cbd5e1" font-size="10">FUNCTIONAL - Theme, language</text>
+
+  <rect x="905" y="762" width="12" height="12" rx="2" fill="#eab308"/>
+  <text x="925" y="772" fill="#cbd5e1" font-size="10">ANALYTICS - GA4, Web Vitals</text>
+
+  <!-- Performance targets -->
+  <rect x="890" y="795" width="250" height="75" rx="4" fill="#0f172a"/>
+  <text x="900" y="812" fill="#64748b" font-size="9">Performance Targets</text>
+
+  <text x="905" y="832" fill="#94a3b8" font-size="10">Banner render</text>
+  <rect x="1020" y="822" width="55" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <text x="1048" y="832" text-anchor="middle" fill="#22c55e" font-size="9">&lt; 100ms</text>
+
+  <text x="905" y="852" fill="#94a3b8" font-size="10">No CWV impact</text>
+  <rect x="1020" y="842" width="55" height="14" rx="3" fill="#22c55e" opacity="0.2"/>
+  <text x="1048" y="852" text-anchor="middle" fill="#22c55e" font-size="9">✓ Pass</text>
+
+</svg>

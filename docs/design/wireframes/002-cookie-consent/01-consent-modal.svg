@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    COOKIE CONSENT - INITIAL MODAL
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Page content behind modal (dimmed) -->
+    <text x="640" y="200" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="32" font-weight="bold" fill="#374151" opacity="0.3">Welcome to ScriptHammer</text>
+    <text x="640" y="240" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="16" fill="#4b5563" opacity="0.3">Your development planning toolkit</text>
+
+    <!-- Dark modal overlay -->
+    <rect width="1280" height="720" fill="#000" opacity="0.5"/>
+
+    <!-- Consent Modal (centered, 500x380) -->
+    <g transform="translate(390, 170)">
+      <rect width="500" height="380" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+      <!-- Modal header -->
+      <text x="250" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="22" font-weight="bold" fill="#374151">Cookie Preferences</text>
+
+      <!-- Cookie icon -->
+      <circle cx="250" cy="90" r="30" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="250" y="98" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="24" fill="#8b5cf6">*</text>
+
+      <!-- Description text -->
+      <text x="250" y="145" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">We use cookies to enhance your experience.</text>
+      <text x="250" y="165" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Choose how you want us to use cookies.</text>
+
+      <!-- Callout 1 - Accept All button -->
+      <rect x="50" y="195" width="400" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="250" y="223" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="600" fill="#e8d4b8">Accept All Cookies</text>
+
+      <!-- Callout 2 - Manage Preferences button -->
+      <rect x="50" y="249" width="400" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="250" y="277" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="600" fill="#8b5cf6">Manage Preferences</text>
+
+      <!-- Callout 3 - Reject All button -->
+      <rect x="50" y="303" width="400" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="250" y="331" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="600" fill="#374151">Reject Non-Essential</text>
+
+      <!-- Privacy link -->
+      <text x="250" y="365" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#8b5cf6" text-decoration="underline">Privacy Policy</text>
+    </g>
+
+    <!-- Desktop callout circles -->
+    <g class="callout">
+      <circle cx="920" cy="387" r="14" fill="#dc2626"/>
+      <text x="920" y="392" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+    </g>
+    <g class="callout">
+      <circle cx="920" cy="441" r="14" fill="#dc2626"/>
+      <text x="920" y="446" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+    </g>
+    <g class="callout">
+      <circle cx="920" cy="495" r="14" fill="#dc2626"/>
+      <text x="920" y="500" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+    </g>
+    <g class="callout">
+      <circle cx="920" cy="535" r="14" fill="#dc2626"/>
+      <text x="920" y="540" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Page content behind modal (dimmed) -->
+    <text x="180" y="200" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="18" font-weight="bold" fill="#374151" opacity="0.3">Welcome</text>
+
+    <!-- Dark modal overlay -->
+    <rect y="78" width="360" height="586" fill="#000" opacity="0.5"/>
+
+    <!-- Mobile Consent Modal (full width with padding) -->
+    <g transform="translate(20, 150)">
+      <rect width="320" height="360" rx="12" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+      <!-- Modal header -->
+      <text x="160" y="35" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold" fill="#374151">Cookie Preferences</text>
+
+      <!-- Cookie icon -->
+      <circle cx="160" cy="75" r="24" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="160" y="82" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="18" fill="#8b5cf6">*</text>
+
+      <!-- Description -->
+      <text x="160" y="120" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">We use cookies to enhance</text>
+      <text x="160" y="138" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">your experience.</text>
+
+      <!-- Accept All button -->
+      <rect x="20" y="160" width="280" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="160" y="188" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Accept All Cookies</text>
+
+      <!-- Manage Preferences button -->
+      <rect x="20" y="214" width="280" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="160" y="242" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#8b5cf6">Manage Preferences</text>
+
+      <!-- Reject All button -->
+      <rect x="20" y="268" width="280" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="160" y="296" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#374151">Reject Non-Essential</text>
+
+      <!-- Privacy link -->
+      <text x="160" y="340" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#8b5cf6" text-decoration="underline">Privacy Policy</text>
+    </g>
+
+    <!-- Mobile callout circles -->
+    <g class="callout">
+      <circle cx="330" cy="324" r="14" fill="#dc2626"/>
+      <text x="330" y="329" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="378" r="14" fill="#dc2626"/>
+      <text x="330" y="383" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="432" r="14" fill="#dc2626"/>
+      <text x="330" y="437" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="490" r="14" fill="#dc2626"/>
+      <text x="330" y="495" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1: First Visit Consent (column 1) -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">First Visit Consent</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">As a first-time visitor, I need to make a choice</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">before cookies are set.</text>
+      <a href="#US-001">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-001</text>
+      </a>
+      <a href="#FR-001">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-001</text>
+      </a>
+      <a href="#FR-002">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-002</text>
+      </a>
+      <a href="#FR-003">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-003</text>
+      </a>
+      <a href="#SC-001">
+        <rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="311" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-001</text>
+      </a>
+    </g>
+
+    <!-- Group 2: Granular Cookie Control (column 2) -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Granular Cookie Control</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">As a privacy-conscious user, I need to</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">control exactly which cookies are used.</text>
+      <a href="#US-002">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-002</text>
+      </a>
+      <a href="#FR-005">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-005</text>
+      </a>
+      <a href="#FR-006">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-006</text>
+      </a>
+      <a href="#FR-008">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-008</text>
+      </a>
+    </g>
+
+    <!-- Group 3: Preference Persistence (column 3) -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Preference Persistence</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">As a returning user, I need my preferences</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">remembered across sessions.</text>
+      <a href="#US-003">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-003</text>
+      </a>
+      <a href="#FR-009">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-009</text>
+      </a>
+      <a href="#SC-003">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-003</text>
+      </a>
+    </g>
+
+    <!-- Group 4: Update Preferences (column 4) -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Update Preferences</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">As a user who changed my mind, I need to</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">modify my cookie preferences anytime.</text>
+      <a href="#US-004">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-004</text>
+      </a>
+      <a href="#FR-011">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-011</text>
+      </a>
+      <a href="#FR-012">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-012</text>
+      </a>
+      <a href="#SC-004">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-004</text>
+      </a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR compliance | consent management | cookie categories | preference storage</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    002:01 | Cookie Consent | ScriptHammer
+  </text>
+</svg>

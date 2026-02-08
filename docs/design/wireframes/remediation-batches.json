@@ -1,0 +1,239 @@
+{
+  "generatedAt": "2026-01-16",
+  "strategy": "PATCH-all (color + positioning)",
+  "totalSVGs": 45,
+  "batches": {
+    "generator-1": {
+      "features": [
+        "000-landing-page",
+        "000-rls-implementation",
+        "001-wcag-aa-compliance",
+        "002-cookie-consent",
+        "003-user-authentication",
+        "004-mobile-first-design",
+        "005-security-hardening",
+        "006-template-fork-experience",
+        "007-e2e-testing-framework",
+        "008-on-the-account"
+      ],
+      "svgCount": 21,
+      "patches": [
+        {
+          "svg": "000-landing-page/01-landing-page.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "000-rls-implementation/01-policy-architecture.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "001-wcag-aa-compliance/01-accessibility-dashboard.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "001-wcag-aa-compliance/02-cicd-pipeline-integration.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "001-wcag-aa-compliance/03-accessibility-controls-overlay.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "002-cookie-consent/01-consent-modal.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "002-cookie-consent/02-cookie-preferences-panel.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "002-cookie-consent/03-privacy-settings-page.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "003-user-authentication/01-registration-sign-in.svg",
+          "fixes": ["SIGNATURE-003: x=960→40", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "003-user-authentication/02-verification-password-reset.svg",
+          "fixes": ["SIGNATURE-003: x=960→40", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "003-user-authentication/03-profile-session-management.svg",
+          "fixes": ["SIGNATURE-003: x=960→40", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "004-mobile-first-design/01-responsive-navigation.svg",
+          "fixes": ["key_concepts y=730→940"]
+        },
+        {
+          "svg": "004-mobile-first-design/02-touch-targets-performance.svg",
+          "fixes": ["key_concepts y=730→940"]
+        },
+        {
+          "svg": "005-security-hardening/01-security-ux-enhancements.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "005-security-hardening/02-session-timeout-warning.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "005-security-hardening/03-security-audit-dashboard.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "006-template-fork-experience/01-service-setup-guidance.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "006-template-fork-experience/02-rebrand-automation-flow.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "007-e2e-testing-framework/01-test-architecture-diagram.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "007-e2e-testing-framework/02-cicd-pipeline-flow.svg",
+          "fixes": ["SIGNATURE-003: x=960→40", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "008-on-the-account/01-avatar-upload-flow.svg",
+          "fixes": ["SIGNATURE-003 + G-044", "key_concepts y=730→940"]
+        }
+      ]
+    },
+    "generator-2": {
+      "features": [
+        "009-user-messaging-system",
+        "010-unified-blog-content",
+        "011-group-chats",
+        "012-welcome-message-architecture",
+        "013-oauth-messaging-password",
+        "014-admin-welcome-email-gate"
+      ],
+      "svgCount": 11,
+      "patches": [
+        {
+          "svg": "009-user-messaging-system/01-connection-and-chat.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "009-user-messaging-system/02-settings-and-data.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "010-unified-blog-content/01-editor-and-preview.svg",
+          "fixes": ["SIGNATURE-003/004 + G-044", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "010-unified-blog-content/02-conflict-resolution.svg",
+          "fixes": ["SIGNATURE-003/004 + G-044", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "011-group-chats/01-group-creation-messaging.svg",
+          "fixes": ["SIGNATURE-003 + G-037", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "011-group-chats/02-member-management.svg",
+          "fixes": ["SIGNATURE-003 + G-037", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "012-welcome-message-architecture/01-user-onboarding-flow.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "013-oauth-messaging-password/01-oauth-password-setup.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "013-oauth-messaging-password/02-oauth-password-unlock.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "014-admin-welcome-email-gate/01-verification-gate.svg",
+          "fixes": ["SIGNATURE-003/004 + G-044", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "014-admin-welcome-email-gate/02-admin-setup-process.svg",
+          "fixes": ["SIGNATURE-003/004 + G-044", "key_concepts y=730→940"]
+        }
+      ]
+    },
+    "generator-3": {
+      "features": [
+        "015-oauth-display-name",
+        "016-messaging-critical-fixes",
+        "017-colorblind-mode",
+        "019-google-analytics",
+        "021-geolocation-map",
+        "022-web3forms-integration"
+      ],
+      "svgCount": 13,
+      "patches": [
+        {
+          "svg": "015-oauth-display-name/01-profile-population-flow.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "016-messaging-critical-fixes/01-conversation-view.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "016-messaging-critical-fixes/01-message-input-visibility.svg",
+          "fixes": ["SIGNATURE-003/004", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "016-messaging-critical-fixes/02-oauth-setup-flow.svg",
+          "fixes": ["SIGNATURE-003/004", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "016-messaging-critical-fixes/03-conversation-error-states.svg",
+          "fixes": ["SIGNATURE-003/004", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "017-colorblind-mode/01-accessibility-settings.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "017-colorblind-mode/02-type-selection.svg",
+          "fixes": ["G-037: #6b7280→#374151", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "019-google-analytics/01-consent-flow.svg",
+          "fixes": ["key_concepts y=730→940"]
+        },
+        {
+          "svg": "019-google-analytics/02-analytics-dashboard.svg",
+          "fixes": ["key_concepts y=730→940"]
+        },
+        {
+          "svg": "021-geolocation-map/01-map-interface-permission.svg",
+          "fixes": ["SIGNATURE-003/004", "key_concepts y=730→940"]
+        },
+        {
+          "svg": "021-geolocation-map/02-markers-and-accessibility.svg",
+          "fixes": ["SIGNATURE-003/004", "key_concepts y=730→940"]
+        }
+      ],
+      "regens": [
+        {
+          "svg": "022-web3forms-integration/01-contact-form-ui.svg",
+          "reason": "WRONG CONTENT - shows Landing Page instead of Contact Form"
+        },
+        {
+          "svg": "022-web3forms-integration/02-submission-states.svg",
+          "reason": "WRONG CONTENT - shows Landing Page instead of Submission States"
+        }
+      ]
+    }
+  },
+  "commonFixes": {
+    "G-037": "Change annotation text fill from #6b7280 to #374151",
+    "key_concepts": "Move Key Concepts row from y=730 to y=940",
+    "SIGNATURE-003": "Move signature x from 960 to 40, remove text-anchor=middle",
+    "SIGNATURE-004": "Fix format to 'NNN:NN | Feature Name | ScriptHammer'",
+    "G-044": "Add rx=8 to footer/nav corners"
+  }
+}

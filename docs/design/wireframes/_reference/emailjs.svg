@@ -1,0 +1,433 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1040" width="1200" height="1040">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+      .label { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+      .error-text { fill: #ef4444; font-family: system-ui, sans-serif; font-size: 10px; }
+      .success-text { fill: #22c55e; font-family: system-ui, sans-serif; font-size: 10px; }
+      .warning-text { fill: #eab308; font-family: system-ui, sans-serif; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="1040" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="1040" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">EMAILJS FAILOVER INTEGRATION</text>
+
+  <!-- Provider Status Dashboard -->
+  <g transform="translate(40, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Email Provider Status Dashboard</text>
+
+    <!-- Dashboard Panel -->
+    <rect x="0" y="40" width="360" height="220" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Web3Forms Provider (Primary) -->
+    <rect x="16" y="56" width="328" height="80" rx="6" fill="#0f172a" stroke="#22c55e" stroke-width="1"/>
+    <circle cx="36" cy="76" r="10" fill="#22c55e"/>
+    <text x="36" y="80" text-anchor="middle" fill="#fff" font-size="10">1</text>
+    <text x="56" y="76" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="600">Web3Forms</text>
+    <rect x="260" y="66" width="70" height="20" rx="10" fill="#22c55e" opacity="0.2"/>
+    <text x="295" y="80" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="10">PRIMARY</text>
+
+    <text x="56" y="96" class="text-muted">Priority: 1 | Failures: 0</text>
+    <circle cx="280" cy="110" r="6" fill="#22c55e"/>
+    <text x="296" y="114" class="success-text">Healthy</text>
+
+    <!-- Status Metrics -->
+    <text x="56" y="120" class="text-sm">Last success: 2 min ago</text>
+
+    <!-- EmailJS Provider (Backup) -->
+    <rect x="16" y="146" width="328" height="80" rx="6" fill="#0f172a" stroke="#8b5cf6" stroke-width="1"/>
+    <circle cx="36" cy="166" r="10" fill="#8b5cf6"/>
+    <text x="36" y="170" text-anchor="middle" fill="#fff" font-size="10">2</text>
+    <text x="56" y="166" fill="#fff" font-family="system-ui, sans-serif" font-size="13" font-weight="600">EmailJS</text>
+    <rect x="260" y="156" width="70" height="20" rx="10" fill="#8b5cf6" opacity="0.2"/>
+    <text x="295" y="170" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="10">BACKUP</text>
+
+    <text x="56" y="186" class="text-muted">Priority: 2 | Failures: 0</text>
+    <circle cx="280" cy="200" r="6" fill="#22c55e"/>
+    <text x="296" y="204" class="success-text">Ready</text>
+
+    <!-- Status Metrics -->
+    <text x="56" y="210" class="text-sm">Standby mode | 0 activations today</text>
+
+    <!-- Legend -->
+    <g transform="translate(16, 235)">
+      <circle cx="8" cy="8" r="5" fill="#22c55e"/>
+      <text x="20" y="12" class="text-muted">Healthy</text>
+      <circle cx="80" cy="8" r="5" fill="#eab308"/>
+      <text x="92" y="12" class="text-muted">Degraded</text>
+      <circle cx="160" cy="8" r="5" fill="#ef4444"/>
+      <text x="172" y="12" class="text-muted">Down</text>
+    </g>
+  </g>
+
+  <!-- Failover Architecture Diagram -->
+  <g transform="translate(420, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Failover Architecture</text>
+
+    <!-- Architecture Panel -->
+    <rect x="0" y="40" width="360" height="220" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- User Request -->
+    <rect x="140" y="56" width="80" height="36" rx="6" fill="#334155" stroke="#cbd5e1" stroke-width="1"/>
+    <text x="180" y="78" text-anchor="middle" class="text-md">User</text>
+
+    <!-- Arrow to EmailService -->
+    <line x1="180" y1="92" x2="180" y2="110" stroke="#cbd5e1" stroke-width="2"/>
+    <polygon points="175,110 180,120 185,110" fill="#cbd5e1"/>
+
+    <!-- EmailService Orchestrator -->
+    <rect x="100" y="120" width="160" height="40" rx="6" fill="url(#accentGrad)"/>
+    <text x="180" y="145" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="12" font-weight="600">EmailService</text>
+
+    <!-- Branching arrows -->
+    <line x1="140" y1="160" x2="70" y2="190" stroke="#22c55e" stroke-width="2"/>
+    <polygon points="65,186 70,200 75,190" fill="#22c55e"/>
+
+    <line x1="220" y1="160" x2="290" y2="190" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4,2"/>
+    <polygon points="285,186 290,200 295,190" fill="#8b5cf6"/>
+
+    <!-- Web3Forms Box -->
+    <rect x="20" y="200" width="100" height="50" rx="6" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+    <text x="70" y="222" text-anchor="middle" class="text-md">Web3Forms</text>
+    <text x="70" y="238" text-anchor="middle" class="text-muted" font-size="8">Priority 1</text>
+
+    <!-- EmailJS Box -->
+    <rect x="240" y="200" width="100" height="50" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="290" y="222" text-anchor="middle" class="text-md">EmailJS</text>
+    <text x="290" y="238" text-anchor="middle" class="text-muted" font-size="8">Priority 2 (Failover)</text>
+
+    <!-- Failover Label -->
+    <text x="180" y="185" text-anchor="middle" class="annotation">Try Primary</text>
+    <text x="290" y="185" text-anchor="middle" class="annotation">If fails → Backup</text>
+  </g>
+
+  <!-- Retry Logic Section -->
+  <g transform="translate(800, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Exponential Backoff Retry</text>
+
+    <!-- Retry Panel -->
+    <rect x="0" y="40" width="360" height="220" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Retry Timeline -->
+    <text x="16" y="65" class="label">Retry Timeline (per provider)</text>
+
+    <!-- Attempt 1 -->
+    <rect x="16" y="78" width="328" height="36" rx="4" fill="#0f172a"/>
+    <rect x="24" y="86" width="60" height="20" rx="4" fill="#ef4444" opacity="0.3"/>
+    <text x="54" y="100" text-anchor="middle" fill="#ef4444" font-size="10">Attempt 1</text>
+    <line x1="90" y1="96" x2="120" y2="96" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="135" y="100" class="text-muted">Failed</text>
+
+    <!-- Wait 1s -->
+    <rect x="180" y="86" width="40" height="20" rx="4" fill="#eab308" opacity="0.2"/>
+    <text x="200" y="100" text-anchor="middle" fill="#eab308" font-size="10">1s</text>
+
+    <!-- Attempt 2 -->
+    <rect x="16" y="120" width="328" height="36" rx="4" fill="#0f172a"/>
+    <rect x="24" y="128" width="60" height="20" rx="4" fill="#ef4444" opacity="0.3"/>
+    <text x="54" y="142" text-anchor="middle" fill="#ef4444" font-size="10">Attempt 2</text>
+    <line x1="90" y1="138" x2="120" y2="138" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="135" y="142" class="text-muted">Failed</text>
+
+    <!-- Wait 2s -->
+    <rect x="180" y="128" width="40" height="20" rx="4" fill="#eab308" opacity="0.2"/>
+    <text x="200" y="142" text-anchor="middle" fill="#eab308" font-size="10">2s</text>
+
+    <!-- Attempt 3 -->
+    <rect x="16" y="162" width="328" height="36" rx="4" fill="#0f172a"/>
+    <rect x="24" y="170" width="60" height="20" rx="4" fill="#22c55e" opacity="0.3"/>
+    <text x="54" y="184" text-anchor="middle" fill="#22c55e" font-size="10">Attempt 3</text>
+    <line x1="90" y1="180" x2="120" y2="180" stroke="#475569" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="135" y="184" class="success-text">Success!</text>
+
+    <!-- Or Failover -->
+    <text x="230" y="184" text-anchor="middle" class="text-muted">or → Try next provider</text>
+
+    <!-- Code snippet -->
+    <rect x="16" y="208" width="328" height="40" rx="4" fill="#334155" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="26" y="225" class="annotation">delay = 1000 * Math.pow(2, attempt)</text>
+    <text x="26" y="240" class="annotation">// 1s → 2s → 4s (exponential)</text>
+  </g>
+
+  <!-- EmailJS Template Config (moved down for spacing) -->
+  <g transform="translate(40, 340)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">EmailJS Template Configuration</text>
+
+    <!-- Config Panel -->
+    <rect x="0" y="40" width="360" height="200" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Template Preview -->
+    <text x="16" y="65" class="label">Email Template (must match Web3Forms)</text>
+
+    <rect x="16" y="78" width="328" height="120" rx="4" fill="#0f172a" stroke="#475569"/>
+
+    <text x="26" y="98" class="text-muted">Subject: {{subject}}</text>
+    <text x="26" y="116" class="text-muted">From: {{from_name}} ({{from_email}})</text>
+    <line x1="26" y1="126" x2="334" y2="126" stroke="#475569"/>
+    <text x="26" y="144" class="text-md">Message:</text>
+    <text x="26" y="162" class="text-sm">{{message}}</text>
+    <line x1="26" y1="175" x2="334" y2="175" stroke="#475569"/>
+    <text x="26" y="190" class="text-muted" font-size="9">Sent from CRUDkit Contact Form</text>
+
+    <!-- Template Variables -->
+    <g transform="translate(16, 205)">
+      <rect x="0" y="0" width="70" height="18" rx="4" fill="#8b5cf6" opacity="0.2"/>
+      <text x="35" y="13" text-anchor="middle" class="annotation" font-size="9">from_name</text>
+      <rect x="78" y="0" width="70" height="18" rx="4" fill="#8b5cf6" opacity="0.2"/>
+      <text x="113" y="13" text-anchor="middle" class="annotation" font-size="9">from_email</text>
+      <rect x="156" y="0" width="55" height="18" rx="4" fill="#8b5cf6" opacity="0.2"/>
+      <text x="183" y="13" text-anchor="middle" class="annotation" font-size="9">subject</text>
+      <rect x="219" y="0" width="60" height="18" rx="4" fill="#8b5cf6" opacity="0.2"/>
+      <text x="249" y="13" text-anchor="middle" class="annotation" font-size="9">message</text>
+    </g>
+  </g>
+
+  <!-- Error Logging Panel (moved down for spacing) -->
+  <g transform="translate(420, 340)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Error Logging &amp; Monitoring</text>
+
+    <!-- Log Panel -->
+    <rect x="0" y="40" width="360" height="200" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Console Output -->
+    <rect x="16" y="56" width="328" height="140" rx="4" fill="#0f172a" stroke="#475569"/>
+
+    <text x="26" y="76" fill="#64748b" font-family="monospace" font-size="9">[14:32:15] Attempting to send via Web3Forms</text>
+    <text x="26" y="92" fill="#ef4444" font-family="monospace" font-size="9">[14:32:16] Web3Forms failed: 503 Service Unavailable</text>
+    <text x="26" y="108" fill="#eab308" font-family="monospace" font-size="9">[14:32:16] Retrying Web3Forms in 1000ms...</text>
+    <text x="26" y="124" fill="#ef4444" font-family="monospace" font-size="9">[14:32:17] Web3Forms failed: 503 Service Unavailable</text>
+    <text x="26" y="140" fill="#eab308" font-family="monospace" font-size="9">[14:32:17] Retrying Web3Forms in 2000ms...</text>
+    <text x="26" y="156" fill="#ef4444" font-family="monospace" font-size="9">[14:32:19] Web3Forms failed: Max retries exceeded</text>
+    <text x="26" y="172" fill="#8b5cf6" font-family="monospace" font-size="9">[14:32:19] Attempting to send via EmailJS</text>
+    <text x="26" y="188" fill="#22c55e" font-family="monospace" font-size="9">[14:32:20] EmailJS success! ID: msg_abc123</text>
+
+    <!-- Failure Counter -->
+    <rect x="16" y="202" width="160" height="28" rx="4" fill="#ef4444" opacity="0.1" stroke="#ef4444"/>
+    <text x="26" y="220" fill="#ef4444" font-family="system-ui, sans-serif" font-size="11">Web3Forms: 3 failures</text>
+
+    <rect x="184" y="202" width="160" height="28" rx="4" fill="#22c55e" opacity="0.1" stroke="#22c55e"/>
+    <text x="194" y="220" fill="#22c55e" font-family="system-ui, sans-serif" font-size="11">EmailJS: 0 failures</text>
+  </g>
+
+  <!-- Failover Scenarios (moved down for spacing) -->
+  <g transform="translate(800, 340)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="360" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Failover Scenarios</text>
+
+    <!-- Scenarios Panel -->
+    <rect x="0" y="40" width="360" height="200" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Scenario 1: Normal -->
+    <rect x="16" y="56" width="328" height="40" rx="4" fill="#0f172a"/>
+    <circle cx="32" cy="76" r="8" fill="#22c55e"/>
+    <text x="32" y="80" text-anchor="middle" fill="#fff" font-size="10">1</text>
+    <text x="50" y="72" class="text-md">Normal Operation</text>
+    <text x="50" y="86" class="text-muted">Web3Forms handles all requests</text>
+
+    <!-- Scenario 2: Primary Down -->
+    <rect x="16" y="102" width="328" height="40" rx="4" fill="#0f172a"/>
+    <circle cx="32" cy="122" r="8" fill="#eab308"/>
+    <text x="32" y="126" text-anchor="middle" fill="#0f172a" font-size="10">2</text>
+    <text x="50" y="118" class="text-md">Primary Provider Down</text>
+    <text x="50" y="132" class="text-muted">Auto-failover to EmailJS (seamless)</text>
+
+    <!-- Scenario 3: Both Degraded -->
+    <rect x="16" y="148" width="328" height="40" rx="4" fill="#0f172a"/>
+    <circle cx="32" cy="168" r="8" fill="#ef4444"/>
+    <text x="32" y="172" text-anchor="middle" fill="#fff" font-size="10">3</text>
+    <text x="50" y="164" class="text-md">Both Providers Fail</text>
+    <text x="50" y="178" class="text-muted">Queue for retry, show error to user</text>
+
+    <!-- User Experience Note -->
+    <rect x="16" y="196" width="328" height="34" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4,2"/>
+    <text x="26" y="214" class="annotation">User is unaware of provider switching</text>
+    <text x="26" y="226" class="annotation">(Same UI, same success message)</text>
+  </g>
+
+  <!-- Mobile Provider Status (moved down for spacing) -->
+  <g transform="translate(40, 600)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="200" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Mobile Status View</text>
+
+    <!-- Mobile Frame -->
+    <rect x="0" y="40" width="200" height="340" rx="16" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+
+    <!-- Status Bar -->
+    <rect x="0" y="40" width="200" height="24" rx="16" fill="#1e293b"/>
+    <text x="100" y="55" text-anchor="middle" class="text-muted" font-size="9">9:41</text>
+
+    <!-- Header -->
+    <text x="20" y="85" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Email Status</text>
+
+    <!-- Provider Cards -->
+    <rect x="12" y="100" width="176" height="70" rx="6" fill="#1e293b" stroke="#22c55e" stroke-width="1"/>
+    <circle cx="32" cy="120" r="10" fill="#22c55e"/>
+    <text x="32" y="124" text-anchor="middle" fill="#fff" font-size="10">1</text>
+    <text x="50" y="124" fill="#fff" font-size="12" font-weight="600">Web3Forms</text>
+    <circle cx="168" cy="120" r="6" fill="#22c55e"/>
+    <text x="50" y="142" class="text-muted" font-size="9">Healthy | 0 failures</text>
+    <text x="50" y="158" class="text-sm" font-size="9">Last: 2m ago</text>
+
+    <rect x="12" y="180" width="176" height="70" rx="6" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+    <circle cx="32" cy="200" r="10" fill="#8b5cf6"/>
+    <text x="32" y="204" text-anchor="middle" fill="#fff" font-size="10">2</text>
+    <text x="50" y="204" fill="#fff" font-size="12" font-weight="600">EmailJS</text>
+    <circle cx="168" cy="200" r="6" fill="#22c55e"/>
+    <text x="50" y="222" class="text-muted" font-size="9">Ready | Standby</text>
+    <text x="50" y="238" class="text-sm" font-size="9">0 activations today</text>
+
+    <!-- Overall Status -->
+    <rect x="12" y="260" width="176" height="50" rx="6" fill="#22c55e" opacity="0.1" stroke="#22c55e"/>
+    <text x="100" y="285" text-anchor="middle" fill="#22c55e" font-size="12" font-weight="600">All Systems Operational</text>
+    <text x="100" y="300" text-anchor="middle" class="text-muted" font-size="9">Redundancy: Active</text>
+
+    <!-- Debug Toggle -->
+    <rect x="12" y="320" width="176" height="36" rx="6" fill="#334155"/>
+    <text x="26" y="342" class="text-sm">Debug Mode</text>
+    <rect x="140" y="328" width="36" height="20" rx="10" fill="#475569"/>
+    <circle cx="150" cy="338" r="8" fill="#64748b"/>
+  </g>
+
+  <!-- Environment Configuration (moved down for spacing) -->
+  <g transform="translate(260, 600)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="400" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Environment Configuration</text>
+
+    <!-- Config Panel -->
+    <rect x="0" y="40" width="400" height="180" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- .env.local -->
+    <text x="16" y="65" class="label">.env.local</text>
+
+    <rect x="16" y="78" width="368" height="120" rx="4" fill="#0f172a" stroke="#475569"/>
+
+    <text x="26" y="98" class="text-muted" font-family="monospace" font-size="9"># Web3Forms (Primary)</text>
+    <text x="26" y="114" class="annotation" font-size="9">NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY=your_web3forms_key</text>
+
+    <text x="26" y="138" class="text-muted" font-family="monospace" font-size="9"># EmailJS (Backup)</text>
+    <text x="26" y="154" class="annotation" font-size="9">NEXT_PUBLIC_EMAILJS_SERVICE_ID=your_service_id</text>
+    <text x="26" y="170" class="annotation" font-size="9">NEXT_PUBLIC_EMAILJS_TEMPLATE_ID=your_template_id</text>
+    <text x="26" y="186" class="annotation" font-size="9">NEXT_PUBLIC_EMAILJS_PUBLIC_KEY=your_public_key</text>
+
+    <!-- Note -->
+    <rect x="16" y="205" width="368" height="24" rx="4" fill="#eab308" opacity="0.1" stroke="#eab308" stroke-dasharray="4,2"/>
+    <text x="26" y="221" class="warning-text">Both services use public keys (safe for client-side)</text>
+  </g>
+
+  <!-- Integration Checklist (moved down for spacing) -->
+  <g transform="translate(680, 600)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="480" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Integration Requirements</text>
+
+    <!-- Checklist Panel -->
+    <rect x="0" y="40" width="480" height="180" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Column 1 -->
+    <g transform="translate(20, 60)">
+      <text x="0" y="0" class="label">Success Criteria</text>
+
+      <circle cx="8" cy="24" r="6" fill="#22c55e"/>
+      <text x="8" y="28" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="28" class="text-md">EmailJS configured as backup</text>
+
+      <circle cx="8" cy="48" r="6" fill="#22c55e"/>
+      <text x="8" y="52" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="52" class="text-md">Auto failover when primary fails</text>
+
+      <circle cx="8" cy="72" r="6" fill="#22c55e"/>
+      <text x="8" y="76" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="76" class="text-md">Exponential backoff retry</text>
+
+      <circle cx="8" cy="96" r="6" fill="#22c55e"/>
+      <text x="8" y="100" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="100" class="text-md">Provider health tracking</text>
+    </g>
+
+    <!-- Column 2 -->
+    <g transform="translate(250, 60)">
+      <text x="0" y="0" class="label">User Experience</text>
+
+      <circle cx="8" cy="24" r="6" fill="#22c55e"/>
+      <text x="8" y="28" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="28" class="text-md">Seamless switching</text>
+
+      <circle cx="8" cy="48" r="6" fill="#22c55e"/>
+      <text x="8" y="52" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="52" class="text-md">Matching templates</text>
+
+      <circle cx="8" cy="72" r="6" fill="#22c55e"/>
+      <text x="8" y="76" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="76" class="text-md">Rate limiting respected</text>
+
+      <circle cx="8" cy="96" r="6" fill="#22c55e"/>
+      <text x="8" y="100" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="100" class="text-md">Error logging for debug</text>
+    </g>
+
+    <!-- Dependency -->
+    <rect x="20" y="175" width="440" height="30" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4,2"/>
+    <text x="32" y="194" class="annotation">npm: @emailjs/browser | Dependencies: Web3Forms (120) must be primary</text>
+  </g>
+
+  <!-- Provider Interface Code (moved down for spacing) -->
+  <g transform="translate(260, 840)">
+    <rect x="0" y="0" width="400" height="80" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="12" y="20" class="annotation">interface EmailProvider {</text>
+    <text x="20" y="36" class="annotation">  name: string;</text>
+    <text x="20" y="52" class="annotation">  priority: number; // 1=primary, 2=backup</text>
+    <text x="20" y="68" class="annotation">  send(data: ContactFormData): Promise&lt;EmailResult&gt;;</text>
+    <text x="12" y="76" class="annotation">}</text>
+  </g>
+
+  <!-- Rate Limits (moved down for spacing) -->
+  <g transform="translate(680, 840)">
+    <rect x="0" y="0" width="240" height="80" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <text x="12" y="20" class="label">Service Limits (Free Tier)</text>
+    <text x="12" y="42" class="text-md">Web3Forms: 250 emails/month</text>
+    <text x="12" y="60" class="text-md">EmailJS: 200 emails/month</text>
+    <text x="12" y="76" class="text-muted">Combined: 450 emails backup capacity</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="1020" text-anchor="middle" class="text-muted">EmailJS Failover Integration - Zero-Downtime Email Delivery with Automatic Provider Switching</text>
+</svg>

@@ -1,0 +1,238 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">008 - USER AVATAR UPLOAD FLOW</text>
+
+  <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="0"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="0"/>
+  </g>
+
+  <!-- DESKTOP -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8"/>
+    <rect width="1280" height="50" fill="#1a1a2e"/>
+    <text x="30" y="32" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#e8d4b8">ScriptHammer</text>
+    <text x="400" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="480" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="580" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <rect x="660" y="8" width="80" height="34" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Account</text>
+
+    <text x="640" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">Account Settings</text>
+    <text x="640" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Manage your profile and preferences</text>
+
+    <!-- LEFT: Avatar Display -->
+    <g transform="translate(100, 150)">
+      <rect width="300" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+      <text x="150" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Profile Picture</text>
+      <circle cx="150" cy="140" r="80" fill="#8b5cf6"/>
+      <text x="150" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="bold" fill="#e8d4b8">JD</text>
+      <text x="150" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Default avatar (initials)</text>
+      <a href="#FR-019"><rect x="200" y="58" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-019</text></a>
+      <rect x="50" y="290" width="200" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="150" y="318" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Upload Avatar</text>
+      <a href="#FR-001"><rect x="200" y="268" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="284" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-001</text></a>
+      <rect x="50" y="345" width="200" height="36" rx="6" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+      <text x="150" y="369" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Remove Avatar</text>
+      <a href="#FR-021"><rect x="200" y="323" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="339" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-021</text></a>
+    </g>
+
+    <circle cx="360" cy="458" r="14" fill="#dc2626"/>
+    <text x="360" y="464" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+    <circle cx="360" cy="290" r="14" fill="#dc2626"/>
+    <text x="360" y="296" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+
+    <!-- CENTER: Crop Interface -->
+    <g transform="translate(440, 150)">
+      <rect width="400" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+      <text x="200" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Crop and Position</text>
+      <rect x="50" y="50" width="300" height="220" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="8,4"/>
+      <rect x="75" y="75" width="250" height="170" fill="#c7ddf5"/>
+      <text x="200" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Drag to position image</text>
+      <circle cx="200" cy="160" r="70" fill="none" stroke="#8b5cf6" stroke-width="3"/>
+      <a href="#FR-006"><rect x="280" y="28" width="70" height="22" rx="4" fill="#2563eb"/><text x="315" y="44" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-006</text></a>
+      <a href="#FR-007"><rect x="280" y="54" width="70" height="22" rx="4" fill="#2563eb"/><text x="315" y="70" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-007</text></a>
+      <rect x="50" y="285" width="300" height="8" rx="4" fill="#dcc8a8"/>
+      <rect x="50" y="285" width="180" height="8" rx="4" fill="#22c55e"/>
+      <text x="200" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Processing... 60%</text>
+      <a href="#FR-016"><rect x="280" y="275" width="70" height="22" rx="4" fill="#2563eb"/><text x="315" y="291" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-016</text></a>
+      <rect x="50" y="330" width="140" height="36" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="120" y="354" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Cancel</text>
+      <rect x="210" y="330" width="140" height="36" rx="6" fill="#8b5cf6"/>
+      <text x="280" y="354" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Avatar</text>
+    </g>
+
+    <circle cx="880" cy="290" r="14" fill="#dc2626"/>
+    <text x="880" y="296" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+
+    <!-- RIGHT: Requirements -->
+    <g transform="translate(880, 150)">
+      <rect width="340" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+      <text x="170" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">File Requirements</text>
+      <text x="20" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Accepted formats:</text>
+      <text x="20" y="82" font-family="system-ui, sans-serif" font-size="14" fill="#374151">JPEG, PNG, WebP only</text>
+      <a href="#FR-002"><rect x="200" y="44" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-002</text></a>
+      <text x="20" y="115" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Maximum size:</text>
+      <text x="20" y="137" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5MB per image</text>
+      <a href="#FR-003"><rect x="200" y="99" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-003</text></a>
+      <text x="20" y="170" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Minimum dimensions:</text>
+      <text x="20" y="192" font-family="system-ui, sans-serif" font-size="14" fill="#374151">200 x 200 pixels</text>
+      <text x="20" y="225" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Output format:</text>
+      <text x="20" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#374151">800x800px WebP (85%)</text>
+      <a href="#FR-008"><rect x="260" y="209" width="70" height="22" rx="4" fill="#2563eb"/><text x="295" y="225" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-008</text></a>
+      <rect x="10" y="270" width="320" height="100" rx="6" fill="#f5f0e6"/>
+      <text x="20" y="295" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Accessibility</text>
+      <text x="20" y="320" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Keyboard navigation</text>
+      <a href="#FR-023"><rect x="200" y="304" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="320" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-023</text></a>
+      <text x="20" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Focus indicators visible</text>
+      <a href="#FR-026"><rect x="200" y="334" width="70" height="22" rx="4" fill="#2563eb"/><text x="235" y="350" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-026</text></a>
+    </g>
+
+    <circle cx="1260" cy="290" r="14" fill="#dc2626"/>
+    <text x="1260" y="296" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+
+    <rect y="670" width="1280" height="50" fill="#1a1a2e" rx="8"/>
+    <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">2026 ScriptHammer - Privacy - Terms - Contact</text>
+  </g>
+
+  <!-- MOBILE -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8"/>
+    <rect width="360" height="24" fill="#1a1a2e"/>
+    <text x="20" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">9:41</text>
+    <text x="320" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">100%</text>
+    <rect y="24" width="360" height="54" fill="#1a1a2e"/>
+    <text x="180" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Account Settings</text>
+    <g transform="translate(0, 78)">
+      <rect x="20" y="20" width="320" height="200" rx="8" fill="#dcc8a8"/>
+      <text x="180" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Profile Picture</text>
+      <circle cx="180" cy="110" r="50" fill="#8b5cf6"/>
+      <text x="180" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#e8d4b8">JD</text>
+      <rect x="90" y="170" width="180" height="40" rx="6" fill="#8b5cf6"/>
+      <text x="180" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Upload Avatar</text>
+      <a href="#FR-001"><rect x="270" y="92" width="60" height="22" rx="4" fill="#2563eb"/><text x="300" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-001</text></a>
+      <rect x="20" y="235" width="320" height="200" rx="8" fill="#dcc8a8"/>
+      <text x="180" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Crop Preview</text>
+      <rect x="80" y="275" width="200" height="120" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <circle cx="180" cy="335" r="45" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+      <rect x="90" y="405" width="180" height="40" rx="6" fill="#8b5cf6"/>
+      <text x="180" y="431" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Avatar</text>
+      <a href="#FR-006"><rect x="270" y="253" width="60" height="22" rx="4" fill="#2563eb"/><text x="300" y="269" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-006</text></a>
+      <rect x="20" y="455" width="320" height="70" rx="8" fill="#f5f0e6"/>
+      <text x="30" y="480" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Success Criteria</text>
+      <text x="30" y="505" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Upload within 5 seconds</text>
+      <a href="#SC-001"><rect x="250" y="488" width="60" height="22" rx="4" fill="#ea580c"/><text x="280" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-001</text></a>
+    </g>
+    <rect y="664" width="360" height="56" fill="#1a1a2e" rx="8"/>
+    <text x="45" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="135" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="225" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <!-- Account active state (bottom-right rounded per G-046) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- REQUIREMENTS KEY -->
+  <g transform="translate(40, 800)">
+    <rect width="1680" height="60" rx="8" fill="#e8d4b8"/>
+    <text x="20" y="25" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">REQUIREMENTS KEY</text>
+    <a href="#FR-001"><rect x="20" y="35" width="60" height="20" rx="4" fill="#2563eb"/><text x="50" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-001</text></a>
+    <text x="90" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Upload button</text>
+    <a href="#FR-006"><rect x="240" y="35" width="60" height="20" rx="4" fill="#2563eb"/><text x="270" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-006</text></a>
+    <text x="310" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Crop interface</text>
+    <a href="#FR-016"><rect x="460" y="35" width="60" height="20" rx="4" fill="#2563eb"/><text x="490" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-016</text></a>
+    <text x="530" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Progress indicator</text>
+    <a href="#FR-019"><rect x="720" y="35" width="60" height="20" rx="4" fill="#2563eb"/><text x="750" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-019</text></a>
+    <text x="790" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Default avatar</text>
+    <a href="#FR-021"><rect x="960" y="35" width="60" height="20" rx="4" fill="#2563eb"/><text x="990" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-021</text></a>
+    <text x="1030" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Remove action</text>
+    <a href="#SC-001"><rect x="1200" y="35" width="60" height="20" rx="4" fill="#ea580c"/><text x="1230" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-001</text></a>
+    <text x="1270" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5-second upload</text>
+    <a href="#SC-004"><rect x="1440" y="35" width="60" height="20" rx="4" fill="#ea580c"/><text x="1470" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-004</text></a>
+    <text x="1510" y="50" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WCAG AA</text>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="150" rx="8" fill="#f5f0e6"/>
+    <!-- Column 1 -->
+    <g transform="translate(20, 20)">
+      <circle cx="10" cy="0" r="12" fill="#dc2626"/>
+      <text x="10" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+      <text x="28" y="5" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Upload New Avatar</text>
+      <text x="0" y="25" font-family="system-ui, sans-serif" font-size="14" fill="#374151">As a user, I want to upload a profile picture.</text>
+      <a href="#US-001"><rect x="0" y="35" width="60" height="20" rx="4" fill="#0891b2"/><text x="30" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">US-001</text></a>
+      <rect x="65" y="35" width="30" height="20" rx="4" fill="#dc2626"/>
+      <text x="80" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">P1</text>
+      <a href="#FR-001"><rect x="0" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-001</text></a>
+      <a href="#FR-006"><rect x="65" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="95" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-006</text></a>
+      <a href="#FR-015"><rect x="130" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="160" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-015</text></a>
+      <a href="#SC-001"><rect x="0" y="85" width="60" height="20" rx="4" fill="#ea580c"/><text x="30" y="99" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-001</text></a>
+      <a href="#SC-002"><rect x="65" y="85" width="60" height="20" rx="4" fill="#ea580c"/><text x="95" y="99" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-002</text></a>
+    </g>
+    <!-- Column 2 -->
+    <g transform="translate(470, 20)">
+      <circle cx="10" cy="0" r="12" fill="#dc2626"/>
+      <text x="10" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+      <text x="28" y="5" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Replace Existing Avatar</text>
+      <text x="0" y="25" font-family="system-ui, sans-serif" font-size="14" fill="#374151">As a user with an avatar, I want to change it.</text>
+      <a href="#US-002"><rect x="0" y="35" width="60" height="20" rx="4" fill="#0891b2"/><text x="30" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">US-002</text></a>
+      <rect x="65" y="35" width="30" height="20" rx="4" fill="#f59e0b"/>
+      <text x="80" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#000000">P2</text>
+      <a href="#FR-012"><rect x="0" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-012</text></a>
+      <a href="#FR-013"><rect x="65" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="95" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-013</text></a>
+      <a href="#SC-005"><rect x="0" y="85" width="60" height="20" rx="4" fill="#ea580c"/><text x="30" y="99" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-005</text></a>
+    </g>
+    <!-- Column 3 -->
+    <g transform="translate(920, 20)">
+      <circle cx="10" cy="0" r="12" fill="#dc2626"/>
+      <text x="10" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+      <text x="28" y="5" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Remove Avatar</text>
+      <text x="0" y="25" font-family="system-ui, sans-serif" font-size="14" fill="#374151">As a user, I want to remove my avatar.</text>
+      <a href="#US-003"><rect x="0" y="35" width="60" height="20" rx="4" fill="#0891b2"/><text x="30" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">US-003</text></a>
+      <rect x="65" y="35" width="30" height="20" rx="4" fill="#3b82f6"/>
+      <text x="80" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">P3</text>
+      <a href="#FR-019"><rect x="0" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-019</text></a>
+      <a href="#FR-021"><rect x="65" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="95" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-021</text></a>
+      <a href="#FR-022"><rect x="130" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="160" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-022</text></a>
+      <a href="#SC-003"><rect x="0" y="85" width="60" height="20" rx="4" fill="#ea580c"/><text x="30" y="99" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-003</text></a>
+    </g>
+    <!-- Column 4 -->
+    <g transform="translate(1370, 20)">
+      <circle cx="10" cy="0" r="12" fill="#dc2626"/>
+      <text x="10" y="5" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+      <text x="28" y="5" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Accessibility and UX</text>
+      <text x="0" y="25" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Keyboard nav, focus, progress, errors.</text>
+      <rect x="0" y="35" width="50" height="20" rx="4" fill="#0891b2"/>
+      <text x="25" y="49" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+      <a href="#FR-023"><rect x="0" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-023</text></a>
+      <a href="#FR-026"><rect x="65" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="95" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-026</text></a>
+      <a href="#FR-016"><rect x="130" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="160" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-016</text></a>
+      <a href="#FR-027"><rect x="195" y="60" width="60" height="20" rx="4" fill="#2563eb"/><text x="225" y="74" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">FR-027</text></a>
+      <a href="#SC-004"><rect x="0" y="85" width="60" height="20" rx="4" fill="#ea580c"/><text x="30" y="99" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">SC-004</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">avatar upload | image processing | storage bucket | profile updates</text>
+
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">008:01 | User Avatar Upload | ScriptHammer</text>
+</svg>

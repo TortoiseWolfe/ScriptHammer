@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    WEB3FORMS - CONTACT FORM UI
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Contact Form Card -->
+    <g transform="translate(340, 80)">
+      <rect width="600" height="520" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <!-- Form Title -->
+      <text x="300" y="40" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="24" font-weight="bold" fill="#374151">Contact Us</text>
+      <text x="300" y="65" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">We'd love to hear from you</text>
+
+      <!-- Name Field -->
+      <g transform="translate(40, 90)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Name *</text>
+        <rect x="0" y="10" width="520" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="15" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Enter your full name</text>
+      </g>
+
+      <!-- Email Field with validation error -->
+      <g transform="translate(40, 160)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Email *</text>
+        <rect x="0" y="10" width="520" height="44" rx="6" fill="#dcc8a8" stroke="#ef4444" stroke-width="2"/>
+        <text x="15" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">invalid-email</text>
+        <circle cx="490" cy="32" r="10" fill="#ef4444"/>
+        <text x="490" y="37" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">!</text>
+        <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#ef4444">Please enter a valid email address</text>
+      </g>
+
+      <!-- Subject Field -->
+      <g transform="translate(40, 250)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Subject</text>
+        <rect x="0" y="10" width="520" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="15" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">What's this about?</text>
+      </g>
+
+      <!-- Message Field -->
+      <g transform="translate(40, 330)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Message * (min 10 characters)</text>
+        <rect x="0" y="10" width="520" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+        <text x="15" y="35" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Hi there</text>
+        <text x="505" y="125" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b">8/10 min</text>
+      </g>
+
+      <!-- Submit Button -->
+      <g transform="translate(40, 460)">
+        <rect width="520" height="44" rx="6" fill="#8b5cf6"/>
+        <text x="260" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="600" fill="#ffffff">Send Message</text>
+      </g>
+
+      <!-- Callout 1 - Form fields -->
+      <circle cx="580" cy="140" r="14" fill="#dc2626"/>
+      <text x="580" y="145" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">1</text>
+
+      <!-- Callout 2 - Validation -->
+      <circle cx="580" cy="210" r="14" fill="#dc2626"/>
+      <text x="580" y="215" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">2</text>
+
+      <!-- Callout 3 - Message -->
+      <circle cx="580" cy="380" r="14" fill="#dc2626"/>
+      <text x="580" y="385" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">3</text>
+
+      <!-- Callout 4 - Submit -->
+      <circle cx="580" cy="480" r="14" fill="#dc2626"/>
+      <text x="580" y="485" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">4</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Form - MOBILE-001 fix: y starts at 78 -->
+    <rect x="20" y="78" width="320" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Form Title -->
+    <text x="180" y="113" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="20" font-weight="bold" fill="#374151">Contact Us</text>
+
+    <!-- Name Field -->
+    <text x="40" y="133" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Name *</text>
+    <rect x="40" y="141" width="280" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Email Field -->
+    <text x="40" y="198" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Email *</text>
+    <rect x="40" y="206" width="280" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Subject Field -->
+    <text x="40" y="263" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Subject</text>
+    <rect x="40" y="271" width="280" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Message Field -->
+    <text x="40" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Message *</text>
+    <rect x="40" y="336" width="280" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="305" y="450" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#374151">0/10</text>
+
+    <!-- Submit Button -->
+    <rect x="40" y="458" width="280" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="486" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="16" font-weight="600" fill="#ffffff">Send Message</text>
+
+    <!-- Mobile Callouts -->
+    <circle cx="330" cy="178" r="14" fill="#dc2626"/>
+    <text x="330" y="183" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">1</text>
+
+    <circle cx="330" cy="243" r="14" fill="#dc2626"/>
+    <text x="330" y="248" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">2</text>
+
+    <circle cx="330" cy="398" r="14" fill="#dc2626"/>
+    <text x="330" y="403" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">3</text>
+
+    <circle cx="330" cy="478" r="14" fill="#dc2626"/>
+    <text x="330" y="483" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">4</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1: Submit Contact Form -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">1</text>
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Submit Contact Form</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a visitor, I need to submit a contact form</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">so my inquiry reaches the recipient.</text>
+      <a href="#US-001"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" text-anchor="middle" fill="#ffffff" font-size="12">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-002</text></a>
+      <a href="#FR-003"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-003</text></a>
+      <a href="#SC-001"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" text-anchor="middle" fill="#ffffff" font-size="12">SC-001</text></a>
+    </g>
+
+    <!-- Group 2: Form Validation -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">2</text>
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Form Validation</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need immediate feedback on</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">validation errors before submitting.</text>
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" text-anchor="middle" fill="#ffffff" font-size="12">US-002</text></a>
+      <a href="#FR-006"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-006</text></a>
+      <a href="#FR-007"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-007</text></a>
+      <a href="#FR-009"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-009</text></a>
+      <a href="#SC-002"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" text-anchor="middle" fill="#ffffff" font-size="12">SC-002</text></a>
+    </g>
+
+    <!-- Group 3: Spam Protection -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">3</text>
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Spam Protection</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hidden fields block automated bots while</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">not interfering with legitimate users.</text>
+      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" text-anchor="middle" fill="#ffffff" font-size="12">US-003</text></a>
+      <a href="#FR-011"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-011</text></a>
+      <a href="#FR-012"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-012</text></a>
+      <a href="#SC-004"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" text-anchor="middle" fill="#ffffff" font-size="12">SC-004</text></a>
+    </g>
+
+    <!-- Group 4: Accessible Form -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">4</text>
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accessible Form</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Full accessibility with proper ARIA labels,</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">keyboard navigation, and screen readers.</text>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" text-anchor="middle" fill="#ffffff" font-size="12">US-005</text></a>
+      <a href="#FR-020"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-020</text></a>
+      <a href="#FR-021"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" text-anchor="middle" fill="#ffffff" font-size="12">FR-021</text></a>
+      <a href="#SC-005"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" text-anchor="middle" fill="#ffffff" font-size="12">SC-005</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">contact form | Web3Forms API | field validation | spam honeypot | WCAG compliance</text>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">022:01 | Web3Forms Integration | ScriptHammer</text>
+</svg>

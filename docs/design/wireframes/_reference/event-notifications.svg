@@ -1,0 +1,338 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 9px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.03">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="900" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="2">EVENT NOTIFICATIONS AND REMINDERS</text>
+
+  <!-- ==================== EMAIL NOTIFICATIONS (Left Column) ==================== -->
+  <g transform="translate(30, 45)">
+    <text x="175" y="0" text-anchor="middle" class="text-muted">Email Notifications</text>
+
+    <!-- Confirmation Email -->
+    <rect x="0" y="15" width="350" height="240" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Email Header -->
+    <rect x="0" y="15" width="350" height="45" rx="8" fill="#334155"/>
+    <rect x="0" y="52" width="350" height="8" fill="#334155"/>
+    <circle cx="30" cy="38" r="12" fill="#8b5cf6"/>
+    <text x="30" y="42" text-anchor="middle" fill="#fff" font-size="8">JD</text>
+    <text x="55" y="35" fill="#fff" font-size="10" font-weight="600">John Doe via Calendly</text>
+    <text x="55" y="50" class="text-muted" font-size="9">noreply@calendly.com</text>
+    <text x="310" y="42" class="text-muted" font-size="9">Just now</text>
+
+    <!-- Email Subject -->
+    <text x="20" y="85" fill="#fff" font-size="12" font-weight="600">Meeting Confirmed: 30 Minute Meeting</text>
+
+    <!-- Email Body -->
+    <g transform="translate(20, 100)">
+      <text x="0" y="15" class="text-md">Hi Sarah,</text>
+      <text x="0" y="40" class="text-md">Your meeting has been scheduled.</text>
+
+      <rect x="0" y="55" width="310" height="80" rx="4" fill="#0f172a"/>
+      <text x="15" y="75" class="text-muted" font-size="9">WHEN</text>
+      <text x="15" y="92" fill="#fff" font-size="10">Tue, Jan 7, 2025 at 10:00 AM (EST)</text>
+      <text x="15" y="115" class="text-muted" font-size="9">WHO</text>
+      <text x="15" y="130" fill="#fff" font-size="10">John Doe and Sarah Johnson</text>
+    </g>
+
+    <!-- Email Actions -->
+    <g transform="translate(20, 215)">
+      <rect x="0" y="0" width="100" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="50" y="18" text-anchor="middle" fill="#fff" font-size="9">View Details</text>
+
+      <rect x="110" y="0" width="90" height="28" rx="4" fill="#475569"/>
+      <text x="155" y="18" text-anchor="middle" fill="#fff" font-size="9">Reschedule</text>
+
+      <rect x="210" y="0" width="70" height="28" rx="4" fill="#475569"/>
+      <text x="245" y="18" text-anchor="middle" fill="#fff" font-size="9">Cancel</text>
+    </g>
+
+    <!-- Reminder Email -->
+    <text x="175" y="285" text-anchor="middle" class="text-muted">24-Hour Reminder</text>
+    <rect x="0" y="300" width="350" height="160" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="1"/>
+
+    <rect x="0" y="300" width="350" height="45" rx="8" fill="#334155"/>
+    <rect x="0" y="337" width="350" height="8" fill="#334155"/>
+    <text x="20" y="328" fill="#eab308" font-size="14">&#x1F514;</text>
+    <text x="45" y="325" fill="#fff" font-size="10" font-weight="600">Reminder: Meeting Tomorrow</text>
+    <text x="45" y="340" class="text-muted" font-size="9">noreply@calendly.com</text>
+
+    <g transform="translate(20, 360)">
+      <text x="0" y="15" class="text-md">Your meeting with John Doe is tomorrow.</text>
+
+      <rect x="0" y="30" width="310" height="50" rx="4" fill="#0f172a"/>
+      <text x="15" y="50" fill="#fff" font-size="10">30 Minute Meeting</text>
+      <text x="15" y="68" class="text-muted" font-size="9">Tue, Jan 7, 2025 at 10:00 AM (EST)</text>
+    </g>
+
+    <g transform="translate(20, 425)">
+      <rect x="0" y="0" width="150" height="28" rx="4" fill="#8b5cf6"/>
+      <text x="75" y="18" text-anchor="middle" fill="#fff" font-size="9">Add to Calendar</text>
+    </g>
+  </g>
+
+  <!-- ==================== IN-APP NOTIFICATIONS (Center Column) ==================== -->
+  <g transform="translate(420, 45)">
+    <text x="175" y="0" text-anchor="middle" class="text-muted">In-App Notifications</text>
+
+    <!-- Notification Bell with Badge -->
+    <rect x="0" y="15" width="350" height="80" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <g transform="translate(20, 35)">
+      <text x="0" y="25" class="text-sm">Header Notification Bell</text>
+
+      <!-- Bell Icon with Badge -->
+      <g transform="translate(200, 0)">
+        <rect x="0" y="0" width="50" height="50" rx="8" fill="#334155"/>
+        <text x="25" y="35" text-anchor="middle" fill="#fff" font-size="20">&#x1F514;</text>
+        <circle cx="38" cy="12" r="10" fill="#ef4444"/>
+        <text x="38" y="16" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">2</text>
+      </g>
+    </g>
+
+    <!-- Notification Dropdown -->
+    <rect x="0" y="110" width="350" height="280" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Dropdown Header -->
+    <rect x="0" y="110" width="350" height="40" rx="8" fill="#334155"/>
+    <rect x="0" y="142" width="350" height="8" fill="#334155"/>
+    <text x="20" y="135" fill="#fff" font-size="12" font-weight="600">Notifications</text>
+    <text x="290" y="135" fill="#8b5cf6" font-size="10">Mark all read</text>
+
+    <!-- Notification 1 - Unread -->
+    <g transform="translate(10, 160)">
+      <rect x="0" y="0" width="330" height="70" rx="6" fill="#8b5cf620"/>
+      <circle cx="8" cy="35" r="4" fill="#8b5cf6"/>
+      <circle cx="40" cy="35" r="18" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="40" y="40" text-anchor="middle" fill="#22c55e" font-size="12">&#x2713;</text>
+      <text x="70" y="25" fill="#fff" font-size="10" font-weight="600">Meeting Confirmed</text>
+      <text x="70" y="42" class="text-muted" font-size="9">30 min with John Doe - Jan 7, 10:00 AM</text>
+      <text x="70" y="58" class="text-muted" font-size="8">Just now</text>
+    </g>
+
+    <!-- Notification 2 - Unread Reminder -->
+    <g transform="translate(10, 235)">
+      <rect x="0" y="0" width="330" height="70" rx="6" fill="#eab30820"/>
+      <circle cx="8" cy="35" r="4" fill="#eab308"/>
+      <circle cx="40" cy="35" r="18" fill="#eab30820" stroke="#eab308" stroke-width="1"/>
+      <text x="40" y="40" text-anchor="middle" fill="#eab308" font-size="12">&#x23F0;</text>
+      <text x="70" y="25" fill="#fff" font-size="10" font-weight="600">Reminder: Meeting in 1 hour</text>
+      <text x="70" y="42" class="text-muted" font-size="9">30 min with John Doe starting soon</text>
+      <text x="70" y="58" class="text-muted" font-size="8">59 minutes ago</text>
+    </g>
+
+    <!-- Notification 3 - Read -->
+    <g transform="translate(10, 310)">
+      <rect x="0" y="0" width="330" height="70" rx="6" fill="#33415540"/>
+      <circle cx="40" cy="35" r="18" fill="#64748b20"/>
+      <text x="40" y="40" text-anchor="middle" fill="#64748b" font-size="12">&#x1F4C5;</text>
+      <text x="70" y="25" class="text-md">Meeting Rescheduled</text>
+      <text x="70" y="42" class="text-muted" font-size="9">Your meeting has been moved to Jan 8</text>
+      <text x="70" y="58" class="text-muted" font-size="8">2 days ago</text>
+    </g>
+
+    <!-- Toast Notifications -->
+    <text x="175" y="420" text-anchor="middle" class="text-muted">Toast Notifications</text>
+
+    <!-- Success Toast -->
+    <g transform="translate(0, 435)">
+      <rect x="0" y="0" width="350" height="55" rx="8" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <circle cx="30" cy="27" r="15" fill="#22c55e"/>
+      <text x="30" y="32" text-anchor="middle" fill="#fff" font-size="12">&#x2713;</text>
+      <text x="60" y="22" fill="#fff" font-size="11" font-weight="600">Meeting Scheduled!</text>
+      <text x="60" y="40" class="text-md">Check your email for confirmation.</text>
+      <text x="320" y="30" fill="#64748b" font-size="14">&#x2715;</text>
+    </g>
+
+    <!-- Reminder Toast -->
+    <g transform="translate(0, 500)">
+      <rect x="0" y="0" width="350" height="55" rx="8" fill="#eab30820" stroke="#eab308" stroke-width="1"/>
+      <circle cx="30" cy="27" r="15" fill="#eab308"/>
+      <text x="30" y="32" text-anchor="middle" fill="#fff" font-size="12">&#x23F0;</text>
+      <text x="60" y="22" fill="#fff" font-size="11" font-weight="600">Meeting in 15 minutes</text>
+      <text x="60" y="40" class="text-md">30 min with John Doe</text>
+      <text x="320" y="30" fill="#64748b" font-size="14">&#x2715;</text>
+    </g>
+  </g>
+
+  <!-- ==================== MOBILE NOTIFICATIONS (Right Column) ==================== -->
+  <g transform="translate(810, 45)">
+    <text x="175" y="0" text-anchor="middle" class="text-muted">Mobile Push Notifications</text>
+
+    <!-- Phone Frame -->
+    <rect x="25" y="15" width="300" height="540" rx="20" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+
+    <!-- Lock Screen -->
+    <rect x="35" y="25" width="280" height="520" rx="16" fill="#1e293b"/>
+
+    <!-- Time -->
+    <text x="175" y="80" text-anchor="middle" fill="#fff" font-size="36" font-weight="200">9:41</text>
+    <text x="175" y="105" text-anchor="middle" class="text-muted" font-size="12">Tuesday, January 7</text>
+
+    <!-- Push Notification 1 -->
+    <g transform="translate(45, 140)">
+      <rect x="0" y="0" width="260" height="80" rx="12" fill="#334155"/>
+
+      <!-- App Icon -->
+      <rect x="10" y="10" width="35" height="35" rx="8" fill="url(#accentGrad)"/>
+      <text x="27" y="33" text-anchor="middle" fill="#fff" font-size="14">&#x1F4C5;</text>
+
+      <text x="55" y="25" fill="#fff" font-size="10" font-weight="600">ScriptHammer</text>
+      <text x="220" y="25" class="text-muted" font-size="8">now</text>
+
+      <text x="55" y="42" fill="#fff" font-size="9" font-weight="600">Meeting Confirmed</text>
+      <text x="55" y="58" class="text-md" font-size="9">30 min with John Doe - Today 10:00 AM</text>
+      <text x="55" y="72" class="text-muted" font-size="8">Tap to view details</text>
+    </g>
+
+    <!-- Push Notification 2 (Reminder) -->
+    <g transform="translate(45, 235)">
+      <rect x="0" y="0" width="260" height="80" rx="12" fill="#334155"/>
+
+      <rect x="10" y="10" width="35" height="35" rx="8" fill="#eab308"/>
+      <text x="27" y="33" text-anchor="middle" fill="#fff" font-size="14">&#x23F0;</text>
+
+      <text x="55" y="25" fill="#fff" font-size="10" font-weight="600">ScriptHammer</text>
+      <text x="220" y="25" class="text-muted" font-size="8">15m ago</text>
+
+      <text x="55" y="42" fill="#fff" font-size="9" font-weight="600">Starting in 15 minutes</text>
+      <text x="55" y="58" class="text-md" font-size="9">30 min with John Doe</text>
+      <text x="55" y="72" class="text-muted" font-size="8">Slide to join or dismiss</text>
+    </g>
+
+    <!-- Expanded Notification Actions -->
+    <g transform="translate(45, 330)">
+      <rect x="0" y="0" width="260" height="100" rx="12" fill="#334155"/>
+
+      <rect x="10" y="10" width="35" height="35" rx="8" fill="url(#accentGrad)"/>
+      <text x="27" y="33" text-anchor="middle" fill="#fff" font-size="14">&#x1F4C5;</text>
+
+      <text x="55" y="30" fill="#fff" font-size="10" font-weight="600">Meeting Starting Now</text>
+      <text x="55" y="47" class="text-md" font-size="9">30 min with John Doe</text>
+
+      <!-- Action Buttons -->
+      <rect x="10" y="60" width="115" height="30" rx="6" fill="#8b5cf6"/>
+      <text x="67" y="80" text-anchor="middle" fill="#fff" font-size="9">Join Meeting</text>
+
+      <rect x="135" y="60" width="115" height="30" rx="6" fill="#475569"/>
+      <text x="192" y="80" text-anchor="middle" fill="#fff" font-size="9">Snooze 5m</text>
+    </g>
+
+    <!-- Notification Settings -->
+    <g transform="translate(45, 450)">
+      <rect x="0" y="0" width="260" height="75" rx="12" fill="#0f172a"/>
+      <text x="15" y="22" fill="#fff" font-size="10" font-weight="600">Notification Preferences</text>
+
+      <g transform="translate(15, 32)">
+        <text x="0" y="15" class="text-md" font-size="9">Email confirmations</text>
+        <rect x="190" y="2" width="40" height="20" rx="10" fill="#8b5cf6"/>
+        <circle cx="218" cy="12" r="8" fill="#fff"/>
+      </g>
+
+      <g transform="translate(15, 52)">
+        <text x="0" y="15" class="text-md" font-size="9">Push reminders</text>
+        <rect x="190" y="2" width="40" height="20" rx="10" fill="#8b5cf6"/>
+        <circle cx="218" cy="12" r="8" fill="#fff"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATIONS ==================== -->
+
+  <!-- Email Templates Annotation -->
+  <g transform="translate(30, 620)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Provider Emails</text>
+    <text x="10" y="32" class="text-muted" font-size="8">Calendly/Cal.com send</text>
+    <text x="10" y="44" class="text-muted" font-size="8">confirmation + reminders</text>
+  </g>
+
+  <!-- Reminder Timing Annotation -->
+  <g transform="translate(210, 620)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Reminder Schedule</text>
+    <text x="10" y="32" class="text-muted" font-size="8">24h, 1h, 15m before</text>
+    <text x="10" y="44" class="text-muted" font-size="8">configurable in provider</text>
+  </g>
+
+  <!-- Analytics Tracking Annotation -->
+  <g transform="translate(420, 620)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Event Listeners</text>
+    <text x="10" y="32" class="text-muted" font-size="8">useCalendlyEventListener</text>
+    <text x="10" y="44" class="text-muted" font-size="8">or getCalApi() callbacks</text>
+  </g>
+
+  <!-- Toast Duration Annotation -->
+  <g transform="translate(600, 620)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Toast Duration</text>
+    <text x="10" y="32" class="text-muted" font-size="8">Auto-dismiss after 5s</text>
+    <text x="10" y="44" class="text-muted" font-size="8">or manual close</text>
+  </g>
+
+  <!-- Deep Links Annotation -->
+  <g transform="translate(30, 685)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Email Deep Links</text>
+    <text x="10" y="32" class="text-muted" font-size="8">View/Reschedule/Cancel</text>
+    <text x="10" y="44" class="text-muted" font-size="8">link to provider portal</text>
+  </g>
+
+  <!-- PWA Push Annotation -->
+  <g transform="translate(210, 685)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">PWA Push (Future)</text>
+    <text x="10" y="32" class="text-muted" font-size="8">Service Worker integration</text>
+    <text x="10" y="44" class="text-muted" font-size="8">for native-like push</text>
+  </g>
+
+  <!-- Notification Center Annotation -->
+  <g transform="translate(420, 685)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">In-App Center</text>
+    <text x="10" y="32" class="text-muted" font-size="8">Aggregates all calendar</text>
+    <text x="10" y="44" class="text-muted" font-size="8">events and reminders</text>
+  </g>
+
+  <!-- Action Buttons Annotation -->
+  <g transform="translate(600, 685)">
+    <rect x="0" y="0" width="170" height="55" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="18" class="annotation">Quick Actions</text>
+    <text x="10" y="32" class="text-muted" font-size="8">Join, Snooze, Dismiss</text>
+    <text x="10" y="44" class="text-muted" font-size="8">from notification</text>
+  </g>
+
+  <!-- Spec Reference -->
+  <text x="600" y="885" text-anchor="middle" class="text-muted" font-size="9">Spec: 080-calendar-integration - Email notifications, in-app alerts, push reminders</text>
+</svg>

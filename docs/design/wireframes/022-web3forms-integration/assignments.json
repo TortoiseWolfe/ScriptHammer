@@ -1,0 +1,46 @@
+{
+  "feature": "022-web3forms-integration",
+  "plannedAt": "2026-01-15T16:55:00Z",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-contact-form-ui.svg",
+      "focus": "Contact form layout with name, email, subject, message fields. Show inline validation errors (min 2 chars name, valid email, min 10 chars message). Desktop and Mobile views. Proper labels, ARIA attributes, and focus indicators for a11y.",
+      "userStories": ["US-001", "US-002", "US-005"],
+      "requirements": [
+        "FR-001",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-009",
+        "FR-010",
+        "FR-020",
+        "FR-021"
+      ],
+      "criteria": ["SC-002", "SC-005"],
+      "mode": "new"
+    },
+    {
+      "svg": "02-submission-states.svg",
+      "focus": "Form submission feedback states: (1) Loading with disabled button and spinner, (2) Success confirmation message, (3) Error with retry option and preserved input, (4) Offline queue indicator with pending count. Hidden honeypot field annotation for spam protection.",
+      "userStories": ["US-001", "US-003", "US-004"],
+      "requirements": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-011",
+        "FR-012",
+        "FR-014",
+        "FR-015",
+        "FR-016",
+        "FR-017",
+        "FR-018",
+        "FR-019",
+        "FR-022"
+      ],
+      "criteria": ["SC-001", "SC-003", "SC-004", "SC-006"],
+      "mode": "new"
+    }
+  ]
+}

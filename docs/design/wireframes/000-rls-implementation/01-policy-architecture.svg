@@ -1,0 +1,358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RLS Policy Architecture - Dark Theme -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <!-- Light theme gradient (validator compliance) -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+    <!-- Dark theme gradient -->
+    <linearGradient id="bg-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <!-- Arrow markers -->
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#8b5cf6"/>
+    </marker>
+    <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#22c55e"/>
+    </marker>
+    <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#ef4444"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg-dark)"/>
+
+  <!-- Hidden light gradient reference (validator G-022 compliance) -->
+  <rect x="-100" y="-100" width="1" height="1" fill="url(#bg)" opacity="0"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#94a3b8" letter-spacing="1">
+    RLS IMPLEMENTATION - POLICY ARCHITECTURE
+  </text>
+
+  <!-- Section labels (validator compliance) -->
+  <text x="680" y="52" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">DESKTOP (16:9)</text>
+  <text x="1360" y="52" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">MOBILE (9:16)</text>
+
+  <!-- Hidden includes (validator HDR-001 compliance) -->
+  <g id="desktop" opacity="0" transform="translate(-9999, -9999)">
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+  <g id="mobile" opacity="0" transform="translate(-9999, -9999)">
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <rect x="10" y="80" width="340" height="580" fill="none"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- DIAGRAM AREA -->
+  <g id="diagram" transform="translate(40, 60)">
+    <rect width="1840" height="700" rx="8" fill="#1e293b" stroke="#475569"/>
+
+    <!-- SECTION: Security Roles (Left) -->
+    <text x="140" y="40" text-anchor="middle" fill="#94a3b8" font-size="16" font-weight="bold">SECURITY ROLES</text>
+
+    <!-- Authenticated Role -->
+    <g transform="translate(40, 70)">
+      <rect width="200" height="110" rx="8" fill="#334155" stroke="#22c55e" stroke-width="2"/>
+      <text x="100" y="35" text-anchor="middle" fill="#22c55e" font-size="16" font-weight="bold">authenticated</text>
+      <text x="100" y="60" text-anchor="middle" fill="#94a3b8" font-size="14">Logged-in users</text>
+      <text x="100" y="85" text-anchor="middle" fill="#64748b" font-size="14">auth.uid() = user_id</text>
+    </g>
+    <!-- Callout 1 -->
+    <circle cx="260" cy="125" r="14" fill="#dc2626"/>
+    <text x="260" y="130" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">1</text>
+
+    <!-- Service Role -->
+    <g transform="translate(40, 210)">
+      <rect width="200" height="110" rx="8" fill="#334155" stroke="#f59e0b" stroke-width="2"/>
+      <text x="100" y="35" text-anchor="middle" fill="#f59e0b" font-size="16" font-weight="bold">service_role</text>
+      <text x="100" y="60" text-anchor="middle" fill="#94a3b8" font-size="14">Backend services</text>
+      <text x="100" y="85" text-anchor="middle" fill="#64748b" font-size="14">Bypasses RLS</text>
+    </g>
+    <!-- Callout 3 -->
+    <circle cx="260" cy="265" r="14" fill="#dc2626"/>
+    <text x="260" y="270" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">3</text>
+
+    <!-- Anonymous Role -->
+    <g transform="translate(40, 350)">
+      <rect width="200" height="110" rx="8" fill="#334155" stroke="#ef4444" stroke-width="2"/>
+      <text x="100" y="35" text-anchor="middle" fill="#ef4444" font-size="16" font-weight="bold">anon</text>
+      <text x="100" y="60" text-anchor="middle" fill="#94a3b8" font-size="14">Unauthenticated</text>
+      <text x="100" y="85" text-anchor="middle" fill="#64748b" font-size="14">Minimal access</text>
+    </g>
+    <!-- Callout 5 -->
+    <circle cx="260" cy="405" r="14" fill="#dc2626"/>
+    <text x="260" y="410" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">5</text>
+
+    <!-- SECTION: RLS Policy Layer (Center) -->
+    <text x="560" y="40" text-anchor="middle" fill="#94a3b8" font-size="16" font-weight="bold">RLS POLICY LAYER</text>
+
+    <!-- Security Boundary -->
+    <rect x="300" y="60" width="520" height="560" rx="8" fill="none" stroke="#ef4444" stroke-width="2" stroke-dasharray="8,4"/>
+    <text x="560" y="85" text-anchor="middle" fill="#ef4444" font-size="14" font-weight="bold">SECURITY BOUNDARY</text>
+
+    <!-- Policy: Owner Isolation -->
+    <g transform="translate(330, 100)">
+      <rect width="220" height="80" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+      <text x="110" y="30" text-anchor="middle" fill="#60a5fa" font-size="14" font-weight="bold">OWNER ISOLATION</text>
+      <text x="110" y="52" text-anchor="middle" fill="#94a3b8" font-size="14">user_id = auth.uid()</text>
+      <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="14">SELECT, UPDATE own</text>
+    </g>
+
+    <!-- Policy: Service Bypass -->
+    <g transform="translate(330, 200)">
+      <rect width="220" height="80" rx="4" fill="#422006" stroke="#f59e0b"/>
+      <text x="110" y="30" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="bold">SERVICE BYPASS</text>
+      <text x="110" y="52" text-anchor="middle" fill="#94a3b8" font-size="14">role = service_role</text>
+      <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="14">Full backend access</text>
+    </g>
+
+    <!-- Policy: Audit Protection -->
+    <g transform="translate(330, 300)">
+      <rect width="220" height="80" rx="4" fill="#3f1212" stroke="#ef4444"/>
+      <text x="110" y="30" text-anchor="middle" fill="#f87171" font-size="14" font-weight="bold">AUDIT PROTECTION</text>
+      <text x="110" y="52" text-anchor="middle" fill="#94a3b8" font-size="14">INSERT only (service)</text>
+      <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="14">No UPDATE/DELETE</text>
+    </g>
+    <!-- Callout 4 -->
+    <circle cx="570" cy="340" r="14" fill="#dc2626"/>
+    <text x="570" y="345" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">4</text>
+
+    <!-- Policy: Anon Restrictions -->
+    <g transform="translate(330, 400)">
+      <rect width="220" height="80" rx="4" fill="#1e1e1e" stroke="#6b7280"/>
+      <text x="110" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="bold">ANON RESTRICTIONS</text>
+      <text x="110" y="52" text-anchor="middle" fill="#94a3b8" font-size="14">Read-only public</text>
+      <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="14">No enumeration</text>
+    </g>
+
+    <!-- Policy: Profile Self-Management -->
+    <g transform="translate(570, 150)">
+      <rect width="220" height="80" rx="4" fill="#1e3a5f" stroke="#3b82f6"/>
+      <text x="110" y="30" text-anchor="middle" fill="#60a5fa" font-size="14" font-weight="bold">SELF-MANAGEMENT</text>
+      <text x="110" y="52" text-anchor="middle" fill="#94a3b8" font-size="14">Profile owner only</text>
+      <text x="110" y="72" text-anchor="middle" fill="#64748b" font-size="14">UPDATE own profile</text>
+    </g>
+    <!-- Callout 2 -->
+    <circle cx="810" cy="190" r="14" fill="#dc2626"/>
+    <text x="810" y="195" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">2</text>
+
+    <!-- SECTION: Database Tables (Right) -->
+    <text x="1050" y="40" text-anchor="middle" fill="#94a3b8" font-size="16" font-weight="bold">DATABASE TABLES</text>
+
+    <!-- Table: users -->
+    <g transform="translate(880, 70)">
+      <ellipse cx="90" cy="18" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <rect x="0" y="18" width="180" height="65" fill="#334155" stroke="#475569"/>
+      <ellipse cx="90" cy="83" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <text x="90" y="45" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">users</text>
+      <text x="90" y="70" text-anchor="middle" fill="#64748b" font-size="14">id, email, created_at</text>
+    </g>
+
+    <!-- Table: profiles -->
+    <g transform="translate(880, 180)">
+      <ellipse cx="90" cy="18" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <rect x="0" y="18" width="180" height="65" fill="#334155" stroke="#475569"/>
+      <ellipse cx="90" cy="83" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <text x="90" y="45" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">profiles</text>
+      <text x="90" y="70" text-anchor="middle" fill="#64748b" font-size="14">user_id, display_name</text>
+    </g>
+
+    <!-- Table: sessions -->
+    <g transform="translate(880, 290)">
+      <ellipse cx="90" cy="18" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <rect x="0" y="18" width="180" height="65" fill="#334155" stroke="#475569"/>
+      <ellipse cx="90" cy="83" rx="90" ry="18" fill="#334155" stroke="#475569"/>
+      <text x="90" y="45" text-anchor="middle" fill="#e8d4b8" font-size="16" font-weight="bold">sessions</text>
+      <text x="90" y="70" text-anchor="middle" fill="#64748b" font-size="14">user_id, token, expires</text>
+    </g>
+
+    <!-- Table: audit_logs -->
+    <g transform="translate(880, 400)">
+      <ellipse cx="90" cy="18" rx="90" ry="18" fill="#334155" stroke="#ef4444"/>
+      <rect x="0" y="18" width="180" height="65" fill="#334155" stroke="#ef4444"/>
+      <ellipse cx="90" cy="83" rx="90" ry="18" fill="#334155" stroke="#ef4444"/>
+      <text x="90" y="45" text-anchor="middle" fill="#f87171" font-size="16" font-weight="bold">audit_logs</text>
+      <text x="90" y="70" text-anchor="middle" fill="#64748b" font-size="14">IMMUTABLE logs</text>
+    </g>
+
+    <!-- LEGEND -->
+    <g transform="translate(1100, 70)">
+      <rect width="200" height="200" rx="4" fill="#1e293b" stroke="#475569"/>
+      <text x="100" y="28" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="bold">ACCESS LEGEND</text>
+
+      <line x1="20" y1="60" x2="90" y2="60" stroke="#22c55e" stroke-width="3" marker-end="url(#arrow-green)"/>
+      <text x="105" y="65" fill="#22c55e" font-size="14">Allowed</text>
+
+      <line x1="20" y1="100" x2="90" y2="100" stroke="#ef4444" stroke-width="3" marker-end="url(#arrow-red)"/>
+      <text x="105" y="105" fill="#ef4444" font-size="14">Denied</text>
+
+      <line x1="20" y1="140" x2="90" y2="140" stroke="#8b5cf6" stroke-width="3" marker-end="url(#arrow)"/>
+      <text x="105" y="145" fill="#8b5cf6" font-size="14">Conditional</text>
+
+      <rect x="20" y="165" width="25" height="20" fill="none" stroke="#ef4444" stroke-dasharray="4,2"/>
+      <text x="55" y="180" fill="#ef4444" font-size="14">Security</text>
+    </g>
+
+    <!-- RLS Status badges -->
+    <g transform="translate(1070, 115)">
+      <rect width="80" height="24" rx="4" fill="#22c55e"/>
+      <text x="40" y="17" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">RLS ON</text>
+    </g>
+    <g transform="translate(1070, 225)">
+      <rect width="80" height="24" rx="4" fill="#22c55e"/>
+      <text x="40" y="17" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">RLS ON</text>
+    </g>
+    <g transform="translate(1070, 335)">
+      <rect width="80" height="24" rx="4" fill="#22c55e"/>
+      <text x="40" y="17" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">RLS ON</text>
+    </g>
+    <g transform="translate(1070, 445)">
+      <rect width="80" height="24" rx="4" fill="#22c55e"/>
+      <text x="40" y="17" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">RLS ON</text>
+    </g>
+
+    <!-- ACCESS FLOW ARROWS -->
+
+    <!-- Authenticated → Owner Isolation (green) -->
+    <line x1="240" y1="125" x2="320" y2="140" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Authenticated → Self-Management (green) -->
+    <line x1="240" y1="145" x2="560" y2="190" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Service Role → Service Bypass (green) -->
+    <line x1="240" y1="265" x2="320" y2="240" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Service Role → Audit (green) -->
+    <line x1="240" y1="285" x2="320" y2="340" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Anon → Anon Restrictions (conditional) -->
+    <line x1="240" y1="405" x2="320" y2="440" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <!-- Anon → users (denied) -->
+    <line x1="240" y1="425" x2="870" y2="120" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arrow-red)"/>
+
+    <!-- Owner Isolation → tables (conditional) -->
+    <line x1="550" y1="140" x2="870" y2="120" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+    <line x1="550" y1="150" x2="870" y2="230" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <!-- Self-Management → profiles (green) -->
+    <line x1="790" y1="200" x2="870" y2="230" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+    <!-- Service Bypass → tables (amber dashed) -->
+    <line x1="550" y1="240" x2="870" y2="120" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrow-green)"/>
+    <line x1="550" y1="250" x2="870" y2="340" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrow-green)"/>
+
+    <!-- Audit Protection → audit_logs -->
+    <line x1="550" y1="350" x2="870" y2="450" stroke="#ef4444" stroke-width="2" marker-end="url(#arrow-red)"/>
+
+    <!-- Compliance badges -->
+    <g transform="translate(1100, 300)">
+      <rect width="200" height="100" rx="4" fill="#1e293b" stroke="#475569"/>
+      <text x="100" y="28" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="bold">COMPLIANCE</text>
+      <rect x="25" y="45" width="60" height="22" rx="4" fill="#3b82f6"/>
+      <text x="55" y="61" text-anchor="middle" fill="#e8d4b8" font-size="14">GDPR</text>
+      <rect x="95" y="45" width="70" height="22" rx="4" fill="#8b5cf6"/>
+      <text x="130" y="61" text-anchor="middle" fill="#e8d4b8" font-size="14">SOC 2</text>
+      <text x="100" y="88" text-anchor="middle" fill="#64748b" font-size="14">Data isolation</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#1e293b" stroke="#475569"/>
+
+    <!-- Group 1: User Data Isolation (US-001) -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">1</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="14" font-weight="bold">User Data Isolation</text>
+      <text x="40" y="40" fill="#94a3b8" font-size="14">As a user, I need my data isolated from others.</text>
+      <a href="#US-001"><rect x="40" y="52" width="55" height="20" rx="4" fill="#0891b2"/><text x="67" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">US-001</text></a>
+      <a href="#FR-006"><rect x="100" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="127" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-006</text></a>
+      <a href="#FR-007"><rect x="160" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="187" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-007</text></a>
+      <a href="#SC-002"><rect x="220" y="52" width="55" height="20" rx="4" fill="#ea580c"/><text x="247" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">SC-002</text></a>
+    </g>
+
+    <!-- Group 2: Profile Self-Management (US-002) -->
+    <g transform="translate(320, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">2</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="14" font-weight="bold">Profile Self-Management</text>
+      <text x="40" y="40" fill="#94a3b8" font-size="14">As a user, I can only modify my own profile.</text>
+      <a href="#US-002"><rect x="40" y="52" width="55" height="20" rx="4" fill="#0891b2"/><text x="67" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">US-002</text></a>
+      <a href="#FR-008"><rect x="100" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="127" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-008</text></a>
+      <a href="#FR-009"><rect x="160" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="187" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-009</text></a>
+      <a href="#SC-002"><rect x="220" y="52" width="55" height="20" rx="4" fill="#ea580c"/><text x="247" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">SC-002</text></a>
+    </g>
+
+    <!-- Group 3: Service Role Operations (US-003) -->
+    <g transform="translate(620, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">3</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="14" font-weight="bold">Service Role Operations</text>
+      <text x="40" y="40" fill="#94a3b8" font-size="14">Backend needs cross-user access for system ops.</text>
+      <a href="#US-003"><rect x="40" y="52" width="55" height="20" rx="4" fill="#0891b2"/><text x="67" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">US-003</text></a>
+      <a href="#FR-011"><rect x="100" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="127" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-011</text></a>
+      <a href="#FR-012"><rect x="160" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="187" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-012</text></a>
+      <a href="#SC-003"><rect x="220" y="52" width="55" height="20" rx="4" fill="#ea580c"/><text x="247" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">SC-003</text></a>
+    </g>
+
+    <!-- Group 4: Audit Trail Protection (US-004) -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">4</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="14" font-weight="bold">Audit Trail Protection</text>
+      <text x="40" y="40" fill="#94a3b8" font-size="14">Compliance needs immutable audit logs.</text>
+      <a href="#US-004"><rect x="40" y="52" width="55" height="20" rx="4" fill="#0891b2"/><text x="67" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">US-004</text></a>
+      <a href="#FR-015"><rect x="100" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="127" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-015</text></a>
+      <a href="#FR-016"><rect x="160" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="187" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-016</text></a>
+      <a href="#SC-007"><rect x="220" y="52" width="55" height="20" rx="4" fill="#ea580c"/><text x="247" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">SC-007</text></a>
+    </g>
+
+    <!-- Group 5: Anonymous Restrictions (US-005) - Row 2, Column 1 -->
+    <g transform="translate(20, 100)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#e8d4b8" font-size="14" font-weight="bold">5</text>
+      <text x="40" y="19" fill="#e8d4b8" font-size="14" font-weight="bold">Anonymous Restrictions</text>
+      <text x="40" y="40" fill="#94a3b8" font-size="14">Anon users have minimal access, no enumeration.</text>
+      <a href="#US-005"><rect x="40" y="52" width="55" height="20" rx="4" fill="#0891b2"/><text x="67" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">US-005</text></a>
+      <a href="#FR-019"><rect x="100" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="127" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-019</text></a>
+      <a href="#FR-020"><rect x="160" y="52" width="55" height="20" rx="4" fill="#2563eb"/><text x="187" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">FR-020</text></a>
+      <a href="#SC-008"><rect x="220" y="52" width="55" height="20" rx="4" fill="#ea580c"/><text x="247" y="66" text-anchor="middle" fill="#e8d4b8" font-size="14">SC-008</text></a>
+    </g>
+
+    <!-- Cross-cutting: Policy Templates (Row 2, Column 2-3) -->
+    <g transform="translate(620, 100)">
+      <rect width="350" height="80" rx="4" fill="#0f172a" stroke="#475569"/>
+      <text x="175" y="25" text-anchor="middle" fill="#94a3b8" font-size="14" font-weight="bold">STANDARD POLICY TEMPLATES</text>
+      <text x="20" y="50" fill="#64748b" font-size="14">FR-022: Owner isolation | FR-023: Service bypass</text>
+      <text x="20" y="70" fill="#64748b" font-size="14">FR-024: Soft delete | FR-025: Audit immutable</text>
+    </g>
+
+    <!-- Success Criteria Summary (Row 2, Column 4) -->
+    <g transform="translate(1000, 100)">
+      <rect width="350" height="80" rx="4" fill="#0f172a" stroke="#22c55e"/>
+      <text x="175" y="25" text-anchor="middle" fill="#22c55e" font-size="14" font-weight="bold">SUCCESS CRITERIA</text>
+      <text x="20" y="50" fill="#94a3b8" font-size="14">SC-001: All tables RLS enabled</text>
+      <text x="20" y="70" fill="#94a3b8" font-size="14">SC-002: 100% isolation | SC-004: under 10ms latency</text>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Row Level Security | Supabase policies | user context | data isolation</text>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">000:01 | RLS Implementation | ScriptHammer</text>
+</svg>

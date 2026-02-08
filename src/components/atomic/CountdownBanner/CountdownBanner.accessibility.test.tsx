@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 
@@ -11,8 +11,21 @@ vi.mock('next/navigation', () => ({
 
 import { CountdownBanner } from './CountdownBanner';
 
+// Mock date to within season so the banner renders for a11y tests
+function mockInSeason() {
+  vi.useFakeTimers({
+    now: new Date('2025-11-15T12:00:00').getTime(),
+    shouldAdvanceTime: true,
+  });
+}
+
 describe('CountdownBanner Accessibility', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('should have no accessibility violations', async () => {
+    mockInSeason();
     const { container } = render(<CountdownBanner />);
 
     const results = await axe(container);
@@ -20,6 +33,7 @@ describe('CountdownBanner Accessibility', () => {
   });
 
   it('should have proper ARIA attributes', () => {
+    mockInSeason();
     const { container } = render(<CountdownBanner />);
 
     // Add specific ARIA attribute tests based on component type
@@ -28,6 +42,7 @@ describe('CountdownBanner Accessibility', () => {
   });
 
   it('should be keyboard navigable', () => {
+    mockInSeason();
     const { container } = render(<CountdownBanner />);
 
     // Test keyboard navigation
@@ -41,6 +56,7 @@ describe('CountdownBanner Accessibility', () => {
   });
 
   it('should have sufficient color contrast', async () => {
+    mockInSeason();
     const { container } = render(<CountdownBanner />);
 
     // Axe will check color contrast
@@ -54,6 +70,7 @@ describe('CountdownBanner Accessibility', () => {
   });
 
   it('should support screen readers', () => {
+    mockInSeason();
     const { container } = render(<CountdownBanner />);
 
     // Check for screen reader support

@@ -1,0 +1,213 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">CHAT WINDOW</text>
+
+  <!-- Chat frame -->
+  <rect x="100" y="50" width="500" height="700" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Chat header -->
+  <rect x="100" y="50" width="500" height="60" rx="12" fill="#334155"/>
+  <text x="120" y="85" fill="#8b5cf6" font-size="18">←</text>
+  <circle cx="170" cy="80" r="22" fill="#8b5cf6"/>
+  <text x="170" y="86" text-anchor="middle" fill="white" class="text-md">JD</text>
+  <text x="205" y="75" class="heading">John Doe</text>
+  <circle cx="205" cy="90" r="4" fill="#22c55e"/>
+  <text x="220" y="94" class="text-sm" fill="#22c55e">Online</text>
+
+  <!-- Encrypted indicator (far right) -->
+  <text x="590" y="85" text-anchor="end" class="text-muted">🔒</text>
+
+  <!-- Utility Icons Group (positioned after user info, before encrypted) -->
+  <g transform="translate(320, 73)">
+    <g transform="translate(0, 0)">
+      <path d="M7 2v6m0 0L4.5 5.5M7 8l2.5-2.5M3 11h8" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+    <g transform="translate(20, 0)">
+      <path d="M2 3h2m3 0h3M2 7h4m3 0h1M2 11h1m3 0h4" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="5.5" cy="3" r="1.2" fill="#94a3b8"/>
+      <circle cx="7.5" cy="7" r="1.2" fill="#94a3b8"/>
+      <circle cx="4.5" cy="11" r="1.2" fill="#94a3b8"/>
+    </g>
+    <g transform="translate(40, 0)">
+      <path d="M1 7s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+      <circle cx="7" cy="7" r="2" fill="#94a3b8"/>
+    </g>
+    <g transform="translate(60, 0)">
+      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+      <path d="M4.5 4h5M4.5 7h5M4.5 10h3" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Date separator -->
+  <line x1="140" y1="130" x2="260" y2="130" stroke="#475569"/>
+  <text x="350" y="134" text-anchor="middle" class="text-muted">Today</text>
+  <line x1="440" y1="130" x2="560" y2="130" stroke="#475569"/>
+
+  <!-- Received message -->
+  <rect x="120" y="150" width="280" height="60" rx="12" fill="#334155"/>
+  <text x="135" y="175" class="text-md">Hey! Are you free tonight for</text>
+  <text x="135" y="192" class="text-md">dinner?</text>
+  <text x="385" y="200" text-anchor="end" class="text-muted">6:30 PM</text>
+
+  <!-- Sent message -->
+  <rect x="200" y="225" width="280" height="45" rx="12" fill="#8b5cf6"/>
+  <text x="215" y="250" fill="white" class="text-md">Sure! What time works for you?</text>
+  <text x="465" y="260" text-anchor="end" fill="white" opacity="0.7" class="text-muted">6:32 PM</text>
+  <text x="460" y="260" fill="#60a5fa" font-size="10">✓✓</text>
+
+  <!-- Received message with edit indicator -->
+  <rect x="120" y="285" width="320" height="60" rx="12" fill="#334155"/>
+  <text x="135" y="310" class="text-md">How about 7:30 at that Italian</text>
+  <text x="135" y="327" class="text-md">place downtown?</text>
+  <text x="425" y="335" text-anchor="end" class="text-muted">6:35 PM</text>
+  <text x="300" y="335" fill="#64748b" font-size="9" font-style="italic">Edited</text>
+
+  <!-- Sent message (read) -->
+  <rect x="260" y="360" width="220" height="45" rx="12" fill="#8b5cf6"/>
+  <text x="275" y="385" fill="white" class="text-md">Perfect! See you there 🍝</text>
+  <text x="465" y="395" text-anchor="end" fill="white" opacity="0.7" class="text-muted">6:36 PM</text>
+  <text x="460" y="395" fill="#60a5fa" font-size="10">✓✓</text>
+
+  <!-- Deleted message placeholder -->
+  <rect x="120" y="420" width="200" height="35" rx="12" fill="#334155" opacity="0.5" stroke="#475569" stroke-dasharray="4"/>
+  <text x="135" y="442" class="text-muted" font-style="italic">[Message deleted]</text>
+
+  <!-- Sent message (delivered, not read) -->
+  <rect x="280" y="470" width="200" height="45" rx="12" fill="#8b5cf6"/>
+  <text x="295" y="495" fill="white" class="text-md">Bringing the wine!</text>
+  <text x="465" y="505" text-anchor="end" fill="white" opacity="0.7" class="text-muted">6:38 PM</text>
+  <text x="458" y="505" fill="white" opacity="0.7" font-size="10">✓</text>
+
+  <!-- Typing indicator -->
+  <rect x="120" y="530" width="100" height="35" rx="12" fill="#334155"/>
+  <circle cx="145" cy="548" r="5" fill="#64748b">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="165" cy="548" r="5" fill="#64748b">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="185" cy="548" r="5" fill="#64748b">
+    <animate attributeName="opacity" values="0.3;1;0.3" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+  <text x="120" y="580" class="text-muted" font-style="italic">John is typing...</text>
+
+  <!-- Scroll to bottom button -->
+  <circle cx="560" cy="600" r="20" fill="#334155" stroke="#475569"/>
+  <text x="560" y="607" text-anchor="middle" class="text-md">↓</text>
+  <circle cx="575" cy="585" r="8" fill="#8b5cf6"/>
+  <text x="575" y="589" text-anchor="middle" fill="white" font-size="8">2</text>
+
+  <!-- Message input -->
+  <rect x="120" y="690" width="400" height="44" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="140" y="718" class="text-muted">Type a message...</text>
+  <rect x="530" y="690" width="50" height="44" rx="8" fill="#8b5cf6"/>
+  <text x="555" y="718" text-anchor="middle" fill="white" font-size="16">→</text>
+
+  <!-- ========================================== -->
+  <!-- Message States Legend -->
+  <!-- ========================================== -->
+  <rect x="650" y="50" width="500" height="200" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="670" y="80" class="heading">Message States</text>
+
+  <!-- Sending -->
+  <rect x="670" y="100" width="120" height="30" rx="6" fill="#8b5cf6" opacity="0.5"/>
+  <text x="685" y="120" fill="white" class="text-sm">Sending...</text>
+  <circle cx="775" cy="115" r="6" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="12,6">
+    <animateTransform attributeName="transform" type="rotate" from="0 775 115" to="360 775 115" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="800" y="120" class="annotation">FR-041: Queued</text>
+
+  <!-- Sent -->
+  <rect x="670" y="140" width="120" height="30" rx="6" fill="#8b5cf6"/>
+  <text x="685" y="160" fill="white" class="text-sm">Message</text>
+  <text x="775" y="160" fill="white" font-size="10">✓</text>
+  <text x="800" y="160" class="annotation">Sent to server</text>
+
+  <!-- Delivered -->
+  <rect x="670" y="180" width="120" height="30" rx="6" fill="#8b5cf6"/>
+  <text x="685" y="200" fill="white" class="text-sm">Message</text>
+  <text x="775" y="200" fill="white" font-size="10">✓✓</text>
+  <text x="800" y="200" class="annotation">FR-021: Delivered</text>
+
+  <!-- Read -->
+  <rect x="670" y="220" width="120" height="30" rx="6" fill="#8b5cf6"/>
+  <text x="685" y="240" fill="white" class="text-sm">Message</text>
+  <text x="775" y="240" fill="#60a5fa" font-size="10">✓✓</text>
+  <text x="800" y="240" class="annotation">FR-032: Read (blue)</text>
+
+  <!-- ========================================== -->
+  <!-- Real-time Features -->
+  <!-- ========================================== -->
+  <rect x="650" y="280" width="500" height="150" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="670" y="310" class="heading">Real-time Features</text>
+
+  <!-- Typing indicator -->
+  <rect x="670" y="330" width="100" height="30" rx="6" fill="#334155"/>
+  <circle cx="690" cy="345" r="4" fill="#64748b"/>
+  <circle cx="705" cy="345" r="4" fill="#94a3b8"/>
+  <circle cx="720" cy="345" r="4" fill="#cbd5e1"/>
+  <text x="780" y="350" class="annotation">FR-031: Typing (3s debounce)</text>
+
+  <!-- Real-time delivery -->
+  <text x="670" y="390" class="text-md">New messages appear instantly</text>
+  <text x="670" y="410" class="annotation">FR-019: Deliver within 500ms via Supabase Realtime</text>
+
+  <!-- ========================================== -->
+  <!-- Encryption Info -->
+  <!-- ========================================== -->
+  <rect x="650" y="450" width="500" height="120" rx="8" fill="#1e293b" stroke="#475569"/>
+  <text x="670" y="480" class="heading">End-to-End Encryption</text>
+
+  <rect x="670" y="500" width="460" height="50" rx="6" fill="#0f172a" opacity="0.5"/>
+  <text x="690" y="520" class="text-sm">🔒 Messages are encrypted with AES-GCM (256-bit)</text>
+  <text x="690" y="538" class="text-sm">Keys derived via ECDH. Server never sees plaintext.</text>
+
+  <!-- ========================================== -->
+  <!-- Annotations -->
+  <!-- ========================================== -->
+  <rect x="650" y="590" width="250" height="65" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="660" y="608" class="annotation">FR-048: 44×44px touch targets</text>
+  <text x="660" y="622" class="annotation">FR-052: Scroll-to-bottom button</text>
+  <text x="660" y="636" class="annotation">FR-055: ARIA live regions for</text>
+  <text x="660" y="650" class="annotation">screen reader announcements</text>
+
+  <rect x="910" y="590" width="250" height="65" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="920" y="608" class="annotation">FR-066: Deleted messages show</text>
+  <text x="920" y="622" class="annotation">"[Message deleted]" placeholder</text>
+  <text x="920" y="636" class="annotation">FR-027: Edited messages show</text>
+  <text x="920" y="650" class="annotation">"Edited" indicator</text>
+
+  <rect x="650" y="670" width="510" height="55" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="660" y="688" class="annotation">FR-012, FR-013: Client-side encryption/decryption using Web Crypto API</text>
+  <text x="660" y="702" class="annotation">FR-014: Zero-knowledge - server sees only ciphertext + IV</text>
+  <text x="660" y="716" class="annotation">FR-060: Encrypt &lt;100ms | FR-061: Decrypt &lt;50ms with cached keys</text>
+
+</svg>

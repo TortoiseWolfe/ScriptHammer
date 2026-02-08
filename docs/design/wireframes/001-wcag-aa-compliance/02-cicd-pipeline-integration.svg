@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    WCAG AAA COMPLIANCE - CI/CD PIPELINE INTEGRATION
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Page Title -->
+    <text x="640" y="80" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="24" font-weight="bold" fill="#374151">CI/CD Accessibility Pipeline</text>
+
+    <!-- Build Status Panel (top left) -->
+    <g transform="translate(40, 100)">
+      <rect width="380" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Build Status</text>
+
+      <!-- Current build -->
+      <g transform="translate(20, 50)">
+        <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="12" width="80" height="26" rx="4" fill="#22c55e"/>
+        <text x="50" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">PASSED</text>
+        <text x="105" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">PR #247 - main branch</text>
+      </g>
+
+      <!-- Previous build -->
+      <g transform="translate(20, 110)">
+        <rect width="340" height="50" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="12" width="80" height="26" rx="4" fill="#dc2626"/>
+        <text x="50" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">FAILED</text>
+        <text x="105" y="30" font-family="system-ui, sans-serif" font-size="14" fill="#374151">PR #246 - 3 a11y violations</text>
+      </g>
+    </g>
+    <!-- Callout ① - RIGHT of build status -->
+    <g class="callout" transform="translate(436, 190)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Violation Report Panel (top right) -->
+    <g transform="translate(460, 100)">
+      <rect width="780" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Violation Report (PR #246)</text>
+
+      <!-- Violation rows -->
+      <g transform="translate(20, 50)">
+        <rect width="740" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="6" width="60" height="24" rx="4" fill="#dc2626"/>
+        <text x="40" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Error</text>
+        <text x="85" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Missing alt text on img.hero-image</text>
+        <text x="550" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">WCAG 1.1.1</text>
+      </g>
+      <g transform="translate(20, 92)">
+        <rect width="740" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="6" width="60" height="24" rx="4" fill="#dc2626"/>
+        <text x="40" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Error</text>
+        <text x="85" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Contrast ratio 4.2:1 on btn.submit (needs 7:1)</text>
+        <text x="550" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">WCAG 1.4.6</text>
+      </g>
+      <g transform="translate(20, 134)">
+        <rect width="740" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="6" width="60" height="24" rx="4" fill="#f59e0b"/>
+        <text x="40" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Warn</text>
+        <text x="85" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Focus indicator not visible on nav.item</text>
+        <text x="550" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">WCAG 2.4.7</text>
+      </g>
+    </g>
+    <!-- Callout ② - RIGHT of violation report -->
+    <g class="callout" transform="translate(1256, 190)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Dev Console Panel (bottom) -->
+    <g transform="translate(40, 300)">
+      <rect width="600" height="280" rx="8" fill="#1f2937" stroke="#374151"/>
+      <text x="20" y="30" font-family="monospace"
+            font-size="14" fill="#22c55e">$ npm run dev</text>
+
+      <text x="20" y="60" font-family="monospace" font-size="14" fill="#9ca3af">Starting development server...</text>
+      <text x="20" y="85" font-family="monospace" font-size="14" fill="#9ca3af">Accessibility watcher active</text>
+
+      <text x="20" y="120" font-family="monospace" font-size="14" fill="#f59e0b">[a11y] Warning: Missing label for input#email</text>
+      <text x="20" y="145" font-family="monospace" font-size="14" fill="#f59e0b">[a11y] Warning: Focus order incorrect in Nav</text>
+
+      <text x="20" y="180" font-family="monospace" font-size="14" fill="#dc2626">[a11y] Error: Contrast ratio 4.1:1 on Button</text>
+      <text x="20" y="205" font-family="monospace" font-size="14" fill="#9ca3af">        at src/components/Button.tsx:42</text>
+      <text x="20" y="230" font-family="monospace" font-size="14" fill="#3b82f6">        Fix: Change color from #777 to #545454</text>
+
+      <text x="20" y="265" font-family="monospace" font-size="14" fill="#22c55e">Server ready at http://localhost:3000</text>
+    </g>
+    <!-- Callout ③ - RIGHT of dev console -->
+    <g class="callout" transform="translate(656, 440)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Remediation Guidance Panel (bottom right) -->
+    <g transform="translate(680, 300)">
+      <rect width="560" height="280" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="16" font-weight="bold" fill="#374151">Remediation Guidance</text>
+
+      <!-- Selected violation detail -->
+      <g transform="translate(20, 50)">
+        <rect width="520" height="80" rx="4" fill="#f5f0e6"/>
+        <text x="15" y="25" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Element: btn.submit</text>
+        <text x="15" y="48" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Current: #777777 on #ffffff (4.2:1)</text>
+        <text x="15" y="68" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Required: 7:1 for WCAG AAA</text>
+      </g>
+
+      <!-- Suggested fix -->
+      <g transform="translate(20, 145)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Suggested Fix:</text>
+        <rect y="15" width="520" height="44" rx="4" fill="#f5f0e6"/>
+        <text x="15" y="42" font-family="monospace" font-size="14" fill="#374151">color: #545454; /* 7.0:1 contrast */</text>
+      </g>
+
+      <!-- Apply button -->
+      <rect x="20" y="220" width="140" height="44" rx="4" fill="#8b5cf6"/>
+      <text x="90" y="247" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Apply Fix</text>
+    </g>
+    <!-- Callout ④ - RIGHT of remediation -->
+    <g class="callout" transform="translate(1256, 440)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Active nav state for Docs -->
+    <rect x="580" y="3" width="60" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="610" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Title -->
+    <text x="180" y="100" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="18" font-weight="bold" fill="#374151">CI/CD Pipeline</text>
+
+    <!-- Mobile Build Status -->
+    <g transform="translate(20, 120)">
+      <rect width="320" height="100" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Build Status</text>
+
+      <g transform="translate(10, 40)">
+        <rect width="300" height="44" rx="4" fill="#f5f0e6"/>
+        <rect x="10" y="10" width="60" height="24" rx="4" fill="#22c55e"/>
+        <text x="40" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">PASS</text>
+        <text x="80" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#374151">PR #247</text>
+      </g>
+    </g>
+    <!-- Callout ① on mobile -->
+    <g class="callout" transform="translate(344, 170)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Mobile Violations List -->
+    <g transform="translate(20, 240)">
+      <rect width="320" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Recent Violations</text>
+
+      <g transform="translate(10, 40)">
+        <rect width="300" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="5" y="6" width="50" height="24" rx="4" fill="#dc2626"/>
+        <text x="30" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Err</text>
+        <text x="65" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Missing alt text</text>
+      </g>
+      <g transform="translate(10, 82)">
+        <rect width="300" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="5" y="6" width="50" height="24" rx="4" fill="#dc2626"/>
+        <text x="30" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Err</text>
+        <text x="65" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Contrast 4.2:1</text>
+      </g>
+      <g transform="translate(10, 124)">
+        <rect width="300" height="36" rx="4" fill="#f5f0e6"/>
+        <rect x="5" y="6" width="50" height="24" rx="4" fill="#f59e0b"/>
+        <text x="30" y="23" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Wrn</text>
+        <text x="65" y="23" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Focus indicator</text>
+      </g>
+    </g>
+    <!-- Callout ② on mobile -->
+    <g class="callout" transform="translate(344, 330)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Mobile Dev Feedback -->
+    <g transform="translate(20, 440)">
+      <rect width="320" height="100" rx="8" fill="#1f2937" stroke="#374151"/>
+      <text x="15" y="25" font-family="monospace" font-size="14" fill="#22c55e">$ dev mode</text>
+      <text x="15" y="50" font-family="monospace" font-size="14" fill="#f59e0b">[a11y] 2 warnings</text>
+      <text x="15" y="75" font-family="monospace" font-size="14" fill="#dc2626">[a11y] 1 error</text>
+    </g>
+    <!-- Callout ③ on mobile -->
+    <g class="callout" transform="translate(344, 490)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile Quick Fix -->
+    <g transform="translate(20, 560)">
+      <rect width="320" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Quick Fix</text>
+      <rect x="10" y="40" width="140" height="30" rx="4" fill="#8b5cf6"/>
+      <text x="80" y="60" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Apply All</text>
+    </g>
+    <!-- Callout ④ on mobile -->
+    <g class="callout" transform="translate(344, 600)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Mobile footer with active Docs tab -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g transform="translate(180, 664)">
+      <rect width="90" height="56" fill="#8b5cf6"/>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group ① - Column 1 -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">CI Pipeline Enforcement</text>
+      <text x="40" y="34" fill="#374151" font-size="14">As a developer, I need CI to block</text>
+      <text x="40" y="52" fill="#374151" font-size="14">deployments with a11y violations.</text>
+      <a href="#US-001">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text>
+      </a>
+      <a href="#FR-001">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-001</text>
+      </a>
+      <a href="#FR-002">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-002</text>
+      </a>
+      <a href="#SC-008">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-008</text>
+      </a>
+    </g>
+
+    <!-- Group ② - Column 2 -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Violation Reports</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Detailed error output with element</text>
+      <text x="40" y="52" fill="#374151" font-size="14">selectors and WCAG criteria.</text>
+      <a href="#US-009">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-009</text>
+      </a>
+      <a href="#FR-003">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-003</text>
+      </a>
+      <a href="#FR-004">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-004</text>
+      </a>
+    </g>
+
+    <!-- Group ③ - Column 3 -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Real-time Dev Feedback</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Console warnings during dev so</text>
+      <text x="40" y="52" fill="#374151" font-size="14">issues are caught before commit.</text>
+      <a href="#US-008">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-008</text>
+      </a>
+      <a href="#FR-028">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-028</text>
+      </a>
+      <a href="#FR-030">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-030</text>
+      </a>
+      <a href="#SC-009">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-009</text>
+      </a>
+    </g>
+
+    <!-- Group ④ - Column 4 -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Remediation Guidance</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Specific fix suggestions with</text>
+      <text x="40" y="52" fill="#374151" font-size="14">one-click apply capability.</text>
+      <a href="#US-008">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">US-008</text>
+      </a>
+      <a href="#FR-031">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-031</text>
+      </a>
+      <a href="#FR-005">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-005</text>
+      </a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WCAG 2.1 | 4.5:1 contrast | focus indicators | screen readers</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    001:02 | WCAG AAA Compliance | ScriptHammer
+  </text>
+</svg>

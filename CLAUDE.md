@@ -366,3 +366,64 @@ ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
 - E2E tests are local-only, not in CI pipeline
 - Docker-first development is mandatory
 - Use `min-h-11 min-w-11` for 44px touch targets (mobile-first)
+
+---
+
+## Planning Factory (27-Terminal Workflow)
+
+This repo also contains the planning factory tooling from the ScriptHammer planning template. The sections below govern the multi-terminal spec-driven workflow.
+
+### Multi-Terminal Assembly Line
+
+26 Claude Code terminals in a tmux session arranged in assembly line order:
+
+```
+STRATEGY:    CTO → ProductOwner → BusinessAnalyst
+DESIGN:      Architect → UXDesigner → UIDesigner
+WIREFRAMES:  Planner → Generators 1-3 → PreviewHost → WireframeQA → Validator → Inspector
+CODE:        Developer → Toolsmith → Security
+TEST:        TestEngineer → QALead → Auditor
+DOCS:        Author → TechWriter
+RELEASE:     DevOps → DockerCaptain → ReleaseManager → Coordinator
+```
+
+See `.claude/roles/` for role-specific context:
+
+| File                    | Roles                                                                   |
+| ----------------------- | ----------------------------------------------------------------------- |
+| `operator.md`           | Operator (runs outside tmux)                                            |
+| `council.md`            | CTO, ProductOwner, Architect, UXDesigner, Toolsmith, Security, DevOps   |
+| `design.md`             | UIDesigner                                                              |
+| `wireframe-pipeline.md` | Planner, Generators 1-3, PreviewHost, WireframeQA, Validator, Inspector |
+| `implementation.md`     | Developer, TestEngineer, QALead, Auditor                                |
+| `support.md`            | Author, TechWriter, BusinessAnalyst, Coordinator                        |
+| `release.md`            | DevOps, DockerCaptain, ReleaseManager                                   |
+| `stw-liaison.md`        | StW-Liaison (client operator for SpokeToWork)                           |
+
+### Terminal Git Rules
+
+When operating as a terminal in the multi-terminal workflow:
+
+- **COMMIT ONLY, NEVER PUSH** — Only the Operator has SSH access to push
+- Stay in your lane: commit your work and move on
+
+### Feature Specs & Wireframes
+
+- `features/` — 46 feature specifications with `IMPLEMENTATION_ORDER.md` dependency graph
+- `docs/design/wireframes/` — 46 SVG wireframes with interactive HTML viewer
+- `.claude/inventories/` — Codebase inventory snapshots (run `/refresh-inventories` after spec changes)
+
+### SVG Wireframe Rules
+
+- Canvas: `viewBox="0 0 1920 1080"`
+- Desktop: x=40, y=60, 1280x720 | Mobile: x=1360, y=60, 360x720
+- Panel color: `#e8d4b8` (never white)
+- Touch targets: 44px minimum
+
+### Fork Guide
+
+After forking ScriptHammer:
+
+1. Run `/refresh-inventories` — Regenerates context files for your specs
+2. Update `.claude/inventories/` — Reflects your project's features
+3. Modify `features/IMPLEMENTATION_ORDER.md` — Your dependency sequence

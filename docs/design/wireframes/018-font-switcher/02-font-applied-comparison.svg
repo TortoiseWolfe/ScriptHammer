@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">FONT SWITCHER - FONT APPLIED COMPARISON</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" fill="#e8d4b8" rx="8"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Docs -->
+    <rect x="580" y="3" width="60" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="610" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+
+    <!-- Page Title -->
+    <text x="640" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">Font Comparison - Before/After</text>
+    <text x="640" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">See how different fonts affect reading experience</text>
+
+    <!-- Left Panel: System Default Font -->
+    <g transform="translate(40, 140)">
+      <rect width="590" height="480" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel Header -->
+      <rect x="0" y="0" width="590" height="45" fill="#1f2937" rx="8" style="clip-path: inset(0 0 50% 0)"/>
+      <text x="295" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">System Default (Sans-Serif)</text>
+
+      <!-- Content Preview -->
+      <g transform="translate(20, 60)">
+        <text x="0" y="25" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Documentation Overview</text>
+        <text x="0" y="55" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Getting Started Guide</text>
+
+        <text x="0" y="90" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Welcome to ScriptHammer documentation. This guide will help</text>
+        <text x="0" y="108" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">you understand how to use our planning template effectively.</text>
+        <text x="0" y="126" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">All 46 feature specifications follow the same structure.</text>
+
+        <!-- Code Block -->
+        <rect x="0" y="145" width="550" height="60" fill="#1f2937" rx="4"/>
+        <text x="15" y="168" font-family="monospace" font-size="14" fill="#22c55e">// Install dependencies</text>
+        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install &amp;&amp; npm run dev</text>
+
+        <!-- List Items -->
+        <text x="0" y="230" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Key Features:</text>
+        <text x="20" y="252" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• 46 complete feature specifications</text>
+        <text x="20" y="272" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Interactive SVG wireframes with hot-reload</text>
+        <text x="20" y="292" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Constitution-driven development workflow</text>
+        <text x="20" y="312" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Docker-first environment setup</text>
+
+        <!-- Button Sample -->
+        <rect x="0" y="340" width="150" height="40" fill="#8b5cf6" rx="6"/>
+        <text x="75" y="365" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">View Specs</text>
+
+        <rect x="170" y="340" width="150" height="40" fill="#f5f0e6" rx="6" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="245" y="365" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Wireframes</text>
+      </g>
+
+      <!-- Active Font Indicator -->
+      <rect x="20" y="430" width="550" height="35" fill="#d1fae5" rx="4" stroke="#22c55e" stroke-width="1"/>
+      <text x="40" y="453" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#166534">✓ Currently Active: System Default</text>
+    </g>
+
+    <!-- Callout ① - Default font example -->
+    <g class="callout">
+      <circle cx="650" cy="300" r="14" fill="#dc2626"/>
+      <text x="650" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Right Panel: Dyslexia-Friendly Font -->
+    <g transform="translate(650, 140)">
+      <rect width="590" height="480" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel Header -->
+      <rect x="0" y="0" width="590" height="45" fill="#0891b2" rx="8" style="clip-path: inset(0 0 50% 0)"/>
+      <text x="295" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Dyslexia-Friendly (OpenDyslexic)</text>
+
+      <!-- Content Preview - Simulated different font styling -->
+      <g transform="translate(20, 60)">
+        <text x="0" y="25" font-family="Comic Sans MS, cursive" font-size="22" font-weight="bold" fill="#1f2937" letter-spacing="1">Documentation Overview</text>
+        <text x="0" y="55" font-family="Comic Sans MS, cursive" font-size="16" font-weight="600" fill="#374151" letter-spacing="1">Getting Started Guide</text>
+
+        <text x="0" y="90" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">Welcome to ScriptHammer documentation. This guide will help</text>
+        <text x="0" y="108" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">you understand how to use our planning template effectively.</text>
+        <text x="0" y="126" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">All 46 feature specifications follow the same structure.</text>
+
+        <!-- Code Block -->
+        <rect x="0" y="145" width="550" height="60" fill="#1f2937" rx="4"/>
+        <text x="15" y="168" font-family="monospace" font-size="14" fill="#22c55e">// Install dependencies</text>
+        <text x="15" y="188" font-family="monospace" font-size="14" fill="#f5f0e6">npm install &amp;&amp; npm run dev</text>
+
+        <!-- List Items -->
+        <text x="0" y="230" font-family="Comic Sans MS, cursive" font-size="14" fill="#374151" letter-spacing="0.5">Key Features:</text>
+        <text x="20" y="252" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">• 46 complete feature specifications</text>
+        <text x="20" y="272" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">• Interactive SVG wireframes with hot-reload</text>
+        <text x="20" y="292" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">• Constitution-driven development workflow</text>
+        <text x="20" y="312" font-family="Comic Sans MS, cursive" font-size="14" fill="#4b5563" letter-spacing="0.5">• Docker-first environment setup</text>
+
+        <!-- Button Sample -->
+        <rect x="0" y="340" width="150" height="40" fill="#8b5cf6" rx="6"/>
+        <text x="75" y="365" text-anchor="middle" font-family="Comic Sans MS, cursive" font-size="14" font-weight="600" fill="#e8d4b8">View Specs</text>
+
+        <rect x="170" y="340" width="150" height="40" fill="#f5f0e6" rx="6" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="245" y="365" text-anchor="middle" font-family="Comic Sans MS, cursive" font-size="14" font-weight="600" fill="#8b5cf6">Wireframes</text>
+      </g>
+
+      <!-- A11Y Badge -->
+      <rect x="20" y="430" width="550" height="35" fill="#e0f2fe" rx="4" stroke="#0891b2" stroke-width="1"/>
+      <rect x="30" y="437" width="60" height="22" rx="4" fill="#0891b2"/>
+      <text x="60" y="452" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">A11Y</text>
+      <text x="105" y="453" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#0c4a6e">Dyslexia-Friendly: Weighted bottoms, unique letterforms</text>
+    </g>
+
+    <!-- Callout ② - Dyslexia-friendly example -->
+    <g class="callout">
+      <circle cx="1260" cy="300" r="14" fill="#dc2626"/>
+      <text x="1260" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" fill="#e8d4b8" rx="24"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Font Preview</text>
+
+    <!-- Toggle between fonts -->
+    <rect x="20" y="125" width="320" height="44" fill="#dcc8a8" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <rect x="25" y="130" width="155" height="34" fill="#8b5cf6" rx="4"/>
+    <text x="102" y="152" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">System</text>
+    <text x="262" y="152" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Dyslexia</text>
+
+    <!-- Callout ③ - Mobile font toggle -->
+    <g class="callout">
+      <circle cx="345" cy="147" r="14" fill="#dc2626"/>
+      <text x="345" y="152" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Sample Content Card -->
+    <rect x="20" y="180" width="320" height="280" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+
+    <text x="30" y="210" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Getting Started</text>
+    <text x="30" y="235" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Welcome to ScriptHammer</text>
+    <text x="30" y="253" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">documentation. This guide</text>
+    <text x="30" y="271" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">helps you get started.</text>
+
+    <!-- Code Block -->
+    <rect x="30" y="290" width="280" height="45" fill="#1f2937" rx="4"/>
+    <text x="40" y="310" font-family="monospace" font-size="14" fill="#22c55e">npm install</text>
+    <text x="40" y="328" font-family="monospace" font-size="14" fill="#f5f0e6">npm run dev</text>
+
+    <!-- Feature list -->
+    <text x="40" y="360" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• 46 feature specs</text>
+    <text x="40" y="378" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• SVG wireframes</text>
+    <text x="40" y="396" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Docker-first setup</text>
+
+    <!-- Sample Buttons -->
+    <rect x="30" y="415" width="130" height="36" fill="#8b5cf6" rx="6"/>
+    <text x="95" y="438" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">View Docs</text>
+
+    <rect x="170" y="415" width="130" height="36" fill="#f5f0e6" rx="6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="235" y="438" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Specs</text>
+
+    <!-- Persistence Info -->
+    <rect x="20" y="475" width="320" height="80" fill="#dcc8a8" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="500" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Session Persistence</text>
+    <text x="180" y="522" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Font choice saved locally</text>
+    <text x="180" y="542" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Restored on return visits</text>
+
+    <!-- Callout ④ - Persistence info -->
+    <g class="callout">
+      <circle cx="345" cy="515" r="14" fill="#dc2626"/>
+      <text x="345" y="520" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Reset Option -->
+    <rect x="20" y="565" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="592" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Reset to System Default</text>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active state for Docs tab -->
+    <g transform="translate(180, 664)">
+      <rect width="90" height="56" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" d="M5.625 1.5C4.58947 1.5 3.75 2.33947 3.75 3.375V20.625C3.75 21.6605 4.58947 22.5 5.625 22.5H18.375C19.4105 22.5 20.25 21.6605 20.25 20.625V12.75C20.25 10.6789 18.5711 9 16.5 9H14.625C13.5895 9 12.75 8.16053 12.75 7.125V5.25C12.75 3.17893 11.0711 1.5 9 1.5H5.625ZM7.5 15C7.5 14.5858 7.83579 14.25 8.25 14.25H15.75C16.1642 14.25 16.5 14.5858 16.5 15C16.5 15.4142 16.1642 15.75 15.75 15.75H8.25C7.83579 15.75 7.5 15.4142 7.5 15ZM8.25 17.25C7.83579 17.25 7.5 17.5858 7.5 18C7.5 18.4142 7.83579 18.75 8.25 18.75H12C12.4142 18.75 12.75 18.4142 12.75 18C12.75 17.5858 12.4142 17.25 12 17.25H8.25Z"/>
+        <path fill="#fff" d="M12.9712 1.8159C13.768 2.73648 14.25 3.93695 14.25 5.25V7.125C14.25 7.33211 14.4179 7.5 14.625 7.5H16.5C17.8131 7.5 19.0135 7.98204 19.9341 8.77881C19.0462 5.37988 16.3701 2.70377 12.9712 1.8159Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Docs</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1: US-001 Font Selection Applied -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Font Selection Applied</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">All text updates instantly without</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">page reload when font changes.</text>
+
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-005"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-005</text></a>
+      <a href="#SC-003"><rect x="162" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-003</text></a>
+      <a href="#SC-006"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 2: US-003 Accessibility Fonts -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accessibility Comparison</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Dyslexia-friendly fonts have unique</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">letterforms and weighted bottoms.</text>
+
+      <a href="#US-003"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-003</text></a>
+      <a href="#FR-002"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-003</text></a>
+      <a href="#SC-005"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 3: US-001 Mobile Quick Toggle -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Mobile Quick Toggle</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Segmented control allows quick</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">font switching on mobile.</text>
+
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-009"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-012"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-012</text></a>
+    </g>
+
+    <!-- Column 4: US-002 Persistence Across Sessions -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Persistence</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Font preference saved to localStorage</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and restored on return visits.</text>
+
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-006"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-007"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-002"><rect x="40" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-002</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">before/after comparison | accessibility fonts | dyslexia-friendly | localStorage persistence | instant apply</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">018:02 | Font Switcher | ScriptHammer</text>
+</svg>

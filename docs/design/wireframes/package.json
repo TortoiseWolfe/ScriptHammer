@@ -1,0 +1,9 @@
+{
+  "name": "firstframe-wireframes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive wireframe viewer for FirstFrame template",
+  "scripts": {
+    "dev": "echo 'Run from repo root: docker compose up wireframe-viewer'"
+  }
+}

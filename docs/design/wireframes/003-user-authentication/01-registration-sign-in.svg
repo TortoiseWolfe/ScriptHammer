@@ -1,0 +1,300 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c7ddf5"/>
+      <stop offset="100%" style="stop-color:#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION - REGISTRATION AND SIGN IN</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <!-- Desktop viewport background -->
+    <rect width="1280" height="720" fill="#e8d4b8" rx="8"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Account -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Main content area - Two panel layout -->
+    <!-- Sign Up Panel (Left) - 600px wide -->
+    <g transform="translate(40, 80)">
+      <rect width="580" height="520" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel header -->
+      <text x="290" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#374151">Create Account</text>
+
+      <!-- Email field -->
+      <text x="40" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Email Address</text>
+      <rect x="40" y="90" width="500" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="52" y="118" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">you@example.com</text>
+
+      <!-- Password field -->
+      <text x="40" y="155" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password</text>
+      <rect x="40" y="165" width="500" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="52" y="193" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">••••••••••••</text>
+
+      <!-- Password strength indicator -->
+      <rect x="40" y="215" width="500" height="8" fill="#b8a080" rx="4"/>
+      <rect x="40" y="215" width="350" height="8" fill="#22c55e" rx="4"/>
+      <text x="40" y="238" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Strong password</text>
+
+      <!-- Confirm Password field -->
+      <text x="40" y="268" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Confirm Password</text>
+      <rect x="40" y="278" width="500" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Sign Up button -->
+      <rect x="40" y="340" width="500" height="48" fill="#8b5cf6" rx="6"/>
+      <text x="290" y="370" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Create Account</text>
+
+      <!-- Divider -->
+      <line x1="40" y1="410" x2="540" y2="410" stroke="#b8a080" stroke-width="1"/>
+      <text x="290" y="415" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">or continue with</text>
+
+      <!-- OAuth buttons -->
+      <rect x="40" y="435" width="240" height="44" fill="#1f2937" rx="6"/>
+      <text x="160" y="463" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#e8d4b8">Sign up with GitHub</text>
+
+      <rect x="300" y="435" width="240" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+      <text x="420" y="463" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Sign up with Google</text>
+    </g>
+
+    <!-- Callout ① - Registration form -->
+    <g class="callout">
+      <circle cx="640" cy="200" r="14" fill="#dc2626"/>
+      <text x="640" y="205" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Sign In Panel (Right) - 600px wide -->
+    <g transform="translate(660, 80)">
+      <rect width="580" height="520" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel header -->
+      <text x="290" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#374151">Welcome Back</text>
+
+      <!-- Email field -->
+      <text x="40" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Email Address</text>
+      <rect x="40" y="90" width="500" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="52" y="118" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">you@example.com</text>
+
+      <!-- Password field -->
+      <text x="40" y="155" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password</text>
+      <rect x="40" y="165" width="500" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="52" y="193" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">••••••••••••</text>
+
+      <!-- Remember me toggle -->
+      <g transform="translate(40, 225)">
+        <rect width="48" height="26" rx="13" fill="#22c55e"/>
+        <circle cx="35" cy="13" r="10" fill="#e8d4b8"/>
+        <text x="60" y="18" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Remember me for 30 days</text>
+      </g>
+
+      <!-- Forgot password link -->
+      <text x="540" y="243" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">Forgot password?</text>
+
+      <!-- Sign In button -->
+      <rect x="40" y="280" width="500" height="48" fill="#8b5cf6" rx="6"/>
+      <text x="290" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Sign In</text>
+
+      <!-- Lockout warning (hidden state shown as info) -->
+      <rect x="40" y="345" width="500" height="44" fill="#fef3c7" rx="4" stroke="#f59e0b" stroke-width="1"/>
+      <text x="290" y="373" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">5 failed attempts = 15 minute lockout</text>
+
+      <!-- Divider -->
+      <line x1="40" y1="410" x2="540" y2="410" stroke="#b8a080" stroke-width="1"/>
+      <text x="290" y="415" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">or continue with</text>
+
+      <!-- OAuth buttons -->
+      <rect x="40" y="435" width="240" height="44" fill="#1f2937" rx="6"/>
+      <text x="160" y="463" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#e8d4b8">Sign in with GitHub</text>
+
+      <rect x="300" y="435" width="240" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+      <text x="420" y="463" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Sign in with Google</text>
+    </g>
+
+    <!-- Callout ② - Sign In form -->
+    <g class="callout">
+      <circle cx="1260" cy="200" r="14" fill="#dc2626"/>
+      <text x="1260" y="205" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout ③ - OAuth buttons -->
+    <g class="callout">
+      <circle cx="640" cy="540" r="14" fill="#dc2626"/>
+      <text x="640" y="545" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout ④ - Security indicator -->
+    <g class="callout">
+      <circle cx="1260" cy="400" r="14" fill="#dc2626"/>
+      <text x="1260" y="405" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <!-- Mobile frame -->
+    <rect width="360" height="720" fill="#e8d4b8" rx="24"/>
+
+    <!-- Mobile header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content (y >= 78 for safe area) -->
+    <!-- Sign Up section -->
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#374151">Create Account</text>
+
+    <!-- Email field -->
+    <text x="20" y="138" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Email</text>
+    <rect x="20" y="148" width="320" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Password field -->
+    <text x="20" y="208" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password</text>
+    <rect x="20" y="218" width="320" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Password strength -->
+    <rect x="20" y="268" width="320" height="6" fill="#b8a080" rx="3"/>
+    <rect x="20" y="268" width="224" height="6" fill="#22c55e" rx="3"/>
+
+    <!-- Confirm Password -->
+    <text x="20" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Confirm Password</text>
+    <rect x="20" y="303" width="320" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Create Account button -->
+    <rect x="20" y="363" width="320" height="48" fill="#8b5cf6" rx="6"/>
+    <text x="180" y="393" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Create Account</text>
+
+    <!-- Divider -->
+    <text x="180" y="438" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">or</text>
+
+    <!-- OAuth buttons (stacked on mobile) -->
+    <rect x="20" y="453" width="320" height="44" fill="#1f2937" rx="6"/>
+    <text x="180" y="481" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#e8d4b8">Continue with GitHub</text>
+
+    <rect x="20" y="508" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="536" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Continue with Google</text>
+
+    <!-- Already have account -->
+    <text x="180" y="583" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Already have an account?</text>
+    <text x="180" y="603" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Sign In</text>
+
+    <!-- Mobile callouts -->
+    <g class="callout">
+      <circle cx="345" cy="250" r="14" fill="#dc2626"/>
+      <text x="345" y="255" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="530" r="14" fill="#dc2626"/>
+      <text x="345" y="535" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile footer nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Active state for Account tab (rightmost) -->
+    <g transform="translate(270, 664)">
+      <rect width="90" height="56" rx="0" fill="#8b5cf6"/>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <!-- Annotation panel background -->
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1 (x=20): Email/Password Registration -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Email/Password Registration</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a new user, I need to create an account</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to securely access payment features.</text>
+
+      <!-- Badges row 1 -->
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-003</text></a>
+      <!-- Badges row 2 -->
+      <a href="#FR-004"><rect x="40" y="90" width="55" height="22" rx="4" fill="#2563eb"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-004</text></a>
+      <a href="#SC-001"><rect x="101" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="128" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 2 (x=470): User Sign In -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">User Sign In</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a registered user, I need to sign in</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to access my payment history.</text>
+
+      <!-- Badges row 1 -->
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-006"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-012"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-013</text></a>
+      <!-- Badges row 2 -->
+      <a href="#FR-014"><rect x="40" y="90" width="55" height="22" rx="4" fill="#2563eb"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-014</text></a>
+      <a href="#SC-002"><rect x="101" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="128" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Column 3 (x=920): OAuth Sign In -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">OAuth Sign In</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user who prefers not to manage</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">another password, I can use OAuth.</text>
+
+      <!-- Badges -->
+      <a href="#US-004"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-004</text></a>
+      <a href="#FR-007"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-006"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 4 (x=1370): Protected Route Access -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Protected Route Access</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">System protects payment routes from</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">unauthenticated access.</text>
+
+      <!-- Badges -->
+      <a href="#US-005"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-004"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-004</text></a>
+      <a href="#SC-008"><rect x="284" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-008</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Supabase Auth | OAuth providers | session management | password reset</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">003:01 | User Authentication | ScriptHammer</text>
+</svg>

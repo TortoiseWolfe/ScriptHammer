@@ -1,0 +1,241 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <linearGradient id="frameGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6" stop-opacity="0.3"/>
+      <stop offset="100%" style="stop-color:#d946ef" stop-opacity="0.1"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+  
+  <!-- Dot grid pattern -->
+  <g opacity="0.08">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1.5" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="630" fill="url(#dots)"/>
+  </g>
+  
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accentGrad)"/>
+  
+  <!-- Left content area -->
+  <g transform="translate(60, 100)">
+    <!-- Frame icon -->
+    <g transform="translate(0, 0)" stroke="url(#accentGrad)" stroke-width="3" fill="none">
+      <rect x="0" y="0" width="50" height="50" rx="6"/>
+      <rect x="8" y="8" width="14" height="14" rx="2" fill="#8b5cf6" stroke="none" opacity="0.6"/>
+      <rect x="28" y="8" width="14" height="14" rx="2" fill="#d946ef" stroke="none" opacity="0.4"/>
+      <rect x="8" y="28" width="34" height="14" rx="2" fill="#8b5cf6" stroke="none" opacity="0.3"/>
+    </g>
+    
+    <!-- Title -->
+    <text x="70" y="38" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" fill="#fff">
+      FirstFrame
+    </text>
+    
+    <!-- Subtitle -->
+    <text x="0" y="100" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="url(#accentGrad)">
+      Wireframe Starter Kit
+    </text>
+    
+    <!-- Description -->
+    <text x="0" y="160" font-family="system-ui, -apple-system, sans-serif" font-size="18" fill="#94a3b8">
+      <tspan x="0" dy="0">Interactive wireframe template</tspan>
+      <tspan x="0" dy="28">for rapid prototyping</tspan>
+    </text>
+    
+    <!-- Feature tags -->
+    <g transform="translate(0, 240)">
+      <rect x="0" y="0" width="140" height="36" rx="18" fill="#1e293b" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="70" y="23" font-family="system-ui, sans-serif" font-size="13" fill="#a78bfa" text-anchor="middle">App Shell</text>
+      
+      <rect x="155" y="0" width="170" height="36" rx="18" fill="#1e293b" stroke="#d946ef" stroke-width="1.5"/>
+      <text x="240" y="23" font-family="system-ui, sans-serif" font-size="13" fill="#e879f9" text-anchor="middle">Component Library</text>
+    </g>
+    
+    <!-- What's included -->
+    <g transform="translate(0, 310)" font-family="system-ui, sans-serif" fill="#64748b">
+      <text x="0" y="0" font-size="11" font-weight="600" fill="#94a3b8" letter-spacing="1">INCLUDES</text>
+      
+      <g transform="translate(0, 25)">
+        <text x="0" y="0" font-size="14">✓</text>
+        <text x="22" y="0" font-size="14">Desktop &amp; Mobile layouts</text>
+      </g>
+      <g transform="translate(0, 50)">
+        <text x="0" y="0" font-size="14">✓</text>
+        <text x="22" y="0" font-size="14">SVG-based wireframes</text>
+      </g>
+      <g transform="translate(0, 75)">
+        <text x="0" y="0" font-size="14">✓</text>
+        <text x="22" y="0" font-size="14">Interactive navigation</text>
+      </g>
+      <g transform="translate(0, 100)">
+        <text x="0" y="0" font-size="14">✓</text>
+        <text x="22" y="0" font-size="14">Ready to customize</text>
+      </g>
+    </g>
+  </g>
+  
+  <!-- Right side: Visual representation -->
+  <g transform="translate(500, 50)">
+    <!-- Main container -->
+    <rect x="0" y="0" width="640" height="530" rx="16" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+    
+    <!-- Desktop wireframe - large -->
+    <g transform="translate(30, 30)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="11" fill="#64748b" font-weight="600" letter-spacing="1">DESKTOP LAYOUT</text>
+      
+      <rect x="0" y="15" width="360" height="220" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+      
+      <!-- Sidebar -->
+      <rect x="8" y="23" width="70" height="204" rx="4" fill="#334155"/>
+      <rect x="16" y="35" width="54" height="8" rx="2" fill="#8b5cf6" opacity="0.5"/>
+      <rect x="16" y="53" width="54" height="6" rx="2" fill="#475569"/>
+      <rect x="16" y="67" width="54" height="6" rx="2" fill="#475569"/>
+      <rect x="16" y="81" width="54" height="6" rx="2" fill="#475569"/>
+      <rect x="16" y="100" width="40" height="5" rx="2" fill="#64748b" opacity="0.5"/>
+      <rect x="16" y="113" width="54" height="6" rx="2" fill="#475569"/>
+      <rect x="16" y="127" width="54" height="6" rx="2" fill="#d946ef" opacity="0.4"/>
+      <rect x="16" y="141" width="54" height="6" rx="2" fill="#475569"/>
+      
+      <!-- Main content -->
+      <rect x="86" y="23" width="180" height="204" rx="4" fill="#334155"/>
+      <rect x="94" y="31" width="100" height="10" rx="2" fill="#8b5cf6" opacity="0.4"/>
+      <rect x="94" y="51" width="164" height="60" rx="4" fill="#475569"/>
+      <rect x="94" y="121" width="164" height="40" rx="4" fill="#475569"/>
+      <rect x="94" y="171" width="80" height="40" rx="4" fill="#475569"/>
+      <rect x="182" y="171" width="76" height="40" rx="4" fill="#475569"/>
+      
+      <!-- Right panel -->
+      <rect x="274" y="23" width="78" height="204" rx="4" fill="url(#frameGrad)" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,4"/>
+      <text x="313" y="120" font-family="system-ui, sans-serif" font-size="9" fill="#8b5cf6" text-anchor="middle" opacity="0.8">Detail</text>
+      <text x="313" y="132" font-family="system-ui, sans-serif" font-size="9" fill="#8b5cf6" text-anchor="middle" opacity="0.8">Panel</text>
+    </g>
+    
+    <!-- Mobile wireframes -->
+    <g transform="translate(420, 30)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="11" fill="#64748b" font-weight="600" letter-spacing="1">MOBILE</text>
+      
+      <!-- Mobile frame 1 -->
+      <rect x="0" y="15" width="85" height="150" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+      <rect x="6" y="23" width="73" height="115" rx="4" fill="#334155"/>
+      <rect x="12" y="30" width="50" height="8" rx="2" fill="#8b5cf6" opacity="0.5"/>
+      <rect x="12" y="45" width="61" height="30" rx="3" fill="#475569"/>
+      <rect x="12" y="82" width="61" height="20" rx="3" fill="#475569"/>
+      <rect x="12" y="108" width="30" height="20" rx="3" fill="#d946ef" opacity="0.3"/>
+      <rect x="48" y="108" width="25" height="20" rx="3" fill="#475569"/>
+      <rect x="6" y="144" width="73" height="14" rx="3" fill="#8b5cf6" opacity="0.2"/>
+      
+      <!-- Mobile frame 2 -->
+      <rect x="100" y="15" width="85" height="150" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+      <rect x="106" y="23" width="73" height="115" rx="4" fill="#334155"/>
+      <rect x="112" y="30" width="40" height="6" rx="2" fill="#64748b"/>
+      <rect x="112" y="42" width="61" height="45" rx="3" fill="url(#frameGrad)" stroke="#d946ef" stroke-width="1" stroke-dasharray="3,3"/>
+      <rect x="112" y="93" width="61" height="8" rx="2" fill="#475569"/>
+      <rect x="112" y="107" width="45" height="8" rx="2" fill="#475569"/>
+      <rect x="112" y="121" width="61" height="10" rx="3" fill="#8b5cf6" opacity="0.4"/>
+      <rect x="106" y="144" width="73" height="14" rx="3" fill="#8b5cf6" opacity="0.2"/>
+    </g>
+    
+    <!-- Component library section -->
+    <g transform="translate(30, 280)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="11" fill="#64748b" font-weight="600" letter-spacing="1">COMPONENT LIBRARY</text>
+      
+      <rect x="0" y="15" width="580" height="205" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+      
+      <!-- Buttons row -->
+      <text x="15" y="40" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Buttons</text>
+      <rect x="15" y="50" width="90" height="32" rx="6" fill="#8b5cf6"/>
+      <text x="60" y="71" font-family="system-ui, sans-serif" font-size="11" fill="#fff" text-anchor="middle">Primary</text>
+      <rect x="115" y="50" width="90" height="32" rx="6" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="160" y="71" font-family="system-ui, sans-serif" font-size="11" fill="#8b5cf6" text-anchor="middle">Secondary</text>
+      <rect x="215" y="50" width="90" height="32" rx="6" fill="#334155"/>
+      <text x="260" y="71" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">Tertiary</text>
+      
+      <!-- Inputs row -->
+      <text x="15" y="105" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Inputs</text>
+      <rect x="15" y="115" width="150" height="32" rx="6" fill="#0f172a" stroke="#475569"/>
+      <text x="25" y="135" font-family="system-ui, sans-serif" font-size="11" fill="#64748b">Text input...</text>
+      <rect x="175" y="115" width="130" height="32" rx="6" fill="#0f172a" stroke="#8b5cf6"/>
+      <text x="185" y="135" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">Focused state</text>
+      
+      <!-- Cards row -->
+      <text x="15" y="170" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Cards</text>
+      <rect x="15" y="180" width="120" height="28" rx="4" fill="#334155"/>
+      <rect x="23" y="186" width="16" height="16" rx="2" fill="#8b5cf6" opacity="0.4"/>
+      <text x="45" y="197" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">List item card</text>
+      <rect x="145" y="180" width="120" height="28" rx="4" fill="#334155" stroke="#d946ef" stroke-width="1"/>
+      <rect x="153" y="186" width="16" height="16" rx="2" fill="#d946ef" opacity="0.4"/>
+      <text x="175" y="197" font-family="system-ui, sans-serif" font-size="9" fill="#e879f9">Selected state</text>
+      
+      <!-- Right side components -->
+      <text x="330" y="40" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Controls</text>
+      
+      <!-- Toggle -->
+      <rect x="330" y="50" width="50" height="26" rx="13" fill="#1e3a5f"/>
+      <circle cx="367" cy="63" r="9" fill="#8b5cf6"/>
+      <text x="390" y="67" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Toggle</text>
+      
+      <!-- Checkbox -->
+      <rect x="330" y="85" width="18" height="18" rx="3" fill="#8b5cf6"/>
+      <path d="M335 94 L339 98 L345 90" stroke="#fff" stroke-width="2" fill="none"/>
+      <text x="355" y="99" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Checkbox</text>
+      
+      <!-- Radio -->
+      <circle cx="339" cy="125" r="9" fill="none" stroke="#d946ef" stroke-width="2"/>
+      <circle cx="339" cy="125" r="4" fill="#d946ef"/>
+      <text x="355" y="129" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Radio</text>
+      
+      <!-- Badge -->
+      <rect x="330" y="145" width="55" height="22" rx="11" fill="#8b5cf6" opacity="0.2"/>
+      <text x="357" y="160" font-family="system-ui, sans-serif" font-size="10" fill="#a78bfa" text-anchor="middle">Badge</text>
+      <rect x="395" y="145" width="45" height="22" rx="11" fill="#d946ef" opacity="0.2"/>
+      <text x="417" y="160" font-family="system-ui, sans-serif" font-size="10" fill="#e879f9" text-anchor="middle">Tag</text>
+      
+      <!-- Avatar placeholder -->
+      <text x="330" y="185" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Avatars</text>
+      <circle cx="345" cy="200" r="12" fill="#334155"/>
+      <circle cx="372" cy="200" r="12" fill="#475569"/>
+      <circle cx="399" cy="200" r="12" fill="#8b5cf6" opacity="0.4"/>
+      
+      <!-- Navigation indicator -->
+      <g transform="translate(470, 50)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Nav</text>
+        <rect x="0" y="10" width="90" height="70" rx="4" fill="#0f172a"/>
+        <rect x="8" y="18" width="74" height="8" rx="2" fill="#8b5cf6" opacity="0.4"/>
+        <rect x="8" y="32" width="74" height="8" rx="2" fill="#475569"/>
+        <rect x="8" y="46" width="74" height="8" rx="2" fill="#475569"/>
+        <rect x="8" y="60" width="74" height="8" rx="2" fill="#475569"/>
+      </g>
+    </g>
+    
+    <!-- Template badge -->
+    <g transform="translate(480, 490)">
+      <rect width="140" height="28" rx="14" fill="url(#accentGrad)" filter="url(#glow)"/>
+      <text x="70" y="18" font-family="system-ui, sans-serif" font-size="11" fill="#fff" text-anchor="middle" font-weight="600">🚀 Starter Template</text>
+    </g>
+  </g>
+  
+  <!-- Bottom URL bar -->
+  <rect x="0" y="590" width="1200" height="40" fill="#0f172a"/>
+  <text x="600" y="616" font-family="monospace" font-size="14" fill="#64748b" text-anchor="middle">
+    tortoisewolfe.github.io/First-Frame/design/wireframes
+  </text>
+</svg>

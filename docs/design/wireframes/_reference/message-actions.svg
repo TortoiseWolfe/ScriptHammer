@@ -1,0 +1,219 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">MESSAGE ACTIONS &amp; STATES</text>
+
+  <!-- ========================================== -->
+  <!-- Long-Press Menu (Within 15 min) -->
+  <!-- ========================================== -->
+  <text x="200" y="60" text-anchor="middle" class="annotation" font-size="12">LONG-PRESS MENU (&lt;15 MIN)</text>
+
+  <rect x="50" y="80" width="300" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Message being acted on -->
+  <rect x="130" y="100" width="200" height="45" rx="12" fill="#8b5cf6"/>
+  <text x="145" y="125" fill="white" class="text-md">Just sent this message!</text>
+  <text x="315" y="135" text-anchor="end" fill="white" opacity="0.7" class="text-muted">Now</text>
+
+  <!-- Context menu -->
+  <rect x="180" y="155" width="140" height="120" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+
+  <!-- Menu items -->
+  <rect x="185" y="160" width="130" height="35" rx="4" fill="#0f172a"/>
+  <text x="205" y="182" class="text-md">✏️ Edit</text>
+
+  <rect x="185" y="200" width="130" height="35" rx="4" fill="#0f172a"/>
+  <text x="205" y="222" class="text-md">📋 Copy</text>
+
+  <rect x="185" y="240" width="130" height="35" rx="4" fill="#ef4444" opacity="0.2"/>
+  <text x="205" y="262" fill="#f87171" class="text-md">🗑️ Delete</text>
+
+  <!-- Time indicator -->
+  <rect x="70" y="290" width="260" height="50" rx="6" fill="#0f172a" opacity="0.5"/>
+  <text x="200" y="315" text-anchor="middle" class="text-sm">⏱️ 12 minutes left to edit or delete</text>
+  <rect x="85" y="325" width="230" height="4" rx="2" fill="#334155"/>
+  <rect x="85" y="325" width="184" height="4" rx="2" fill="#8b5cf6"/>
+
+  <!-- ========================================== -->
+  <!-- Long-Press Menu (After 15 min) -->
+  <!-- ========================================== -->
+  <text x="550" y="60" text-anchor="middle" class="annotation" font-size="12">LONG-PRESS MENU (&gt;15 MIN)</text>
+
+  <rect x="400" y="80" width="300" height="200" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Old message -->
+  <rect x="480" y="100" width="200" height="45" rx="12" fill="#8b5cf6" opacity="0.7"/>
+  <text x="495" y="125" fill="white" class="text-md">This is an older message</text>
+  <text x="665" y="135" text-anchor="end" fill="white" opacity="0.7" class="text-muted">2h ago</text>
+
+  <!-- Limited menu -->
+  <rect x="530" y="155" width="140" height="80" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+
+  <rect x="535" y="160" width="130" height="35" rx="4" fill="#0f172a"/>
+  <text x="555" y="182" class="text-md">📋 Copy</text>
+
+  <rect x="535" y="200" width="130" height="35" rx="4" fill="#0f172a" opacity="0.3"/>
+  <text x="555" y="222" class="text-muted">✏️ Edit (expired)</text>
+
+  <text x="550" y="265" text-anchor="middle" class="text-muted">Edit/Delete disabled after 15 minutes</text>
+
+  <!-- ========================================== -->
+  <!-- Edit Mode -->
+  <!-- ========================================== -->
+  <text x="900" y="60" text-anchor="middle" class="annotation" font-size="12">EDIT MODE</text>
+
+  <rect x="750" y="80" width="400" height="200" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Edit header -->
+  <rect x="750" y="80" width="400" height="40" fill="#eab308" opacity="0.2" rx="12"/>
+  <text x="770" y="105" fill="#facc15" class="text-md">✏️ Editing message</text>
+  <text x="1130" y="105" text-anchor="end" fill="#facc15" class="text-sm">Cancel</text>
+
+  <!-- Original message preview -->
+  <rect x="770" y="135" width="360" height="35" rx="6" fill="#0f172a" opacity="0.5"/>
+  <text x="785" y="158" class="text-muted">Original: "Just sent this message!"</text>
+
+  <!-- Edit input -->
+  <rect x="770" y="185" width="300" height="40" rx="6" fill="#0f172a" stroke="#eab308"/>
+  <text x="785" y="210" class="text-md">Just sent this message! (edited)</text>
+
+  <!-- Save button -->
+  <rect x="1080" y="185" width="50" height="40" rx="6" fill="#eab308"/>
+  <text x="1105" y="210" text-anchor="middle" fill="#0f172a" font-weight="bold" class="text-md">✓</text>
+
+  <text x="770" y="260" class="text-muted">Changes will replace the original message</text>
+
+  <!-- ========================================== -->
+  <!-- Delete Confirmation -->
+  <!-- ========================================== -->
+  <text x="200" y="400" text-anchor="middle" class="annotation" font-size="12">DELETE CONFIRMATION</text>
+
+  <rect x="50" y="420" width="300" height="200" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Modal overlay effect -->
+  <rect x="50" y="420" width="300" height="200" rx="12" fill="#0f172a" opacity="0.8"/>
+
+  <!-- Modal -->
+  <rect x="80" y="450" width="240" height="140" rx="8" fill="#334155" stroke="#ef4444"/>
+
+  <text x="200" y="485" text-anchor="middle" class="heading">Delete Message?</text>
+  <text x="200" y="510" text-anchor="middle" class="text-sm">This message will show as</text>
+  <text x="200" y="528" text-anchor="middle" class="text-sm">"[Message deleted]" for everyone.</text>
+
+  <rect x="100" y="545" width="80" height="32" rx="6" fill="#334155" stroke="#475569"/>
+  <text x="140" y="566" text-anchor="middle" class="text-md">Cancel</text>
+
+  <rect x="200" y="545" width="100" height="32" rx="6" fill="#ef4444"/>
+  <text x="250" y="566" text-anchor="middle" fill="white" class="text-md">Delete</text>
+
+  <!-- ========================================== -->
+  <!-- Message States -->
+  <!-- ========================================== -->
+  <text x="550" y="400" text-anchor="middle" class="annotation" font-size="12">MESSAGE STATES</text>
+
+  <rect x="400" y="420" width="300" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Normal message -->
+  <text x="420" y="450" class="text-muted">Normal:</text>
+  <rect x="420" y="460" width="180" height="35" rx="8" fill="#8b5cf6"/>
+  <text x="435" y="482" fill="white" class="text-sm">Hello there!</text>
+  <text x="585" y="485" text-anchor="end" fill="white" opacity="0.7" class="text-muted">2:30 PM</text>
+
+  <!-- Edited message -->
+  <text x="420" y="515" class="text-muted">Edited:</text>
+  <rect x="420" y="525" width="220" height="35" rx="8" fill="#8b5cf6"/>
+  <text x="435" y="547" fill="white" class="text-sm">Hello there! How are you?</text>
+  <text x="625" y="550" text-anchor="end" fill="white" opacity="0.7" class="text-muted">Edited</text>
+
+  <!-- Deleted message -->
+  <text x="420" y="580" class="text-muted">Deleted:</text>
+  <rect x="420" y="590" width="160" height="35" rx="8" fill="#334155" opacity="0.5" stroke="#475569" stroke-dasharray="4"/>
+  <text x="435" y="612" class="text-muted" font-style="italic">[Message deleted]</text>
+
+  <!-- Failed message -->
+  <text x="420" y="645" class="text-muted">Failed:</text>
+  <rect x="420" y="655" width="180" height="35" rx="8" fill="#ef4444" opacity="0.3" stroke="#ef4444"/>
+  <text x="435" y="677" fill="#f87171" class="text-sm">Failed to send</text>
+  <text x="585" y="677" text-anchor="end" fill="#ef4444" class="text-sm">Retry</text>
+
+  <!-- ========================================== -->
+  <!-- Offline Queue -->
+  <!-- ========================================== -->
+  <text x="900" y="400" text-anchor="middle" class="annotation" font-size="12">OFFLINE QUEUE</text>
+
+  <rect x="750" y="420" width="400" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Offline banner -->
+  <rect x="750" y="420" width="400" height="35" rx="12" fill="#eab308" opacity="0.2"/>
+  <text x="950" y="443" text-anchor="middle" fill="#facc15" class="text-md">⚠️ You are offline</text>
+
+  <!-- Queued messages -->
+  <rect x="850" y="470" width="200" height="40" rx="8" fill="#8b5cf6" opacity="0.5"/>
+  <text x="865" y="495" fill="white" class="text-sm">Sending when online...</text>
+  <circle cx="1035" cy="490" r="8" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="12,6">
+    <animateTransform attributeName="transform" type="rotate" from="0 1035 490" to="360 1035 490" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <rect x="870" y="520" width="200" height="40" rx="8" fill="#8b5cf6" opacity="0.5"/>
+  <text x="885" y="545" fill="white" class="text-sm">Queued message 2</text>
+  <circle cx="1055" cy="540" r="8" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="12,6">
+    <animateTransform attributeName="transform" type="rotate" from="0 1055 540" to="360 1055 540" dur="2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Queue info -->
+  <rect x="770" y="580" width="360" height="50" rx="6" fill="#0f172a" opacity="0.5"/>
+  <text x="950" y="600" text-anchor="middle" class="text-sm">2 messages queued in IndexedDB</text>
+  <text x="950" y="618" text-anchor="middle" class="text-muted">Will sync automatically when back online</text>
+
+  <!-- Retry limit reached -->
+  <rect x="770" y="645" width="360" height="40" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444"/>
+  <text x="950" y="670" text-anchor="middle" fill="#f87171" class="text-sm">Message failed after 5 retries - tap to retry manually</text>
+
+  <!-- ========================================== -->
+  <!-- Annotations -->
+  <!-- ========================================== -->
+  <rect x="50" y="650" width="300" height="90" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="60" y="670" class="annotation">FR-025: Edit within 15 minutes</text>
+  <text x="60" y="685" class="annotation">FR-026: Overwrite content (no history)</text>
+  <text x="60" y="700" class="annotation">FR-065: Delete within 15 minutes</text>
+  <text x="60" y="715" class="annotation">FR-066: Show "[Message deleted]"</text>
+  <text x="60" y="730" class="annotation">FR-029: Disable after 15 minutes</text>
+
+  <rect x="400" y="720" width="250" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="410" y="740" class="annotation">FR-027: "Edited" indicator only</text>
+  <text x="410" y="755" class="annotation">(no edit history drill-down)</text>
+  <text x="410" y="770" class="annotation">FR-030: Can't edit deleted messages</text>
+
+  <rect x="750" y="720" width="280" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="740" class="annotation">FR-037-042: Offline queue in IndexedDB</text>
+  <text x="760" y="755" class="annotation">FR-040: Retry 5x with exponential backoff</text>
+  <text x="760" y="770" class="annotation">FR-043: Dedupe via client-side UUIDs</text>
+
+</svg>

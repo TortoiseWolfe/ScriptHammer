@@ -1,0 +1,330 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <linearGradient id="mapGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a3a2f"/>
+      <stop offset="100%" style="stop-color:#0f2922"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">DIRECTIONS - ROUTE DISPLAY &amp; NAVIGATION</text>
+
+  <!-- ==================== DESKTOP VIEW ==================== -->
+  <text x="20" y="60" class="heading" font-size="12">DESKTOP - ROUTE VIEW</text>
+
+  <!-- Main map with route -->
+  <rect x="20" y="75" width="550" height="430" rx="8" fill="url(#mapGrad)" stroke="#475569" stroke-width="1"/>
+
+  <!-- Map grid lines -->
+  <g stroke="#2d4a3f" stroke-width="1" opacity="0.5">
+    <line x1="20" y1="175" x2="570" y2="175"/>
+    <line x1="20" y1="275" x2="570" y2="275"/>
+    <line x1="20" y1="375" x2="570" y2="375"/>
+    <line x1="20" y1="475" x2="570" y2="475"/>
+    <line x1="150" y1="75" x2="150" y2="505"/>
+    <line x1="280" y1="75" x2="280" y2="505"/>
+    <line x1="410" y1="75" x2="410" y2="505"/>
+  </g>
+
+  <!-- Route path (primary route - blue) -->
+  <path d="M80,420 Q120,400 150,350 Q180,300 220,280 Q280,250 340,230 Q400,210 450,150 Q480,110 520,100"
+        fill="none" stroke="#3b82f6" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Alternative route (gray dashed) -->
+  <path d="M80,420 Q100,380 120,320 Q150,250 200,200 Q280,130 380,110 Q450,95 520,100"
+        fill="none" stroke="#64748b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="12 6"/>
+
+  <!-- Start marker (green) -->
+  <g transform="translate(80, 420)">
+    <circle cx="0" cy="0" r="12" fill="#22c55e" stroke="#fff" stroke-width="2"/>
+    <text x="0" y="5" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">A</text>
+  </g>
+
+  <!-- End marker (red) -->
+  <g transform="translate(520, 100)">
+    <path d="M0,-25 C-12,-25 -18,-12 -18,0 C-18,12 0,30 0,30 C0,30 18,12 18,0 C18,-12 12,-25 0,-25" fill="#ef4444"/>
+    <circle cx="0" cy="-8" r="6" fill="#fff"/>
+  </g>
+
+  <!-- Turn indicators on route -->
+  <g transform="translate(220, 280)">
+    <circle cx="0" cy="0" r="8" fill="#fff"/>
+    <text x="0" y="4" text-anchor="middle" fill="#3b82f6" font-size="10">1</text>
+  </g>
+  <g transform="translate(340, 230)">
+    <circle cx="0" cy="0" r="8" fill="#fff"/>
+    <text x="0" y="4" text-anchor="middle" fill="#3b82f6" font-size="10">2</text>
+  </g>
+  <g transform="translate(450, 150)">
+    <circle cx="0" cy="0" r="8" fill="#fff"/>
+    <text x="0" y="4" text-anchor="middle" fill="#3b82f6" font-size="10">3</text>
+  </g>
+
+  <!-- Map controls -->
+  <rect x="530" y="420" width="32" height="64" rx="4" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="546" y="444" text-anchor="middle" fill="#fff" font-size="18" font-weight="bold">+</text>
+  <line x1="534" y1="452" x2="558" y2="452" stroke="#475569" stroke-width="1"/>
+  <text x="546" y="472" text-anchor="middle" fill="#fff" font-size="18" font-weight="bold">-</text>
+
+  <!-- Route summary badge -->
+  <rect x="35" y="85" width="200" height="60" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <text x="50" y="108" class="heading" font-size="16">25 min</text>
+  <text x="105" y="108" class="text-sm">via Broadway</text>
+  <text x="50" y="128" class="text-sm">3.2 miles - Fastest route</text>
+  <rect x="50" y="133" width="80" height="4" rx="2" fill="#3b82f6"/>
+  <rect x="132" y="133" width="40" height="4" rx="2" fill="#eab308"/>
+  <rect x="174" y="133" width="30" height="4" rx="2" fill="#ef4444"/>
+
+  <!-- Traffic legend -->
+  <rect x="35" y="460" width="160" height="35" rx="4" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+  <circle cx="52" cy="477" r="5" fill="#22c55e"/>
+  <text x="62" y="481" class="text-muted">Light</text>
+  <circle cx="102" cy="477" r="5" fill="#eab308"/>
+  <text x="112" y="481" class="text-muted">Moderate</text>
+  <circle cx="162" cy="477" r="5" fill="#ef4444"/>
+  <text x="172" y="481" class="text-muted">Heavy</text>
+
+  <!-- ==================== DIRECTIONS PANEL ==================== -->
+  <rect x="590" y="75" width="210" height="430" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+  <!-- From/To inputs -->
+  <rect x="605" y="90" width="180" height="36" rx="6" fill="#334155"/>
+  <circle cx="622" cy="108" r="8" fill="#22c55e"/>
+  <text x="622" y="112" text-anchor="middle" fill="#fff" font-size="8">A</text>
+  <text x="638" y="112" class="text-md">Your Location</text>
+
+  <line x1="622" y1="126" x2="622" y2="140" stroke="#475569" stroke-width="1" stroke-dasharray="3 2"/>
+
+  <rect x="605" y="132" width="180" height="36" rx="6" fill="#334155"/>
+  <circle cx="622" cy="150" r="8" fill="#ef4444"/>
+  <text x="622" y="154" text-anchor="middle" fill="#fff" font-size="8">B</text>
+  <text x="638" y="154" class="text-md">Central Park Zoo</text>
+
+  <!-- Transport mode tabs -->
+  <g transform="translate(605, 180)">
+    <rect x="0" y="0" width="45" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="22" y="19" text-anchor="middle" fill="#fff" font-size="16">&#x1F697;</text>
+    <rect x="50" y="0" width="40" height="30" rx="4" fill="#334155"/>
+    <text x="70" y="19" text-anchor="middle" fill="#94a3b8" font-size="14">&#x1F6B6;</text>
+    <rect x="95" y="0" width="40" height="30" rx="4" fill="#334155"/>
+    <text x="115" y="19" text-anchor="middle" fill="#94a3b8" font-size="14">&#x1F6B2;</text>
+    <rect x="140" y="0" width="40" height="30" rx="4" fill="#334155"/>
+    <text x="160" y="19" text-anchor="middle" fill="#94a3b8" font-size="14">&#x1F68C;</text>
+  </g>
+
+  <!-- Route options -->
+  <text x="605" y="235" class="text-sm" fill="#64748b">ROUTES</text>
+
+  <!-- Route option 1 (selected) -->
+  <rect x="605" y="245" width="180" height="55" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="618" y="265" class="text-md" fill="#fff">via Broadway</text>
+  <text x="618" y="282" class="heading" font-size="18" fill="#8b5cf6">25 min</text>
+  <text x="680" y="282" class="text-sm">3.2 mi</text>
+  <rect x="618" y="288" width="30" height="6" rx="2" fill="#22c55e"/>
+  <text x="655" y="295" class="text-muted" font-size="9">Fastest</text>
+
+  <!-- Route option 2 -->
+  <rect x="605" y="308" width="180" height="55" rx="6" fill="#334155"/>
+  <text x="618" y="328" class="text-md" fill="#fff">via 5th Avenue</text>
+  <text x="618" y="345" class="heading" font-size="18">32 min</text>
+  <text x="680" y="345" class="text-sm">4.1 mi</text>
+  <rect x="618" y="351" width="45" height="6" rx="2" fill="#eab308"/>
+  <text x="670" y="358" class="text-muted" font-size="9">Traffic</text>
+
+  <!-- Turn-by-turn -->
+  <text x="605" y="390" class="text-sm" fill="#64748b">DIRECTIONS</text>
+
+  <!-- Step 1 -->
+  <rect x="605" y="400" width="180" height="36" rx="4" fill="#334155"/>
+  <circle cx="625" cy="418" r="12" fill="#475569"/>
+  <path d="M625,412 L625,424 M620,417 L625,412 L630,417" stroke="#fff" stroke-width="2" fill="none"/>
+  <text x="645" y="414" class="text-sm" fill="#fff">Head north on Main St</text>
+  <text x="645" y="428" class="text-muted">0.2 mi</text>
+
+  <!-- Step 2 -->
+  <rect x="605" y="440" width="180" height="36" rx="4" fill="#334155"/>
+  <circle cx="625" cy="458" r="12" fill="#475569"/>
+  <path d="M620,458 L630,458 M626,453 L631,458 L626,463" stroke="#fff" stroke-width="2" fill="none"/>
+  <text x="645" y="454" class="text-sm" fill="#fff">Turn right on Broadway</text>
+  <text x="645" y="468" class="text-muted">1.4 mi</text>
+
+  <!-- More steps indicator -->
+  <text x="700" y="495" text-anchor="middle" class="text-muted">+ 3 more steps</text>
+
+  <!-- ==================== MOBILE VIEW ==================== -->
+  <text x="820" y="60" class="heading" font-size="12">MOBILE - NAVIGATION</text>
+
+  <!-- Phone frame -->
+  <rect x="820" y="75" width="180" height="380" rx="20" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+
+  <!-- Status bar -->
+  <text x="840" y="96" class="text-muted" font-size="9">9:41</text>
+  <text x="980" y="96" text-anchor="end" class="text-muted" font-size="9">100%</text>
+
+  <!-- Turn instruction banner (top) -->
+  <rect x="820" y="105" width="180" height="70" fill="#3b82f6"/>
+  <text x="835" y="128" fill="#fff" font-size="24" font-weight="bold">&#x2192;</text>
+  <text x="870" y="128" fill="#fff" font-size="11" font-weight="600">Turn right</text>
+  <text x="870" y="145" fill="rgba(255,255,255,0.8)" font-size="10">onto Broadway</text>
+  <text x="985" y="145" text-anchor="end" fill="#fff" font-size="14" font-weight="bold">0.3 mi</text>
+  <text x="870" y="165" fill="rgba(255,255,255,0.6)" font-size="9">Then continue for 1.4 mi</text>
+
+  <!-- Mobile map -->
+  <rect x="820" y="175" width="180" height="200" fill="url(#mapGrad)"/>
+
+  <!-- Mobile map grid -->
+  <g stroke="#2d4a3f" stroke-width="1" opacity="0.5">
+    <line x1="820" y1="225" x2="1000" y2="225"/>
+    <line x1="820" y1="275" x2="1000" y2="275"/>
+    <line x1="820" y1="325" x2="1000" y2="325"/>
+    <line x1="880" y1="175" x2="880" y2="375"/>
+    <line x1="940" y1="175" x2="940" y2="375"/>
+  </g>
+
+  <!-- Mobile route -->
+  <path d="M860,350 Q880,320 910,290 Q940,260 960,220"
+        fill="none" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Current position with direction -->
+  <circle cx="860" cy="350" r="10" fill="#3b82f6" opacity="0.3">
+    <animate attributeName="r" values="10;18;10" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="860" cy="350" r="8" fill="#3b82f6" stroke="#fff" stroke-width="2"/>
+  <polygon points="860,340 855,350 865,350" fill="#fff"/>
+
+  <!-- Destination marker -->
+  <circle cx="960" cy="220" r="8" fill="#ef4444" stroke="#fff" stroke-width="2"/>
+
+  <!-- Bottom info panel -->
+  <rect x="820" y="375" width="180" height="80" fill="#1e293b"/>
+  <rect x="895" y="380" width="30" height="4" rx="2" fill="#475569"/>
+
+  <text x="835" y="402" class="heading" font-size="16">18 min</text>
+  <text x="895" y="402" class="text-sm">2.4 mi left</text>
+  <text x="835" y="420" class="text-sm">Arriving at 10:23 AM</text>
+
+  <!-- Action buttons -->
+  <rect x="835" y="430" width="60" height="20" rx="4" fill="#334155"/>
+  <text x="865" y="444" text-anchor="middle" class="text-sm">Steps</text>
+  <rect x="905" y="430" width="50" height="20" rx="4" fill="#ef4444"/>
+  <text x="930" y="444" text-anchor="middle" fill="#fff" font-size="10">End</text>
+
+  <!-- ==================== TURN TYPES ==================== -->
+  <text x="1020" y="60" class="heading" font-size="12">TURN INDICATORS</text>
+
+  <!-- Turn icons -->
+  <g transform="translate(1020, 80)">
+    <!-- Straight -->
+    <rect x="0" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M25,38 L25,20 M20,25 L25,18 L30,25" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="25" y="60" text-anchor="middle" class="text-muted">Straight</text>
+
+    <!-- Right -->
+    <rect x="60" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M70,32 L90,32 M85,27 L92,32 L85,37" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="85" y="60" text-anchor="middle" class="text-muted">Right</text>
+
+    <!-- Left -->
+    <rect x="120" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M160,32 L140,32 M145,27 L138,32 L145,37" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="145" y="60" text-anchor="middle" class="text-muted">Left</text>
+  </g>
+
+  <g transform="translate(1020, 155)">
+    <!-- U-turn -->
+    <rect x="0" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M20,38 L20,25 Q20,15 30,15 Q40,15 40,25 L40,30 M35,27 L40,32 L45,27" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="25" y="60" text-anchor="middle" class="text-muted">U-turn</text>
+
+    <!-- Merge -->
+    <rect x="60" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M75,38 L85,20 M95,38 L85,20" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <text x="85" y="60" text-anchor="middle" class="text-muted">Merge</text>
+
+    <!-- Arrive -->
+    <rect x="120" y="0" width="50" height="50" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+    <path d="M145,15 C137,15 132,22 132,30 C132,38 145,50 145,50 C145,50 158,38 158,30 C158,22 153,15 145,15" fill="#ef4444"/>
+    <circle cx="145" cy="26" r="5" fill="#fff"/>
+    <text x="145" y="60" text-anchor="middle" class="text-muted">Arrive</text>
+  </g>
+
+  <!-- ==================== ETA & STATS ==================== -->
+  <text x="1020" y="240" class="heading" font-size="12">ROUTE STATS</text>
+
+  <rect x="1020" y="255" width="160" height="100" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+  <text x="1035" y="280" class="text-sm" fill="#64748b">DISTANCE</text>
+  <text x="1035" y="300" class="heading" font-size="20">3.2 mi</text>
+
+  <line x1="1100" y1="265" x2="1100" y2="345" stroke="#475569" stroke-width="1"/>
+
+  <text x="1115" y="280" class="text-sm" fill="#64748b">DURATION</text>
+  <text x="1115" y="300" class="heading" font-size="20">25 min</text>
+
+  <text x="1100" y="330" text-anchor="middle" class="text-sm">ETA: 10:23 AM</text>
+  <rect x="1050" y="338" width="100" height="10" rx="2" fill="#334155"/>
+  <rect x="1050" y="338" width="30" height="10" rx="2" fill="#8b5cf6">
+    <animate attributeName="width" values="10;100;10" dur="25s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- ==================== ARRIVED STATE ==================== -->
+  <text x="1020" y="380" class="heading" font-size="12">ARRIVED</text>
+
+  <rect x="1020" y="395" width="160" height="110" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+  <g transform="translate(1100, 440)">
+    <circle cx="0" cy="0" r="25" fill="#22c55e" opacity="0.2"/>
+    <circle cx="0" cy="0" r="18" fill="#22c55e"/>
+    <path d="M-8,0 L-3,6 L10,-6" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <text x="1100" y="480" text-anchor="middle" class="heading">You have arrived!</text>
+  <text x="1100" y="495" text-anchor="middle" class="text-sm">Central Park Zoo</text>
+
+  <!-- ==================== ANNOTATIONS ==================== -->
+  <rect x="20" y="520" width="340" height="80" rx="4" fill="#8b5cf6" opacity="0.15" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="35" y="545" class="annotation">OSRM (Open Source Routing Machine) for routing</text>
+  <text x="35" y="565" class="annotation">Client-side navigation (no Google Directions API)</text>
+  <text x="35" y="585" class="annotation">Polyline decoding for route geometry</text>
+
+  <rect x="380" y="520" width="200" height="80" rx="4" fill="#8b5cf6" opacity="0.15" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="395" y="545" class="annotation">Transport modes:</text>
+  <text x="395" y="565" class="annotation">- Driving, Walking, Cycling</text>
+  <text x="395" y="585" class="annotation">- Public transit (future)</text>
+
+  <!-- Mobile landscape hint -->
+  <rect x="600" y="520" width="200" height="80" rx="4" fill="#8b5cf6" opacity="0.15" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="615" y="545" class="annotation">Mobile considerations:</text>
+  <text x="615" y="565" class="annotation">- Landscape mode for nav</text>
+  <text x="615" y="585" class="annotation">- Wake lock to keep screen on</text>
+
+</svg>

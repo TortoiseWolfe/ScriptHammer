@@ -1,0 +1,346 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 950" width="1200" height="950">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+      .label { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+      .error-text { fill: #ef4444; font-family: system-ui, sans-serif; font-size: 10px; }
+      .success-text { fill: #22c55e; font-family: system-ui, sans-serif; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="950" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="950" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">WEB3FORMS CONTACT INTEGRATION</text>
+
+  <!-- Main Contact Form Section -->
+  <g transform="translate(40, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="500" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Contact Form - Desktop Layout</text>
+
+    <!-- Form Container -->
+    <rect x="0" y="40" width="500" height="420" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Form Header -->
+    <text x="20" y="70" fill="#fff" font-family="system-ui, sans-serif" font-size="18" font-weight="600">Get in Touch</text>
+    <text x="20" y="90" class="text-muted">We'll respond within 24 hours</text>
+
+    <!-- Name Field -->
+    <text x="20" y="120" class="label">Full Name *</text>
+    <rect x="20" y="128" width="220" height="38" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+    <text x="32" y="152" class="text-md">John Doe</text>
+
+    <!-- Email Field -->
+    <text x="260" y="120" class="label">Email Address *</text>
+    <rect x="260" y="128" width="220" height="38" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+    <text x="272" y="152" class="text-md">john@example.com</text>
+
+    <!-- Subject Field -->
+    <text x="20" y="186" class="label">Subject *</text>
+    <rect x="20" y="194" width="460" height="38" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+    <text x="32" y="218" class="text-md">Partnership Inquiry</text>
+
+    <!-- Message Field -->
+    <text x="20" y="252" class="label">Message *</text>
+    <rect x="20" y="260" width="460" height="120" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+    <text x="32" y="284" class="text-md">Hello, I would like to discuss...</text>
+    <text x="460" y="370" class="text-muted" text-anchor="end">10/5000</text>
+
+    <!-- Honeypot Field (Hidden) - Annotation -->
+    <rect x="20" y="390" width="200" height="24" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4,2"/>
+    <text x="30" y="406" class="annotation">&lt;input name="botcheck" hidden/&gt;</text>
+
+    <!-- Submit Button -->
+    <rect x="20" y="420" width="460" height="44" rx="8" fill="url(#accentGrad)"/>
+    <text x="250" y="447" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send Message</text>
+  </g>
+
+  <!-- Annotation: Honeypot -->
+  <g transform="translate(260, 470)">
+    <line x1="0" y1="0" x2="40" y2="30" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="4,2"/>
+    <rect x="40" y="30" width="140" height="50" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="50" y="50" class="annotation">HONEYPOT SPAM</text>
+    <text x="50" y="65" class="annotation">PROTECTION</text>
+    <text x="50" y="75" class="text-muted" font-size="8">Hidden from users, catches bots</text>
+  </g>
+
+  <!-- Validation States Section -->
+  <g transform="translate(560, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="280" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Zod Validation States</text>
+
+    <!-- Validation Panel -->
+    <rect x="0" y="40" width="280" height="220" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Valid Field -->
+    <text x="16" y="65" class="label">Email (Valid)</text>
+    <rect x="16" y="73" width="248" height="32" rx="4" fill="#0f172a" stroke="#22c55e" stroke-width="1"/>
+    <text x="28" y="94" class="text-md">user@example.com</text>
+    <circle cx="248" cy="89" r="8" fill="#22c55e" opacity="0.2"/>
+    <text x="248" y="93" text-anchor="middle" fill="#22c55e" font-size="12">✓</text>
+
+    <!-- Invalid Field -->
+    <text x="16" y="125" class="label">Email (Invalid)</text>
+    <rect x="16" y="133" width="248" height="32" rx="4" fill="#0f172a" stroke="#ef4444" stroke-width="1"/>
+    <text x="28" y="154" class="text-md">invalid-email</text>
+    <circle cx="248" cy="149" r="8" fill="#ef4444" opacity="0.2"/>
+    <text x="248" y="153" text-anchor="middle" fill="#ef4444" font-size="12">!</text>
+    <text x="16" y="178" class="error-text">Please enter a valid email address</text>
+
+    <!-- Min Length Error -->
+    <text x="16" y="200" class="label">Message (Too Short)</text>
+    <rect x="16" y="208" width="248" height="32" rx="4" fill="#0f172a" stroke="#ef4444" stroke-width="1"/>
+    <text x="28" y="229" class="text-md">Hi</text>
+    <text x="16" y="250" class="error-text">Message must be at least 10 characters</text>
+  </g>
+
+  <!-- Zod Schema Annotation (moved down to avoid overlap) -->
+  <g transform="translate(560, 330)">
+    <rect x="0" y="0" width="280" height="100" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="12" y="20" class="annotation">contactSchema = z.object({</text>
+    <text x="20" y="36" class="annotation">  name: z.string().min(2).max(100),</text>
+    <text x="20" y="52" class="annotation">  email: z.string().email(),</text>
+    <text x="20" y="68" class="annotation">  subject: z.string().min(5).max(200),</text>
+    <text x="20" y="84" class="annotation">  message: z.string().min(10).max(5000)</text>
+    <text x="12" y="96" class="annotation">})</text>
+  </g>
+
+  <!-- Submission States Section -->
+  <g transform="translate(860, 60)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="300" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Submission States</text>
+
+    <!-- States Panel -->
+    <rect x="0" y="40" width="300" height="260" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Loading State -->
+    <text x="16" y="65" class="label">Loading State</text>
+    <rect x="16" y="73" width="268" height="40" rx="6" fill="#8b5cf6" opacity="0.5"/>
+    <circle cx="100" cy="93" r="8" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="12,8">
+      <animateTransform attributeName="transform" type="rotate" from="0 100 93" to="360 100 93" dur="1s" repeatCount="indefinite"/>
+    </circle>
+    <text x="120" y="98" fill="#fff" font-family="system-ui, sans-serif" font-size="12">Sending...</text>
+
+    <!-- Success State -->
+    <text x="16" y="133" class="label">Success State</text>
+    <rect x="16" y="141" width="268" height="48" rx="6" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1"/>
+    <circle cx="40" cy="165" r="12" fill="#22c55e"/>
+    <text x="40" y="170" text-anchor="middle" fill="#fff" font-size="14">✓</text>
+    <text x="60" y="161" fill="#22c55e" font-family="system-ui, sans-serif" font-size="12" font-weight="600">Message Sent!</text>
+    <text x="60" y="176" class="text-muted">We'll respond within 24 hours</text>
+
+    <!-- Error State -->
+    <text x="16" y="209" class="label">Error State</text>
+    <rect x="16" y="217" width="268" height="48" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" stroke-width="1"/>
+    <circle cx="40" cy="241" r="12" fill="#ef4444"/>
+    <text x="40" y="246" text-anchor="middle" fill="#fff" font-size="14">!</text>
+    <text x="60" y="237" fill="#ef4444" font-family="system-ui, sans-serif" font-size="12" font-weight="600">Failed to Send</text>
+    <text x="60" y="252" class="text-muted">Please try again later</text>
+
+    <!-- Retry Button -->
+    <rect x="200" y="227" width="70" height="28" rx="4" fill="#ef4444" opacity="0.3"/>
+    <text x="235" y="246" text-anchor="middle" fill="#ef4444" font-family="system-ui, sans-serif" font-size="10">Retry</text>
+  </g>
+
+  <!-- Offline Queue Section -->
+  <g transform="translate(860, 340)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="300" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Offline Queue (PWA)</text>
+
+    <!-- Queue Panel -->
+    <rect x="0" y="40" width="300" height="150" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Offline Banner -->
+    <rect x="16" y="55" width="268" height="32" rx="4" fill="#eab308" opacity="0.15" stroke="#eab308" stroke-width="1"/>
+    <circle cx="36" cy="71" r="8" fill="#eab308"/>
+    <text x="36" y="75" text-anchor="middle" fill="#0f172a" font-size="10">!</text>
+    <text x="52" y="76" fill="#eab308" font-family="system-ui, sans-serif" font-size="11">You're offline - message queued</text>
+
+    <!-- Queued Messages -->
+    <text x="16" y="110" class="label">Pending Messages</text>
+
+    <rect x="16" y="118" width="268" height="28" rx="4" fill="#0f172a"/>
+    <circle cx="32" cy="132" r="6" fill="#eab308"/>
+    <text x="46" y="136" class="text-sm">Partnership Inquiry</text>
+    <text x="260" y="136" class="text-muted" text-anchor="end">2m ago</text>
+
+    <rect x="16" y="150" width="268" height="28" rx="4" fill="#0f172a"/>
+    <circle cx="32" cy="164" r="6" fill="#eab308"/>
+    <text x="46" y="168" class="text-sm">Support Request</text>
+    <text x="260" y="168" class="text-muted" text-anchor="end">5m ago</text>
+  </g>
+
+  <!-- Mobile Layout Section (moved down for spacing) -->
+  <g transform="translate(40, 550)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="200" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Mobile Layout</text>
+
+    <!-- Mobile Frame -->
+    <rect x="0" y="40" width="200" height="350" rx="16" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+
+    <!-- Status Bar -->
+    <rect x="0" y="40" width="200" height="24" rx="16" fill="#1e293b"/>
+    <text x="100" y="55" text-anchor="middle" class="text-muted" font-size="9">9:41</text>
+
+    <!-- Mobile Header -->
+    <text x="20" y="85" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Contact Us</text>
+
+    <!-- Stacked Form Fields -->
+    <text x="16" y="110" class="label" font-size="9">Full Name *</text>
+    <rect x="16" y="116" width="168" height="30" rx="4" fill="#1e293b" stroke="#475569"/>
+
+    <text x="16" y="160" class="label" font-size="9">Email *</text>
+    <rect x="16" y="166" width="168" height="30" rx="4" fill="#1e293b" stroke="#475569"/>
+
+    <text x="16" y="210" class="label" font-size="9">Subject *</text>
+    <rect x="16" y="216" width="168" height="30" rx="4" fill="#1e293b" stroke="#475569"/>
+
+    <text x="16" y="260" class="label" font-size="9">Message *</text>
+    <rect x="16" y="266" width="168" height="60" rx="4" fill="#1e293b" stroke="#475569"/>
+
+    <!-- Submit Button -->
+    <rect x="16" y="340" width="168" height="36" rx="6" fill="url(#accentGrad)"/>
+    <text x="100" y="363" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="11" font-weight="600">Send Message</text>
+  </g>
+
+  <!-- API Flow Diagram (moved down for spacing) -->
+  <g transform="translate(260, 550)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="460" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Web3Forms API Flow</text>
+
+    <!-- Flow Panel -->
+    <rect x="0" y="40" width="460" height="180" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Step 1: User Input -->
+    <rect x="20" y="60" width="80" height="50" rx="6" fill="#334155" stroke="#8b5cf6" stroke-width="1"/>
+    <text x="60" y="82" text-anchor="middle" class="text-sm">User</text>
+    <text x="60" y="96" text-anchor="middle" class="text-sm">Input</text>
+
+    <!-- Arrow 1 -->
+    <line x1="100" y1="85" x2="130" y2="85" stroke="#8b5cf6" stroke-width="2"/>
+    <polygon points="130,80 140,85 130,90" fill="#8b5cf6"/>
+
+    <!-- Step 2: Zod Validation -->
+    <rect x="140" y="60" width="80" height="50" rx="6" fill="#334155" stroke="#22c55e" stroke-width="1"/>
+    <text x="180" y="82" text-anchor="middle" class="text-sm">Zod</text>
+    <text x="180" y="96" text-anchor="middle" class="text-sm">Validate</text>
+
+    <!-- Arrow 2 -->
+    <line x1="220" y1="85" x2="250" y2="85" stroke="#22c55e" stroke-width="2"/>
+    <polygon points="250,80 260,85 250,90" fill="#22c55e"/>
+
+    <!-- Step 3: Web3Forms API -->
+    <rect x="260" y="60" width="80" height="50" rx="6" fill="#334155" stroke="#d946ef" stroke-width="1"/>
+    <text x="300" y="82" text-anchor="middle" class="text-sm">Web3Forms</text>
+    <text x="300" y="96" text-anchor="middle" class="text-sm">API</text>
+
+    <!-- Arrow 3 -->
+    <line x1="340" y1="85" x2="370" y2="85" stroke="#d946ef" stroke-width="2"/>
+    <polygon points="370,80 380,85 370,90" fill="#d946ef"/>
+
+    <!-- Step 4: Email Delivery -->
+    <rect x="380" y="60" width="60" height="50" rx="6" fill="#334155" stroke="#22c55e" stroke-width="1"/>
+    <text x="410" y="82" text-anchor="middle" class="text-sm">Email</text>
+    <text x="410" y="96" text-anchor="middle" class="text-sm">Sent</text>
+
+    <!-- API Details -->
+    <rect x="20" y="130" width="420" height="70" rx="4" fill="#0f172a"/>
+    <text x="32" y="150" class="annotation">POST https://api.web3forms.com/submit</text>
+    <text x="32" y="168" class="text-muted">{</text>
+    <text x="44" y="182" class="text-muted">"access_key": "NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY",</text>
+    <text x="44" y="194" class="text-muted">"name", "email", "subject", "message", "botcheck": ""</text>
+  </g>
+
+  <!-- Features Checklist (moved down for spacing) -->
+  <g transform="translate(740, 550)">
+    <!-- Section Header -->
+    <rect x="0" y="0" width="420" height="28" rx="4" fill="#334155"/>
+    <text x="12" y="18" class="heading">Integration Features</text>
+
+    <!-- Features Panel -->
+    <rect x="0" y="40" width="420" height="180" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Column 1 -->
+    <g transform="translate(20, 60)">
+      <circle cx="8" cy="8" r="6" fill="#22c55e"/>
+      <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="12" class="text-md">Serverless (no backend needed)</text>
+
+      <circle cx="8" cy="32" r="6" fill="#22c55e"/>
+      <text x="8" y="36" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="36" class="text-md">Zod schema validation</text>
+
+      <circle cx="8" cy="56" r="6" fill="#22c55e"/>
+      <text x="8" y="60" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="60" class="text-md">react-hook-form integration</text>
+
+      <circle cx="8" cy="80" r="6" fill="#22c55e"/>
+      <text x="8" y="84" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="84" class="text-md">Honeypot spam protection</text>
+
+      <circle cx="8" cy="104" r="6" fill="#22c55e"/>
+      <text x="8" y="108" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="108" class="text-md">Input sanitization (XSS)</text>
+    </g>
+
+    <!-- Column 2 -->
+    <g transform="translate(220, 60)">
+      <circle cx="8" cy="8" r="6" fill="#22c55e"/>
+      <text x="8" y="12" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="12" class="text-md">Offline queue (PWA)</text>
+
+      <circle cx="8" cy="32" r="6" fill="#22c55e"/>
+      <text x="8" y="36" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="36" class="text-md">Loading/success/error states</text>
+
+      <circle cx="8" cy="56" r="6" fill="#22c55e"/>
+      <text x="8" y="60" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="60" class="text-md">Mobile-first responsive</text>
+
+      <circle cx="8" cy="80" r="6" fill="#22c55e"/>
+      <text x="8" y="84" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="84" class="text-md">WCAG 2.1 AA accessible</text>
+
+      <circle cx="8" cy="104" r="6" fill="#22c55e"/>
+      <text x="8" y="108" text-anchor="middle" fill="#fff" font-size="8">✓</text>
+      <text x="24" y="108" class="text-md">Free tier: 250 emails/month</text>
+    </g>
+
+    <!-- Env Vars Note -->
+    <rect x="20" y="175" width="380" height="26" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4,2"/>
+    <text x="32" y="192" class="annotation">ENV: NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY</text>
+  </g>
+
+  <!-- Footer -->
+  <text x="600" y="930" text-anchor="middle" class="text-muted">Web3Forms Integration - Serverless Contact Form for Static Sites</text>
+</svg>

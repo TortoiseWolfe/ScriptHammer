@@ -1,0 +1,245 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">CONNECTION MANAGEMENT</text>
+
+  <!-- ========================================== -->
+  <!-- User Search -->
+  <!-- ========================================== -->
+  <text x="200" y="60" text-anchor="middle" class="annotation" font-size="12">USER SEARCH</text>
+
+  <rect x="50" y="80" width="300" height="350" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Header -->
+  <rect x="50" y="80" width="300" height="50" rx="12" fill="#334155"/>
+  <text x="200" y="112" text-anchor="middle" class="heading">Find Users</text>
+
+  <!-- Search input -->
+  <rect x="70" y="145" width="260" height="40" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="90" y="171" class="text-muted">Search by username or email...</text>
+
+  <!-- Search results -->
+  <text x="70" y="210" class="text-muted">Results</text>
+
+  <!-- Result 1 -->
+  <rect x="70" y="225" width="260" height="55" rx="6" fill="#334155"/>
+  <circle cx="105" cy="252" r="18" fill="#059669"/>
+  <text x="105" y="258" text-anchor="middle" fill="white" class="text-sm">AS</text>
+  <text x="135" y="248" class="text-md">alice_smith</text>
+  <text x="135" y="264" class="text-sm">alice@example.com</text>
+  <rect x="250" y="240" width="65" height="28" rx="4" fill="#8b5cf6"/>
+  <text x="282" y="258" text-anchor="middle" fill="white" class="text-sm">Add</text>
+
+  <!-- Result 2: Already sent -->
+  <rect x="70" y="290" width="260" height="55" rx="6" fill="#334155"/>
+  <circle cx="105" cy="317" r="18" fill="#dc2626"/>
+  <text x="105" y="323" text-anchor="middle" fill="white" class="text-sm">MJ</text>
+  <text x="135" y="313" class="text-md">mary_johnson</text>
+  <text x="135" y="329" class="text-sm">mary@example.com</text>
+  <rect x="235" y="305" width="80" height="28" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="275" y="323" text-anchor="middle" class="text-muted">Pending</text>
+
+  <!-- Result 3: Already connected -->
+  <rect x="70" y="355" width="260" height="55" rx="6" fill="#334155"/>
+  <circle cx="105" cy="382" r="18" fill="#8b5cf6"/>
+  <text x="105" y="388" text-anchor="middle" fill="white" class="text-sm">JD</text>
+  <text x="135" y="378" class="text-md">john_doe</text>
+  <text x="135" y="394" class="text-sm">john@example.com</text>
+  <rect x="230" y="370" width="85" height="28" rx="4" fill="#22c55e" opacity="0.2" stroke="#22c55e"/>
+  <text x="272" y="388" text-anchor="middle" fill="#4ade80" class="text-sm">Connected</text>
+
+  <!-- ========================================== -->
+  <!-- Friend Requests -->
+  <!-- ========================================== -->
+  <text x="550" y="60" text-anchor="middle" class="annotation" font-size="12">FRIEND REQUESTS</text>
+
+  <rect x="400" y="80" width="300" height="350" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Tabs -->
+  <rect x="400" y="80" width="150" height="40" rx="12" fill="#8b5cf6" opacity="0.15"/>
+  <text x="475" y="106" text-anchor="middle" fill="#a78bfa" class="text-md">Received (3)</text>
+  <text x="625" y="106" text-anchor="middle" class="text-muted">Sent (1)</text>
+
+  <!-- Received requests -->
+  <rect x="420" y="135" width="260" height="80" rx="6" fill="#334155"/>
+  <circle cx="455" cy="165" r="22" fill="#f97316"/>
+  <text x="455" y="171" text-anchor="middle" fill="white" class="text-md">TW</text>
+  <text x="490" y="155" class="heading">Tom Wilson</text>
+  <text x="490" y="172" class="text-sm">@tom_wilson</text>
+  <rect x="490" y="182" width="60" height="26" rx="4" fill="#22c55e"/>
+  <text x="520" y="199" text-anchor="middle" fill="white" class="text-sm">Accept</text>
+  <rect x="560" y="182" width="60" height="26" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="590" y="199" text-anchor="middle" class="text-muted">Decline</text>
+  <rect x="630" y="182" width="40" height="26" rx="4" fill="#ef4444" opacity="0.2" stroke="#ef4444"/>
+  <text x="650" y="199" text-anchor="middle" fill="#f87171" class="text-sm">Block</text>
+
+  <!-- Request 2 -->
+  <rect x="420" y="225" width="260" height="80" rx="6" fill="#334155"/>
+  <circle cx="455" cy="255" r="22" fill="#06b6d4"/>
+  <text x="455" y="261" text-anchor="middle" fill="white" class="text-md">SL</text>
+  <text x="490" y="245" class="heading">Sarah Lee</text>
+  <text x="490" y="262" class="text-sm">@sarah_lee</text>
+  <rect x="490" y="272" width="60" height="26" rx="4" fill="#22c55e"/>
+  <text x="520" y="289" text-anchor="middle" fill="white" class="text-sm">Accept</text>
+  <rect x="560" y="272" width="60" height="26" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="590" y="289" text-anchor="middle" class="text-muted">Decline</text>
+  <rect x="630" y="272" width="40" height="26" rx="4" fill="#ef4444" opacity="0.2" stroke="#ef4444"/>
+  <text x="650" y="289" text-anchor="middle" fill="#f87171" class="text-sm">Block</text>
+
+  <!-- Request 3 -->
+  <rect x="420" y="315" width="260" height="80" rx="6" fill="#334155"/>
+  <circle cx="455" cy="345" r="22" fill="#ec4899"/>
+  <text x="455" y="351" text-anchor="middle" fill="white" class="text-md">RK</text>
+  <text x="490" y="335" class="heading">Rachel Kim</text>
+  <text x="490" y="352" class="text-sm">@rachel_k</text>
+  <rect x="490" y="362" width="60" height="26" rx="4" fill="#22c55e"/>
+  <text x="520" y="379" text-anchor="middle" fill="white" class="text-sm">Accept</text>
+  <rect x="560" y="362" width="60" height="26" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="590" y="379" text-anchor="middle" class="text-muted">Decline</text>
+  <rect x="630" y="362" width="40" height="26" rx="4" fill="#ef4444" opacity="0.2" stroke="#ef4444"/>
+  <text x="650" y="379" text-anchor="middle" fill="#f87171" class="text-sm">Block</text>
+
+  <!-- ========================================== -->
+  <!-- My Connections -->
+  <!-- ========================================== -->
+  <text x="900" y="60" text-anchor="middle" class="annotation" font-size="12">MY CONNECTIONS</text>
+
+  <rect x="750" y="80" width="300" height="350" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Header -->
+  <rect x="750" y="80" width="300" height="50" rx="12" fill="#334155"/>
+  <text x="900" y="112" text-anchor="middle" class="heading">Connections (12)</text>
+
+  <!-- Search -->
+  <rect x="770" y="145" width="260" height="32" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="790" y="166" class="text-muted">Filter connections...</text>
+
+  <!-- Connections list -->
+  <rect x="770" y="190" width="260" height="50" rx="6" fill="#334155"/>
+  <circle cx="800" cy="215" r="18" fill="#8b5cf6"/>
+  <text x="800" y="221" text-anchor="middle" fill="white" class="text-sm">JD</text>
+  <text x="830" y="210" class="text-md">John Doe</text>
+  <text x="830" y="226" class="text-sm" fill="#22c55e">● Online</text>
+  <text x="1010" y="218" text-anchor="end" fill="#8b5cf6" class="text-sm">Message</text>
+
+  <rect x="770" y="250" width="260" height="50" rx="6" fill="#334155"/>
+  <circle cx="800" cy="275" r="18" fill="#059669"/>
+  <text x="800" y="281" text-anchor="middle" fill="white" class="text-sm">AS</text>
+  <text x="830" y="270" class="text-md">Alice Smith</text>
+  <text x="830" y="286" class="text-sm" fill="#64748b">● Offline</text>
+  <text x="1010" y="278" text-anchor="end" fill="#8b5cf6" class="text-sm">Message</text>
+
+  <rect x="770" y="310" width="260" height="50" rx="6" fill="#334155"/>
+  <circle cx="800" cy="335" r="18" fill="#f97316"/>
+  <text x="800" y="341" text-anchor="middle" fill="white" class="text-sm">BW</text>
+  <text x="830" y="330" class="text-md">Bob Wilson</text>
+  <text x="830" y="346" class="text-sm" fill="#64748b">● Offline</text>
+  <text x="1010" y="338" text-anchor="end" fill="#8b5cf6" class="text-sm">Message</text>
+
+  <rect x="770" y="370" width="260" height="50" rx="6" fill="#334155"/>
+  <circle cx="800" cy="395" r="18" fill="#dc2626"/>
+  <text x="800" y="401" text-anchor="middle" fill="white" class="text-sm">MJ</text>
+  <text x="830" y="390" class="text-md">Mary Johnson</text>
+  <text x="830" y="406" class="text-sm" fill="#64748b">● Offline</text>
+  <text x="1010" y="398" text-anchor="end" fill="#8b5cf6" class="text-sm">Message</text>
+
+  <!-- ========================================== -->
+  <!-- Blocked Users -->
+  <!-- ========================================== -->
+  <text x="200" y="460" text-anchor="middle" class="annotation" font-size="12">BLOCKED USERS</text>
+
+  <rect x="50" y="480" width="300" height="180" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Header -->
+  <rect x="50" y="480" width="300" height="45" rx="12" fill="#334155"/>
+  <text x="200" y="508" text-anchor="middle" class="heading">Blocked (2)</text>
+
+  <!-- Blocked user 1 -->
+  <rect x="70" y="540" width="260" height="50" rx="6" fill="#ef4444" opacity="0.1" stroke="#ef4444"/>
+  <circle cx="100" cy="565" r="18" fill="#334155"/>
+  <text x="100" y="571" text-anchor="middle" class="text-muted">SP</text>
+  <text x="130" y="560" class="text-md">spam_person</text>
+  <text x="130" y="576" class="text-sm">Blocked on Jan 15</text>
+  <rect x="260" y="553" width="55" height="26" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="287" y="570" text-anchor="middle" class="text-muted">Unblock</text>
+
+  <!-- Blocked user 2 -->
+  <rect x="70" y="600" width="260" height="50" rx="6" fill="#ef4444" opacity="0.1" stroke="#ef4444"/>
+  <circle cx="100" cy="625" r="18" fill="#334155"/>
+  <text x="100" y="631" text-anchor="middle" class="text-muted">AB</text>
+  <text x="130" y="620" class="text-md">annoying_bot</text>
+  <text x="130" y="636" class="text-sm">Blocked on Jan 10</text>
+  <rect x="260" y="613" width="55" height="26" rx="4" fill="#334155" stroke="#475569"/>
+  <text x="287" y="630" text-anchor="middle" class="text-muted">Unblock</text>
+
+  <!-- ========================================== -->
+  <!-- Blocked Conversation View -->
+  <!-- ========================================== -->
+  <text x="550" y="460" text-anchor="middle" class="annotation" font-size="12">BLOCKED CONVERSATION VIEW</text>
+
+  <rect x="400" y="480" width="300" height="180" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Blocked banner -->
+  <rect x="400" y="480" width="300" height="40" rx="12" fill="#ef4444" opacity="0.2"/>
+  <text x="550" y="505" text-anchor="middle" fill="#f87171" class="text-md">⚠ spam_person blocked you</text>
+
+  <!-- Message history (read-only) -->
+  <rect x="420" y="535" width="180" height="35" rx="6" fill="#334155" opacity="0.5"/>
+  <text x="435" y="558" class="text-muted">Previous message...</text>
+
+  <rect x="470" y="580" width="210" height="35" rx="6" fill="#8b5cf6" opacity="0.3"/>
+  <text x="485" y="603" class="text-muted">Your last message...</text>
+
+  <!-- Disabled input -->
+  <rect x="420" y="635" width="260" height="30" rx="6" fill="#0f172a" opacity="0.3" stroke="#475569" stroke-dasharray="4"/>
+  <text x="550" y="655" text-anchor="middle" class="text-muted">Cannot send messages</text>
+
+  <!-- ========================================== -->
+  <!-- Annotations -->
+  <!-- ========================================== -->
+  <rect x="750" y="480" width="250" height="90" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="500" class="annotation">FR-001: Search exact username/email</text>
+  <text x="760" y="515" class="annotation">FR-002: Send friend requests</text>
+  <text x="760" y="530" class="annotation">FR-003: Accept/Decline/Block</text>
+  <text x="760" y="545" class="annotation">FR-004: No duplicate requests</text>
+  <text x="760" y="560" class="annotation">FR-005: Cannot self-request</text>
+
+  <rect x="750" y="585" width="250" height="75" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="605" class="annotation">FR-006: View connections, pending,</text>
+  <text x="760" y="620" class="annotation">and blocked users</text>
+  <text x="760" y="635" class="annotation">FR-007: Remove connections (unfriend)</text>
+  <text x="760" y="650" class="annotation">NFR-011: Exact search only (no fuzzy)</text>
+
+  <rect x="1020" y="480" width="150" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="1030" y="500" class="annotation">Blocked users:</text>
+  <text x="1030" y="515" class="annotation">• History visible</text>
+  <text x="1030" y="530" class="annotation">• Input disabled</text>
+
+</svg>

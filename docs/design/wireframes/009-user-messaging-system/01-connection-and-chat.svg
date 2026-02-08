@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    USER MESSAGING - CONNECTION AND CHAT
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Left Sidebar - Conversations List (280px wide) -->
+    <rect x="0" y="50" width="280" height="590" fill="#dcc8a8"/>
+
+    <!-- Search Bar -->
+    <rect x="10" y="60" width="260" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="25" y="86" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Search users...</text>
+
+    <!-- Add Friend Button -->
+    <rect x="10" y="110" width="120" height="36" rx="6" fill="#8b5cf6"/>
+    <text x="70" y="134" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Add Friend</text>
+
+    <!-- Callout ① - Add Friend -->
+    <circle cx="145" cy="128" r="14" fill="#dc2626"/>
+    <text x="145" y="133" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Conversations List Header -->
+    <text x="10" y="170" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Conversations</text>
+
+    <!-- Conversation Item 1 (Active) -->
+    <rect x="5" y="180" width="270" height="60" rx="4" fill="#f5f0e6"/>
+    <circle cx="35" cy="210" r="18" fill="#8b5cf6"/>
+    <text x="35" y="215" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">JD</text>
+    <text x="60" y="200" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Jane Doe</text>
+    <text x="60" y="220" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Thanks for the update!</text>
+    <circle cx="255" cy="200" r="10" fill="#dc2626"/>
+    <text x="255" y="205" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">2</text>
+
+    <!-- Conversation Item 2 -->
+    <rect x="5" y="250" width="270" height="62" rx="4" fill="#dcc8a8"/>
+    <circle cx="35" cy="280" r="18" fill="#22c55e"/>
+    <text x="35" y="285" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">BT</text>
+    <text x="60" y="270" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Bob Taylor</text>
+    <text x="60" y="290" fill="#374151" font-family="system-ui, sans-serif" font-size="14">See you tomorrow!</text>
+
+    <!-- Conversation Item 3 -->
+    <rect x="5" y="322" width="270" height="62" rx="4" fill="#dcc8a8"/>
+    <circle cx="35" cy="350" r="18" fill="#0891b2"/>
+    <text x="35" y="355" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">AS</text>
+    <text x="60" y="340" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Alice Smith</text>
+    <text x="60" y="360" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Got it, thanks!</text>
+
+    <!-- Right Panel - Active Chat (980px wide) -->
+    <rect x="290" y="50" width="980" height="590" fill="#f5f0e6"/>
+
+    <!-- Chat Header -->
+    <rect x="290" y="50" width="980" height="50" fill="#dcc8a8"/>
+    <circle cx="325" cy="75" r="18" fill="#8b5cf6"/>
+    <text x="325" y="80" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">JD</text>
+    <text x="355" y="70" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Jane Doe</text>
+    <text x="355" y="88" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">Online</text>
+
+    <!-- Messages Area -->
+    <!-- Received Message 1 -->
+    <rect x="310" y="120" width="280" height="50" rx="12" fill="#dcc8a8"/>
+    <text x="325" y="145" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey! Did you see the latest update?</text>
+    <text x="325" y="162" fill="#374151" font-family="system-ui, sans-serif" font-size="14">10:30 AM</text>
+
+    <!-- Sent Message 1 -->
+    <rect x="870" y="190" width="380" height="50" rx="12" fill="#8b5cf6"/>
+    <text x="885" y="215" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Yes! It looks great. The new features are amazing.</text>
+    <text x="885" y="232" fill="#e0d4f7" font-family="system-ui, sans-serif" font-size="14">10:32 AM</text>
+
+    <!-- Callout ② - Encrypted Message -->
+    <circle cx="1265" cy="215" r="14" fill="#dc2626"/>
+    <text x="1265" y="220" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Received Message 2 -->
+    <rect x="310" y="260" width="320" height="50" rx="12" fill="#dcc8a8"/>
+    <text x="325" y="285" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I especially like the real-time messaging!</text>
+    <text x="325" y="302" fill="#374151" font-family="system-ui, sans-serif" font-size="14">10:33 AM</text>
+
+    <!-- Sent Message 2 with Edit indicator -->
+    <rect x="900" y="330" width="350" height="65" rx="12" fill="#8b5cf6"/>
+    <text x="915" y="355" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Thanks for the update! Let me know if you</text>
+    <text x="915" y="373" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">need anything else.</text>
+    <text x="915" y="390" fill="#e0d4f7" font-family="system-ui, sans-serif" font-size="14">10:35 AM - Edited</text>
+
+    <!-- Callout ④ - Edit/Delete -->
+    <circle cx="1265" cy="355" r="14" fill="#dc2626"/>
+    <text x="1265" y="360" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Delivery Status Icons (double checkmarks) -->
+    <text x="1230" y="232" fill="#e0d4f7" font-family="system-ui, sans-serif" font-size="14">✓✓</text>
+
+    <!-- Typing Indicator -->
+    <rect x="310" y="420" width="120" height="35" rx="12" fill="#dcc8a8"/>
+    <text x="325" y="442" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Jane is typing...</text>
+
+    <!-- Callout ③ - Real-time/Typing -->
+    <circle cx="445" cy="437" r="14" fill="#dc2626"/>
+    <text x="445" y="442" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Message Input Area -->
+    <rect x="300" y="590" width="860" height="50" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="320" y="620" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Type a message...</text>
+    <rect x="1170" y="598" width="90" height="34" rx="6" fill="#8b5cf6"/>
+    <text x="1215" y="620" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+
+    <!-- Desktop Nav Active State - Features (messaging is a feature) -->
+    <rect x="480" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="520" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Chat View - content safe area starts below header -->
+    <!-- Chat Header -->
+    <rect x="0" y="78" width="360" height="50" fill="#dcc8a8"/>
+    <text x="15" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">&lt; Back</text>
+    <circle cx="180" cy="103" r="16" fill="#8b5cf6"/>
+    <text x="180" y="108" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">JD</text>
+    <text x="210" y="100" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Jane Doe</text>
+    <text x="210" y="116" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">Online</text>
+
+    <!-- Mobile Messages -->
+    <!-- Received Message -->
+    <rect x="15" y="140" width="220" height="45" rx="10" fill="#dcc8a8"/>
+    <text x="25" y="162" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey! Did you see the update?</text>
+    <text x="25" y="178" fill="#374151" font-family="system-ui, sans-serif" font-size="14">10:30 AM</text>
+
+    <!-- Sent Message -->
+    <rect x="100" y="200" width="245" height="60" rx="10" fill="#8b5cf6"/>
+    <text x="110" y="222" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Yes! It looks great. The new</text>
+    <text x="110" y="240" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">features are amazing.</text>
+    <text x="110" y="255" fill="#e0d4f7" font-family="system-ui, sans-serif" font-size="14">10:32 AM ✓✓</text>
+
+    <!-- Callout ② - Mobile encrypted message -->
+    <circle cx="330" cy="230" r="12" fill="#dc2626"/>
+    <text x="330" y="235" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Received Message 2 -->
+    <rect x="15" y="275" width="250" height="45" rx="10" fill="#dcc8a8"/>
+    <text x="25" y="297" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I love the real-time messaging!</text>
+    <text x="25" y="313" fill="#374151" font-family="system-ui, sans-serif" font-size="14">10:33 AM</text>
+
+    <!-- Sent Message with Edited -->
+    <rect x="80" y="335" width="265" height="60" rx="10" fill="#8b5cf6"/>
+    <text x="90" y="357" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Thanks! Let me know if you</text>
+    <text x="90" y="375" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">need anything else.</text>
+    <text x="90" y="390" fill="#e0d4f7" font-family="system-ui, sans-serif" font-size="14">10:35 AM - Edited ✓✓</text>
+
+    <!-- Callout ④ - Mobile edit indicator -->
+    <circle cx="330" cy="365" r="12" fill="#dc2626"/>
+    <text x="330" y="370" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Typing Indicator -->
+    <rect x="15" y="410" width="100" height="30" rx="8" fill="#dcc8a8"/>
+    <text x="25" y="430" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Typing...</text>
+
+    <!-- Callout ③ - Mobile typing -->
+    <circle cx="130" cy="425" r="12" fill="#dc2626"/>
+    <text x="130" y="430" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Message Input -->
+    <rect x="10" y="610" width="280" height="44" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="25" y="637" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Message...</text>
+    <rect x="300" y="615" width="50" height="34" rx="6" fill="#8b5cf6"/>
+    <text x="325" y="637" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Send</text>
+
+    <!-- Mobile Footer Active State - Features (middle tab, rect with rx is OK) -->
+    <g transform="translate(90, 664)">
+      <rect width="90" height="56" rx="4" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" d="M14.6152 1.59492C14.9164 1.76287 15.0643 2.1146 14.9736 2.44734L12.9819 9.75H20.25C20.5486 9.75 20.8188 9.92718 20.9378 10.2011C21.0569 10.475 21.0021 10.7934 20.7983 11.0117L10.2983 22.2617C10.063 22.5139 9.68601 22.573 9.38478 22.4051C9.08354 22.2371 8.93567 21.8854 9.02641 21.5527L11.018 14.25H3.74999C3.45134 14.25 3.18115 14.0728 3.06213 13.7989C2.9431 13.525 2.99792 13.2066 3.20169 12.9883L13.7017 1.73826C13.937 1.48613 14.314 1.42698 14.6152 1.59492Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-001 Friend Request -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Friend Request Flow</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to connect with another</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">user so we can exchange private messages.</text>
+      <a href="#US-001"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-006"><rect x="284" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-006</text></a>
+    </g>
+
+    <!-- Column 2: US-002 Send Encrypted Message -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Send Encrypted Message</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user with connections, I need to send</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">private messages only we can read.</text>
+      <a href="#US-002"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-008"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#FR-012"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-016"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-016</text></a>
+      <a href="#SC-001"><rect x="284" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-001</text></a>
+      <a href="#SC-002"><rect x="345" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="372" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Column 3: US-003 Real-time Delivery -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Real-time Delivery</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to receive messages</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">instantly without refreshing the page.</text>
+      <a href="#US-003"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-003</text></a>
+      <a href="#FR-018"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-030"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-030</text></a>
+      <a href="#FR-031"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-031</text></a>
+      <a href="#SC-009"><rect x="284" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-009</text></a>
+    </g>
+
+    <!-- Column 4: US-004 Edit/Delete -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Edit or Delete Message</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to correct typos or</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">unsend messages I sent by mistake.</text>
+      <a href="#US-004"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-004</text></a>
+      <a href="#FR-024"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-024</text></a>
+      <a href="#FR-026"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-026</text></a>
+      <a href="#FR-028"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-028</text></a>
+      <a href="#FR-029"><rect x="284" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-029</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">real-time messaging | WebSocket | conversation threads | notifications</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    009:01 | User Messaging System | ScriptHammer
+  </text>
+</svg>

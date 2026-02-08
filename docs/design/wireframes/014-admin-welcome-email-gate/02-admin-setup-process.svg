@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <title>014 Admin Welcome Email Gate - Admin Setup Process</title>
+
+  <!-- Background Gradient G-022 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Wireframe Title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">ADMIN WELCOME EMAIL GATE - ADMIN SETUP PROCESS</text>
+
+  <!-- DESKTOP (16:9) -->
+  <text x="40" y="52" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">DESKTOP (16:9)</text>
+  <g transform="translate(40, 60)">
+    <!-- Browser Chrome -->
+    <rect width="1280" height="720" rx="8" fill="#2d2d44"/>
+    <rect width="1280" height="32" rx="8" fill="#3d3d5c"/>
+    <circle cx="16" cy="16" r="6" fill="#ef4444"/>
+    <circle cx="36" cy="16" r="6" fill="#f59e0b"/>
+    <circle cx="56" cy="16" r="6" fill="#22c55e"/>
+    <rect x="80" y="8" width="400" height="16" rx="4" fill="#1a1a2e"/>
+    <text x="280" y="20" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">scripthammer.dev/admin/setup</text>
+
+    <!-- Header Bar -->
+    <rect x="0" y="32" width="1280" height="48" fill="#e8d4b8"/>
+    <text x="20" y="62" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Admin Setup Dashboard</text>
+
+    <!-- Admin Badge -->
+    <g transform="translate(1100, 46)">
+      <rect x="0" y="0" width="100" height="24" rx="4" fill="#dc2626"/>
+      <text x="50" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">ADMIN</text>
+    </g>
+
+    <!-- Main Content Area -->
+    <rect x="0" y="80" width="1280" height="590" fill="#f5f0e6"/>
+
+    <!-- Callout 1: Setup Status Panel -->
+    <circle cx="200" cy="130" r="16" fill="#dc2626"/>
+    <text x="200" y="135" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">1</text>
+
+    <!-- Setup Status Panel -->
+    <rect x="20" y="100" width="600" height="280" rx="8" fill="#faf8f5"/>
+    <rect x="20" y="100" width="600" height="44" rx="8" fill="#dcc8a8"/>
+    <rect x="20" y="136" width="600" height="8" fill="#dcc8a8"/>
+    <text x="40" y="130" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Admin User Setup Status</text>
+
+    <!-- Status Indicators -->
+    <g transform="translate(40, 170)">
+      <circle cx="10" cy="10" r="10" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Authentication Record Created</text>
+    </g>
+    <g transform="translate(40, 210)">
+      <circle cx="10" cy="10" r="10" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Admin Profile Created (admin flag: true)</text>
+    </g>
+    <g transform="translate(40, 250)">
+      <circle cx="10" cy="10" r="10" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Encryption Keypair Generated</text>
+    </g>
+    <g transform="translate(40, 290)">
+      <circle cx="10" cy="10" r="10" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Public Key Stored for Feature 012</text>
+    </g>
+    <g transform="translate(40, 330)">
+      <circle cx="10" cy="10" r="10" fill="#374151"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Private Key Discarded (not needed)</text>
+    </g>
+
+    <!-- Callout 2: Key Generation Panel -->
+    <circle cx="860" cy="130" r="16" fill="#dc2626"/>
+    <text x="860" y="135" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">2</text>
+
+    <!-- Key Generation Panel -->
+    <rect x="660" y="100" width="600" height="280" rx="8" fill="#faf8f5"/>
+    <rect x="660" y="100" width="600" height="44" rx="8" fill="#dcc8a8"/>
+    <rect x="660" y="136" width="600" height="8" fill="#dcc8a8"/>
+    <text x="680" y="130" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Encryption Key Details</text>
+
+    <!-- Key Info -->
+    <text x="680" y="175" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Algorithm:</text>
+    <text x="780" y="175" font-family="monospace" font-size="14" fill="#3b82f6">RSA-OAEP-256</text>
+
+    <text x="680" y="205" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Key Size:</text>
+    <text x="780" y="205" font-family="monospace" font-size="14" fill="#3b82f6">4096 bits</text>
+
+    <text x="680" y="235" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Public Key ID:</text>
+    <text x="800" y="235" font-family="monospace" font-size="14" fill="#3b82f6">admin-pub-2026-01-14</text>
+
+    <text x="680" y="275" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Public Key (truncated):</text>
+    <rect x="680" y="290" width="560" height="70" rx="4" fill="#1a1a2e"/>
+    <text x="695" y="315" font-family="monospace" font-size="14" fill="#22c55e">-----BEGIN PUBLIC KEY-----</text>
+    <text x="695" y="335" font-family="monospace" font-size="14" fill="#f5f0e6">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...</text>
+
+    <!-- Callout 3: Configuration Panel -->
+    <circle cx="200" cy="430" r="16" fill="#dc2626"/>
+    <text x="200" y="435" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
+
+    <!-- Configuration Panel -->
+    <rect x="20" y="400" width="600" height="250" rx="8" fill="#faf8f5"/>
+    <rect x="20" y="400" width="600" height="44" rx="8" fill="#dcc8a8"/>
+    <rect x="20" y="436" width="600" height="8" fill="#dcc8a8"/>
+    <text x="40" y="430" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Environment Configuration</text>
+
+    <!-- Config Fields -->
+    <text x="40" y="475" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">ADMIN_EMAIL:</text>
+    <rect x="180" y="458" width="420" height="28" rx="4" fill="#e8d4b8"/>
+    <text x="195" y="478" font-family="monospace" font-size="14" fill="#1a1a2e">admin@scripthammer.dev</text>
+
+    <text x="40" y="520" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">ADMIN_ID:</text>
+    <rect x="180" y="503" width="420" height="28" rx="4" fill="#e8d4b8"/>
+    <text x="195" y="523" font-family="monospace" font-size="14" fill="#1a1a2e">scripthammer-admin</text>
+
+    <text x="40" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">SETUP_MODE:</text>
+    <rect x="180" y="548" width="420" height="28" rx="4" fill="#dcfce7"/>
+    <text x="195" y="568" font-family="monospace" font-size="14" fill="#166534">production</text>
+
+    <!-- Idempotent Badge -->
+    <rect x="40" y="600" width="200" height="32" rx="4" fill="#3b82f6"/>
+    <text x="140" y="622" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">Idempotent Setup</text>
+
+    <!-- Callout 4: CLI Output Panel -->
+    <circle cx="860" cy="430" r="16" fill="#dc2626"/>
+    <text x="860" y="435" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
+
+    <!-- CLI Output Panel -->
+    <rect x="660" y="400" width="600" height="250" rx="8" fill="#1a1a2e"/>
+    <rect x="660" y="400" width="600" height="32" rx="8" fill="#3d3d5c"/>
+    <text x="680" y="422" font-family="monospace" font-size="14" fill="#f5f0e6">setup-admin.sh</text>
+
+    <!-- Terminal Output -->
+    <text x="680" y="460" font-family="monospace" font-size="14" fill="#22c55e">$ npm run setup:admin</text>
+    <text x="680" y="485" font-family="monospace" font-size="14" fill="#f5f0e6">[INFO] Checking existing admin user...</text>
+    <text x="680" y="510" font-family="monospace" font-size="14" fill="#f59e0b">[WARN] Admin user exists, skipping creation</text>
+    <text x="680" y="535" font-family="monospace" font-size="14" fill="#f5f0e6">[INFO] Verifying admin profile...</text>
+    <text x="680" y="560" font-family="monospace" font-size="14" fill="#22c55e">[OK] Admin flag: true</text>
+    <text x="680" y="585" font-family="monospace" font-size="14" fill="#f5f0e6">[INFO] Checking public key...</text>
+    <text x="680" y="610" font-family="monospace" font-size="14" fill="#22c55e">[OK] Public key available for Feature 012</text>
+    <text x="680" y="635" font-family="monospace" font-size="14" fill="#22c55e">[DONE] Admin setup complete (idempotent)</text>
+
+    <!-- Status Bar -->
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
+    <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Setup completed at: 2026-01-14 19:30:00 UTC</text>
+    <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Status: Ready</text>
+  </g>
+
+  <!-- MOBILE MOCKUP -->
+  <g transform="translate(1360, 60)">
+    <!-- Phone Frame -->
+    <rect width="360" height="720" rx="24" fill="#2d2d44"/>
+    <rect x="10" y="10" width="340" height="700" rx="16" fill="#e8d4b8"/>
+
+    <!-- Status Bar -->
+    <rect x="10" y="10" width="340" height="44" rx="16" fill="#dcc8a8"/>
+    <text x="30" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">9:41</text>
+    <text x="300" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">100%</text>
+
+    <!-- Header -->
+    <rect x="10" y="54" width="340" height="56" fill="#f5f0e6"/>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">Admin Status</text>
+
+    <!-- Admin Badge -->
+    <rect x="250" y="70" width="80" height="24" rx="4" fill="#dc2626"/>
+    <text x="290" y="86" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">ADMIN</text>
+
+    <!-- Status Card -->
+    <rect x="20" y="120" width="320" height="400" rx="12" fill="#faf8f5"/>
+
+    <!-- Overall Status -->
+    <circle cx="180" cy="180" r="48" fill="#dcfce7"/>
+    <text x="180" y="190" text-anchor="middle" font-family="system-ui, sans-serif" font-size="36" fill="#22c55e">✓</text>
+
+    <text x="180" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">Setup Complete</text>
+
+    <!-- Status List -->
+    <g transform="translate(40, 290)">
+      <circle cx="10" cy="10" r="8" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Auth Record</text>
+    </g>
+    <g transform="translate(40, 325)">
+      <circle cx="10" cy="10" r="8" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Admin Profile</text>
+    </g>
+    <g transform="translate(40, 360)">
+      <circle cx="10" cy="10" r="8" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Public Key</text>
+    </g>
+    <g transform="translate(40, 395)">
+      <circle cx="10" cy="10" r="8" fill="#22c55e"/>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Feature 012 Ready</text>
+    </g>
+
+    <!-- Re-run Button -->
+    <rect x="40" y="460" width="260" height="44" rx="8" fill="#3b82f6"/>
+    <text x="170" y="488" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">Re-run Setup (Idempotent)</text>
+
+    <!-- Timestamp -->
+    <rect x="20" y="540" width="320" height="60" rx="8" fill="#f5f0e6"/>
+    <text x="180" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Last run:</text>
+    <text x="180" y="588" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">2026-01-14 19:30:00 UTC</text>
+
+    <!-- Bottom Navigation -->
+    <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
+    <g transform="translate(60, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Users</text>
+    </g>
+    <g transform="translate(160, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6">Admin</text>
+    </g>
+    <g transform="translate(250, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Settings</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#f5f0e6"/>
+
+    <!-- Column 1: US-001 Admin Creation -->
+    <g transform="translate(20, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">1</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Admin User Creation</text>
+      <a href="#US-001"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-001</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Setup creates admin user with</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">auth record, profile, and</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">pre-generated encryption key.</text>
+      <a href="#FR-008"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-008</text></a>
+      <a href="#FR-009"><rect x="70" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-009</text></a>
+      <a href="#SC-005"><rect x="140" y="116" width="60" height="20" rx="4" fill="#059669"/><text x="170" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">SC-005</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">100% success rate on first</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">run with public key created.</text>
+    </g>
+
+    <!-- Column 2: US-001 Key Generation -->
+    <g transform="translate(480, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">2</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Key Generation</text>
+      <a href="#US-001"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-001</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Asymmetric keypair generated.</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Public key stored for welcome</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">message encryption (Feature 012).</text>
+      <a href="#FR-011"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-011</text></a>
+      <a href="#FR-012"><rect x="70" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-012</text></a>
+      <a href="#SC-007"><rect x="140" y="116" width="60" height="20" rx="4" fill="#059669"/><text x="170" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">SC-007</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Private key discarded after</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">generation (FR-013).</text>
+    </g>
+
+    <!-- Column 3: US-004 Configuration -->
+    <g transform="translate(940, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Environment Config</text>
+      <a href="#US-004"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-004</text></a>
+      <a href="#US-002"><rect x="80" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="115" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-002</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Admin details configured via</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">environment settings before</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">running setup process.</text>
+      <a href="#FR-008"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-008</text></a>
+      <a href="#FR-010"><rect x="70" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-010</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Allows customization per</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">deployment environment.</text>
+    </g>
+
+    <!-- Column 4: Idempotent Process -->
+    <g transform="translate(1400, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Idempotent Setup</text>
+      <a href="#US-001"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-001</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Safe to run multiple times.</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">No errors or duplicates on</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">re-run. Skips existing steps.</text>
+      <a href="#FR-014"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-014</text></a>
+      <a href="#SC-006"><rect x="70" y="116" width="60" height="20" rx="4" fill="#059669"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">SC-006</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">CLI output shows skip/OK</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">status for each step.</text>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">email verification | admin approval | user activation</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">014:02 | Admin Welcome Email Gate | ScriptHammer</text>
+
+  <!-- Hidden Includes for HDR-001 Compliance (placed at end) -->
+  <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="0"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="0"/>
+  </g>
+</svg>

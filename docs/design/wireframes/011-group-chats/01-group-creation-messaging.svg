@@ -1,0 +1,270 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Title Block -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">GROUP CHATS - CREATION AND MESSAGING</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g transform="translate(40, 60)">
+    <!-- Desktop Frame -->
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Sidebar - Conversation List -->
+    <rect x="20" y="70" width="280" height="630" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="95" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Messages</text>
+
+    <!-- New Group Button -->
+    <rect x="200" y="78" width="90" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="245" y="97" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">+ Group</text>
+
+    <!-- Conversation Items -->
+    <g transform="translate(30, 115)">
+      <!-- Group conversation with stacked avatars -->
+      <rect x="0" y="0" width="260" height="60" rx="4" fill="#f5f0e6"/>
+      <circle cx="20" cy="30" r="16" fill="#8b5cf6"/>
+      <circle cx="32" cy="30" r="16" fill="#22c55e" stroke="#f5f0e6" stroke-width="2"/>
+      <circle cx="44" cy="30" r="16" fill="#3b82f6" stroke="#f5f0e6" stroke-width="2"/>
+      <text x="70" y="25" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Project Team</text>
+      <text x="70" y="42" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Alex: Ready for meeting?</text>
+
+      <!-- DM conversation -->
+      <rect x="0" y="70" width="260" height="60" rx="4" fill="#dcc8a8"/>
+      <circle cx="30" cy="100" r="16" fill="#f59e0b"/>
+      <text x="56" y="95" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
+      <text x="56" y="112" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Thanks for the update!</text>
+
+      <!-- Another group -->
+      <rect x="0" y="140" width="260" height="60" rx="4" fill="#dcc8a8"/>
+      <circle cx="20" cy="170" r="16" fill="#ef4444"/>
+      <circle cx="32" cy="170" r="16" fill="#8b5cf6" stroke="#e8d4b8" stroke-width="2"/>
+      <text x="56" y="165" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Design Review</text>
+      <text x="56" y="182" font-family="system-ui, sans-serif" font-size="14" fill="#374151">New mockups uploaded</text>
+    </g>
+
+    <!-- Main Chat Area -->
+    <rect x="320" y="70" width="940" height="630" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Group Chat Header -->
+    <rect x="320" y="70" width="940" height="50" rx="6" fill="#dcc8a8"/>
+    <circle cx="350" cy="95" r="16" fill="#8b5cf6"/>
+    <circle cx="362" cy="95" r="16" fill="#22c55e" stroke="#dcc8a8" stroke-width="2"/>
+    <circle cx="374" cy="95" r="16" fill="#3b82f6" stroke="#dcc8a8" stroke-width="2"/>
+    <text x="400" y="92" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Project Team</text>
+    <text x="400" y="110" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
+
+    <!-- Info button -->
+    <rect x="1200" y="80" width="44" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="1222" y="101" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Info</text>
+
+    <!-- Messages with sender attribution -->
+    <g transform="translate(340, 140)">
+      <!-- Message from Alex -->
+      <circle cx="20" cy="20" r="16" fill="#22c55e"/>
+      <text x="20" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <text x="46" y="15" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex Chen</text>
+      <text x="130" y="15" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">10:32 AM</text>
+      <rect x="46" y="22" width="280" height="36" rx="6" fill="#f5f0e6"/>
+      <text x="56" y="45" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Ready for the design review meeting?</text>
+
+      <!-- Message from Sarah -->
+      <circle cx="20" cy="90" r="16" fill="#f59e0b"/>
+      <text x="20" y="95" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
+      <text x="46" y="85" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
+      <text x="140" y="85" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">10:33 AM</text>
+      <rect x="46" y="92" width="200" height="36" rx="6" fill="#f5f0e6"/>
+      <text x="56" y="115" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Yes! Joining in 5 minutes</text>
+
+      <!-- Message from You -->
+      <circle cx="20" cy="160" r="16" fill="#8b5cf6"/>
+      <text x="20" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">Y</text>
+      <text x="46" y="155" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
+      <text x="76" y="155" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">10:34 AM</text>
+      <rect x="46" y="162" width="260" height="36" rx="6" fill="#dcc8a8"/>
+      <text x="56" y="185" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Perfect, I have the mockups ready</text>
+    </g>
+
+    <!-- Typing Indicators -->
+    <g transform="translate(340, 380)">
+      <circle cx="20" cy="20" r="16" fill="#22c55e"/>
+      <text x="20" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <circle cx="50" cy="20" r="16" fill="#3b82f6"/>
+      <text x="50" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">M</text>
+      <text x="76" y="25" font-family="system-ui, sans-serif" font-size="14" font-style="italic" fill="#374151">Alex and Mike are typing...</text>
+      <circle cx="250" cy="20" r="4" fill="#374151"/>
+      <circle cx="262" cy="20" r="4" fill="#9ca3af"/>
+      <circle cx="274" cy="20" r="4" fill="#d1d5db"/>
+    </g>
+
+    <!-- Message Input -->
+    <rect x="340" y="640" width="900" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="360" y="667" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Type a message...</text>
+    <rect x="1180" y="647" width="50" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="1205" y="667" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Send</text>
+
+    <!-- Callout 1 - New Group Button -->
+    <g class="callout" transform="translate(295, 78)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 - Sender Attribution -->
+    <g class="callout" transform="translate(640, 155)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 - Typing Indicators -->
+    <g class="callout" transform="translate(640, 400)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 - Stacked Avatars -->
+    <g class="callout" transform="translate(110, 195)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g transform="translate(1360, 60)">
+    <!-- Mobile Frame -->
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Group Chat Header -->
+    <rect x="12" y="78" width="336" height="50" rx="6" fill="#dcc8a8"/>
+    <circle cx="32" cy="103" r="14" fill="#8b5cf6"/>
+    <circle cx="42" cy="103" r="14" fill="#22c55e" stroke="#dcc8a8" stroke-width="2"/>
+    <text x="64" y="100" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Project Team</text>
+    <text x="64" y="116" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
+    <rect x="290" y="88" width="44" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="312" y="107" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Info</text>
+
+    <!-- Messages -->
+    <g transform="translate(20, 140)">
+      <!-- Message 1 -->
+      <circle cx="16" cy="16" r="14" fill="#22c55e"/>
+      <text x="16" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <text x="38" y="12" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex</text>
+      <rect x="38" y="20" width="200" height="32" rx="6" fill="#f5f0e6"/>
+      <text x="48" y="41" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Ready for the meeting?</text>
+
+      <!-- Message 2 -->
+      <circle cx="16" cy="76" r="14" fill="#f59e0b"/>
+      <text x="16" y="81" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
+      <text x="38" y="72" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah</text>
+      <rect x="38" y="80" width="160" height="32" rx="6" fill="#f5f0e6"/>
+      <text x="48" y="101" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Joining in 5 min</text>
+
+      <!-- Message 3 (You) -->
+      <circle cx="16" cy="136" r="14" fill="#8b5cf6"/>
+      <text x="16" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">Y</text>
+      <text x="38" y="132" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
+      <rect x="38" y="140" width="180" height="32" rx="6" fill="#dcc8a8"/>
+      <text x="48" y="161" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Mockups are ready</text>
+    </g>
+
+    <!-- Typing indicator -->
+    <g transform="translate(20, 340)">
+      <circle cx="16" cy="16" r="14" fill="#22c55e"/>
+      <text x="16" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <text x="38" y="21" font-family="system-ui, sans-serif" font-size="14" font-style="italic" fill="#374151">Alex is typing...</text>
+      <circle cx="150" cy="16" r="3" fill="#374151"/>
+      <circle cx="160" cy="16" r="3" fill="#9ca3af"/>
+      <circle cx="170" cy="16" r="3" fill="#d1d5db"/>
+    </g>
+
+    <!-- Message Input -->
+    <rect x="12" y="600" width="336" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="24" y="627" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Message...</text>
+    <rect x="290" y="607" width="50" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="315" y="627" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Send</text>
+
+    <!-- Mobile Footer -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect x="0" y="0" width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Annotation Group 1 - Create Group Chat (US-001) -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Create Group Chat</text>
+      <text x="40" y="34" fill="#374151" font-size="14">As a user, I need to create group conversations with 2-200 members</text>
+      <text x="40" y="52" fill="#374151" font-size="14">for multi-person discussions. Optional group names auto-generate if empty.</text>
+      <a href="#US-001"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-019</text></a>
+      <a href="#SC-001"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Annotation Group 2 - Send/Receive Messages (US-002) -->
+    <g transform="translate(450, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Send/Receive Group Messages</text>
+      <text x="40" y="34" fill="#374151" font-size="14">As a group member, I need encrypted messaging with sender attribution.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Each message shows sender name and avatar for clear identification.</text>
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-002"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-016"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-021"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-021</text></a>
+      <a href="#SC-004"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-004</text></a>
+    </g>
+
+    <!-- Annotation Group 3 - Typing Indicators -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Multi-User Typing Indicators</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Real-time typing indicators show all currently active members.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Displays stacked avatars and names of who is composing messages.</text>
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-021"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-021</text></a>
+    </g>
+
+    <!-- Annotation Group 4 - Add Members (US-003) -->
+    <g transform="translate(1350, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Add Members to Group</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Any member can add connections. Stacked avatars show group identity.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Key rotation ensures new members can't read pre-join messages.</text>
+      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-004"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-004</text></a>
+      <a href="#FR-009"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#SC-003"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-003</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">group creation | member management | admin roles | message threading</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">011:01 | Group Chats | ScriptHammer</text>
+</svg>

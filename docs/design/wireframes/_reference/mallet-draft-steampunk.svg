@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <!-- Oak wood gradient -->
+    <linearGradient id="oakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B6F47"/>
+      <stop offset="50%" style="stop-color:#6B5637"/>
+      <stop offset="100%" style="stop-color:#8B6F47"/>
+    </linearGradient>
+    <!-- Iron gradient -->
+    <linearGradient id="ironGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5A5A5A"/>
+      <stop offset="50%" style="stop-color:#7A7A7A"/>
+      <stop offset="100%" style="stop-color:#4A4A4A"/>
+    </linearGradient>
+    <!-- Brass gradient -->
+    <linearGradient id="brassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="30%" style="stop-color:#C5A028"/>
+      <stop offset="50%" style="stop-color:#AA8C1E"/>
+      <stop offset="70%" style="stop-color:#C5A028"/>
+      <stop offset="100%" style="stop-color:#D4AF37"/>
+    </linearGradient>
+    <!-- Leather gradient -->
+    <linearGradient id="leatherGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#5C3317"/>
+      <stop offset="50%" style="stop-color:#8B4513"/>
+      <stop offset="100%" style="stop-color:#5C3317"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="3" dy="3" result="offsetblur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.4"/>
+      <feComposite in2="offsetblur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <style>
+      .title { fill: #8b5cf6; font-family: monospace; font-size: 14px; }
+      .label { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 11px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="500" fill="url(#bgGrad)"/>
+
+  <!-- Title -->
+  <text x="200" y="30" text-anchor="middle" class="title">OPTION C: HYBRID STEAMPUNK MALLET</text>
+
+  <!-- Mallet centered in view -->
+  <g transform="translate(200, 240)" filter="url(#shadow)">
+
+    <!-- Mallet Head - Block with rounded corners -->
+    <rect x="-75" y="-105" width="150" height="90" rx="8" fill="url(#oakGradient)" stroke="#5B4637" stroke-width="2.5"/>
+
+    <!-- Iron reinforcement band (top) -->
+    <rect x="-78" y="-108" width="156" height="14" rx="2" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="1"/>
+    <!-- Iron rivets on top band -->
+    <circle cx="-60" cy="-101" r="3" fill="#3A3A3A"/>
+    <circle cx="-60" cy="-101" r="1.5" fill="#6A6A6A"/>
+    <circle cx="60" cy="-101" r="3" fill="#3A3A3A"/>
+    <circle cx="60" cy="-101" r="1.5" fill="#6A6A6A"/>
+
+    <!-- Iron reinforcement band (bottom) -->
+    <rect x="-78" y="-28" width="156" height="14" rx="2" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="1"/>
+    <!-- Iron rivets on bottom band -->
+    <circle cx="-60" cy="-21" r="3" fill="#3A3A3A"/>
+    <circle cx="-60" cy="-21" r="1.5" fill="#6A6A6A"/>
+    <circle cx="60" cy="-21" r="3" fill="#3A3A3A"/>
+    <circle cx="60" cy="-21" r="1.5" fill="#6A6A6A"/>
+
+    <!-- Wood grain texture (curved lines) -->
+    <path d="M-55,-90 Q-50,-60 -55,-20" stroke="#5B4637" stroke-width="1.2" fill="none" opacity="0.25"/>
+    <path d="M-25,-92 Q-20,-60 -25,-18" stroke="#5B4637" stroke-width="0.8" fill="none" opacity="0.2"/>
+    <path d="M5,-94 Q10,-60 5,-16" stroke="#5B4637" stroke-width="1.2" fill="none" opacity="0.25"/>
+    <path d="M35,-92 Q40,-60 35,-18" stroke="#5B4637" stroke-width="0.8" fill="none" opacity="0.2"/>
+    <path d="M55,-90 Q50,-60 55,-20" stroke="#5B4637" stroke-width="1.2" fill="none" opacity="0.25"/>
+
+    <!-- Leather-wrapped ferrule (head-to-handle transition) -->
+    <rect x="-26" y="-12" width="52" height="24" rx="4" fill="url(#leatherGradient)" stroke="#3A2010" stroke-width="1.5"/>
+    <!-- Leather stitching lines -->
+    <line x1="-22" y1="-6" x2="22" y2="-6" stroke="#3A2010" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="-22" y1="0" x2="22" y2="0" stroke="#3A2010" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="-22" y1="6" x2="22" y2="6" stroke="#3A2010" stroke-width="1" stroke-dasharray="3,2"/>
+
+    <!-- Oak handle (shorter, sturdier) -->
+    <path d="M-20,12 L-22,115 L22,115 L20,12 Z" fill="url(#oakGradient)" stroke="#5B4637" stroke-width="2"/>
+
+    <!-- Handle grain -->
+    <line x1="-8" y1="20" x2="-10" y2="105" stroke="#5B4637" stroke-width="0.8" opacity="0.2"/>
+    <line x1="8" y1="20" x2="10" y2="105" stroke="#5B4637" stroke-width="0.8" opacity="0.2"/>
+
+    <!-- Brass pommel at bottom -->
+    <ellipse cx="0" cy="118" rx="24" ry="10" fill="url(#brassGradient)" stroke="#8B7355" stroke-width="1"/>
+    <!-- Pommel highlight -->
+    <ellipse cx="0" cy="116" rx="18" ry="5" fill="#D4AF37" opacity="0.3"/>
+
+  </g>
+
+  <!-- Labels -->
+  <text x="200" y="420" text-anchor="middle" class="label">Steampunk industrial aesthetic</text>
+  <text x="200" y="438" text-anchor="middle" class="label">Iron bands + leather ferrule + brass pommel</text>
+  <text x="200" y="456" text-anchor="middle" class="label">Matches existing logo style</text>
+
+  <!-- Annotation labels -->
+  <text x="330" y="135" class="label" fill="#8b5cf6">Iron bands</text>
+  <text x="30" y="240" class="label" fill="#8b5cf6">Leather wrap</text>
+  <text x="320" y="365" class="label" fill="#8b5cf6">Brass pommel</text>
+
+</svg>

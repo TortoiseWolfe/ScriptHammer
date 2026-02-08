@@ -1,0 +1,192 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">CONVERSATION LIST</text>
+
+  <!-- ========================================== -->
+  <!-- Mobile Layout (Left) -->
+  <!-- ========================================== -->
+  <text x="200" y="60" text-anchor="middle" class="annotation" font-size="12">MOBILE (FULL-SCREEN LIST)</text>
+
+  <!-- Phone frame -->
+  <rect x="50" y="80" width="300" height="650" rx="20" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+  <!-- Status bar -->
+  <rect x="50" y="80" width="300" height="30" rx="20" fill="#0f172a"/>
+  <text x="200" y="100" text-anchor="middle" class="text-sm">9:41</text>
+
+  <!-- Header -->
+  <rect x="50" y="110" width="300" height="50" fill="#1e293b"/>
+  <text x="200" y="142" text-anchor="middle" class="heading" font-size="16">Messages</text>
+  <circle cx="320" cy="135" r="16" fill="#8b5cf6"/>
+  <text x="320" y="140" text-anchor="middle" fill="white" font-size="14">+</text>
+
+  <!-- Search bar -->
+  <rect x="65" y="170" width="270" height="36" rx="8" fill="#0f172a" stroke="#475569"/>
+  <text x="85" y="193" class="text-muted">Search conversations...</text>
+
+  <!-- Conversation items -->
+  <!-- Item 1: Unread -->
+  <rect x="50" y="220" width="300" height="72" fill="#334155"/>
+  <circle cx="90" cy="256" r="24" fill="#8b5cf6"/>
+  <text x="90" y="262" text-anchor="middle" fill="white" class="text-md">JD</text>
+  <text x="125" y="248" class="heading">John Doe</text>
+  <text x="125" y="268" class="text-sm">Hey, are you free tonight?</text>
+  <text x="320" y="248" text-anchor="end" class="text-muted">2m</text>
+  <circle cx="320" cy="268" r="10" fill="#8b5cf6"/>
+  <text x="320" y="272" text-anchor="middle" fill="white" font-size="10">3</text>
+
+  <!-- Item 2: Read, typing -->
+  <rect x="50" y="292" width="300" height="72" fill="#1e293b"/>
+  <circle cx="90" cy="328" r="24" fill="#059669"/>
+  <text x="90" y="334" text-anchor="middle" fill="white" class="text-md">AS</text>
+  <text x="125" y="320" class="heading">Alice Smith</text>
+  <text x="125" y="340" fill="#8b5cf6" font-family="system-ui" font-size="11" font-style="italic">typing...</text>
+  <text x="320" y="320" text-anchor="end" class="text-muted">15m</text>
+
+  <!-- Item 3: Read -->
+  <rect x="50" y="364" width="300" height="72" fill="#1e293b"/>
+  <circle cx="90" cy="400" r="24" fill="#334155"/>
+  <text x="90" y="406" text-anchor="middle" fill="white" class="text-md">BW</text>
+  <text x="125" y="392" class="heading">Bob Wilson</text>
+  <text x="125" y="412" class="text-sm">Thanks for the update!</text>
+  <text x="320" y="392" text-anchor="end" class="text-muted">1h</text>
+  <text x="320" y="412" text-anchor="end" fill="#3b82f6" font-size="10">✓✓</text>
+
+  <!-- Item 4: Encrypted indicator -->
+  <rect x="50" y="436" width="300" height="72" fill="#1e293b"/>
+  <circle cx="90" cy="472" r="24" fill="#dc2626"/>
+  <text x="90" y="478" text-anchor="middle" fill="white" class="text-md">MJ</text>
+  <text x="125" y="464" class="heading">Mary Johnson</text>
+  <text x="125" y="484" class="text-muted">🔒 Encrypted message</text>
+  <text x="320" y="464" text-anchor="end" class="text-muted">2d</text>
+
+  <!-- Bottom nav -->
+  <rect x="50" y="680" width="300" height="50" rx="20" fill="#0f172a"/>
+  <text x="110" y="710" text-anchor="middle" fill="#8b5cf6" class="text-sm">Messages</text>
+  <text x="200" y="710" text-anchor="middle" class="text-muted">Contacts</text>
+  <text x="290" y="710" text-anchor="middle" class="text-muted">Settings</text>
+
+  <!-- ========================================== -->
+  <!-- Desktop Layout (Right) -->
+  <!-- ========================================== -->
+  <text x="800" y="60" text-anchor="middle" class="annotation" font-size="12">DESKTOP (SPLIT-PANE)</text>
+
+  <!-- Desktop frame -->
+  <rect x="450" y="80" width="700" height="550" rx="8" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Sidebar -->
+  <rect x="450" y="80" width="280" height="550" rx="8" fill="#0f172a"/>
+
+  <!-- Sidebar header -->
+  <rect x="450" y="80" width="280" height="50" fill="#1e293b"/>
+  <text x="470" y="112" class="heading" font-size="16">Conversations</text>
+  <circle cx="700" cy="105" r="14" fill="#8b5cf6"/>
+  <text x="700" y="110" text-anchor="middle" fill="white" font-size="12">+</text>
+
+  <!-- Search -->
+  <rect x="465" y="145" width="250" height="32" rx="6" fill="#1e293b" stroke="#475569"/>
+  <text x="485" y="166" class="text-muted">Search...</text>
+
+  <!-- Conversation list items -->
+  <!-- Active conversation -->
+  <rect x="450" y="190" width="280" height="60" fill="#8b5cf6" opacity="0.15"/>
+  <rect x="450" y="190" width="4" height="60" fill="#8b5cf6"/>
+  <circle cx="485" cy="220" r="20" fill="#8b5cf6"/>
+  <text x="485" y="226" text-anchor="middle" fill="white" class="text-sm">JD</text>
+  <text x="515" y="215" fill="#a78bfa" font-family="system-ui" font-size="12" font-weight="bold">John Doe</text>
+  <text x="515" y="232" class="text-sm">Hey, are you free...</text>
+  <text x="715" y="215" text-anchor="end" class="text-muted">2m</text>
+  <circle cx="715" cy="230" r="8" fill="#8b5cf6"/>
+  <text x="715" y="234" text-anchor="middle" fill="white" font-size="8">3</text>
+
+  <!-- Other items -->
+  <rect x="450" y="250" width="280" height="60" fill="#0f172a"/>
+  <circle cx="485" cy="280" r="20" fill="#059669"/>
+  <text x="485" y="286" text-anchor="middle" fill="white" class="text-sm">AS</text>
+  <text x="515" y="275" class="text-md">Alice Smith</text>
+  <text x="515" y="292" fill="#8b5cf6" font-family="system-ui" font-size="10" font-style="italic">typing...</text>
+
+  <rect x="450" y="310" width="280" height="60" fill="#0f172a"/>
+  <circle cx="485" cy="340" r="20" fill="#334155"/>
+  <text x="485" y="346" text-anchor="middle" fill="white" class="text-sm">BW</text>
+  <text x="515" y="335" class="text-md">Bob Wilson</text>
+  <text x="515" y="352" class="text-sm">Thanks for the update!</text>
+
+  <!-- Main chat area -->
+  <rect x="730" y="80" width="420" height="550" fill="#1e293b"/>
+
+  <!-- Chat header -->
+  <rect x="730" y="80" width="420" height="55" fill="#334155"/>
+  <circle cx="770" cy="108" r="20" fill="#8b5cf6"/>
+  <text x="770" y="114" text-anchor="middle" fill="white" class="text-md">JD</text>
+  <text x="805" y="103" class="heading">John Doe</text>
+  <circle cx="805" cy="118" r="4" fill="#22c55e"/>
+  <text x="820" y="122" class="text-sm" fill="#22c55e">Online</text>
+  <text x="1120" y="110" text-anchor="end" class="text-muted">🔒 End-to-end encrypted</text>
+
+  <!-- Messages area placeholder -->
+  <rect x="750" y="150" width="380" height="400" rx="4" fill="#0f172a" opacity="0.3" stroke="#475569" stroke-dasharray="4"/>
+  <text x="940" y="350" text-anchor="middle" class="text-muted">Chat messages here</text>
+  <text x="940" y="370" text-anchor="middle" class="annotation">See chat-window.svg</text>
+
+  <!-- Message input -->
+  <rect x="750" y="560" width="320" height="44" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="770" y="588" class="text-muted">Type a message...</text>
+  <rect x="1080" y="560" width="50" height="44" rx="6" fill="#8b5cf6"/>
+  <text x="1105" y="588" text-anchor="middle" fill="white" class="text-md">→</text>
+
+  <!-- ========================================== -->
+  <!-- Annotations -->
+  <!-- ========================================== -->
+  <rect x="50" y="750" width="180" height="45" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="60" y="770" class="annotation">FR-050: Sort by</text>
+  <text x="60" y="785" class="annotation">last_message_at (recent first)</text>
+
+  <rect x="250" y="750" width="180" height="45" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="260" y="770" class="annotation">FR-051: Unread badge</text>
+  <text x="260" y="785" class="annotation">shows message count</text>
+
+  <rect x="450" y="650" width="200" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="460" y="670" class="annotation">FR-053: Mobile = full-screen</text>
+  <text x="460" y="685" class="annotation">Tablet+ = split-pane layout</text>
+  <text x="460" y="700" class="annotation">FR-062: Load within 1 second</text>
+
+  <rect x="700" y="650" width="200" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="710" y="670" class="annotation">FR-031: Typing indicator</text>
+  <text x="710" y="685" class="annotation">shown in list preview</text>
+  <text x="710" y="700" class="annotation">(always enabled)</text>
+
+  <rect x="950" y="650" width="200" height="60" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="960" y="670" class="annotation">FR-014: Zero-knowledge</text>
+  <text x="960" y="685" class="annotation">encryption indicator</text>
+  <text x="960" y="700" class="annotation">shown in header</text>
+
+</svg>

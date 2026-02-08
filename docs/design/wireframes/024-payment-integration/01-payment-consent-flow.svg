@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">PAYMENT INTEGRATION - CONSENT FLOW</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <!-- Desktop viewport background -->
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8"/>
+
+    <!-- Header -->
+    <rect width="1280" height="50" fill="#1a1a2e"/>
+    <text x="30" y="32" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#e8d4b8">ScriptHammer</text>
+    <text x="400" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="480" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="580" y="32" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <rect x="660" y="8" width="80" height="34" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Payments</text>
+
+    <!-- Background: Payment page content (will be dimmed by overlay) -->
+    <rect x="0" y="50" width="1280" height="620" fill="#e8d4b8"/>
+    <text x="640" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" fill="#9ca3af">Payment Page</text>
+    <text x="640" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#9ca3af">(Content blocked until consent granted)</text>
+
+    <!-- Consent Modal Overlay - dark semi-transparent -->
+    <rect x="0" y="50" width="1280" height="620" fill="#000000" opacity="0.5"/>
+
+    <!-- Consent Modal (centered) -->
+    <g transform="translate(340, 120)">
+      <rect width="600" height="480" rx="12" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+
+      <!-- Modal Header -->
+      <rect width="600" height="60" rx="12" fill="#1a1a2e"/>
+      <rect y="50" width="600" height="10" fill="#1a1a2e"/>
+      <text x="300" y="38" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#e8d4b8">Payment Privacy Consent</text>
+
+      <!-- GDPR Badge -->
+      <rect x="20" y="75" width="80" height="26" rx="4" fill="#22c55e"/>
+      <text x="60" y="93" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">GDPR</text>
+
+      <!-- Explanation Text -->
+      <text x="300" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#374151">To process payments, we need your consent to load</text>
+      <text x="300" y="155" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" fill="#374151">third-party payment provider scripts:</text>
+
+      <!-- Provider Logos Row -->
+      <g transform="translate(100, 175)">
+        <!-- Stripe -->
+        <rect width="180" height="80" rx="8" fill="#635bff"/>
+        <text x="90" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#ffffff">Stripe</text>
+        <text x="90" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Cards</text>
+
+        <!-- PayPal -->
+        <rect x="220" width="180" height="80" rx="8" fill="#003087"/>
+        <text x="310" y="45" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#ffffff">PayPal</text>
+        <text x="310" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Account</text>
+      </g>
+
+      <!-- Privacy Notice -->
+      <rect x="30" y="275" width="540" height="60" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="300" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">These providers may collect browsing data.</text>
+      <text x="300" y="320" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">View our Privacy Policy</text>
+
+      <!-- Consent Buttons -->
+      <rect x="30" y="355" width="260" height="48" rx="6" fill="#22c55e"/>
+      <text x="160" y="385" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Accept &amp; Continue</text>
+
+      <rect x="310" y="355" width="260" height="48" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+      <text x="440" y="385" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Decline</text>
+
+      <!-- Alternative Options -->
+      <text x="300" y="430" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Decline? You can still pay via:</text>
+      <rect x="150" y="440" width="130" height="30" rx="4" fill="#00D632"/>
+      <text x="215" y="460" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Cash App</text>
+      <rect x="290" y="440" width="160" height="30" rx="4" fill="#00A859"/>
+      <text x="370" y="460" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Chime</text>
+    </g>
+
+    <!-- Callout 1 - Consent Modal -->
+    <g class="callout">
+      <circle cx="960" cy="250" r="14" fill="#dc2626"/>
+      <text x="960" y="255" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 - Accept Button -->
+    <g class="callout">
+      <circle cx="580" cy="540" r="14" fill="#dc2626"/>
+      <text x="580" y="545" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 - Alternative Options -->
+    <g class="callout">
+      <circle cx="880" cy="560" r="14" fill="#dc2626"/>
+      <text x="880" y="565" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Footer -->
+    <rect y="670" width="1280" height="50" fill="#1a1a2e" rx="8"/>
+    <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">2026 ScriptHammer - Privacy - Terms - Contact</text>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <!-- Mobile frame -->
+    <rect width="360" height="720" rx="24" fill="#e8d4b8"/>
+
+    <!-- Mobile status bar -->
+    <rect width="360" height="24" fill="#1a1a2e"/>
+    <text x="20" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">9:41</text>
+    <text x="330" y="17" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">100%</text>
+
+    <!-- Mobile header -->
+    <rect y="24" width="360" height="54" fill="#1a1a2e"/>
+    <text x="180" y="58" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Payment</text>
+
+    <!-- Full-screen Consent Modal for mobile -->
+    <g transform="translate(0, 78)">
+      <!-- Modal background -->
+      <rect width="360" height="586" fill="#dcc8a8"/>
+
+      <!-- Modal Header -->
+      <rect width="360" height="50" fill="#1a1a2e"/>
+      <text x="180" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Payment Privacy Consent</text>
+
+      <!-- GDPR Badge -->
+      <rect x="140" y="60" width="80" height="24" rx="4" fill="#22c55e"/>
+      <text x="180" y="77" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8">GDPR</text>
+
+      <!-- Explanation Text -->
+      <text x="180" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">To process payments, we need</text>
+      <text x="180" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">your consent to load scripts:</text>
+
+      <!-- Provider Logos (stacked) -->
+      <rect x="20" y="150" width="320" height="60" rx="8" fill="#635bff"/>
+      <text x="180" y="180" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Stripe</text>
+      <text x="180" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Cards</text>
+
+      <rect x="20" y="220" width="320" height="60" rx="8" fill="#003087"/>
+      <text x="180" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">PayPal</text>
+      <text x="180" y="270" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Account</text>
+
+      <!-- Privacy Notice -->
+      <rect x="20" y="295" width="320" height="50" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="180" y="318" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Providers collect data.</text>
+      <text x="180" y="335" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">Privacy Policy</text>
+
+      <!-- Large Touch-Friendly Buttons -->
+      <rect x="20" y="360" width="320" height="52" rx="6" fill="#22c55e"/>
+      <text x="180" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Accept &amp; Continue</text>
+
+      <rect x="20" y="422" width="320" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+      <text x="180" y="454" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Decline</text>
+
+      <!-- Alternative Options -->
+      <text x="180" y="500" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Alternative payment methods:</text>
+      <rect x="20" y="510" width="155" height="44" rx="6" fill="#00D632"/>
+      <text x="97" y="538" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Cash App</text>
+      <rect x="185" y="510" width="155" height="44" rx="6" fill="#00A859"/>
+      <text x="262" y="538" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff">Chime</text>
+    </g>
+
+    <!-- Mobile Callouts -->
+    <g class="callout">
+      <circle cx="345" cy="200" r="14" fill="#dc2626"/>
+      <text x="345" y="205" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="460" r="14" fill="#dc2626"/>
+      <text x="345" y="465" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="610" r="14" fill="#dc2626"/>
+      <text x="345" y="615" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile footer nav -->
+    <rect y="664" width="360" height="56" fill="#1a1a2e" rx="8"/>
+    <text x="45" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Home</text>
+    <text x="135" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Features</text>
+    <text x="225" y="696" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">Docs</text>
+    <!-- Active state for rightmost tab (rounded bottom-right per G-046) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <text x="45" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Pay</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <!-- Annotation panel background -->
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1: GDPR Consent Modal -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">GDPR Consent Modal</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a privacy-conscious user, I need to</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">consent before payment scripts load.</text>
+
+      <!-- Badges -->
+      <a href="#US-003"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-003</text></a>
+      <a href="#FR-017"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-018"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-018</text></a>
+      <a href="#SC-003"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-003</text></a>
+    </g>
+
+    <!-- Column 2: Accept Flow -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accept &amp; Continue</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">On acceptance, payment scripts load</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and user proceeds to checkout.</text>
+
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-002</text></a>
+    </g>
+
+    <!-- Column 3: Decline Alternative -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Alternative Payment Options</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">If consent declined, user sees Cash App</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and Chime direct payment links.</text>
+
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-019"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-019</text></a>
+      <a href="#FR-005"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-005</text></a>
+    </g>
+
+    <!-- Column 4: Re-prompt Behavior -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Consent Persistence</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Consent is stored. If declined, user is</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">re-prompted on subsequent visits.</text>
+
+      <!-- Badges -->
+      <a href="#US-004"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-004</text></a>
+      <a href="#FR-020"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-020</text></a>
+      <a href="#SC-003"><rect x="162" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-003</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="150" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR consent | payment providers | privacy-first | third-party scripts | alternative payments</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">024:01 | Payment Integration | ScriptHammer</text>
+
+  <!-- Include compliance (at end) -->
+  <g id="include-refs" transform="translate(-9999, -9999)" opacity="0">
+    <use href="includes/header-desktop.svg#desktop-header"/>
+    <use href="includes/footer-desktop.svg#site-footer"/>
+    <use href="includes/header-mobile.svg#mobile-header-group"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav"/>
+  </g>
+</svg>

@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <title>010 Unified Blog Content - Editor and Preview</title>
+
+  <!-- Background Gradient G-022 -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Wireframe Title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">UNIFIED BLOG CONTENT - EDITOR AND PREVIEW</text>
+
+  <!-- Hidden Includes for HDR-001 Compliance -->
+  <g id="include-compliance" opacity="0" transform="translate(-9999, -9999)">
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="0"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="0"/>
+  </g>
+
+  <!-- DESKTOP (16:9) -->
+  <text x="40" y="52" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">DESKTOP (16:9)</text>
+  <g transform="translate(40, 60)">
+    <!-- Browser Chrome -->
+    <rect width="1280" height="720" rx="8" fill="#2d2d44"/>
+    <rect width="1280" height="32" rx="8" fill="#3d3d5c"/>
+    <circle cx="16" cy="16" r="6" fill="#ef4444"/>
+    <circle cx="36" cy="16" r="6" fill="#f59e0b"/>
+    <circle cx="56" cy="16" r="6" fill="#22c55e"/>
+    <rect x="80" y="8" width="400" height="16" rx="4" fill="#1a1a2e"/>
+    <text x="280" y="20" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">scripthammer.dev/blog/editor</text>
+
+    <!-- Header Bar with Sync Status -->
+    <rect x="0" y="32" width="1280" height="48" fill="#e8d4b8"/>
+    <text x="20" y="62" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Blog Editor</text>
+
+    <!-- Sync Status Indicator -->
+    <g transform="translate(1100, 46)">
+      <circle cx="0" cy="10" r="8" fill="#22c55e"/>
+      <text x="14" y="14" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Connected</text>
+    </g>
+
+    <!-- Offline Indicator Badge -->
+    <g transform="translate(960, 46)">
+      <rect x="0" y="0" width="100" height="24" rx="4" fill="#dcc8a8"/>
+      <text x="50" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Online</text>
+    </g>
+
+    <!-- Callout 1: Editor Panel -->
+    <circle cx="120" cy="120" r="16" fill="#dc2626"/>
+    <text x="120" y="125" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">1</text>
+
+    <!-- Split Pane: MDX Editor (Left) -->
+    <rect x="10" y="90" width="620" height="570" rx="4" fill="#f5f0e6"/>
+    <rect x="10" y="90" width="620" height="36" fill="#dcc8a8"/>
+    <text x="30" y="114" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">MDX Editor</text>
+
+    <!-- Editor Toolbar -->
+    <g transform="translate(20, 136)">
+      <rect x="0" y="0" width="44" height="28" rx="4" fill="#3b82f6"/>
+      <text x="22" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#faf8f5">B</text>
+      <rect x="50" y="0" width="44" height="28" rx="4" fill="#e8d4b8"/>
+      <text x="72" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e" font-style="italic">I</text>
+      <rect x="100" y="0" width="44" height="28" rx="4" fill="#e8d4b8"/>
+      <text x="122" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">{ }</text>
+      <rect x="150" y="0" width="44" height="28" rx="4" fill="#e8d4b8"/>
+      <text x="172" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Img</text>
+    </g>
+
+    <!-- Editor Content Area -->
+    <rect x="20" y="174" width="600" height="476" rx="4" fill="#faf8f5" stroke="#dcc8a8" stroke-width="1"/>
+    <text x="30" y="200" font-family="monospace" font-size="14" fill="#374151">---</text>
+    <text x="30" y="220" font-family="monospace" font-size="14" fill="#3b82f6">title:</text>
+    <text x="80" y="220" font-family="monospace" font-size="14" fill="#22c55e">"Getting Started with ScriptHammer"</text>
+    <text x="30" y="240" font-family="monospace" font-size="14" fill="#3b82f6">date:</text>
+    <text x="80" y="240" font-family="monospace" font-size="14" fill="#22c55e">"2026-01-14"</text>
+    <text x="30" y="260" font-family="monospace" font-size="14" fill="#374151">---</text>
+    <text x="30" y="290" font-family="monospace" font-size="14" fill="#1a1a2e"># Introduction</text>
+    <text x="30" y="320" font-family="monospace" font-size="14" fill="#1a1a2e">Welcome to **ScriptHammer**, your</text>
+    <text x="30" y="340" font-family="monospace" font-size="14" fill="#1a1a2e">AI-powered development companion.</text>
+    <text x="30" y="380" font-family="monospace" font-size="14" fill="#1a1a2e">```typescript</text>
+    <text x="30" y="400" font-family="monospace" font-size="14" fill="#8b5cf6">const</text>
+    <text x="80" y="400" font-family="monospace" font-size="14" fill="#1a1a2e">config = {</text>
+    <text x="40" y="420" font-family="monospace" font-size="14" fill="#3b82f6">  theme:</text>
+    <text x="120" y="420" font-family="monospace" font-size="14" fill="#22c55e">'dark'</text>
+    <text x="30" y="440" font-family="monospace" font-size="14" fill="#1a1a2e">};</text>
+    <text x="30" y="460" font-family="monospace" font-size="14" fill="#1a1a2e">```</text>
+
+    <!-- Callout 2: Preview Panel -->
+    <circle cx="780" cy="120" r="16" fill="#dc2626"/>
+    <text x="780" y="125" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">2</text>
+
+    <!-- Split Pane: Live Preview (Right) -->
+    <rect x="650" y="90" width="620" height="570" rx="4" fill="#f5f0e6"/>
+    <rect x="650" y="90" width="620" height="36" fill="#dcc8a8"/>
+    <text x="670" y="114" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Live Preview</text>
+
+    <!-- Hot Reload Indicator -->
+    <g transform="translate(1150, 96)">
+      <circle cx="0" cy="14" r="6" fill="#22c55e"/>
+      <text x="12" y="18" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Hot Reload Active</text>
+    </g>
+
+    <!-- Preview Content -->
+    <rect x="660" y="136" width="600" height="514" rx="4" fill="#faf8f5"/>
+
+    <!-- TOC Sidebar -->
+    <rect x="670" y="146" width="140" height="200" rx="4" fill="#f5f0e6"/>
+    <text x="680" y="168" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1a1a2e">Contents</text>
+    <text x="690" y="192" font-family="system-ui, sans-serif" font-size="14" fill="#3b82f6">Introduction</text>
+    <text x="690" y="216" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Quick Start</text>
+    <text x="690" y="240" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Configuration</text>
+    <text x="690" y="264" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Advanced</text>
+
+    <!-- Rendered Blog Content -->
+    <text x="830" y="180" font-family="Georgia, serif" font-size="24" font-weight="bold" fill="#1a1a2e">Getting Started with ScriptHammer</text>
+    <text x="830" y="210" font-family="system-ui, sans-serif" font-size="14" fill="#374151">January 14, 2026</text>
+
+    <text x="830" y="250" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">Introduction</text>
+    <text x="830" y="280" font-family="Georgia, serif" font-size="16" fill="#1a1a2e">Welcome to ScriptHammer, your AI-powered</text>
+    <text x="830" y="300" font-family="Georgia, serif" font-size="16" fill="#1a1a2e">development companion.</text>
+
+    <!-- Syntax Highlighted Code Block in Preview -->
+    <rect x="830" y="320" width="400" height="100" rx="4" fill="#1a1a2e"/>
+    <text x="845" y="345" font-family="monospace" font-size="14" fill="#8b5cf6">const</text>
+    <text x="895" y="345" font-family="monospace" font-size="14" fill="#f5f0e6">config = {</text>
+    <text x="855" y="370" font-family="monospace" font-size="14" fill="#3b82f6">theme:</text>
+    <text x="920" y="370" font-family="monospace" font-size="14" fill="#22c55e">'dark'</text>
+    <text x="845" y="395" font-family="monospace" font-size="14" fill="#f5f0e6">};</text>
+
+    <!-- Callout 3: TOC -->
+    <circle cx="740" cy="246" r="16" fill="#dc2626"/>
+    <text x="740" y="251" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
+
+    <!-- Status Bar -->
+    <rect x="0" y="670" width="1280" height="50" fill="#dcc8a8" rx="8"/>
+    <text x="20" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Last saved: 2 seconds ago</text>
+    <text x="1100" y="700" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">All changes synced</text>
+
+    <!-- Callout 4: Status Bar -->
+    <circle cx="640" cy="695" r="16" fill="#dc2626"/>
+    <text x="640" y="700" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
+  </g>
+
+  <!-- MOBILE MOCKUP -->
+  <g transform="translate(1360, 60)">
+    <!-- Phone Frame -->
+    <rect width="360" height="720" rx="24" fill="#2d2d44"/>
+    <rect x="10" y="10" width="340" height="700" rx="16" fill="#e8d4b8"/>
+
+    <!-- Status Bar -->
+    <rect x="10" y="10" width="340" height="44" rx="16" fill="#dcc8a8"/>
+    <text x="30" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">9:41</text>
+    <text x="300" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">100%</text>
+
+    <!-- Offline Indicator -->
+    <g transform="translate(140, 20)">
+      <circle cx="0" cy="16" r="8" fill="#22c55e"/>
+      <text x="14" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Online</text>
+    </g>
+
+    <!-- Header -->
+    <rect x="10" y="54" width="340" height="56" fill="#f5f0e6"/>
+    <text x="30" y="90" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1a1a2e">Blog</text>
+    <rect x="270" y="70" width="60" height="28" rx="4" fill="#3b82f6"/>
+    <text x="300" y="89" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#faf8f5">Sync</text>
+
+    <!-- Blog Article Card -->
+    <rect x="20" y="120" width="320" height="540" rx="8" fill="#faf8f5"/>
+
+    <!-- Article Header -->
+    <text x="35" y="155" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">Getting Started with</text>
+    <text x="35" y="178" font-family="Georgia, serif" font-size="18" font-weight="bold" fill="#1a1a2e">ScriptHammer</text>
+    <text x="35" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">January 14, 2026</text>
+
+    <!-- Offline Badge -->
+    <g transform="translate(230, 135)">
+      <rect x="0" y="0" width="90" height="24" rx="12" fill="#dcc8a8"/>
+      <text x="45" y="16" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1a1a2e">Cached</text>
+    </g>
+
+    <!-- Article Content -->
+    <text x="35" y="240" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#1a1a2e">Introduction</text>
+    <text x="35" y="270" font-family="Georgia, serif" font-size="14" fill="#1a1a2e">Welcome to ScriptHammer,</text>
+    <text x="35" y="290" font-family="Georgia, serif" font-size="14" fill="#1a1a2e">your AI-powered development</text>
+    <text x="35" y="310" font-family="Georgia, serif" font-size="14" fill="#1a1a2e">companion.</text>
+
+    <!-- Code Block Mobile -->
+    <rect x="35" y="330" width="280" height="80" rx="4" fill="#1a1a2e"/>
+    <text x="50" y="355" font-family="monospace" font-size="14" fill="#8b5cf6">const</text>
+    <text x="95" y="355" font-family="monospace" font-size="14" fill="#f5f0e6">config = {</text>
+    <text x="60" y="380" font-family="monospace" font-size="14" fill="#3b82f6">theme:</text>
+    <text x="115" y="380" font-family="monospace" font-size="14" fill="#22c55e">'dark'</text>
+
+    <!-- Pull to Sync Hint -->
+    <text x="180" y="450" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Pull down to sync</text>
+    <text x="180" y="475" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" fill="#374151">↓</text>
+
+    <!-- Reading Progress -->
+    <rect x="35" y="620" width="280" height="4" rx="2" fill="#dcc8a8"/>
+    <rect x="35" y="620" width="100" height="4" rx="2" fill="#3b82f6"/>
+    <text x="35" y="645" font-family="system-ui, sans-serif" font-size="14" fill="#374151">35% read</text>
+
+    <!-- Bottom Navigation -->
+    <rect x="10" y="660" width="340" height="50" fill="#f5f0e6" rx="16"/>
+    <g transform="translate(60, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Home</text>
+    </g>
+    <g transform="translate(160, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#3b82f6">Blog</text>
+    </g>
+    <g transform="translate(250, 675)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Profile</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#f5f0e6"/>
+
+    <!-- Column 1: US-001 Real-Time Editing -->
+    <g transform="translate(20, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">1</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">MDX Editor Panel</text>
+      <a href="#US-001"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-001</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Real-time MDX editing with</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">frontmatter support. Git as</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">single source of truth.</text>
+      <a href="#FR-001"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-001</text></a>
+      <a href="#FR-016"><rect x="70" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-016</text></a>
+      <a href="#SC-001"><rect x="140" y="116" width="60" height="20" rx="4" fill="#059669"/><text x="170" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">SC-001</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">2-second hot reload latency</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">for instant preview updates.</text>
+    </g>
+
+    <!-- Column 2: US-002 Offline and Sync -->
+    <g transform="translate(480, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">2</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Live Preview Panel</text>
+      <a href="#US-002"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-002</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Offline-first with IndexedDB</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">caching. Auto-sync when</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">connection restored.</text>
+      <a href="#FR-003"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-003</text></a>
+      <a href="#SC-002"><rect x="70" y="116" width="60" height="20" rx="4" fill="#059669"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">SC-002</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">100% sync integrity with</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">conflict detection alerts.</text>
+    </g>
+
+    <!-- Column 3: US-005 Rich Rendering -->
+    <g transform="translate(940, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">3</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Table of Contents</text>
+      <a href="#US-005"><rect x="0" y="24" width="70" height="22" rx="4" fill="#8b5cf6"/><text x="35" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">US-005</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Auto-generated TOC from</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">headings. Syntax highlighting</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">for code blocks.</text>
+      <a href="#FR-021"><rect x="0" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="30" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-021</text></a>
+      <a href="#FR-022"><rect x="70" y="116" width="60" height="20" rx="4" fill="#2563eb"/><text x="100" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-022</text></a>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Rich content rendering with</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">embedded media support.</text>
+    </g>
+
+    <!-- Column 4: Technical Status Bar -->
+    <g transform="translate(1400, 20)">
+      <circle cx="10" cy="8" r="12" fill="#dc2626"/>
+      <text x="10" y="13" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#faf8f5">4</text>
+      <text x="30" y="14" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1a1a2e">Sync Status Bar</text>
+      <a href="#FR-004"><rect x="0" y="24" width="60" height="22" rx="4" fill="#2563eb"/><text x="30" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#faf8f5">FR-004</text></a>
+      <text x="0" y="70" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Visual sync indicators:</text>
+      <text x="0" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">- Connected (green)</text>
+      <text x="0" y="106" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">- Syncing (yellow pulse)</text>
+      <text x="0" y="124" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">- Offline (gray)</text>
+      <text x="0" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Last save timestamp and</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">pending changes count.</text>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MDX editor | conflict resolution | autosave | version history</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">010:01 | Unified Blog Content | ScriptHammer</text>
+</svg>

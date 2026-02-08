@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#c7ddf5"/>
+      <stop offset="100%" style="stop-color:#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">USER AUTHENTICATION - PROFILE AND SESSION MANAGEMENT</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <!-- Desktop viewport background -->
+    <rect width="1280" height="720" fill="#e8d4b8" rx="8"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Account -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Main content - Two column layout -->
+    <!-- Left column: Profile Settings -->
+    <g transform="translate(40, 80)">
+      <rect width="580" height="520" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel header -->
+      <text x="290" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#374151">Profile Settings</text>
+
+      <!-- Avatar section -->
+      <circle cx="80" cy="90" r="40" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+      <text x="80" y="98" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#8b5cf6">JD</text>
+      <text x="140" y="80" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">John Doe</text>
+      <text x="140" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">john.doe@example.com</text>
+
+      <!-- Display Name field -->
+      <text x="30" y="160" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Display Name</text>
+      <rect x="30" y="170" width="520" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="42" y="198" font-family="system-ui, sans-serif" font-size="14" fill="#374151">John Doe</text>
+
+      <!-- Username field -->
+      <text x="30" y="235" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Username</text>
+      <rect x="30" y="245" width="520" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="42" y="273" font-family="system-ui, sans-serif" font-size="14" fill="#374151">johndoe</text>
+
+      <!-- Save button -->
+      <rect x="30" y="310" width="520" height="44" fill="#8b5cf6" rx="6"/>
+      <text x="290" y="338" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Changes</text>
+
+      <!-- Divider -->
+      <line x1="30" y1="380" x2="550" y2="380" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Change Password section -->
+      <text x="30" y="410" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">Change Password</text>
+      <rect x="30" y="425" width="520" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+      <text x="290" y="453" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">Update Password</text>
+
+      <!-- Delete Account -->
+      <rect x="30" y="485" width="520" height="44" fill="#fee2e2" rx="6" stroke="#ef4444" stroke-width="1"/>
+      <text x="290" y="513" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#dc2626">Delete Account</text>
+    </g>
+
+    <!-- Callout 1 - Profile fields -->
+    <g class="callout">
+      <circle cx="640" cy="220" r="14" fill="#dc2626"/>
+      <text x="640" y="225" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Right column: Active Sessions -->
+    <g transform="translate(660, 80)">
+      <rect width="580" height="520" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Panel header -->
+      <text x="290" y="35" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#374151">Active Sessions</text>
+
+      <!-- Current session -->
+      <rect x="30" y="55" width="520" height="90" fill="#d1fae5" rx="6" stroke="#22c55e" stroke-width="2"/>
+      <text x="50" y="80" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#166534">Current Session</text>
+      <text x="50" y="100" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Chrome on macOS</text>
+      <text x="50" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">San Francisco, CA - Active now</text>
+      <text x="470" y="100" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#166534">This device</text>
+
+      <!-- Other session 1 -->
+      <rect x="30" y="160" width="520" height="80" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+      <text x="50" y="185" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Safari on iPhone</text>
+      <text x="50" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">San Francisco, CA - 2 hours ago</text>
+      <rect x="420" y="180" width="100" height="32" fill="#dcc8a8" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="470" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Revoke</text>
+
+      <!-- Other session 2 -->
+      <rect x="30" y="255" width="520" height="80" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+      <text x="50" y="280" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Firefox on Windows</text>
+      <text x="50" y="300" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">New York, NY - 3 days ago</text>
+      <rect x="420" y="275" width="100" height="32" fill="#dcc8a8" rx="4" stroke="#b8a080" stroke-width="1"/>
+      <text x="470" y="297" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Revoke</text>
+
+      <!-- Info box -->
+      <rect x="30" y="355" width="520" height="60" fill="#fef3c7" rx="4" stroke="#f59e0b" stroke-width="1"/>
+      <text x="290" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Sessions expire after 30 days with Remember Me</text>
+      <text x="290" y="400" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">or 7 days without it.</text>
+
+      <!-- Sign out all button -->
+      <rect x="30" y="435" width="520" height="44" fill="#fee2e2" rx="6" stroke="#ef4444" stroke-width="1"/>
+      <text x="290" y="463" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#dc2626">Sign Out All Other Sessions</text>
+    </g>
+
+    <!-- Callout 2 - Session management -->
+    <g class="callout">
+      <circle cx="1260" cy="140" r="14" fill="#dc2626"/>
+      <text x="1260" y="145" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 - Delete account -->
+    <g class="callout">
+      <circle cx="640" cy="530" r="14" fill="#dc2626"/>
+      <text x="640" y="535" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 - Revoke sessions -->
+    <g class="callout">
+      <circle cx="1260" cy="300" r="14" fill="#dc2626"/>
+      <text x="1260" y="305" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <!-- Mobile frame -->
+    <rect width="360" height="720" fill="#e8d4b8" rx="24"/>
+
+    <!-- Mobile header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content - Profile screen (y >= 78) -->
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">Profile Settings</text>
+
+    <!-- Avatar -->
+    <circle cx="180" cy="165" r="40" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+    <text x="180" y="173" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#8b5cf6">JD</text>
+    <text x="180" y="225" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">John Doe</text>
+    <text x="180" y="245" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">john.doe@example.com</text>
+
+    <!-- Display Name field -->
+    <text x="20" y="280" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Display Name</text>
+    <rect x="20" y="290" width="320" height="44" fill="#f5f0e6" rx="4" stroke="#b8a080" stroke-width="1"/>
+    <text x="32" y="318" font-family="system-ui, sans-serif" font-size="14" fill="#374151">John Doe</text>
+
+    <!-- Save button -->
+    <rect x="20" y="350" width="320" height="44" fill="#8b5cf6" rx="6"/>
+    <text x="180" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Save Changes</text>
+
+    <!-- Menu items -->
+    <rect x="20" y="415" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="443" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Change Password</text>
+
+    <rect x="20" y="470" width="320" height="44" fill="#f5f0e6" rx="6" stroke="#b8a080" stroke-width="1"/>
+    <text x="180" y="498" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Active Sessions (3)</text>
+
+    <rect x="20" y="525" width="320" height="44" fill="#fee2e2" rx="6" stroke="#ef4444" stroke-width="1"/>
+    <text x="180" y="553" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#dc2626">Delete Account</text>
+
+    <!-- Mobile callouts -->
+    <g class="callout">
+      <circle cx="345" cy="310" r="14" fill="#dc2626"/>
+      <text x="345" y="315" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="495" r="14" fill="#dc2626"/>
+      <text x="345" y="500" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout">
+      <circle cx="345" cy="548" r="14" fill="#dc2626"/>
+      <text x="345" y="553" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile footer nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Active state for Account tab -->
+    <g transform="translate(270, 664)">
+      <rect width="90" height="56" rx="0" fill="#8b5cf6"/>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <!-- Annotation panel background -->
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1 (x=20): Profile Management -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Profile Management</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a registered user, I need to manage</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">my profile and account settings.</text>
+
+      <!-- Badges row 1 -->
+      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-024"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-024</text></a>
+      <a href="#FR-025"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-025</text></a>
+    </g>
+
+    <!-- Column 2 (x=470): Session Management -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Management</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Users can view all active sessions</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and revoke any of them.</text>
+
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-029"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-029</text></a>
+      <a href="#FR-030"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-030</text></a>
+      <a href="#SC-008"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-008</text></a>
+    </g>
+
+    <!-- Column 3 (x=920): Account Deletion -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Account Deletion</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">User can delete their account,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">cascading all data including payments.</text>
+
+      <!-- Badges -->
+      <a href="#US-006"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-027"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-027</text></a>
+      <a href="#FR-028"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-028</text></a>
+    </g>
+
+    <!-- Column 4 (x=1370): Security and Audit -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Security Controls</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Password changes and all auth events</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">are logged for compliance.</text>
+
+      <!-- Badges -->
+      <a href="#US-005"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#FR-026"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-026</text></a>
+      <a href="#FR-031"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-031</text></a>
+      <a href="#SC-007"><rect x="223" y="64" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-007</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Supabase Auth | OAuth providers | session management | password reset</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">003:03 | User Authentication | ScriptHammer</text>
+</svg>

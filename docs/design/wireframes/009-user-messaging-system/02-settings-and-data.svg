@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    USER MESSAGING - SETTINGS AND DATA
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Settings Page Container -->
+    <rect x="80" y="70" width="1120" height="560" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Settings Header -->
+    <text x="120" y="110" fill="#374151" font-family="system-ui, sans-serif" font-size="24" font-weight="bold">Messaging Settings</text>
+
+    <!-- Connection Status Section -->
+    <rect x="100" y="130" width="500" height="120" rx="6" fill="#dcc8a8"/>
+    <text x="120" y="160" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Connection Status</text>
+
+    <!-- Online Status Indicator -->
+    <circle cx="140" cy="195" r="8" fill="#22c55e"/>
+    <text x="160" y="200" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Online - All messages synced</text>
+
+    <!-- Offline Queue Status -->
+    <rect x="120" y="215" width="200" height="28" rx="4" fill="#f5f0e6"/>
+    <text x="135" y="234" fill="#374151" font-family="system-ui, sans-serif" font-size="14">0 messages in queue</text>
+
+    <!-- Callout ① - Offline Queue -->
+    <circle cx="615" cy="175" r="14" fill="#dc2626"/>
+    <text x="615" y="180" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Message History Section -->
+    <rect x="620" y="130" width="500" height="120" rx="6" fill="#dcc8a8"/>
+    <text x="640" y="160" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Message History</text>
+    <text x="640" y="185" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total conversations: 24</text>
+    <text x="640" y="205" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total messages: 1,847</text>
+
+    <!-- Scroll to Top Button -->
+    <rect x="640" y="218" width="140" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="710" y="237" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Load More</text>
+
+    <!-- Callout ② - Virtual Scrolling -->
+    <circle cx="1135" cy="175" r="14" fill="#dc2626"/>
+    <text x="1135" y="180" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- GDPR Data Section -->
+    <rect x="100" y="270" width="500" height="180" rx="6" fill="#dcc8a8"/>
+    <text x="120" y="300" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Data Management (GDPR)</text>
+    <text x="120" y="325" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Export or delete your messaging data</text>
+
+    <!-- Export Data Button -->
+    <rect x="120" y="345" width="180" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="210" y="371" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Export All Data</text>
+
+    <!-- Delete Account Button -->
+    <rect x="320" y="345" width="180" height="40" rx="6" fill="#dc2626"/>
+    <text x="410" y="371" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Delete Account</text>
+
+    <text x="120" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Export includes all conversations in decrypted format.</text>
+    <text x="120" y="440" fill="#dc2626" font-family="system-ui, sans-serif" font-size="14">Delete permanently removes all your data.</text>
+
+    <!-- Callout ③ - GDPR -->
+    <circle cx="615" cy="345" r="14" fill="#dc2626"/>
+    <text x="615" y="350" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Accessibility Settings Section -->
+    <rect x="620" y="270" width="500" height="180" rx="6" fill="#dcc8a8"/>
+    <text x="640" y="300" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Accessibility</text>
+
+    <!-- Screen Reader Announcements Toggle -->
+    <text x="640" y="335" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Screen reader announcements</text>
+    <rect x="1020" y="320" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="1057" cy="333" r="10" fill="#ffffff"/>
+
+    <!-- Keyboard Navigation Toggle -->
+    <text x="640" y="375" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Keyboard navigation</text>
+    <rect x="1020" y="360" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="1057" cy="373" r="10" fill="#ffffff"/>
+
+    <!-- High Contrast Mode Toggle -->
+    <text x="640" y="415" fill="#374151" font-family="system-ui, sans-serif" font-size="14">High contrast mode</text>
+    <rect x="1020" y="400" width="50" height="26" rx="13" fill="#6b7280"/>
+    <circle cx="1033" cy="413" r="10" fill="#ffffff"/>
+
+    <!-- Callout ④ - Accessibility -->
+    <circle cx="1135" cy="345" r="14" fill="#dc2626"/>
+    <text x="1135" y="350" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Notification Preferences -->
+    <rect x="100" y="470" width="1020" height="140" rx="6" fill="#dcc8a8"/>
+    <text x="120" y="500" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Notification Preferences</text>
+
+    <!-- Push Notifications -->
+    <text x="120" y="535" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Push notifications for new messages</text>
+    <rect x="420" y="520" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="457" cy="533" r="10" fill="#ffffff"/>
+
+    <!-- Sound Alerts -->
+    <text x="520" y="535" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Sound alerts</text>
+    <rect x="720" y="520" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="757" cy="533" r="10" fill="#ffffff"/>
+
+    <!-- Read Receipts -->
+    <text x="820" y="535" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Send read receipts</text>
+    <rect x="1020" y="520" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="1057" cy="533" r="10" fill="#ffffff"/>
+
+    <!-- Typing Indicators -->
+    <text x="120" y="585" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Show typing indicators</text>
+    <rect x="420" y="570" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="457" cy="583" r="10" fill="#ffffff"/>
+
+    <!-- Desktop Nav Active State - Account -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Settings Header -->
+    <rect x="0" y="78" width="360" height="50" fill="#dcc8a8"/>
+    <text x="15" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">&lt; Back</text>
+    <text x="180" y="108" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Settings</text>
+
+    <!-- Connection Status Card -->
+    <rect x="15" y="140" width="330" height="80" rx="8" fill="#f5f0e6"/>
+    <text x="30" y="165" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Connection Status</text>
+    <circle cx="40" cy="195" r="6" fill="#22c55e"/>
+    <text x="55" y="200" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Online - Synced</text>
+
+    <!-- Callout ① - Mobile offline status -->
+    <circle cx="330" cy="165" r="12" fill="#dc2626"/>
+    <text x="330" y="170" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Message History Card -->
+    <rect x="15" y="230" width="330" height="80" rx="8" fill="#f5f0e6"/>
+    <text x="30" y="255" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Message History</text>
+    <text x="30" y="280" fill="#374151" font-family="system-ui, sans-serif" font-size="14">24 conversations, 1,847 messages</text>
+    <rect x="220" y="250" width="110" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="275" y="269" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14">Load More</text>
+
+    <!-- Callout ② - Mobile virtual scrolling -->
+    <circle cx="330" cy="295" r="12" fill="#dc2626"/>
+    <text x="330" y="300" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Data Management Card -->
+    <rect x="15" y="320" width="330" height="130" rx="8" fill="#f5f0e6"/>
+    <text x="30" y="345" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Data Management</text>
+    <text x="30" y="370" fill="#374151" font-family="system-ui, sans-serif" font-size="14">GDPR data export and deletion</text>
+
+    <!-- Export Button -->
+    <rect x="30" y="390" width="145" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="102" y="416" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Export Data</text>
+
+    <!-- Delete Button -->
+    <rect x="185" y="390" width="145" height="40" rx="6" fill="#dc2626"/>
+    <text x="257" y="416" text-anchor="middle" fill="#ffffff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Delete All</text>
+
+    <!-- Callout ③ - Mobile GDPR -->
+    <circle cx="330" cy="370" r="12" fill="#dc2626"/>
+    <text x="330" y="375" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Accessibility Card -->
+    <rect x="15" y="460" width="330" height="100" rx="8" fill="#f5f0e6"/>
+    <text x="30" y="485" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accessibility</text>
+
+    <!-- Screen Reader Toggle -->
+    <text x="30" y="515" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Screen reader</text>
+    <rect x="270" y="500" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="307" cy="513" r="10" fill="#ffffff"/>
+
+    <!-- Keyboard Nav Toggle -->
+    <text x="30" y="545" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Keyboard nav</text>
+    <rect x="270" y="530" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="307" cy="543" r="10" fill="#ffffff"/>
+
+    <!-- Callout ④ - Mobile accessibility -->
+    <circle cx="330" cy="485" r="12" fill="#dc2626"/>
+    <text x="330" y="490" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Notifications Card -->
+    <rect x="15" y="570" width="330" height="80" rx="8" fill="#f5f0e6"/>
+    <text x="30" y="595" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Notifications</text>
+    <text x="30" y="620" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Push notifications</text>
+    <rect x="270" y="605" width="50" height="26" rx="13" fill="#22c55e"/>
+    <circle cx="307" cy="618" r="10" fill="#ffffff"/>
+
+    <!-- Mobile Footer Active State - Account (G-045: includes icon, G-046: uses path for rounded corner) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#fff" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-005 Offline Queue -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Offline Message Queue</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user with unreliable connectivity, I need</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">messages queued and sent when reconnected.</text>
+      <a href="#US-005"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#FR-034"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-034</text></a>
+      <a href="#FR-035"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-035</text></a>
+      <a href="#FR-037"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-037</text></a>
+      <a href="#SC-004"><rect x="284" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-004</text></a>
+    </g>
+
+    <!-- Column 2: US-006 Virtual Scrolling -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Conversation History</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user with extensive history, I need smooth</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">scrolling through all my messages.</text>
+      <a href="#US-006"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-022"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-022</text></a>
+      <a href="#FR-023"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-023</text></a>
+      <a href="#FR-044"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-044</text></a>
+      <a href="#SC-006"><rect x="284" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 3: US-007 GDPR -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">GDPR Data Rights</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to export my data or delete</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">my account to maintain control over my info.</text>
+      <a href="#US-007"><rect x="40" y="66" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">US-007</text></a>
+      <a href="#FR-040"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-040</text></a>
+      <a href="#FR-041"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-041</text></a>
+      <a href="#FR-042"><rect x="223" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-042</text></a>
+    </g>
+
+    <!-- Column 4: Accessibility -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Accessibility Features</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">System supports keyboard navigation, live</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">regions, and meets contrast requirements.</text>
+      <a href="#FR-048"><rect x="40" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="67" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-048</text></a>
+      <a href="#FR-049"><rect x="101" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-049</text></a>
+      <a href="#FR-051"><rect x="162" y="66" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="81" fill="#fff" font-size="12" text-anchor="middle">FR-051</text></a>
+      <a href="#SC-007"><rect x="223" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-007</text></a>
+      <a href="#SC-012"><rect x="284" y="66" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="81" fill="#fff" font-size="12" text-anchor="middle">SC-012</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">real-time messaging | WebSocket | conversation threads | notifications</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    009:02 | User Messaging System | ScriptHammer
+  </text>
+</svg>

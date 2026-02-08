@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">LANDING PAGE - HOMEPAGE</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav overlay (Home is active) -->
+    <rect x="400" y="3" width="70" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="435" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Home</text>
+
+    <!-- Hero Section -->
+    <rect x="40" y="70" width="1200" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="640" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="800" fill="#1a1a2e">Build Better Apps Faster</text>
+    <text x="640" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="500" fill="#2d3748">A complete product planning template with 46 feature specifications</text>
+    <text x="640" y="170" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">SVG wireframes, SpecKit workflow, and constitution-driven development</text>
+
+    <!-- CTA Buttons -->
+    <rect x="490" y="195" width="140" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="560" y="223" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Get Started</text>
+
+    <rect x="650" y="195" width="140" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="720" y="223" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="600">View Docs</text>
+
+    <!-- Callout ① on Hero section - RIGHT side -->
+    <circle cx="1255" cy="130" r="14" fill="#dc2626"/>
+    <text x="1255" y="135" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Feature Cards Grid - Row 1 -->
+    <g transform="translate(40, 270)">
+      <!-- Card 1: 46 Feature Specs -->
+      <rect x="0" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">46 Feature Specs</text>
+      <text x="20" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Complete product requirements</text>
+      <rect x="20" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="190" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">Foundation - Core - Auth - Payments</text>
+      <rect x="20" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="70" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Explore</text>
+
+      <!-- Card 2: SVG Wireframes -->
+      <rect x="400" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="420" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">SVG Wireframes</text>
+      <text x="420" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Interactive design system</text>
+      <rect x="420" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="590" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">1920x1080 - Hot reload - Keyboard nav</text>
+      <rect x="420" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="470" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">View</text>
+
+      <!-- Card 3: SpecKit Workflow -->
+      <rect x="800" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="820" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">SpecKit Workflow</text>
+      <text x="820" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">End-to-end development</text>
+      <rect x="820" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="990" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">Specify - Clarify - Plan - Implement</text>
+      <rect x="820" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="870" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Learn</text>
+    </g>
+
+    <!-- Callout ② on feature cards row - RIGHT of row -->
+    <circle cx="1255" cy="345" r="14" fill="#dc2626"/>
+    <text x="1255" y="350" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Feature Cards Grid - Row 2 -->
+    <g transform="translate(40, 440)">
+      <!-- Card 4: Constitution -->
+      <rect x="0" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">Constitution</text>
+      <text x="20" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Project governance rules</text>
+      <rect x="20" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="190" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">6 core principles - Quality gates</text>
+      <rect x="20" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="70" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Read</text>
+
+      <!-- Card 5: Docker-First -->
+      <rect x="400" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="420" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">Docker-First</text>
+      <text x="420" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">No local dependencies</text>
+      <rect x="420" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="590" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">MCP Playwright - Supabase - Build tools</text>
+      <rect x="420" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="470" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Setup</text>
+
+      <!-- Card 6: WCAG AAA -->
+      <rect x="800" y="0" width="380" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="820" y="35" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">WCAG AAA</text>
+      <text x="820" y="60" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Accessibility-first design</text>
+      <rect x="820" y="75" width="340" height="40" rx="4" fill="#f5f0e6"/>
+      <text x="990" y="100" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">7:1 contrast - 44px targets - Focus mgmt</text>
+      <rect x="820" y="120" width="100" height="25" rx="4" fill="#8b5cf6"/>
+      <text x="870" y="138" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Check</text>
+    </g>
+
+    <!-- Callout ③ on CTA section - BELOW buttons -->
+    <circle cx="560" cy="260" r="14" fill="#dc2626"/>
+    <text x="560" y="265" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Callout ④ on row 2 - RIGHT of row -->
+    <circle cx="1255" cy="515" r="14" fill="#dc2626"/>
+    <text x="1255" y="520" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <!-- Hero (compact) -->
+    <rect x="15" y="78" width="330" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Build Better Apps Faster</text>
+    <text x="180" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#4b5563">46 feature specifications</text>
+    <rect x="115" y="143" width="130" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="180" y="162" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Get Started</text>
+
+    <!-- Callout ① on mobile hero - RIGHT side -->
+    <circle cx="345" cy="108" r="14" fill="#dc2626"/>
+    <text x="345" y="113" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Stacked feature cards -->
+    <rect x="15" y="188" width="330" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="213" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">46 Feature Specs</text>
+    <text x="30" y="233" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Complete requirements</text>
+    <rect x="240" y="203" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="223" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Explore</text>
+
+    <!-- Callout ② on mobile card - RIGHT side -->
+    <circle cx="345" cy="218" r="14" fill="#dc2626"/>
+    <text x="345" y="223" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <rect x="15" y="268" width="330" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="293" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">SVG Wireframes</text>
+    <text x="30" y="313" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Interactive designs</text>
+    <rect x="240" y="283" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="303" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">View</text>
+
+    <rect x="15" y="348" width="330" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="373" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">SpecKit Workflow</text>
+    <text x="30" y="393" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">End-to-end dev</text>
+    <rect x="240" y="363" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="383" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Learn</text>
+
+    <!-- Callout ③ on mobile CTA area - BELOW button -->
+    <circle cx="180" cy="183" r="14" fill="#dc2626"/>
+    <text x="180" y="188" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <rect x="15" y="428" width="330" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="453" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Constitution</text>
+    <text x="30" y="473" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Governance rules</text>
+    <rect x="240" y="443" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="463" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Read</text>
+
+    <!-- Callout ④ on mobile constitution - RIGHT side -->
+    <circle cx="345" cy="458" r="14" fill="#dc2626"/>
+    <text x="345" y="463" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <rect x="15" y="508" width="330" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="533" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Docker-First</text>
+    <text x="30" y="553" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">No local deps</text>
+    <rect x="240" y="523" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="543" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Setup</text>
+
+    <rect x="15" y="588" width="330" height="66" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="613" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">WCAG AAA</text>
+    <text x="30" y="633" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Accessibility-first</text>
+    <rect x="240" y="603" width="90" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="285" y="623" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Check</text>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active tab overlay (Home) -->
+    <g transform="translate(0, 664)">
+      <path d="M 0 0 L 90 0 L 90 56 L 24 56 A 24 24 0 0 1 0 32 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#e8d4b8" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
+        <path fill="#e8d4b8" d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Home</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-001 Product Discovery -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Product Discovery</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a visitor, I need to understand what</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">ScriptHammer offers quickly.</text>
+      <a href="#US-001"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-002</text></a>
+    </g>
+
+    <!-- Column 2: US-002 Feature Exploration -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Feature Exploration</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a developer, I need to see key</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">features at a glance to evaluate.</text>
+      <a href="#US-002"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text></a>
+      <a href="#FR-003"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-004"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-004</text></a>
+    </g>
+
+    <!-- Column 3: US-003 Getting Started -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Getting Started</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a new user, I need clear CTAs</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">so I can begin using the template.</text>
+      <a href="#US-003"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#SC-001"><rect x="101" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text></a>
+      <a href="#SC-002"><rect x="162" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Column 4: US-004 Technical Confidence -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Technical Confidence</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As an evaluator, I need quality</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">indicators to trust the template.</text>
+      <a href="#US-004"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-005"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-005</text></a>
+      <a href="#SC-003"><rect x="162" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-003</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">hero section | feature cards | CTA buttons | responsive grid</text>
+
+
+  <!-- SIGNATURE: 18px bold -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">000:01 | Landing Page | ScriptHammer</text>
+</svg>

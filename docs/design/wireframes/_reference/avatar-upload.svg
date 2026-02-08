@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">AVATAR UPLOAD FLOW</text>
+
+  <!-- ========================================== -->
+  <!-- Step 1: File Selection -->
+  <!-- ========================================== -->
+  <text x="200" y="60" text-anchor="middle" class="annotation" font-size="12">STEP 1: FILE SELECTION</text>
+
+  <rect x="50" y="80" width="300" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Drop zone -->
+  <rect x="70" y="100" width="260" height="160" rx="8" fill="#0f172a" stroke="#475569" stroke-dasharray="8"/>
+  <circle cx="200" cy="155" r="25" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="200" y="160" text-anchor="middle" fill="#8b5cf6" font-size="20">+</text>
+  <text x="200" y="195" text-anchor="middle" class="text-md">Drag image here or</text>
+  <text x="200" y="215" text-anchor="middle" fill="#8b5cf6" class="text-md">click to browse</text>
+  <text x="200" y="245" text-anchor="middle" class="text-muted">JPEG, PNG, WebP up to 5MB</text>
+
+  <!-- File requirements badge -->
+  <rect x="100" y="275" width="200" height="30" rx="4" fill="#8b5cf6" opacity="0.15"/>
+  <text x="200" y="295" text-anchor="middle" class="text-sm">Min 200x200 pixels required</text>
+
+  <!-- Arrow to step 2 -->
+  <text x="370" y="200" fill="#8b5cf6" font-size="24">&#x2192;</text>
+
+  <!-- ========================================== -->
+  <!-- Step 2: Crop Interface -->
+  <!-- ========================================== -->
+  <text x="550" y="60" text-anchor="middle" class="annotation" font-size="12">STEP 2: CROP &amp; POSITION</text>
+
+  <rect x="400" y="80" width="300" height="360" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Modal header -->
+  <rect x="400" y="80" width="300" height="45" rx="12" fill="#334155"/>
+  <text x="420" y="108" fill="#ef4444" class="text-md">Cancel</text>
+  <text x="550" y="108" text-anchor="middle" class="heading">Crop Avatar</text>
+  <text x="680" y="108" text-anchor="end" fill="#8b5cf6" class="text-md">Save</text>
+
+  <!-- Crop area -->
+  <rect x="425" y="140" width="250" height="200" fill="#0f172a"/>
+
+  <!-- Image placeholder with crop overlay -->
+  <rect x="435" y="150" width="230" height="180" fill="#334155"/>
+  <text x="550" y="245" text-anchor="middle" class="text-muted">Image Preview</text>
+
+  <!-- Circular crop guide -->
+  <circle cx="550" cy="240" r="75" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4"/>
+
+  <!-- Corner handles -->
+  <rect x="470" y="160" width="10" height="10" fill="#8b5cf6"/>
+  <rect x="620" y="160" width="10" height="10" fill="#8b5cf6"/>
+  <rect x="470" y="310" width="10" height="10" fill="#8b5cf6"/>
+  <rect x="620" y="310" width="10" height="10" fill="#8b5cf6"/>
+
+  <!-- Zoom slider -->
+  <text x="425" y="365" class="text-muted">Zoom:</text>
+  <rect x="465" y="357" width="150" height="8" rx="4" fill="#334155"/>
+  <rect x="465" y="357" width="75" height="8" rx="4" fill="#8b5cf6"/>
+  <circle cx="540" cy="361" r="8" fill="#fff"/>
+  <text x="640" y="365" text-anchor="end" class="text-muted">1.5x</text>
+
+  <!-- Instructions -->
+  <text x="550" y="400" text-anchor="middle" class="text-sm">Drag to position, pinch to zoom</text>
+  <text x="550" y="418" text-anchor="middle" class="text-muted">Image will be cropped to circle</text>
+
+  <!-- Arrow to step 3 -->
+  <text x="720" y="260" fill="#8b5cf6" font-size="24">&#x2192;</text>
+
+  <!-- ========================================== -->
+  <!-- Step 3: Upload Progress -->
+  <!-- ========================================== -->
+  <text x="900" y="60" text-anchor="middle" class="annotation" font-size="12">STEP 3: PROCESSING</text>
+
+  <rect x="750" y="80" width="300" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Processing states -->
+  <rect x="770" y="100" width="260" height="70" rx="6" fill="#0f172a"/>
+  <circle cx="810" cy="135" r="12" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="20,10">
+    <animateTransform attributeName="transform" type="rotate" from="0 810 135" to="360 810 135" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <text x="835" y="130" class="text-md">Processing image...</text>
+  <text x="835" y="148" class="text-muted">Resizing to 800x800 WebP</text>
+
+  <!-- Progress bar -->
+  <rect x="770" y="185" width="260" height="70" rx="6" fill="#0f172a"/>
+  <text x="790" y="210" class="text-md">Uploading to storage</text>
+  <rect x="790" y="225" width="220" height="8" rx="4" fill="#334155"/>
+  <rect x="790" y="225" width="154" height="8" rx="4" fill="#8b5cf6"/>
+  <text x="990" y="210" text-anchor="end" class="text-muted">70%</text>
+
+  <!-- Success state -->
+  <rect x="770" y="270" width="260" height="70" rx="6" fill="#22c55e" opacity="0.15" stroke="#22c55e"/>
+  <circle cx="810" cy="305" r="12" fill="#22c55e"/>
+  <text x="810" y="310" text-anchor="middle" fill="white" font-size="12">&#x2713;</text>
+  <text x="835" y="300" fill="#22c55e" class="text-md">Upload complete!</text>
+  <text x="835" y="318" class="text-muted">Avatar updated successfully</text>
+
+  <!-- ========================================== -->
+  <!-- Mobile Crop Interface -->
+  <!-- ========================================== -->
+  <text x="200" y="470" text-anchor="middle" class="annotation" font-size="12">MOBILE CROP INTERFACE</text>
+
+  <!-- Phone frame -->
+  <rect x="50" y="490" width="300" height="280" rx="16" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+  <!-- Modal header (mobile) -->
+  <rect x="50" y="490" width="300" height="45" rx="16" fill="#334155"/>
+  <text x="80" y="518" fill="#ef4444" class="text-md">Cancel</text>
+  <text x="200" y="518" text-anchor="middle" class="heading">Crop Avatar</text>
+  <text x="320" y="518" text-anchor="end" fill="#8b5cf6" class="text-md">Save</text>
+
+  <!-- Full-width crop area -->
+  <rect x="50" y="535" width="300" height="180" fill="#0f172a"/>
+  <rect x="75" y="550" width="250" height="150" fill="#334155"/>
+
+  <!-- Circular crop guide (mobile) -->
+  <circle cx="200" cy="625" r="60" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+
+  <!-- Zoom controls (mobile) -->
+  <rect x="70" y="730" width="260" height="30" rx="4" fill="#0f172a"/>
+  <text x="90" y="750" class="text-md">&#x2212;</text>
+  <rect x="110" y="742" width="180" height="6" rx="3" fill="#334155"/>
+  <rect x="110" y="742" width="90" height="6" rx="3" fill="#8b5cf6"/>
+  <text x="310" y="750" text-anchor="end" class="text-md">+</text>
+
+  <!-- ========================================== -->
+  <!-- Error States -->
+  <!-- ========================================== -->
+  <text x="550" y="470" text-anchor="middle" class="annotation" font-size="12">ERROR STATES</text>
+
+  <rect x="400" y="490" width="300" height="280" rx="12" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Invalid format error -->
+  <rect x="420" y="510" width="260" height="55" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444"/>
+  <text x="440" y="535" fill="#f87171" class="text-md">Invalid file format</text>
+  <text x="440" y="552" class="text-muted">Please upload JPEG, PNG, or WebP</text>
+
+  <!-- File too large error -->
+  <rect x="420" y="575" width="260" height="55" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444"/>
+  <text x="440" y="600" fill="#f87171" class="text-md">File too large (8.2MB)</text>
+  <text x="440" y="617" class="text-muted">Maximum file size is 5MB</text>
+
+  <!-- Image too small error -->
+  <rect x="420" y="640" width="260" height="55" rx="6" fill="#eab308" opacity="0.15" stroke="#eab308"/>
+  <text x="440" y="665" fill="#facc15" class="text-md">Image too small (150x150)</text>
+  <text x="440" y="682" class="text-muted">Minimum size is 200x200 pixels</text>
+
+  <!-- Network error with retry -->
+  <rect x="420" y="705" width="260" height="55" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444"/>
+  <text x="440" y="730" fill="#f87171" class="text-md">Upload failed - network error</text>
+  <rect x="580" y="738" width="80" height="25" rx="4" fill="#ef4444"/>
+  <text x="620" y="755" text-anchor="middle" fill="white" class="text-sm">Retry</text>
+
+  <!-- ========================================== -->
+  <!-- Annotations -->
+  <!-- ========================================== -->
+  <rect x="750" y="400" width="200" height="110" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="420" class="annotation">FR-005: Crop interface for</text>
+  <text x="760" y="435" class="annotation">positioning before upload</text>
+  <text x="760" y="455" class="annotation">FR-006: Resize to 800x800</text>
+  <text x="760" y="470" class="annotation">WebP 85% quality</text>
+  <text x="760" y="490" class="annotation">FR-011: Progress indicator</text>
+  <text x="760" y="505" class="annotation">Assumption-5: Client-side processing</text>
+
+  <rect x="750" y="520" width="200" height="90" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="540" class="annotation">FR-003: Reject &gt;5MB files</text>
+  <text x="760" y="555" class="annotation">FR-004: Validate image decoding</text>
+  <text x="760" y="570" class="annotation">FR-012: Clear error messages</text>
+  <text x="760" y="585" class="annotation">FR-016: Retry option on failure</text>
+  <text x="760" y="600" class="annotation">Edge: Handle all error types</text>
+
+  <rect x="750" y="620" width="200" height="75" rx="4" fill="#8b5cf6" opacity="0.1" stroke="#8b5cf6" stroke-dasharray="4"/>
+  <text x="760" y="640" class="annotation">SC-001: Complete within 5s</text>
+  <text x="760" y="655" class="annotation">SC-002: 100% valid uploads succeed</text>
+  <text x="760" y="670" class="annotation">SC-003: 100% invalid rejected</text>
+  <text x="760" y="685" class="annotation">with clear messages</text>
+
+</svg>

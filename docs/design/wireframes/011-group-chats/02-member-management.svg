@@ -1,0 +1,302 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Title Block -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">GROUP CHATS - MEMBER MANAGEMENT</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g transform="translate(40, 60)">
+    <!-- Desktop Frame -->
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Left: DM Conversation (before upgrade) -->
+    <rect x="20" y="70" width="400" height="630" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="40" y="95" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Direct Message</text>
+
+    <!-- DM Header -->
+    <rect x="30" y="110" width="380" height="44" rx="4" fill="#dcc8a8"/>
+    <circle cx="60" cy="132" r="16" fill="#f59e0b"/>
+    <text x="60" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
+    <text x="90" y="128" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
+    <text x="90" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Online</text>
+
+    <!-- Add People Button -->
+    <rect x="320" y="118" width="80" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="360" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">+ Add</text>
+
+    <!-- DM Messages -->
+    <g transform="translate(40, 170)">
+      <rect x="0" y="0" width="250" height="32" rx="6" fill="#dcc8a8"/>
+      <text x="10" y="21" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Hey, want to discuss the project?</text>
+
+      <rect x="100" y="45" width="260" height="32" rx="6" fill="#f5f0e6"/>
+      <text x="110" y="66" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Sure! Should we add the team?</text>
+    </g>
+
+    <!-- Arrow indicating upgrade -->
+    <text x="220" y="320" font-family="system-ui, sans-serif" font-size="32" fill="#8b5cf6">→</text>
+    <text x="155" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Upgrade to Group</text>
+
+    <!-- Right: Group Info Panel -->
+    <rect x="440" y="70" width="420" height="630" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="460" y="95" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Group Info</text>
+
+    <!-- Group Header -->
+    <rect x="450" y="110" width="400" height="60" rx="4" fill="#dcc8a8"/>
+    <circle cx="480" cy="140" r="18" fill="#8b5cf6"/>
+    <circle cx="495" cy="140" r="18" fill="#22c55e" stroke="#dcc8a8" stroke-width="2"/>
+    <circle cx="510" cy="140" r="18" fill="#3b82f6" stroke="#dcc8a8" stroke-width="2"/>
+    <text x="540" y="135" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Project Team</text>
+    <text x="540" y="152" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
+    <rect x="780" y="122" width="60" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="810" y="141" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Edit</text>
+
+    <!-- Member List -->
+    <text x="460" y="195" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Members</text>
+    <rect x="780" y="178" width="60" height="24" rx="4" fill="#8b5cf6"/>
+    <text x="810" y="195" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">+ Add</text>
+
+    <!-- Member 1 - Owner -->
+    <g transform="translate(450, 210)">
+      <rect x="0" y="0" width="400" height="50" rx="4" fill="#dcc8a8"/>
+      <circle cx="30" cy="25" r="18" fill="#8b5cf6"/>
+      <text x="30" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">Y</text>
+      <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
+      <rect x="85" y="6" width="55" height="22" rx="3" fill="#8b5cf6"/>
+      <text x="112" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Owner</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Can manage group</text>
+    </g>
+
+    <!-- Member 2 -->
+    <g transform="translate(450, 270)">
+      <rect x="0" y="0" width="400" height="50" rx="4" fill="#f5f0e6"/>
+      <circle cx="30" cy="25" r="18" fill="#22c55e"/>
+      <text x="30" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex Chen</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
+      <rect x="310" y="11" width="80" height="28" rx="4" fill="#ef4444"/>
+      <text x="350" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
+    </g>
+
+    <!-- Member 3 -->
+    <g transform="translate(450, 330)">
+      <rect x="0" y="0" width="400" height="50" rx="4" fill="#f5f0e6"/>
+      <circle cx="30" cy="25" r="18" fill="#f59e0b"/>
+      <text x="30" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
+      <text x="60" y="20" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
+      <text x="60" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
+      <rect x="310" y="11" width="80" height="28" rx="4" fill="#ef4444"/>
+      <text x="350" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
+    </g>
+
+    <!-- Transfer Ownership -->
+    <rect x="450" y="420" width="400" height="50" rx="4" fill="#dcc8a8"/>
+    <text x="470" y="450" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Transfer Ownership</text>
+    <rect x="710" y="430" width="130" height="28" rx="4" fill="#f59e0b"/>
+    <text x="775" y="449" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Select Member</text>
+
+    <!-- Leave/Delete Group -->
+    <rect x="450" y="490" width="190" height="44" rx="4" fill="#dcc8a8"/>
+    <text x="545" y="517" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Leave Group</text>
+    <rect x="660" y="490" width="190" height="44" rx="4" fill="#ef4444"/>
+    <text x="755" y="517" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Delete Group</text>
+
+    <!-- Right: History Restriction Panel -->
+    <rect x="880" y="70" width="380" height="630" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="900" y="95" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">New Member View</text>
+
+    <!-- New member info -->
+    <rect x="890" y="110" width="360" height="44" rx="4" fill="#dcc8a8"/>
+    <circle cx="920" cy="132" r="16" fill="#3b82f6"/>
+    <text x="920" y="137" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">M</text>
+    <text x="950" y="128" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Mike Brown</text>
+    <text x="950" y="144" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Joined today</text>
+
+    <!-- Pre-join messages (hidden) -->
+    <g transform="translate(900, 170)">
+      <rect x="0" y="0" width="340" height="44" rx="6" fill="#dcc8a8" opacity="0.5"/>
+      <text x="20" y="27" font-family="system-ui, sans-serif" font-size="14" fill="#374151" font-style="italic">[Message before you joined]</text>
+
+      <rect x="0" y="55" width="340" height="44" rx="6" fill="#dcc8a8" opacity="0.5"/>
+      <text x="20" y="82" font-family="system-ui, sans-serif" font-size="14" fill="#374151" font-style="italic">[Message before you joined]</text>
+
+      <!-- Visible messages after join -->
+      <rect x="0" y="120" width="340" height="32" rx="6" fill="#22c55e" opacity="0.2"/>
+      <text x="10" y="141" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Welcome Mike to the group!</text>
+
+      <rect x="0" y="165" width="340" height="32" rx="6" fill="#f5f0e6"/>
+      <text x="10" y="186" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Hey Mike! Glad you could join</text>
+    </g>
+
+    <!-- Callouts -->
+    <g class="callout" transform="translate(405, 120)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout" transform="translate(865, 295)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout" transform="translate(865, 510)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <g class="callout" transform="translate(1265, 200)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g transform="translate(1360, 60)">
+    <!-- Mobile Frame -->
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Group Info Header -->
+    <rect x="12" y="78" width="336" height="50" rx="6" fill="#dcc8a8"/>
+    <text x="24" y="108" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Group Info</text>
+
+    <!-- Group Avatar Stack -->
+    <g transform="translate(24, 140)">
+      <circle cx="20" cy="20" r="18" fill="#8b5cf6"/>
+      <circle cx="38" cy="20" r="18" fill="#22c55e" stroke="#e8d4b8" stroke-width="2"/>
+      <circle cx="56" cy="20" r="18" fill="#3b82f6" stroke="#e8d4b8" stroke-width="2"/>
+      <text x="90" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Project Team</text>
+      <text x="90" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 members</text>
+    </g>
+
+    <!-- Member List -->
+    <text x="24" y="200" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Members</text>
+
+    <!-- Member 1 - Owner -->
+    <g transform="translate(12, 210)">
+      <rect x="0" y="0" width="336" height="44" rx="4" fill="#dcc8a8"/>
+      <circle cx="28" cy="22" r="16" fill="#8b5cf6"/>
+      <text x="28" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">Y</text>
+      <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">You</text>
+      <rect x="80" y="4" width="55" height="22" rx="3" fill="#8b5cf6"/>
+      <text x="107" y="19" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Owner</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Can manage group</text>
+    </g>
+
+    <!-- Member 2 -->
+    <g transform="translate(12, 260)">
+      <rect x="0" y="0" width="336" height="44" rx="4" fill="#f5f0e6"/>
+      <circle cx="28" cy="22" r="16" fill="#22c55e"/>
+      <text x="28" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">A</text>
+      <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Alex Chen</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
+      <rect x="270" y="8" width="60" height="28" rx="4" fill="#ef4444"/>
+      <text x="300" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Remove</text>
+    </g>
+
+    <!-- Member 3 -->
+    <g transform="translate(12, 310)">
+      <rect x="0" y="0" width="336" height="44" rx="4" fill="#f5f0e6"/>
+      <circle cx="28" cy="22" r="16" fill="#f59e0b"/>
+      <text x="28" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">S</text>
+      <text x="56" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Sarah Wilson</text>
+      <text x="56" y="34" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Member since Jan 10</text>
+    </g>
+
+    <!-- Action Buttons -->
+    <rect x="12" y="380" width="336" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="407" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">+ Add Members</text>
+
+    <rect x="12" y="435" width="160" height="44" rx="6" fill="#dcc8a8"/>
+    <text x="92" y="462" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Leave</text>
+
+    <rect x="188" y="435" width="160" height="44" rx="6" fill="#ef4444"/>
+    <text x="268" y="462" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#ffffff">Delete</text>
+
+    <!-- Mobile Footer -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect x="0" y="0" width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Annotation Group 1 - Upgrade 1-to-1 (US-004) -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Upgrade 1-to-1 to Group</text>
+      <text x="40" y="34" fill="#374151" font-size="14">As a user, I need to add people to a DM to create a group discussion.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Original participants retain full message history after upgrade.</text>
+      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-015"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-015</text></a>
+      <a href="#FR-024"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-024</text></a>
+      <a href="#SC-005"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Annotation Group 2 - Remove/Leave (US-005) -->
+    <g transform="translate(450, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Remove Member / Leave Group</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Owner can remove members; any member can leave voluntarily.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Key rotation ensures removed members can't decrypt new messages.</text>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-010"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#FR-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Annotation Group 3 - Ownership Transfer -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">Ownership Transfer</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Owner must transfer ownership before leaving the group.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">Owner can also delete the entire group if needed.</text>
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-012"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#FR-014"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-014</text></a>
+    </g>
+
+    <!-- Annotation Group 4 - View Group Info (US-006) -->
+    <g transform="translate(1350, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="14" fill="#1f2937" font-size="14" font-weight="bold">View Group Info / History</text>
+      <text x="40" y="34" fill="#374151" font-size="14">Members see group metadata and member list with roles.</text>
+      <text x="40" y="52" fill="#374151" font-size="14">New members see placeholder text for pre-join messages.</text>
+      <a href="#US-006"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#fff" font-size="14" text-anchor="middle">US-006</text></a>
+      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-022"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-022</text></a>
+      <a href="#FR-023"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#fff" font-size="14" text-anchor="middle">FR-023</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">group creation | member management | admin roles | message threading</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">011:02 | Group Chats | ScriptHammer</text>
+</svg>

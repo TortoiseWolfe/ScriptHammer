@@ -1,0 +1,440 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 9px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="900" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.03">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="900" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="25" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#64748b" letter-spacing="2">BILLING HISTORY</text>
+
+  <!-- ==================== DESKTOP VIEW (Left) ==================== -->
+  <g transform="translate(30, 45)">
+    <!-- Desktop label -->
+    <text x="350" y="0" text-anchor="middle" class="text-muted">Desktop (1024px+)</text>
+
+    <!-- Main Container -->
+    <rect x="0" y="15" width="700" height="560" rx="8" fill="#1e293b" stroke="#475569" stroke-width="1"/>
+
+    <!-- Header Bar -->
+    <rect x="0" y="15" width="700" height="50" rx="8" fill="#334155"/>
+    <rect x="0" y="57" width="700" height="8" fill="#334155"/>
+    <text x="20" y="47" class="heading" font-size="16">Billing &amp; Payments</text>
+
+    <!-- Utility Icons Group (positioned between Tabs and Export button) -->
+    <g transform="translate(500, 37)">
+      <g transform="translate(0, 0)">
+        <path d="M7 2v6m0 0L4.5 5.5M7 8l2.5-2.5M3 11h8" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </g>
+      <g transform="translate(20, 0)">
+        <path d="M2 3h2m3 0h3M2 7h4m3 0h1M2 11h1m3 0h4" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="5.5" cy="3" r="1.2" fill="#94a3b8"/>
+        <circle cx="7.5" cy="7" r="1.2" fill="#94a3b8"/>
+        <circle cx="4.5" cy="11" r="1.2" fill="#94a3b8"/>
+      </g>
+      <g transform="translate(40, 0)">
+        <path d="M1 7s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+        <circle cx="7" cy="7" r="2" fill="#94a3b8"/>
+      </g>
+      <g transform="translate(60, 0)">
+        <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+        <path d="M4.5 4h5M4.5 7h5M4.5 10h3" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+      </g>
+    </g>
+
+    <!-- Tabs -->
+    <g transform="translate(300, 30)">
+      <rect x="0" y="0" width="180" height="32" rx="6" fill="#0f172a"/>
+      <rect x="4" y="4" width="85" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="46" y="22" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">History</text>
+      <text x="133" y="22" text-anchor="middle" class="text-muted" font-size="10">Subscriptions</text>
+    </g>
+
+    <!-- Export Button -->
+    <rect x="590" y="30" width="90" height="32" rx="6" fill="#475569"/>
+    <text x="635" y="51" text-anchor="middle" fill="#fff" font-size="10">Export CSV</text>
+
+    <!-- Summary Cards -->
+    <g transform="translate(15, 80)">
+      <!-- Total Revenue -->
+      <rect x="0" y="0" width="165" height="70" rx="6" fill="#334155"/>
+      <text x="15" y="25" class="text-muted" font-size="9">TOTAL REVENUE</text>
+      <text x="15" y="50" fill="#fff" font-size="20" font-weight="bold">$2,847.00</text>
+      <text x="15" y="65" fill="#22c55e" font-size="9">↑ 12% this month</text>
+
+      <!-- Transactions -->
+      <rect x="180" y="0" width="165" height="70" rx="6" fill="#334155"/>
+      <text x="195" y="25" class="text-muted" font-size="9">TRANSACTIONS</text>
+      <text x="195" y="50" fill="#fff" font-size="20" font-weight="bold">127</text>
+      <text x="195" y="65" class="text-muted" font-size="9">Last 30 days</text>
+
+      <!-- Active Subscriptions -->
+      <rect x="360" y="0" width="165" height="70" rx="6" fill="#334155"/>
+      <text x="375" y="25" class="text-muted" font-size="9">ACTIVE SUBS</text>
+      <text x="375" y="50" fill="#22c55e" font-size="20" font-weight="bold">23</text>
+      <text x="375" y="65" class="text-muted" font-size="9">$667/mo recurring</text>
+
+      <!-- Failed Payments -->
+      <rect x="540" y="0" width="145" height="70" rx="6" fill="#334155"/>
+      <text x="555" y="25" class="text-muted" font-size="9">FAILED</text>
+      <text x="555" y="50" fill="#ef4444" font-size="20" font-weight="bold">3</text>
+      <text x="555" y="65" class="text-muted" font-size="9">Needs attention</text>
+    </g>
+
+    <!-- Search & Filters -->
+    <g transform="translate(15, 165)">
+      <rect x="0" y="0" width="250" height="36" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <text x="35" y="23" class="text-muted">Search by transaction ID...</text>
+      <text x="15" y="24" fill="#64748b" font-size="12">🔍</text>
+
+      <rect x="265" y="0" width="120" height="36" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <text x="280" y="23" class="text-md">All Status</text>
+      <text x="365" y="23" fill="#64748b" font-size="10">▼</text>
+
+      <rect x="400" y="0" width="120" height="36" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <text x="415" y="23" class="text-md">All Providers</text>
+      <text x="500" y="23" fill="#64748b" font-size="10">▼</text>
+
+      <rect x="535" y="0" width="135" height="36" rx="6" fill="#0f172a" stroke="#475569" stroke-width="1"/>
+      <text x="550" y="23" class="text-md">Last 30 Days</text>
+      <text x="650" y="23" fill="#64748b" font-size="10">▼</text>
+    </g>
+
+    <!-- Transaction Table Header -->
+    <g transform="translate(15, 215)">
+      <rect x="0" y="0" width="670" height="28" rx="4" fill="#0f172a"/>
+      <text x="15" y="18" class="text-sm" font-weight="600">DATE</text>
+      <text x="110" y="18" class="text-sm" font-weight="600">TRANSACTION ID</text>
+      <text x="280" y="18" class="text-sm" font-weight="600">AMOUNT</text>
+      <text x="360" y="18" class="text-sm" font-weight="600">PROVIDER</text>
+      <text x="450" y="18" class="text-sm" font-weight="600">STATUS</text>
+      <text x="550" y="18" class="text-sm" font-weight="600">WEBHOOK</text>
+      <text x="630" y="18" class="text-sm" font-weight="600">ACTION</text>
+    </g>
+
+    <!-- Transaction Row 1 - Succeeded -->
+    <g transform="translate(15, 248)">
+      <rect x="0" y="0" width="670" height="50" rx="4" fill="#334155" stroke="#475569" stroke-width="1"/>
+      <text x="15" y="20" class="text-md">Dec 28, 2024</text>
+      <text x="15" y="38" class="text-muted">10:32 AM</text>
+      <text x="110" y="28" class="text-md" font-family="monospace" font-size="10">txn_1NqX7J2eZv...</text>
+      <text x="280" y="28" fill="#fff" font-size="12" font-weight="bold">$29.00</text>
+      <text x="320" y="28" class="text-muted">USD</text>
+      <!-- Stripe badge -->
+      <rect x="360" y="14" width="50" height="20" rx="4" fill="#635bff"/>
+      <text x="385" y="28" text-anchor="middle" fill="#fff" font-size="8">stripe</text>
+      <!-- Status -->
+      <rect x="430" y="14" width="70" height="22" rx="11" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="465" y="29" text-anchor="middle" fill="#22c55e" font-size="9">Succeeded</text>
+      <!-- Webhook verified -->
+      <text x="560" y="28" fill="#22c55e" font-size="12">✓</text>
+      <text x="578" y="28" class="text-muted" font-size="9">Verified</text>
+      <!-- Receipt button -->
+      <rect x="625" y="12" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="640" y="30" text-anchor="middle" font-size="11">📄</text>
+    </g>
+
+    <!-- Transaction Row 2 - Succeeded (PayPal) -->
+    <g transform="translate(15, 303)">
+      <rect x="0" y="0" width="670" height="50" rx="4" fill="#334155" stroke="#475569" stroke-width="1"/>
+      <text x="15" y="20" class="text-md">Dec 27, 2024</text>
+      <text x="15" y="38" class="text-muted">3:15 PM</text>
+      <text x="110" y="28" class="text-md" font-family="monospace" font-size="10">PAYID-MQ5N...</text>
+      <text x="280" y="28" fill="#fff" font-size="12" font-weight="bold">€25.00</text>
+      <text x="320" y="28" class="text-muted">EUR</text>
+      <!-- PayPal badge -->
+      <rect x="360" y="14" width="50" height="20" rx="4" fill="#003087"/>
+      <text x="385" y="28" text-anchor="middle" fill="#fff" font-size="8">PayPal</text>
+      <!-- Status -->
+      <rect x="430" y="14" width="70" height="22" rx="11" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="465" y="29" text-anchor="middle" fill="#22c55e" font-size="9">Succeeded</text>
+      <!-- Webhook verified -->
+      <text x="560" y="28" fill="#22c55e" font-size="12">✓</text>
+      <text x="578" y="28" class="text-muted" font-size="9">Verified</text>
+      <!-- Receipt button -->
+      <rect x="625" y="12" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="640" y="30" text-anchor="middle" font-size="11">📄</text>
+    </g>
+
+    <!-- Transaction Row 3 - Failed -->
+    <g transform="translate(15, 358)">
+      <rect x="0" y="0" width="670" height="50" rx="4" fill="#33415580" stroke="#ef4444" stroke-width="1"/>
+      <text x="15" y="20" class="text-md">Dec 26, 2024</text>
+      <text x="15" y="38" class="text-muted">9:45 AM</text>
+      <text x="110" y="28" class="text-md" font-family="monospace" font-size="10">txn_1NpY8K3fWx...</text>
+      <text x="280" y="28" fill="#fff" font-size="12" font-weight="bold">$29.00</text>
+      <text x="320" y="28" class="text-muted">USD</text>
+      <!-- Stripe badge -->
+      <rect x="360" y="14" width="50" height="20" rx="4" fill="#635bff"/>
+      <text x="385" y="28" text-anchor="middle" fill="#fff" font-size="8">stripe</text>
+      <!-- Status -->
+      <rect x="430" y="14" width="55" height="22" rx="11" fill="#ef444420" stroke="#ef4444" stroke-width="1"/>
+      <text x="457" y="29" text-anchor="middle" fill="#ef4444" font-size="9">Failed</text>
+      <!-- No webhook -->
+      <text x="560" y="28" fill="#64748b" font-size="12">—</text>
+      <text x="578" y="28" class="text-muted" font-size="9">N/A</text>
+      <!-- Retry button -->
+      <rect x="625" y="12" width="30" height="26" rx="4" fill="#ef4444"/>
+      <text x="640" y="30" text-anchor="middle" font-size="11">↻</text>
+    </g>
+
+    <!-- Transaction Row 4 - Pending -->
+    <g transform="translate(15, 413)">
+      <rect x="0" y="0" width="670" height="50" rx="4" fill="#334155" stroke="#eab308" stroke-width="1"/>
+      <text x="15" y="20" class="text-md">Dec 25, 2024</text>
+      <text x="15" y="38" class="text-muted">11:20 AM</text>
+      <text x="110" y="28" class="text-md" font-family="monospace" font-size="10">txn_1NoZ9L4gXy...</text>
+      <text x="280" y="28" fill="#fff" font-size="12" font-weight="bold">£19.99</text>
+      <text x="320" y="28" class="text-muted">GBP</text>
+      <!-- Stripe badge -->
+      <rect x="360" y="14" width="50" height="20" rx="4" fill="#635bff"/>
+      <text x="385" y="28" text-anchor="middle" fill="#fff" font-size="8">stripe</text>
+      <!-- Status -->
+      <rect x="430" y="14" width="60" height="22" rx="11" fill="#eab30820" stroke="#eab308" stroke-width="1"/>
+      <text x="460" y="29" text-anchor="middle" fill="#eab308" font-size="9">Pending</text>
+      <!-- Webhook pending -->
+      <text x="560" y="28" fill="#eab308" font-size="12">⏳</text>
+      <text x="578" y="28" class="text-muted" font-size="9">Waiting</text>
+      <!-- View button -->
+      <rect x="625" y="12" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="640" y="30" text-anchor="middle" font-size="11">👁</text>
+    </g>
+
+    <!-- Transaction Row 5 - Subscription (Recurring) -->
+    <g transform="translate(15, 468)">
+      <rect x="0" y="0" width="670" height="50" rx="4" fill="#334155" stroke="#475569" stroke-width="1"/>
+      <text x="15" y="20" class="text-md">Dec 24, 2024</text>
+      <text x="15" y="38" class="text-muted">12:00 AM</text>
+      <text x="110" y="20" class="text-md" font-family="monospace" font-size="10">sub_1NnA0M5hZz...</text>
+      <text x="110" y="38" fill="#8b5cf6" font-size="9">🔄 Recurring</text>
+      <text x="280" y="28" fill="#fff" font-size="12" font-weight="bold">$29.00</text>
+      <text x="320" y="28" class="text-muted">USD</text>
+      <!-- Stripe badge -->
+      <rect x="360" y="14" width="50" height="20" rx="4" fill="#635bff"/>
+      <text x="385" y="28" text-anchor="middle" fill="#fff" font-size="8">stripe</text>
+      <!-- Status -->
+      <rect x="430" y="14" width="70" height="22" rx="11" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="465" y="29" text-anchor="middle" fill="#22c55e" font-size="9">Succeeded</text>
+      <!-- Webhook verified -->
+      <text x="560" y="28" fill="#22c55e" font-size="12">✓</text>
+      <text x="578" y="28" class="text-muted" font-size="9">Verified</text>
+      <!-- Invoice button -->
+      <rect x="625" y="12" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="640" y="30" text-anchor="middle" font-size="11">📄</text>
+    </g>
+
+    <!-- Pagination -->
+    <g transform="translate(15, 535)">
+      <text x="0" y="20" class="text-muted">Showing 1-5 of 127 transactions</text>
+      <rect x="530" y="5" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="545" y="23" text-anchor="middle" fill="#fff" font-size="10">←</text>
+      <rect x="565" y="5" width="30" height="26" rx="4" fill="#8b5cf6"/>
+      <text x="580" y="23" text-anchor="middle" fill="#fff" font-size="10">1</text>
+      <rect x="600" y="5" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="615" y="23" text-anchor="middle" fill="#fff" font-size="10">2</text>
+      <rect x="635" y="5" width="30" height="26" rx="4" fill="#475569"/>
+      <text x="650" y="23" text-anchor="middle" fill="#fff" font-size="10">→</text>
+    </g>
+  </g>
+
+  <!-- ==================== MOBILE VIEW (Right) ==================== -->
+  <g transform="translate(760, 45)">
+    <!-- Mobile label -->
+    <text x="200" y="0" text-anchor="middle" class="text-muted">Mobile (390px)</text>
+
+    <!-- Phone Frame -->
+    <rect x="0" y="15" width="400" height="700" rx="20" fill="#0f172a" stroke="#475569" stroke-width="2"/>
+
+    <!-- Status Bar -->
+    <text x="25" y="38" fill="#fff" font-size="10" font-weight="600">9:41</text>
+    <text x="350" y="38" fill="#fff" font-size="10">📶 🔋</text>
+
+    <!-- Header -->
+    <rect x="10" y="50" width="380" height="50" fill="#1e293b"/>
+    <text x="30" y="82" fill="#fff" font-size="14">←</text>
+    <text x="200" y="82" text-anchor="middle" class="heading" font-size="14">Billing</text>
+
+    <!-- Tab Bar -->
+    <g transform="translate(30, 110)">
+      <rect x="0" y="0" width="340" height="36" rx="8" fill="#0f172a"/>
+      <rect x="4" y="4" width="165" height="28" rx="6" fill="#8b5cf6"/>
+      <text x="86" y="24" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">History</text>
+      <text x="254" y="24" text-anchor="middle" class="text-muted" font-size="10">Subscriptions</text>
+    </g>
+
+    <!-- Summary Cards (Horizontal Scroll) -->
+    <g transform="translate(20, 160)">
+      <rect x="0" y="0" width="110" height="60" rx="8" fill="#334155"/>
+      <text x="10" y="20" class="text-muted" font-size="8">REVENUE</text>
+      <text x="10" y="42" fill="#fff" font-size="14" font-weight="bold">$2,847</text>
+
+      <rect x="120" y="0" width="110" height="60" rx="8" fill="#334155"/>
+      <text x="130" y="20" class="text-muted" font-size="8">TRANSACTIONS</text>
+      <text x="130" y="42" fill="#fff" font-size="14" font-weight="bold">127</text>
+
+      <rect x="240" y="0" width="110" height="60" rx="8" fill="#334155"/>
+      <text x="250" y="20" class="text-muted" font-size="8">ACTIVE SUBS</text>
+      <text x="250" y="42" fill="#22c55e" font-size="14" font-weight="bold">23</text>
+    </g>
+
+    <!-- Search Bar -->
+    <g transform="translate(20, 235)">
+      <rect x="0" y="0" width="270" height="40" rx="8" fill="#334155" stroke="#475569" stroke-width="1"/>
+      <text x="40" y="26" class="text-muted">Search transactions...</text>
+      <text x="15" y="27" fill="#64748b" font-size="14">🔍</text>
+
+      <!-- Filter Button -->
+      <rect x="280" y="0" width="80" height="40" rx="8" fill="#334155" stroke="#475569" stroke-width="1"/>
+      <text x="320" y="26" text-anchor="middle" class="text-sm">Filter ▼</text>
+    </g>
+
+    <!-- Transaction Card 1 -->
+    <g transform="translate(20, 290)">
+      <rect x="0" y="0" width="360" height="80" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+
+      <text x="15" y="25" class="text-md" font-weight="600" fill="#fff">$29.00 USD</text>
+      <rect x="100" y="10" width="60" height="20" rx="10" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="130" y="24" text-anchor="middle" fill="#22c55e" font-size="8">Succeeded</text>
+
+      <text x="15" y="45" class="text-muted" font-size="9">txn_1NqX7J2eZvKYlo2C</text>
+      <text x="15" y="65" class="text-muted" font-size="9">Dec 28, 2024 • Stripe</text>
+
+      <text x="320" y="25" fill="#22c55e" font-size="10">✓ Verified</text>
+      <text x="335" y="55" fill="#64748b" font-size="14">📄</text>
+    </g>
+
+    <!-- Transaction Card 2 (Failed) -->
+    <g transform="translate(20, 380)">
+      <rect x="0" y="0" width="360" height="80" rx="10" fill="#33415580" stroke="#ef4444" stroke-width="1"/>
+
+      <text x="15" y="25" class="text-md" font-weight="600" fill="#fff">$29.00 USD</text>
+      <rect x="100" y="10" width="50" height="20" rx="10" fill="#ef444420" stroke="#ef4444" stroke-width="1"/>
+      <text x="125" y="24" text-anchor="middle" fill="#ef4444" font-size="8">Failed</text>
+
+      <text x="15" y="45" class="text-muted" font-size="9">txn_1NpY8K3fWx...</text>
+      <text x="15" y="65" class="text-muted" font-size="9">Dec 26, 2024 • Stripe</text>
+
+      <rect x="290" y="40" width="55" height="28" rx="6" fill="#ef4444"/>
+      <text x="317" y="59" text-anchor="middle" fill="#fff" font-size="9">Retry</text>
+    </g>
+
+    <!-- Transaction Card 3 (Subscription) -->
+    <g transform="translate(20, 470)">
+      <rect x="0" y="0" width="360" height="80" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+
+      <text x="15" y="25" class="text-md" font-weight="600" fill="#fff">$29.00 USD</text>
+      <rect x="100" y="10" width="60" height="20" rx="10" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="130" y="24" text-anchor="middle" fill="#22c55e" font-size="8">Succeeded</text>
+
+      <text x="15" y="45" fill="#8b5cf6" font-size="9">🔄 Recurring subscription</text>
+      <text x="15" y="65" class="text-muted" font-size="9">Dec 24, 2024 • Stripe</text>
+
+      <text x="320" y="25" fill="#22c55e" font-size="10">✓ Verified</text>
+      <text x="335" y="55" fill="#64748b" font-size="14">📄</text>
+    </g>
+
+    <!-- Transaction Card 4 (partial) -->
+    <g transform="translate(20, 560)">
+      <rect x="0" y="0" width="360" height="80" rx="10" fill="#334155" stroke="#475569" stroke-width="1"/>
+
+      <text x="15" y="25" class="text-md" font-weight="600" fill="#fff">€25.00 EUR</text>
+      <rect x="100" y="10" width="60" height="20" rx="10" fill="#22c55e20" stroke="#22c55e" stroke-width="1"/>
+      <text x="130" y="24" text-anchor="middle" fill="#22c55e" font-size="8">Succeeded</text>
+
+      <text x="15" y="45" class="text-muted" font-size="9">PAYID-MQ5N...</text>
+      <text x="15" y="65" class="text-muted" font-size="9">Dec 27, 2024 • PayPal</text>
+    </g>
+
+    <!-- Load More -->
+    <g transform="translate(120, 655)">
+      <rect x="0" y="0" width="160" height="36" rx="8" fill="#475569"/>
+      <text x="80" y="23" text-anchor="middle" fill="#fff" font-size="11">Load More</text>
+    </g>
+
+    <!-- Bottom Nav Bar -->
+    <rect x="10" y="690" width="380" height="25" rx="10" fill="#1e293b"/>
+    <line x1="200" y1="700" x2="200" y2="710" stroke="#475569" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ==================== ANNOTATIONS ==================== -->
+
+  <!-- Row 1: Desktop feature annotations (5 boxes spread across) -->
+  <g transform="translate(30, 625)">
+    <rect x="0" y="0" width="130" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">🔍 Search (FR-023)</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Query by transaction</text>
+    <text x="10" y="42" class="text-muted" font-size="8">ID from any provider</text>
+  </g>
+
+  <g transform="translate(170, 625)">
+    <rect x="0" y="0" width="130" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">✓ Webhook (FR-024)</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Verified by webhook</text>
+    <text x="10" y="42" class="text-muted" font-size="8">callback status</text>
+  </g>
+
+  <g transform="translate(310, 625)">
+    <rect x="0" y="0" width="130" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">💱 Multi-Currency</text>
+    <text x="10" y="30" class="text-muted" font-size="8">USD, EUR, GBP, CAD</text>
+    <text x="10" y="42" class="text-muted" font-size="8">AUD per transaction</text>
+  </g>
+
+  <g transform="translate(450, 625)">
+    <rect x="0" y="0" width="130" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">📋 Audit (FR-022)</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Full payment event</text>
+    <text x="10" y="42" class="text-muted" font-size="8">history + timestamps</text>
+  </g>
+
+  <g transform="translate(590, 625)">
+    <rect x="0" y="0" width="130" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">📄 Receipts</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Downloadable for</text>
+    <text x="10" y="42" class="text-muted" font-size="8">each transaction</text>
+  </g>
+
+  <!-- Mobile annotations -->
+  <g transform="translate(760, 770)">
+    <rect x="0" y="0" width="180" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">📱 Mobile: Card Layout</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Condensed transaction info</text>
+    <text x="10" y="42" class="text-muted" font-size="8">with swipe actions</text>
+  </g>
+
+  <g transform="translate(950, 770)">
+    <rect x="0" y="0" width="180" height="48" rx="4" fill="#8b5cf610" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,3"/>
+    <text x="10" y="16" class="annotation">⚠️ Failed Payments</text>
+    <text x="10" y="30" class="text-muted" font-size="8">Red highlight + retry</text>
+    <text x="10" y="42" class="text-muted" font-size="8">button for actionable</text>
+  </g>
+
+  <!-- Spec Reference -->
+  <text x="600" y="885" text-anchor="middle" class="text-muted" font-size="9">Spec: 015-payment-integration • FR-021 to FR-024: Transaction history, audit trail, webhook verification</text>
+</svg>

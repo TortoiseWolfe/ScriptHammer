@@ -1,0 +1,313 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <style>
+      .heading { fill: #ffffff; font-family: system-ui, sans-serif; font-size: 14px; font-weight: bold; }
+      .text-sm { fill: #94a3b8; font-family: system-ui, sans-serif; font-size: 10px; }
+      .text-md { fill: #cbd5e1; font-family: system-ui, sans-serif; font-size: 12px; }
+      .text-muted { fill: #64748b; font-family: system-ui, sans-serif; font-size: 10px; }
+      .annotation { fill: #8b5cf6; font-family: monospace; font-size: 10px; }
+      .code { fill: #a5f3fc; font-family: monospace; font-size: 10px; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.05">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">BLOG EDITOR</text>
+
+  <!-- ========================================== -->
+  <!-- DESKTOP LAYOUT (Left: Editor, Right: Preview) -->
+  <!-- ========================================== -->
+
+  <!-- Header Bar -->
+  <rect x="20" y="50" width="860" height="50" rx="8" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Back button -->
+  <rect x="30" y="60" width="80" height="30" rx="6" fill="#334155"/>
+  <text x="45" y="80" class="text-md">← Back</text>
+
+  <!-- Post Title Input -->
+  <rect x="120" y="60" width="400" height="30" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="135" y="80" fill="#fff" font-size="14" font-family="system-ui">Getting Started with TypeScript...</text>
+
+  <!-- Status indicators -->
+  <g transform="translate(530, 60)">
+    <!-- Autosave indicator -->
+    <circle cx="8" cy="15" r="4" fill="#22c55e"/>
+    <text x="18" y="19" class="text-sm">Saved</text>
+    <!-- Online indicator -->
+    <circle cx="58" cy="15" r="4" fill="#facc15"/>
+    <text x="68" y="19" class="text-sm">Online</text>
+  </g>
+
+  <!-- Utility Icons Group (positioned with clear spacing from status) -->
+  <g transform="translate(650, 68)">
+    <g transform="translate(0, 0)">
+      <path d="M7 2v6m0 0L4.5 5.5M7 8l2.5-2.5M3 11h8" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+    <g transform="translate(20, 0)">
+      <path d="M2 3h2m3 0h3M2 7h4m3 0h1M2 11h1m3 0h4" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+      <circle cx="5.5" cy="3" r="1.2" fill="#94a3b8"/>
+      <circle cx="7.5" cy="7" r="1.2" fill="#94a3b8"/>
+      <circle cx="4.5" cy="11" r="1.2" fill="#94a3b8"/>
+    </g>
+    <g transform="translate(40, 0)">
+      <path d="M1 7s2-4 6-4 6 4 6 4-2 4-6 4-6-4-6-4z" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+      <circle cx="7" cy="7" r="2" fill="#94a3b8"/>
+    </g>
+    <g transform="translate(60, 0)">
+      <rect x="2" y="1" width="10" height="12" rx="1.5" stroke="#94a3b8" stroke-width="1.2" fill="none"/>
+      <path d="M4.5 4h5M4.5 7h5M4.5 10h3" stroke="#94a3b8" stroke-width="1.2" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Draft/Publish buttons -->
+  <rect x="760" y="60" width="50" height="30" rx="6" fill="#334155" stroke="#475569"/>
+  <text x="770" y="80" class="text-md">Draft</text>
+
+  <rect x="820" y="60" width="60" height="30" rx="6" fill="#8b5cf6"/>
+  <text x="835" y="80" fill="#fff" font-size="12">Publish</text>
+
+  <!-- ========================================== -->
+  <!-- LEFT PANEL: Editor -->
+  <!-- ========================================== -->
+  <rect x="20" y="110" width="420" height="580" rx="8" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Editor toolbar -->
+  <rect x="30" y="120" width="400" height="35" rx="6" fill="#0f172a"/>
+
+  <!-- Markdown/Rich text toggle -->
+  <rect x="40" y="127" width="90" height="22" rx="4" fill="#8b5cf6"/>
+  <text x="55" y="142" fill="#fff" font-size="10">Markdown</text>
+  <rect x="130" y="127" width="60" height="22" rx="4" fill="#334155"/>
+  <text x="142" y="142" class="text-sm">Rich</text>
+
+  <!-- Formatting buttons -->
+  <text x="210" y="142" class="text-md" font-weight="bold">B</text>
+  <text x="235" y="142" class="text-md" font-style="italic">I</text>
+  <text x="260" y="142" class="text-md">H1</text>
+  <text x="290" y="142" class="text-md">H2</text>
+  <text x="320" y="142" class="code">&lt;/&gt;</text>
+  <text x="355" y="142" class="text-md">🔗</text>
+  <text x="385" y="142" class="text-md">📷</text>
+
+  <!-- Frontmatter Panel (collapsible) -->
+  <rect x="30" y="165" width="400" height="140" rx="6" fill="#0f172a" stroke="#475569"/>
+  <text x="45" y="185" class="heading">Frontmatter</text>
+  <text x="400" y="185" class="text-muted" text-anchor="end">▼</text>
+
+  <!-- Frontmatter fields -->
+  <text x="45" y="205" class="text-sm">Slug:</text>
+  <rect x="90" y="193" width="150" height="20" rx="3" fill="#334155"/>
+  <text x="100" y="207" class="text-muted">getting-started-typescript</text>
+
+  <text x="260" y="205" class="text-sm">Date:</text>
+  <rect x="295" y="193" width="120" height="20" rx="3" fill="#334155"/>
+  <text x="305" y="207" class="text-muted">2025-01-15</text>
+
+  <text x="45" y="235" class="text-sm">Author:</text>
+  <rect x="90" y="223" width="150" height="20" rx="3" fill="#334155"/>
+  <text x="100" y="237" class="text-muted">John Developer</text>
+
+  <text x="260" y="235" class="text-sm">Category:</text>
+  <rect x="315" y="223" width="100" height="20" rx="3" fill="#334155"/>
+  <text x="325" y="237" class="text-muted">Tutorial</text>
+
+  <text x="45" y="265" class="text-sm">Tags:</text>
+  <rect x="75" y="250" width="45" height="20" rx="10" fill="#8b5cf6" opacity="0.3"/>
+  <text x="85" y="264" class="text-sm" fill="#c4b5fd">TypeScript</text>
+  <rect x="125" y="250" width="35" height="20" rx="10" fill="#8b5cf6" opacity="0.3"/>
+  <text x="133" y="264" class="text-sm" fill="#c4b5fd">React</text>
+  <rect x="165" y="250" width="55" height="20" rx="10" fill="#8b5cf6" opacity="0.3"/>
+  <text x="173" y="264" class="text-sm" fill="#c4b5fd">Beginner</text>
+  <rect x="225" y="250" width="25" height="20" rx="10" fill="#334155"/>
+  <text x="232" y="264" class="text-md">+</text>
+
+  <!-- showToc toggle -->
+  <text x="45" y="295" class="text-sm">Show TOC:</text>
+  <rect x="105" y="281" width="40" height="20" rx="10" fill="#8b5cf6"/>
+  <circle cx="135" cy="291" r="8" fill="#fff"/>
+
+  <!-- Editor content area -->
+  <rect x="30" y="315" width="400" height="365" rx="6" fill="#0f172a"/>
+
+  <!-- Markdown content -->
+  <text x="45" y="340" class="code" fill="#c4b5fd"># Getting Started with TypeScript</text>
+  <text x="45" y="360" class="text-md" fill="#94a3b8"></text>
+  <text x="45" y="380" class="text-md" fill="#94a3b8">TypeScript is a typed superset of JavaScript</text>
+  <text x="45" y="400" class="text-md" fill="#94a3b8">that compiles to plain JavaScript.</text>
+  <text x="45" y="420" class="text-md" fill="#94a3b8"></text>
+  <text x="45" y="440" class="code" fill="#c4b5fd">## Installation</text>
+  <text x="45" y="460" class="text-md" fill="#94a3b8"></text>
+  <text x="45" y="480" class="code" fill="#64748b">```bash</text>
+  <text x="45" y="500" class="code" fill="#a5f3fc">npm install -g typescript</text>
+  <text x="45" y="520" class="code" fill="#64748b">```</text>
+  <text x="45" y="540" class="text-md" fill="#94a3b8"></text>
+  <text x="45" y="560" class="code" fill="#c4b5fd">## Basic Types</text>
+  <text x="45" y="580" class="text-md" fill="#94a3b8"></text>
+  <text x="45" y="600" class="text-md" fill="#94a3b8">TypeScript provides several basic types:</text>
+
+  <!-- Line numbers -->
+  <text x="38" y="340" class="text-muted" text-anchor="end">1</text>
+  <text x="38" y="360" class="text-muted" text-anchor="end">2</text>
+  <text x="38" y="380" class="text-muted" text-anchor="end">3</text>
+  <text x="38" y="400" class="text-muted" text-anchor="end">4</text>
+  <text x="38" y="420" class="text-muted" text-anchor="end">5</text>
+  <text x="38" y="440" class="text-muted" text-anchor="end">6</text>
+  <text x="38" y="460" class="text-muted" text-anchor="end">7</text>
+  <text x="38" y="480" class="text-muted" text-anchor="end">8</text>
+  <text x="38" y="500" class="text-muted" text-anchor="end">9</text>
+  <text x="38" y="520" class="text-muted" text-anchor="end">10</text>
+
+  <!-- ========================================== -->
+  <!-- RIGHT PANEL: Live Preview -->
+  <!-- ========================================== -->
+  <rect x="450" y="110" width="430" height="580" rx="8" fill="#1e293b" stroke="#475569"/>
+
+  <!-- Preview header -->
+  <rect x="460" y="120" width="410" height="30" rx="6" fill="#0f172a"/>
+  <text x="475" y="140" class="text-md" fill="#64748b">Live Preview</text>
+  <circle cx="840" cy="135" r="5" fill="#22c55e"/>
+
+  <!-- Preview content -->
+  <rect x="460" y="160" width="410" height="520" rx="6" fill="#0f172a"/>
+
+  <!-- Rendered title -->
+  <text x="480" y="195" fill="#fff" font-size="24" font-family="system-ui" font-weight="bold">Getting Started with</text>
+  <text x="480" y="225" fill="#fff" font-size="24" font-family="system-ui" font-weight="bold">TypeScript</text>
+
+  <!-- Meta info -->
+  <text x="480" y="250" class="text-sm">By John Developer • Jan 15, 2025 • 5 min read</text>
+
+  <!-- Tags in preview -->
+  <rect x="480" y="260" width="65" height="18" rx="9" fill="#8b5cf6" opacity="0.2"/>
+  <text x="493" y="273" class="text-sm" fill="#c4b5fd">TypeScript</text>
+  <rect x="550" y="260" width="45" height="18" rx="9" fill="#8b5cf6" opacity="0.2"/>
+  <text x="560" y="273" class="text-sm" fill="#c4b5fd">React</text>
+
+  <!-- Rendered content -->
+  <text x="480" y="310" class="text-md">TypeScript is a typed superset of JavaScript</text>
+  <text x="480" y="330" class="text-md">that compiles to plain JavaScript.</text>
+
+  <!-- Rendered H2 -->
+  <text x="480" y="370" fill="#fff" font-size="18" font-family="system-ui" font-weight="bold">Installation</text>
+
+  <!-- Syntax highlighted code block -->
+  <rect x="480" y="385" width="370" height="45" rx="6" fill="#334155"/>
+  <text x="495" y="405" class="code" fill="#64748b">bash</text>
+  <text x="495" y="420" class="code" fill="#a5f3fc">npm install -g typescript</text>
+
+  <!-- Copy button on code block -->
+  <rect x="815" y="390" width="25" height="20" rx="4" fill="#475569"/>
+  <text x="821" y="404" class="text-sm">📋</text>
+
+  <!-- More rendered content -->
+  <text x="480" y="460" fill="#fff" font-size="18" font-family="system-ui" font-weight="bold">Basic Types</text>
+  <text x="480" y="490" class="text-md">TypeScript provides several basic types:</text>
+
+  <!-- Table of Contents (floating) -->
+  <rect x="700" y="500" width="160" height="120" rx="6" fill="#334155" stroke="#475569"/>
+  <text x="715" y="520" class="text-sm" fill="#64748b">TABLE OF CONTENTS</text>
+  <text x="715" y="545" class="text-sm" fill="#8b5cf6">• Installation</text>
+  <text x="715" y="565" class="text-sm" fill="#94a3b8">• Basic Types</text>
+  <text x="715" y="585" class="text-sm" fill="#94a3b8">• Interfaces</text>
+  <text x="715" y="605" class="text-sm" fill="#94a3b8">• Functions</text>
+
+  <!-- ========================================== -->
+  <!-- MOBILE LAYOUT (Right side) -->
+  <!-- ========================================== -->
+  <rect x="900" y="50" width="280" height="640" rx="12" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+  <!-- Mobile status bar -->
+  <rect x="900" y="50" width="280" height="25" rx="12" fill="#0f172a"/>
+  <text x="920" y="67" class="text-sm">9:41</text>
+  <text x="1150" y="67" class="text-sm" text-anchor="end">📶 🔋</text>
+
+  <!-- Mobile header -->
+  <rect x="910" y="80" width="260" height="45" fill="#1e293b"/>
+  <text x="925" y="105" class="text-md">← Back</text>
+  <text x="1040" y="105" text-anchor="middle" class="heading">Edit Post</text>
+  <rect x="1120" y="90" width="40" height="25" rx="4" fill="#8b5cf6"/>
+  <text x="1130" y="107" class="text-sm" fill="#fff">Save</text>
+
+  <!-- Mobile tab toggle -->
+  <rect x="920" y="135" width="250" height="35" rx="8" fill="#0f172a"/>
+  <rect x="925" y="140" width="120" height="25" rx="6" fill="#8b5cf6"/>
+  <text x="965" y="157" fill="#fff" font-size="11" text-anchor="middle">Edit</text>
+  <rect x="1045" y="140" width="120" height="25" rx="6" fill="transparent"/>
+  <text x="1105" y="157" class="text-sm" text-anchor="middle">Preview</text>
+
+  <!-- Mobile editor content -->
+  <rect x="920" y="180" width="250" height="350" rx="6" fill="#0f172a"/>
+
+  <!-- Mobile toolbar -->
+  <rect x="930" y="190" width="230" height="30" rx="4" fill="#334155"/>
+  <text x="945" y="210" class="text-sm" font-weight="bold">B</text>
+  <text x="965" y="210" class="text-sm" font-style="italic">I</text>
+  <text x="985" y="210" class="text-sm">H1</text>
+  <text x="1010" y="210" class="text-sm">H2</text>
+  <text x="1035" y="210" class="code" font-size="9">&lt;/&gt;</text>
+  <text x="1065" y="210" class="text-sm">🔗</text>
+  <text x="1090" y="210" class="text-sm">📷</text>
+  <text x="1115" y="210" class="text-sm">⋮</text>
+
+  <!-- Mobile content -->
+  <text x="935" y="245" class="code" font-size="9" fill="#c4b5fd"># Getting Started with</text>
+  <text x="935" y="260" class="code" font-size="9" fill="#c4b5fd"># TypeScript</text>
+  <text x="935" y="285" class="text-sm">TypeScript is a typed</text>
+  <text x="935" y="300" class="text-sm">superset of JavaScript...</text>
+
+  <!-- Mobile metadata button -->
+  <rect x="920" y="540" width="250" height="40" rx="6" fill="#334155" stroke="#475569"/>
+  <text x="1045" y="565" text-anchor="middle" class="text-md">📝 Edit Metadata</text>
+
+  <!-- Mobile status bar bottom -->
+  <rect x="920" y="590" width="250" height="35" rx="6" fill="#0f172a"/>
+  <circle cx="945" cy="607" r="5" fill="#22c55e"/>
+  <text x="958" y="611" class="text-sm">Saved</text>
+  <text x="1050" y="611" class="text-sm" fill="#facc15">⚡ Online</text>
+  <text x="1140" y="611" class="text-sm">Draft</text>
+
+  <!-- Home indicator -->
+  <rect x="1000" y="670" width="80" height="5" rx="2.5" fill="#475569"/>
+
+  <!-- ========================================== -->
+  <!-- ANNOTATIONS -->
+  <!-- ========================================== -->
+
+  <!-- Desktop annotations -->
+  <text x="20" y="710" class="annotation">FR-014: Hot reload in development</text>
+  <text x="20" y="725" class="annotation">FR-003: Full offline editing capabilities</text>
+  <text x="20" y="740" class="annotation">FR-006: Syntax highlighting for code blocks</text>
+  <text x="20" y="755" class="annotation">FR-007: TOC generation with showToc flag</text>
+
+  <!-- Mobile annotations -->
+  <text x="900" y="710" class="annotation">Mobile: Tab toggle Edit/Preview</text>
+  <text x="900" y="725" class="annotation">44px min touch targets</text>
+  <text x="900" y="740" class="annotation">Collapsible metadata panel</text>
+
+  <!-- Divider line annotations -->
+  <line x1="890" y1="50" x2="890" y2="700" stroke="#475569" stroke-dasharray="5,5" opacity="0.5"/>
+  <text x="895" y="750" class="text-muted">Desktop ← | → Mobile</text>
+
+</svg>

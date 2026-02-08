@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    COOKIE POLICY - PRIVACY SETTINGS
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Page Title -->
+    <text x="640" y="85" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="24" font-weight="bold" fill="#374151">Privacy Settings</text>
+    <text x="640" y="110" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="14" fill="#4b5563">Manage your data and cookie settings</text>
+
+    <!-- Left Column: Current Preferences and History -->
+    <g transform="translate(60, 140)">
+      <!-- Current Preferences Card -->
+      <rect width="560" height="200" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold" fill="#374151">Current Cookie Settings</text>
+
+      <!-- Mini toggles showing current state -->
+      <g transform="translate(20, 50)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Necessary</text>
+        <rect x="160" y="0" width="36" height="20" rx="10" fill="#22c55e" opacity="0.6"/>
+        <circle cx="186" cy="10" r="8" fill="#e8d4b8"/>
+
+        <text x="220" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Functional</text>
+        <rect x="380" y="0" width="36" height="20" rx="10" fill="#22c55e"/>
+        <circle cx="406" cy="10" r="8" fill="#e8d4b8"/>
+      </g>
+
+      <g transform="translate(20, 80)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Analytics</text>
+        <rect x="160" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
+        <circle cx="170" cy="10" r="8" fill="#e8d4b8"/>
+
+        <text x="220" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Marketing</text>
+        <rect x="380" y="0" width="36" height="20" rx="10" fill="#6b7280"/>
+        <circle cx="390" cy="10" r="8" fill="#e8d4b8"/>
+      </g>
+
+      <!-- Edit preferences button -->
+      <rect x="20" y="120" width="200" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="120" y="148" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Edit Preferences</text>
+
+      <!-- Last updated -->
+      <text x="20" y="185" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">Last updated: Jan 10, 2026 at 3:42 PM</text>
+
+      <!-- Approval History Card -->
+      <rect y="220" width="560" height="180" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="250" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold" fill="#374151">Approval History</text>
+
+      <!-- History entries -->
+      <g transform="translate(20, 270)">
+        <rect width="520" height="36" rx="4" fill="#e8d4b8"/>
+        <text x="12" y="24" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Jan 10, 2026 - Accepted Functional, rejected Analytics</text>
+      </g>
+      <g transform="translate(20, 316)">
+        <rect width="520" height="36" rx="4" fill="#e8d4b8"/>
+        <text x="12" y="24" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Jan 5, 2026 - Initial approval (Accept All)</text>
+      </g>
+      <g transform="translate(20, 362)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#8b5cf6" text-decoration="underline">View full history</text>
+      </g>
+    </g>
+
+    <!-- Right Column: Data Rights -->
+    <g transform="translate(660, 140)">
+      <!-- Data Export Card -->
+      <rect width="560" height="180" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold" fill="#374151">Export Your Data</text>
+      <text x="20" y="55" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Download all data we have stored about you.</text>
+      <text x="20" y="75" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Includes approval history, preferences, and any</text>
+      <text x="20" y="95" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">locally stored information.</text>
+
+      <rect x="20" y="115" width="200" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="120" y="143" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Export Data (JSON)</text>
+
+      <!-- Data Deletion Card -->
+      <rect y="200" width="560" height="180" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="20" y="230" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold" fill="#374151">Delete Your Data</text>
+      <text x="20" y="255" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Remove all locally stored data and reset</text>
+      <text x="20" y="275" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">your approval preferences. You will be treated</text>
+      <text x="20" y="295" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">as a first-time visitor after deletion.</text>
+
+      <rect x="20" y="315" width="200" height="44" rx="6" fill="#ef4444"/>
+      <text x="120" y="343" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Request Deletion</text>
+    </g>
+
+    <!-- Desktop callout circles -->
+    <g class="callout">
+      <circle cx="510" cy="305" r="14" fill="#dc2626"/>
+      <text x="510" y="310" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+    </g>
+    <g class="callout">
+      <circle cx="1110" cy="305" r="14" fill="#dc2626"/>
+      <text x="1110" y="310" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+    </g>
+    <g class="callout">
+      <circle cx="1110" cy="505" r="14" fill="#dc2626"/>
+      <text x="1110" y="510" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+    </g>
+    <g class="callout">
+      <circle cx="510" cy="465" r="14" fill="#dc2626"/>
+      <text x="510" y="470" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content starts below header -->
+    <text x="180" y="108" text-anchor="middle" font-family="system-ui, sans-serif"
+          font-size="18" font-weight="bold" fill="#374151">Privacy Settings</text>
+
+    <!-- Current Preferences Card -->
+    <g transform="translate(20, 125)">
+      <rect width="320" height="130" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Current Settings</text>
+
+      <!-- Mini status indicators -->
+      <g transform="translate(15, 40)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Necessary: On</text>
+        <text x="150" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Functional: On</text>
+      </g>
+      <g transform="translate(15, 62)">
+        <text x="0" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Analytics: Off</text>
+        <text x="150" y="14" font-family="system-ui, sans-serif"
+              font-size="14" fill="#374151">Marketing: Off</text>
+      </g>
+
+      <rect x="15" y="88" width="140" height="32" rx="4" fill="#8b5cf6"/>
+      <text x="85" y="110" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Edit</text>
+    </g>
+
+    <!-- Data Export Card -->
+    <g transform="translate(20, 270)">
+      <rect width="320" height="100" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Export Your Data</text>
+      <text x="15" y="45" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Download all stored data</text>
+
+      <rect x="15" y="58" width="140" height="32" rx="4" fill="#8b5cf6"/>
+      <text x="85" y="80" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Export</text>
+    </g>
+
+    <!-- Data Deletion Card -->
+    <g transform="translate(20, 385)">
+      <rect width="320" height="100" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Delete Your Data</text>
+      <text x="15" y="45" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Remove all stored data</text>
+
+      <rect x="15" y="58" width="140" height="32" rx="4" fill="#ef4444"/>
+      <text x="85" y="80" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600" fill="#e8d4b8">Delete</text>
+    </g>
+
+    <!-- Approval History Card -->
+    <g transform="translate(20, 500)">
+      <rect width="320" height="100" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#374151">Approval History</text>
+      <text x="15" y="45" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Jan 10, 2026 - Modified</text>
+      <text x="15" y="65" font-family="system-ui, sans-serif"
+            font-size="14" fill="#4b5563">Jan 5, 2026 - Initial</text>
+      <text x="15" y="88" font-family="system-ui, sans-serif"
+            font-size="14" fill="#8b5cf6" text-decoration="underline">View all</text>
+    </g>
+
+    <!-- Mobile callout circles -->
+    <g class="callout">
+      <circle cx="330" cy="208" r="14" fill="#dc2626"/>
+      <text x="330" y="213" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="323" r="14" fill="#dc2626"/>
+      <text x="330" y="328" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="438" r="14" fill="#dc2626"/>
+      <text x="330" y="443" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+    </g>
+    <g class="callout">
+      <circle cx="330" cy="553" r="14" fill="#dc2626"/>
+      <text x="330" y="558" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1: Update Preferences (column 1) -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">1</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Update Preferences</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">Quick access to modify cookie settings</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">from this central privacy hub.</text>
+      <a href="#US-004">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-004</text>
+      </a>
+      <a href="#FR-010">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-010</text>
+      </a>
+      <a href="#FR-011">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-011</text>
+      </a>
+      <a href="#SC-004">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-004</text>
+      </a>
+    </g>
+
+    <!-- Group 2: Data Export (column 2) -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">2</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Data Export</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">GDPR Right of Access - download all data</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">stored about you in JSON format.</text>
+      <a href="#US-005">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-005</text>
+      </a>
+      <a href="#FR-016">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-016</text>
+      </a>
+      <a href="#FR-018">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-018</text>
+      </a>
+      <a href="#SC-005">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-005</text>
+      </a>
+    </g>
+
+    <!-- Group 3: Data Deletion (column 3) -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">3</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Data Deletion</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">GDPR Right to Erasure - remove all local</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">data and reset to first-time visitor.</text>
+      <a href="#US-006">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">US-006</text>
+      </a>
+      <a href="#FR-017">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-017</text>
+      </a>
+    </g>
+
+    <!-- Group 4: Approval Versioning (column 4) -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#e8d4b8">4</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold" fill="#1f2937">Approval History</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">Track approval changes over time with</text>
+      <text x="40" y="54" font-family="system-ui, sans-serif"
+            font-size="14" fill="#374151">timestamps for audit compliance.</text>
+      <a href="#FR-013">
+        <rect x="40" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="67" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-013</text>
+      </a>
+      <a href="#FR-014">
+        <rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="128" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-014</text>
+      </a>
+      <a href="#FR-015">
+        <rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/>
+        <text x="189" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">FR-015</text>
+      </a>
+      <a href="#SC-008">
+        <rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/>
+        <text x="250" y="77" text-anchor="middle" font-family="system-ui, sans-serif"
+              font-size="11" fill="#e8d4b8">SC-008</text>
+      </a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">GDPR compliance | preference management | cookie categories | data rights</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    002:03 | Cookie Policy | ScriptHammer
+  </text>
+</svg>

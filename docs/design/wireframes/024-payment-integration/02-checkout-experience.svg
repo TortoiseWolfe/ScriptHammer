@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">PAYMENT INTEGRATION - CHECKOUT EXPERIENCE</text>
+
+  <!-- Section Labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ==================== DESKTOP MOCKUP ==================== -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <!-- Active nav state for Payments -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Payments</text>
+
+    <!-- Page Title -->
+    <text x="640" y="90" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">Complete Your Payment</text>
+    <text x="640" y="115" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Secure checkout powered by Stripe</text>
+
+    <!-- Left: Payment Type Selection -->
+    <g transform="translate(40, 140)">
+      <rect width="380" height="470" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Section Header -->
+      <rect width="380" height="45" rx="8" fill="#1f2937"/>
+      <rect y="35" width="380" height="10" fill="#1f2937"/>
+      <text x="190" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Select Payment Type</text>
+
+      <!-- One-Time Payment Option -->
+      <rect x="20" y="60" width="340" height="90" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <circle cx="45" cy="105" r="12" fill="#8b5cf6"/>
+      <circle cx="45" cy="105" r="5" fill="#e8d4b8"/>
+      <text x="70" y="90" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">One-Time Payment</text>
+      <text x="70" y="110" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Donate or purchase once</text>
+      <text x="70" y="130" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">No recurring charges</text>
+
+      <!-- Subscription Option -->
+      <rect x="20" y="165" width="340" height="90" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <circle cx="45" cy="210" r="12" fill="#f5f0e6" stroke="#b8a080" stroke-width="2"/>
+      <text x="70" y="195" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">Monthly Subscription</text>
+      <text x="70" y="215" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Support us monthly</text>
+      <text x="70" y="235" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">Cancel anytime</text>
+
+      <!-- Amount Selection -->
+      <text x="20" y="285" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Select Amount</text>
+
+      <!-- Preset amounts -->
+      <rect x="20" y="300" width="75" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="57" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">$5</text>
+
+      <rect x="105" y="300" width="75" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="142" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">$10</text>
+
+      <rect x="190" y="300" width="75" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="227" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">$25</text>
+
+      <rect x="275" y="300" width="85" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="317" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#374151">$50</text>
+
+      <!-- Custom amount -->
+      <text x="20" y="375" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Or enter custom amount:</text>
+      <rect x="20" y="390" width="340" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="35" y="418" font-family="system-ui, sans-serif" font-size="16" fill="#9ca3af">$ Enter amount...</text>
+    </g>
+
+    <!-- Callout 1 - Payment Type -->
+    <g class="callout">
+      <circle cx="440" cy="230" r="14" fill="#dc2626"/>
+      <text x="440" y="235" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Center: Payment Form -->
+    <g transform="translate(450, 140)">
+      <rect width="400" height="470" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Section Header -->
+      <rect width="400" height="45" rx="8" fill="#635bff"/>
+      <rect y="35" width="400" height="10" fill="#635bff"/>
+      <text x="200" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Stripe Checkout</text>
+
+      <!-- Card Number -->
+      <text x="20" y="75" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Card Number</text>
+      <rect x="20" y="85" width="360" height="44" rx="6" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+      <text x="35" y="113" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">4242 4242 4242 4242</text>
+      <rect x="320" y="95" width="50" height="24" rx="2" fill="#1a1f71"/>
+      <text x="345" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">VISA</text>
+
+      <!-- Expiry and CVC -->
+      <g transform="translate(20, 145)">
+        <text x="0" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Expiry</text>
+        <rect x="0" y="10" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+        <text x="15" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">12 / 28</text>
+
+        <text x="195" y="0" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">CVC</text>
+        <rect x="195" y="10" width="165" height="44" rx="6" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+        <text x="210" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">123</text>
+      </g>
+
+      <!-- Name on Card -->
+      <text x="20" y="225" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Name on Card</text>
+      <rect x="20" y="235" width="360" height="44" rx="6" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+      <text x="35" y="263" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">John Doe</text>
+
+      <!-- Order Summary -->
+      <rect x="20" y="300" width="360" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="35" y="325" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Order Summary</text>
+      <text x="35" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#374151">One-Time Donation</text>
+      <text x="345" y="350" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">$10.00</text>
+      <text x="345" y="370" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#374151">USD</text>
+
+      <!-- Pay Button -->
+      <rect x="20" y="400" width="360" height="52" rx="6" fill="#22c55e"/>
+      <text x="200" y="432" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#ffffff">Pay $10.00</text>
+    </g>
+
+    <!-- Callout 2 - Stripe Form -->
+    <g class="callout">
+      <circle cx="870" cy="330" r="14" fill="#dc2626"/>
+      <text x="870" y="335" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Right: Status and Verification -->
+    <g transform="translate(880, 140)">
+      <rect width="360" height="470" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+
+      <!-- Section Header -->
+      <rect width="360" height="45" rx="8" fill="#1f2937"/>
+      <rect y="35" width="360" height="10" fill="#1f2937"/>
+      <text x="180" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#e8d4b8">Payment Status</text>
+
+      <!-- Security Indicators -->
+      <rect x="20" y="60" width="320" height="70" rx="6" fill="#d1fae5" stroke="#22c55e" stroke-width="1"/>
+      <text x="40" y="85" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#166534">Secure Connection</text>
+      <text x="40" y="105" font-family="system-ui, sans-serif" font-size="14" fill="#166534">SSL/TLS encrypted</text>
+      <text x="40" y="120" font-family="system-ui, sans-serif" font-size="14" fill="#166534">PCI-DSS compliant</text>
+
+      <!-- Webhook Verification -->
+      <rect x="20" y="145" width="320" height="90" rx="6" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+      <text x="40" y="175" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Webhook Verification</text>
+      <text x="40" y="195" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Payment confirmed via secure</text>
+      <text x="40" y="215" font-family="system-ui, sans-serif" font-size="14" fill="#374151">callback with signature validation</text>
+
+      <!-- Retry Logic -->
+      <rect x="20" y="250" width="320" height="90" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+      <text x="40" y="280" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#92400e">Subscription Retry Logic</text>
+      <text x="40" y="300" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Failed payments auto-retry:</text>
+      <text x="40" y="320" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">1d → 3d → 7d → Grace Period</text>
+
+      <!-- Offline Queue -->
+      <rect x="20" y="355" width="320" height="90" rx="6" fill="#e0f2fe" stroke="#0891b2" stroke-width="1"/>
+      <text x="40" y="385" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#0c4a6e">Offline Queue</text>
+      <text x="40" y="405" font-family="system-ui, sans-serif" font-size="14" fill="#0c4a6e">Operations queued when offline</text>
+      <text x="40" y="425" font-family="system-ui, sans-serif" font-size="14" fill="#0c4a6e">Auto-sync on reconnection</text>
+    </g>
+
+    <!-- Callout 3 - Verification -->
+    <g class="callout">
+      <circle cx="1260" cy="330" r="14" fill="#dc2626"/>
+      <text x="1260" y="335" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- ==================== MOBILE MOCKUP ==================== -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78) -->
+    <text x="180" y="105" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Checkout</text>
+
+    <!-- Payment Type Toggle -->
+    <rect x="20" y="120" width="320" height="50" rx="6" fill="#dcc8a8" stroke="#b8a080" stroke-width="1"/>
+    <rect x="25" y="125" width="155" height="40" rx="4" fill="#8b5cf6"/>
+    <text x="102" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">One-Time</text>
+    <text x="262" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="500" fill="#374151">Subscribe</text>
+
+    <!-- Callout 1 - Payment Toggle -->
+    <g class="callout">
+      <circle cx="345" cy="145" r="14" fill="#dc2626"/>
+      <text x="345" y="150" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Amount Selection (horizontal scroll) -->
+    <text x="30" y="195" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Amount</text>
+    <rect x="20" y="205" width="70" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="55" y="230" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$5</text>
+    <rect x="95" y="205" width="70" height="40" rx="4" fill="#8b5cf6"/>
+    <text x="130" y="230" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">$10</text>
+    <rect x="170" y="205" width="70" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="205" y="230" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$25</text>
+    <rect x="245" y="205" width="95" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-width="1"/>
+    <text x="292" y="230" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Custom</text>
+
+    <!-- Card Form -->
+    <rect x="20" y="260" width="320" height="200" rx="8" fill="#dcc8a8" stroke="#635bff" stroke-width="2"/>
+    <rect x="20" y="260" width="320" height="35" rx="8" fill="#635bff"/>
+    <rect x="20" y="285" width="320" height="10" fill="#635bff"/>
+    <text x="180" y="285" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#ffffff">Stripe</text>
+
+    <!-- Card Number -->
+    <text x="35" y="320" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Card</text>
+    <rect x="35" y="328" width="290" height="36" rx="4" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+    <text x="50" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">4242 4242 4242 4242</text>
+
+    <!-- Expiry / CVC -->
+    <rect x="35" y="375" width="140" height="36" rx="4" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+    <text x="50" y="399" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">12/28</text>
+    <rect x="185" y="375" width="140" height="36" rx="4" fill="#f5f0e6" stroke="#d1d5db" stroke-width="1"/>
+    <text x="200" y="399" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">123</text>
+
+    <!-- Order Summary -->
+    <rect x="35" y="420" width="290" height="30" rx="4" fill="#f5f0e6"/>
+    <text x="50" y="440" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Total:</text>
+    <text x="310" y="440" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">$10.00</text>
+
+    <!-- Callout 2 - Stripe Form -->
+    <g class="callout">
+      <circle cx="345" cy="360" r="14" fill="#dc2626"/>
+      <text x="345" y="365" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Pay Button -->
+    <rect x="20" y="475" width="320" height="52" rx="6" fill="#22c55e"/>
+    <text x="180" y="507" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#ffffff">Pay $10.00</text>
+
+    <!-- Security Badge -->
+    <rect x="20" y="540" width="320" height="60" rx="6" fill="#d1fae5" stroke="#22c55e" stroke-width="1"/>
+    <text x="180" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#166534">Secure Payment</text>
+    <text x="180" y="585" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#166534">SSL Encrypted • PCI Compliant</text>
+
+    <!-- Callout 3 - Security -->
+    <g class="callout">
+      <circle cx="345" cy="570" r="14" fill="#dc2626"/>
+      <text x="345" y="575" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active state for Pay tab -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <text x="45" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Pay</text>
+    </g>
+  </g>
+
+  <!-- ==================== ANNOTATION PANEL ==================== -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" fill="#dcc8a8" rx="8" stroke="#b8a080" stroke-width="1"/>
+
+    <!-- Column 1: US-001 One-Time Payment -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Payment Type Selection</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a customer, I need to choose between</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">one-time or subscription payments.</text>
+
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#US-002"><rect x="101" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-001"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-002</text></a>
+      <a href="#SC-001"><rect x="40" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 2: Stripe Checkout -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Secure Checkout Form</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Stripe-powered card entry with</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">real-time validation and PCI compliance.</text>
+
+      <a href="#US-001"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-003"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-006"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-009"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-009</text></a>
+    </g>
+
+    <!-- Column 3: Verification -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Payment Verification</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Webhook verification, retry logic,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and offline queue for resilience.</text>
+
+      <a href="#US-004"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-004</text></a>
+      <a href="#US-005"><rect x="101" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-005</text></a>
+      <a href="#US-006"><rect x="162" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-006</text></a>
+      <a href="#FR-007"><rect x="40" y="90" width="55" height="22" rx="4" fill="#2563eb"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="101" y="90" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#FR-013"><rect x="162" y="90" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-013</text></a>
+      <a href="#SC-004"><rect x="223" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-004</text></a>
+    </g>
+
+    <!-- Column 4: Subscription Management -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Subscription Features</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Recurring billing with auto-retry,</text>
+      <text x="40" y="54" fill="#374151" font-family="system-ui, sans-serif" font-size="14">grace period, and cancel anytime.</text>
+
+      <a href="#US-002"><rect x="40" y="64" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-012"><rect x="101" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-014"><rect x="162" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-014</text></a>
+      <a href="#FR-017"><rect x="223" y="64" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="79" fill="#e8d4b8" font-size="12" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-002"><rect x="40" y="90" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="105" fill="#e8d4b8" font-size="12" text-anchor="middle">SC-002</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="150" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Stripe checkout | one-time payment | subscription | webhook verification | retry logic | offline queue</text>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">024:02 | Payment Integration | ScriptHammer</text>
+</svg>

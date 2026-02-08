@@ -12,13 +12,13 @@ You **MUST** consider the user input before proceeding (if not empty).
 
 ## Goal
 
-Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/tasks` has successfully produced a complete `tasks.md`.
+Identify inconsistencies, duplications, ambiguities, and underspecified items across the three core artifacts (`spec.md`, `plan.md`, `tasks.md`) before implementation. This command MUST run only after `/speckit.tasks` has successfully produced a complete `tasks.md`.
 
 ## Operating Constraints
 
 **STRICTLY READ-ONLY**: Do **not** modify any files. Output a structured analysis report. Offer an optional remediation plan (user must explicitly approve before any follow-up editing commands would be invoked manually).
 
-**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/analyze`.
+**Constitution Authority**: The project constitution (`.specify/memory/constitution.md`) is **non-negotiable** within this analysis scope. Constitution conflicts are automatically CRITICAL and require adjustment of the spec, plan, or tasks—not dilution, reinterpretation, or silent ignoring of the principle. If a principle itself needs to change, that must occur in a separate, explicit constitution update outside `/speckit.analyze`.
 
 ## Execution Steps
 
@@ -31,6 +31,25 @@ Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --inclu
 - TASKS = FEATURE_DIR/tasks.md
 
 Abort with an error message if any required file is missing (instruct the user to run missing prerequisite command).
+For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+### 1.5. Run Constitution Check Script (Automated)
+
+**Before any manual analysis**, run the constitution compliance script to get deterministic structural checks:
+
+```bash
+python3 scripts/constitution-check.py check FEATURE_DIR --json
+```
+
+Parse the JSON output and extract:
+
+- `overall_score`: Constitution compliance percentage
+- `issues[]`: Array of principle violations (each has `principle` and `issue`)
+- `principles{}`: Per-principle pass/fail details
+
+**Store these results** for inclusion in the final report under "Constitution Alignment Issues". These are CRITICAL severity findings that the AI does not need to re-analyze.
+
+If the script fails or is not available, fall back to manual constitution analysis in step 4.D.
 
 ### 2. Load Artifacts (Progressive Disclosure)
 
@@ -92,10 +111,15 @@ Focus on high-signal findings. Limit to 50 findings total; aggregate remainder i
 - User stories missing acceptance criteria alignment
 - Tasks referencing files or components not defined in spec/plan
 
-#### D. Constitution Alignment
+#### D. Constitution Alignment (Semantic Only)
 
-- Any requirement or plan element conflicting with a MUST principle
-- Missing mandated sections or quality gates from constitution
+**Note**: Structural constitution checks (missing files, file patterns) are already handled by `constitution-check.py` in step 1.5. Include those script results directly in the report.
+
+AI analysis here focuses on **semantic** constitution issues only:
+
+- Requirements or plan elements conflicting with a MUST principle's intent
+- Logical contradictions with constitution guidance
+- Quality gate requirements not reflected in acceptance criteria
 
 #### E. Coverage Gaps
 
@@ -136,26 +160,36 @@ Output a Markdown report (no file writes) with the following structure:
 | Requirement Key | Has Task? | Task IDs | Notes |
 | --------------- | --------- | -------- | ----- |
 
-**Constitution Alignment Issues:** (if any)
+**Constitution Alignment Issues:**
+
+From `constitution-check.py` (structural):
+| Principle | Issue | Severity |
+|-----------|-------|----------|
+| (include all issues from script JSON) | | CRITICAL |
+
+From semantic analysis (if any):
+| Issue | Location | Severity |
+|-------|----------|----------|
 
 **Unmapped Tasks:** (if any)
 
 **Metrics:**
 
+- Constitution Score (from script): X%
 - Total Requirements
 - Total Tasks
 - Coverage % (requirements with >=1 task)
 - Ambiguity Count
 - Duplication Count
-- Critical Issues Count
+- Critical Issues Count (script + semantic)
 
 ### 7. Provide Next Actions
 
 At end of report, output a concise Next Actions block:
 
-- If CRITICAL issues exist: Recommend resolving before `/implement`
+- If CRITICAL issues exist: Recommend resolving before `/speckit.implement`
 - If only LOW/MEDIUM: User may proceed, but provide improvement suggestions
-- Provide explicit command suggestions: e.g., "Run /specify with refinement", "Run /plan to adjust architecture", "Manually edit tasks.md to add coverage for 'performance-metrics'"
+- Provide explicit command suggestions: e.g., "Run /speckit.specify with refinement", "Run /speckit.plan to adjust architecture", "Manually edit tasks.md to add coverage for 'performance-metrics'"
 
 ### 8. Offer Remediation
 

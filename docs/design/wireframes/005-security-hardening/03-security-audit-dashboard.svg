@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">SECURITY HARDENING - AUDIT DASHBOARD</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav overlay (Account for admin) -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Page Title -->
+    <text x="60" y="90" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1a1a2e">Security Audit Log</text>
+    <text x="60" y="115" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Review authentication and security events</text>
+
+    <!-- Stats Cards Row -->
+    <g transform="translate(60, 130)">
+      <!-- Card 1: Total Events -->
+      <rect x="0" y="0" width="180" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Total Events (90d)</text>
+      <text x="20" y="55" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1a1a2e">12,847</text>
+
+      <!-- Card 2: Failed Sign-ins -->
+      <rect x="200" y="0" width="180" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="220" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Failed Sign-ins</text>
+      <text x="220" y="55" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#dc2626">423</text>
+
+      <!-- Card 3: Locked Accounts -->
+      <rect x="400" y="0" width="180" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="420" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Locked Accounts</text>
+      <text x="420" y="55" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#f59e0b">12</text>
+
+      <!-- Card 4: Active Sessions -->
+      <rect x="600" y="0" width="180" height="70" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="620" y="28" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Active Sessions</text>
+      <text x="620" y="55" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#22c55e">847</text>
+    </g>
+
+    <!-- Callout ① on stats - RIGHT side -->
+    <circle cx="860" cy="165" r="14" fill="#dc2626"/>
+    <text x="860" y="170" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Filter Bar -->
+    <rect x="60" y="215" width="1160" height="50" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Event Type Filter -->
+    <text x="80" y="245" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Event Type:</text>
+    <rect x="170" y="225" width="160" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="185" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#374151">All Events</text>
+    <text x="315" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">▼</text>
+
+    <!-- User Filter -->
+    <text x="360" y="245" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">User:</text>
+    <rect x="410" y="225" width="200" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="425" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Search by email...</text>
+
+    <!-- Date Range -->
+    <text x="640" y="245" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Date:</text>
+    <rect x="690" y="225" width="150" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="705" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Last 90 days</text>
+    <text x="825" y="247" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">▼</text>
+
+    <!-- Search Button -->
+    <rect x="870" y="225" width="100" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="920" y="247" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Search</text>
+
+    <!-- Export Button -->
+    <rect x="990" y="225" width="100" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1040" y="247" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Export</text>
+
+    <!-- Callout ② on filters - RIGHT side -->
+    <circle cx="1120" cy="240" r="14" fill="#dc2626"/>
+    <text x="1120" y="245" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Event Log Table -->
+    <rect x="60" y="280" width="1160" height="290" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Table Header -->
+    <rect x="60" y="280" width="1160" height="36" rx="6" fill="#b8a080"/>
+    <text x="80" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1a1a2e">Timestamp</text>
+    <text x="240" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1a1a2e">Event Type</text>
+    <text x="420" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1a1a2e">User</text>
+    <text x="640" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1a1a2e">Details</text>
+    <text x="1000" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1a1a2e">IP Address</text>
+
+    <!-- Table Rows -->
+    <!-- Row 1 -->
+    <rect x="70" y="326" width="1140" height="40" rx="4" fill="#f5f0e6"/>
+    <text x="80" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2026-01-13 14:32:15</text>
+    <rect x="240" y="336" width="80" height="22" rx="4" fill="#22c55e"/>
+    <text x="280" y="352" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sign In</text>
+    <text x="420" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#374151">admin@example.com</text>
+    <text x="640" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password authentication</text>
+    <text x="1000" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">192.168.1.42</text>
+
+    <!-- Row 2 - Failed attempt -->
+    <rect x="70" y="376" width="1140" height="40" rx="4" fill="#f5f0e6"/>
+    <text x="80" y="402" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2026-01-13 14:28:03</text>
+    <rect x="240" y="386" width="100" height="22" rx="4" fill="#ef4444"/>
+    <text x="290" y="402" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Failed Login</text>
+    <text x="420" y="402" font-family="system-ui, sans-serif" font-size="14" fill="#374151">user123@example.com</text>
+    <text x="640" y="402" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Incorrect password (attempt 3/5)</text>
+    <text x="1000" y="402" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">203.45.67.89</text>
+
+    <!-- Callout ③ on failed login - RIGHT side -->
+    <circle cx="1180" cy="396" r="14" fill="#dc2626"/>
+    <text x="1180" y="401" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Row 3 - Session event -->
+    <rect x="70" y="426" width="1140" height="40" rx="4" fill="#f5f0e6"/>
+    <text x="80" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2026-01-13 14:15:22</text>
+    <rect x="240" y="436" width="90" height="22" rx="4" fill="#3b82f6"/>
+    <text x="285" y="452" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sign Out</text>
+    <text x="420" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#374151">jane.doe@example.com</text>
+    <text x="640" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#374151">User-initiated sign out</text>
+    <text x="1000" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">10.0.0.15</text>
+
+    <!-- Callout ④ on session event - RIGHT side -->
+    <circle cx="1180" cy="446" r="14" fill="#dc2626"/>
+    <text x="1180" y="451" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Row 4 -->
+    <rect x="70" y="476" width="1140" height="40" rx="4" fill="#f5f0e6"/>
+    <text x="80" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2026-01-13 13:45:08</text>
+    <rect x="240" y="486" width="110" height="22" rx="4" fill="#f59e0b"/>
+    <text x="295" y="502" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pwd Change</text>
+    <text x="420" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#374151">bob.smith@example.com</text>
+    <text x="640" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password updated successfully</text>
+    <text x="1000" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">172.16.0.88</text>
+
+    <!-- Row 5 -->
+    <rect x="70" y="526" width="1140" height="40" rx="4" fill="#f5f0e6"/>
+    <text x="80" y="552" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2026-01-13 12:30:45</text>
+    <rect x="240" y="536" width="80" height="22" rx="4" fill="#22c55e"/>
+    <text x="280" y="552" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sign In</text>
+    <text x="420" y="552" font-family="system-ui, sans-serif" font-size="14" fill="#374151">alice.wong@example.com</text>
+    <text x="640" y="552" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OAuth (Google)</text>
+    <text x="1000" y="552" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">98.76.54.32</text>
+
+    <!-- Pagination -->
+    <text x="80" y="600" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Showing 1-25 of 12,847 events</text>
+    <rect x="1020" y="585" width="70" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1055" y="604" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Prev</text>
+    <rect x="1100" y="585" width="70" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="1135" y="604" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Next</text>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <!-- Page Title -->
+    <text x="20" y="100" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Audit Log</text>
+
+    <!-- Filter Button -->
+    <rect x="270" y="80" width="70" height="30" rx="4" fill="#8b5cf6"/>
+    <text x="305" y="100" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Filter</text>
+
+    <!-- Callout ② on mobile filter -->
+    <circle cx="345" cy="95" r="14" fill="#dc2626"/>
+    <text x="345" y="100" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Stats Summary -->
+    <rect x="15" y="120" width="330" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="145" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Events: 12,847</text>
+    <text x="150" y="145" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626">Failed: 423</text>
+    <text x="250" y="145" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">Active: 847</text>
+
+    <!-- Callout ① on mobile stats -->
+    <circle cx="345" cy="140" r="14" fill="#dc2626"/>
+    <text x="345" y="145" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Event Card 1 -->
+    <rect x="15" y="195" width="330" height="90" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="25" y="205" width="70" height="22" rx="4" fill="#22c55e"/>
+    <text x="60" y="221" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sign In</text>
+    <text x="110" y="221" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">14:32:15</text>
+    <text x="25" y="248" font-family="system-ui, sans-serif" font-size="14" fill="#374151">admin@example.com</text>
+    <text x="25" y="270" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Password auth | 192.168.1.42</text>
+
+    <!-- Event Card 2 - Failed -->
+    <rect x="15" y="295" width="330" height="90" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="25" y="305" width="90" height="22" rx="4" fill="#ef4444"/>
+    <text x="70" y="321" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Failed Login</text>
+    <text x="130" y="321" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">14:28:03</text>
+    <text x="25" y="348" font-family="system-ui, sans-serif" font-size="14" fill="#374151">user123@example.com</text>
+    <text x="25" y="370" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Attempt 3/5 | 203.45.67.89</text>
+
+    <!-- Callout ③ on mobile failed -->
+    <circle cx="345" cy="340" r="14" fill="#dc2626"/>
+    <text x="345" y="345" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Event Card 3 - Sign Out -->
+    <rect x="15" y="395" width="330" height="90" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="25" y="405" width="80" height="22" rx="4" fill="#3b82f6"/>
+    <text x="65" y="421" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sign Out</text>
+    <text x="120" y="421" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">14:15:22</text>
+    <text x="25" y="448" font-family="system-ui, sans-serif" font-size="14" fill="#374151">jane.doe@example.com</text>
+    <text x="25" y="470" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">User-initiated | 10.0.0.15</text>
+
+    <!-- Callout ④ on mobile session -->
+    <circle cx="345" cy="440" r="14" fill="#dc2626"/>
+    <text x="345" y="445" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Load More -->
+    <rect x="100" y="505" width="160" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="528" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Load More</text>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active tab overlay (Account) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-006 Security Audit Trail -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Security Audit Trail</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a security admin, I need all events</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">logged for incident investigation.</text>
+      <a href="#US-006"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-006</text></a>
+      <a href="#FR-025"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-025</text></a>
+      <a href="#FR-026"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-026</text></a>
+      <a href="#SC-005"><rect x="223" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-005</text></a>
+      <a href="#SC-006"><rect x="284" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 2: Event Filtering -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Event Filtering</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Query logs by event type, user,</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">and date range for security review.</text>
+      <a href="#US-006"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-006</text></a>
+      <a href="#FR-027"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-027</text></a>
+      <a href="#FR-028"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-028</text></a>
+    </g>
+
+    <!-- Column 3: Failed Attempt Tracking -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Failed Attempt Tracking</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Brute force attempts logged with</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">IP and attempt count for analysis.</text>
+      <a href="#US-003"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#SC-003"><rect x="162" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-003</text></a>
+    </g>
+
+    <!-- Column 4: Session Events -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Events</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Sign-in, sign-out, and session</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">timeout events tracked.</text>
+      <a href="#US-009"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-009</text></a>
+      <a href="#FR-029"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-029</text></a>
+      <a href="#FR-033"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-033</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CSP headers | rate limiting | session timeout | audit logging</text>
+
+
+  <!-- SIGNATURE: 18px bold -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">005:03 | Security Hardening | ScriptHammer</text>
+</svg>

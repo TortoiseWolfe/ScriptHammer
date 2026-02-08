@@ -1,0 +1,309 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a"/>
+      <stop offset="100%" style="stop-color:#1e293b"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#8b5cf6"/>
+      <stop offset="100%" style="stop-color:#d946ef"/>
+    </linearGradient>
+    <linearGradient id="syncingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="800" fill="url(#bgGrad)"/>
+
+  <!-- Dot grid pattern -->
+  <g opacity="0.03">
+    <pattern id="dots" width="30" height="30" patternUnits="userSpaceOnUse">
+      <circle cx="15" cy="15" r="1" fill="#fff"/>
+    </pattern>
+    <rect width="1200" height="800" fill="url(#dots)"/>
+  </g>
+
+  <!-- Accent line top -->
+  <rect x="0" y="0" width="1200" height="3" fill="url(#accentGrad)"/>
+
+  <!-- Title -->
+  <text x="600" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#64748b" letter-spacing="1">SYNC STATUS</text>
+
+  <!-- ==================== STATE 1: SYNCING ==================== -->
+
+  <text x="160" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#3b82f6">SYNCING</text>
+
+  <!-- Syncing Panel -->
+  <rect x="40" y="80" width="240" height="320" rx="8" fill="#1e293b" stroke="#3b82f6" stroke-width="2"/>
+
+  <!-- Syncing Banner -->
+  <rect x="40" y="80" width="240" height="40" rx="8" fill="#1e3a8a"/>
+  <rect x="40" y="112" width="240" height="8" fill="#1e293b"/>
+
+  <!-- Sync icon (rotating) -->
+  <g transform="translate(60, 92)">
+    <circle cx="8" cy="8" r="7" stroke="#60a5fa" stroke-width="1.5" fill="none" stroke-dasharray="12,6"/>
+    <path d="M8 3v3l2 2" stroke="#60a5fa" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  </g>
+  <text x="85" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#60a5fa">Syncing 3 items...</text>
+
+  <!-- Progress bar -->
+  <rect x="55" y="135" width="210" height="8" rx="4" fill="#334155"/>
+  <rect x="55" y="135" width="84" height="8" rx="4" fill="url(#syncingGrad)"/>
+  <text x="265" y="143" text-anchor="end" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">40%</text>
+
+  <!-- Sync items -->
+  <rect x="55" y="160" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="65" y="170" width="4" height="30" rx="2" fill="#3b82f6"/>
+  <text x="80" y="185" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Contact Form</text>
+  <text x="80" y="198" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Sending...</text>
+  <!-- Spinner -->
+  <circle cx="245" cy="185" r="8" stroke="#3b82f6" stroke-width="2" fill="none" stroke-dasharray="15,35" stroke-linecap="round"/>
+
+  <rect x="55" y="220" width="210" height="50" rx="4" fill="#334155" opacity="0.6"/>
+  <rect x="65" y="230" width="4" height="30" rx="2" fill="#475569"/>
+  <text x="80" y="245" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#94a3b8">Profile Update</text>
+  <text x="80" y="258" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Waiting...</text>
+  <text x="245" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">2</text>
+
+  <rect x="55" y="280" width="210" height="50" rx="4" fill="#334155" opacity="0.6"/>
+  <rect x="65" y="290" width="4" height="30" rx="2" fill="#475569"/>
+  <text x="80" y="305" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#94a3b8">Message to John</text>
+  <text x="80" y="318" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Waiting...</text>
+  <text x="245" y="310" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">3</text>
+
+  <!-- Status text -->
+  <text x="160" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#64748b">Connection restored</text>
+  <text x="160" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#475569">Background sync in progress</text>
+
+  <!-- ==================== STATE 2: SUCCESS ==================== -->
+
+  <text x="420" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#22c55e">SUCCESS</text>
+
+  <!-- Success Panel -->
+  <rect x="300" y="80" width="240" height="320" rx="8" fill="#1e293b" stroke="#22c55e" stroke-width="2"/>
+
+  <!-- Success Banner -->
+  <rect x="300" y="80" width="240" height="40" rx="8" fill="#14532d"/>
+  <rect x="300" y="112" width="240" height="8" fill="#1e293b"/>
+
+  <!-- Check icon -->
+  <g transform="translate(320, 92)">
+    <circle cx="8" cy="8" r="7" fill="#22c55e"/>
+    <path d="M5 8l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <text x="345" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#86efac">All items synced!</text>
+
+  <!-- Completed items -->
+  <rect x="315" y="135" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="325" y="145" width="4" height="30" rx="2" fill="#22c55e"/>
+  <text x="340" y="160" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Contact Form</text>
+  <text x="340" y="173" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">Sent successfully</text>
+  <g transform="translate(495, 152)">
+    <circle cx="8" cy="8" r="8" fill="#166534"/>
+    <path d="M5 8l2 2 4-4" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <rect x="315" y="195" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="325" y="205" width="4" height="30" rx="2" fill="#22c55e"/>
+  <text x="340" y="220" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Profile Update</text>
+  <text x="340" y="233" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">Saved successfully</text>
+  <g transform="translate(495, 212)">
+    <circle cx="8" cy="8" r="8" fill="#166534"/>
+    <path d="M5 8l2 2 4-4" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <rect x="315" y="255" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="325" y="265" width="4" height="30" rx="2" fill="#22c55e"/>
+  <text x="340" y="280" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Message to John</text>
+  <text x="340" y="293" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">Delivered</text>
+  <g transform="translate(495, 272)">
+    <circle cx="8" cy="8" r="8" fill="#166534"/>
+    <path d="M5 8l2 2 4-4" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Clear button -->
+  <rect x="340" y="320" width="160" height="32" rx="6" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="420" y="341" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#94a3b8">Clear History</text>
+
+  <!-- Timestamp -->
+  <text x="420" y="375" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Synced just now</text>
+
+  <!-- ==================== STATE 3: PARTIAL/RETRY ==================== -->
+
+  <text x="680" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#eab308">RETRY</text>
+
+  <!-- Retry Panel -->
+  <rect x="560" y="80" width="240" height="320" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="2"/>
+
+  <!-- Retry Banner -->
+  <rect x="560" y="80" width="240" height="40" rx="8" fill="#713f12"/>
+  <rect x="560" y="112" width="240" height="8" fill="#1e293b"/>
+
+  <!-- Warning icon -->
+  <g transform="translate(580, 92)">
+    <path d="M8 2L1 15h14L8 2z" fill="#eab308"/>
+    <text x="8" y="12" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="bold" fill="#713f12">!</text>
+  </g>
+  <text x="605" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#fcd34d">1 item failed, retrying...</text>
+
+  <!-- Mixed status items -->
+  <rect x="575" y="135" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="585" y="145" width="4" height="30" rx="2" fill="#22c55e"/>
+  <text x="600" y="160" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Contact Form</text>
+  <text x="600" y="173" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">Sent successfully</text>
+  <g transform="translate(755, 152)">
+    <circle cx="8" cy="8" r="8" fill="#166534"/>
+    <path d="M5 8l2 2 4-4" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <rect x="575" y="195" width="210" height="65" rx="4" fill="#451a03" stroke="#eab308" stroke-width="1"/>
+  <rect x="585" y="205" width="4" height="45" rx="2" fill="#eab308"/>
+  <text x="600" y="220" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Profile Update</text>
+  <text x="600" y="233" font-family="system-ui, sans-serif" font-size="9" fill="#fcd34d">Server error (500)</text>
+  <text x="600" y="248" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Retry 2/3 in 30s</text>
+  <!-- Retry spinner -->
+  <circle cx="763" cy="225" r="8" stroke="#eab308" stroke-width="2" fill="none" stroke-dasharray="15,35" stroke-linecap="round"/>
+
+  <rect x="575" y="270" width="210" height="50" rx="4" fill="#334155"/>
+  <rect x="585" y="280" width="4" height="30" rx="2" fill="#22c55e"/>
+  <text x="600" y="295" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Message to John</text>
+  <text x="600" y="308" font-family="system-ui, sans-serif" font-size="9" fill="#22c55e">Delivered</text>
+  <g transform="translate(755, 287)">
+    <circle cx="8" cy="8" r="8" fill="#166534"/>
+    <path d="M5 8l2 2 4-4" stroke="#86efac" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- Retry action -->
+  <rect x="600" y="335" width="75" height="28" rx="4" fill="#eab308"/>
+  <text x="637" y="354" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#1e293b">Retry Now</text>
+
+  <rect x="685" y="335" width="75" height="28" rx="4" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="722" y="354" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Discard</text>
+
+  <text x="680" y="385" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Exponential backoff: 30s → 60s → 120s</text>
+
+  <!-- ==================== STATE 4: FAILED ==================== -->
+
+  <text x="940" y="65" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#ef4444">FAILED</text>
+
+  <!-- Failed Panel -->
+  <rect x="820" y="80" width="240" height="320" rx="8" fill="#1e293b" stroke="#ef4444" stroke-width="2"/>
+
+  <!-- Failed Banner -->
+  <rect x="820" y="80" width="240" height="40" rx="8" fill="#7f1d1d"/>
+  <rect x="820" y="112" width="240" height="8" fill="#1e293b"/>
+
+  <!-- X icon -->
+  <g transform="translate(840, 92)">
+    <circle cx="8" cy="8" r="7" fill="#ef4444"/>
+    <path d="M5 5l6 6M11 5l-6 6" stroke="#fff" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  </g>
+  <text x="865" y="105" font-family="system-ui, sans-serif" font-size="11" font-weight="500" fill="#fca5a5">Sync failed after 3 retries</text>
+
+  <!-- Failed items -->
+  <rect x="835" y="135" width="210" height="65" rx="4" fill="#450a0a" stroke="#ef4444" stroke-width="1"/>
+  <rect x="845" y="145" width="4" height="45" rx="2" fill="#ef4444"/>
+  <text x="860" y="160" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Profile Update</text>
+  <text x="860" y="175" font-family="system-ui, sans-serif" font-size="9" fill="#fca5a5">Network timeout</text>
+  <text x="860" y="190" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Max retries exceeded</text>
+  <g transform="translate(1015, 160)">
+    <circle cx="8" cy="8" r="8" fill="#7f1d1d"/>
+    <path d="M5 5l6 6M11 5l-6 6" stroke="#fca5a5" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Data recovery info -->
+  <rect x="835" y="215" width="210" height="70" rx="4" fill="#334155"/>
+  <text x="850" y="238" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Data preserved locally</text>
+  <text x="850" y="255" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Your data is safe in IndexedDB.</text>
+  <text x="850" y="270" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Try again when online.</text>
+
+  <!-- Recovery actions -->
+  <rect x="850" y="300" width="90" height="32" rx="6" fill="#8b5cf6"/>
+  <text x="895" y="321" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Retry All</text>
+
+  <rect x="950" y="300" width="80" height="32" rx="6" fill="#334155" stroke="#475569" stroke-width="1"/>
+  <text x="990" y="321" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#94a3b8">Export</text>
+
+  <rect x="850" y="345" width="180" height="28" rx="6" fill="#334155" stroke="#ef4444" stroke-width="1"/>
+  <text x="940" y="364" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">Discard Failed Items</text>
+
+  <text x="940" y="395" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#64748b">Check network connection</text>
+
+  <!-- ==================== MOBILE TOAST NOTIFICATIONS ==================== -->
+
+  <text x="600" y="440" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="#fff">MOBILE TOAST NOTIFICATIONS</text>
+
+  <!-- Toast: Syncing -->
+  <rect x="40" y="460" width="260" height="60" rx="8" fill="#1e3a8a" stroke="#3b82f6" stroke-width="1"/>
+  <circle cx="70" cy="490" r="12" stroke="#60a5fa" stroke-width="2" fill="none" stroke-dasharray="20,50" stroke-linecap="round"/>
+  <text x="95" y="485" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#fff">Syncing...</text>
+  <text x="95" y="502" font-family="system-ui, sans-serif" font-size="10" fill="#93c5fd">3 items pending</text>
+  <rect x="250" y="475" width="35" height="30" rx="4" fill="#3b82f6"/>
+  <text x="267" y="495" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" fill="#fff">40%</text>
+
+  <!-- Toast: Success -->
+  <rect x="320" y="460" width="260" height="60" rx="8" fill="#14532d" stroke="#22c55e" stroke-width="1"/>
+  <g transform="translate(345, 478)">
+    <circle cx="12" cy="12" r="12" fill="#22c55e"/>
+    <path d="M7 12l3 3 6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+  <text x="375" y="485" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#fff">Sync Complete</text>
+  <text x="375" y="502" font-family="system-ui, sans-serif" font-size="10" fill="#86efac">All 3 items synced</text>
+  <text x="555" y="495" font-family="system-ui, sans-serif" font-size="16" fill="#86efac">×</text>
+
+  <!-- Toast: Error -->
+  <rect x="600" y="460" width="260" height="60" rx="8" fill="#7f1d1d" stroke="#ef4444" stroke-width="1"/>
+  <g transform="translate(625, 478)">
+    <circle cx="12" cy="12" r="12" fill="#ef4444"/>
+    <path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2" stroke-linecap="round" fill="none"/>
+  </g>
+  <text x="655" y="485" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#fff">Sync Failed</text>
+  <text x="655" y="502" font-family="system-ui, sans-serif" font-size="10" fill="#fca5a5">Tap to retry</text>
+  <rect x="790" y="475" width="55" height="30" rx="4" fill="#ef4444"/>
+  <text x="817" y="495" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" font-weight="500" fill="#fff">Retry</text>
+
+  <!-- Toast: Queued -->
+  <rect x="880" y="460" width="260" height="60" rx="8" fill="#713f12" stroke="#eab308" stroke-width="1"/>
+  <g transform="translate(905, 478)">
+    <circle cx="12" cy="12" r="12" fill="#eab308"/>
+    <text x="12" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="bold" fill="#1e293b">+</text>
+  </g>
+  <text x="935" y="485" font-family="system-ui, sans-serif" font-size="12" font-weight="500" fill="#fff">Queued for Later</text>
+  <text x="935" y="502" font-family="system-ui, sans-serif" font-size="10" fill="#fcd34d">Will sync when online</text>
+  <text x="1115" y="495" font-family="system-ui, sans-serif" font-size="16" fill="#fcd34d">×</text>
+
+  <!-- ==================== ANNOTATIONS ==================== -->
+
+  <rect x="40" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="55" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">Background Sync API</text>
+  <text x="55" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Service Worker handles</text>
+  <text x="55" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">sync when online</text>
+
+  <rect x="230" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="245" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">Exponential Backoff</text>
+  <text x="245" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">30s → 60s → 120s</text>
+  <text x="245" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Max 3 retries</text>
+
+  <rect x="420" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="435" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">IndexedDB Storage</text>
+  <text x="435" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Data persists locally</text>
+  <text x="435" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">until sync succeeds</text>
+
+  <rect x="610" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="625" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">User Control</text>
+  <text x="625" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Retry, discard, or</text>
+  <text x="625" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">export failed items</text>
+
+  <rect x="800" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="815" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">Toast Notifications</text>
+  <text x="815" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Non-blocking status</text>
+  <text x="815" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">updates on mobile</text>
+
+  <rect x="990" y="550" width="170" height="65" rx="4" fill="#1e293b" stroke="#8b5cf6" stroke-width="1"/>
+  <text x="1005" y="570" font-family="monospace" font-size="10" fill="#8b5cf6">Browser Compat</text>
+  <text x="1005" y="585" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Chrome/Edge: Full</text>
+  <text x="1005" y="598" font-family="system-ui, sans-serif" font-size="9" fill="#94a3b8">Safari/FF: Fallback</text>
+</svg>

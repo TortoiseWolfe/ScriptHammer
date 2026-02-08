@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    GEOLOCATION MAP - PERMISSION FLOW
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Map container -->
+    <rect x="20" y="60" width="1240" height="570" rx="4" fill="#d4e6d4" stroke="#b8a080"/>
+
+    <!-- Map grid lines (simulating map tiles) -->
+    <g stroke="#a8c8a8" stroke-width="1" opacity="0.5">
+      <line x1="20" y1="200" x2="1260" y2="200"/>
+      <line x1="20" y1="340" x2="1260" y2="340"/>
+      <line x1="20" y1="480" x2="1260" y2="480"/>
+      <line x1="300" y1="60" x2="300" y2="630"/>
+      <line x1="580" y1="60" x2="580" y2="630"/>
+      <line x1="860" y1="60" x2="860" y2="630"/>
+      <line x1="1140" y1="60" x2="1140" y2="630"/>
+    </g>
+
+    <!-- Map features (roads, areas) -->
+    <path d="M100,300 Q300,200 500,350 T900,250 T1200,400" stroke="#888" stroke-width="3" fill="none"/>
+    <ellipse cx="640" cy="350" rx="150" ry="80" fill="#a8d8a8" opacity="0.5"/>
+    <text x="640" y="355" text-anchor="middle" fill="#4a7c4a" font-family="system-ui, sans-serif" font-size="14">Park</text>
+
+    <!-- User location marker (when granted) -->
+    <g transform="translate(640, 280)">
+      <circle r="30" fill="#3b82f6" opacity="0.2"/>
+      <circle r="15" fill="#3b82f6" opacity="0.4"/>
+      <circle r="8" fill="#3b82f6"/>
+      <circle r="4" fill="#e8d4b8"/>
+    </g>
+    <text x="640" y="240" text-anchor="middle" fill="#1e40af" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Your Location</text>
+
+    <!-- Callout 3: User location marker -->
+    <g transform="translate(700, 280)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Zoom controls -->
+    <g transform="translate(1180, 100)">
+      <rect x="0" y="0" width="50" height="100" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <rect x="5" y="5" width="40" height="40" rx="4" fill="#8b5cf6"/>
+      <text x="25" y="32" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="24" font-weight="bold">+</text>
+      <rect x="5" y="55" width="40" height="40" rx="4" fill="#8b5cf6"/>
+      <text x="25" y="82" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="24" font-weight="bold">−</text>
+    </g>
+
+    <!-- Callout 1: Zoom controls -->
+    <g transform="translate(1250, 150)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Location button -->
+    <g transform="translate(1180, 220)">
+      <rect x="0" y="0" width="50" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <rect x="5" y="5" width="40" height="40" rx="4" fill="#22c55e"/>
+      <circle cx="25" cy="25" r="10" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="25" cy="25" r="3" fill="#e8d4b8"/>
+    </g>
+    <text x="1205" y="290" text-anchor="middle" fill="#166534" font-family="system-ui, sans-serif" font-size="14" font-weight="600">My Location</text>
+
+    <!-- Callout 2: Location button -->
+    <g transform="translate(1250, 245)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Permission states panel -->
+    <g transform="translate(40, 450)">
+      <rect x="0" y="0" width="350" height="170" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="175" y="25" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Permission States</text>
+
+      <!-- State: Not requested -->
+      <rect x="15" y="40" width="100" height="35" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="65" y="62" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Prompt</text>
+
+      <!-- State: Granted -->
+      <rect x="125" y="40" width="100" height="35" rx="4" fill="#dcfce7" stroke="#22c55e"/>
+      <text x="175" y="62" text-anchor="middle" fill="#166534" font-family="system-ui, sans-serif" font-size="14">Granted</text>
+
+      <!-- State: Denied -->
+      <rect x="235" y="40" width="100" height="35" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+      <text x="285" y="62" text-anchor="middle" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14">Denied</text>
+
+      <!-- Denied state UI example -->
+      <rect x="15" y="90" width="320" height="65" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+      <text x="25" y="115" fill="#92400e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Location access blocked</text>
+      <text x="25" y="135" fill="#92400e" font-family="system-ui, sans-serif" font-size="14">To enable, click the lock icon in your</text>
+      <text x="25" y="150" fill="#92400e" font-family="system-ui, sans-serif" font-size="14">browser address bar.</text>
+    </g>
+
+    <!-- Callout 4: Permission denied state -->
+    <g transform="translate(410, 520)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Map attribution -->
+    <rect x="20" y="610" width="200" height="20" rx="2" fill="#f5f0e6" opacity="0.8"/>
+    <text x="30" y="624" fill="#374151" font-family="system-ui, sans-serif" font-size="14">© OpenStreetMap contributors</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile map container -->
+    <rect x="10" y="85" width="340" height="400" rx="4" fill="#d4e6d4" stroke="#b8a080"/>
+
+    <!-- Mobile map grid -->
+    <g stroke="#a8c8a8" stroke-width="1" opacity="0.5">
+      <line x1="10" y1="185" x2="350" y2="185"/>
+      <line x1="10" y1="285" x2="350" y2="285"/>
+      <line x1="10" y1="385" x2="350" y2="385"/>
+      <line x1="120" y1="85" x2="120" y2="485"/>
+      <line x1="230" y1="85" x2="230" y2="485"/>
+    </g>
+
+    <!-- Mobile map features -->
+    <path d="M30,250 Q100,180 180,280 T300,220" stroke="#888" stroke-width="2" fill="none"/>
+    <ellipse cx="180" cy="300" rx="60" ry="40" fill="#a8d8a8" opacity="0.5"/>
+
+    <!-- Mobile user location -->
+    <g transform="translate(180, 240)">
+      <circle r="20" fill="#3b82f6" opacity="0.2"/>
+      <circle r="10" fill="#3b82f6" opacity="0.4"/>
+      <circle r="5" fill="#3b82f6"/>
+      <circle r="2" fill="#e8d4b8"/>
+    </g>
+
+    <!-- Callout 3 mobile -->
+    <g transform="translate(220, 240)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile zoom controls -->
+    <g transform="translate(290, 110)">
+      <rect x="0" y="0" width="44" height="88" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <rect x="2" y="2" width="40" height="40" rx="4" fill="#8b5cf6"/>
+      <text x="22" y="28" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">+</text>
+      <rect x="2" y="46" width="40" height="40" rx="4" fill="#8b5cf6"/>
+      <text x="22" y="72" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">−</text>
+    </g>
+
+    <!-- Callout 1 mobile -->
+    <g transform="translate(355, 150)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Mobile location button -->
+    <g transform="translate(290, 210)">
+      <rect x="0" y="0" width="44" height="44" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <rect x="2" y="2" width="40" height="40" rx="4" fill="#22c55e"/>
+      <circle cx="22" cy="22" r="10" fill="none" stroke="#ffffff" stroke-width="2"/>
+      <circle cx="22" cy="22" r="3" fill="#e8d4b8"/>
+    </g>
+
+    <!-- Callout 2 mobile -->
+    <g transform="translate(355, 232)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Mobile permission states -->
+    <g transform="translate(20, 500)">
+      <rect x="0" y="0" width="320" height="150" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="160" y="25" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Permission States</text>
+
+      <!-- States row -->
+      <rect x="10" y="40" width="95" height="30" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="57" y="60" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Prompt</text>
+
+      <rect x="115" y="40" width="95" height="30" rx="4" fill="#dcfce7" stroke="#22c55e"/>
+      <text x="162" y="60" text-anchor="middle" fill="#166534" font-family="system-ui, sans-serif" font-size="14">Granted</text>
+
+      <rect x="220" y="40" width="90" height="30" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+      <text x="265" y="60" text-anchor="middle" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14">Denied</text>
+
+      <!-- Denied explanation -->
+      <rect x="10" y="80" width="300" height="55" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+      <text x="20" y="100" fill="#92400e" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Location blocked</text>
+      <text x="20" y="120" fill="#92400e" font-family="system-ui, sans-serif" font-size="14">Enable in browser settings</text>
+    </g>
+
+    <!-- Callout 4 mobile -->
+    <g transform="translate(355, 575)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Column 1: Interactive Map -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Interactive Map Controls</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can pan and zoom the map</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">without granting location permission.</text>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-003"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-003</text></a>
+      <a href="#SC-001"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 2: Permission Request -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Location Permission Request</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I click the location button to</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">request permission and center on me.</text>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-006"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-007"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-007</text></a>
+      <a href="#SC-003"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-003</text></a>
+    </g>
+
+    <!-- Column 3: Permission Granted -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Location Granted State</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user with permission granted, I see</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">my location marker on the map.</text>
+      <a href="#US-002"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-002</text></a>
+      <a href="#FR-008"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-008</text></a>
+      <a href="#FR-011"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-011</text></a>
+      <a href="#SC-002"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Column 4: Permission Denied -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Permission Denied State</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user who denied permission, I see</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">guidance on how to re-enable access.</text>
+      <a href="#US-003"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">US-003</text></a>
+      <a href="#FR-010"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-010</text></a>
+      <a href="#FR-014"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">FR-014</text></a>
+      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="12" text-anchor="middle">SC-004</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Leaflet.js | location permission | markers | map accessibility</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">021:01 | Geolocation Map | ScriptHammer</text>
+</svg>

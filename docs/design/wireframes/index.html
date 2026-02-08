@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Security: Content Security Policy -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://tortoisewolfe.github.io; connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com; frame-ancestors 'self';">
+  <title>ScriptHammer Wireframes</title>
+
+  <!-- Social Media Meta Tags -->
+  <meta name="description" content="Interactive wireframe viewer for project planning. 46 feature specifications with SVG wireframes.">
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tortoisewolfe.github.io/ScriptHammer/">
+  <meta property="og:title" content="ScriptHammer Wireframes">
+  <meta property="og:description" content="Interactive wireframe viewer for project planning. 46 feature specifications with SVG wireframes.">
+  <meta property="og:image" content="https://tortoisewolfe.github.io/ScriptHammer/og-image.png">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://tortoisewolfe.github.io/ScriptHammer/">
+  <meta name="twitter:title" content="ScriptHammer Wireframes">
+  <meta name="twitter:description" content="Interactive wireframe viewer for project planning. 46 feature specifications with SVG wireframes.">
+  <meta name="twitter:image" content="https://tortoisewolfe.github.io/ScriptHammer/og-image.png">
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-N342H6T3VS"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-N342H6T3VS');
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #1f2937;
+      color: #e5e7eb;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar - always fixed position */
+    nav {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 260px;
+      height: 100vh;
+      background: #111827;
+      border-right: 1px solid #374151;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      z-index: 50;
+      transition: transform 0.3s ease-out;
+    }
+
+    nav h1 {
+      padding: 20px;
+      font-size: 18px;
+      border-bottom: 1px solid #374151;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    nav h1 a {
+      color: #6366f1;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: color 0.15s;
+    }
+
+    nav h1 a:hover {
+      color: #818cf8;
+    }
+
+    nav h1 a::before {
+      content: '';
+      width: 24px;
+      height: 24px;
+      background: #6366f1;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Category groups (3-tier: Category > Feature > Wireframe) */
+    .nav-category {
+      border-top: 1px solid #374151;
+    }
+
+    .nav-category:first-of-type {
+      border-top: none;
+    }
+
+    .nav-category .category-header {
+      font-size: 12px;
+      font-weight: 700;
+      color: #8b5cf6;
+      padding: 14px 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+      background: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .nav-category .category-header:hover {
+      color: #a78bfa;
+    }
+
+    .nav-category .category-header::before {
+      content: '▼';
+      font-size: 8px;
+      transition: transform 0.2s;
+    }
+
+    .nav-category.collapsed .category-header::before {
+      transform: rotate(-90deg);
+    }
+
+    .nav-category .category-header .shortcut {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 500;
+      color: #64748b;
+      opacity: 0.7;
+    }
+
+    .nav-section h2 .shortcut {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 500;
+      color: #64748b;
+      opacity: 0.6;
+    }
+
+    /* Status badges */
+    .status-badge {
+      font-size: 12px;
+      margin-left: 6px;
+    }
+    .nav-section h2 .status-badge {
+      font-size: 14px;
+    }
+    .nav-links a .status-badge {
+      font-size: 11px;
+      margin-left: 4px;
+    }
+
+    .nav-category .category-links {
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+      max-height: 3000px;
+    }
+
+    .nav-category.collapsed .category-links {
+      max-height: 0;
+    }
+
+    /* Feature sections inside categories */
+    .nav-category .nav-section {
+      padding: 8px 0;
+      margin-left: 12px;
+      border-left: 2px solid #374151;
+    }
+
+    .nav-category .nav-section h2 {
+      padding-left: 16px;
+      font-size: 10px;
+      color: #fbbf24;  /* Amber/yellow for feature level */
+    }
+
+    .nav-category .nav-section a {
+      padding-left: 24px;
+    }
+
+    .nav-section {
+      padding: 16px 0 8px 0;
+    }
+
+    .nav-section h2 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      padding: 8px 20px;
+      margin-bottom: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+    }
+
+    .nav-section h2:hover {
+      color: #d1d5db;
+    }
+
+    .nav-section h2::before {
+      content: '▼';
+      font-size: 8px;
+      transition: transform 0.2s;
+    }
+
+    .nav-section.collapsed h2::before {
+      transform: rotate(-90deg);
+    }
+
+    .nav-section .nav-links {
+      overflow: hidden;
+      transition: max-height 0.2s ease-out;
+      max-height: 500px;
+    }
+
+    .nav-section.collapsed .nav-links {
+      max-height: 0;
+    }
+
+    .nav-section a {
+      display: block;
+      padding: 10px 20px;
+      color: #d1d5db;
+      text-decoration: none;
+      font-size: 14px;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .nav-section a:hover {
+      background: #1f2937;
+      color: #fff;
+    }
+
+    .nav-section a.active {
+      background: #1f2937;
+      color: #6366f1;
+      border-left-color: #6366f1;
+    }
+
+    .nav-section a .path {
+      display: block;
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    /* Main content area */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      margin-left: 260px;
+      margin-bottom: 60px;
+      transition: margin-left 0.3s ease-out, margin-bottom 0.3s ease-out;
+    }
+
+    #viewer-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #374151;
+    }
+
+    #viewer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      transform-origin: center center;
+      transition: transform 0.3s ease-out;
+      /* Transform set via JS: translate(-50%, -50%) translate(panX, panY) scale(zoom) */
+    }
+
+    #viewer svg {
+      display: block;
+      max-width: none; /* Allow SVG to use its natural dimensions */
+    }
+
+    #viewer a {
+      cursor: pointer;
+    }
+
+    #viewer a:hover rect,
+    #viewer a:hover text {
+      filter: brightness(1.2);
+    }
+
+    /* Bottom navigation - fixed position */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 260px;
+      right: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      background: #111827;
+      border-top: 1px solid #374151;
+      z-index: 200;
+      transition: transform 0.3s ease-out, left 0.3s ease-out;
+    }
+
+    footer button {
+      padding: 10px 20px;
+      background: #374151;
+      color: #e5e7eb;
+      border: 1px solid #4b5563;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      min-width: 120px;
+    }
+
+    footer button:hover:not(:disabled) {
+      background: #4b5563;
+      color: #fff;
+    }
+
+    footer button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #current-info {
+      text-align: center;
+    }
+
+    #current-info .title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    #current-info .counter {
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    .shortcut-hint {
+      font-size: 14px;
+      font-weight: 600;
+      color: #9ca3af;
+      margin-left: 16px;
+    }
+
+    /* Error state */
+    .error {
+      color: #f87171;
+      padding: 40px;
+      text-align: center;
+    }
+
+    /* Zoom controls */
+    .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 16px;
+    }
+
+    .zoom-controls button {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      padding: 0;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .zoom-display {
+      min-width: 50px;
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      cursor: pointer;
+    }
+
+    .zoom-display:hover {
+      color: #6366f1;
+    }
+
+    /* Pan/drag cursor */
+    #viewer-container {
+      cursor: grab;
+    }
+
+    #viewer-container.dragging {
+      cursor: grabbing;
+      user-select: none;
+    }
+
+    #viewer-container.dragging #viewer {
+      pointer-events: none;
+      transition: none; /* Disable transition during drag for smooth panning */
+    }
+
+    /* Focus mode - slide UI chrome out */
+    body.focus-mode nav {
+      transform: translateX(-100%);
+    }
+
+    body.focus-mode main {
+      margin-left: 0;
+      margin-bottom: 0;
+    }
+
+    body.focus-mode footer {
+      left: 0;
+      transform: translateY(100%);
+    }
+
+    /* Focus mode indicator */
+    .focus-hint {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #9ca3af;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    body.focus-mode .focus-hint {
+      opacity: 1;
+    }
+
+    /* GitHub link in footer */
+    .github-link {
+      color: #9ca3af;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      transition: color 0.15s;
+    }
+
+    .github-link:hover {
+      color: #6366f1;
+    }
+
+    .footer-links {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .link-separator {
+      color: #4b5563;
+    }
+
+    .github-icon {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    /* Legend drawer (L toggle) */
+    .legend-drawer {
+      position: fixed;
+      right: -340px;
+      top: 0;
+      bottom: 60px;
+      width: 340px;
+      background: #111827;
+      border-left: 1px solid #374151;
+      transition: right 0.3s ease-out;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body.legend-open .legend-drawer {
+      right: 0;
+    }
+
+    .legend-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid #374151;
+      background: #111827;
+    }
+
+    .legend-header h2 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin: 0;
+    }
+
+    .legend-close {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+    }
+
+    .legend-close:hover {
+      color: #fff;
+    }
+
+    .legend-section {
+      padding: 12px 16px;
+      border-bottom: 1px solid #374151;
+    }
+
+    .legend-section h3 {
+      font-size: 11px;
+      font-weight: 700;
+      color: #8b5cf6;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 8px 0;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .legend-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .legend-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 24px;
+      background: #374151;
+      border: 1px solid #4b5563;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      font-family: monospace;
+    }
+
+    .legend-key.arrow {
+      font-size: 18px;
+      min-width: 56px;
+      height: 26px;
+      letter-spacing: 4px;
+    }
+
+    .legend-desc {
+      color: #d1d5db;
+    }
+
+    .legend-swatch {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .legend-abbr {
+      font-weight: 600;
+      color: #9ca3af;
+      min-width: 50px;
+    }
+  </style>
+</head>
+<body class="focus-mode">
+  <nav>
+    <h1><a href="https://github.com/TortoiseWolfe/First-Frame" target="_blank">FirstFrame</a></h1>
+
+    <!-- Nav sections populated dynamically by /wireframe command -->
+
+    <!-- Foundation (000-006) -->
+    <div class="nav-category" id="cat-foundation">
+      <div class="category-header">Foundation <span class="shortcut">⇧F1</span></div>
+      <div class="category-links">
+        <!-- 000-landing-page (FIRST) -->
+        <div class="nav-section">
+          <h2>000 - Landing Page <span class="shortcut">^1</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="000-landing-page/01-landing-page.svg">
+              Landing Page
+              <span class="path">Desktop 1366×768 + Mobile</span>
+            </a>
+          </div>
+        </div>
+        <!-- 000-rls-implementation -->
+        <div class="nav-section">
+          <h2>000 - RLS Implementation <span class="shortcut">^2</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="000-rls-implementation/01-policy-architecture.svg">
+              Policy Architecture
+              <span class="path">Roles, Policies, Tables, Access Flows</span>
+            </a>
+          </div>
+        </div>
+        <!-- 001-wcag-aa-compliance -->
+        <div class="nav-section">
+          <h2>001 - WCAG AAA Compliance <span class="shortcut">^3</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="001-wcag-aa-compliance/01-accessibility-dashboard.svg">
+              Accessibility Dashboard
+              <span class="path">Score, Per-Page Breakdown, Trends, Issues</span>
+            </a>
+            <a href="#" data-svg="001-wcag-aa-compliance/02-cicd-pipeline-integration.svg">
+              CI/CD Pipeline Integration
+              <span class="path">Build Status, Violations, Dev Console</span>
+            </a>
+            <a href="#" data-svg="001-wcag-aa-compliance/03-accessibility-controls-overlay.svg">
+              Accessibility Controls
+              <span class="path">Contrast, Keyboard, Touch, Timing</span>
+            </a>
+          </div>
+        </div>
+        <!-- 002-cookie-consent -->
+        <div class="nav-section">
+          <h2>002 - Cookie Consent <span class="shortcut">^4</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="002-cookie-consent/01-consent-modal.svg">
+              Initial Consent Modal
+              <span class="path">Accept/Reject/Manage cookie choices</span>
+            </a>
+            <a href="#" data-svg="002-cookie-consent/02-cookie-preferences-panel.svg">
+              Cookie Preferences Panel
+              <span class="path">Granular category toggles</span>
+            </a>
+            <a href="#" data-svg="002-cookie-consent/03-privacy-settings-page.svg">
+              Privacy Settings Page
+              <span class="path">Data export, deletion, history</span>
+            </a>
+          </div>
+        </div>
+        <!-- 003-user-authentication -->
+        <div class="nav-section">
+          <h2>003 - User Authentication <span class="shortcut">^5</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="003-user-authentication/01-registration-sign-in.svg">
+              Registration &amp; Sign In
+              <span class="path">Email/Password, OAuth, Sign In</span>
+            </a>
+            <a href="#" data-svg="003-user-authentication/02-verification-password-reset.svg">
+              Verification &amp; Password Reset
+              <span class="path">Email Verification, Recovery Flow</span>
+            </a>
+            <a href="#" data-svg="003-user-authentication/03-profile-session-management.svg">
+              Profile &amp; Session Management
+              <span class="path">Profile Settings, Sessions, Protected Routes</span>
+            </a>
+          </div>
+        </div>
+        <!-- 004-mobile-first-design -->
+        <div class="nav-section">
+          <h2>004 - Mobile-First Design <span class="shortcut">^6</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="004-mobile-first-design/01-responsive-navigation.svg">
+              Responsive Navigation
+              <span class="path">Viewport-safe nav, Readable content</span>
+            </a>
+            <a href="#" data-svg="004-mobile-first-design/02-touch-targets-performance.svg">
+              Touch Targets &amp; Performance
+              <span class="path">44px targets, LCP, FID, CLS metrics</span>
+            </a>
+          </div>
+        </div>
+        <!-- 005-security-hardening -->
+        <div class="nav-section">
+          <h2>005 - Security Hardening <span class="shortcut">^7</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="005-security-hardening/01-security-ux-sign-in.svg">
+              Security UX - Sign In
+              <span class="path">Password Strength, Lockout, Email Validation</span>
+            </a>
+            <a href="#" data-svg="005-security-hardening/02-session-management.svg">
+              Session Management
+              <span class="path">Timeout Warning, OAuth Protection</span>
+            </a>
+            <a href="#" data-svg="005-security-hardening/03-admin-security-dashboard.svg">
+              Admin Security Dashboard
+              <span class="path">Audit Trail, Secret Detection</span>
+            </a>
+          </div>
+        </div>
+        <!-- 006-template-fork-experience -->
+        <div class="nav-section">
+          <h2>006 - Template Fork Experience <span class="shortcut">^8</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="006-template-fork-experience/01-service-setup-guidance.svg">
+              Service Setup Guidance
+              <span class="path">Dashboard, Status Indicators, Quick Actions</span>
+            </a>
+            <a href="#" data-svg="006-template-fork-experience/02-rebrand-automation-flow.svg">
+              Rebrand Automation Flow
+              <span class="path">CLI Workflow, Config Updates, Validation</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Features (007-012) -->
+    <div class="nav-category" id="cat-core">
+      <div class="category-header">Core Features <span class="shortcut">⇧F2</span></div>
+      <div class="category-links">
+        <!-- 007-e2e-testing-framework -->
+        <div class="nav-section">
+          <h2>007 - E2E Testing Framework <span class="shortcut">^8</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="007-e2e-testing-framework/01-test-architecture-diagram.svg">
+              Test Architecture Diagram
+              <span class="path">Playwright Framework, Browser Engines, CI/CD</span>
+            </a>
+            <a href="#" data-svg="007-e2e-testing-framework/02-cicd-pipeline-flow.svg">
+              CI/CD Pipeline Flow
+              <span class="path">GitHub Actions, Artifacts, Status</span>
+            </a>
+          </div>
+        </div>
+        <!-- 008-on-the-account -->
+        <div class="nav-section">
+          <h2>008 - User Avatar Upload</h2>
+          <div class="nav-links">
+            <a href="#" data-svg="008-on-the-account/01-avatar-upload-flow.svg">
+              Avatar Upload Flow
+              <span class="path">Upload, Crop, Replace, Remove</span>
+            </a>
+          </div>
+        </div>
+        <!-- 009-user-messaging-system -->
+        <div class="nav-section">
+          <h2>009 - User Messaging System <span class="shortcut">^9</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="009-user-messaging-system/01-connection-and-chat.svg">
+              Connection &amp; Chat
+              <span class="path">Friends, Encrypted Messages, Real-time</span>
+            </a>
+            <a href="#" data-svg="009-user-messaging-system/02-settings-and-data.svg">
+              Settings &amp; Data
+              <span class="path">Offline Queue, History, GDPR Export</span>
+            </a>
+          </div>
+        </div>
+        <!-- 010-unified-blog-content -->
+        <div class="nav-section">
+          <h2>010 - Unified Blog Content</h2>
+          <div class="nav-links">
+            <a href="#" data-svg="010-unified-blog-content/01-editor-and-preview.svg">
+              Editor &amp; Preview
+              <span class="path">MDX Editor, Live Preview, Hot Reload</span>
+            </a>
+            <a href="#" data-svg="010-unified-blog-content/02-conflict-resolution.svg">
+              Conflict Resolution
+              <span class="path">Three-Way Merge, Migration Status</span>
+            </a>
+          </div>
+        </div>
+        <!-- 011-group-chats -->
+        <div class="nav-section">
+          <h2>011 - Group Chats</h2>
+          <div class="nav-links">
+            <a href="#" data-svg="011-group-chats/01-group-creation-messaging.svg">
+              Group Creation &amp; Messaging
+              <span class="path">Create group, Sender attribution, Typing indicators</span>
+            </a>
+            <a href="#" data-svg="011-group-chats/02-member-management.svg">
+              Member Management
+              <span class="path">Add/remove members, Transfer ownership, History</span>
+            </a>
+          </div>
+        </div>
+        <!-- 012-welcome-message-architecture -->
+        <div class="nav-section">
+          <h2>012 - Welcome Message Architecture <span class="shortcut">^0</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="012-welcome-message-architecture/01-user-onboarding-flow.svg">
+              User Onboarding Flow
+              <span class="path">Welcome Message, E2E Encryption, Idempotency</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth OAuth (013-016) -->
+    <div class="nav-category" id="cat-auth">
+      <div class="category-header">Auth OAuth <span class="shortcut">⇧F3</span></div>
+      <div class="category-links">
+        <!-- 013-oauth-messaging-password -->
+        <div class="nav-section">
+          <h2>013 - OAuth Messaging Password <span class="shortcut">^1</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="013-oauth-messaging-password/01-oauth-password-setup.svg">
+              OAuth Password Setup
+              <span class="path">Create messaging password for new OAuth users</span>
+            </a>
+            <a href="#" data-svg="013-oauth-messaging-password/02-oauth-password-unlock.svg">
+              OAuth Password Unlock
+              <span class="path">Unlock messages for returning OAuth users</span>
+            </a>
+          </div>
+        </div>
+        <!-- 015-oauth-display-name -->
+        <div class="nav-section">
+          <h2>015 - OAuth Display Name <span class="shortcut">^2</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="015-oauth-display-name/01-profile-population-flow.svg">
+              Profile Population Flow
+              <span class="path">OAuth metadata extraction and fallback cascade</span>
+            </a>
+          </div>
+        </div>
+        <!-- 016-messaging-critical-fixes -->
+        <div class="nav-section">
+          <h2>016 - Messaging Critical Fixes <span class="shortcut">^3</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="016-messaging-critical-fixes/01-message-input-visibility.svg">
+              Message Input Visibility
+              <span class="path">Fixed input field across all viewports</span>
+            </a>
+            <a href="#" data-svg="016-messaging-critical-fixes/02-oauth-setup-flow.svg">
+              OAuth Setup Flow
+              <span class="path">Full-page password setup with warnings</span>
+            </a>
+            <a href="#" data-svg="016-messaging-critical-fixes/03-conversation-error-states.svg">
+              Conversation Error States
+              <span class="path">Decryption failures and name resolution</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Enhancements (017-021) -->
+    <div class="nav-category" id="cat-enhancements">
+      <div class="category-header">Enhancements <span class="shortcut">⇧F4</span></div>
+      <div class="category-links">
+        <!-- 019-google-analytics -->
+        <div class="nav-section">
+          <h2>019 - Google Analytics <span class="shortcut">^3</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="019-google-analytics/01-consent-flow.svg">
+              Analytics Consent Flow
+              <span class="path">Permission settings, consent status</span>
+            </a>
+            <a href="#" data-svg="019-google-analytics/02-analytics-dashboard.svg">
+              Analytics Dashboard
+              <span class="path">Web Vitals, Custom Events, GA4 Status</span>
+            </a>
+          </div>
+        </div>
+        <!-- 021-geolocation-map -->
+        <div class="nav-section">
+          <h2>021 - Geolocation Map <span class="shortcut">^5</span></h2>
+          <div class="nav-links">
+            <a href="#" data-svg="021-geolocation-map/01-map-interface-permission.svg">
+              Map Interface & Permission
+              <span class="path">Interactive map, zoom, location permission</span>
+            </a>
+            <a href="#" data-svg="021-geolocation-map/02-markers-and-accessibility.svg">
+              Markers & Accessibility
+              <span class="path">Custom markers, keyboard nav, screen reader</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integrations (022-026) -->
+    <div class="nav-category" id="cat-integrations">
+      <div class="category-header">Integrations <span class="shortcut">⇧F5</span></div>
+      <div class="category-links">
+        <!-- Populated by /wireframe -->
+      </div>
+    </div>
+
+    <!-- Polish (027-030) -->
+    <div class="nav-category" id="cat-polish">
+      <div class="category-header">Polish <span class="shortcut">⇧F6</span></div>
+      <div class="category-links">
+        <!-- Populated by /wireframe -->
+      </div>
+    </div>
+
+    <!-- Testing (031-037) -->
+    <div class="nav-category" id="cat-testing">
+      <div class="category-header">Testing <span class="shortcut">⇧F7</span></div>
+      <div class="category-links">
+        <!-- Populated by /wireframe -->
+      </div>
+    </div>
+
+    <!-- Payments (038-043) -->
+    <div class="nav-category" id="cat-payments">
+      <div class="category-header">Payments <span class="shortcut">⇧F8</span></div>
+      <div class="category-links">
+        <!-- Populated by /wireframe -->
+      </div>
+    </div>
+
+    <!-- Code Quality (044-045) -->
+    <div class="nav-category" id="cat-quality">
+      <div class="category-header">Code Quality <span class="shortcut">⇧F9</span></div>
+      <div class="category-links">
+        <!-- Populated by /wireframe -->
+      </div>
+    </div>
+
+  </nav>
+
+  <main>
+    <div id="viewer-container">
+      <div id="viewer" aria-label="Wireframe preview"></div>
+    </div>
+
+    <footer>
+      <div style="display: flex; align-items: center;">
+        <button id="prev" aria-label="Previous wireframe">
+          &larr; Previous
+        </button>
+        <div class="zoom-controls">
+          <button id="zoom-out" aria-label="Zoom out">&minus;</button>
+          <span id="zoom-display" class="zoom-display" title="Click to reset">100%</span>
+          <button id="zoom-in" aria-label="Zoom in">+</button>
+        </div>
+        <span class="shortcut-hint">F: focus | L: legend</span>
+      </div>
+      <div id="current-info">
+        <div class="title">User Dashboard</div>
+        <div class="counter"><span id="counter-text">1 / 1</span></div>
+      </div>
+      <div class="footer-links">
+        <a id="project-link" href="#" target="_blank" class="github-link">
+          <svg class="github-icon" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span id="project-link-text">Project</span>
+        </a>
+        <span class="link-separator">|</span>
+        <a id="firstframe-link" href="#" target="_blank" class="github-link">
+          <svg class="github-icon" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          FirstFrame
+        </a>
+      </div>
+      <button id="next" aria-label="Next wireframe">
+        Next &rarr;
+      </button>
+    </footer>
+  </main>
+
+  <div class="focus-hint">Press F or Escape to exit focus mode</div>
+
+  <!-- Legend drawer (toggle with L) -->
+  <aside class="legend-drawer" id="legend-drawer">
+    <div class="legend-header">
+      <h2>Legend Reference</h2>
+      <button class="legend-close" id="legend-close" aria-label="Close legend">&times;</button>
+    </div>
+
+    <div class="legend-section">
+      <h3>Keyboard Shortcuts</h3>
+      <div class="legend-item">
+        <span class="legend-key">L</span>
+        <span class="legend-desc">Toggle this legend</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">F</span>
+        <span class="legend-desc">Focus mode (hide UI)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key arrow">← →</span>
+        <span class="legend-desc">Previous / Next wireframe</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key arrow">↑ ↓</span>
+        <span class="legend-desc">Zoom in / out</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">0</span>
+        <span class="legend-desc">Fit to view (dynamic)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">Esc</span>
+        <span class="legend-desc">Exit focus mode</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key">1-9</span>
+        <span class="legend-desc">Jump to spec 1-9 in current feature</span>
+      </div>
+    </div>
+
+    <div class="legend-section">
+      <h3>Tag Colors (Colorblind-Friendly)</h3>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background: #2563eb; border: 2px solid #2563eb;"></span>
+        <span class="legend-desc"><strong>FR</strong> – Functional Requirements (solid)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background: #ea580c; border: 2px dashed #ea580c;"></span>
+        <span class="legend-desc"><strong>SC</strong> – Success Criteria (dashed)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-swatch" style="background: #0891b2; border: 2px dotted #0891b2;"></span>
+        <span class="legend-desc"><strong>US</strong> – User Stories (dotted)</span>
+      </div>
+    </div>
+
+    <div class="legend-section">
+      <h3>RLS Access Palette (with Icons)</h3>
+      <div class="legend-item">
+        <span class="legend-key" style="background: #2563eb; color: #fff;">✓</span>
+        <span class="legend-desc">Allow – Operation permitted</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key" style="background: repeating-linear-gradient(45deg, #991b1b, #991b1b 2px, #7f1d1d 2px, #7f1d1d 4px); color: #fff;">✗</span>
+        <span class="legend-desc">Deny – Operation blocked (striped)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key" style="background: #eab308; border: 2px dashed #854d0e; color: #451a03;">?</span>
+        <span class="legend-desc">Conditional – Row-filtered (dashed)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key" style="background: #7c3aed; color: #fff;">🔑</span>
+        <span class="legend-desc">Auth Role – Authenticated user</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-key" style="background: #c026d3; border: 3px double #86198f; color: #fff;">⚙</span>
+        <span class="legend-desc">Service Role – Backend bypass (double)</span>
+      </div>
+    </div>
+
+    <div class="legend-section">
+      <h3>Abbreviations</h3>
+      <div class="legend-item">
+        <span class="legend-abbr">RLS</span>
+        <span class="legend-desc">Row Level Security</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-abbr">GDPR</span>
+        <span class="legend-desc">General Data Protection Regulation</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-abbr">WCAG</span>
+        <span class="legend-desc">Web Content Accessibility Guidelines</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-abbr">a11y</span>
+        <span class="legend-desc">Accessibility (numeronym)</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-abbr">PWA</span>
+        <span class="legend-desc">Progressive Web App</span>
+      </div>
+      <div class="legend-item">
+        <span class="legend-abbr">E2E</span>
+        <span class="legend-desc">End-to-End (encryption/testing)</span>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    // ========================================
+    // PROJECT CONFIG - Change these for your project
+    // ========================================
+    const PROJECT_NAME = "ScriptHammer";
+    const PROJECT_REPO = "https://github.com/TortoiseWolfe/ScriptHammer";
+    const FIRSTFRAME_REPO = "https://github.com/TortoiseWolfe/First-Frame";
+
+    // Apply project name to UI elements
+    document.title = `${PROJECT_NAME} Wireframes`;
+    document.querySelector('nav h1 a').textContent = PROJECT_NAME;
+    document.querySelector('nav h1 a').href = PROJECT_REPO;
+    document.getElementById('project-link').href = PROJECT_REPO;
+    document.getElementById('project-link-text').textContent = PROJECT_NAME;
+    document.getElementById('firstframe-link').href = FIRSTFRAME_REPO;
+
+    // Wireframes array - populated dynamically by /wireframe command
+    const wireframes = [
+      // 000-landing-page (FIRST)
+      { path: '000-landing-page/01-landing-page.svg', title: 'Landing Page' },
+      // 000-rls-implementation
+      { path: '000-rls-implementation/01-policy-architecture.svg', title: 'RLS Policy Architecture' },
+      // 001-wcag-aa-compliance
+      { path: '001-wcag-aa-compliance/01-accessibility-dashboard.svg', title: 'Accessibility Dashboard' },
+      { path: '001-wcag-aa-compliance/02-cicd-pipeline-integration.svg', title: 'CI/CD Pipeline Integration' },
+      { path: '001-wcag-aa-compliance/03-accessibility-controls-overlay.svg', title: 'Accessibility Controls' },
+      // 002-cookie-consent
+      { path: '002-cookie-consent/01-consent-modal.svg', title: 'Cookie Consent - Initial Modal' },
+      { path: '002-cookie-consent/02-cookie-preferences-panel.svg', title: 'Cookie Consent - Preferences Panel' },
+      { path: '002-cookie-consent/03-privacy-settings-page.svg', title: 'Cookie Policy - Privacy Settings' },
+      // 003-user-authentication
+      { path: '003-user-authentication/01-registration-sign-in.svg', title: 'Registration & Sign In' },
+      { path: '003-user-authentication/02-verification-password-reset.svg', title: 'Verification & Password Reset' },
+      { path: '003-user-authentication/03-profile-session-management.svg', title: 'Profile & Session Management' },
+      // 004-mobile-first-design
+      { path: '004-mobile-first-design/01-responsive-navigation.svg', title: 'Responsive Navigation' },
+      { path: '004-mobile-first-design/02-touch-targets-performance.svg', title: 'Touch Targets & Performance' },
+      // 005-security-hardening
+      { path: '005-security-hardening/01-security-ux-enhancements.svg', title: 'Security UX Enhancements' },
+      { path: '005-security-hardening/02-session-timeout-warning.svg', title: 'Session Timeout Warning' },
+      { path: '005-security-hardening/03-security-audit-dashboard.svg', title: 'Security Audit Dashboard' },
+      // 006-template-fork-experience
+      { path: '006-template-fork-experience/01-service-setup-guidance.svg', title: 'Service Setup Guidance' },
+      { path: '006-template-fork-experience/02-rebrand-automation-flow.svg', title: 'Rebrand Automation Flow' },
+      // 007-e2e-testing-framework
+      { path: '007-e2e-testing-framework/01-test-architecture-diagram.svg', title: 'Test Architecture Diagram' },
+      { path: '007-e2e-testing-framework/02-cicd-pipeline-flow.svg', title: 'CI/CD Pipeline Flow' },
+      // 008-on-the-account
+      { path: '008-on-the-account/01-avatar-upload-flow.svg', title: 'Avatar Upload Flow' },
+      // 009-user-messaging-system
+      { path: '009-user-messaging-system/01-connection-and-chat.svg', title: 'Connection & Chat' },
+      { path: '009-user-messaging-system/02-settings-and-data.svg', title: 'Settings & Data' },
+      // 010-unified-blog-content
+      { path: '010-unified-blog-content/01-editor-and-preview.svg', title: 'Editor & Preview' },
+      { path: '010-unified-blog-content/02-conflict-resolution.svg', title: 'Conflict Resolution' },
+      // 011-group-chats
+      { path: '011-group-chats/01-group-creation-messaging.svg', title: 'Group Creation & Messaging' },
+      { path: '011-group-chats/02-member-management.svg', title: 'Member Management' },
+      // 012-welcome-message-architecture
+      { path: '012-welcome-message-architecture/01-user-onboarding-flow.svg', title: 'User Onboarding Flow' },
+      // 013-oauth-messaging-password
+      { path: '013-oauth-messaging-password/01-oauth-password-setup.svg', title: 'OAuth Password Setup' },
+      { path: '013-oauth-messaging-password/02-oauth-password-unlock.svg', title: 'OAuth Password Unlock' },
+      // 015-oauth-display-name
+      { path: '015-oauth-display-name/01-profile-population-flow.svg', title: 'Profile Population Flow' },
+      // 016-messaging-critical-fixes
+      { path: '016-messaging-critical-fixes/01-message-input-visibility.svg', title: 'Message Input Visibility' },
+      { path: '016-messaging-critical-fixes/02-oauth-setup-flow.svg', title: 'OAuth Setup Flow' },
+      { path: '016-messaging-critical-fixes/03-conversation-error-states.svg', title: 'Conversation Error States' },
+      // 019-google-analytics
+      { path: '019-google-analytics/01-consent-flow.svg', title: 'Analytics Consent Flow' },
+      { path: '019-google-analytics/02-analytics-dashboard.svg', title: 'Analytics Dashboard' },
+      // 021-geolocation-map
+      { path: '021-geolocation-map/01-map-interface-permission.svg', title: 'Map Interface & Permission' },
+      { path: '021-geolocation-map/02-markers-and-accessibility.svg', title: 'Markers & Accessibility' },
+    ];
+
+    // Category mapping for Shift+F1-F9 navigation
+    // Feature ranges are fixed (46 features), only SVG counts vary
+    const categories = [
+      { name: 'Foundation', start: 0, end: 6 },      // F1: 000-006
+      { name: 'Core Features', start: 7, end: 12 },  // F2: 007-012
+      { name: 'Auth OAuth', start: 13, end: 16 },    // F3: 013-016
+      { name: 'Enhancements', start: 17, end: 21 },  // F4: 017-021
+      { name: 'Integrations', start: 22, end: 26 },  // F5: 022-026
+      { name: 'Polish', start: 27, end: 30 },        // F6: 027-030
+      { name: 'Testing', start: 31, end: 37 },       // F7: 031-037
+      { name: 'Payments', start: 38, end: 43 },      // F8: 038-043
+      { name: 'Code Quality', start: 44, end: 45 }   // F9: 044-045
+    ];
+
+    // ========================================
+    // STATUS SYSTEM - Single source of truth
+    // ========================================
+    const STATUS_EMOJI = {
+      draft: '📝',
+      regenerating: '🔄',
+      review: '👁️',
+      issues: '🔴',
+      patchable: '🟡',
+      approved: '✅',
+      planning: '📋',
+      tasked: '📝',
+      inprogress: '🚧',
+      complete: '✅',
+      blocked: '⛔'
+    };
+
+    let statusData = null;
+
+    // Fetch status from JSON (single source of truth)
+    async function fetchStatus() {
+      try {
+        const response = await fetch('wireframe-status.json');
+        statusData = await response.json();
+        applyStatusToNav();
+      } catch (err) {
+        console.warn('Could not load wireframe-status.json:', err);
+      }
+    }
+
+    // Apply status badges to navigation
+    function applyStatusToNav() {
+      if (!statusData) return;
+
+      // Update feature headers
+      document.querySelectorAll('.nav-section h2').forEach(h2 => {
+        const text = h2.textContent;
+        const match = text.match(/(\d{3})/);
+        if (match) {
+          const featureNum = match[1];
+          const featureKey = Object.keys(statusData).find(k => k.startsWith(featureNum));
+          if (featureKey && statusData[featureKey]) {
+            const status = statusData[featureKey].status;
+            const emoji = STATUS_EMOJI[status] || '';
+            // Remove any existing status badge
+            const existingBadge = h2.querySelector('.status-badge');
+            if (existingBadge) existingBadge.remove();
+            // Add new badge
+            if (emoji) {
+              const badge = document.createElement('span');
+              badge.className = 'status-badge';
+              badge.textContent = emoji;
+              h2.appendChild(badge);
+            }
+          }
+        }
+      });
+
+      // Update individual SVG links
+      document.querySelectorAll('.nav-links a[data-svg]').forEach(link => {
+        const svgPath = link.getAttribute('data-svg');
+        const parts = svgPath.split('/');
+        if (parts.length >= 2) {
+          const featureFolder = parts[0];
+          const svgFile = parts[1];
+          if (statusData[featureFolder] && statusData[featureFolder].svgs) {
+            const status = statusData[featureFolder].svgs[svgFile];
+            const emoji = STATUS_EMOJI[status] || '';
+            // Remove any existing status badge
+            const existingBadge = link.querySelector('.status-badge');
+            if (existingBadge) existingBadge.remove();
+            // Add new badge (insert BEFORE .path span to stay inline with title)
+            if (emoji) {
+              const badge = document.createElement('span');
+              badge.className = 'status-badge';
+              badge.textContent = emoji;
+              const pathSpan = link.querySelector('.path');
+              if (pathSpan) {
+                link.insertBefore(badge, pathSpan);
+              } else {
+                link.appendChild(badge);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Load status on page load
+    fetchStatus();
+
+    // Parse feature number from path (e.g., "000-rls-implementation/..." → 0)
+    function getFeatureNum(path) {
+      return parseInt(path.substring(0, 3), 10);
+    }
+
+    // Get current feature number
+    function getCurrentFeature() {
+      return getFeatureNum(wireframes[currentIndex].path);
+    }
+
+    // Find first wireframe index for a feature number
+    function findFeatureStart(featureNum) {
+      const prefix = String(featureNum).padStart(3, '0');
+      return wireframes.findIndex(w => w.path.startsWith(prefix));
+    }
+
+    // Find wireframe index for spec N in current feature
+    function findSpecInFeature(specNum) {
+      const currentFeature = getCurrentFeature();
+      const prefix = String(currentFeature).padStart(3, '0');
+      return wireframes.findIndex(w =>
+        w.path.startsWith(prefix) && w.path.includes(`/0${specNum}-`)
+      );
+    }
+
+    // Get current category index (0-8) based on current wireframe
+    function getCurrentCategory() {
+      const featureNum = getCurrentFeature();
+      for (let i = 0; i < categories.length; i++) {
+        if (featureNum >= categories[i].start && featureNum <= categories[i].end) {
+          return i;
+        }
+      }
+      return 0;
+    }
+
+    // Find wireframe index for feature N (1-based) within current category
+    function findFeatureInCategory(featureIndex) {
+      const catIndex = getCurrentCategory();
+      const cat = categories[catIndex];
+      const targetFeature = cat.start + (featureIndex - 1); // Convert 1-based to feature number
+      if (targetFeature > cat.end) return -1; // Feature doesn't exist in this category
+      return findFeatureStart(targetFeature);
+    }
+
+    // ========================================
+    // DEFAULT BOOKMARK - Change this to start on a different wireframe
+    // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
+    // Set to null to start at first wireframe
+    // ========================================
+    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal.svg";
+
+    // Find wireframe index by path
+    function findIndexByPath(path) {
+      if (!path) return 0;
+      const idx = wireframes.findIndex(wf => wf.path === path);
+      return idx >= 0 ? idx : 0;
+    }
+
+    let currentIndex = 0;
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    const ZOOM_STEP = 0.15;
+    const ZOOM_MIN = 0.25;
+    const ZOOM_MAX = 3;
+
+    const viewer = document.getElementById('viewer');
+    const viewerContainer = document.getElementById('viewer-container');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const titleEl = document.querySelector('#current-info .title');
+    const counterEl = document.getElementById('counter-text');
+    const navLinks = document.querySelectorAll('nav a[data-svg]');
+    const navSections = document.querySelectorAll('.nav-section');
+    const navCategories = document.querySelectorAll('.nav-category');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomDisplay = document.getElementById('zoom-display');
+
+    // Section collapse/expand functionality - only active category expanded
+    function expandSectionForPath(path) {
+      // Collapse all categories except the one containing the active link
+      navCategories.forEach(category => {
+        const hasActiveLink = category.querySelector(`a[data-svg="${path}"]`);
+        if (hasActiveLink) {
+          category.classList.remove('collapsed');
+        } else {
+          category.classList.add('collapsed');
+        }
+      });
+
+      // Features still auto-collapse (existing behavior)
+      navSections.forEach(section => {
+        const hasActiveLink = section.querySelector(`a[data-svg="${path}"]`);
+        if (hasActiveLink) {
+          section.classList.remove('collapsed');
+        } else {
+          section.classList.add('collapsed');
+        }
+      });
+    }
+
+    // Click handlers for category headers
+    navCategories.forEach(category => {
+      const header = category.querySelector('.category-header');
+      header.addEventListener('click', () => {
+        category.classList.toggle('collapsed');
+      });
+    });
+
+    // Click handlers for section headers
+    navSections.forEach(section => {
+      const header = section.querySelector('h2');
+      header.addEventListener('click', () => {
+        section.classList.toggle('collapsed');
+      });
+    });
+
+    // Combined transform for pan + zoom
+    function updateTransform() {
+      viewer.style.transform = `translate(-50%, -50%) translate(${panX}px, ${panY}px) scale(${zoom})`;
+    }
+
+    function updateView(index) {
+      currentIndex = index;
+      const wf = wireframes[currentIndex];
+
+      // Reset zoom and pan when changing wireframes
+      zoom = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+      zoomDisplay.textContent = '100%';
+      zoomInBtn.disabled = false;
+      zoomOutBtn.disabled = zoom <= ZOOM_MIN;
+
+      // Resolve external <use href="file.svg#id"> references
+      async function resolveExternalUseRefs(svgContent, basePath) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, 'image/svg+xml');
+        const baseDir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+
+        // Security: Validate path to prevent path traversal attacks
+        function isValidSvgPath(path) {
+          // Block path traversal sequences
+          if (path.includes('..') || path.includes('//') || path.startsWith('/')) {
+            return false;
+          }
+          // Only allow .svg files from includes/ directory
+          if (!path.endsWith('.svg')) {
+            return false;
+          }
+          // Allow relative paths within project (includes/ or same directory)
+          return path.startsWith('includes/') || !path.includes('/');
+        }
+
+        // Find all <use> elements with external href (file.svg#id pattern)
+        const useElements = doc.querySelectorAll('use[href*=".svg#"]');
+        const fetchPromises = [];
+
+        for (const useEl of useElements) {
+          const href = useEl.getAttribute('href');
+          if (!href || !href.includes('.svg#')) continue;
+
+          const [filePath, elementId] = href.split('#');
+
+          // Security: Validate path before fetching
+          if (!isValidSvgPath(filePath)) {
+            console.warn('Blocked suspicious SVG reference:', filePath);
+            continue;
+          }
+
+          const fullPath = baseDir + filePath;
+
+          fetchPromises.push(
+            fetch(fullPath)
+              .then(r => r.text())
+              .then(externalSvg => {
+                const externalDoc = parser.parseFromString(externalSvg, 'image/svg+xml');
+                const targetElement = externalDoc.getElementById(elementId);
+                if (targetElement) {
+                  // Clone the target element
+                  const clone = targetElement.cloneNode(true);
+                  // Apply position from <use> element
+                  const x = useEl.getAttribute('x') || '0';
+                  const y = useEl.getAttribute('y') || '0';
+                  // Wrap in a group with transform for positioning
+                  const wrapper = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                  wrapper.setAttribute('transform', `translate(${x}, ${y})`);
+                  wrapper.appendChild(clone);
+                  // Replace <use> with resolved content
+                  useEl.parentNode.replaceChild(wrapper, useEl);
+                }
+              })
+              .catch(() => {/* External ref failed, leave <use> as-is */})
+          );
+        }
+
+        await Promise.all(fetchPromises);
+        return new XMLSerializer().serializeToString(doc);
+      }
+
+      // Security: SVG sanitization to prevent XSS via embedded scripts
+      function sanitizeSVG(svgString) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+        const svg = doc.documentElement;
+
+        // Remove all script elements
+        svg.querySelectorAll('script').forEach(el => el.remove());
+
+        // Remove all event handlers (onclick, onload, onerror, etc.)
+        const allElements = svg.querySelectorAll('*');
+        allElements.forEach(el => {
+          const attrs = [...el.attributes];
+          attrs.forEach(attr => {
+            if (attr.name.startsWith('on') || (attr.name === 'href' && attr.value.startsWith('javascript:'))) {
+              el.removeAttribute(attr.name);
+            }
+          });
+        });
+
+        // Remove dangerous SVG elements
+        svg.querySelectorAll('foreignObject, set, animate[attributeName="href"]').forEach(el => el.remove());
+
+        return new XMLSerializer().serializeToString(svg);
+      }
+
+      // Fetch and inject SVG content (enables both clickable links AND zoom/pan)
+      fetch(wf.path)
+        .then(response => response.text())
+        .then(svgContent => resolveExternalUseRefs(svgContent, wf.path))
+        .then(resolvedSvg => {
+          viewer.innerHTML = sanitizeSVG(resolvedSvg);
+          // Auto-fit to visible viewport after SVG loads
+          requestAnimationFrame(() => fitToView());
+        })
+        .catch(err => {
+          // Security: Use textContent to prevent XSS in error path
+          const errorP = document.createElement('p');
+          errorP.style.cssText = 'color: #ef4444; padding: 20px;';
+          errorP.textContent = 'Failed to load: ' + wf.path;
+          viewer.innerHTML = '';
+          viewer.appendChild(errorP);
+        });
+
+      // Update info
+      titleEl.textContent = wf.title;
+      counterEl.textContent = `${currentIndex + 1} / ${wireframes.length}`;
+
+      // Update buttons
+      prevBtn.disabled = currentIndex === 0;
+      nextBtn.disabled = currentIndex === wireframes.length - 1;
+
+      // Update active nav link and expand its section
+      navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.svg === wf.path);
+      });
+      expandSectionForPath(wf.path);
+    }
+
+    // Nav link clicks
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const path = link.dataset.svg;
+        const index = wireframes.findIndex(w => w.path === path);
+        if (index !== -1) {
+          updateView(index);
+        }
+      });
+    });
+
+    // Prev/Next buttons
+    prevBtn.addEventListener('click', () => {
+      if (currentIndex > 0) {
+        updateView(currentIndex - 1);
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      if (currentIndex < wireframes.length - 1) {
+        updateView(currentIndex + 1);
+      }
+    });
+
+    // Focus mode toggle
+    function toggleFocusMode() {
+      document.body.classList.toggle('focus-mode');
+      // Wait for CSS transition (0.3s) then refit
+      setTimeout(() => fitToView(), 350);
+    }
+
+    // Legend drawer toggle
+    function toggleLegendDrawer() {
+      document.body.classList.toggle('legend-open');
+      // Refit immediately (legend is overlay, no transition needed)
+      fitToView();
+    }
+
+    // Legend close button
+    document.getElementById('legend-close').addEventListener('click', () => {
+      document.body.classList.remove('legend-open');
+      fitToView();
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      // Shift+F1 through Shift+F9 for category navigation
+      if (e.shiftKey && e.key.startsWith('F') && e.key.length <= 2) {
+        const fNum = parseInt(e.key.substring(1), 10);
+        if (fNum >= 1 && fNum <= 9) {
+          e.preventDefault(); // Block browser F-key defaults
+          const catIndex = fNum - 1;
+          if (catIndex < categories.length) {
+            const idx = findFeatureStart(categories[catIndex].start);
+            if (idx >= 0) updateView(idx);
+          }
+          return;
+        }
+      }
+
+      // Ctrl+1 through Ctrl+7 for feature navigation within current category
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && !e.metaKey) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 7) {
+          e.preventDefault(); // Block browser Ctrl+number shortcuts
+          const idx = findFeatureInCategory(num);
+          if (idx >= 0) updateView(idx);
+          return;
+        }
+      }
+
+      // Number keys 1-9 for specs within current feature
+      if (!e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 9) {
+          const idx = findSpecInFeature(num);
+          if (idx >= 0) updateView(idx);
+          return;
+        }
+      }
+
+      // Legend drawer: L to toggle
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault();
+        toggleLegendDrawer();
+        return;
+      }
+
+      // Focus mode: F to toggle, Escape to exit
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFocusMode();
+        return;
+      }
+      if (e.key === 'Escape') {
+        if (document.body.classList.contains('legend-open')) {
+          document.body.classList.remove('legend-open');
+          fitToView();
+          return;
+        }
+        if (document.body.classList.contains('focus-mode')) {
+          toggleFocusMode();
+          return;
+        }
+      }
+
+      if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        updateView(currentIndex - 1);
+      } else if (e.key === 'ArrowRight' && currentIndex < wireframes.length - 1) {
+        updateView(currentIndex + 1);
+      } else if (e.key === '+' || e.key === '=') {
+        setZoom(zoom + ZOOM_STEP);
+      } else if (e.key === '-' || e.key === '_') {
+        setZoom(zoom - ZOOM_STEP);
+      } else if (e.key === 'ArrowUp') {
+        setZoom(zoom + ZOOM_STEP);
+      } else if (e.key === 'ArrowDown') {
+        setZoom(zoom - ZOOM_STEP);
+      } else if (e.key === '0') {
+        fitToView();
+      }
+    });
+
+    // Zoom functions
+    function setZoom(level) {
+      zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
+      updateTransform();
+      zoomDisplay.textContent = `${Math.round(zoom * 100)}%`;
+      zoomInBtn.disabled = zoom >= ZOOM_MAX;
+      zoomOutBtn.disabled = zoom <= ZOOM_MIN;
+    }
+
+    // Expose API for screenshot tool (Playwright can't access let/const variables)
+    // This bypasses ZOOM_MAX limit since it's for automated screenshots
+    let manualZoomActive = false;
+    window.setViewerState = function(newZoom, newPanX, newPanY) {
+      manualZoomActive = true; // Prevent fitToView from overriding
+      zoom = newZoom;  // No limit check - allow any zoom for screenshots
+      panX = newPanX;
+      panY = newPanY;
+      updateTransform();
+      console.log('setViewerState:', zoom, panX, panY); // Debug
+    };
+    window.resetViewerState = function() {
+      manualZoomActive = false;
+      fitToView();
+    };
+
+    // Fit SVG to available viewport with minimal margins
+    function fitToView() {
+      if (manualZoomActive) return; // Don't override screenshot tool's zoom
+      const svg = viewer.querySelector('svg');
+      if (!svg) return;
+
+      // Get SVG dimensions from viewBox or attributes
+      let svgWidth, svgHeight;
+      const viewBox = svg.getAttribute('viewBox');
+      if (viewBox) {
+        const parts = viewBox.split(/\s+|,/).map(Number);
+        svgWidth = parts[2];
+        svgHeight = parts[3];
+      } else {
+        svgWidth = parseFloat(svg.getAttribute('width')) || 1920;
+        svgHeight = parseFloat(svg.getAttribute('height')) || 1080;
+      }
+
+      // Get available viewport dimensions (accounting for legend drawer overlay)
+      const containerRect = viewerContainer.getBoundingClientRect();
+      const padding = 20; // Small margin around SVG
+      const legendOpen = document.body.classList.contains('legend-open');
+      const legendWidth = legendOpen ? 340 : 0;
+      const availableWidth = containerRect.width - (padding * 2) - legendWidth;
+      const availableHeight = containerRect.height - (padding * 2);
+
+      // Calculate zoom to fit both dimensions
+      const scaleX = availableWidth / svgWidth;
+      const scaleY = availableHeight / svgHeight;
+      const optimalZoom = Math.min(scaleX, scaleY, ZOOM_MAX);
+
+      // Apply zoom and offset pan to center in visible area
+      zoom = Math.max(ZOOM_MIN, optimalZoom);
+      // When legend is open, shift SVG left to center in visible area
+      panX = legendOpen ? -(legendWidth / 2) : 0;
+      panY = 0;
+      updateTransform();
+      zoomDisplay.textContent = `${Math.round(zoom * 100)}%`;
+      zoomInBtn.disabled = zoom >= ZOOM_MAX;
+      zoomOutBtn.disabled = zoom <= ZOOM_MIN;
+    }
+
+    // Refit on window resize (debounced)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => fitToView(), 150);
+    });
+
+    // Zoom button clicks
+    zoomInBtn.addEventListener('click', () => setZoom(zoom + ZOOM_STEP));
+    zoomOutBtn.addEventListener('click', () => setZoom(zoom - ZOOM_STEP));
+    zoomDisplay.addEventListener('click', () => fitToView());
+
+    // Mouse wheel zoom centered on cursor position
+    viewerContainer.addEventListener('wheel', (e) => {
+      e.preventDefault();
+
+      // Get container dimensions and mouse position relative to container center
+      const rect = viewerContainer.getBoundingClientRect();
+      const containerCenterX = rect.width / 2;
+      const containerCenterY = rect.height / 2;
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Mouse offset from container center
+      const offsetX = mouseX - containerCenterX;
+      const offsetY = mouseY - containerCenterY;
+
+      // Calculate new zoom level
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      const oldZoom = zoom;
+      const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom + delta));
+
+      if (newZoom !== oldZoom) {
+        // Adjust pan to keep the point under cursor stationary
+        // The point under cursor in image space: (offsetX - panX) / oldZoom
+        // After zoom, we want: (offsetX - newPanX) / newZoom = (offsetX - panX) / oldZoom
+        // Solving: newPanX = offsetX - (offsetX - panX) * newZoom / oldZoom
+        const scale = newZoom / oldZoom;
+        panX = offsetX - (offsetX - panX) * scale;
+        panY = offsetY - (offsetY - panY) * scale;
+
+        zoom = newZoom;
+        updateTransform();
+        zoomDisplay.textContent = `${Math.round(zoom * 100)}%`;
+        zoomInBtn.disabled = zoom >= ZOOM_MAX;
+        zoomOutBtn.disabled = zoom <= ZOOM_MIN;
+      }
+    }, { passive: false });
+
+    // Pan/drag functionality using transform
+    let isDragging = false;
+    let lastX, lastY;
+
+    viewerContainer.addEventListener('mousedown', (e) => {
+      // Only left mouse button
+      if (e.button !== 0) return;
+
+      // Allow links to work - don't start drag if clicking a link
+      if (e.target.closest('a')) return;
+
+      isDragging = true;
+      viewerContainer.classList.add('dragging');
+      lastX = e.clientX;
+      lastY = e.clientY;
+    });
+
+    viewerContainer.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      // Update pan offset based on mouse movement
+      panX += e.clientX - lastX;
+      panY += e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+
+      updateTransform();
+    });
+
+    viewerContainer.addEventListener('mouseup', () => {
+      isDragging = false;
+      viewerContainer.classList.remove('dragging');
+    });
+
+    viewerContainer.addEventListener('mouseleave', () => {
+      isDragging = false;
+      viewerContainer.classList.remove('dragging');
+    });
+
+    // Initialize - check URL hash first, then bookmark, then first wireframe
+    function getInitialPath() {
+      // Check URL hash (e.g., #002-cookie-consent/01-consent-modal-flow.svg)
+      const hash = window.location.hash.slice(1); // Remove leading #
+      if (hash && findIndexByPath(hash) >= 0) {
+        return hash;
+      }
+      // Fall back to default bookmark
+      return DEFAULT_BOOKMARK;
+    }
+
+    if (wireframes.length > 0) {
+      updateView(findIndexByPath(getInitialPath()));
+    }
+
+    // Handle hash changes for screenshot tool navigation
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.slice(1);
+      const index = findIndexByPath(hash);
+      if (index >= 0) {
+        updateView(index);
+      }
+    });
+  </script>
+</body>
+</html>

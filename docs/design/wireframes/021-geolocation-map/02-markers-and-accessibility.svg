@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    GEOLOCATION MAP - MARKERS AND ACCESSIBILITY
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Main Content Area -->
+    <rect x="0" y="78" width="1280" height="562" fill="#16213e"/>
+
+    <!-- Map Area with Markers -->
+    <rect x="20" y="98" width="900" height="502" fill="#0f3460" rx="8"/>
+
+    <!-- Map Tiles Pattern -->
+    <g opacity="0.3">
+      <line x1="20" y1="198" x2="920" y2="198" stroke="#e94560" stroke-width="1"/>
+      <line x1="20" y1="298" x2="920" y2="298" stroke="#e94560" stroke-width="1"/>
+      <line x1="20" y1="398" x2="920" y2="398" stroke="#e94560" stroke-width="1"/>
+      <line x1="20" y1="498" x2="920" y2="498" stroke="#e94560" stroke-width="1"/>
+      <line x1="220" y1="98" x2="220" y2="600" stroke="#e94560" stroke-width="1"/>
+      <line x1="420" y1="98" x2="420" y2="600" stroke="#e94560" stroke-width="1"/>
+      <line x1="620" y1="98" x2="620" y2="600" stroke="#e94560" stroke-width="1"/>
+      <line x1="820" y1="98" x2="820" y2="600" stroke="#e94560" stroke-width="1"/>
+    </g>
+
+    <!-- Marker 1 - Restaurant (with popup) -->
+    <g transform="translate(280, 250)">
+      <circle cx="0" cy="0" r="16" fill="#e94560"/>
+      <text x="0" y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">R</text>
+      <!-- Popup -->
+      <rect x="-80" y="-90" width="160" height="70" fill="#e8d4b8" rx="6"/>
+      <polygon points="-5,-20 5,-20 0,-10" fill="#e8d4b8"/>
+      <text x="0" y="-65" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">Downtown Bistro</text>
+      <text x="0" y="-45" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">★★★★☆ 4.2</text>
+      <text x="0" y="-28" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">View Details →</text>
+    </g>
+
+    <!-- Callout 1 marker -->
+    <g transform="translate(200, 160)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Marker 2 - Park -->
+    <g transform="translate(500, 380)">
+      <circle cx="0" cy="0" r="16" fill="#22c55e"/>
+      <text x="0" y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">P</text>
+    </g>
+
+    <!-- Marker 3 - Shopping -->
+    <g transform="translate(680, 200)">
+      <circle cx="0" cy="0" r="16" fill="#8b5cf6"/>
+      <text x="0" y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">S</text>
+    </g>
+
+    <!-- Marker 4 - User Location -->
+    <g transform="translate(400, 320)">
+      <circle cx="0" cy="0" r="24" fill="#3b82f6" opacity="0.3"/>
+      <circle cx="0" cy="0" r="12" fill="#3b82f6"/>
+      <circle cx="0" cy="0" r="6" fill="#e8d4b8"/>
+    </g>
+
+    <!-- Focus Ring on Marker (Accessibility) -->
+    <g transform="translate(500, 380)">
+      <circle cx="0" cy="0" r="24" fill="none" stroke="#fbbf24" stroke-width="3" stroke-dasharray="4,2"/>
+    </g>
+
+    <!-- Callout 2 - Focus Ring -->
+    <g transform="translate(530, 350)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Sidebar - Marker Legend -->
+    <rect x="940" y="98" width="320" height="200" fill="#e8d4b8" rx="8"/>
+
+    <text x="960" y="130" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Map Legend</text>
+
+    <!-- Legend Items -->
+    <g transform="translate(960, 160)">
+      <circle cx="16" cy="0" r="12" fill="#e94560"/>
+      <text x="16" y="4" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">R</text>
+      <text x="45" y="5" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16">Restaurants</text>
+    </g>
+
+    <g transform="translate(960, 195)">
+      <circle cx="16" cy="0" r="12" fill="#22c55e"/>
+      <text x="16" y="4" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">P</text>
+      <text x="45" y="5" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16">Parks</text>
+    </g>
+
+    <g transform="translate(960, 230)">
+      <circle cx="16" cy="0" r="12" fill="#8b5cf6"/>
+      <text x="16" y="4" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">S</text>
+      <text x="45" y="5" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16">Shopping</text>
+    </g>
+
+    <g transform="translate(960, 265)">
+      <circle cx="16" cy="0" r="12" fill="#3b82f6"/>
+      <circle cx="16" cy="0" r="6" fill="#e8d4b8"/>
+      <text x="45" y="5" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="16">Your Location</text>
+    </g>
+
+    <!-- Keyboard Shortcuts Panel -->
+    <rect x="940" y="315" width="320" height="180" fill="#16213e" rx="6"/>
+    <text x="960" y="345" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Keyboard Shortcuts</text>
+
+    <text x="960" y="375" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Arrow Keys</text>
+    <text x="1120" y="375" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pan map</text>
+
+    <text x="960" y="400" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">+ / -</text>
+    <text x="1120" y="400" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Zoom in/out</text>
+
+    <text x="960" y="425" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Tab</text>
+    <text x="1120" y="425" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Navigate markers</text>
+
+    <text x="960" y="450" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Enter</text>
+    <text x="1120" y="450" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Open popup</text>
+
+    <text x="960" y="475" fill="#94a3b8" font-family="system-ui, sans-serif" font-size="14">Escape</text>
+    <text x="1120" y="475" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Close popup</text>
+
+    <!-- Callout 3 - Keyboard Shortcuts -->
+    <g transform="translate(1275, 345)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Screen Reader Status -->
+    <rect x="940" y="510" width="320" height="80" fill="#1e3a5f" rx="6"/>
+    <text x="960" y="540" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">♿ Screen Reader Live Region:</text>
+    <text x="960" y="565" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">"Park marker, 2 of 4. Press Enter to</text>
+    <text x="960" y="585" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">view details."</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content Area -->
+    <rect x="0" y="78" width="360" height="586" fill="#16213e"/>
+
+    <!-- Mobile Map Area -->
+    <rect x="10" y="88" width="340" height="320" fill="#0f3460" rx="8"/>
+
+    <!-- Map Grid -->
+    <g opacity="0.3">
+      <line x1="10" y1="168" x2="350" y2="168" stroke="#e94560" stroke-width="1"/>
+      <line x1="10" y1="248" x2="350" y2="248" stroke="#e94560" stroke-width="1"/>
+      <line x1="10" y1="328" x2="350" y2="328" stroke="#e94560" stroke-width="1"/>
+      <line x1="123" y1="88" x2="123" y2="408" stroke="#e94560" stroke-width="1"/>
+      <line x1="236" y1="88" x2="236" y2="408" stroke="#e94560" stroke-width="1"/>
+    </g>
+
+    <!-- Mobile Markers -->
+    <circle cx="100" cy="180" r="14" fill="#e94560"/>
+    <text x="100" y="185" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">R</text>
+
+    <circle cx="200" cy="280" r="14" fill="#22c55e"/>
+    <text x="200" y="285" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">P</text>
+
+    <circle cx="280" cy="150" r="14" fill="#8b5cf6"/>
+    <text x="280" y="155" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">S</text>
+
+    <!-- User Location Marker -->
+    <circle cx="160" cy="230" r="20" fill="#3b82f6" opacity="0.3"/>
+    <circle cx="160" cy="230" r="10" fill="#3b82f6"/>
+    <circle cx="160" cy="230" r="5" fill="#e8d4b8"/>
+
+    <!-- Bottom Sheet - Marker Details -->
+    <rect x="0" y="420" width="360" height="244" fill="#e8d4b8" rx="12 12 0 0"/>
+
+    <!-- Drag Handle -->
+    <rect x="160" y="430" width="40" height="4" fill="#374151" rx="2"/>
+
+    <!-- Marker Detail Content -->
+    <text x="20" y="465" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Downtown Bistro</text>
+
+    <g transform="translate(20, 485)">
+      <text x="0" y="0" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="16">★★★★☆</text>
+      <text x="80" y="0" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14">4.2 (128 reviews)</text>
+    </g>
+
+    <text x="20" y="515" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Restaurant • $$ • 0.3 mi</text>
+
+    <!-- Action Buttons (44px touch targets) -->
+    <rect x="20" y="540" width="150" height="44" fill="#3b82f6" rx="8"/>
+    <text x="95" y="568" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Get Directions</text>
+
+    <rect x="190" y="540" width="150" height="44" fill="#16213e" rx="8" stroke="#3b82f6" stroke-width="2"/>
+    <text x="265" y="568" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Save Place</text>
+
+    <!-- Callout 4 mobile -->
+    <g transform="translate(355, 565)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Accessibility Badge -->
+    <rect x="20" y="600" width="320" height="50" fill="#1e3a5f" rx="6"/>
+    <text x="40" y="625" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">♿ Accessible:</text>
+    <text x="140" y="625" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Wheelchair ramp, Braille menu</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Column 1: Custom Markers -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Custom Markers</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I see custom markers (R/P/S)</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">with popup showing name, rating, actions.</text>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-015"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-015</text></a>
+      <a href="#FR-016"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#SC-006"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 2: Keyboard Navigation -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Keyboard Navigation</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a keyboard user, I Tab to markers</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">with visible focus ring (yellow dashed).</text>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-019"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-019</text></a>
+      <a href="#FR-020"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-020</text></a>
+      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 3: Screen Reader Support -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Screen Reader Support</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a screen reader user, I hear marker</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">announcements: "Park, 2 of 4".</text>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-021"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-021</text></a>
+      <a href="#FR-022"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-022</text></a>
+      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 4: Mobile Bottom Sheet -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Mobile Bottom Sheet</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a mobile user, I tap markers to see</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">details in bottom sheet (44px buttons).</text>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-005"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-005</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-007"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-007</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Leaflet.js | location permission | markers | map accessibility</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">021:02 | Geolocation Map | ScriptHammer</text>
+</svg>

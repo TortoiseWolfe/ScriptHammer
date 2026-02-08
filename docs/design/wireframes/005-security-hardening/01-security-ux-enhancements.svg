@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">SECURITY HARDENING - UX ENHANCEMENTS</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav overlay (Account is active for auth pages) -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Main Content: Sign Up Form -->
+    <rect x="340" y="70" width="600" height="550" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="640" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1a1a2e">Create Account</text>
+
+    <!-- Email Input Field -->
+    <text x="380" y="150" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Email Address</text>
+    <rect x="380" y="160" width="520" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="395" y="188" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">user@tempmail.com</text>
+
+    <!-- Email Warning (disposable email) -->
+    <rect x="380" y="210" width="520" height="30" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="400" y="230" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Warning: Disposable email detected. You may proceed.</text>
+
+    <!-- Callout ② on email validation - RIGHT side -->
+    <circle cx="920" cy="195" r="14" fill="#dc2626"/>
+    <text x="920" y="200" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Password Input Field -->
+    <text x="380" y="270" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Password</text>
+    <rect x="380" y="280" width="520" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="395" y="308" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">••••••••••••</text>
+
+    <!-- Password Strength Meter -->
+    <rect x="380" y="330" width="520" height="8" rx="4" fill="#dcc8a8"/>
+    <rect x="380" y="330" width="390" height="8" rx="4" fill="#22c55e"/>
+    <text x="380" y="355" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e" font-weight="600">Strong</text>
+
+    <!-- Password Requirements -->
+    <text x="380" y="380" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Requirements: 8+ characters, uppercase, number, symbol</text>
+
+    <!-- Callout ③ on password strength - RIGHT side -->
+    <circle cx="920" cy="342" r="14" fill="#dc2626"/>
+    <text x="920" y="347" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Confirm Password -->
+    <text x="380" y="415" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Confirm Password</text>
+    <rect x="380" y="425" width="520" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Sign Up Button -->
+    <rect x="380" y="490" width="520" height="48" rx="6" fill="#8b5cf6"/>
+    <text x="640" y="520" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Create Account</text>
+
+    <!-- Lockout Warning Panel (shown when rate limited) -->
+    <rect x="340" y="555" width="600" height="50" rx="6" fill="#fef2f2" stroke="#ef4444"/>
+    <text x="360" y="580" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626" font-weight="600">Account Temporarily Locked</text>
+    <text x="360" y="598" font-family="system-ui, sans-serif" font-size="14" fill="#991b1b">Too many failed attempts. Try again in 15 minutes. (2 attempts remaining today)</text>
+
+    <!-- Callout ① on lockout warning - RIGHT side -->
+    <circle cx="920" cy="580" r="14" fill="#dc2626"/>
+    <text x="920" y="585" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Error Recovery Link -->
+    <text x="560" y="580" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Forgot password? Reset here</text>
+
+    <!-- Callout ④ on error recovery - RIGHT of link -->
+    <circle cx="720" cy="575" r="14" fill="#dc2626"/>
+    <text x="720" y="580" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <!-- Form Container -->
+    <rect x="15" y="78" width="330" height="576" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <text x="180" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Create Account</text>
+
+    <!-- Email Input -->
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Email</text>
+    <rect x="30" y="148" width="300" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="45" y="174" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">user@tempmail.com</text>
+
+    <!-- Email Warning -->
+    <rect x="30" y="194" width="300" height="26" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="45" y="212" font-family="system-ui, sans-serif" font-size="14" fill="#92400e">Disposable email warning</text>
+
+    <!-- Callout ② on mobile email - RIGHT side -->
+    <circle cx="345" cy="185" r="14" fill="#dc2626"/>
+    <text x="345" y="190" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Password Input -->
+    <text x="30" y="245" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Password</text>
+    <rect x="30" y="253" width="300" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Password Strength Meter -->
+    <rect x="30" y="299" width="300" height="6" rx="3" fill="#dcc8a8"/>
+    <rect x="30" y="299" width="225" height="6" rx="3" fill="#22c55e"/>
+    <text x="30" y="318" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e" font-weight="600">Strong</text>
+
+    <!-- Callout ③ on mobile password strength - RIGHT side -->
+    <circle cx="345" cy="302" r="14" fill="#dc2626"/>
+    <text x="345" y="307" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Confirm Password -->
+    <text x="30" y="350" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Confirm Password</text>
+    <rect x="30" y="358" width="300" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Sign Up Button -->
+    <rect x="30" y="415" width="300" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="443" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Create Account</text>
+
+    <!-- Lockout Warning -->
+    <rect x="30" y="475" width="300" height="60" rx="6" fill="#fef2f2" stroke="#ef4444"/>
+    <text x="45" y="498" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626" font-weight="600">Account Locked</text>
+    <text x="45" y="518" font-family="system-ui, sans-serif" font-size="14" fill="#991b1b">Try again in 15 min</text>
+
+    <!-- Callout ① on mobile lockout - RIGHT side -->
+    <circle cx="345" cy="505" r="14" fill="#dc2626"/>
+    <text x="345" y="510" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Error Recovery -->
+    <text x="180" y="560" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Forgot password?</text>
+
+    <!-- Callout ④ on mobile error recovery - BELOW link -->
+    <circle cx="265" cy="560" r="14" fill="#dc2626"/>
+    <text x="265" y="565" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active tab overlay (Account) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-003 Brute Force Prevention -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Brute Force Prevention</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need the system to block</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">repeated failed login attempts.</text>
+      <a href="#US-003"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-010"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#FR-012"><rect x="223" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#SC-009"><rect x="284" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-009</text></a>
+    </g>
+
+    <!-- Column 2: US-007 Email Validation -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Email Validation</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user signing up, I need my email</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to be validated for account recovery.</text>
+      <a href="#US-007"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-007</text></a>
+      <a href="#FR-021"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-021</text></a>
+      <a href="#FR-022"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-022</text></a>
+      <a href="#FR-023"><rect x="223" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-023</text></a>
+    </g>
+
+    <!-- Column 3: US-008 Password Strength -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Password Strength</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user creating a password, I need</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">real-time strength feedback.</text>
+      <a href="#US-008"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-008</text></a>
+      <a href="#FR-034"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-034</text></a>
+      <a href="#FR-035"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-035</text></a>
+      <a href="#SC-007"><rect x="223" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-007</text></a>
+    </g>
+
+    <!-- Column 4: US-010 Error Recovery -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Error Recovery</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user experiencing auth failures,</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">I need clear error messages.</text>
+      <a href="#US-010"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-010</text></a>
+      <a href="#FR-036"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-036</text></a>
+      <a href="#FR-037"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-037</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CSP headers | rate limiting | session timeout | audit logging</text>
+
+
+  <!-- SIGNATURE: 18px bold -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">005:01 | Security Hardening | ScriptHammer</text>
+</svg>
