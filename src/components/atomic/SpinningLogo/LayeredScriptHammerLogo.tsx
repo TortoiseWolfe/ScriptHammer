@@ -28,11 +28,11 @@ export const LayeredScriptHammerLogo: React.FC<
       <div
         className="pointer-events-none absolute"
         style={{
-          top: '56%',
-          left: '44%',
-          transform: 'translate(calc(-50% + 2px), -50%)',
-          width: '58%',
-          height: '58%',
+          top: '58%',
+          left: '42%',
+          transform: 'translate(-50%, -50%)',
+          width: '65%',
+          height: '65%',
           opacity: 0.9,
         }}
       >
@@ -77,8 +77,8 @@ export const LayeredScriptHammerLogo: React.FC<
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '56%',
-          height: '56%',
+          width: '68%',
+          height: '68%',
         }}
       >
         <Image
