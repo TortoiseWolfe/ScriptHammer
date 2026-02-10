@@ -293,7 +293,7 @@ export default function Home() {
       >
         <div className="container mx-auto">
           <h2 className="sr-only">Key Features</h2>
-          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-5">
             <Link
               href="/themes"
               className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
@@ -309,6 +309,25 @@ export default function Home() {
                 <h3 className="card-title text-base">32 Themes</h3>
                 <p className="text-base-content/70 text-xs">
                   Light & dark with live switching
+                </p>
+              </div>
+            </Link>
+
+            <Link
+              href="/wireframes"
+              className="card bg-base-100 focus-within:ring-primary cursor-pointer shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
+            >
+              <div className="card-body items-center p-4 text-center">
+                <div
+                  className="mb-3 text-3xl"
+                  role="img"
+                  aria-label="Triangular ruler"
+                >
+                  📐
+                </div>
+                <h3 className="card-title text-base">Wireframes</h3>
+                <p className="text-base-content/70 text-xs">
+                  46 interactive SVG design specs
                 </p>
               </div>
             </Link>

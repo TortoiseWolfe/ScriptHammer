@@ -51,6 +51,7 @@ playwright-report/
 .pnpm-store/
 
 # Generated files (copied during build)
+public/wireframes/
 public/TASKS.md
 public/manifest.json
 /src/config/project-detected.ts

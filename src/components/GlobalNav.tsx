@@ -106,6 +106,7 @@ export function GlobalNav() {
     { href: '/', label: 'Home' },
     { href: '/blog', label: 'Blog' },
     { href: '/docs', label: 'Docs' },
+    { href: '/wireframes', label: 'Wireframes' },
   ];
 
   const themes = [
