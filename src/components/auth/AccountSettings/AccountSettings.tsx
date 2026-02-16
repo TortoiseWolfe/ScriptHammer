@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { validatePassword } from '@/lib/auth/password-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
-import AvatarUpload from '@/components/atomic/AvatarUpload';
+import AvatarUpload from '@/components/molecular/AvatarUpload';
 import { removeAvatar } from '@/lib/avatar/upload';
 import DataExportButton from '@/components/atomic/DataExportButton';
 import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';

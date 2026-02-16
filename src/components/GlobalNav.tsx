@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
-import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
+import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { useAuth } from '@/contexts/AuthContext';

@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import MessageThread from '@/components/molecular/MessageThread';
-import MessageInput from '@/components/atomic/MessageInput';
+import MessageInput from '@/components/molecular/MessageInput';
 import type { DecryptedMessage } from '@/types/messaging';
 import { cn } from '@/lib/utils';
 import { useKeyboardShortcuts, shortcuts } from '@/hooks/useKeyboardShortcuts';

@@ -1,5 +1,5 @@
 import React from 'react';
-import TagBadge from '../TagBadge';
+import TagBadge from '@/components/atomic/TagBadge';
 
 export interface TagData {
   name: string;

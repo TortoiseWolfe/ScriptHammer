@@ -6,7 +6,7 @@ import TagCloud from './TagCloud';
 expect.extend(toHaveNoViolations);
 
 // Mock TagBadge component
-vi.mock('../TagBadge', () => ({
+vi.mock('@/components/atomic/TagBadge', () => ({
   default: ({ tag, count, size, variant, onClick, active, className }: any) => (
     <button
       data-testid={`tag-badge-${tag}`}

@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import TagCloud from '@/components/atomic/TagCloud';
+import TagCloud from '@/components/molecular/TagCloud';
 import blogData from '@/lib/blog/blog-data.json';
 import { getProjectConfig } from '@/config/project.config';
 

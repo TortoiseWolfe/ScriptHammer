@@ -1,8 +1,8 @@
 'use client';
 
 import { useAccessibility } from '@/contexts/AccessibilityContext';
-import { ColorblindToggle } from '@/components/atomic/ColorblindToggle';
-import { FontSwitcher } from '@/components/atomic/FontSwitcher';
+import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
+import { FontSwitcher } from '@/components/molecular/FontSwitcher';
 
 export default function AccessibilityPage() {
   const { settings, updateSettings, resetSettings } = useAccessibility();

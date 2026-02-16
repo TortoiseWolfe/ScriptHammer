@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import AvatarUpload from './AvatarUpload';
 
 const meta: Meta<typeof AvatarUpload> = {
-  title: 'Components/Atomic/AvatarUpload',
+  title: 'Components/Molecular/AvatarUpload',
   component: AvatarUpload,
   parameters: {
     layout: 'centered',
