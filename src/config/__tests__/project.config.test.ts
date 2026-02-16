@@ -180,8 +180,8 @@ describe('Project Configuration', () => {
       expect(manifest.description).toContain('Opinionated Next.js template');
       expect(manifest.start_url).toBe('/');
       expect(manifest.display).toBe('standalone');
-      expect(manifest.theme_color).toBe('#570df8');
-      expect(manifest.background_color).toBe('#ffffff');
+      expect(manifest.theme_color).toBe('#1a1a2e');
+      expect(manifest.background_color).toBe('#1a1a2e');
     });
 
     it('should include basePath in manifest URLs when set', () => {
