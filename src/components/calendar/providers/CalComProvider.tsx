@@ -54,6 +54,7 @@ export function CalComProvider({
       ? document.documentElement.getAttribute('data-theme')
       : 'light';
   const isDark = [
+    'scripthammer-dark',
     'dark',
     'dracula',
     'night',

@@ -110,6 +110,8 @@ export function GlobalNav() {
   ];
 
   const themes = [
+    'scripthammer-dark',
+    'scripthammer-light',
     'light',
     'dark',
     'cupcake',

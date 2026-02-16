@@ -240,17 +240,13 @@ export default function BlogPostViewer({
         {seoScore !== undefined && (
           <button
             onClick={onSeoClick}
-            className="inline-flex min-h-8 min-w-8 items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md"
-            style={{
-              backgroundColor:
-                seoScore >= 80
-                  ? '#10b981'
-                  : seoScore >= 60
-                    ? '#f59e0b'
-                    : '#ef4444',
-              color: 'white',
-              border: 'none',
-            }}
+            className={`inline-flex min-h-8 min-w-8 items-center justify-center gap-1 rounded-lg border-none px-2 py-1 text-xs font-medium shadow-md ${
+              seoScore >= 80
+                ? 'bg-success text-success-content'
+                : seoScore >= 60
+                  ? 'bg-warning text-warning-content'
+                  : 'bg-error text-error-content'
+            }`}
             title="Click to view SEO details"
           >
             <svg

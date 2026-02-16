@@ -5,8 +5,10 @@ import { canUseCookies } from '../../utils/consent';
 import { CookieCategory } from '../../utils/consent-types';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
-// DaisyUI themes
+// DaisyUI themes (custom themes listed first)
 const THEMES = [
+  'scripthammer-dark',
+  'scripthammer-light',
   'light',
   'dark',
   'cupcake',
@@ -42,7 +44,7 @@ const THEMES = [
 ];
 
 export function ThemeSwitcher() {
-  const [currentTheme, setCurrentTheme] = useState('light');
+  const [currentTheme, setCurrentTheme] = useState('scripthammer-dark');
   const { trackThemeChange } = useAnalytics();
 
   useEffect(() => {
@@ -50,14 +52,14 @@ export function ThemeSwitcher() {
     const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
 
     // Try to load saved theme
-    let savedTheme = 'light';
+    let savedTheme = 'scripthammer-dark';
 
     if (canPersist) {
       // Use localStorage if functional cookies allowed
-      savedTheme = localStorage.getItem('theme') || 'light';
+      savedTheme = localStorage.getItem('theme') || 'scripthammer-dark';
     } else {
       // Use sessionStorage as fallback
-      savedTheme = sessionStorage.getItem('theme') || 'light';
+      savedTheme = sessionStorage.getItem('theme') || 'scripthammer-dark';
     }
 
     setCurrentTheme(savedTheme);
@@ -114,7 +116,9 @@ export function ThemeSwitcher() {
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Theme Selector</h2>
-        <p className="text-sm opacity-70">Choose from 32 DaisyUI themes</p>
+        <p className="text-sm opacity-70">
+          Choose from 34 themes (2 custom + 32 DaisyUI)
+        </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
           {THEMES.map((theme) => (

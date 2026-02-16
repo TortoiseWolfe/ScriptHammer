@@ -142,6 +142,7 @@ export default function DisqusComments({
       return (
         theme &&
         [
+          'scripthammer-dark',
           'dark',
           'night',
           'dracula',

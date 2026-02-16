@@ -47,6 +47,7 @@ export function CalendlyProvider({
   useEffect(() => {
     const theme = document.documentElement.getAttribute('data-theme');
     const isDark = [
+      'scripthammer-dark',
       'dark',
       'dracula',
       'night',
@@ -64,6 +65,7 @@ export function CalendlyProvider({
       ? document.documentElement.getAttribute('data-theme')
       : 'light';
   const isDark = [
+    'scripthammer-dark',
     'dark',
     'dracula',
     'night',
