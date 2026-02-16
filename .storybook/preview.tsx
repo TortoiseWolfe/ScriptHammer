@@ -56,6 +56,8 @@ const preview: Preview = {
     // Theme decorator
     withThemeByDataAttribute({
       themes: {
+        'scripthammer-dark': 'scripthammer-dark',
+        'scripthammer-light': 'scripthammer-light',
         light: 'light',
         dark: 'dark',
         cupcake: 'cupcake',
@@ -89,7 +91,7 @@ const preview: Preview = {
         nord: 'nord',
         sunset: 'sunset',
       },
-      defaultTheme: 'light',
+      defaultTheme: 'scripthammer-dark',
       attributeName: 'data-theme',
     }),
   ],

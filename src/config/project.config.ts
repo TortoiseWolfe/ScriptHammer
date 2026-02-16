@@ -101,8 +101,8 @@ export function generateManifest() {
     scope: `${basePath}/`,
     display: 'standalone',
     orientation: 'portrait-primary',
-    theme_color: '#570df8',
-    background_color: '#ffffff',
+    theme_color: '#1a1a2e',
+    background_color: '#1a1a2e',
     categories: ['developer', 'productivity', 'utilities'],
     icons: [
       {

@@ -14,10 +14,126 @@
 
 @plugin "daisyui" {
   themes:
-    light, dark, cupcake, bumblebee, emerald, corporate, synthwave, retro,
-    cyberpunk, valentine, halloween, garden, forest, aqua, lofi, pastel,
-    fantasy, wireframe, black, luxury, dracula, cmyk, autumn, business, acid,
-    lemonade, night, coffee, winter, dim, nord, sunset;
+    scripthammer-dark --default --prefersdark,
+    scripthammer-light,
+    light,
+    dark,
+    cupcake,
+    bumblebee,
+    emerald,
+    corporate,
+    synthwave,
+    retro,
+    cyberpunk,
+    valentine,
+    halloween,
+    garden,
+    forest,
+    aqua,
+    lofi,
+    pastel,
+    fantasy,
+    wireframe,
+    black,
+    luxury,
+    dracula,
+    cmyk,
+    autumn,
+    business,
+    acid,
+    lemonade,
+    night,
+    coffee,
+    winter,
+    dim,
+    nord,
+    sunset;
+}
+
+/* ScriptHammer Dark Theme — VS Code dark meets metallic craftsmanship */
+@plugin "daisyui/theme" {
+  name: 'scripthammer-dark';
+  default: true;
+  prefersdark: true;
+  color-scheme: dark;
+
+  --color-base-100: oklch(22.84% 0.038 282.93); /* #1a1a2e charcoal */
+  --color-base-200: oklch(21.13% 0.039 282.53); /* #16162a darker */
+  --color-base-300: oklch(28.51% 0.067 281.32); /* #25254a borders */
+  --color-base-content: oklch(92.88% 0.013 255.51); /* #e2e8f0 cool gray text */
+
+  --color-primary: oklch(76.05% 0.024 258.37); /* #a8b2c1 silver/steel */
+  --color-primary-content: oklch(22.84% 0.038 282.93);
+
+  --color-secondary: oklch(87.91% 0.043 76.31); /* #e8d4b8 warm amber */
+  --color-secondary-content: oklch(22.84% 0.038 282.93);
+
+  --color-accent: oklch(75.35% 0.139 232.66); /* #38bdf8 electric blue */
+  --color-accent-content: oklch(22.84% 0.038 282.93);
+
+  --color-neutral: oklch(31.14% 0.052 282.99); /* #2d2d4a purple-gray */
+  --color-neutral-content: oklch(87.17% 0.009 258.34);
+
+  --color-info: oklch(62.31% 0.188 259.81); /* #3b82f6 */
+  --color-info-content: oklch(96% 0.018 272.31);
+  --color-success: oklch(72.27% 0.192 149.58); /* #22c55e */
+  --color-success-content: oklch(22.84% 0.038 282.93);
+  --color-warning: oklch(90.52% 0.166 98.11); /* #fde047 */
+  --color-warning-content: oklch(22.84% 0.038 282.93);
+  --color-error: oklch(63.68% 0.208 25.33); /* #ef4444 */
+  --color-error-content: oklch(96% 0.018 272.31);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ScriptHammer Light Theme — warm parchment with adjusted brand colors */
+@plugin "daisyui/theme" {
+  name: 'scripthammer-light';
+  default: false;
+  prefersdark: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(95.76% 0.009 67.72); /* #f5f0eb warm parchment */
+  --color-base-200: oklch(92.44% 0.013 75.36); /* #ebe5dd */
+  --color-base-300: oklch(87.66% 0.016 73.66); /* #ddd5cb */
+  --color-base-content: oklch(27.81% 0.03 256.85); /* #1f2937 dark text */
+
+  --color-primary: oklch(55.44% 0.041 257.42); /* #64748b darker silver */
+  --color-primary-content: oklch(100% 0 0);
+
+  --color-secondary: oklch(47.32% 0.125 46.2); /* #92400e dark amber */
+  --color-secondary-content: oklch(100% 0 0);
+
+  --color-accent: oklch(58.76% 0.139 241.97); /* #0284c7 darker blue */
+  --color-accent-content: oklch(100% 0 0);
+
+  --color-neutral: oklch(37.29% 0.031 259.73); /* #374151 */
+  --color-neutral-content: oklch(98.46% 0.002 247.84);
+
+  --color-info: oklch(54.61% 0.215 262.88); /* #2563eb */
+  --color-info-content: oklch(100% 0 0);
+  --color-success: oklch(62.71% 0.17 149.21); /* #16a34a */
+  --color-success-content: oklch(100% 0 0);
+  --color-warning: oklch(68.06% 0.142 75.83); /* #ca8a04 */
+  --color-warning-content: oklch(22.84% 0.038 282.93);
+  --color-error: oklch(57.71% 0.215 27.33); /* #dc2626 */
+  --color-error-content: oklch(100% 0 0);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
 }
 
 /* Override DaisyUI drawer-side to respect container bounds
@@ -208,6 +324,7 @@ p:not([class*='text-']) {
 }
 
 /* Fix Leaflet controls for dark mode */
+[data-theme='scripthammer-dark'] .leaflet-control,
 [data-theme='dark'] .leaflet-control,
 [data-theme='dracula'] .leaflet-control,
 [data-theme='synthwave'] .leaflet-control,
@@ -223,6 +340,7 @@ p:not([class*='text-']) {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
+[data-theme='scripthammer-dark'] .leaflet-control a,
 [data-theme='dark'] .leaflet-control a,
 [data-theme='dracula'] .leaflet-control a,
 [data-theme='synthwave'] .leaflet-control a,
