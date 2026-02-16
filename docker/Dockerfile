@@ -103,15 +103,17 @@ RUN npx playwright install chromium firefox webkit
 
 COPY --chown=node:node . .
 
-# Set proper ownership for all files
-RUN chown -R node:node /app
+# Set proper ownership for all files including pnpm store
+RUN chown -R node:node /app /pnpm
 
 # Copy entrypoint script
 COPY --chown=node:node docker/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Don't switch to node user yet - let entrypoint handle it
-# USER node
+# Run as non-root user (Bret Fisher pattern: USER in Dockerfile,
+# not runtime su/gosu. This also fixes docker compose exec running
+# as root and creating root-owned files in bind mounts like .git/)
+USER node
 
 # Expose ports for Next.js and Storybook
 EXPOSE 3000 6006

@@ -408,6 +408,48 @@ See [docs/prp-docs/PRP-STATUS.md](./docs/prp-docs/PRP-STATUS.md) for detailed pr
 4. Commit changes (`git commit -m 'Add feature'`)
 5. Push and open a PR
 
+## Design System Redesign
+
+Custom ScriptHammer theme (dark default + light variant) built on the existing DaisyUI/Tailwind stack. Storybook upgrade to v10, hierarchy cleanup, then bottom-up component reskin. Includes theme template tooling for forks.
+
+**Design doc**: [docs/plans/2026-02-13-design-system-redesign.md](./docs/plans/2026-02-13-design-system-redesign.md)
+**Implementation plan**: [docs/plans/2026-02-13-design-system-implementation.md](./docs/plans/2026-02-13-design-system-implementation.md)
+
+### Session Continuation Prompt
+
+```
+Read these files to pick up the design system redesign:
+
+1. CLAUDE.md (in src/) - Project rules, Docker setup, component standards
+2. docs/plans/2026-02-13-design-system-redesign.md - Approved design
+3. docs/plans/2026-02-13-design-system-implementation.md - Task-by-task plan
+4. docs/STORYBOOK_NOTES.md - Current Storybook state
+5. src/app/globals.css - Current theme config, DaisyUI plugin block
+
+Use superpowers:executing-plans to work through the implementation plan.
+Start at Phase 0 Task 1 (or wherever the plan left off).
+
+Key context:
+- Everything runs inside Docker: docker compose exec scripthammer <command>
+- pnpm, not npm
+- DaisyUI beta with Tailwind v4 CSS-first config (@plugin syntax)
+- ScriptHammer is a template, design must be bold but also easy to rebrand
+- Brand colors: silver/steel (primary), warm amber (secondary), electric accent, charcoal base
+- Dark theme default, light variant available
+- Preserve all existing accessibility work
+- Aesthetic: bold, industrial, developer-focused. VS Code dark meets metallic craftsmanship.
+
+Learnings from SpokeToWork (already completed Phase 0 there):
+- atomic/ was a catch-all, not true atomic components. Move these to molecular/:
+  AvatarUpload, FontSwitcher, ColorblindToggle, TagCloud, CodeBlock, MessageInput
+- Move GoogleAnalytics to src/lib/analytics/ (not a UI component)
+- Move DiceTray to organisms/ (full game interface)
+- Gotcha: relative imports break on move (TagCloud->TagBadge, DiceTray->DraggableDice).
+  Convert to @/ absolute imports.
+- ScriptHammer has 33 atomic dirs vs SpokeToWork's 29. Audit the extras too.
+- Blast radius is small: ~6 production files need import updates.
+```
+
 ## 📄 License
 
 MIT - See [LICENSE](./LICENSE) for details
