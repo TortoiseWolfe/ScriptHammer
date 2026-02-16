@@ -2,108 +2,76 @@
 
 ## Current Status
 
-Using Storybook 9.1.5 with Next.js 15.5
+Using Storybook 10.2.8 with Next.js 15.5 (via `@storybook/nextjs-vite`)
 
-## Temporarily Removed Packages (Incompatible with Storybook 9.1.5)
+**Upgraded from 9.1.5 on 2026-02-15.** The v10 upgrade applied 4 automigrations:
 
-The following packages are still on version 8.6.14 and cause build errors with Storybook 9.1.5:
+- `upgrade-storybook-related-dependencies`
+- `consolidated-imports` (all story imports → `@storybook/nextjs-vite`)
+- `nextjs-to-nextjs-vite` (framework migration from Webpack to Vite)
+- `renderer-to-framework`
 
-### Removed Packages:
+### Addon Ecosystem (Fully Restored)
 
-1. **@storybook/addon-essentials** (8.6.14)
-   - **Missing features:**
-     - Controls addon (for live prop editing)
-     - Actions addon (for logging callbacks)
-     - Backgrounds addon (for background color switching)
-     - Viewport addon (for responsive testing)
-     - Toolbars addon (for custom toolbars)
-     - Measure addon (for measuring components)
-     - Outline addon (for component boundaries)
-     - Highlight addon (for highlighting elements)
+All addons are now at 10.2.8 and working:
 
-2. **@storybook/addon-interactions** (8.6.14)
-   - **Missing features:**
-     - Interactive testing in Storybook UI
-     - Play functions for automated interactions
-     - Step-by-step debugging
+- `@storybook/addon-docs` — Documentation generation, autodocs
+- `@storybook/addon-links` — Component linking
+- `@storybook/addon-themes` — Theme switcher (32 DaisyUI themes)
+- `@storybook/addon-a11y` — Accessibility testing (WCAG 2.1 AA)
+- `@storybook/addon-onboarding` — First-run experience
+- `@chromatic-com/storybook` (5.0.1) — Visual testing
+- `@storybook/test` (8.6.15) — Testing utilities with `fn()`
 
-3. **@storybook/blocks** (8.6.14)
-   - **Missing features:**
-     - Pre-built documentation blocks
-     - MDX story components
-     - Auto-generated prop tables
+**Note:** `@storybook/addon-essentials` is not installed as a meta-package. The individual addons above provide equivalent coverage. Controls, Actions, Viewport, and Backgrounds are available through addon-docs and the Storybook 10 built-in toolbar.
 
-4. **@storybook/test** (8.6.14)
-   - **Missing features:**
-     - Built-in testing utilities
-     - Vitest integration
-     - Testing-library utilities
+### Migration Notes for SpokeToWork
 
-## What's Still Working:
+When backporting this upgrade:
 
-- ✅ Basic Storybook UI
-- ✅ Story rendering
-- ✅ Next.js integration
-- ✅ Documentation generation (@storybook/addon-docs)
-- ✅ Component linking (@storybook/addon-links)
-- ✅ Onboarding experience (@storybook/addon-onboarding)
-- ✅ Chromatic integration for visual testing
+1. PostCSS config must use object-based format for Vite compatibility:
+   ```js
+   // postcss.config.mjs
+   const config = {
+     plugins: {
+       '@tailwindcss/postcss': {},
+     },
+   };
+   ```
+2. All story imports change from `@storybook/nextjs` to `@storybook/nextjs-vite`
+3. Preview type import: `import type { Preview } from '@storybook/nextjs-vite'`
+4. `@storybook/react` package is removed (consolidated into framework)
 
-## Workarounds:
+## Story Organization (Updated February 2026)
 
-- **Controls**: Edit props directly in story files for now
-- **Viewport**: Use browser dev tools for responsive testing
-- **Actions**: Use console.log for callback debugging
-- **Testing**: Run tests separately with Jest/Vitest
-
-## When to Re-add:
-
-Check periodically if these packages have been updated to 9.x:
-
-```bash
-npm view @storybook/addon-essentials dist-tags.latest
-npm view @storybook/addon-interactions dist-tags.latest
-npm view @storybook/blocks dist-tags.latest
-npm view @storybook/test dist-tags.latest
-```
-
-Once they reach 9.x, add them back to package.json and .storybook/main.ts
-
-## Story Organization (Updated October 2025)
-
-All 51 component stories follow a consistent functional organization structure:
+Stories follow a consistent functional organization structure:
 
 ### Structure:
 
-**Atomic Design/** - Design complexity hierarchy (16 components)
+**Components/** — Design hierarchy categories
 
-- `Atomic Design/Subatomic/` - Primitive building blocks (Text)
-- `Atomic Design/Atomic/` - Basic UI components (Button, Card, etc.)
+- `Components/Molecular/` — Multi-primitive compositions (TagCloud, CodeBlock, FontSwitcher, etc.)
+- `Components/Organisms/` — Full interactive interfaces (DiceTray, CaptainShipCrew, etc.)
 
-**Features/** - Functional purpose grouping (34 components)
+**Atomic Design/** — Single-purpose primitives
 
-- `Features/Authentication/` - Auth components (SignInForm, SignUpForm, etc.)
-- `Features/Privacy/` - GDPR compliance (CookieConsent, ConsentModal, etc.)
-- `Features/Payment/` - Payment processing (PaymentButton, PaymentHistory, etc.)
-- `Features/Map/` - Geolocation (MapContainer, LocationButton, etc.)
-- `Features/Blog/` - Blog system (BlogPostCard, BlogContent, etc.)
-- `Features/Forms/` - Form components (ContactForm)
-- `Features/Calendar/` - Calendar integration (CalendarEmbed)
-- `Features/Analytics/` - Tracking (GoogleAnalytics)
+- `Atomic Design/Atomic/` — Basic UI components (Button, Card, TagBadge, etc.)
 
-**Layout/** - Layout and theming (3 components)
+**Features/** — Functional purpose grouping
 
-- `Layout/Theme/` - Theme switching (FontSwitcher, ColorblindToggle, etc.)
+- `Features/Authentication/` — Auth components (SignInForm, SignUpForm, etc.)
+- `Features/Privacy/` — GDPR compliance (CookieConsent, ConsentModal, etc.)
+- `Features/Payment/` — Payment processing (PaymentButton, PaymentHistory, etc.)
+- `Features/Map/` — Geolocation (MapContainer, LocationButton, etc.)
+- `Features/Blog/` — Blog system (BlogPostCard, BlogContent, etc.)
+- `Features/Forms/` — Form components (ContactForm)
+- `Features/Calendar/` — Calendar integration (CalendarEmbed)
 
-### Example Story Titles:
+**Utils/** — Non-UI utilities
 
-```typescript
-title: 'Atomic Design/Atomic/Button';
-title: 'Features/Authentication/SignInForm';
-title: 'Features/Payment/PaymentButton';
-title: 'Features/Blog/BlogPostCard';
-title: 'Layout/Theme/FontSwitcher';
-```
+- `Utils/Analytics/` — Tracking (GoogleAnalytics)
+
+**Layout/** — Layout components
 
 ### When Creating New Components:
 
