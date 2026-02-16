@@ -42,6 +42,7 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 | **Docker**  | Updates service name in `docker-compose.yml`                                                           |
 | **Git**     | Updates remote origin URL to your repository                                                           |
 | **Config**  | Updates `package.json` name, description, and repository fields                                        |
+| **Themes**  | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name                     |
 | **Cleanup** | Deletes `public/CNAME` (unless custom domain detected)                                                 |
 
 ### Script Options
@@ -82,6 +83,16 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 | 1    | Invalid arguments        |
 | 2    | User declined re-rebrand |
 | 3    | Git error                |
+
+## Customizing Your Theme
+
+The rebrand script renames the ScriptHammer theme blocks to your project name but keeps the same colors. To customize:
+
+1. Edit `src/app/globals.css` — change the oklch color values in the `@plugin "daisyui/theme"` blocks
+2. Run Storybook to preview: `docker compose exec <project> pnpm run storybook`
+3. Use the theme switcher in the Storybook toolbar to verify both dark and light variants
+
+See [CUSTOM-THEME.md](./CUSTOM-THEME.md) for the full guide including color format, WCAG contrast requirements, and all files that reference the theme.
 
 ## GitHub Pages Deployment
 

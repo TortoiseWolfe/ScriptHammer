@@ -337,6 +337,56 @@ delete_cname() {
     fi
 }
 
+# Scaffold custom theme blocks in globals.css
+scaffold_themes() {
+    local css_file="$REPO_ROOT/src/app/globals.css"
+
+    if [ ! -f "$css_file" ]; then
+        log_warning "globals.css not found, skipping theme scaffold"
+        return
+    fi
+
+    # Replace theme names in @plugin "daisyui" block
+    if grep -q "scripthammer-dark" "$css_file" 2>/dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            log_verbose "[DRY-RUN] Would rename theme references in globals.css"
+        else
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$css_file"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$css_file"
+            sed "${SED_INPLACE[@]}" "s|ScriptHammer Dark Theme|${DISPLAY_NAME} Dark Theme|g" "$css_file"
+            sed "${SED_INPLACE[@]}" "s|ScriptHammer Light Theme|${DISPLAY_NAME} Light Theme|g" "$css_file"
+            log_verbose "Renamed theme blocks: scripthammer-* → ${SANITIZED_NAME}-*"
+        fi
+        ((FILES_MODIFIED++)) || true
+    fi
+
+    # Update ThemeScript.tsx fallback theme names
+    local theme_script="$REPO_ROOT/src/components/ThemeScript.tsx"
+    if [ -f "$theme_script" ] && grep -q "scripthammer-dark" "$theme_script" 2>/dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            log_verbose "[DRY-RUN] Would update ThemeScript.tsx theme names"
+        else
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$theme_script"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$theme_script"
+            log_verbose "Updated ThemeScript.tsx theme fallbacks"
+        fi
+        ((FILES_MODIFIED++)) || true
+    fi
+
+    # Update Storybook preview theme names
+    local preview_file="$REPO_ROOT/.storybook/preview.tsx"
+    if [ -f "$preview_file" ] && grep -q "scripthammer-dark" "$preview_file" 2>/dev/null; then
+        if [ "$DRY_RUN" = true ]; then
+            log_verbose "[DRY-RUN] Would update .storybook/preview.tsx theme names"
+        else
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$preview_file"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$preview_file"
+            log_verbose "Updated Storybook preview theme names"
+        fi
+        ((FILES_MODIFIED++)) || true
+    fi
+}
+
 # Update git remote
 update_git_remote() {
     local current_url
@@ -493,6 +543,10 @@ main() {
     update_package_json
 
     echo ""
+    echo "Scaffolding custom themes..."
+    scaffold_themes
+
+    echo ""
     echo "Updating git remote..."
     update_git_remote
 
@@ -522,7 +576,8 @@ main() {
         echo "Next steps:"
         echo "  1. Run 'docker compose up --build' to rebuild with new configuration"
         echo "  2. Run 'docker compose exec ${SANITIZED_NAME} pnpm run build' to verify build"
-        echo "  3. Commit changes: git add -A && git commit -m \"Rebrand to ${DISPLAY_NAME}\""
+        echo "  3. Customize your theme colors in src/app/globals.css (see docs/CUSTOM-THEME.md)"
+        echo "  4. Commit changes: git add -A && git commit -m \"Rebrand to ${DISPLAY_NAME}\""
     fi
     echo ""
 }
