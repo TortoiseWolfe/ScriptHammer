@@ -51,8 +51,8 @@ const manifest = {
   name: projectConfig.projectName,
   short_name: projectConfig.projectName.substring(0, 12),
   description: `${projectConfig.projectName} - Modern Next.js template with PWA, theming, and interactive components`,
-  theme_color: '#2563eb',
-  background_color: '#1a1a1a', // Dark splash screen (Lighthouse Phase 1)
+  theme_color: '#1a1a2e',
+  background_color: '#1a1a2e',
   display: 'standalone',
   start_url: `${projectConfig.basePath}/`,
   scope: `${projectConfig.basePath}/`,
