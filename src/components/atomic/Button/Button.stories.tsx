@@ -197,3 +197,121 @@ export const AllVariants: Story = {
     </div>
   ),
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    children: 'Button',
+  },
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          Solid Variants
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary">Primary</Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="accent">Accent</Button>
+          <Button variant="info">Info</Button>
+          <Button variant="success">Success</Button>
+          <Button variant="warning">Warning</Button>
+          <Button variant="error">Error</Button>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          Outline Variants
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" outline>
+            Primary
+          </Button>
+          <Button variant="secondary" outline>
+            Secondary
+          </Button>
+          <Button variant="accent" outline>
+            Accent
+          </Button>
+          <Button variant="info" outline>
+            Info
+          </Button>
+          <Button variant="success" outline>
+            Success
+          </Button>
+          <Button variant="warning" outline>
+            Warning
+          </Button>
+          <Button variant="error" outline>
+            Error
+          </Button>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">States</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary">Default</Button>
+          <Button variant="primary" loading>
+            Loading
+          </Button>
+          <Button variant="primary" disabled>
+            Disabled
+          </Button>
+          <Button variant="ghost">Ghost</Button>
+          <Button variant="link">Link</Button>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          On Surfaces
+        </h3>
+        <div className="flex flex-col gap-3">
+          <div className="bg-base-100 flex flex-wrap gap-2 rounded-lg p-4">
+            <span className="text-base-content text-sm opacity-60">
+              base-100:
+            </span>
+            <Button variant="primary" size="sm">
+              Primary
+            </Button>
+            <Button variant="secondary" size="sm">
+              Secondary
+            </Button>
+            <Button variant="accent" size="sm">
+              Accent
+            </Button>
+          </div>
+          <div className="bg-base-200 flex flex-wrap gap-2 rounded-lg p-4">
+            <span className="text-base-content text-sm opacity-60">
+              base-200:
+            </span>
+            <Button variant="primary" size="sm">
+              Primary
+            </Button>
+            <Button variant="secondary" size="sm">
+              Secondary
+            </Button>
+            <Button variant="accent" size="sm">
+              Accent
+            </Button>
+          </div>
+          <div className="bg-neutral flex flex-wrap gap-2 rounded-lg p-4">
+            <span className="text-neutral-content text-sm opacity-60">
+              neutral:
+            </span>
+            <Button variant="primary" size="sm">
+              Primary
+            </Button>
+            <Button variant="secondary" size="sm">
+              Secondary
+            </Button>
+            <Button variant="accent" size="sm">
+              Accent
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};

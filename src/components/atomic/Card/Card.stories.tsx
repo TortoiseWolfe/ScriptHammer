@@ -172,3 +172,83 @@ export const CardGrid: Story = {
     layout: 'fullscreen',
   },
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    children: 'Card content',
+  },
+  render: () => (
+    <div className="bg-base-200 flex flex-col gap-6 p-6">
+      <h3 className="text-base-content text-lg font-semibold">
+        Card Styles on base-200
+      </h3>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card title="Default Card">
+          <p className="text-base-content/80">
+            Standard card with shadow on the current theme surface.
+          </p>
+        </Card>
+        <Card title="Bordered Card" bordered>
+          <p className="text-base-content/80">
+            Card with visible border for subtle separation.
+          </p>
+        </Card>
+        <Card
+          title="Card with Actions"
+          actions={
+            <>
+              <Button variant="ghost" size="sm">
+                Cancel
+              </Button>
+              <Button variant="primary" size="sm">
+                Confirm
+              </Button>
+            </>
+          }
+        >
+          <p className="text-base-content/80">
+            Primary and ghost buttons on a card surface.
+          </p>
+        </Card>
+        <Card
+          title="Accent Card"
+          actions={
+            <Button variant="accent" size="sm">
+              Learn More
+            </Button>
+          }
+        >
+          <p className="text-base-content/80">
+            Card with accent action for call-to-action emphasis.
+          </p>
+        </Card>
+      </div>
+      <h3 className="text-base-content text-lg font-semibold">
+        Card on neutral surface
+      </h3>
+      <div className="bg-neutral rounded-box grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
+        <Card title="On Neutral" bordered>
+          <p className="text-base-content/80">
+            Card elevated above a neutral background.
+          </p>
+        </Card>
+        <Card
+          title="Glass on Neutral"
+          glass
+          actions={
+            <Button variant="secondary" size="sm">
+              Action
+            </Button>
+          }
+        >
+          <p className="text-base-content/80">
+            Glass effect shows the neutral surface beneath.
+          </p>
+        </Card>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'fullscreen',
+  },
+};

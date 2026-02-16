@@ -153,3 +153,74 @@ export const LongTagNames: Story = {
     </div>
   ),
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    tag: 'Theme Demo',
+  },
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          Variants by Size
+        </h3>
+        <div className="flex flex-col gap-3">
+          {(['sm', 'md', 'lg'] as const).map((size) => (
+            <div key={size} className="flex flex-wrap items-center gap-2">
+              <span className="text-base-content w-8 text-xs opacity-60">
+                {size}:
+              </span>
+              <TagBadge tag="Default" size={size} variant="default" />
+              <TagBadge tag="Primary" size={size} variant="primary" />
+              <TagBadge tag="Secondary" size={size} variant="secondary" />
+              <TagBadge tag="Accent" size={size} variant="accent" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">States</h3>
+        <div className="flex flex-wrap gap-2">
+          <TagBadge tag="Normal" variant="primary" />
+          <TagBadge tag="Active" variant="primary" active />
+          <TagBadge tag="With Count" variant="secondary" count={42} />
+          <TagBadge tag="Non-clickable" variant="accent" clickable={false} />
+        </div>
+      </div>
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          On Surfaces
+        </h3>
+        <div className="flex flex-col gap-3">
+          <div className="bg-base-100 flex flex-wrap gap-2 rounded-lg p-3">
+            <span className="text-base-content text-xs opacity-60">
+              base-100:
+            </span>
+            <TagBadge tag="React" variant="primary" count={15} />
+            <TagBadge tag="TypeScript" variant="secondary" count={12} />
+            <TagBadge tag="Next.js" variant="accent" count={8} />
+          </div>
+          <div className="bg-base-200 flex flex-wrap gap-2 rounded-lg p-3">
+            <span className="text-base-content text-xs opacity-60">
+              base-200:
+            </span>
+            <TagBadge tag="React" variant="primary" count={15} />
+            <TagBadge tag="TypeScript" variant="secondary" count={12} />
+            <TagBadge tag="Next.js" variant="accent" count={8} />
+          </div>
+          <div className="bg-neutral flex flex-wrap gap-2 rounded-lg p-3">
+            <span className="text-neutral-content text-xs opacity-60">
+              neutral:
+            </span>
+            <TagBadge tag="React" variant="primary" count={15} />
+            <TagBadge tag="TypeScript" variant="secondary" count={12} />
+            <TagBadge tag="Next.js" variant="accent" count={8} />
+          </div>
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};
