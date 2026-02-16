@@ -5,7 +5,9 @@ import dynamic from 'next/dynamic';
 // Dynamically import game component to reduce initial bundle size
 const CaptainShipCrewWithNPC = dynamic(
   () =>
-    import('@/components/atomic/CaptainShipCrewWithNPC/CaptainShipCrewWithNPC'),
+    import(
+      '@/components/organisms/CaptainShipCrewWithNPC/CaptainShipCrewWithNPC'
+    ),
   {
     loading: () => (
       <div className="bg-base-200 card flex h-96 items-center justify-center">

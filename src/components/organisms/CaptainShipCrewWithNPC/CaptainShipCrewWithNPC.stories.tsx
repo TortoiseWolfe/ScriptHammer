@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs';
 import CaptainShipCrewWithNPC from './CaptainShipCrewWithNPC';
 
 const meta = {
-  title: 'Atomic Design/Atomic/CaptainShipCrewWithNPC',
+  title: 'Components/Organisms/CaptainShipCrewWithNPC',
   component: CaptainShipCrewWithNPC,
   parameters: {
     layout: 'centered',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DraggableDice from '../DraggableDice/DraggableDice';
+import DraggableDice from '@/components/atomic/DraggableDice/DraggableDice';
 
 interface DiceData {
   id: string;

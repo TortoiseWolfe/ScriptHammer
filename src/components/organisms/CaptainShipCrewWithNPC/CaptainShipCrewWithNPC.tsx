@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import DraggableDice from '../DraggableDice/DraggableDice';
+import DraggableDice from '@/components/atomic/DraggableDice/DraggableDice';
 import { ValidatedInput } from '@/components/forms';
 import { playerNameSchema } from '@/schemas/forms';
 import { createLogger } from '@/lib/logger/logger';
 
-const logger = createLogger('components:atomic:CaptainShipCrewWithNPC');
+const logger = createLogger('components:organisms:CaptainShipCrewWithNPC');
 
 // TODO: Add validation to other atomic components throughout the app
 // This is a demonstration of the new validation system in action.
