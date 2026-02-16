@@ -12,7 +12,7 @@ export default function ThemesPage() {
             ScriptHammer Theme Playground
           </h1>
           <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
-            Explore 32+ beautiful DaisyUI themes
+            Explore 34 themes including custom ScriptHammer variants
           </p>
         </div>
 
