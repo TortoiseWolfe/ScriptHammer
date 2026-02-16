@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import type { Meta, StoryObj } from '@storybook/nextjs';
-import type { Decorator } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Decorator } from '@storybook/nextjs-vite';
 import { PaymentConsentModal } from './PaymentConsentModal';
 
 // Mock the usePaymentConsent hook to always show the modal

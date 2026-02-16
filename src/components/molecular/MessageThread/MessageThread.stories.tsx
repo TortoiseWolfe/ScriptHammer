@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import MessageThread from './MessageThread';
 import type { DecryptedMessage } from '@/types/messaging';
 

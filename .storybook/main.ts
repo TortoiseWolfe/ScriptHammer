@@ -1,4 +1,4 @@
-import type { StorybookConfig } from '@storybook/nextjs';
+import type { StorybookConfig } from '@storybook/nextjs-vite';
 import { config as dotenvConfig } from 'dotenv';
 import path from 'path';
 
@@ -17,7 +17,7 @@ const config: StorybookConfig = {
     '@storybook/addon-a11y',
   ],
   framework: {
-    name: '@storybook/nextjs',
+    name: '@storybook/nextjs-vite',
     options: {},
   },
   staticDirs: ['../public'],

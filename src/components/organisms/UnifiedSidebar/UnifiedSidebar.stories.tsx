@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
-import { fn } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { fn } from 'storybook/test';
 import UnifiedSidebar from './UnifiedSidebar';
 
 const meta: Meta<typeof UnifiedSidebar> = {

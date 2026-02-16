@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import BlogPostViewer from './BlogPostViewer';
 import type { BlogPost } from '@/types/blog';
 import type { TOCItem } from '@/types/metadata';

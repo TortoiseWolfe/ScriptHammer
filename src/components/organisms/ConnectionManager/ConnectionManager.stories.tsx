@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import ConnectionManager from './ConnectionManager';
 
 const meta: Meta<typeof ConnectionManager> = {

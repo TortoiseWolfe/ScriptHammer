@@ -4,7 +4,7 @@
  * Interactive demonstration of the logger service functionality.
  * Open browser console to see log output.
  */
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import React, { useState } from 'react';
 import {
   createLogger,

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { PrivacyControls } from './PrivacyControls';
 import { ConsentProvider } from '../../../contexts/ConsentContext';
 import React, { useEffect } from 'react';

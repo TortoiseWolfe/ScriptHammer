@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/nextjs-vite';
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
 import { ConsentProvider } from '../src/contexts/ConsentContext';
 import '../src/app/globals.css';

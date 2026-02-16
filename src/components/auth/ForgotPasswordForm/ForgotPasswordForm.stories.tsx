@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import ForgotPasswordForm from './ForgotPasswordForm';
 
 const meta: Meta<typeof ForgotPasswordForm> = {

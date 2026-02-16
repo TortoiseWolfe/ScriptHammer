@@ -2,7 +2,7 @@
  * PaymentButton Storybook Stories
  */
 
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { PaymentButton } from './PaymentButton';
 
 const meta: Meta<typeof PaymentButton> = {

@@ -4,7 +4,7 @@
  * Mock data is provided via MSW handlers in src/mocks/handlers.ts
  */
 
-import type { Meta, StoryObj } from '@storybook/nextjs';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { PaymentStatusDisplay } from './PaymentStatusDisplay';
 
 const meta: Meta<typeof PaymentStatusDisplay> = {
