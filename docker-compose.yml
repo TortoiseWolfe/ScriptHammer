@@ -12,7 +12,6 @@ services:
       - .:/app
       - node_modules:/app/node_modules
       - next_cache:/app/.next
-      - out_cache:/app/out
     env_file:
       - .env
     environment:
@@ -58,4 +57,3 @@ volumes:
   postgres_data:
   node_modules:
   next_cache:
-  out_cache:
