@@ -15,6 +15,7 @@ services:
     env_file:
       - .env
     environment:
+      - CI=true
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       # Git author config for container-based commits

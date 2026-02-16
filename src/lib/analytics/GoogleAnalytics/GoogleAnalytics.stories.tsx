@@ -29,7 +29,7 @@ const MockConsentWrapper = ({
 };
 
 const meta: Meta<typeof GoogleAnalytics> = {
-  title: 'Features/Analytics/GoogleAnalytics',
+  title: 'Utils/Analytics/GoogleAnalytics',
   component: GoogleAnalytics,
   parameters: {
     layout: 'padded',
@@ -54,7 +54,7 @@ It only loads and tracks when analytics consent is granted through the ConsentCo
 ## Usage
 \`\`\`tsx
 // In app/layout.tsx
-import GoogleAnalytics from '@/components/atomic/GoogleAnalytics';
+import GoogleAnalytics from '@/lib/analytics/GoogleAnalytics';
 
 export default function RootLayout({ children }) {
   return (
