@@ -323,6 +323,23 @@ p:not([class*='text-']) {
   font-family: inherit;
 }
 
+/* Dark background for map container before tiles load */
+[data-theme='scripthammer-dark'] .leaflet-container,
+[data-theme='dark'] .leaflet-container,
+[data-theme='dracula'] .leaflet-container,
+[data-theme='synthwave'] .leaflet-container,
+[data-theme='halloween'] .leaflet-container,
+[data-theme='forest'] .leaflet-container,
+[data-theme='black'] .leaflet-container,
+[data-theme='luxury'] .leaflet-container,
+[data-theme='business'] .leaflet-container,
+[data-theme='night'] .leaflet-container,
+[data-theme='coffee'] .leaflet-container,
+[data-theme='dim'] .leaflet-container,
+[data-theme='sunset'] .leaflet-container {
+  background-color: #2d3436;
+}
+
 /* Fix Leaflet controls for dark mode */
 [data-theme='scripthammer-dark'] .leaflet-control,
 [data-theme='dark'] .leaflet-control,
@@ -332,6 +349,7 @@ p:not([class*='text-']) {
 [data-theme='forest'] .leaflet-control,
 [data-theme='black'] .leaflet-control,
 [data-theme='luxury'] .leaflet-control,
+[data-theme='business'] .leaflet-control,
 [data-theme='night'] .leaflet-control,
 [data-theme='coffee'] .leaflet-control,
 [data-theme='dim'] .leaflet-control,
@@ -348,6 +366,7 @@ p:not([class*='text-']) {
 [data-theme='forest'] .leaflet-control a,
 [data-theme='black'] .leaflet-control a,
 [data-theme='luxury'] .leaflet-control a,
+[data-theme='business'] .leaflet-control a,
 [data-theme='night'] .leaflet-control a,
 [data-theme='coffee'] .leaflet-control a,
 [data-theme='dim'] .leaflet-control a,

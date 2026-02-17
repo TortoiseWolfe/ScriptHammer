@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
+import { isDarkTheme } from '@/utils/theme-utils';
 
 interface DisqusCommentsProps {
   slug: string;
@@ -137,29 +138,9 @@ export default function DisqusComments({
     if (!isVisible) return;
 
     // Get computed styles to determine if we're in a dark theme
-    const isDarkTheme = () => {
-      const theme = document.documentElement.getAttribute('data-theme');
-      return (
-        theme &&
-        [
-          'scripthammer-dark',
-          'dark',
-          'night',
-          'dracula',
-          'synthwave',
-          'halloween',
-          'forest',
-          'black',
-          'luxury',
-          'business',
-          'coffee',
-          'dim',
-          'sunset',
-        ].includes(theme)
-      );
-    };
-
-    const dark = isDarkTheme();
+    const dark = isDarkTheme(
+      document.documentElement.getAttribute('data-theme')
+    );
 
     const style = document.createElement('style');
     style.textContent = `

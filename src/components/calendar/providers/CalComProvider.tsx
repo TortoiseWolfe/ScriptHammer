@@ -1,6 +1,7 @@
 import Cal, { getCalApi } from '@calcom/embed-react';
 import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';
+import { isDarkTheme } from '@/utils/theme-utils';
 
 interface CalComProviderProps {
   calLink: string;
@@ -53,15 +54,7 @@ export function CalComProvider({
     typeof window !== 'undefined'
       ? document.documentElement.getAttribute('data-theme')
       : 'light';
-  const isDark = [
-    'scripthammer-dark',
-    'dark',
-    'dracula',
-    'night',
-    'coffee',
-    'dim',
-    'sunset',
-  ].includes(theme || '');
+  const isDark = isDarkTheme(theme);
 
   if (mode === 'popup') {
     return (

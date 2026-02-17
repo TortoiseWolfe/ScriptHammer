@@ -8,11 +8,8 @@ import {
 } from 'react-leaflet';
 import type { Map as LeafletMap, LatLngTuple } from 'leaflet';
 import L from 'leaflet';
-import {
-  OSM_TILE_URL,
-  OSM_ATTRIBUTION,
-  DEFAULT_MAP_CONFIG,
-} from '@/utils/map-utils';
+import { DEFAULT_MAP_CONFIG } from '@/utils/map-utils';
+import { useMapTheme } from '@/hooks/useMapTheme';
 
 interface MapContainerInnerProps {
   center: LatLngTuple;
@@ -137,13 +134,19 @@ const MapContainerInner: React.FC<MapContainerInnerProps> = ({
   onLocationFound,
   onLocationError,
   onMapReady,
-  tileUrl = OSM_TILE_URL,
-  attribution = OSM_ATTRIBUTION,
+  tileUrl: tileUrlProp,
+  attribution: attributionProp,
   scrollWheelZoom = DEFAULT_MAP_CONFIG.scrollWheelZoom,
   zoomControl = DEFAULT_MAP_CONFIG.zoomControl,
   keyboardNavigation = DEFAULT_MAP_CONFIG.keyboardNavigation,
   children,
 }) => {
+  const themeConfig = useMapTheme();
+
+  // Props override the hook when explicitly provided
+  const tileUrl = tileUrlProp ?? themeConfig.tileUrl;
+  const attribution = attributionProp ?? themeConfig.attribution;
+
   return (
     <LeafletMapContainer
       center={center}
@@ -153,7 +156,7 @@ const MapContainerInner: React.FC<MapContainerInnerProps> = ({
       zoomControl={zoomControl}
       keyboard={keyboardNavigation}
     >
-      <TileLayer attribution={attribution} url={tileUrl} />
+      <TileLayer key={tileUrl} attribution={attribution} url={tileUrl} />
 
       <MapEventHandler
         onMapReady={onMapReady}

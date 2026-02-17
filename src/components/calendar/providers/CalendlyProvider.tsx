@@ -5,6 +5,7 @@ import {
 } from 'react-calendly';
 import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';
+import { isDarkTheme } from '@/utils/theme-utils';
 
 interface CalendlyProviderProps {
   url: string;
@@ -46,15 +47,7 @@ export function CalendlyProvider({
   // Apply theme-aware styles
   useEffect(() => {
     const theme = document.documentElement.getAttribute('data-theme');
-    const isDark = [
-      'scripthammer-dark',
-      'dark',
-      'dracula',
-      'night',
-      'coffee',
-      'dim',
-      'sunset',
-    ].includes(theme || '');
+    const isDark = isDarkTheme(theme);
 
     // Theme will be applied through pageSettings below
     logger.debug('Theme detected', { theme, isDark });
@@ -64,15 +57,7 @@ export function CalendlyProvider({
     typeof window !== 'undefined'
       ? document.documentElement.getAttribute('data-theme')
       : 'light';
-  const isDark = [
-    'scripthammer-dark',
-    'dark',
-    'dracula',
-    'night',
-    'coffee',
-    'dim',
-    'sunset',
-  ].includes(theme || '');
+  const isDark = isDarkTheme(theme);
 
   const pageSettings = {
     backgroundColor: isDark ? '1a1a1a' : 'ffffff',
