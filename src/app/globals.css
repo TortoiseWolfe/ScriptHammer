@@ -337,7 +337,63 @@ p:not([class*='text-']) {
 [data-theme='coffee'] .leaflet-container,
 [data-theme='dim'] .leaflet-container,
 [data-theme='sunset'] .leaflet-container {
-  background-color: #2d3436;
+  background-color: #1a1a2e;
+}
+
+/* Invert OSM tiles for dark mode — preserves color/detail unlike CartoDB dark_all */
+[data-theme='scripthammer-dark'] .leaflet-tile-pane,
+[data-theme='dark'] .leaflet-tile-pane,
+[data-theme='dracula'] .leaflet-tile-pane,
+[data-theme='synthwave'] .leaflet-tile-pane,
+[data-theme='halloween'] .leaflet-tile-pane,
+[data-theme='forest'] .leaflet-tile-pane,
+[data-theme='black'] .leaflet-tile-pane,
+[data-theme='luxury'] .leaflet-tile-pane,
+[data-theme='business'] .leaflet-tile-pane,
+[data-theme='night'] .leaflet-tile-pane,
+[data-theme='coffee'] .leaflet-tile-pane,
+[data-theme='dim'] .leaflet-tile-pane,
+[data-theme='sunset'] .leaflet-tile-pane {
+  filter: brightness(0.6) invert(1) contrast(3) hue-rotate(180deg) saturate(0.8)
+    brightness(1.1);
+}
+
+/* Smooth filter transition when switching themes */
+.leaflet-tile-pane {
+  transition: filter 0.4s ease;
+}
+
+/* Rounded map corners */
+.leaflet-container {
+  border-radius: var(--rounded-box, 0.75rem);
+  overflow: hidden;
+}
+
+/* Glass-morphism zoom controls */
+.leaflet-control-zoom {
+  border: none !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-control-zoom a {
+  border: none !important;
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+}
+
+/* Subtle attribution */
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.leaflet-control-attribution:hover {
+  opacity: 1;
 }
 
 /* Fix Leaflet controls for dark mode */
@@ -354,8 +410,12 @@ p:not([class*='text-']) {
 [data-theme='coffee'] .leaflet-control,
 [data-theme='dim'] .leaflet-control,
 [data-theme='sunset'] .leaflet-control {
-  background-color: rgba(0, 0, 0, 0.8);
-  border-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  background: rgba(26, 26, 46, 0.75);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 [data-theme='scripthammer-dark'] .leaflet-control a,
@@ -371,8 +431,8 @@ p:not([class*='text-']) {
 [data-theme='coffee'] .leaflet-control a,
 [data-theme='dim'] .leaflet-control a,
 [data-theme='sunset'] .leaflet-control a {
-  color: white;
-  background-color: rgba(0, 0, 0, 0.8);
+  color: rgba(255, 255, 255, 0.9);
+  background: transparent;
 }
 
 /* Fix popup styles for themes */

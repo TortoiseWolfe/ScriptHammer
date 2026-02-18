@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { isDarkTheme } from '@/utils/theme-utils';
-import {
-  CARTO_LIGHT_TILE_URL,
-  CARTO_DARK_TILE_URL,
-  CARTO_ATTRIBUTION,
-} from '@/utils/map-utils';
+import { OSM_TILE_URL, OSM_ATTRIBUTION } from '@/utils/map-utils';
 
 export type MapTheme = 'light' | 'dark' | 'auto';
 
@@ -19,7 +15,8 @@ export interface MapTileConfig {
 /**
  * Hook to get theme-aware Leaflet tile configuration.
  * Watches DaisyUI data-theme attribute via MutationObserver and
- * returns the appropriate CartoDB light/dark tile URL.
+ * returns CartoDB Voyager tiles + isDark flag. Dark appearance is
+ * handled via CSS filter on .leaflet-tile-pane (see globals.css).
  *
  * Adapted from SpokeToWork's useMapTheme (MapLibre → Leaflet).
  */
@@ -57,8 +54,8 @@ export function useMapTheme(preferredTheme: MapTheme = 'auto'): MapTileConfig {
     preferredTheme === 'dark' || (preferredTheme === 'auto' && isDark);
 
   return {
-    tileUrl: dark ? CARTO_DARK_TILE_URL : CARTO_LIGHT_TILE_URL,
-    attribution: CARTO_ATTRIBUTION,
+    tileUrl: OSM_TILE_URL,
+    attribution: OSM_ATTRIBUTION,
     isDark: dark,
   };
 }

@@ -32,6 +32,9 @@ const MapContainer = dynamicImport(
 export default function MapPage() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [hasConsent, setHasConsent] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const [userLocation, setUserLocation] = useState<LatLngTuple | null>(null);
   const [mapCenter, setMapCenter] = useState<LatLngTuple>([51.505, -0.09]); // Default to London
@@ -165,7 +168,7 @@ export default function MapPage() {
         <p>
           Explore the map and enable location services to see your current
           position.
-          {!isSupported && (
+          {mounted && !isSupported && (
             <span className="text-error ml-2">
               (Geolocation is not supported by your browser)
             </span>
@@ -179,7 +182,7 @@ export default function MapPage() {
             <LocationButton
               onClick={handleLocationRequest}
               loading={loading}
-              disabled={!isSupported || permission === 'denied'}
+              disabled={!mounted || !isSupported || permission === 'denied'}
               hasLocation={!!userLocation}
               permissionState={permission}
             />
@@ -207,7 +210,7 @@ export default function MapPage() {
             )}
           </div>
 
-          <div className="relative">
+          <div className="ring-base-300/50 relative overflow-hidden rounded-xl ring-1">
             <MapContainer
               center={mapCenter}
               zoom={13}
