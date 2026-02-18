@@ -8,10 +8,6 @@ import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:organisms:CaptainShipCrewWithNPC');
 
-// TODO: Add validation to other atomic components throughout the app
-// This is a demonstration of the new validation system in action.
-// Future work: Extend validation to Button, Input, and other form components.
-
 type PlayerType = 'human' | 'npc';
 type NPCDifficulty = 'easy' | 'medium' | 'hard';
 

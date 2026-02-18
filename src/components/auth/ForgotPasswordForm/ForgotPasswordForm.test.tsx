@@ -19,6 +19,4 @@ describe('ForgotPasswordForm', () => {
     const form = container.querySelector('form');
     expect(form).toHaveClass(customClass);
   });
-
-  // TODO: Add more specific tests for ForgotPasswordForm functionality
 });

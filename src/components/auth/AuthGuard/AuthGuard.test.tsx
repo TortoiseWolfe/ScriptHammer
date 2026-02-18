@@ -19,6 +19,4 @@ describe('AuthGuard', () => {
     const element = screen.getByText(testContent);
     expect(element).toBeInTheDocument();
   });
-
-  // TODO: Add more specific tests for AuthGuard functionality
 });

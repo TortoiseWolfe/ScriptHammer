@@ -335,7 +335,6 @@ export class GroupService {
    * @throws MembershipError if validation fails
    */
   async addMembers(input: AddMembersInput): Promise<AddMembersResult> {
-    // TODO: Implement in T043
     throw new Error('Not implemented');
   }
 
@@ -346,7 +345,6 @@ export class GroupService {
    * @throws MembershipError if not owner or user not found
    */
   async removeMember(conversationId: string, userId: string): Promise<void> {
-    // TODO: Implement in T060
     throw new Error('Not implemented');
   }
 
@@ -356,7 +354,6 @@ export class GroupService {
    * @throws MembershipError if owner without transfer
    */
   async leaveGroup(conversationId: string): Promise<void> {
-    // TODO: Implement in T061
     throw new Error('Not implemented');
   }
 
@@ -366,7 +363,6 @@ export class GroupService {
    * @throws MembershipError if not owner or target not member
    */
   async transferOwnership(input: TransferOwnershipInput): Promise<void> {
-    // TODO: Implement in T062
     throw new Error('Not implemented');
   }
 
@@ -376,7 +372,6 @@ export class GroupService {
    * @returns Upgraded group conversation
    */
   async upgradeToGroup(input: UpgradeToGroupInput): Promise<GroupConversation> {
-    // TODO: Implement in T054
     throw new Error('Not implemented');
   }
 
@@ -386,7 +381,6 @@ export class GroupService {
    * @throws MembershipError if not owner
    */
   async deleteGroup(conversationId: string): Promise<void> {
-    // TODO: Implement in T092
     throw new Error('Not implemented');
   }
 
@@ -397,7 +391,6 @@ export class GroupService {
    * @throws MembershipError if not owner
    */
   async renameGroup(conversationId: string, newName: string): Promise<void> {
-    // TODO: Implement in T093
     throw new Error('Not implemented');
   }
 
@@ -407,7 +400,6 @@ export class GroupService {
    * @returns List of members with profiles
    */
   async getMembers(conversationId: string): Promise<ConversationMember[]> {
-    // TODO: Implement in T074
     throw new Error('Not implemented');
   }
 

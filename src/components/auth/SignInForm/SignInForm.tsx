@@ -142,28 +142,30 @@ export default function SignInForm({
 
           // Send welcome message (non-blocking, Feature 003-feature-004-welcome)
           // Pass privateKey for ECDH shared secret derivation with admin's public key
-          import('@/services/messaging/welcome-service')
-            .then(({ welcomeService }) => {
-              // Get current user ID from auth context or session
-              const { createClient } = require('@/lib/supabase/client');
-              const supabase = createClient();
-              supabase.auth.getUser().then(({ data }: any) => {
-                if (
-                  data?.user?.id &&
-                  keyPair.privateKey &&
-                  keyPair.publicKeyJwk
-                ) {
-                  welcomeService
-                    .sendWelcomeMessage(
-                      data.user.id,
-                      keyPair.privateKey,
-                      keyPair.publicKeyJwk
-                    )
-                    .catch((err: Error) => {
-                      logger.error('Welcome message failed', { error: err });
-                    });
-                }
-              });
+          Promise.all([
+            import('@/services/messaging/welcome-service'),
+            import('@/lib/supabase/client'),
+          ])
+            .then(([{ welcomeService }, { supabase: supabaseClient }]) => {
+              supabaseClient.auth
+                .getUser()
+                .then(({ data }: { data: { user: { id: string } | null } }) => {
+                  if (
+                    data?.user?.id &&
+                    keyPair.privateKey &&
+                    keyPair.publicKeyJwk
+                  ) {
+                    welcomeService
+                      .sendWelcomeMessage(
+                        data.user.id,
+                        keyPair.privateKey,
+                        keyPair.publicKeyJwk
+                      )
+                      .catch((err: Error) => {
+                        logger.error('Welcome message failed', { error: err });
+                      });
+                  }
+                });
             })
             .catch((err: Error) => {
               logger.error('Failed to load welcome service', { error: err });
@@ -186,24 +188,30 @@ export default function SignInForm({
           // Check if user needs welcome message (Feature 004)
           // This handles cases where keys exist but welcome message wasn't sent
           if (keyPair?.privateKey && keyPair?.publicKeyJwk) {
-            import('@/services/messaging/welcome-service')
-              .then(({ welcomeService }) => {
-                const { createClient } = require('@/lib/supabase/client');
-                const supabase = createClient();
-                supabase.auth.getUser().then(({ data }: any) => {
-                  if (data?.user?.id) {
-                    // welcomeService.sendWelcomeMessage checks welcome_message_sent flag
-                    welcomeService
-                      .sendWelcomeMessage(
-                        data.user.id,
-                        keyPair.privateKey,
-                        keyPair.publicKeyJwk
-                      )
-                      .catch((err: Error) => {
-                        logger.error('Welcome message failed', { error: err });
-                      });
-                  }
-                });
+            Promise.all([
+              import('@/services/messaging/welcome-service'),
+              import('@/lib/supabase/client'),
+            ])
+              .then(([{ welcomeService }, { supabase: supabaseClient }]) => {
+                supabaseClient.auth
+                  .getUser()
+                  .then(
+                    ({ data }: { data: { user: { id: string } | null } }) => {
+                      if (data?.user?.id) {
+                        welcomeService
+                          .sendWelcomeMessage(
+                            data.user.id,
+                            keyPair.privateKey,
+                            keyPair.publicKeyJwk
+                          )
+                          .catch((err: Error) => {
+                            logger.error('Welcome message failed', {
+                              error: err,
+                            });
+                          });
+                      }
+                    }
+                  );
               })
               .catch((err: Error) => {
                 logger.error('Failed to load welcome service', { error: err });

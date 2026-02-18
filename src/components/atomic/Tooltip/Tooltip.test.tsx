@@ -7,6 +7,4 @@ describe('Tooltip', () => {
     render(<Tooltip text="Test tooltip">Test content</Tooltip>);
     expect(screen.getByText('Test content')).toBeInTheDocument();
   });
-
-  // TODO: Add more specific tests
 });

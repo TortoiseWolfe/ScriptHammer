@@ -191,16 +191,9 @@ export function AccessibilityProvider({
     setSettings(updatedSettings);
     applySettings(updatedSettings);
 
-    // Dispatch storage event for same-tab updates (only if using localStorage)
-    if (canPersist) {
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: Object.keys(newSettings)[0],
-          newValue: Object.values(newSettings)[0],
-          url: window.location.href,
-        })
-      );
-    }
+    // Note: No need to dispatch StorageEvent to self — state is already
+    // updated via setSettings/applySettings above. The storage event listener
+    // handles cross-tab synchronization natively.
   };
 
   // Reset settings function

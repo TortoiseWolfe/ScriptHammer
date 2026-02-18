@@ -141,20 +141,6 @@ export async function recordFailedAttempt(
 }
 
 /**
- * Get client IP address (best effort)
- * Note: This is approximate and can be spoofed. Server-side IP detection is more reliable.
- */
-export async function getClientIP(): Promise<string | undefined> {
-  try {
-    // In production, this would use a geolocation API or extract from request headers
-    // For now, return undefined and let server handle it
-    return undefined;
-  } catch (error) {
-    return undefined;
-  }
-}
-
-/**
  * Format lockout time for user display
  */
 export function formatLockoutTime(lockedUntil: string): string {

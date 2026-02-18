@@ -14,6 +14,4 @@ describe('OAuthButtons', () => {
     const element = container.firstChild as HTMLElement;
     expect(element).toHaveClass(customClass);
   });
-
-  // TODO: Add more specific tests for OAuthButtons functionality
 });

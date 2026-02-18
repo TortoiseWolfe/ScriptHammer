@@ -9,9 +9,6 @@ import {
   GeolocationPurpose,
 } from '@/components/map/GeolocationConsent';
 import type { LatLngTuple } from 'leaflet';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('app:map:page');
 
 // Dynamic import for MapContainer to avoid SSR issues
 const MapContainer = dynamicImport(
@@ -111,28 +108,6 @@ export default function MapPage() {
     setShowConsentModal(false);
   }, []);
 
-  const handleLocationFound = useCallback(
-    (geolocationPosition: GeolocationPosition) => {
-      const newLocation: LatLngTuple = [
-        geolocationPosition.coords.latitude,
-        geolocationPosition.coords.longitude,
-      ];
-      setUserLocation(newLocation);
-      setMapCenter(newLocation);
-    },
-    []
-  );
-
-  const handleLocationError = useCallback(
-    (geolocationError: GeolocationPositionError) => {
-      logger.error('Location error', {
-        code: geolocationError.code,
-        message: geolocationError.message,
-      });
-    },
-    []
-  );
-
   // Update location when position changes
   React.useEffect(() => {
     if (position) {
@@ -230,8 +205,6 @@ export default function MapPage() {
                     ]
                   : []),
               ]}
-              onLocationFound={handleLocationFound}
-              onLocationError={handleLocationError}
               testId="map-container"
             />
           </div>

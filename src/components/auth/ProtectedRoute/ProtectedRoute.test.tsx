@@ -19,6 +19,4 @@ describe('ProtectedRoute', () => {
     const element = screen.getByText(testContent);
     expect(element).toBeInTheDocument();
   });
-
-  // TODO: Add more specific tests for ProtectedRoute functionality
 });

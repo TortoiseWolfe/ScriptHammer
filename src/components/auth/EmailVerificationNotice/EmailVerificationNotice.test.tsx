@@ -9,6 +9,4 @@ describe('EmailVerificationNotice', () => {
       screen.getByText(/please verify your email address/i)
     ).toBeInTheDocument();
   });
-
-  // TODO: Add more specific tests for EmailVerificationNotice functionality
 });

@@ -233,8 +233,6 @@ class ErrorHandler {
     // Track to analytics
     trackError(errorMessage, isFatal);
 
-    // TODO: Implement additional integration with logging service
-    // Example: Sentry, LogRocket, DataDog, etc.
     if (this.config.isDevelopment) {
       logger.debug('Error tracked to analytics', {
         message: error.message,
@@ -252,8 +250,6 @@ class ErrorHandler {
     // Get user-friendly message
     const userMessage = this.getUserMessage(error);
 
-    // TODO: Integrate with your notification system
-    // For now, just log to logger
     if (typeof window !== 'undefined') {
       logger.info('User notification', { message: userMessage });
     }

@@ -25,6 +25,4 @@ describe('SignInForm', () => {
     const form = container.querySelector('form');
     expect(form).toHaveClass(customClass);
   });
-
-  // TODO: Add more specific tests for SignInForm functionality
 });

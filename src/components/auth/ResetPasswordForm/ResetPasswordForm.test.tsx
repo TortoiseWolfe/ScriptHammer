@@ -17,6 +17,4 @@ describe('ResetPasswordForm', () => {
     const form = container.querySelector('form');
     expect(form).toHaveClass(customClass);
   });
-
-  // TODO: Add more specific tests for ResetPasswordForm functionality
 });

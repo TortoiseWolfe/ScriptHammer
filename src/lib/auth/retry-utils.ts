@@ -23,10 +23,10 @@ export function sleep(ms: number): Promise<void> {
  * Retry a function with exponential backoff
  *
  * @param fn - Async function to retry
- * @param maxRetries - Maximum number of retry attempts (default: 3)
- * @param delays - Array of delay durations in ms (default: [1000, 2000, 4000])
+ * @param maxAttempts - Maximum number of attempts including the initial try (default: 3)
+ * @param delays - Array of delay durations in ms between attempts (default: [1000, 2000, 4000])
  * @returns Result of the function if successful
- * @throws Error after all retries exhausted
+ * @throws Error after all attempts exhausted
  *
  * @example
  * ```ts
@@ -39,23 +39,23 @@ export function sleep(ms: number): Promise<void> {
  */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
-  maxRetries: number = 3,
+  maxAttempts: number = 3,
   delays: number[] = [1000, 2000, 4000]
 ): Promise<T> {
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
 
-      // If we have more retries, wait before trying again
-      if (attempt < maxRetries) {
+      // If we have more attempts, wait before trying again
+      if (attempt < maxAttempts - 1) {
         const delayMs = delays[attempt] || delays[delays.length - 1];
         logger.warn('Auth operation failed, retrying', {
           attempt: attempt + 1,
-          maxAttempts: maxRetries + 1,
+          maxAttempts,
           delayMs,
           errorMessage: lastError.message,
         });
@@ -64,9 +64,9 @@ export async function retryWithBackoff<T>(
     }
   }
 
-  // All retries exhausted
+  // All attempts exhausted
   throw new Error(
-    `Auth operation failed after ${maxRetries + 1} attempts: ${lastError?.message || 'Unknown error'}`
+    `Auth operation failed after ${maxAttempts} attempts: ${lastError?.message || 'Unknown error'}`
   );
 }
 
@@ -75,17 +75,17 @@ export async function retryWithBackoff<T>(
  * Handles Supabase-specific error responses
  *
  * @param fn - Async function returning Supabase response with data/error
- * @param maxRetries - Maximum retry attempts
+ * @param maxAttempts - Maximum number of attempts including the initial try
  * @param delays - Backoff delay array
  */
 export async function retrySupabaseAuth<T>(
   fn: () => Promise<{ data: T; error: Error | null }>,
-  maxRetries: number = 3,
+  maxAttempts: number = 3,
   delays: number[] = [1000, 2000, 4000]
 ): Promise<{ data: T; error: Error | null }> {
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const result = await fn();
 
@@ -109,23 +109,23 @@ export async function retrySupabaseAuth<T>(
       lastError = error instanceof Error ? error : new Error(String(error));
     }
 
-    // If we have more retries, wait before trying again
-    if (attempt < maxRetries) {
+    // If we have more attempts, wait before trying again
+    if (attempt < maxAttempts - 1) {
       const delayMs = delays[attempt] || delays[delays.length - 1];
       logger.warn('Auth operation failed, retrying', {
         attempt: attempt + 1,
-        maxAttempts: maxRetries + 1,
+        maxAttempts,
         delayMs,
       });
       await sleep(delayMs);
     }
   }
 
-  // All retries exhausted - return error response
+  // All attempts exhausted - return error response
   return {
     data: null as T,
     error:
       lastError ||
-      new Error(`Auth operation failed after ${maxRetries + 1} attempts`),
+      new Error(`Auth operation failed after ${maxAttempts} attempts`),
   };
 }

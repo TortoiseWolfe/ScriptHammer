@@ -129,53 +129,53 @@ export function ConsentProvider({ children }: { children: React.ReactNode }) {
    * Accept all cookies
    */
   const acceptAll = useCallback(() => {
-    const newConsent = updateConsentTimestamp({
-      ...consent,
-      necessary: true,
-      functional: true,
-      analytics: true,
-      marketing: true,
-      method: ConsentMethod.BANNER_ACCEPT_ALL,
-    });
-    setConsent(newConsent);
+    setConsent((prev) =>
+      updateConsentTimestamp({
+        ...prev,
+        necessary: true,
+        functional: true,
+        analytics: true,
+        marketing: true,
+        method: ConsentMethod.BANNER_ACCEPT_ALL,
+      })
+    );
     setShowBanner(false);
     setShowModal(false);
-  }, [consent]);
+  }, []);
 
   /**
    * Reject all optional cookies
    */
   const rejectAll = useCallback(() => {
-    const newConsent = updateConsentTimestamp({
-      ...consent,
-      necessary: true,
-      functional: false,
-      analytics: false,
-      marketing: false,
-      method: ConsentMethod.BANNER_REJECT_ALL,
-    });
-    setConsent(newConsent);
+    setConsent((prev) =>
+      updateConsentTimestamp({
+        ...prev,
+        necessary: true,
+        functional: false,
+        analytics: false,
+        marketing: false,
+        method: ConsentMethod.BANNER_REJECT_ALL,
+      })
+    );
     setShowBanner(false);
     setShowModal(false);
-  }, [consent]);
+  }, []);
 
   /**
    * Save custom preferences
    */
-  const savePreferences = useCallback(
-    (preferences: Partial<ConsentState>) => {
-      const newConsent = updateConsentTimestamp({
-        ...consent,
+  const savePreferences = useCallback((preferences: Partial<ConsentState>) => {
+    setConsent((prev) =>
+      updateConsentTimestamp({
+        ...prev,
         ...preferences,
         necessary: true, // Always keep necessary true
         method: ConsentMethod.BANNER_CUSTOM,
-      });
-      setConsent(newConsent);
-      setShowBanner(false);
-      setShowModal(false);
-    },
-    [consent]
-  );
+      })
+    );
+    setShowBanner(false);
+    setShowModal(false);
+  }, []);
 
   /**
    * Dismiss banner without making a choice

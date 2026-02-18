@@ -89,20 +89,6 @@ export async function logAuthEvent(entry: AuditLogEntry): Promise<void> {
 }
 
 /**
- * Get client IP address (best effort)
- * Note: This is approximate and can be spoofed. Server-side IP detection is more reliable.
- */
-export async function getClientIP(): Promise<string | undefined> {
-  try {
-    // In a real production app, you'd use a geolocation API or extract from request headers
-    // For now, return undefined and let the database/server handle it
-    return undefined;
-  } catch (error) {
-    return undefined;
-  }
-}
-
-/**
  * Get user audit logs (for displaying to the user)
  *
  * @param userId - User ID to fetch logs for

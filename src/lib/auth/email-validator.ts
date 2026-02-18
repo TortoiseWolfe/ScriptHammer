@@ -8,47 +8,9 @@
 const EMAIL_REGEX =
   /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
-// Valid TLDs (common ones, not exhaustive)
-const VALID_TLDS = new Set([
-  'com',
-  'org',
-  'net',
-  'edu',
-  'gov',
-  'mil',
-  'int',
-  'io',
-  'co',
-  'uk',
-  'us',
-  'ca',
-  'au',
-  'de',
-  'fr',
-  'it',
-  'es',
-  'nl',
-  'se',
-  'jp',
-  'cn',
-  'in',
-  'br',
-  'ru',
-  'kr',
-  'mx',
-  'za',
-  'sg',
-  'hk',
-  'tw',
-  'app',
-  'dev',
-  'cloud',
-  'tech',
-  'ai',
-  'info',
-  'biz',
-  'name',
-]);
+// TLD validation: must be 2+ alphabetic chars (IANA TLDs are all-alpha, 2+ chars)
+// Using a pattern check instead of an allowlist to avoid rejecting legitimate TLDs
+const VALID_TLD_PATTERN = /^[a-zA-Z]{2,}$/;
 
 // Known disposable email domains (subset - can be expanded)
 const DISPOSABLE_DOMAINS = new Set([
@@ -104,9 +66,12 @@ export function isValidEmail(email: string): boolean {
     return false;
   }
 
-  // Check TLD
+  // Check TLD: domain must have a dot, TLD must be 2+ alphabetic chars
+  if (!domain.includes('.')) {
+    return false;
+  }
   const tld = domain.split('.').pop()?.toLowerCase();
-  if (!tld || !VALID_TLDS.has(tld)) {
+  if (!tld || !VALID_TLD_PATTERN.test(tld)) {
     return false;
   }
 
@@ -205,9 +170,16 @@ export function validateEmail(email: string): EmailValidationResult {
     };
   }
 
-  // TLD validation
-  const tld = domain?.split('.').pop()?.toLowerCase();
-  if (!tld || tld.length === 1 || !VALID_TLDS.has(tld)) {
+  // TLD validation: domain must have a dot, TLD must be 2+ alphabetic chars
+  if (!domain?.includes('.')) {
+    return {
+      valid: false,
+      errors: ['Invalid or missing top-level domain (TLD)'],
+      warnings: [],
+    };
+  }
+  const tld = domain.split('.').pop()?.toLowerCase();
+  if (!tld || !VALID_TLD_PATTERN.test(tld)) {
     return {
       valid: false,
       errors: ['Invalid or missing top-level domain (TLD)'],

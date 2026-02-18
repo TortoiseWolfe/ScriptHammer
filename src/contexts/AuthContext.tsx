@@ -11,6 +11,7 @@ import React, {
   useEffect,
   useState,
   useRef,
+  useCallback,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
@@ -200,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     // Mark as local sign-out to prevent double redirect from onAuthStateChange
     isLocalSignOut.current = true;
 
@@ -221,7 +222,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // FR-005: Force page reload to clear any stale React state
     window.location.href = '/';
-  };
+  }, []);
 
   const refreshSession = async () => {
     const { data } = await supabase.auth.refreshSession();

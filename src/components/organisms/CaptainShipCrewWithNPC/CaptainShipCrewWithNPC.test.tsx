@@ -9,6 +9,4 @@ describe('CaptainShipCrewWithNPC', () => {
       screen.getByText('Captain, Ship & Crew - Setup')
     ).toBeInTheDocument();
   });
-
-  // TODO: Add more specific tests
 });

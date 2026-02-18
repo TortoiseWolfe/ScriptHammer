@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SocialPlatform } from '@/types/author';
 
-interface SocialIconProps {
+export interface SocialIconProps {
   platform: SocialPlatform;
   className?: string;
 }

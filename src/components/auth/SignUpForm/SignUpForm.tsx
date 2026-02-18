@@ -121,11 +121,12 @@ export default function SignUpForm({
         const keyPair = await keyManagementService.initializeKeys(password);
 
         // Send welcome message (non-blocking)
-        import('@/services/messaging/welcome-service')
-          .then(({ welcomeService }) => {
-            const { createClient } = require('@/lib/supabase/client');
-            const supabase = createClient();
-            supabase.auth
+        Promise.all([
+          import('@/services/messaging/welcome-service'),
+          import('@/lib/supabase/client'),
+        ])
+          .then(([{ welcomeService }, { supabase: supabaseClient }]) => {
+            supabaseClient.auth
               .getUser()
               .then(({ data }: { data: { user: { id: string } | null } }) => {
                 if (
