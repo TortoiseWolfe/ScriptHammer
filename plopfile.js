@@ -3,6 +3,20 @@
  * Generates React components with the 5-file pattern (including accessibility tests)
  */
 
+// Map filesystem category to Storybook title prefix
+const CATEGORY_TITLE_MAP = {
+  subatomic: 'Components/Subatomic',
+  atomic: 'Components/Atomic',
+  molecular: 'Components/Molecular',
+  organisms: 'Components/Organisms',
+  templates: 'Components/Templates',
+  auth: 'Features/Authentication',
+  map: 'Features/Map',
+  payment: 'Features/Payment',
+  privacy: 'Features/Privacy',
+  forms: 'Features/Forms',
+};
+
 module.exports = function (plop) {
   // Component generator
   plop.setGenerator('component', {
@@ -30,6 +44,11 @@ module.exports = function (plop) {
           { name: 'Molecular (compound components)', value: 'molecular' },
           { name: 'Organisms (complex sections)', value: 'organisms' },
           { name: 'Templates (page layouts)', value: 'templates' },
+          { name: 'Auth (authentication features)', value: 'auth' },
+          { name: 'Map (map features)', value: 'map' },
+          { name: 'Payment (payment features)', value: 'payment' },
+          { name: 'Privacy (privacy features)', value: 'privacy' },
+          { name: 'Forms (form features)', value: 'forms' },
         ],
         default: 'atomic',
       },
@@ -117,5 +136,11 @@ export function use{{pascalCase name}}() {
   plop.setHelper('upperCase', (text) => text.toUpperCase());
   plop.setHelper('properCase', (text) => {
     return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+  });
+  plop.setHelper('storybookTitle', (category) => {
+    return (
+      CATEGORY_TITLE_MAP[category] ||
+      `Components/${category.charAt(0).toUpperCase() + category.slice(1)}`
+    );
   });
 };

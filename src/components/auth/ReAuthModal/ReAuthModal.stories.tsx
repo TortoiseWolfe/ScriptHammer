@@ -3,7 +3,7 @@ import { fn } from 'storybook/test';
 import { ReAuthModal } from './ReAuthModal';
 
 const meta: Meta<typeof ReAuthModal> = {
-  title: 'Auth/ReAuthModal',
+  title: 'Features/Authentication/ReAuthModal',
   component: ReAuthModal,
   tags: ['autodocs'],
   parameters: {

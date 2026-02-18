@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Tooltip } from './Tooltip';
 
 const meta: Meta<typeof Tooltip> = {
-  title: 'Atomic Design/Atomic/Tooltip',
+  title: 'Components/Atomic/Tooltip',
   component: Tooltip,
   parameters: {
     layout: 'centered',

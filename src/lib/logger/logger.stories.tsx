@@ -182,7 +182,7 @@ function LoggerDemo() {
 }
 
 const meta: Meta<typeof LoggerDemo> = {
-  title: 'Lib/Logger',
+  title: 'Utilities/Logger',
   component: LoggerDemo,
   parameters: {
     layout: 'padded',

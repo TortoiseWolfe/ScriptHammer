@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Text } from './Text';
 
 const meta = {
-  title: 'Atomic Design/Subatomic/Text',
+  title: 'Components/Subatomic/Text',
   component: Text,
   parameters: {
     layout: 'padded',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import Dice from './Dice';
 
 const meta = {
-  title: 'Atomic Design/Atomic/Dice',
+  title: 'Components/Atomic/Dice',
   component: Dice,
   parameters: {
     layout: 'centered',

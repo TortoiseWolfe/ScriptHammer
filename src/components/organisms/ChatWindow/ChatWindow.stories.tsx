@@ -3,7 +3,7 @@ import { fn } from 'storybook/test';
 import ChatWindow from './ChatWindow';
 
 const meta = {
-  title: 'Organisms/ChatWindow',
+  title: 'Components/Organisms/ChatWindow',
   component: ChatWindow,
   parameters: {
     layout: 'fullscreen',

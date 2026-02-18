@@ -3,7 +3,7 @@ import { useState } from 'react';
 import TagFilter from './TagFilter';
 
 const meta = {
-  title: 'Features/Blog/TagFilter',
+  title: 'Components/Atomic/TagFilter',
   component: TagFilter,
   parameters: {
     layout: 'padded',

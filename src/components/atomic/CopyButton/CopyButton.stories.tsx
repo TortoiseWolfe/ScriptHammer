@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { CopyButton } from './CopyButton';
 
 const meta = {
-  title: 'Features/Blog/CopyButton',
+  title: 'Components/Atomic/CopyButton',
   component: CopyButton,
   parameters: {
     layout: 'centered',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import BlogContent from './BlogContent';
 
 const meta: Meta<typeof BlogContent> = {
-  title: 'Features/Blog/BlogContent',
+  title: 'Components/Molecular/BlogContent',
   component: BlogContent,
   parameters: {
     layout: 'padded',

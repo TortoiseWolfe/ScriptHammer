@@ -113,7 +113,7 @@ const mockTOC: TOCItem[] = [
 ];
 
 const meta: Meta<typeof BlogPostViewer> = {
-  title: 'Features/Blog/BlogPostViewer',
+  title: 'Components/Molecular/BlogPostViewer',
   component: BlogPostViewer,
   parameters: {
     layout: 'fullscreen',

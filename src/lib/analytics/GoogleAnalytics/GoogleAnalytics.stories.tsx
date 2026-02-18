@@ -29,7 +29,7 @@ const MockConsentWrapper = ({
 };
 
 const meta: Meta<typeof GoogleAnalytics> = {
-  title: 'Utils/Analytics/GoogleAnalytics',
+  title: 'Utilities/Analytics/GoogleAnalytics',
   component: GoogleAnalytics,
   parameters: {
     layout: 'padded',

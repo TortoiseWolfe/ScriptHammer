@@ -9,7 +9,7 @@ import TypingIndicator from './TypingIndicator';
  */
 
 const meta: Meta<typeof TypingIndicator> = {
-  title: 'Messaging/TypingIndicator',
+  title: 'Components/Atomic/TypingIndicator',
   component: TypingIndicator,
   parameters: {
     layout: 'centered',

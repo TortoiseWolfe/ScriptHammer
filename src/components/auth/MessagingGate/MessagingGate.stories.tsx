@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import MessagingGate from './MessagingGate';
 
 const meta: Meta<typeof MessagingGate> = {
-  title: 'Auth/MessagingGate',
+  title: 'Features/Authentication/MessagingGate',
   component: MessagingGate,
   parameters: {
     layout: 'fullscreen',

@@ -4,7 +4,7 @@ import { withConsentProvider } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof CalendarEmbed> = {
   id: 'atomic-calendarembed',
-  title: 'Features/Calendar/CalendarEmbed',
+  title: 'Components/Atomic/CalendarEmbed',
   component: CalendarEmbed,
   decorators: [withConsentProvider],
   parameters: {
