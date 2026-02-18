@@ -65,12 +65,13 @@ export async function checkRateLimit(
         attemptType,
         ipAddress,
       });
-      // Fail open - allow attempt if rate limit check fails
-      // This prevents rate limiting from becoming a DoS vector
+      // Fail closed - block attempt if rate limit check fails
+      // This prevents brute force if rate limiting infrastructure is down
       return {
-        allowed: true,
-        remaining: 5,
+        allowed: false,
+        remaining: 0,
         locked_until: null,
+        reason: 'Rate limit check unavailable. Please try again shortly.',
       };
     }
 
@@ -82,11 +83,12 @@ export async function checkRateLimit(
       attemptType,
       ipAddress,
     });
-    // Fail open
+    // Fail closed - block attempt if rate limit check fails
     return {
-      allowed: true,
-      remaining: 5,
+      allowed: false,
+      remaining: 0,
       locked_until: null,
+      reason: 'Rate limit check unavailable. Please try again shortly.',
     };
   }
 }

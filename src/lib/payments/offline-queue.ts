@@ -15,6 +15,7 @@ export interface QueuedOperation {
   id?: number;
   type: 'payment_intent' | 'subscription_update';
   data: CreatePaymentIntentInput | Record<string, unknown>;
+  userId?: string;
   createdAt: Date;
   attempts: number;
   lastError?: string;
@@ -41,11 +42,13 @@ export const db = new PaymentQueueDB();
  */
 export async function queueOperation(
   type: QueuedOperation['type'],
-  data: QueuedOperation['data']
+  data: QueuedOperation['data'],
+  userId?: string
 ): Promise<unknown> {
   return await db.queuedOperations.add({
     type,
     data,
+    userId,
     createdAt: new Date(),
     attempts: 0,
   });
@@ -137,7 +140,10 @@ export async function retryFailedOperations(): Promise<void> {
 async function executeOperation(op: QueuedOperation): Promise<void> {
   switch (op.type) {
     case 'payment_intent':
-      await executePaymentIntent(op.data as CreatePaymentIntentInput);
+      await executePaymentIntent(
+        op.data as CreatePaymentIntentInput,
+        op.userId
+      );
       break;
     case 'subscription_update':
       await executeSubscriptionUpdate(op.data as Record<string, unknown>);
@@ -151,8 +157,15 @@ async function executeOperation(op: QueuedOperation): Promise<void> {
  * Execute payment intent creation
  */
 async function executePaymentIntent(
-  data: CreatePaymentIntentInput
+  data: CreatePaymentIntentInput,
+  userId?: string
 ): Promise<void> {
+  if (!userId) {
+    throw new Error(
+      'Cannot execute queued payment intent: missing userId. The operation was queued without an authenticated user.'
+    );
+  }
+
   const { data: intent, error } = await supabase
     .from('payment_intents')
     .insert({
@@ -163,7 +176,7 @@ async function executePaymentIntent(
       customer_email: data.customer_email,
       description: data.description || null,
       metadata: (data.metadata || {}) as Json,
-      template_user_id: '00000000-0000-0000-0000-000000000000', // TODO: Get from auth context
+      template_user_id: userId,
     })
     .select()
     .single();

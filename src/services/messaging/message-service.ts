@@ -202,39 +202,57 @@ export class MessageService {
 
       // Online - attempt to send to database
       try {
-        // Get next sequence number for this conversation
-        const { data: lastMessage } = await msgClient
-          .from('messages')
-          .select('sequence_number')
-          .eq('conversation_id', input.conversation_id)
-          .order('sequence_number', { ascending: false })
-          .limit(1)
-          .single();
+        // Atomic sequence number assignment with retry on conflict
+        let retries = 3;
+        let message = null;
+        while (retries > 0) {
+          const { data: lastMessage } = await msgClient
+            .from('messages')
+            .select('sequence_number')
+            .eq('conversation_id', input.conversation_id)
+            .order('sequence_number', { ascending: false })
+            .limit(1)
+            .single();
 
-        const nextSequenceNumber = lastMessage
-          ? lastMessage.sequence_number + 1
-          : 1;
+          const nextSequenceNumber = lastMessage
+            ? lastMessage.sequence_number + 1
+            : 1;
 
-        // Insert encrypted message
-        const { data: message, error: insertError } = await msgClient
-          .from('messages')
-          .insert({
-            conversation_id: input.conversation_id,
-            sender_id: user.id,
-            encrypted_content: encrypted.ciphertext,
-            initialization_vector: encrypted.iv,
-            sequence_number: nextSequenceNumber,
-            deleted: false,
-            edited: false,
-            delivered_at: new Date().toISOString(), // Mark as delivered immediately (saved to database)
-          })
-          .select()
-          .single();
+          const { data: inserted, error: insertError } = await msgClient
+            .from('messages')
+            .insert({
+              conversation_id: input.conversation_id,
+              sender_id: user.id,
+              encrypted_content: encrypted.ciphertext,
+              initialization_vector: encrypted.iv,
+              sequence_number: nextSequenceNumber,
+              deleted: false,
+              edited: false,
+              delivered_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
 
-        if (insertError) {
-          // Send failed - queue for retry
+          if (!insertError) {
+            message = inserted;
+            break;
+          }
+
+          // If unique constraint violation, retry with fresh sequence number
+          if (insertError.code === '23505') {
+            retries--;
+            continue;
+          }
+
+          // Other errors - throw
           throw new ConnectionError(
             'Failed to send message: ' + insertError.message
+          );
+        }
+
+        if (!message) {
+          throw new ConnectionError(
+            'Failed to send message after retries: sequence number conflict'
           );
         }
 

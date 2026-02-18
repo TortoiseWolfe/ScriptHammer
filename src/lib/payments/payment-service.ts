@@ -92,7 +92,7 @@ export async function createPaymentIntent(
 
   if (!isOnline) {
     // Queue for later
-    await queueOperation('payment_intent', intentData);
+    await queueOperation('payment_intent', intentData, userId);
     throw new Error(
       'You are offline. Payment has been queued and will be processed when connection returns.'
     );
@@ -124,7 +124,7 @@ export async function createPaymentIntent(
         error.message.includes('network') ||
         error.message.includes('ECONNREFUSED'))
     ) {
-      await queueOperation('payment_intent', intentData);
+      await queueOperation('payment_intent', intentData, userId);
       throw new Error(
         'Network error. Payment has been queued and will be processed when connection returns.'
       );

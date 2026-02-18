@@ -27,6 +27,18 @@ import type {
 export class MarkdownProcessor {
   private options: MarkdownProcessorOptions;
 
+  /**
+   * Sanitize a URL to prevent XSS via javascript:, data:, or vbscript: protocols
+   */
+  private static sanitizeUrl(url: string): string {
+    const trimmed = url.trim();
+    // Block dangerous protocols
+    if (/^\s*(javascript|data|vbscript)\s*:/i.test(trimmed)) {
+      return '#';
+    }
+    return trimmed;
+  }
+
   constructor(options: MarkdownProcessorOptions = {}) {
     this.options = {
       enableToc: true,
@@ -405,13 +417,20 @@ export class MarkdownProcessor {
     );
 
     // Convert images (MUST be before links!)
-    html = html.replace(
-      /!\[([^\]]*)\]\(([^)]+)\)/g,
-      '<img src="$2" alt="$1" />'
-    );
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_match, alt, url) => {
+      const safeUrl = MarkdownProcessor.sanitizeUrl(url);
+      return `<img src="${safeUrl}" alt="${alt}" />`;
+    });
 
     // Convert links (after images to avoid conflicts)
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, text, url) => {
+      const safeUrl = MarkdownProcessor.sanitizeUrl(url);
+      const isExternal = safeUrl.startsWith('http');
+      const attrs = isExternal
+        ? ' target="_blank" rel="noopener noreferrer"'
+        : '';
+      return `<a href="${safeUrl}"${attrs}>${text}</a>`;
+    });
 
     // Convert line breaks to paragraphs
     const blocks = html.split(/\n\n+/);
