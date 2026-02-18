@@ -69,8 +69,6 @@ function extractTitle(filePath: string): string | null {
 }
 
 function getExpectedPrefix(filePath: string): string | null {
-  const projectRoot = path.resolve(__dirname, '../..');
-
   // Check src/components/ paths
   const componentsMatch = filePath.match(/src\/components\/([^/]+)\//);
   if (componentsMatch) {

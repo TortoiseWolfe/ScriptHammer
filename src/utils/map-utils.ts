@@ -13,7 +13,7 @@ export const DEFAULT_MAP_CONFIG = {
   showUserLocation: false,
   allowZoom: true,
   allowPan: true,
-  scrollWheelZoom: true,
+  scrollWheelZoom: false,
   keyboardNavigation: true,
   zoomControl: true,
 };

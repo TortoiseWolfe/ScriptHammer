@@ -15,7 +15,7 @@ export interface MapTileConfig {
 /**
  * Hook to get theme-aware Leaflet tile configuration.
  * Watches DaisyUI data-theme attribute via MutationObserver and
- * returns CartoDB Voyager tiles + isDark flag. Dark appearance is
+ * returns OSM tiles + isDark flag. Dark appearance is
  * handled via CSS filter on .leaflet-tile-pane (see globals.css).
  *
  * Adapted from SpokeToWork's useMapTheme (MapLibre → Leaflet).

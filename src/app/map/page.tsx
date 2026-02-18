@@ -217,6 +217,7 @@ export default function MapPage() {
               height="600px"
               width="100%"
               showUserLocation={false} // We'll manage location manually
+              config={{ scrollWheelZoom: true }}
               markers={[
                 ...demoMarkers,
                 ...(userLocation
