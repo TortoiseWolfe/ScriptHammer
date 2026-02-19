@@ -138,10 +138,12 @@ describe('Validation Service - Time Window Functions', () => {
     });
 
     it('should return true for message created exactly 15 minutes ago', () => {
-      const exactlyFifteen = new Date(
-        Date.now() - 15 * 60 * 1000
-      ).toISOString();
+      vi.useFakeTimers();
+      const now = Date.now();
+      vi.setSystemTime(now);
+      const exactlyFifteen = new Date(now - 15 * 60 * 1000).toISOString();
       expect(isWithinDeleteWindow(exactlyFifteen)).toBe(true);
+      vi.useRealTimers();
     });
 
     it('should return false for message created 16 minutes ago', () => {
