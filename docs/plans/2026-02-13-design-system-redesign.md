@@ -1,7 +1,7 @@
 # ScriptHammer Design System Redesign
 
 **Date:** 2026-02-13
-**Status:** Approved
+**Status:** In Progress (Phases 0-3 complete, Phase 4 next)
 **Approach:** Design System Build-Out (Phase 0-2), then Theme-First component iteration (Phases 3-6)
 
 ## Design Direction
@@ -21,23 +21,23 @@
 
 ### Dark Variant (Default)
 
-| Role      | Color                              | Source                        |
-| --------- | ---------------------------------- | ----------------------------- |
-| Base      | Near-black / charcoal (#1a1a2e)    | Developer-tool convention     |
-| Primary   | Silver / steel (#a8b2c1)           | Logo, metallic identity       |
-| Secondary | Warm amber (#e8d4b8)               | Wireframe panels              |
-| Accent    | Electric blue or green             | Developer energy              |
-| Neutral   | Cool grays                         | Standard dark theme neutrals  |
-| Info/Warning/Error | Standard semantics tuned to palette | --                   |
+| Role               | Color                               | Source                       |
+| ------------------ | ----------------------------------- | ---------------------------- |
+| Base               | Near-black / charcoal (#1a1a2e)     | Developer-tool convention    |
+| Primary            | Silver / steel (#a8b2c1)            | Logo, metallic identity      |
+| Secondary          | Warm amber (#e8d4b8)                | Wireframe panels             |
+| Accent             | Electric blue or green              | Developer energy             |
+| Neutral            | Cool grays                          | Standard dark theme neutrals |
+| Info/Warning/Error | Standard semantics tuned to palette | --                           |
 
 ### Light Variant
 
-| Role      | Color                                   | Notes                                |
-| --------- | --------------------------------------- | ------------------------------------ |
-| Base      | Warm off-white / parchment              | Not clinical white, fits personality |
-| Primary   | Silver/steel (adjusted for light bg)    | Same hue family                      |
-| Secondary | Warm amber (adjusted)                   | Same hue family                      |
-| Accent    | Electric blue/green (adjusted)          | Same hue family                      |
+| Role      | Color                                | Notes                                |
+| --------- | ------------------------------------ | ------------------------------------ |
+| Base      | Warm off-white / parchment           | Not clinical white, fits personality |
+| Primary   | Silver/steel (adjusted for light bg) | Same hue family                      |
+| Secondary | Warm amber (adjusted)                | Same hue family                      |
+| Accent    | Electric blue/green (adjusted)       | Same hue family                      |
 
 All colors must pass WCAG AA contrast against their respective backgrounds.
 
@@ -48,6 +48,7 @@ All colors must pass WCAG AA contrast against their respective backgrounds.
 Apply validated component moves from SpokeToWork's design-system-redesign branch. The atomic/ directory was used as a catch-all rather than true single-purpose UI primitives.
 
 **Known moves (validated in SpokeToWork):**
+
 - `GoogleAnalytics` to `src/lib/analytics/` (not a UI component, just a `<Script>` tag)
 - `DiceTray` to `organisms/` (full game interface with drag-drop, stats, multiple sub-components)
 - 6 components to `molecular/`: AvatarUpload, FontSwitcher, ColorblindToggle, TagCloud, CodeBlock, MessageInput (all compose multiple primitives)
@@ -55,6 +56,7 @@ Apply validated component moves from SpokeToWork's design-system-redesign branch
 **ScriptHammer-specific:** ScriptHammer has 33 atomic directories (vs SpokeToWork's 29). Audit the extras for misplacement before moving.
 
 **Gotchas from SpokeToWork:**
+
 - Relative imports break on move (TagCloud had `../TagBadge`, DiceTray had `../DraggableDice/DraggableDice`). Convert to `@/` absolute imports.
 - Story titles need updating for moved components.
 - Blast radius is small: only 5-6 production files needed import updates. Type-check + build caught everything.
@@ -104,6 +106,7 @@ Priority order:
 5. AnimatedLogo / SpinningLogo (ScriptHammer's mallet)
 
 ScriptHammer-specific:
+
 - Dice / DiceTray (gaming elements, unique to ScriptHammer)
 - CaptainShipCrew (game component)
 - SetupBanner (first-time user experience)

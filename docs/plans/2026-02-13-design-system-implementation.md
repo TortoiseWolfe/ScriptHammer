@@ -12,7 +12,7 @@
 
 ---
 
-## Phase 0: Hierarchy Cleanup
+## Phase 0: Hierarchy Cleanup ✅ COMPLETE
 
 ### Task 1: Audit atomic/ directory for misplacements
 
@@ -28,6 +28,7 @@ Expected: ~33 directories. Compare against SpokeToWork's validated list.
 **Step 2: Identify misplaced components**
 
 Known moves (validated in SpokeToWork):
+
 - `GoogleAnalytics` → `src/lib/analytics/` (not a UI component)
 - `DiceTray` → `organisms/` (full game interface)
 - `AvatarUpload` → `molecular/` (composes file input + preview + crop)
@@ -132,6 +133,7 @@ For each moved component, update the story title from `Atomic Design/Atomic/X` t
 **Step 4: Update production file imports**
 
 Expected files to update:
+
 - `src/components/GlobalNav.tsx` (FontSwitcher, ColorblindToggle)
 - `src/app/accessibility/page.tsx` (FontSwitcher, ColorblindToggle)
 - `src/components/auth/AccountSettings/AccountSettings.tsx` (AvatarUpload)
@@ -159,7 +161,7 @@ Convert relative imports to @/ absolute paths."
 
 ---
 
-## Phase 1: Upgrade Storybook to v10
+## Phase 1: Upgrade Storybook to v10 ✅ COMPLETE
 
 ### Task 5: Check current Storybook state
 
@@ -310,6 +312,7 @@ Expected: All stories compile. Note any failures.
 **Step 2: Fix any broken stories**
 
 Address compilation errors one by one. Common issues after major upgrades:
+
 - Import path changes
 - Removed/renamed APIs
 - Type mismatches with new Meta/StoryObj generics
@@ -330,7 +333,7 @@ Update STORYBOOK_NOTES.md to reflect v10 state."
 
 ---
 
-## Phase 2: ScriptHammer Brand Theme
+## Phase 2: ScriptHammer Brand Theme ✅ COMPLETE
 
 ### Task 10: Research DaisyUI custom theme syntax for Tailwind v4
 
@@ -533,7 +536,7 @@ git commit -m "fix: add scripthammer-dark to map control dark theme selectors"
 
 ---
 
-## Phase 3: Theme Template System for Forks
+## Phase 3: Theme Template System for Forks ✅ COMPLETE
 
 ### Task 15: Create CUSTOM-THEME.md documentation
 
@@ -544,6 +547,7 @@ git commit -m "fix: add scripthammer-dark to map control dark theme selectors"
 **Step 1: Write the theme creation guide**
 
 Document how to define a custom DaisyUI theme with the `@plugin` CSS-first syntax:
+
 - Required CSS custom properties (all color tokens)
 - How to add the theme to the `@plugin "daisyui"` block
 - WCAG AA contrast requirements

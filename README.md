@@ -415,19 +415,32 @@ Custom ScriptHammer theme (dark default + light variant) built on the existing D
 **Design doc**: [docs/plans/2026-02-13-design-system-redesign.md](./docs/plans/2026-02-13-design-system-redesign.md)
 **Implementation plan**: [docs/plans/2026-02-13-design-system-implementation.md](./docs/plans/2026-02-13-design-system-implementation.md)
 
+### Progress
+
+| Phase | Description                                          | Status   |
+| ----- | ---------------------------------------------------- | -------- |
+| 0     | Hierarchy cleanup (8 component moves)                | Complete |
+| 1     | Storybook 9.1.5 → 10.2.8                             | Complete |
+| 2     | Custom DaisyUI themes (dark + light, WCAG AAA)       | Complete |
+| 3     | Theme template system (CUSTOM-THEME.md + rebrand.sh) | Complete |
+| 4     | Redesign atomic components                           | Next     |
+| 5     | Rebuild molecular & organism components              | Pending  |
+| 6     | Page-by-page polish                                  | Pending  |
+
+Current component hierarchy: 22 atomic, 17 molecular, 8 organisms.
+
 ### Session Continuation Prompt
 
 ```
 Read these files to pick up the design system redesign:
 
-1. CLAUDE.md (in src/) - Project rules, Docker setup, component standards
-2. docs/plans/2026-02-13-design-system-redesign.md - Approved design
+1. CLAUDE.md - Project rules, Docker setup, component standards
+2. docs/plans/2026-02-13-design-system-redesign.md - Approved design (Phase 4 section)
 3. docs/plans/2026-02-13-design-system-implementation.md - Task-by-task plan
-4. docs/STORYBOOK_NOTES.md - Current Storybook state
-5. src/app/globals.css - Current theme config, DaisyUI plugin block
+4. src/app/globals.css - Custom theme definitions (scripthammer-dark, scripthammer-light)
 
 Use superpowers:executing-plans to work through the implementation plan.
-Start at Phase 0 Task 1 (or wherever the plan left off).
+Start at Phase 4 Task 17 (audit Button component in Storybook).
 
 Key context:
 - Everything runs inside Docker: docker compose exec scripthammer <command>
@@ -436,18 +449,11 @@ Key context:
 - ScriptHammer is a template, design must be bold but also easy to rebrand
 - Brand colors: silver/steel (primary), warm amber (secondary), electric accent, charcoal base
 - Dark theme default, light variant available
+- Both themes pass WCAG AAA (7:1) contrast
 - Preserve all existing accessibility work
 - Aesthetic: bold, industrial, developer-focused. VS Code dark meets metallic craftsmanship.
-
-Learnings from SpokeToWork (already completed Phase 0 there):
-- atomic/ was a catch-all, not true atomic components. Move these to molecular/:
-  AvatarUpload, FontSwitcher, ColorblindToggle, TagCloud, CodeBlock, MessageInput
-- Move GoogleAnalytics to src/lib/analytics/ (not a UI component)
-- Move DiceTray to organisms/ (full game interface)
-- Gotcha: relative imports break on move (TagCloud->TagBadge, DiceTray->DraggableDice).
-  Convert to @/ absolute imports.
-- ScriptHammer has 33 atomic dirs vs SpokeToWork's 29. Audit the extras too.
-- Blast radius is small: ~6 production files need import updates.
+- Component hierarchy: 22 atomic, 17 molecular, 8 organisms
+- Pattern: audit component in Storybook against both themes, update, verify a11y, commit
 ```
 
 ## 📄 License
