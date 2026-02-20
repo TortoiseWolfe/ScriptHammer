@@ -21,6 +21,18 @@ const config: StorybookConfig = {
     options: {},
   },
   staticDirs: ['../public'],
+  viteFinal: async (config) => {
+    const storybookDir = path.dirname(new URL(import.meta.url).pathname);
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias as Record<string, string>),
+      '@/services/messaging/key-service': path.resolve(
+        storybookDir,
+        'mocks/key-service.ts'
+      ),
+    };
+    return config;
+  },
   env: (config) => ({
     ...config,
     // Pass through all NEXT_PUBLIC_ env vars to Storybook
