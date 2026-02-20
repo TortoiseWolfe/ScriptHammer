@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import ChatWindow from './ChatWindow';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 
 const meta = {
   title: 'Components/Organisms/ChatWindow',
   component: ChatWindow,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'fullscreen',
   },

@@ -15,7 +15,7 @@ export default function AccessibilityPage() {
           <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
             Accessibility Controls
           </h1>
-          <p className="text-base-content/70 mb-8 text-lg">
+          <p className="text-base-content/85 mb-8 text-lg">
             Customize the reading experience to suit your preferences
           </p>
 

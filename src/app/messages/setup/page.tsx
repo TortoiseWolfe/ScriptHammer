@@ -317,7 +317,7 @@ export default function MessagingSetupPage() {
             </div>
           </form>
 
-          <p className="mt-4 text-center text-sm opacity-70">
+          <p className="text-base-content/85 mt-4 text-center text-sm">
             Your messages are end-to-end encrypted. Only you and your recipients
             can read them.
           </p>

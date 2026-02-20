@@ -57,12 +57,22 @@ export default function AvatarDisplay({
     xl: 'w-24 h-24 text-2xl',
   };
 
+  // Ring scales with size — thin for sm, standard for larger
+  const ringClasses = {
+    sm: 'ring-1 ring-base-content/20 ring-offset-1 ring-offset-base-100',
+    md: 'ring-2 ring-base-content/25 ring-offset-2 ring-offset-base-100',
+    lg: 'ring-2 ring-base-content/25 ring-offset-2 ring-offset-base-100',
+    xl: 'ring-2 ring-base-content/25 ring-offset-2 ring-offset-base-100',
+  };
+
   const showImage = avatarUrl && !imageError;
   const initials = getInitials(displayName);
 
   return (
     <div className={`avatar ${className}`}>
-      <div className={`${sizeClasses[size]} overflow-hidden rounded-full`}>
+      <div
+        className={`${sizeClasses[size]} overflow-hidden rounded-full ${ringClasses[size]}`}
+      >
         {showImage ? (
           // eslint-disable-next-line @next/next/no-img-element -- Avatar URLs from Supabase Storage, native img with lazy loading is appropriate
           <img

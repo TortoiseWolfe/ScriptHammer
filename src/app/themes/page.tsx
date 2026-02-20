@@ -11,7 +11,7 @@ export default function ThemesPage() {
           <h1 className="mb-4 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
             ScriptHammer Theme Playground
           </h1>
-          <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
+          <p className="text-base-content/85 text-base sm:text-lg md:text-xl">
             Explore 34 themes including custom ScriptHammer variants
           </p>
         </div>

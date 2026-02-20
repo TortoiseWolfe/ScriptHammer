@@ -19,7 +19,7 @@ export function PrivacyActions() {
       >
         Manage Cookie Preferences
       </button>
-      <Link href="/cookies" className="btn btn-outline">
+      <Link href="/cookies" className="btn btn-neutral btn-outline">
         View Cookie Policy
       </Link>
     </nav>

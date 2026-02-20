@@ -126,7 +126,7 @@ export default function BlogPostPageClient({
               <div className="flex-1">
                 <div className="font-semibold">{author.name}</div>
                 {author.bio && (
-                  <div className="text-base-content/60 line-clamp-1 text-sm">
+                  <div className="text-base-content/80 line-clamp-1 text-sm">
                     {author.bio}
                   </div>
                 )}
@@ -159,7 +159,7 @@ export default function BlogPostPageClient({
 
           {/* Right: Share buttons - compact */}
           <div className="flex items-center gap-2">
-            <span className="text-base-content/40 border-base-300 hidden border-r pr-2 text-sm sm:inline">
+            <span className="text-base-content/75 border-base-300 hidden border-r pr-2 text-sm sm:inline">
               Share
             </span>
             <SocialShareButtons

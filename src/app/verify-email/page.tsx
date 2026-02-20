@@ -18,7 +18,7 @@ export default function VerifyEmailPage() {
 
         <EmailVerificationNotice className="mb-6" />
 
-        <p className="text-center text-sm opacity-70">
+        <p className="text-base-content/85 text-center text-sm">
           Check your inbox for a verification link. Once verified, you&apos;ll
           be able to access all features.
         </p>

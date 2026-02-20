@@ -29,7 +29,7 @@ const CalendlyProvider = dynamic(
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <span className="loading loading-spinner loading-lg"></span>
-          <p className="text-base-content/70 mt-4">Loading calendar...</p>
+          <p className="text-base-content/85 mt-4">Loading calendar...</p>
         </div>
       </div>
     ),
@@ -47,7 +47,7 @@ const CalComProvider = dynamic(
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <span className="loading loading-spinner loading-lg"></span>
-          <p className="text-base-content/70 mt-4">Loading calendar...</p>
+          <p className="text-base-content/85 mt-4">Loading calendar...</p>
         </div>
       </div>
     ),

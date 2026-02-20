@@ -128,7 +128,7 @@ export const Interactive: Story = {
           <h3 className="mb-2 text-lg font-semibold">
             Click tags to select/deselect
           </h3>
-          <p className="text-base-content/70 text-sm">
+          <p className="text-base-content/85 text-sm">
             Selected:{' '}
             {selectedTags.length > 0 ? selectedTags.join(', ') : 'None'}
           </p>

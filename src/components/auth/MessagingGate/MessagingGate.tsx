@@ -43,7 +43,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
-          <p className="text-base-content/70">
+          <p className="text-base-content/85">
             Please sign in to access messaging.
           </p>
         </div>
@@ -107,7 +107,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
 
           <h2 className="card-title text-2xl">Email Verification Required</h2>
 
-          <p className="text-base-content/70 mt-2">
+          <p className="text-base-content/85 mt-2">
             To protect your privacy and ensure secure messaging, please verify
             your email address first.
           </p>
@@ -173,7 +173,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
             </div>
           )}
 
-          <p className="text-base-content/50 mt-4 text-xs">
+          <p className="text-base-content/75 mt-4 text-xs">
             After verifying, refresh this page to access messaging.
           </p>
         </div>

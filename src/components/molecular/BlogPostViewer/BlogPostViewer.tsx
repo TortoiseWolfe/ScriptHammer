@@ -270,7 +270,7 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/60 hover:text-base-content/80 bg-base-100 inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
+              <summary className="text-base-content/80 hover:text-base-content/80 bg-base-100 inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
                 <span className="inline-flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
@@ -303,7 +303,7 @@ export default function BlogPostViewer({
           {post.title}
         </h1>
 
-        <div className="text-base-content/70 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
+        <div className="text-base-content/85 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
           {publishedDate && (
             <time dateTime={post.publishedAt}>{publishedDate}</time>
           )}
@@ -338,7 +338,7 @@ export default function BlogPostViewer({
             />
           </div>
           {post.metadata?.featuredImageAlt && (
-            <figcaption className="text-base-content/60 mt-2 text-center text-sm">
+            <figcaption className="text-base-content/80 mt-2 text-center text-sm">
               {post.metadata.featuredImageAlt}
             </figcaption>
           )}
@@ -371,7 +371,7 @@ export default function BlogPostViewer({
             )}
             <div>
               <h2 className="text-lg font-semibold">{post.author.name}</h2>
-              <p className="text-base-content/70">Author</p>
+              <p className="text-base-content/85">Author</p>
             </div>
           </div>
         </footer>

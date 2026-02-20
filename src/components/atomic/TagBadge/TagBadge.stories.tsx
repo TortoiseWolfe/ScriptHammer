@@ -167,9 +167,7 @@ export const ThemeShowcase: Story = {
         <div className="flex flex-col gap-3">
           {(['sm', 'md', 'lg'] as const).map((size) => (
             <div key={size} className="flex flex-wrap items-center gap-2">
-              <span className="text-base-content w-8 text-xs opacity-60">
-                {size}:
-              </span>
+              <span className="text-base-content/80 w-8 text-xs">{size}:</span>
               <TagBadge tag="Default" size={size} variant="default" />
               <TagBadge tag="Primary" size={size} variant="primary" />
               <TagBadge tag="Secondary" size={size} variant="secondary" />
@@ -193,25 +191,19 @@ export const ThemeShowcase: Story = {
         </h3>
         <div className="flex flex-col gap-3">
           <div className="bg-base-100 flex flex-wrap gap-2 rounded-lg p-3">
-            <span className="text-base-content text-xs opacity-60">
-              base-100:
-            </span>
+            <span className="text-base-content/80 text-xs">base-100:</span>
             <TagBadge tag="React" variant="primary" count={15} />
             <TagBadge tag="TypeScript" variant="secondary" count={12} />
             <TagBadge tag="Next.js" variant="accent" count={8} />
           </div>
           <div className="bg-base-200 flex flex-wrap gap-2 rounded-lg p-3">
-            <span className="text-base-content text-xs opacity-60">
-              base-200:
-            </span>
+            <span className="text-base-content/80 text-xs">base-200:</span>
             <TagBadge tag="React" variant="primary" count={15} />
             <TagBadge tag="TypeScript" variant="secondary" count={12} />
             <TagBadge tag="Next.js" variant="accent" count={8} />
           </div>
           <div className="bg-neutral flex flex-wrap gap-2 rounded-lg p-3">
-            <span className="text-neutral-content text-xs opacity-60">
-              neutral:
-            </span>
+            <span className="text-neutral-content/80 text-xs">neutral:</span>
             <TagBadge tag="React" variant="primary" count={15} />
             <TagBadge tag="TypeScript" variant="secondary" count={12} />
             <TagBadge tag="Next.js" variant="accent" count={8} />

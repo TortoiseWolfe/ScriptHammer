@@ -116,7 +116,7 @@ export function ThemeSwitcher() {
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Theme Selector</h2>
-        <p className="text-sm opacity-70">
+        <p className="text-base-content/85 text-sm">
           Choose from 34 themes (2 custom + 32 DaisyUI)
         </p>
 

@@ -36,7 +36,7 @@ describe('Text Component', () => {
     rerender(<Text variant="small">Test</Text>);
     expect(screen.getByText('Test')).toHaveClass(
       'text-sm',
-      'text-base-content/70'
+      'text-base-content/85'
     );
 
     rerender(<Text variant="code">Test</Text>);

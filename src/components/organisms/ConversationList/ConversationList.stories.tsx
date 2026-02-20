@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import ConversationList from './ConversationList';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof ConversationList> = {
   title: 'Components/Organisms/ConversationList',
   component: ConversationList,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'fullscreen',
     docs: {

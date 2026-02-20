@@ -175,7 +175,7 @@ export default function DiceTray({
               'Roll Unlocked Dice'
             )}
           </button>
-          <button onClick={resetAll} className="btn btn-outline">
+          <button onClick={resetAll} className="btn btn-neutral btn-outline">
             Reset All
           </button>
         </div>
@@ -198,7 +198,7 @@ export default function DiceTray({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'tray')}
         >
-          <div className="text-base-content/60 mb-2 text-sm">
+          <div className="text-base-content/80 mb-2 text-sm">
             Active Dice (drag to lock zone to save)
           </div>
           <div className="flex flex-wrap gap-3">
@@ -256,7 +256,7 @@ export default function DiceTray({
         </div>
 
         {/* Instructions */}
-        <div className="text-base-content/60 mt-6 text-sm">
+        <div className="text-base-content/80 mt-6 text-sm">
           <p>💡 Tips:</p>
           <ul className="ml-2 list-inside list-disc">
             <li>Drag dice to the lock zone to preserve their values</li>

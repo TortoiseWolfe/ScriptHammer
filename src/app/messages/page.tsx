@@ -535,7 +535,7 @@ function MessagesContent() {
                     <h2 className="mb-2 text-xl font-semibold">
                       Select a conversation
                     </h2>
-                    <p className="text-base-content/70">
+                    <p className="text-base-content/85">
                       Choose a conversation from the sidebar to start messaging
                     </p>
                     <button

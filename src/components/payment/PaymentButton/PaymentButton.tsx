@@ -198,7 +198,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
 
       {/* Provider Info */}
       {selectedProvider && (
-        <p className="text-base-content/70 text-center text-sm">
+        <p className="text-base-content/85 text-center text-sm">
           You will be redirected to{' '}
           {selectedProvider === 'stripe' ? 'Stripe' : 'PayPal'} to complete your
           payment securely.

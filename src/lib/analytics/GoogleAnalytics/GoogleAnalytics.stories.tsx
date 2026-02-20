@@ -17,7 +17,7 @@ const MockConsentWrapper = ({
         <p>
           Analytics Consent: {analyticsConsent ? '✅ Granted' : '❌ Denied'}
         </p>
-        <p className="mt-2 text-sm opacity-70">
+        <p className="text-base-content/85 mt-2 text-sm">
           {analyticsConsent
             ? 'GA4 scripts would be loaded and tracking enabled'
             : 'No scripts loaded, no tracking occurs'}

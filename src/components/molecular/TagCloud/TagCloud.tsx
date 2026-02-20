@@ -48,7 +48,7 @@ export default function TagCloud({
 
   if (filteredTags.length === 0) {
     return (
-      <div className={`text-base-content/60 py-4 text-center ${className}`}>
+      <div className={`text-base-content/80 py-4 text-center ${className}`}>
         No tags available
       </div>
     );

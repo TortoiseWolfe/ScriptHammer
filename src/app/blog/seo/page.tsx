@@ -100,7 +100,7 @@ export default async function SEODashboardPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="mb-4 text-3xl font-bold">SEO Dashboard</h1>
-        <p className="text-base-content/70">
+        <p className="text-base-content/85">
           Analyze and improve the SEO performance of your blog posts
         </p>
       </div>
@@ -193,7 +193,7 @@ export default async function SEODashboardPage() {
                           {post.title}
                         </a>
                       </h3>
-                      <p className="text-base-content/70 text-sm">
+                      <p className="text-base-content/85 text-sm">
                         {post.excerpt}
                       </p>
                     </div>
@@ -220,7 +220,7 @@ export default async function SEODashboardPage() {
           </div>
         ) : (
           <div className="py-12 text-center">
-            <p className="text-base-content/60 text-lg">No posts found.</p>
+            <p className="text-base-content/80 text-lg">No posts found.</p>
           </div>
         )}
       </div>

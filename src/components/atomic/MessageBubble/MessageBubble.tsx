@@ -184,8 +184,10 @@ const MessageBubble = memo(
           data-message-id={message.id}
         >
           <div className="chat-header mb-1">
-            <span className="text-sm opacity-70">{message.senderName}</span>
-            <time className="ml-2 text-xs opacity-50">
+            <span className="text-base-content/85 text-sm">
+              {message.senderName}
+            </span>
+            <time className="text-base-content/75 ml-2 text-xs">
               {formatTimestamp(message.created_at)}
             </time>
           </div>
@@ -209,13 +211,15 @@ const MessageBubble = memo(
           data-message-id={message.id}
         >
           <div className="chat-header mb-1">
-            <span className="text-sm opacity-70">{message.senderName}</span>
-            <time className="ml-2 text-xs opacity-50">
+            <span className="text-base-content/85 text-sm">
+              {message.senderName}
+            </span>
+            <time className="text-base-content/75 ml-2 text-xs">
               {formatTimestamp(message.created_at)}
             </time>
           </div>
           <div
-            className="chat-bubble bg-base-300 text-base-content/70"
+            className="chat-bubble bg-base-300 text-base-content/85"
             role="group"
             aria-label="Encrypted message that cannot be decrypted"
           >
@@ -256,12 +260,14 @@ const MessageBubble = memo(
         data-message-id={message.id}
       >
         <div className="chat-header mb-1">
-          <span className="text-sm opacity-70">{message.senderName}</span>
-          <time className="ml-2 text-xs opacity-50">
+          <span className="text-base-content/85 text-sm">
+            {message.senderName}
+          </span>
+          <time className="text-base-content/75 ml-2 text-xs">
             {formatTimestamp(message.created_at)}
           </time>
           {message.edited && message.edited_at && (
-            <span className="ml-2 text-xs opacity-50">
+            <span className="text-base-content/75 ml-2 text-xs">
               (Edited {formatTimestamp(message.edited_at)})
             </span>
           )}
@@ -324,7 +330,7 @@ const MessageBubble = memo(
                   {canDelete && (
                     <button
                       onClick={handleDeleteClick}
-                      className="btn btn-xs btn-ghost text-error min-h-11 min-w-11"
+                      className="btn btn-xs btn-outline btn-error min-h-11 min-w-11"
                       aria-label="Delete message"
                     >
                       Delete

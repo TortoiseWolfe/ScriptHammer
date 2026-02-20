@@ -106,7 +106,7 @@ export default function TagFilter({
       {/* Controls */}
       {showControls && (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-base-content/70 text-sm">
+          <div className="text-base-content/85 text-sm">
             {selectedCount > 0
               ? `${selectedCount} selected`
               : 'No tags selected'}
@@ -150,7 +150,7 @@ export default function TagFilter({
         aria-label="Tag selection"
       >
         {filteredTags.length === 0 ? (
-          <div className="text-base-content/60 py-4 text-center">
+          <div className="text-base-content/80 py-4 text-center">
             {searchQuery ? 'No matching tags found' : 'No tags available'}
           </div>
         ) : mode === 'checkbox' ? (

@@ -85,7 +85,9 @@ export const FontSwitcher: React.FC<FontSwitcherProps> = ({
           {/* Recent fonts section */}
           {recentFontObjects.length > 0 && (
             <>
-              <div className="text-sm font-semibold opacity-60">Recent</div>
+              <div className="text-base-content/80 text-sm font-semibold">
+                Recent
+              </div>
               <div
                 className="mb-3 space-y-1"
                 role="listbox"
@@ -107,7 +109,9 @@ export const FontSwitcher: React.FC<FontSwitcherProps> = ({
           )}
 
           {/* All fonts */}
-          <div className="text-sm font-semibold opacity-60">All Fonts</div>
+          <div className="text-base-content/80 text-sm font-semibold">
+            All Fonts
+          </div>
           <div className="space-y-1" role="listbox" aria-label="Font options">
             {otherFonts.map((font, index) => (
               <FontOption
@@ -191,7 +195,9 @@ const FontOption: React.FC<FontOptionProps> = ({
               <span className="loading loading-spinner loading-xs"></span>
             )}
           </div>
-          <div className="mt-1 text-sm opacity-60">{font.description}</div>
+          <div className="text-base-content/80 mt-1 text-sm">
+            {font.description}
+          </div>
         </div>
         {font.accessibility && (
           <span className="badge badge-success badge-sm mt-1">

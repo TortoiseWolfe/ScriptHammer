@@ -26,7 +26,7 @@ export default function GamePage() {
         {/* Compact Header */}
         <div className="mb-4 text-center">
           <h1 className="mb-2 text-3xl font-bold">Captain, Ship & Crew</h1>
-          <p className="text-base-content/70 text-sm">
+          <p className="text-base-content/85 text-sm">
             Roll for your ship, captain, and crew!
           </p>
         </div>
@@ -73,7 +73,7 @@ export default function GamePage() {
 
                   <div className="divider my-3"></div>
 
-                  <div className="space-y-1 text-xs opacity-70">
+                  <div className="text-base-content/85 space-y-1 text-xs">
                     <p>
                       <strong>Tip:</strong> Higher cargo scores win rounds
                     </p>

@@ -176,7 +176,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             />
           </svg>
           <h3 className="mt-4 text-xl font-bold">No payment history</h3>
-          <p className="text-base-content/70">
+          <p className="text-base-content/85">
             You haven&apos;t made any payments yet.
           </p>
         </div>
@@ -312,7 +312,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           <div key={payment.id} className="card bg-base-100 shadow">
             <div className="card-body p-4">
               <div className="flex items-center justify-between">
-                <span className="text-base-content/70 text-sm">
+                <span className="text-base-content/85 text-sm">
                   {new Date(payment.created_at).toLocaleDateString()}
                 </span>
                 <span className={`badge ${getStatusBadge(payment.status)}`}>

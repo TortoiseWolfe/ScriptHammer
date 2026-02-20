@@ -82,7 +82,7 @@ export const FormField: React.FC<FormFieldProps> = ({
 
       {/* Help text */}
       {helpText && !error && (
-        <div id={helpId} className="label-text-alt text-base-content/70 mt-1">
+        <div id={helpId} className="label-text-alt text-base-content/85 mt-1">
           {helpText}
         </div>
       )}

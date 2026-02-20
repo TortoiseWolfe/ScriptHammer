@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { ReAuthModal } from './ReAuthModal';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof ReAuthModal> = {
   title: 'Features/Authentication/ReAuthModal',
   component: ReAuthModal,
+  decorators: [withAuthProvider],
   tags: ['autodocs'],
   parameters: {
     layout: 'fullscreen',

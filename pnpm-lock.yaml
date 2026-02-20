@@ -297,6 +297,9 @@ importers:
       serve:
         specifier: ^14.2.5
         version: 14.2.5
+      serve-handler:
+        specifier: ^6.1.6
+        version: 6.1.6
       sharp:
         specifier: ^0.34.4
         version: 0.34.4

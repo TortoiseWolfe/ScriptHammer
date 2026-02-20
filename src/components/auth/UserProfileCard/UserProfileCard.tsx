@@ -54,7 +54,7 @@ export default function UserProfileCard({
           />
           <div className="flex-1">
             <h3 className="card-title">{displayName}</h3>
-            <p className="text-sm opacity-70">{user.email}</p>
+            <p className="text-base-content/85 text-sm">{user.email}</p>
             {profile?.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
           </div>
         </div>

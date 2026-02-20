@@ -36,7 +36,7 @@ export const AllFonts: Story = {
       <div className="text-lg font-bold">Font Switcher Component</div>
       <FontSwitcher />
       <div className="divider"></div>
-      <div className="text-sm opacity-70">
+      <div className="text-base-content/85 text-sm">
         <p>Available fonts:</p>
         <ul className="mt-2 list-inside list-disc">
           <li>System Default - OS native font</li>

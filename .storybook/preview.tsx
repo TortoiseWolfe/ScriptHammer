@@ -16,6 +16,9 @@ if (typeof window !== 'undefined') {
 
 const preview: Preview = {
   parameters: {
+    nextjs: {
+      appDirectory: true,
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,
@@ -53,7 +56,14 @@ const preview: Preview = {
         <Story />
       </ConsentProvider>
     ),
-    // Theme decorator
+    // DaisyUI themed background — ensures bg-base-100 is applied inside
+    // the data-theme container so Docs page previews aren't plain white
+    (Story) => (
+      <div className="bg-base-100 text-base-content p-4">
+        <Story />
+      </div>
+    ),
+    // Theme decorator (outermost — sets data-theme on parent element)
     withThemeByDataAttribute({
       themes: {
         'scripthammer-dark': 'scripthammer-dark',

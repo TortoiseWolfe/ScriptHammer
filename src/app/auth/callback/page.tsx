@@ -104,7 +104,7 @@ function AuthCallbackContent() {
       <div className="text-center">
         <span className="loading loading-spinner loading-lg"></span>
         <p className="mt-4">Completing sign in...</p>
-        <p className="mt-2 text-sm text-gray-500">{debugInfo}</p>
+        <p className="text-base-content/85 mt-2 text-sm">{debugInfo}</p>
       </div>
     </div>
   );

@@ -336,7 +336,7 @@ export default function AccountSettings({
               displayName={displayName || user?.email || 'User'}
               size="xl"
             />
-            <div className="text-sm opacity-70">
+            <div className="text-base-content/85 text-sm">
               {avatarUrl ? (
                 <p>Your current profile picture</p>
               ) : (
@@ -430,7 +430,7 @@ export default function AccountSettings({
       <div className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Privacy & Data</h3>
-          <p className="text-sm opacity-70">
+          <p className="text-base-content/85 text-sm">
             Manage your personal data in compliance with GDPR regulations.
           </p>
 
@@ -438,7 +438,7 @@ export default function AccountSettings({
           <div className="divider"></div>
           <div className="space-y-3">
             <h4 className="font-semibold">Data Export</h4>
-            <p className="text-sm opacity-70">
+            <p className="text-base-content/85 text-sm">
               Download all your data including messages (decrypted),
               connections, and profile information in JSON format.
             </p>
@@ -449,7 +449,7 @@ export default function AccountSettings({
           <div className="divider"></div>
           <div className="space-y-3">
             <h4 className="text-error font-semibold">Account Deletion</h4>
-            <p className="text-sm opacity-70">
+            <p className="text-base-content/85 text-sm">
               Permanently delete your account and all associated data. This
               action cannot be undone.
             </p>

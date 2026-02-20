@@ -177,7 +177,7 @@ export default function SEOAnalysisPanel({
                     <span className="badge badge-xs sm:badge-sm badge-outline">
                       {suggestion.category}
                     </span>
-                    <span className="text-xs opacity-70">
+                    <span className="text-base-content/85 text-xs">
                       Impact: {suggestion.impact}/10
                     </span>
                   </div>

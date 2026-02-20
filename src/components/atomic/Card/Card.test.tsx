@@ -81,7 +81,6 @@ describe('Card', () => {
     const card = container.firstChild;
     expect(card).toHaveClass('card');
     expect(card).toHaveClass('bg-base-100');
-    expect(card).toHaveClass('shadow-xl');
     expect(card).toHaveClass('card-compact');
     expect(card).toHaveClass('glass');
     expect(card).toHaveClass('card-bordered');

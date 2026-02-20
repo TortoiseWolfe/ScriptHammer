@@ -34,13 +34,13 @@ export function FontSizeControl() {
         tabIndex={0}
         className="dropdown-content bg-base-100 rounded-box z-[1] w-56 max-w-[calc(100vw-2rem)] p-4 shadow-lg sm:w-72"
       >
-        <h3 className="mb-3 text-sm font-semibold tracking-wide uppercase opacity-70">
+        <h3 className="text-base-content/85 mb-3 text-sm font-semibold tracking-wide uppercase">
           Text Settings
         </h3>
 
         {/* Font Size */}
         <div className="mb-4">
-          <label className="mb-2 block text-xs font-medium opacity-60">
+          <label className="text-base-content/80 mb-2 block text-xs font-medium">
             Size
           </label>
           <div className="btn-group btn-group-horizontal w-full">
@@ -69,7 +69,7 @@ export function FontSizeControl() {
 
         {/* Line Height */}
         <div className="mb-4">
-          <label className="mb-2 block text-xs font-medium opacity-60">
+          <label className="text-base-content/80 mb-2 block text-xs font-medium">
             Spacing
           </label>
           <div className="btn-group btn-group-horizontal w-full">
@@ -97,7 +97,7 @@ export function FontSizeControl() {
           {/* Reset button */}
           <button
             onClick={resetSettings}
-            className="btn btn-outline btn-sm flex-1"
+            className="btn btn-neutral btn-outline btn-sm flex-1"
             title="Reset all accessibility settings to defaults"
           >
             Reset

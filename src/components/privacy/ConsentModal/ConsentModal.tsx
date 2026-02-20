@@ -280,7 +280,7 @@ export function ConsentModal({
                           <h3 className="mb-1 text-lg font-semibold">
                             {categoryInfo.title}
                           </h3>
-                          <p className="text-base-content/70 text-sm">
+                          <p className="text-base-content/85 text-sm">
                             {categoryInfo.description}
                           </p>
 
@@ -331,7 +331,7 @@ export function ConsentModal({
 
             {/* Last Updated */}
             {consent.lastUpdated && (
-              <div className="text-base-content/60 text-sm">
+              <div className="text-base-content/80 text-sm">
                 Last updated: {formatDate(consent.lastUpdated)}
               </div>
             )}
@@ -350,7 +350,7 @@ export function ConsentModal({
             </button>
             <button
               onClick={handleAcceptAll}
-              className="btn btn-outline"
+              className="btn btn-neutral btn-outline"
               aria-label="Accept all cookies"
             >
               Accept All

@@ -227,7 +227,7 @@ export function GlobalNav() {
               <div className="dropdown dropdown-end">
                 <label
                   tabIndex={0}
-                  className="btn btn-ghost btn-circle avatar min-h-11 min-w-11"
+                  className="btn btn-ghost btn-circle min-h-11 min-w-11"
                   aria-label="User account menu"
                 >
                   <AvatarDisplay

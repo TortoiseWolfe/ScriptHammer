@@ -142,7 +142,7 @@ export function CreateGroupModal({
         <div className="form-control mb-4">
           <label htmlFor="group-name" className="label">
             <span className="label-text">Group Name</span>
-            <span className="label-text-alt text-base-content/60">
+            <span className="label-text-alt text-base-content/80">
               {groupName.length}/{GROUP_CONSTRAINTS.MAX_NAME_LENGTH}
             </span>
           </label>
@@ -162,7 +162,7 @@ export function CreateGroupModal({
           />
           <p
             id="group-name-hint"
-            className="label-text-alt text-base-content/60 mt-1"
+            className="label-text-alt text-base-content/80 mt-1"
           >
             Leave empty to auto-generate from member names
           </p>
@@ -249,7 +249,7 @@ export function CreateGroupModal({
               <span className="loading loading-spinner loading-md" />
             </div>
           ) : searchResults.length === 0 ? (
-            <p className="text-base-content/60 p-4 text-center">
+            <p className="text-base-content/80 p-4 text-center">
               {searchQuery
                 ? 'No connections found'
                 : 'No connections available'}

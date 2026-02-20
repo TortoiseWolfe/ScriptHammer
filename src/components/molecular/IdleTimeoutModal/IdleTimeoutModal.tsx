@@ -43,7 +43,7 @@ export default function IdleTimeoutModal({
         >
           {minutes}:{seconds.toString().padStart(2, '0')}
         </div>
-        <p className="text-base-content/70 pt-4 text-sm">
+        <p className="text-base-content/85 pt-4 text-sm">
           Click &quot;Continue&quot; to stay signed in, or &quot;Sign Out&quot;
           to sign out now.
         </p>

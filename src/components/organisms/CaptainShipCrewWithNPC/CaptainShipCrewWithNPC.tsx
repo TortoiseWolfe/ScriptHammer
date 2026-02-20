@@ -706,7 +706,7 @@ export default function CaptainShipCrewWithNPC({
                 <span className="flex items-center gap-2">
                   {player.type === 'npc' ? '🤖' : '👤'} {player.name}
                   {player.type === 'npc' && (
-                    <span className="text-xs opacity-60">
+                    <span className="text-base-content/80 text-xs">
                       ({player.difficulty})
                     </span>
                   )}

@@ -20,7 +20,7 @@ export default function CommentPolicyPage() {
       </header>
 
       <article className="prose prose-lg max-w-none">
-        <p className="text-base-content/70 mb-6 text-sm">
+        <p className="text-base-content/85 mb-6 text-sm">
           Last updated: {lastUpdated}
         </p>
 

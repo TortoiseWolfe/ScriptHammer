@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { SetupBanner } from './SetupBanner';
 
 const meta = {
-  title: 'Components/SetupBanner',
+  title: 'Components/Atomic/SetupBanner',
   component: SetupBanner,
   parameters: {
     layout: 'padded',

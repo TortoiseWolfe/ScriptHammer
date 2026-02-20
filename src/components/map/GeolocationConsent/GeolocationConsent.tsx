@@ -127,7 +127,7 @@ export const GeolocationConsent: React.FC<GeolocationConsentProps> = ({
         </div>
 
         {privacyPolicyUrl && (
-          <p className="text-base-content/70 mt-4 text-sm">
+          <p className="text-base-content/85 mt-4 text-sm">
             By accepting, you agree to our{' '}
             <a
               href={privacyPolicyUrl}

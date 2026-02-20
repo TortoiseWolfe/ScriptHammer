@@ -27,10 +27,10 @@ export default function PrivacyControlsPage() {
         className="mt-8 flex flex-wrap gap-4"
         aria-label="Related privacy pages"
       >
-        <Link href="/privacy" className="btn btn-outline">
+        <Link href="/privacy" className="btn btn-neutral btn-outline">
           Privacy Policy
         </Link>
-        <Link href="/cookies" className="btn btn-outline">
+        <Link href="/cookies" className="btn btn-neutral btn-outline">
           Cookie Policy
         </Link>
       </nav>

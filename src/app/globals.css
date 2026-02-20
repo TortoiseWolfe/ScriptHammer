@@ -14,7 +14,7 @@
 
 @plugin "daisyui" {
   themes:
-    scripthammer-dark --default --prefersdark,
+    scripthammer-dark --default,
     scripthammer-light,
     light,
     dark,
@@ -54,7 +54,6 @@
 @plugin "daisyui/theme" {
   name: 'scripthammer-dark';
   default: true;
-  prefersdark: true;
   color-scheme: dark;
 
   --color-base-100: oklch(22.84% 0.038 282.93); /* #1a1a2e charcoal */
@@ -83,14 +82,14 @@
   --color-error: oklch(74.7% 0.132 20.69); /* #f58989 — AAA 7.17:1 */
   --color-error-content: oklch(22.84% 0.038 282.93);
 
-  --radius-selector: 0.5rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.75rem;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1.5rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
   --depth: 1;
-  --noise: 0;
+  --noise: 1;
 }
 
 /* ScriptHammer Light Theme — warm parchment with adjusted brand colors */
@@ -126,14 +125,47 @@
   --color-error: oklch(44.94% 0.164 26.98); /* #9c1b1b — AAA 8.12:1 */
   --color-error-content: oklch(100% 0 0);
 
-  --radius-selector: 0.5rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.75rem;
+  --radius-selector: 0.75rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1.5rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
   --depth: 1;
-  --noise: 0;
+  --noise: 1;
+}
+
+/* ScriptHammer visual polish — scoped to custom themes only.
+ * Stock DaisyUI themes keep their original look untouched. */
+[data-theme='scripthammer-dark'] .card,
+[data-theme='scripthammer-light'] .card {
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.25),
+    0 10px 15px -3px rgb(0 0 0 / 0.2),
+    0 20px 25px -5px rgb(0 0 0 / 0.15);
+}
+
+[data-theme='scripthammer-dark'] .btn,
+[data-theme='scripthammer-light'] .btn {
+  box-shadow:
+    0 2px 4px 0 rgb(0 0 0 / 0.2),
+    0 1px 2px -1px rgb(0 0 0 / 0.15);
+}
+
+[data-theme='scripthammer-dark'] .btn:hover,
+[data-theme='scripthammer-light'] .btn:hover {
+  box-shadow:
+    0 4px 8px -1px rgb(0 0 0 / 0.3),
+    0 2px 4px -2px rgb(0 0 0 / 0.2);
+}
+
+/* Avatar glow/shadow — uses base-content so it auto-adapts:
+ * dark themes → light glow, light themes → dark shadow.
+ * Works across all 35 DaisyUI themes. */
+.avatar {
+  filter: drop-shadow(
+    0 4px 8px color-mix(in oklch, currentColor 25%, transparent)
+  );
 }
 
 /* Override DaisyUI drawer-side to respect container bounds
@@ -743,4 +775,48 @@ p:not([class*='text-']) {
     margin-top: 1rem !important;
     margin-bottom: 0.75rem !important;
   }
+}
+
+/* Storybook Docs: inherit DaisyUI theme background instead of hardcoded white.
+ * These selectors only exist inside Storybook's docs iframe — no production impact. */
+.sbdocs-wrapper {
+  background-color: var(--color-base-100, inherit) !important;
+  color: var(--color-base-content, inherit) !important;
+}
+
+.sbdocs-preview {
+  background-color: var(--color-base-200, inherit) !important;
+  border-color: var(--color-base-300, currentColor) !important;
+}
+
+/* Docs heading and body text inherit theme color */
+.sbdocs-wrapper h1,
+.sbdocs-wrapper h2,
+.sbdocs-wrapper h3,
+.sbdocs-wrapper h4,
+.sbdocs-wrapper p {
+  color: var(--color-base-content, inherit) !important;
+}
+
+/* Props table: themed backgrounds + text (actual class is .sb-argstableBlock) */
+.sb-argstableBlock td,
+.sb-argstableBlock th {
+  background-color: var(--color-base-100, inherit) !important;
+  color: var(--color-base-content, inherit) !important;
+  border-color: var(--color-base-300, currentColor) !important;
+}
+
+.sb-argstableBlock thead th {
+  background-color: var(--color-base-200, inherit) !important;
+}
+
+/* Controls, code, and descriptive text inside the table */
+.sb-argstableBlock td span,
+.sb-argstableBlock td code {
+  color: var(--color-base-content, inherit) !important;
+}
+
+/* Storybook loading skeleton wrapper */
+.sb-preparing-docs.sb-wrapper {
+  background-color: var(--color-base-100, inherit) !important;
 }

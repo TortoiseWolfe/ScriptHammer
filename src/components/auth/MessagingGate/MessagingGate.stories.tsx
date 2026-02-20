@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import MessagingGate from './MessagingGate';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof MessagingGate> = {
   title: 'Features/Authentication/MessagingGate',
   component: MessagingGate,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'fullscreen',
   },
@@ -42,7 +44,7 @@ export const Allowed: Story = {
       <div className="bg-base-200 flex h-96 items-center justify-center p-4">
         <div className="text-center">
           <h2 className="text-2xl font-bold">Messaging Content</h2>
-          <p className="text-base-content/70 mt-2">
+          <p className="text-base-content/85 mt-2">
             You have access to messaging features!
           </p>
         </div>
@@ -71,7 +73,7 @@ export const OAuthAllowed: Story = {
       <div className="bg-base-200 flex h-96 items-center justify-center p-4">
         <div className="text-center">
           <h2 className="text-2xl font-bold">Messaging Content</h2>
-          <p className="text-base-content/70 mt-2">
+          <p className="text-base-content/85 mt-2">
             OAuth users have immediate access!
           </p>
         </div>

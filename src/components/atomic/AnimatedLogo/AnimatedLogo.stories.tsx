@@ -111,22 +111,20 @@ export const ThemeShowcase: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="text-base-content mb-2 text-sm opacity-60">
+        <p className="text-base-content/80 mb-2 text-sm">
           Uses text-primary — adapts to current theme
         </p>
         <AnimatedLogo text="ScriptHammer" size="2xl" />
       </div>
       <div className="flex flex-col gap-4">
-        <p className="text-base-content text-sm opacity-60">All sizes</p>
+        <p className="text-base-content/80 text-sm">All sizes</p>
         <AnimatedLogo text="ScriptHammer" size="sm" />
         <AnimatedLogo text="ScriptHammer" size="md" />
         <AnimatedLogo text="ScriptHammer" size="lg" />
         <AnimatedLogo text="ScriptHammer" size="xl" />
       </div>
       <div>
-        <p className="text-base-content mb-2 text-sm opacity-60">
-          On neutral surface
-        </p>
+        <p className="text-base-content/80 mb-2 text-sm">On neutral surface</p>
         <div className="bg-neutral rounded-box inline-block p-6">
           <AnimatedLogo text="ScriptHammer" size="xl" />
         </div>

@@ -44,7 +44,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
     <div className={`flex flex-col gap-2${className ? ` ${className}` : ''}`}>
       <button
         onClick={() => handleOAuth('github')}
-        className="btn btn-outline min-h-11 w-full"
+        className="btn btn-neutral btn-outline min-h-11 w-full"
         disabled={loading !== null}
       >
         <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -58,7 +58,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
       </button>
       <button
         onClick={() => handleOAuth('google')}
-        className="btn btn-outline min-h-11 w-full"
+        className="btn btn-neutral btn-outline min-h-11 w-full"
         disabled={loading !== null}
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">

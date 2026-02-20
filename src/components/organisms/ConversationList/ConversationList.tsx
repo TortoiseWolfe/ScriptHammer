@@ -239,7 +239,7 @@ export default function ConversationList({
               />
             </svg>
             <h3 className="mb-2 text-lg font-semibold">No conversations yet</h3>
-            <p className="text-base-content/70 mb-4">
+            <p className="text-base-content/85 mb-4">
               {searchQuery
                 ? 'No conversations match your search'
                 : 'Start a conversation by connecting with someone'}

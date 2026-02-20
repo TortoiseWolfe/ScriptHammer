@@ -60,7 +60,7 @@ export class OAuthErrorBoundary extends Component<Props, State> {
                 </div>
                 <div>
                   <h2 className="card-title text-error">Sign-In Failed</h2>
-                  <p className="text-base-content/70">
+                  <p className="text-base-content/85">
                     We couldn&apos;t complete your sign-in request.
                   </p>
                 </div>
@@ -91,7 +91,7 @@ export class OAuthErrorBoundary extends Component<Props, State> {
 
               <div className="mt-6">
                 <h3 className="mb-2 font-semibold">What you can do:</h3>
-                <ul className="text-base-content/70 list-inside list-disc space-y-1 text-sm">
+                <ul className="text-base-content/85 list-inside list-disc space-y-1 text-sm">
                   <li>Try signing in again using the button below</li>
                   <li>Sign in with email and password instead</li>
                   <li>Check your browser settings allow pop-ups</li>

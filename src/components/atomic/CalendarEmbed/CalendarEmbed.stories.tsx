@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import CalendarEmbed from './CalendarEmbed';
-import { withConsentProvider } from '../../../../.storybook/decorators';
+import { withFunctionalConsent } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof CalendarEmbed> = {
   id: 'atomic-calendarembed',
   title: 'Components/Atomic/CalendarEmbed',
   component: CalendarEmbed,
-  decorators: [withConsentProvider],
+  decorators: [withFunctionalConsent],
   parameters: {
     layout: 'centered',
     docs: {
@@ -48,7 +48,7 @@ export const Default: Story = {
   args: {
     mode: 'inline',
     provider: 'calendly',
-    url: '',
+    url: 'https://calendly.com/example',
   },
   parameters: {
     docs: {
@@ -61,6 +61,7 @@ export const InlineMode: Story = {
   args: {
     mode: 'inline',
     provider: 'calendly',
+    url: 'https://calendly.com/example',
   },
 };
 
@@ -68,6 +69,7 @@ export const PopupMode: Story = {
   args: {
     mode: 'popup',
     provider: 'calendly',
+    url: 'https://calendly.com/example',
   },
 };
 
@@ -91,6 +93,7 @@ export const WithPrefill: Story = {
   args: {
     mode: 'inline',
     provider: 'calendly',
+    url: 'https://calendly.com/example',
     prefill: {
       name: 'John Doe',
       email: 'john.doe@example.com',
@@ -101,6 +104,8 @@ export const WithPrefill: Story = {
 export const CustomStyling: Story = {
   args: {
     mode: 'inline',
+    provider: 'calendly',
+    url: 'https://calendly.com/example',
     className: 'custom-calendar-wrapper',
   },
 };

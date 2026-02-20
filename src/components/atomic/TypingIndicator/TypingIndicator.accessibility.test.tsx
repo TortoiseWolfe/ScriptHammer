@@ -83,8 +83,8 @@ describe('TypingIndicator Accessibility', () => {
 
     const indicator = screen.getByTestId('typing-indicator');
 
-    // Text should have base-content/70 opacity for sufficient contrast
-    expect(indicator).toHaveClass('text-base-content/70');
+    // Text should have base-content/85 opacity for sufficient contrast
+    expect(indicator).toHaveClass('text-base-content/85');
   });
 
   it('should support custom className', () => {

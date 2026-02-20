@@ -242,7 +242,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
             />
           </svg>
           <h3 className="mt-4 text-xl font-bold">No active subscriptions</h3>
-          <p className="text-base-content/70">
+          <p className="text-base-content/85">
             You don&apos;t have any subscriptions yet.
           </p>
         </div>
@@ -273,11 +273,11 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                       subscription.amount,
                       subscription.currency
                     )}
-                    <span className="text-base-content/70 ml-2 text-sm font-normal">
+                    <span className="text-base-content/85 ml-2 text-sm font-normal">
                       / {formatInterval(subscription.interval)}
                     </span>
                   </h3>
-                  <p className="text-base-content/70 mt-1 capitalize">
+                  <p className="text-base-content/85 mt-1 capitalize">
                     {subscription.provider}
                   </p>
                 </div>

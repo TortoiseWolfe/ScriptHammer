@@ -29,11 +29,11 @@ const variantStyles: Record<TextVariant, string> = {
   h5: 'text-xl font-medium text-base-content',
   h6: 'text-lg font-medium text-base-content',
   body: 'text-base text-base-content',
-  lead: 'text-xl text-base-content/70',
-  small: 'text-sm text-base-content/70',
+  lead: 'text-xl text-base-content/85',
+  small: 'text-sm text-base-content/85',
   code: 'font-mono text-sm bg-base-200 px-1 py-0.5 rounded',
   emphasis: 'text-base italic text-base-content',
-  caption: 'text-xs text-base-content/60',
+  caption: 'text-xs text-base-content/75',
 };
 
 const variantElements: Partial<Record<TextVariant, React.ElementType>> = {

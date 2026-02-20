@@ -181,7 +181,7 @@ export default function Home() {
                   href={detectedConfig.projectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-outline btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
+                  className="btn btn-neutral btn-md group md:btn-lg min-h-11 w-full min-w-11 sm:w-auto"
                 >
                   <svg
                     className="mr-2 h-5 w-5 transition-transform group-hover:scale-110"
@@ -307,7 +307,7 @@ export default function Home() {
                   🎨
                 </div>
                 <h3 className="card-title text-base">32 Themes</h3>
-                <p className="text-base-content/70 text-xs">
+                <p className="text-base-content/85 text-xs">
                   Light & dark with live switching
                 </p>
               </div>
@@ -326,7 +326,7 @@ export default function Home() {
                   📐
                 </div>
                 <h3 className="card-title text-base">Wireframes</h3>
-                <p className="text-base-content/70 text-xs">
+                <p className="text-base-content/85 text-xs">
                   46 interactive SVG design specs
                 </p>
               </div>
@@ -345,7 +345,7 @@ export default function Home() {
                   📱
                 </div>
                 <h3 className="card-title text-base">PWA Ready</h3>
-                <p className="text-base-content/70 text-xs">
+                <p className="text-base-content/85 text-xs">
                   Installable with offline support
                 </p>
               </div>
@@ -364,7 +364,7 @@ export default function Home() {
                   ♿
                 </div>
                 <h3 className="card-title text-base">Accessible</h3>
-                <p className="text-base-content/70 text-xs">
+                <p className="text-base-content/85 text-xs">
                   WCAG compliant & customizable
                 </p>
               </div>
@@ -383,7 +383,7 @@ export default function Home() {
                   🚀
                 </div>
                 <h3 className="card-title text-base">Production Ready</h3>
-                <p className="text-base-content/70 text-xs">
+                <p className="text-base-content/85 text-xs">
                   CI/CD, testing & monitoring
                 </p>
               </div>

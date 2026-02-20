@@ -266,9 +266,7 @@ export const ThemeShowcase: Story = {
         </h3>
         <div className="flex flex-col gap-3">
           <div className="bg-base-100 flex flex-wrap gap-2 rounded-lg p-4">
-            <span className="text-base-content text-sm opacity-60">
-              base-100:
-            </span>
+            <span className="text-base-content/80 text-sm">base-100:</span>
             <Button variant="primary" size="sm">
               Primary
             </Button>
@@ -280,9 +278,7 @@ export const ThemeShowcase: Story = {
             </Button>
           </div>
           <div className="bg-base-200 flex flex-wrap gap-2 rounded-lg p-4">
-            <span className="text-base-content text-sm opacity-60">
-              base-200:
-            </span>
+            <span className="text-base-content/80 text-sm">base-200:</span>
             <Button variant="primary" size="sm">
               Primary
             </Button>
@@ -294,9 +290,7 @@ export const ThemeShowcase: Story = {
             </Button>
           </div>
           <div className="bg-neutral flex flex-wrap gap-2 rounded-lg p-4">
-            <span className="text-neutral-content text-sm opacity-60">
-              neutral:
-            </span>
+            <span className="text-neutral-content/80 text-sm">neutral:</span>
             <Button variant="primary" size="sm">
               Primary
             </Button>

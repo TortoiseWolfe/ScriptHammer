@@ -100,7 +100,7 @@ export default function BlogPostCard({
           </Link>
         </h2>
 
-        {post.excerpt && <p className="text-base-content/70">{post.excerpt}</p>}
+        {post.excerpt && <p className="text-base-content/85">{post.excerpt}</p>}
 
         <div className="card-actions mt-4 items-center justify-between">
           <div className="flex flex-wrap gap-2">
@@ -114,7 +114,7 @@ export default function BlogPostCard({
             )}
           </div>
 
-          <div className="text-base-content/60 flex gap-3 text-sm">
+          <div className="text-base-content/80 flex gap-3 text-sm">
             <span>{publishedDate}</span>
             <span>{readingTime} min read</span>
           </div>

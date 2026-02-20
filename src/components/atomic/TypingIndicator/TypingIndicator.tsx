@@ -37,7 +37,7 @@ export default function TypingIndicator({
 
   return (
     <div
-      className={`flex items-center gap-2 px-4 py-2 text-sm text-base-content/70${className ? ` ${className}` : ''}`}
+      className={`flex items-center gap-2 px-4 py-2 text-sm text-base-content/85${className ? ` ${className}` : ''}`}
       role="status"
       aria-live="polite"
       aria-atomic="true"

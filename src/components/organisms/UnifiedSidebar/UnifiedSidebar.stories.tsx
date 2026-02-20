@@ -1,10 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import UnifiedSidebar from './UnifiedSidebar';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 
 const meta: Meta<typeof UnifiedSidebar> = {
   title: 'Components/Organisms/UnifiedSidebar',
   component: UnifiedSidebar,
+  decorators: [
+    withAuthProvider,
+    (Story) => (
+      <div className="border-base-300 h-[600px] w-[400px] border">
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -43,13 +52,6 @@ const meta: Meta<typeof UnifiedSidebar> = {
     onStartConversation: fn().mockResolvedValue('conv-mock-123'),
     onTabChange: fn(),
   },
-  decorators: [
-    (Story) => (
-      <div className="border-base-300 h-[600px] w-[400px] border">
-        <Story />
-      </div>
-    ),
-  ],
 };
 
 export default meta;

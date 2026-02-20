@@ -133,7 +133,7 @@ export default async function TagPage({ params }: PageProps) {
             clickable={false}
           />
         </div>
-        <p className="text-base-content/70 text-lg">
+        <p className="text-base-content/85 text-lg">
           {posts.length} {posts.length === 1 ? 'post' : 'posts'} found
         </p>
       </div>
@@ -149,7 +149,7 @@ export default async function TagPage({ params }: PageProps) {
             </div>
           ) : (
             <div className="py-12 text-center">
-              <p className="text-base-content/70 text-xl">
+              <p className="text-base-content/85 text-xl">
                 No posts found with this tag.
               </p>
             </div>

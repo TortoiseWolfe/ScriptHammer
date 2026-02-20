@@ -184,7 +184,7 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
         </div>
 
         {/* Privacy Notice */}
-        <p className="text-base-content/60 mt-4 text-center text-xs">
+        <p className="text-base-content/80 mt-4 text-center text-xs">
           By accepting, you agree to our payment processing terms.
           <br />
           Read our{' '}

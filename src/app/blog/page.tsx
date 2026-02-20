@@ -65,7 +65,7 @@ export default async function BlogPage() {
     <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Page Header - Mobile-first (PRP-017 T037) */}
       <header className="mb-8 text-center sm:mb-10 md:mb-12">
-        <p className="text-base-content/70 text-base sm:text-lg md:text-xl">
+        <p className="text-base-content/85 text-base sm:text-lg md:text-xl">
           Thoughts, ideas, and insights from our team
         </p>
       </header>
@@ -87,7 +87,7 @@ export default async function BlogPage() {
         </div>
       ) : (
         <div className="py-12 text-center">
-          <p className="text-base-content/60 text-lg">
+          <p className="text-base-content/80 text-lg">
             No posts found. Check back soon!
           </p>
         </div>

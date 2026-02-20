@@ -186,7 +186,7 @@ export default function MessageInput({
       <div
         id="char-count"
         className={`text-xs ${
-          remaining < 100 ? 'text-warning' : 'text-base-content opacity-60'
+          remaining < 100 ? 'text-warning' : 'text-base-content/80'
         }`}
         aria-live="polite"
       >
