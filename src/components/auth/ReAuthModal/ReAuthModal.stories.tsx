@@ -15,6 +15,10 @@ const meta: Meta<typeof ReAuthModal> = {
         component:
           'Modal for re-authenticating user to unlock encryption keys after session restore.',
       },
+      story: {
+        inline: false,
+        height: '500px',
+      },
     },
   },
   argTypes: {

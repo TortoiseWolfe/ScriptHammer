@@ -9,6 +9,12 @@ const meta: Meta<typeof ConsentModal> = {
   component: ConsentModal,
   parameters: {
     layout: 'fullscreen',
+    docs: {
+      story: {
+        inline: false,
+        height: '500px',
+      },
+    },
   },
   decorators: [
     (Story) => (
