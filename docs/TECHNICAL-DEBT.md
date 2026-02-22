@@ -537,3 +537,35 @@ The following TODO comments are part of code generation templates and are intent
    - Used to simulate incomplete component structures
 
 These TODOs should remain as they are part of the tooling infrastructure.
+
+## Future Considerations: Template-Library Components
+
+Components from the [Template-Library](https://github.com/TortoiseWolfe/Template-Library) project that ScriptHammer doesn't have yet. Documented 2026-02-22 for potential future adoption.
+
+### Atomic Components
+
+| Component         | Description                        | Potential Use                           |
+| ----------------- | ---------------------------------- | --------------------------------------- |
+| StarRating        | Interactive/readonly 5-star rating | User reviews, feedback, content ratings |
+| BeforeAfterSlider | Drag-to-compare image slider       | Theme comparisons, design showcases     |
+| Separator         | Divider line component             | Page section dividers                   |
+| Lucide React      | Tree-shakeable icon library        | Replace inline SVGs project-wide        |
+
+### Landing Page Sections
+
+| Component                      | Description                                        | Potential Use              |
+| ------------------------------ | -------------------------------------------------- | -------------------------- |
+| HeroSection / HeroSectionAlt   | Hero with headline, description, CTAs (light/dark) | Landing page template      |
+| ServicesGrid                   | Three-column service cards with icons              | Feature showcase           |
+| PricingSection                 | Three-tier pricing table                           | Payment feature complement |
+| Testimonials / TestimonialsAlt | Client testimonials (dark cards vs light grid)     | Social proof section       |
+| AboutSection / AboutSection2   | Split image/text with stats/credentials            | About page template        |
+| ContactSection                 | Contact form + business info sidebar               | Contact page enhancement   |
+
+### Interactive Features
+
+| Feature                           | Description                             | Potential Use           |
+| --------------------------------- | --------------------------------------- | ----------------------- |
+| ComponentPreview "Build Your Own" | Toggle sections on/off to compose pages | Fork customization tool |
+
+**Note:** Template-Library is a pure presentational library (no auth, database, or testing). These components would need adaptation to ScriptHammer's 5-file pattern, DaisyUI theming, and Docker-first workflow.

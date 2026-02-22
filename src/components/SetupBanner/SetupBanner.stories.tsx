@@ -65,3 +65,52 @@ export const Hidden: Story = {
     show: false,
   },
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    show: true,
+  },
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          Banner Variants
+        </h3>
+        <div className="flex flex-col gap-3">
+          <SetupBanner show={true} />
+          <SetupBanner
+            show={true}
+            message="Custom warning message for your project."
+          />
+          <SetupBanner show={true} docsUrl="" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          On Surfaces
+        </h3>
+        <div className="bg-base-100 rounded-lg p-4">
+          <span className="text-base-content/80 mb-2 block text-sm">
+            base-100:
+          </span>
+          <SetupBanner show={true} />
+        </div>
+        <div className="bg-base-200 rounded-lg p-4">
+          <span className="text-base-content/80 mb-2 block text-sm">
+            base-200:
+          </span>
+          <SetupBanner show={true} />
+        </div>
+        <div className="bg-neutral rounded-lg p-4">
+          <span className="text-neutral-content/80 mb-2 block text-sm">
+            neutral:
+          </span>
+          <SetupBanner show={true} />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};

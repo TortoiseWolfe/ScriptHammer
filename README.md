@@ -423,8 +423,8 @@ Custom ScriptHammer theme (dark default + light variant) built on the existing D
 | 1     | Storybook 9.1.5 → 10.2.8                             | Complete |
 | 2     | Custom DaisyUI themes (dark + light, WCAG AAA)       | Complete |
 | 3     | Theme template system (CUSTOM-THEME.md + rebrand.sh) | Complete |
-| 4     | Redesign atomic components                           | Next     |
-| 5     | Rebuild molecular & organism components              | Pending  |
+| 4     | Redesign atomic components                           | Complete |
+| 5     | Rebuild molecular & organism components              | Next     |
 | 6     | Page-by-page polish                                  | Pending  |
 
 Current component hierarchy: 22 atomic, 17 molecular, 8 organisms.
@@ -440,7 +440,7 @@ Read these files to pick up the design system redesign:
 4. src/app/globals.css - Custom theme definitions (scripthammer-dark, scripthammer-light)
 
 Use superpowers:executing-plans to work through the implementation plan.
-Start at Phase 4 Task 17 (audit Button component in Storybook).
+Start at Phase 5 (rebuild molecular & organism components).
 
 Key context:
 - Everything runs inside Docker: docker compose exec scripthammer <command>

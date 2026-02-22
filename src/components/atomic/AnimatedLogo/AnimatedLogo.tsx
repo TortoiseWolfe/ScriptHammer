@@ -38,7 +38,7 @@ export const AnimatedLogo: React.FC<AnimatedLogoProps> = ({
     <span
       className={`${styles.animatedLogo} ${sizeClasses[size]} ${className} text-primary inline-flex cursor-pointer font-bold`}
       style={{
-        filter: 'drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.8))',
+        filter: 'drop-shadow(2px 2px 2px rgb(0 0 0 / 0.8))',
       }}
     >
       {letters.map((letter, index) => (

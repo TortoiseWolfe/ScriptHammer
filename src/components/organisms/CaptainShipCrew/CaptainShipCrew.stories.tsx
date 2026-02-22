@@ -84,3 +84,48 @@ export const QuickGame: Story = {
     targetScore: 25,
   },
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    playerCount: 2,
+    gameMode: 'single',
+  },
+  render: () => (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          Game Modes
+        </h3>
+        <div className="flex flex-wrap gap-4">
+          <CaptainShipCrew playerCount={2} gameMode="single" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <h3 className="text-base-content mb-2 text-lg font-semibold">
+          On Surfaces
+        </h3>
+        <div className="bg-base-100 rounded-lg p-4">
+          <span className="text-base-content/80 mb-2 block text-sm">
+            base-100:
+          </span>
+          <CaptainShipCrew playerCount={2} gameMode="single" />
+        </div>
+        <div className="bg-base-200 rounded-lg p-4">
+          <span className="text-base-content/80 mb-2 block text-sm">
+            base-200:
+          </span>
+          <CaptainShipCrew playerCount={2} gameMode="single" />
+        </div>
+        <div className="bg-neutral rounded-lg p-4">
+          <span className="text-neutral-content/80 mb-2 block text-sm">
+            neutral:
+          </span>
+          <CaptainShipCrew playerCount={2} gameMode="single" />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};

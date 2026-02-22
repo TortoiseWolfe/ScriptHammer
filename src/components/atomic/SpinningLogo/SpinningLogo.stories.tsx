@@ -229,3 +229,40 @@ export const MultipleLogos: Story = {
     </div>
   ),
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    children: null,
+  },
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <div>
+        <p className="text-base-content/80 mb-2 text-sm">
+          ScriptHammer logo — adapts to current theme via text-primary
+        </p>
+        <div className="flex items-center gap-8">
+          <LayeredScriptHammerLogo size={150} speed="slow" pauseOnHover />
+          <LayeredScriptHammerLogo size={100} speed="slow" pauseOnHover />
+        </div>
+      </div>
+      <div className="flex flex-col gap-3">
+        <p className="text-base-content/80 text-sm">On surfaces</p>
+        <div className="bg-base-100 flex items-center gap-6 rounded-lg p-4">
+          <span className="text-base-content/80 text-sm">base-100:</span>
+          <LayeredScriptHammerLogo size={80} speed="slow" pauseOnHover />
+        </div>
+        <div className="bg-base-200 flex items-center gap-6 rounded-lg p-4">
+          <span className="text-base-content/80 text-sm">base-200:</span>
+          <LayeredScriptHammerLogo size={80} speed="slow" pauseOnHover />
+        </div>
+        <div className="bg-neutral flex items-center gap-6 rounded-lg p-4">
+          <span className="text-neutral-content/80 text-sm">neutral:</span>
+          <LayeredScriptHammerLogo size={80} speed="slow" pauseOnHover />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};
