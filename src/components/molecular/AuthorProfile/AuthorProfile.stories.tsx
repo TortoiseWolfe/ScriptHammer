@@ -114,3 +114,31 @@ export const MinimalProfile: Story = {
     showStats: true,
   },
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    author: mockAuthor,
+    showSocial: true,
+    showStats: true,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-base-content mb-2 text-lg font-semibold">
+        On Surfaces
+      </h3>
+      <div className="bg-base-100 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-100:</span>
+        <AuthorProfile {...args} />
+      </div>
+      <div className="bg-base-200 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-200:</span>
+        <AuthorProfile {...args} />
+      </div>
+      <div className="bg-neutral rounded-lg p-4">
+        <span className="text-neutral-content/80 text-sm">neutral:</span>
+        <AuthorProfile {...args} />
+      </div>
+    </div>
+  ),
+  parameters: { layout: 'padded' },
+};

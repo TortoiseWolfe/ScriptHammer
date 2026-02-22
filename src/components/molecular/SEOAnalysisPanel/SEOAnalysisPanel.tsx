@@ -10,6 +10,16 @@ export interface SEOAnalysisPanelProps {
   onToggle?: () => void;
 }
 
+const scoreColorClass = (value: number) =>
+  value >= 80 ? 'text-success' : value >= 60 ? 'text-warning' : 'text-error';
+
+const alertSeverityClass = (severity: string) =>
+  severity === 'error'
+    ? 'alert-error'
+    : severity === 'warning'
+      ? 'alert-warning'
+      : 'alert-info';
+
 export default function SEOAnalysisPanel({
   post,
   expanded = false,
@@ -55,7 +65,7 @@ export default function SEOAnalysisPanel({
               {copied ? '✓ Copied' : '📋 Copy'}
             </button>
             <div
-              className={`radial-progress text-${seoAnalyzer.getScoreColor(score.overall)}`}
+              className={`radial-progress ${scoreColorClass(score.overall)}`}
               style={
                 {
                   '--value': score.overall,
@@ -74,7 +84,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Title</div>
             <div
-              className={`stat-value text-sm text-${score.title >= 80 ? 'success' : score.title >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.title)}`}
             >
               {score.title}%
             </div>
@@ -82,7 +92,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Description</div>
             <div
-              className={`stat-value text-sm text-${score.description >= 80 ? 'success' : score.description >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.description)}`}
             >
               {score.description}%
             </div>
@@ -90,7 +100,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Content</div>
             <div
-              className={`stat-value text-sm text-${score.content >= 80 ? 'success' : score.content >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.content)}`}
             >
               {score.content}%
             </div>
@@ -98,7 +108,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Keywords</div>
             <div
-              className={`stat-value text-sm text-${score.keywords >= 80 ? 'success' : score.keywords >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.keywords)}`}
             >
               {score.keywords}%
             </div>
@@ -106,7 +116,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Readability</div>
             <div
-              className={`stat-value text-sm text-${score.readability >= 80 ? 'success' : score.readability >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.readability)}`}
             >
               {score.readability}%
             </div>
@@ -114,7 +124,7 @@ export default function SEOAnalysisPanel({
           <div className="stat bg-base-100 rounded p-2">
             <div className="stat-title text-xs">Technical</div>
             <div
-              className={`stat-value text-sm text-${score.technical >= 80 ? 'success' : score.technical >= 60 ? 'warning' : 'error'}`}
+              className={`stat-value text-sm ${scoreColorClass(score.technical)}`}
             >
               {score.technical}%
             </div>
@@ -170,7 +180,7 @@ export default function SEOAnalysisPanel({
             {suggestions.map((suggestion, i) => (
               <div
                 key={i}
-                className={`alert alert-${suggestion.severity === 'error' ? 'error' : suggestion.severity === 'warning' ? 'warning' : 'info'} px-3 py-2`}
+                className={`alert ${alertSeverityClass(suggestion.severity)} px-3 py-2`}
               >
                 <div className="flex-1">
                   <div className="mb-1 flex flex-wrap items-center justify-between gap-2">

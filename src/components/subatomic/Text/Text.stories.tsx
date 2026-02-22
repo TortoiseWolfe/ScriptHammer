@@ -144,3 +144,46 @@ export const AllVariants: Story = {
     </div>
   ),
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    children: 'Theme Showcase',
+  },
+  render: () => (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-base-content mb-2 text-lg font-semibold">
+        On Surfaces
+      </h3>
+      <div className="bg-base-100 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-100:</span>
+        <div className="mt-2 space-y-1">
+          <Text variant="h3">Heading</Text>
+          <Text variant="body">Body text on base-100 surface</Text>
+          <Text variant="small">Small text for captions</Text>
+          <Text variant="code">const code = true;</Text>
+        </div>
+      </div>
+      <div className="bg-base-200 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-200:</span>
+        <div className="mt-2 space-y-1">
+          <Text variant="h3">Heading</Text>
+          <Text variant="body">Body text on base-200 surface</Text>
+          <Text variant="small">Small text for captions</Text>
+          <Text variant="code">const code = true;</Text>
+        </div>
+      </div>
+      <div className="bg-neutral rounded-lg p-4">
+        <span className="text-neutral-content/80 text-sm">neutral:</span>
+        <div className="mt-2 space-y-1">
+          <Text variant="h3">Heading</Text>
+          <Text variant="body">Body text on neutral surface</Text>
+          <Text variant="small">Small text for captions</Text>
+          <Text variant="code">const code = true;</Text>
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: 'padded',
+  },
+};

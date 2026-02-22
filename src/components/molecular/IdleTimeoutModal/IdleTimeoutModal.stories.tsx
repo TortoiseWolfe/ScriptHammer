@@ -57,3 +57,24 @@ export const Closed: Story = {
     onSignOut: () => console.log('Sign out clicked'),
   },
 };
+
+export const ThemeShowcase: Story = {
+  args: {
+    isOpen: true,
+    timeRemaining: 60,
+    onContinue: () => {},
+    onSignOut: () => {},
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-base-content mb-2 text-lg font-semibold">
+        On Surfaces
+      </h3>
+      <div className="bg-base-100 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-100:</span>
+        <IdleTimeoutModal {...args} />
+      </div>
+    </div>
+  ),
+  parameters: { layout: 'padded' },
+};
