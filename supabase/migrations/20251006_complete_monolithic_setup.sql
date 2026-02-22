@@ -167,6 +167,7 @@ CREATE TABLE user_profiles (
   avatar_url TEXT,
   bio TEXT CHECK (length(bio) <= 500),
   welcome_message_sent BOOLEAN NOT NULL DEFAULT FALSE,
+  is_admin BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -568,6 +569,184 @@ CREATE POLICY "Users can view own audit logs" ON auth_audit_logs
 
 CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
   FOR INSERT WITH CHECK (true);
+
+-- Admin read-only policies (Feature: Admin Dashboard)
+-- Each policy checks is_admin via user_profiles lookup
+CREATE POLICY "Admin can view all profiles" ON user_profiles
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles up WHERE up.id = auth.uid() AND up.is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all payment intents" ON payment_intents
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all payment results" ON payment_results
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all subscriptions" ON subscriptions
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view all connections" ON user_connections
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view conversation metadata" ON conversations
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+CREATE POLICY "Admin can view message metadata" ON messages
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- ============================================================================
+-- Admin RPC Aggregation Functions (Feature: Admin Dashboard)
+-- SECURITY INVOKER: runs as calling user, respects RLS
+-- ============================================================================
+
+-- admin_payment_stats(): Payment metrics for admin dashboard
+CREATE OR REPLACE FUNCTION admin_payment_stats()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  RETURN (
+    SELECT json_build_object(
+      'total_payments', (SELECT count(*) FROM payment_results),
+      'successful_payments', (SELECT count(*) FROM payment_results WHERE status = 'succeeded'),
+      'failed_payments', (SELECT count(*) FROM payment_results WHERE status = 'failed'),
+      'pending_payments', (SELECT count(*) FROM payment_results WHERE status = 'pending'),
+      'total_revenue_cents', (SELECT COALESCE(sum(charged_amount), 0) FROM payment_results WHERE status = 'succeeded'),
+      'active_subscriptions', (SELECT count(*) FROM subscriptions WHERE status = 'active'),
+      'failed_this_week', (SELECT count(*) FROM payment_results WHERE status = 'failed' AND created_at > now() - interval '7 days'),
+      'revenue_by_provider', (
+        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+        FROM (
+          SELECT provider, sum(charged_amount) AS total
+          FROM payment_results
+          WHERE status = 'succeeded'
+          GROUP BY provider
+        ) t
+      )
+    )
+  );
+END;
+$$;
+
+-- admin_auth_stats(): Auth/security metrics for admin dashboard
+CREATE OR REPLACE FUNCTION admin_auth_stats()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  RETURN (
+    SELECT json_build_object(
+      'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE AND created_at > now() - interval '1 day'),
+      'failed_this_week', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in_failed' AND created_at > now() - interval '7 days'),
+      'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND created_at > now() - interval '30 days'),
+      'rate_limited_users', (SELECT count(*) FROM rate_limit_attempts WHERE locked_until IS NOT NULL AND locked_until > now()),
+      'top_failed_logins', (
+        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+        FROM (
+          SELECT user_id, count(*) AS fail_count
+          FROM auth_audit_logs
+          WHERE event_type = 'sign_in_failed'
+            AND created_at > now() - interval '7 days'
+          GROUP BY user_id
+          ORDER BY fail_count DESC
+          LIMIT 10
+        ) t
+      )
+    )
+  );
+END;
+$$;
+
+-- admin_user_stats(): User metrics for admin dashboard
+CREATE OR REPLACE FUNCTION admin_user_stats()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  RETURN (
+    SELECT json_build_object(
+      'total_users', (SELECT count(*) FROM user_profiles WHERE is_admin = FALSE),
+      'active_this_week', (SELECT count(*) FROM user_profiles WHERE updated_at > now() - interval '7 days' AND is_admin = FALSE),
+      'pending_connections', (SELECT count(*) FROM user_connections WHERE status = 'pending'),
+      'total_connections', (SELECT count(*) FROM user_connections WHERE status = 'accepted')
+    )
+  );
+END;
+$$;
+
+-- admin_messaging_stats(): Messaging metrics for admin dashboard
+CREATE OR REPLACE FUNCTION admin_messaging_stats()
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  RETURN (
+    SELECT json_build_object(
+      'total_conversations', (SELECT count(*) FROM conversations),
+      'group_conversations', (SELECT count(*) FROM conversations WHERE is_group = TRUE),
+      'direct_conversations', (SELECT count(*) FROM conversations WHERE is_group = FALSE),
+      'messages_this_week', (SELECT count(*) FROM messages WHERE created_at > now() - interval '7 days'),
+      'active_connections', (SELECT count(*) FROM user_connections WHERE status = 'accepted'),
+      'blocked_connections', (SELECT count(*) FROM user_connections WHERE status = 'blocked'),
+      'connection_distribution', (
+        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+        FROM (
+          SELECT status, count(*) AS total
+          FROM user_connections
+          GROUP BY status
+        ) t
+      )
+    )
+  );
+END;
+$$;
 
 -- ============================================================================
 -- PART 7: GRANT PERMISSIONS
@@ -1258,21 +1437,23 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 --   ✅ Group chat tables: conversation_members, group_keys (Feature 010)
 --   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt, update_conversation_timestamp, assign_sequence_number
+--   ✅ Admin RPC functions: admin_payment_stats, admin_auth_stats, admin_user_stats, admin_messaging_stats
 --   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert
---   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 total policies)
+--   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 + 9 admin policies)
+--   ✅ Admin RLS policies: 9 read-only policies for admin dashboard (is_admin check)
 --   ✅ Avatar policies: 4 policies (user isolation + public read)
 --   ✅ Messaging policies: 17 policies (E2E encryption, user isolation, 15-min edit window)
 --   ✅ Group chat policies: 8 policies (membership access, key distribution)
 --   ✅ Permissions: Authenticated users + service role (all tables)
 --   ✅ Test user: test@example.com (primary, email confirmed)
---   ✅ Admin user: scripthammer (Feature 002 - welcome messages)
+--   ✅ Admin user: scripthammer (Feature 002 - welcome messages, is_admin = TRUE)
 -- ============================================================================
 
 -- Admin profile for system welcome messages (Feature 002)
 -- Fixed UUID: 00000000-0000-0000-0000-000000000001
-INSERT INTO user_profiles (id, username, display_name, welcome_message_sent)
-VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE)
-ON CONFLICT (id) DO NOTHING;
+INSERT INTO user_profiles (id, username, display_name, welcome_message_sent, is_admin)
+VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE, TRUE)
+ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
 
 -- ============================================================================
 -- Feature 004: Populate OAuth user profiles (one-time migration)
