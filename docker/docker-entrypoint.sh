@@ -15,10 +15,17 @@ echo "Dependencies are up-to-date"
 # Clean .next directory to prevent stale cache issues
 echo "Cleaning .next directory..."
 if [ -d "/app/.next" ]; then
-  rm -rf /app/.next 2>/dev/null || echo "  .next is a volume (skip cleanup)"
+  # Named volume may be owned by root — clean contents, not the mount point
+  rm -rf /app/.next/* /app/.next/.* 2>/dev/null || true
 fi
 
-mkdir -p /app/.next
+# Ensure .next exists and is writable (handles fresh named volumes)
+if [ ! -w "/app/.next" ]; then
+  echo "  .next volume not writable by node user — this is expected on first run"
+  echo "  Hint: run 'docker compose down -v' and 'docker compose up' to reset volumes"
+fi
+
+mkdir -p /app/.next 2>/dev/null || true
 echo "Fresh .next directory configured"
 
 if [ -f ".next/BUILD_ID" ]; then

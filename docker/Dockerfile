@@ -106,6 +106,9 @@ COPY --chown=node:node . .
 # Set proper ownership for all files including pnpm store
 RUN chown -R node:node /app /pnpm
 
+# Pre-create .next directory so named volume inherits node ownership
+RUN mkdir -p /app/.next && chown node:node /app/.next
+
 # Copy entrypoint script
 COPY --chown=node:node docker/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
