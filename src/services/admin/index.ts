@@ -1,2 +1,10 @@
 export { AdminAuthService } from './admin-auth-service';
 export type { AdminProfile } from './admin-auth-service';
+export { AdminPaymentService } from './admin-payment-service';
+export type { AdminPaymentStats } from './admin-payment-service';
+export { AdminAuditService } from './admin-audit-service';
+export type { AdminAuthStats, AuditLogEntry } from './admin-audit-service';
+export { AdminUserService } from './admin-user-service';
+export type { AdminUserStats, AdminUserRow } from './admin-user-service';
+export { AdminMessagingService } from './admin-messaging-service';
+export type { AdminMessagingStats } from './admin-messaging-service';
