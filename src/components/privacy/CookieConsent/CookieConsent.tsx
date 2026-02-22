@@ -58,57 +58,65 @@ export function CookieConsent({
   const positionClasses = position === 'top' ? 'top-0' : 'bottom-0';
 
   return (
-    <div
-      role="region"
-      aria-label="Cookie consent banner"
-      aria-live="polite"
-      className={`fixed right-0 left-0 ${positionClasses} bg-base-100 border-base-300 z-[60] border-t-2 shadow-lg backdrop-blur-md ${className}`}
-    >
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Message Section - Compact */}
-          <div className="flex flex-1 items-center gap-2">
-            <span className="text-lg" role="img" aria-label="Cookie">
-              🍪
-            </span>
-            {customContent || (
-              <p className="text-sm sm:text-base">
-                We use cookies to enhance your experience.
-                {privacyPolicyUrl && (
-                  <>
-                    {' '}
-                    <a
-                      href={privacyPolicyUrl}
-                      className="link link-primary text-xs"
-                      aria-label="Privacy Policy"
-                    >
-                      Learn more
-                    </a>
-                  </>
-                )}
-              </p>
-            )}
-          </div>
+    <>
+      {/* Spacer to prevent fixed banner from overlapping footer content */}
+      <div className="h-14" aria-hidden="true" />
+      <div
+        role="region"
+        aria-label="Cookie consent banner"
+        aria-live="polite"
+        className={`fixed right-0 left-0 ${positionClasses} bg-base-100 border-base-300 z-[60] border-t-2 shadow-lg backdrop-blur-md ${className}`}
+      >
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            {/* Message Section - Compact */}
+            <div className="flex flex-1 items-center gap-2">
+              <span className="text-lg" role="img" aria-label="Cookie">
+                🍪
+              </span>
+              {customContent || (
+                <p className="text-sm sm:text-base">
+                  We use cookies to enhance your experience.
+                  {privacyPolicyUrl && (
+                    <>
+                      {' '}
+                      <a
+                        href={privacyPolicyUrl}
+                        className="link link-primary text-xs"
+                        aria-label="Privacy Policy"
+                      >
+                        Learn more
+                      </a>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
 
-          {/* Actions Section - Compact */}
-          <div className="flex gap-2" role="group" aria-label="Consent actions">
-            <button
-              onClick={handleAcceptAll}
-              className="btn btn-primary btn-sm"
-              aria-label="Accept all cookies"
+            {/* Actions Section - Compact */}
+            <div
+              className="flex gap-2"
+              role="group"
+              aria-label="Consent actions"
             >
-              Accept All
-            </button>
-            <button
-              onClick={handleCustomize}
-              className="btn btn-ghost btn-sm"
-              aria-label="Customize cookie preferences"
-            >
-              Settings
-            </button>
+              <button
+                onClick={handleAcceptAll}
+                className="btn btn-primary btn-sm"
+                aria-label="Accept all cookies"
+              >
+                Accept All
+              </button>
+              <button
+                onClick={handleCustomize}
+                className="btn btn-ghost btn-sm"
+                aria-label="Customize cookie preferences"
+              >
+                Settings
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

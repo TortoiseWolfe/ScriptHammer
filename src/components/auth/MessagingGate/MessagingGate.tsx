@@ -40,7 +40,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   // Not logged in - should be handled by auth middleware, but safety check
   if (!user) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
           <p className="text-base-content/85">

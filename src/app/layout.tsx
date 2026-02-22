@@ -127,7 +127,9 @@ export default function RootLayout({
               <CountdownBanner />
               <SetupBanner />
               <ErrorBoundary level="page">
-                <div className="min-h-0 flex-1 overflow-hidden">{children}</div>
+                <div className="min-h-0 flex-1 overflow-hidden pb-14">
+                  {children}
+                </div>
               </ErrorBoundary>
               <Footer />
               <CookieConsent />
