@@ -57,6 +57,8 @@ export default defineConfig({
       'tests/integration/auth/rate-limiting.integration.test.ts',
       'tests/integration/messaging/connections.test.ts',
       'src/tests/integration/payment-isolation.test.ts',
+      // Exclude admin contract tests requiring live Supabase with admin RPC functions
+      'tests/contract/admin/admin-access.contract.test.ts',
     ],
     coverage: {
       provider: 'v8',

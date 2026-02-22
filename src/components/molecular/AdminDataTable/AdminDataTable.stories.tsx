@@ -81,14 +81,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    columns: sampleColumns,
+    columns: sampleColumns as AdminDataTableColumn<Record<string, unknown>>[],
     data: sampleData,
   },
 };
 
 export const Empty: Story = {
   args: {
-    columns: sampleColumns,
+    columns: sampleColumns as AdminDataTableColumn<Record<string, unknown>>[],
     data: [],
     emptyMessage: 'No users found',
   },
@@ -96,7 +96,7 @@ export const Empty: Story = {
 
 export const Loading: Story = {
   args: {
-    columns: sampleColumns,
+    columns: sampleColumns as AdminDataTableColumn<Record<string, unknown>>[],
     data: [],
     isLoading: true,
   },
@@ -104,14 +104,14 @@ export const Loading: Story = {
 
 export const Sortable: Story = {
   args: {
-    columns: sortableColumns,
+    columns: sortableColumns as AdminDataTableColumn<Record<string, unknown>>[],
     data: sampleData,
   },
 };
 
 export const ThemeShowcase: Story = {
   args: {
-    columns: sampleColumns,
+    columns: sampleColumns as AdminDataTableColumn<Record<string, unknown>>[],
     data: sampleData,
   },
   render: (args) => (
