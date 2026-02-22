@@ -18,11 +18,11 @@ services:
       - CI=true
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
-      # Git author config for container-based commits
-      - GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-}
-      - GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-}
-      - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME:-}
-      - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL:-}
+      # Git author config for container-based commits (read from .env)
+      - GIT_AUTHOR_NAME
+      - GIT_AUTHOR_EMAIL
+      - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
+      - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
       interval: 30s
