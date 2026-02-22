@@ -440,7 +440,7 @@ Read these files to pick up the design system redesign:
 4. src/app/globals.css - Custom theme definitions (scripthammer-dark, scripthammer-light)
 
 Use superpowers:executing-plans to work through the implementation plan.
-Start at Phase 5 (rebuild molecular & organism components).
+Phases 0-6 complete. Next: final polish or new feature work.
 
 Key context:
 - Everything runs inside Docker: docker compose exec scripthammer <command>

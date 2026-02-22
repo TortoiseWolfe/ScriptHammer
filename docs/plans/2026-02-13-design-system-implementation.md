@@ -675,7 +675,7 @@ Each task: audit in Storybook, apply changes, verify a11y, commit.
 
 ---
 
-## Phase 5: Molecular & Organism Components
+## Phase 5: Molecular & Organism Components ✅ COMPLETE
 
 Tasks 25+ follow the same pattern for higher-level components:
 
@@ -688,7 +688,7 @@ Each audited in Storybook, updated, verified, committed.
 
 ---
 
-## Phase 6: Page-by-Page Polish
+## Phase 6: Page-by-Page Polish ✅ COMPLETE
 
 Tasks 30+ iterate through pages:
 
