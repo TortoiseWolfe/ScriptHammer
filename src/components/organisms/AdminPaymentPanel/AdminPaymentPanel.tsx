@@ -50,10 +50,11 @@ const columns: AdminDataTableColumn<TransactionRow>[] = [
     sortable: true,
     render: (row) => formatDate(row.created_at as string),
   },
-  { key: 'provider', label: 'Provider' },
+  { key: 'provider', label: 'Provider', sortable: true },
   {
     key: 'status',
     label: 'Status',
+    sortable: true,
     render: (row) => (
       <span className={statusBadgeClass[row.status as string] ?? 'badge'}>
         {row.status as string}
@@ -63,12 +64,14 @@ const columns: AdminDataTableColumn<TransactionRow>[] = [
   {
     key: 'charged_amount',
     label: 'Amount',
+    sortable: true,
     render: (row) => formatCents(row.charged_amount as number),
   },
-  { key: 'customer_email', label: 'Customer' },
+  { key: 'customer_email', label: 'Customer', sortable: true },
   {
     key: 'webhook_verified',
     label: 'Verified',
+    sortable: true,
     render: (row) =>
       row.webhook_verified ? (
         <span className="badge badge-success">Yes</span>

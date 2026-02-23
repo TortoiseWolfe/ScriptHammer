@@ -42,6 +42,7 @@ const columns: AdminDataTableColumn<UserRow>[] = [
   {
     key: 'display_name',
     label: 'Display Name',
+    sortable: true,
     render: (row) => (row.display_name as string) || 'N/A',
   },
   {
@@ -53,6 +54,7 @@ const columns: AdminDataTableColumn<UserRow>[] = [
   {
     key: 'welcome_message_sent',
     label: 'Welcome Sent',
+    sortable: true,
     render: (row) =>
       row.welcome_message_sent ? (
         <span className="badge badge-success">Yes</span>

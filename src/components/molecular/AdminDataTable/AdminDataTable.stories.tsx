@@ -21,7 +21,7 @@ const sortableColumns: AdminDataTableColumn<SampleUser>[] = [
   { key: 'name', label: 'Name', sortable: true },
   { key: 'email', label: 'Email', sortable: true },
   { key: 'role', label: 'Role', sortable: true },
-  { key: 'status', label: 'Status' },
+  { key: 'status', label: 'Status', sortable: true },
 ];
 
 const sampleData: SampleUser[] = [

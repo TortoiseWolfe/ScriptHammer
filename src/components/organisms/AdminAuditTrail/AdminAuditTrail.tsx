@@ -65,6 +65,7 @@ const columns: AdminDataTableColumn<EventRow>[] = [
   {
     key: 'event_type',
     label: 'Event Type',
+    sortable: true,
     render: (row) => (
       <span className="badge badge-outline">{row.event_type as string}</span>
     ),
@@ -72,6 +73,7 @@ const columns: AdminDataTableColumn<EventRow>[] = [
   {
     key: 'user_id',
     label: 'User ID',
+    sortable: true,
     render: (row) => (
       <span className="font-mono text-xs">
         {truncateId(row.user_id as string | null)}
@@ -81,6 +83,7 @@ const columns: AdminDataTableColumn<EventRow>[] = [
   {
     key: 'success',
     label: 'Success',
+    sortable: true,
     render: (row) =>
       row.success ? (
         <span className="badge badge-success">Yes</span>
@@ -91,6 +94,7 @@ const columns: AdminDataTableColumn<EventRow>[] = [
   {
     key: 'ip_address',
     label: 'IP Address',
+    sortable: true,
     render: (row) => (
       <span className="font-mono text-xs">
         {(row.ip_address as string) || 'N/A'}
