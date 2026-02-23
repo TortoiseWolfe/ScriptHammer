@@ -571,50 +571,52 @@ CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
   FOR INSERT WITH CHECK (true);
 
 -- Admin read-only policies (Feature: Admin Dashboard)
--- Each policy checks is_admin via user_profiles lookup
+-- Uses JWT custom claims from auth.users.raw_app_meta_data (Supabase RBAC best practice)
+-- NEVER subquery user_profiles from its own policy — causes infinite recursion
+-- Admin status is set via: UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
 CREATE POLICY "Admin can view all profiles" ON user_profiles
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles up WHERE up.id = auth.uid() AND up.is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all payment intents" ON payment_intents
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all payment results" ON payment_results
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all subscriptions" ON subscriptions
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view all connections" ON user_connections
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view conversation metadata" ON conversations
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 CREATE POLICY "Admin can view message metadata" ON messages
   FOR SELECT USING (
-    EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE)
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
 -- ============================================================================
@@ -630,7 +632,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
     RETURN '{}'::json;
   END IF;
 
@@ -665,7 +667,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
     RETURN '{}'::json;
   END IF;
 
@@ -700,7 +702,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
     RETURN '{}'::json;
   END IF;
 
@@ -723,7 +725,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin = TRUE) THEN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
     RETURN '{}'::json;
   END IF;
 
@@ -1451,6 +1453,10 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 
 -- Admin profile for system welcome messages (Feature 002)
 -- Fixed UUID: 00000000-0000-0000-0000-000000000001
+-- NOTE: Admin RLS policies use JWT claims from auth.users.raw_app_meta_data, NOT this column.
+-- To grant admin access to a real user, run:
+--   UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb WHERE id = '<user-uuid>';
+-- The is_admin column on user_profiles is for application-level queries only.
 INSERT INTO user_profiles (id, username, display_name, welcome_message_sent, is_admin)
 VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE, TRUE)
 ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
