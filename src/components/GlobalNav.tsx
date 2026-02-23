@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
+import { AdminAuthService } from '@/services/admin/admin-auth-service';
+import { createClient } from '@/lib/supabase/client';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -27,6 +29,17 @@ export function GlobalNav() {
     useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setIsAdmin(false);
+      return;
+    }
+    const supabase = createClient();
+    const service = new AdminAuthService(supabase);
+    service.checkIsAdmin(user.id).then(setIsAdmin);
+  }, [user?.id]);
 
   // Theme management
   useEffect(() => {
@@ -269,6 +282,11 @@ export function GlobalNav() {
                   <li>
                     <Link href="/messages?tab=connections">Connections</Link>
                   </li>
+                  {isAdmin && (
+                    <li>
+                      <Link href="/admin">Admin Dashboard</Link>
+                    </li>
+                  )}
                   <li>
                     <button
                       type="button"
@@ -369,6 +387,11 @@ export function GlobalNav() {
                     <li>
                       <Link href="/messages?tab=connections">Connections</Link>
                     </li>
+                    {isAdmin && (
+                      <li>
+                        <Link href="/admin">Admin Dashboard</Link>
+                      </li>
+                    )}
                     <li>
                       <button
                         type="button"

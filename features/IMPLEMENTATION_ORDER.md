@@ -1,7 +1,7 @@
 # ScriptHammer Feature Implementation Order
 
 **Generated**: 2025-12-30
-**Total Features**: 45
+**Total Features**: 46
 **All Issues Fixed**: 23/23 (P0, P1, P2, P3 resolved in feature files)
 
 ---
@@ -67,17 +67,25 @@ Payment integration must come before payment UIs.
 | 22    | **040** | Payment Retry UI      | 024        |
 | 23    | **041** | PayPal Subscriptions  | 024        |
 
+### Tier 4.5: Admin Dashboard
+
+Cross-cutting admin oversight across payments, auth, users, and messaging.
+
+| Order | Feature | Name            | Depends On         |
+| ----- | ------- | --------------- | ------------------ |
+| 24    | **046** | Admin Dashboard | 000, 003, 009, 024 |
+
 ### Tier 5: Content & Blog
 
 Blog features in dependency order.
 
 | Order | Feature | Name                    | Depends On |
 | ----- | ------- | ----------------------- | ---------- |
-| 24    | **010** | Unified Blog Content    | 002        |
-| 25    | **025** | Blog Social Features    | 010        |
-| 26    | **029** | SEO Editorial Assistant | 010        |
-| 27    | **022** | Web3Forms Integration   | 002        |
-| 28    | **023** | EmailJS Integration     | 002        |
+| 25    | **010** | Unified Blog Content    | 002        |
+| 26    | **025** | Blog Social Features    | 010        |
+| 27    | **029** | SEO Editorial Assistant | 010        |
+| 28    | **022** | Web3Forms Integration   | 002        |
+| 29    | **023** | EmailJS Integration     | 002        |
 
 ### Tier 6: Enhancements
 
@@ -85,12 +93,12 @@ PWA and accessibility enhancements.
 
 | Order | Feature | Name                 | Depends On |
 | ----- | ------- | -------------------- | ---------- |
-| 29    | **017** | Colorblind Mode      | 001        |
-| 30    | **018** | Font Switcher        | 001        |
-| 31    | **020** | PWA Background Sync  | -          |
-| 32    | **021** | Geolocation Map      | -          |
-| 33    | **028** | Enhanced Geolocation | 021        |
-| 34    | **030** | Calendar Integration | 003        |
+| 30    | **017** | Colorblind Mode      | 001        |
+| 31    | **018** | Font Switcher        | 001        |
+| 32    | **020** | PWA Background Sync  | -          |
+| 33    | **021** | Geolocation Map      | -          |
+| 34    | **028** | Enhanced Geolocation | 021        |
+| 35    | **030** | Calendar Integration | 003        |
 
 ### Tier 7: Polish
 
@@ -98,8 +106,8 @@ UX refinements (can be done any time after Tier 1).
 
 | Order | Feature | Name           | Depends On |
 | ----- | ------- | -------------- | ---------- |
-| 35    | **027** | UX Polish      | 002        |
-| 36    | **008** | On The Account | 003        |
+| 36    | **027** | UX Polish      | 002        |
+| 37    | **008** | On The Account | 003        |
 
 ### Tier 8: Testing
 
@@ -107,13 +115,13 @@ Implement AFTER the features they test.
 
 | Order | Feature | Name                    | Tests For |
 | ----- | ------- | ----------------------- | --------- |
-| 37    | **031** | Standardize Test Users  | 007       |
-| 38    | **032** | Signup E2E Tests        | 003, 007  |
-| 39    | **033** | SEO Library Tests       | 010, 029  |
-| 40    | **034** | Blog Library Tests      | 010       |
-| 41    | **035** | Messaging Service Tests | 009, 011  |
-| 42    | **036** | Auth Component Tests    | 003, 005  |
-| 43    | **037** | Game A11y Tests         | 001       |
+| 38    | **031** | Standardize Test Users  | 007       |
+| 39    | **032** | Signup E2E Tests        | 003, 007  |
+| 40    | **033** | SEO Library Tests       | 010, 029  |
+| 41    | **034** | Blog Library Tests      | 010       |
+| 42    | **035** | Messaging Service Tests | 009, 011  |
+| 43    | **036** | Auth Component Tests    | 003, 005  |
+| 44    | **037** | Game A11y Tests         | 001       |
 
 ### Tier 9: Third-Party Integrations
 
@@ -121,8 +129,8 @@ Must come AFTER 019 (consent framework).
 
 | Order | Feature | Name                       | Requires |
 | ----- | ------- | -------------------------- | -------- |
-| 44    | **044** | Error Handler Integrations | 019      |
-| 45    | **045** | Disqus Theme               | 019      |
+| 45    | **044** | Error Handler Integrations | 019      |
+| 46    | **045** | Disqus Theme               | 019      |
 
 ---
 
@@ -138,6 +146,9 @@ Must come AFTER 019 (consent framework).
                   │    039-Offline
                   │    040-Retry
                   │    041-PayPal
+                  │
+000 + 003 ────────┤
+009 + 024 ────────┴──> 046-Admin-Dashboard
                   │
 007-E2E ──────────┼──> 031-Test-Users
                   │    032-037 (all tests)
@@ -157,7 +168,7 @@ For parallel sprint implementation:
 | **Wave 1** | 000, 003, 007, 006, 002, 001      | Foundation              |
 | **Wave 2** | 005, 019, 020                     | Security & Consent      |
 | **Wave 3** | 009, 011, 012, 016, 013, 014, 015 | Messaging               |
-| **Wave 4** | 024, 042, 038, 039, 040, 041      | Payments                |
+| **Wave 4** | 024, 042, 038, 039, 040, 041, 046 | Payments & Admin        |
 | **Wave 5** | 010, 025, 029, 017, 018, 022, 023 | Content & A11y          |
 | **Wave 6** | 021, 028, 026, 027, 030, 008, 043 | Enhancements & Polish   |
 | **Wave 7** | 031, 032, 033, 034, 035, 036, 037 | Testing                 |
@@ -201,6 +212,13 @@ graph TD
         042 --> 039
         042 --> 040
         042 --> 041
+    end
+
+    subgraph Admin
+        000 --> 046[046-Admin-Dashboard]
+        003 --> 046
+        009 --> 046
+        024 --> 046
     end
 
     subgraph Blog
