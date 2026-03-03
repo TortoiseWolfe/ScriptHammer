@@ -14,6 +14,13 @@ describe('Project Configuration', () => {
   beforeEach(() => {
     // Reset environment for each test
     process.env = { ...originalEnv };
+    // Clear project-specific env vars so tests start from defaults.
+    // Docker injects .env values into container process.env, but Vitest
+    // doesn't load .env.local (only Next.js does), so we must clean manually.
+    delete process.env.NEXT_PUBLIC_BASE_PATH;
+    delete process.env.NEXT_PUBLIC_DEPLOY_URL;
+    delete process.env.NEXT_PUBLIC_PROJECT_NAME;
+    delete process.env.NEXT_PUBLIC_PROJECT_OWNER;
   });
 
   afterEach(() => {
