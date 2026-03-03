@@ -5,8 +5,8 @@
   "theme_color": "#1a1a2e",
   "background_color": "#1a1a2e",
   "display": "standalone",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/ScriptHammer/",
+  "scope": "/ScriptHammer/",
   "orientation": "portrait-primary",
   "categories": [
     "productivity",
@@ -17,61 +17,61 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/icon-72.svg",
+      "src": "/ScriptHammer/icon-72.svg",
       "sizes": "72x72",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-96.svg",
+      "src": "/ScriptHammer/icon-96.svg",
       "sizes": "96x96",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-128.svg",
+      "src": "/ScriptHammer/icon-128.svg",
       "sizes": "128x128",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-144.svg",
+      "src": "/ScriptHammer/icon-144.svg",
       "sizes": "144x144",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-152.svg",
+      "src": "/ScriptHammer/icon-152.svg",
       "sizes": "152x152",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-192.svg",
+      "src": "/ScriptHammer/icon-192.svg",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-384.svg",
+      "src": "/ScriptHammer/icon-384.svg",
       "sizes": "384x384",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-512.svg",
+      "src": "/ScriptHammer/icon-512.svg",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon-192x192-maskable.png",
+      "src": "/ScriptHammer/icon-192x192-maskable.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/icon-512x512-maskable.png",
+      "src": "/ScriptHammer/icon-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -79,14 +79,14 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/desktop.png",
+      "src": "/ScriptHammer/screenshots/desktop.png",
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Desktop view"
     },
     {
-      "src": "/screenshots/mobile.png",
+      "src": "/ScriptHammer/screenshots/mobile.png",
       "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
@@ -96,33 +96,33 @@
   "shortcuts": [
     {
       "name": "Components",
-      "url": "/components",
+      "url": "/ScriptHammer/components",
       "description": "View all components",
       "icons": [
         {
-          "src": "/icon-96.svg",
+          "src": "/ScriptHammer/icon-96.svg",
           "sizes": "96x96"
         }
       ]
     },
     {
       "name": "Contact",
-      "url": "/contact",
+      "url": "/ScriptHammer/contact",
       "description": "Send us a message",
       "icons": [
         {
-          "src": "/icon-96.svg",
+          "src": "/ScriptHammer/icon-96.svg",
           "sizes": "96x96"
         }
       ]
     },
     {
       "name": "Themes",
-      "url": "/themes",
+      "url": "/ScriptHammer/themes",
       "description": "Choose your theme",
       "icons": [
         {
-          "src": "/icon-96.svg",
+          "src": "/ScriptHammer/icon-96.svg",
           "sizes": "96x96"
         }
       ]
@@ -131,7 +131,7 @@
   "related_applications": [],
   "protocol_handlers": [],
   "share_target": {
-    "action": "/share",
+    "action": "/ScriptHammer/share",
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
