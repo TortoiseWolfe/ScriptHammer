@@ -1,0 +1,38 @@
+[17:07:55.116] [INFO] storybook v10.2.8
+[17:07:55.580] [DEBUG] Getting package.json info for /app/package.json...
+[17:07:55.581] [WARN] You are currently using Storybook [1m10.2.8[22m but you have packages which are incompatible with it:
+
+- @storybook/test@8.6.15 which depends on 8.6.15
+ Repo: https://github.com/storybookjs/storybook/tree/next/code/lib/test
+
+Please consider updating your packages or contacting the maintainers for compatibility details.
+
+For more details on compatibility guidance, see:
+https://github.com/storybookjs/storybook/issues/32836
+[17:07:56.351] [WARN] Looks like multiple favicons were detected. Using the first one.
+
+/app/public/favicon.svg, /app/public/favicon.ico
+[17:07:56.352] [DEBUG] Serving static files from [36mnode_modules/.pnpm/@chromatic-com+storybook@5.0.1_storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3._a8f36eaf74007dd6915deaf6e18b44f8/node_modules/@chromatic-com/storybook/assets[39m at [36m/addon-visual-tests-assets[39m
+[17:07:56.352] [DEBUG] Serving static files from [36mpublic[39m at [36m/[39m
+[17:07:56.370] [INFO] Starting...
+[17:07:56.372] [WARN] Looks like multiple favicons were detected. Using the first one.
+
+/app/public/favicon.svg, /app/public/favicon.ico
+[17:07:56.417] [WARN] unable to find package.json for react-leaflet
+[17:07:56.475] [WARN] No story files found for the specified pattern: [34msrc/**/*.mdx[39m
+[17:07:56.827] [DEBUG] Starting preview..
+[17:07:56.980] [DEBUG] Using tsconfig paths for react-docgen
+[17:07:57.262] [ERROR] Failed to build the preview
+[17:07:57.264] [ERROR] [38;2;241;97;97mReferenceError: __dirname is not defined[39m
+    at Object.viteFinal (file://./.storybook/main.ts:25:9)
+    at file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/_node-chunks/chunk-WF46L34H.js:10114:36
+    at async createViteServer (file://./node_modules/.pnpm/@storybook+builder-vite@10.2.8_esbuild@0.25.9_rollup@4.50.1_storybook@10.2.8_@testing-l_b5cc5c58560c3d65426d6f93e10690cf/node_modules/@storybook/builder-vite/dist/index.js:1898:21)
+    at async Module.start (file://./node_modules/.pnpm/@storybook+builder-vite@10.2.8_esbuild@0.25.9_rollup@4.50.1_storybook@10.2.8_@testing-l_b5cc5c58560c3d65426d6f93e10690cf/node_modules/@storybook/builder-vite/dist/index.js:1923:17)
+    at async storybookDevServer (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/core-server/index.js:7207:83)
+    at async buildOrThrow (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/core-server/index.js:4504:12)
+    at async buildDevStandalone (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/core-server/index.js:7577:66)
+    at async withTelemetry (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/_node-chunks/chunk-KIOKJLL5.js:218:12)
+    at async dev (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/bin/core.js:2734:3)
+    at async _Command.<anonymous> (file://./node_modules/.pnpm/storybook@10.2.8_@testing-library+dom@10.4.0_prettier@3.6.2_react-dom@19.1.0_react@19.1.0__react@19.1.0/node_modules/storybook/dist/bin/core.js:2803:92)
+[17:07:57.268] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.
