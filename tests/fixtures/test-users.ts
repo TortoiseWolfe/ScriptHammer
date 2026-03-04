@@ -10,10 +10,47 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
-// Test configuration
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+// Test configuration — read without non-null assertion so we can gate
+// cleanly when infra is absent rather than failing with an opaque
+// "Invalid API key" deep inside the Supabase client.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+/**
+ * Reports whether the current environment can run live RLS tests.
+ *
+ * RLS tests exercise real Postgres row-level-security policies. They need a
+ * running Supabase instance AND the service-role key (to create/delete test
+ * users via the admin API). CI does not provide these; the local
+ * `docker compose --profile supabase` stack does.
+ *
+ * Usage in test files:
+ *   describe.skipIf(!hasRlsTestEnvironment())('RLS: ...', () => { ... })
+ *
+ * This keeps security tests visible in CI output as "skipped" rather than
+ * invisibly excluded, so reviewers know they exist.
+ */
+export function hasRlsTestEnvironment(): boolean {
+  return Boolean(
+    SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY
+  );
+}
+
+/** Human-readable explanation for why RLS tests were skipped. */
+export const RLS_SKIP_REASON =
+  'RLS tests require a live Supabase instance and SUPABASE_SERVICE_ROLE_KEY. ' +
+  'Run `docker compose --profile supabase up` then `pnpm test:rls`.';
+
+function requireEnv(value: string | undefined, name: string): string {
+  if (!value) {
+    throw new Error(
+      `${name} is not set. ${RLS_SKIP_REASON} ` +
+        `(Did you forget to gate with describe.skipIf(!hasRlsTestEnvironment())?)`
+    );
+  }
+  return value;
+}
 
 /**
  * Test user credentials
@@ -46,19 +83,26 @@ export const TEST_USERS = {
  * Creates a Supabase client with anon key (for unauthenticated tests)
  */
 export function createAnonClient() {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+  return createClient<Database>(
+    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv(SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  );
 }
 
 /**
  * Creates a Supabase client with service role (bypasses RLS)
  */
 export function createServiceClient() {
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  return createClient<Database>(
+    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv(SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
 }
 
 /**
@@ -78,7 +122,10 @@ export async function createAuthenticatedClient(
   email: string,
   password: string
 ) {
-  const client = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const client = createClient<Database>(
+    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv(SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  );
 
   const { error } = await client.auth.signInWithPassword({
     email,

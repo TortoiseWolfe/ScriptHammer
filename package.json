@@ -68,6 +68,8 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
     "test:suite": "./scripts/test-suite.sh",
+    "test:scripts": "node --test --test-reporter=spec scripts/__tests__/*.test.js scripts/__tests__/contract/*.test.js scripts/__tests__/integration/*.test.js",
+    "test:rls": "vitest run tests/rls/",
     "test:quick": "pnpm run type-check && pnpm run lint && pnpm test -- --run",
     "test:pwa": "node scripts/test-pwa.js",
     "test:pwa:verbose": "node scripts/test-pwa.js --verbose",

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
+import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
 import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
@@ -176,8 +177,12 @@ export function GlobalNav() {
                   className="drop-shadow-sm"
                 />
               </div>
-              <span className="hidden text-xl font-bold sm:block">
-                {detectedConfig.projectName}
+              <span className="hidden sm:block">
+                <AnimatedLogo
+                  text={detectedConfig.projectName}
+                  className="!text-xl font-bold"
+                  animationSpeed="normal"
+                />
               </span>
             </Link>
           </div>

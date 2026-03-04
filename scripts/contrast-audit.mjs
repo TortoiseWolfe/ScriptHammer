@@ -32,8 +32,20 @@ const REPORT_PATH = '/tmp/contrast-audit-report.json';
 const RENDER_WAIT_MS = 1000;
 
 const TEXT_SELECTORS = [
-  'p', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'a', 'button', 'label', 'li', 'td', 'th',
+  'p',
+  'span',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'a',
+  'button',
+  'label',
+  'li',
+  'td',
+  'th',
 ];
 
 // AA and AAA thresholds for normal text (WCAG 2.1).
@@ -54,7 +66,7 @@ function parseCssColor(raw) {
   }
 
   const rgbaMatch = raw.match(
-    /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/,
+    /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/
   );
   if (rgbaMatch) {
     return {
@@ -126,7 +138,7 @@ function collectElementData(selectors) {
   function _parse(raw) {
     if (!raw || raw === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
     const m = raw.match(
-      /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/,
+      /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/
     );
     if (m) {
       return {
@@ -230,7 +242,11 @@ function collectElementData(selectors) {
     if (rect.width === 0 || rect.height === 0) continue;
 
     const style = window.getComputedStyle(el);
-    if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) {
+    if (
+      style.display === 'none' ||
+      style.visibility === 'hidden' ||
+      parseFloat(style.opacity) === 0
+    ) {
       continue;
     }
 
@@ -251,7 +267,9 @@ function collectElementData(selectors) {
       bg: bgResolved,
       fgRaw: { r: fgRaw.r, g: fgRaw.g, b: fgRaw.b, a: fgRaw.a },
       bgRaw: bgResolved,
-      selector: el.tagName.toLowerCase() + (el.className ? '.' + [...el.classList].join('.') : ''),
+      selector:
+        el.tagName.toLowerCase() +
+        (el.className ? '.' + [...el.classList].join('.') : ''),
     });
   }
 
@@ -265,7 +283,9 @@ function collectElementData(selectors) {
 async function fetchStoryIds() {
   const res = await fetch(INDEX_URL);
   if (!res.ok) {
-    throw new Error(`Failed to fetch Storybook index: ${res.status} ${res.statusText}`);
+    throw new Error(
+      `Failed to fetch Storybook index: ${res.status} ${res.statusText}`
+    );
   }
   const data = await res.json();
 
@@ -292,7 +312,11 @@ async function auditPage(page, storyId, theme) {
   try {
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
   } catch (err) {
-    return { error: `Navigation failed: ${err.message}`, failures, elementsChecked: 0 };
+    return {
+      error: `Navigation failed: ${err.message}`,
+      failures,
+      elementsChecked: 0,
+    };
   }
 
   // Allow time for theme styles & animations to settle.
@@ -302,7 +326,11 @@ async function auditPage(page, storyId, theme) {
   try {
     elements = await page.evaluate(collectElementData, TEXT_SELECTORS);
   } catch (err) {
-    return { error: `Evaluate failed: ${err.message}`, failures, elementsChecked: 0 };
+    return {
+      error: `Evaluate failed: ${err.message}`,
+      failures,
+      elementsChecked: 0,
+    };
   }
 
   for (const el of elements) {
@@ -398,7 +426,7 @@ async function main() {
       const pct = ((completed / totalCombinations) * 100).toFixed(1);
       process.stdout.write(
         `\r  [${completed}/${totalCombinations}] (${pct}%) Auditing: ${storyId} @ ${theme}` +
-          ' '.repeat(20),
+          ' '.repeat(20)
       );
 
       const result = await auditPage(page, storyId, theme);
@@ -484,18 +512,20 @@ async function main() {
 
   if (allFailures.length > 0) {
     // Show the worst offenders (lowest contrast ratio first).
-    const sorted = [...allFailures].sort((a, b) => a.contrastRatio - b.contrastRatio);
+    const sorted = [...allFailures].sort(
+      (a, b) => a.contrastRatio - b.contrastRatio
+    );
     const top = sorted.slice(0, 15);
     console.log('  Worst offenders (up to 15):');
     console.log('  ' + '-'.repeat(68));
     for (const f of top) {
       console.log(
         `    ${f.contrastRatio.toFixed(2).padStart(5)}:1  [${f.level.padEnd(8)}]  ` +
-          `${f.storyId} @ ${f.theme}`,
+          `${f.storyId} @ ${f.theme}`
       );
       console.log(
         `             <${f.tag}> "${f.text.substring(0, 50)}"  ` +
-          `fg=${f.foreground}  bg=${f.background}`,
+          `fg=${f.foreground}  bg=${f.background}`
       );
     }
     console.log();

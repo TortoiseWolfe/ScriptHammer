@@ -53,3 +53,7 @@ src/lib/blog/blog-data.json
 public/feed.json
 public/manifest.json
 public/blog-manifest.json
+
+# Runtime test fixtures — created/deleted by node:test beforeEach/afterEach
+# (see scripts/__tests__/fixtures/README.md). Not hand-maintained source.
+scripts/__tests__/fixtures/

@@ -75,3 +75,8 @@ docs/visual-testing/
 # Test screenshots
 screenshots/
 mobile-check.png
+
+# Runtime test fixtures — created by node:test beforeEach, deleted by afterEach.
+# If afterEach fails they linger; never commit them (see fixtures/README.md).
+scripts/__tests__/fixtures/*
+!scripts/__tests__/fixtures/README.md

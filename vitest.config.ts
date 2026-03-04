@@ -44,11 +44,9 @@ export default defineConfig({
       'tests/integration/avatar/upload-flow.integration.test.ts', // 4 tests - requires real browser
       // Exclude messaging schema verification - hits real Supabase, rate limit / transient failures
       'tests/integration/messaging/database-setup.test.ts', // DB schema verification - run manually after migrations
-      // Exclude RLS tests requiring service role key
-      'tests/rls/anonymous-access.test.ts',
-      'tests/rls/audit-immutability.test.ts',
-      'tests/rls/service-role.test.ts',
-      'tests/rls/user-isolation.test.ts',
+      // NOTE: tests/rls/** self-gate via describe.skipIf(!hasRlsTestEnvironment())
+      // so they show as "skipped" in CI instead of being invisibly excluded here.
+      // Run them locally with: docker compose --profile supabase up && pnpm test:rls
       // Exclude remaining contract/integration tests requiring service role key
       'tests/contract/auth/sign-out.contract.test.ts',
       'tests/contract/auth/sign-in.contract.test.ts',
@@ -81,12 +79,74 @@ export default defineConfig({
         '**/*.accessibility.test.*',
         'tests/**',
         'scripts/**',
+        // Next.js route files — integration-level, covered by E2E not unit tests
+        '**/app/**/page.tsx',
+        '**/app/**/layout.tsx',
+        '**/app/**/loading.tsx',
+        '**/app/**/error.tsx',
+        '**/app/**/not-found.tsx',
+        '**/app/**/template.tsx',
+        '**/app/**/global-error.tsx',
+        '**/app/api/**',
+        '**/middleware.ts',
+        // Barrel exports (re-exports only)
+        '**/index.tsx',
+        '**/index.ts',
+        // Service worker and PWA runtime
+        '**/sw-register.ts',
+        '**/service-worker/**',
+        // Type-only and declaration files
+        '**/types/**',
+        '**/types.ts',
+        '**/*.d.ts',
+        // Context providers — thin React wrappers, tested via component integration
+        '**/contexts/**',
+        // Mocks
+        '**/mocks/**',
+        // Config/generated files
+        'plopfile.js',
+        '**/config/project-detected.ts',
+        // Static config/data files (no logic to test)
+        'src/config/**',
+        // Docs/specs contract stubs (design artifacts, not runtime code)
+        'docs/**',
+        'specs/**',
+        'supabase/**',
+        // Pages directory (legacy, not used with App Router)
+        'src/pages/**',
+        // Browser-only APIs not available in jsdom
+        '**/utils/pwa-test.ts',
+        '**/utils/web-vitals.ts',
+        '**/utils/performance.ts',
+        '**/PWAInstall.tsx',
+        '**/useOfflineStatus.ts',
+        '**/useNetworkStatus.ts',
+        '**/ThemeScript.tsx',
+        '**/theme/ThemeSwitcher.tsx',
+        // Server-only Supabase (requires Node runtime, not jsdom)
+        '**/lib/supabase/server.ts',
+        '**/lib/auth/protected-route.tsx',
+        // Third-party widget wrappers (Disqus, etc.)
+        '**/DisqusComments.tsx',
+        // Map components (require Leaflet/browser geolocation)
+        '**/map/**',
+        // Calendar provider wrappers (third-party embeds)
+        '**/calendar/**',
+        // Payment SDK wrappers (require live Stripe/PayPal)
+        '**/payments/**',
+        // Admin services (require live Supabase with RPC functions)
+        '**/services/admin/**',
+        // Test utilities (not application code)
+        '**/utils/test-utils.ts',
+        // Error boundaries (tested via E2E, need real error propagation)
+        '**/ErrorBoundary.tsx',
+        '**/error-boundary.tsx',
       ],
       thresholds: {
-        statements: 25,
-        branches: 25,
-        functions: 25,
-        lines: 25,
+        statements: 60,
+        branches: 60,
+        functions: 60,
+        lines: 60,
       },
     },
   },
