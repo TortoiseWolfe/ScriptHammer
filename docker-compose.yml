@@ -1,13 +1,51 @@
+# ScriptHammer — Multi-Instance Development Stack
+#
+# Run two instances side-by-side (A/B testing):
+#   Instance A:   docker compose up
+#   Instance B:   docker compose -p scripthammer-b up
+#
+# Host ports auto-assign (see the `:-0` defaults below). Find yours with:
+#   docker compose [-p <name>] port scripthammer 3000
+#
+# Optional Supabase stack:
+#   docker compose --profile supabase up
+#
+# All resources (volumes, networks, containers) are prefixed by the project
+# name below. Change COMPOSE_PROJECT_NAME in .env to isolate instances that
+# share a checkout directory.
+
+name: ${COMPOSE_PROJECT_NAME:-scripthammer}
+
+x-supabase-env: &supabase-env
+  # Demo keys from Supabase self-hosting docs — LOCAL DEV ONLY, never deploy.
+  # https://supabase.com/docs/guides/self-hosting/docker
+  JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+  ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+  SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}
+
 services:
+  # ──────────────────────────────────────────────────────────────────────
+  # Next.js app
+  # ──────────────────────────────────────────────────────────────────────
   scripthammer:
     build:
       context: .
       dockerfile: docker/Dockerfile
       target: dev
+    # Host port 0 = Docker picks a free one. The prior `:-3000` default was
+    # a footgun: two `docker compose up` invocations from the same checkout
+    # both resolved to 3000 and collided. 0 means "any instance from this
+    # file gets a non-conflicting host port with zero config." Pin a port by
+    # setting SH_PORT=3000 in .env — that's opt-in per instance, not
+    # mandatory per collision.
+    #
+    # Discover where you landed:
+    #   docker compose port scripthammer 3000   → 127.0.0.1:49171 (or wherever)
     ports:
-      - '127.0.0.1:3000:3000'
-      - '127.0.0.1:6006:6006'
-      - '127.0.0.1:24678:24678' # Next.js HMR websocket
+      - '127.0.0.1:${SH_PORT:-0}:3000'
+      - '127.0.0.1:${SH_STORYBOOK_PORT:-0}:6006'
+      - '127.0.0.1:${SH_HMR_PORT:-0}:24678'
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -18,7 +56,6 @@ services:
       - CI=true
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
-      # Git author config for container-based commits (read from .env)
       - GIT_AUTHOR_NAME
       - GIT_AUTHOR_EMAIL
       - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
@@ -31,26 +68,288 @@ services:
       start_period: 40s
     init: true
     restart: unless-stopped
-    networks:
-      - scripthammer-network
 
-  # Future services can be added here
-  # db:
-  #   image: postgres:16-alpine
-  #   environment:
-  #     POSTGRES_DB: scripthammer
-  #     POSTGRES_USER: scripthammer
-  #     POSTGRES_PASSWORD: scripthammer
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - scripthammer-network
+  # ──────────────────────────────────────────────────────────────────────
+  # Supabase — optional local stack (profile: supabase)
+  #
+  # When active, set in .env:
+  #   NEXT_PUBLIC_SUPABASE_URL=http://supabase-kong:8000
+  #   NEXT_PUBLIC_SUPABASE_ANON_KEY=<demo anon key above>
+  # ──────────────────────────────────────────────────────────────────────
 
-networks:
-  scripthammer-network:
-    driver: bridge
+  supabase-db:
+    profiles: [supabase]
+    image: supabase/postgres:15.8.1.060
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${SH_DB_PORT:-54322}:5432'
+    environment:
+      <<: *supabase-env
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      PGPORT: 5432
+      PGDATABASE: postgres
+      POSTGRES_DB: postgres
+      JWT_EXP: 3600
+    command:
+      - postgres
+      - -c
+      - config_file=/etc/postgresql/postgresql.conf
+      - -c
+      - log_min_messages=fatal
+    volumes:
+      - supabase_db:/var/lib/postgresql/data
+      # /etc/postgresql.schema.sql is a hard-coded postinit hook inside the
+      # supabase/postgres image -- migrate.sh runs it as supabase_admin after
+      # everything else. Role passwords + _realtime schema + auth ownership.
+      # Without this file, auth/rest/realtime/storage all crash-loop on a
+      # fresh volume. See the header of roles.sql for the gory details.
+      - ./docker/supabase/roles.sql:/etc/postgresql.schema.sql:ro
+      # Mount the monolithic as a FILE, not the whole ./supabase/migrations/
+      # dir. Two separate bugs fixed by this one line:
+      #
+      #  (1) A directory bind mount SHADOWS the 38 migrations the image bakes
+      #      into /docker-entrypoint-initdb.d/migrations/ -- demote-postgres,
+      #      create-realtime-schema, update-auth-owner, pg_graphql, vault,
+      #      all of it. With those shadowed, GoTrue can't CREATE OR REPLACE
+      #      auth.uid() (42501 not owner) and Realtime has no schema at all
+      #      (3F000). This profile could never have worked.
+      #
+      #  (2) The host dir also holds 00000000000000_rls_foundation.sql
+      #      (creates on_auth_user_created first -> monolithic :421 re-creates
+      #      it and crashes), 999_drop_all_tables.sql (header: "WARNING: This
+      #      script will DELETE EVERYTHING"), and seed-test-user-b.sql.
+      #      migrate.sh globs migrations/*.sql alphabetically with
+      #      ON_ERROR_STOP=1; the first error poisons the volume.
+      #
+      # 99999999999999_ sorts after the last baked migration (20250312...).
+      # App schema lands AFTER platform bootstrap, not in the middle of it.
+      - ./supabase/migrations/20251006_complete_monolithic_setup.sql:/docker-entrypoint-initdb.d/migrations/99999999999999_app_monolithic.sql:ro
+      - ./supabase/seed.sql:/docker-entrypoint-initdb.d/seed.sql:ro
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-kong:
+    profiles: [supabase]
+    image: kong:2.8.1
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${SH_SUPABASE_API_PORT:-54321}:8000'
+    environment:
+      <<: *supabase-env
+      KONG_DATABASE: 'off'
+      KONG_DECLARATIVE_CONFIG: /home/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl,basic-auth
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 64 160k
+      DASHBOARD_USERNAME: ${SUPABASE_DASHBOARD_USER:-supabase}
+      DASHBOARD_PASSWORD: ${SUPABASE_DASHBOARD_PASS:-this_password_is_insecure_and_should_be_updated}
+    volumes:
+      - ./docker/supabase/kong.yml:/home/kong/kong.tpl.yml:ro
+    entrypoint: >
+      sh -c '
+        set -e
+        eval "echo \"$$(cat /home/kong/kong.tpl.yml)\"" > /home/kong/kong.yml
+        exec /docker-entrypoint.sh kong docker-start
+      '
+
+  supabase-auth:
+    profiles: [supabase]
+    image: supabase/gotrue:v2.177.0
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      <<: *supabase-env
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: http://localhost:${SH_SUPABASE_API_PORT:-54321}
+      GOTRUE_SITE_URL: http://localhost:${SH_PORT:-3000}
+      GOTRUE_URI_ALLOW_LIST: '*'
+      GOTRUE_DISABLE_SIGNUP: 'false'
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
+      GOTRUE_MAILER_AUTOCONFIRM: 'true'
+      GOTRUE_SMTP_HOST: supabase-mail
+      GOTRUE_SMTP_PORT: 1025
+      GOTRUE_SMTP_ADMIN_EMAIL: admin@example.com
+      GOTRUE_SMTP_SENDER_NAME: Supabase
+      GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
+      GOTRUE_SMS_AUTOCONFIRM: 'true'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:9999/health',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-rest:
+    profiles: [supabase]
+    image: postgrest/postgrest:v12.2.12
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage,graphql_public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_DB_USE_LEGACY_GUCS: 'false'
+      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+
+  supabase-realtime:
+    profiles: [supabase]
+    image: supabase/realtime:v2.34.47
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: supabase-db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: supabaserealtime
+      API_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      SECRET_KEY_BASE: ${SUPABASE_REALTIME_SECRET:-0123456789012345678901234567890123456789012345678901234567890123}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      DNS_NODES: "''"
+      RLIMIT_NOFILE: '10000'
+      APP_NAME: realtime
+      SEED_SELF_HOST: 'true'
+      RUN_JANITOR: 'true'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-sSfL',
+          '--head',
+          '-o',
+          '/dev/null',
+          'http://localhost:4000/api/tenants/realtime-dev/health',
+          '-H',
+          'Authorization: Bearer ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-storage:
+    profiles: [supabase]
+    image: supabase/storage-api:v1.25.7
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+      supabase-rest:
+        condition: service_started
+    environment:
+      <<: *supabase-env
+      POSTGREST_URL: http://supabase-rest:3000
+      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+      ENABLE_IMAGE_TRANSFORMATION: 'false'
+    volumes:
+      - supabase_storage:/var/lib/storage
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'wget',
+          '--no-verbose',
+          '--tries=1',
+          '--spider',
+          'http://localhost:5000/status',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  supabase-meta:
+    profiles: [supabase]
+    image: supabase/postgres-meta:v0.91.0
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: supabase-db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}
+
+  supabase-studio:
+    profiles: [supabase]
+    image: supabase/studio:2025.06.30-sha-6f5982d
+    restart: unless-stopped
+    depends_on:
+      - supabase-kong
+      - supabase-meta
+    ports:
+      - '127.0.0.1:${SH_SUPABASE_STUDIO_PORT:-54323}:3000'
+    environment:
+      <<: *supabase-env
+      STUDIO_PG_META_URL: http://supabase-meta:8080
+      DEFAULT_ORGANIZATION_NAME: ScriptHammer
+      DEFAULT_PROJECT_NAME: Local
+      SUPABASE_URL: http://supabase-kong:8000
+      SUPABASE_PUBLIC_URL: http://localhost:${SH_SUPABASE_API_PORT:-54321}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q}
+      NEXT_PUBLIC_ENABLE_LOGS: 'false'
+      NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
+
+  supabase-mail:
+    profiles: [supabase]
+    image: axllent/mailpit:v1.22
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${SH_SUPABASE_MAIL_PORT:-54324}:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+      MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
 
 volumes:
-  postgres_data:
   node_modules:
+    name: '${COMPOSE_PROJECT_NAME:-scripthammer}_node_modules'
   next_cache:
+    name: '${COMPOSE_PROJECT_NAME:-scripthammer}_next_cache'
+  supabase_db:
+    name: '${COMPOSE_PROJECT_NAME:-scripthammer}_supabase_db'
+  supabase_storage:
+    name: '${COMPOSE_PROJECT_NAME:-scripthammer}_supabase_storage'

@@ -27,8 +27,8 @@ function getStoryIds() {
   const indexPath = join(STORYBOOK_DIR, 'index.json');
   const index = JSON.parse(readFileSync(indexPath, 'utf-8'));
   return Object.values(index.entries || index.stories || {})
-    .filter(s => s.type === 'story')
-    .map(s => ({ id: s.id, title: s.title, name: s.name }));
+    .filter((s) => s.type === 'story')
+    .map((s) => ({ id: s.id, title: s.title, name: s.name }));
 }
 
 function checkServer() {
@@ -44,16 +44,20 @@ async function main() {
   const serverReady = await checkServer();
   if (!serverReady) {
     console.error(`Server not running on port ${PORT}. Start it first:`);
-    console.error(`  docker compose exec -d scripthammer npx http-server /tmp/storybook-static -p ${PORT} -s`);
+    console.error(
+      `  docker compose exec -d scripthammer npx http-server /tmp/storybook-static -p ${PORT} -s`
+    );
     process.exit(1);
   }
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
 
   const stories = getStoryIds();
-  const atomicStories = stories.filter(s => s.title.includes('/Atomic/'));
+  const atomicStories = stories.filter((s) => s.title.includes('/Atomic/'));
   const total = atomicStories.length * THEMES.length;
-  console.log(`Auditing ${atomicStories.length} atomic stories × ${THEMES.length} themes = ${total} screenshots`);
+  console.log(
+    `Auditing ${atomicStories.length} atomic stories × ${THEMES.length} themes = ${total} screenshots`
+  );
 
   const browser = await chromium.launch({
     executablePath: '/usr/bin/chromium',
@@ -66,38 +70,55 @@ async function main() {
     const themeDir = join(OUTPUT_DIR, theme);
     mkdirSync(themeDir, { recursive: true });
 
-    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const context = await browser.newContext({
+      viewport: { width: 1280, height: 900 },
+    });
     const page = await context.newPage();
 
     for (const story of atomicStories) {
       const url = `${BASE_URL}/iframe.html?id=${story.id}&viewMode=story`;
       try {
         await page.goto(url, { waitUntil: 'networkidle', timeout: 15000 });
-        await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), theme);
+        await page.evaluate(
+          (t) => document.documentElement.setAttribute('data-theme', t),
+          theme
+        );
         await page.waitForTimeout(300);
 
         // innerText returns only visible text (textContent includes hidden fallback elements)
-        const hasNoPreview = await page.evaluate(() =>
-          document.body.innerText?.includes('No Preview') ?? false
+        const hasNoPreview = await page.evaluate(
+          () => document.body.innerText?.includes('No Preview') ?? false
         );
 
         const filename = `${story.title.replace(/\//g, '--')}--${story.name}.png`;
-        await page.screenshot({ path: join(themeDir, filename), fullPage: true });
+        await page.screenshot({
+          path: join(themeDir, filename),
+          fullPage: true,
+        });
 
         if (hasNoPreview) {
           issues.push({ theme, story: story.id, error: 'No Preview rendered' });
-          console.log(`  ? ${theme} | ${story.title} > ${story.name} — No Preview`);
+          console.log(
+            `  ? ${theme} | ${story.title} > ${story.name} — No Preview`
+          );
         } else {
           const a11yIssues = await page.evaluate(() => {
             const problems = [];
-            document.querySelectorAll('button, a, span, p, h1, h2, h3, label').forEach(el => {
-              const style = window.getComputedStyle(el);
-              const color = style.color;
-              const bg = style.backgroundColor;
-              if (color === bg && color !== 'rgba(0, 0, 0, 0)') {
-                problems.push({ tag: el.tagName, text: el.textContent?.slice(0, 30), color, bg });
-              }
-            });
+            document
+              .querySelectorAll('button, a, span, p, h1, h2, h3, label')
+              .forEach((el) => {
+                const style = window.getComputedStyle(el);
+                const color = style.color;
+                const bg = style.backgroundColor;
+                if (color === bg && color !== 'rgba(0, 0, 0, 0)') {
+                  problems.push({
+                    tag: el.tagName,
+                    text: el.textContent?.slice(0, 30),
+                    color,
+                    bg,
+                  });
+                }
+              });
             return problems;
           });
 
@@ -108,7 +129,9 @@ async function main() {
           console.log(`  ✓ ${theme} | ${story.title} > ${story.name}`);
         }
       } catch (err) {
-        console.log(`  ✗ ${theme} | ${story.title} > ${story.name} — ${err.message}`);
+        console.log(
+          `  ✗ ${theme} | ${story.title} > ${story.name} — ${err.message}`
+        );
         issues.push({ theme, story: story.id, error: err.message });
       }
     }
@@ -125,7 +148,11 @@ async function main() {
 
   if (issues.length > 0) {
     console.log('\nISSUES:');
-    issues.forEach(i => console.log(` - ${i.theme} | ${i.story}: ${JSON.stringify(i.issues || i.error)}`));
+    issues.forEach((i) =>
+      console.log(
+        ` - ${i.theme} | ${i.story}: ${JSON.stringify(i.issues || i.error)}`
+      )
+    );
   }
 
   const report = {
@@ -136,14 +163,17 @@ async function main() {
     successfulRenders: successCount,
     issues,
   };
-  writeFileSync(join(OUTPUT_DIR, 'audit-report.json'), JSON.stringify(report, null, 2));
+  writeFileSync(
+    join(OUTPUT_DIR, 'audit-report.json'),
+    JSON.stringify(report, null, 2)
+  );
   console.log(`\nReport: ${OUTPUT_DIR}/audit-report.json`);
 
   for (const theme of THEMES) {
     const dir = join(OUTPUT_DIR, theme);
     const files = readdirSync(dir);
     console.log(`\n${theme}/ (${files.length} screenshots):`);
-    files.forEach(f => console.log(`  ${f}`));
+    files.forEach((f) => console.log(`  ${f}`));
   }
 }
 

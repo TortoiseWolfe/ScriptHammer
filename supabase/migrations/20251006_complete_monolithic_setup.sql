@@ -32,7 +32,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================================
 
 -- Payment intents (24hr expiry)
-CREATE TABLE payment_intents (
+CREATE TABLE IF NOT EXISTS payment_intents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_user_id UUID NOT NULL REFERENCES auth.users(id),
   amount INTEGER NOT NULL CHECK (amount >= 100 AND amount <= 99999),
@@ -46,15 +46,15 @@ CREATE TABLE payment_intents (
   expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours')
 );
 
-CREATE INDEX idx_payment_intents_customer_email ON payment_intents(customer_email);
-CREATE INDEX idx_payment_intents_created_at ON payment_intents(created_at DESC);
-CREATE INDEX idx_payment_intents_user_id ON payment_intents(template_user_id);
-CREATE INDEX idx_payment_intents_expires_at ON payment_intents(expires_at);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_customer_email ON payment_intents(customer_email);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_created_at ON payment_intents(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_user_id ON payment_intents(template_user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_intents_expires_at ON payment_intents(expires_at);
 
 COMMENT ON TABLE payment_intents IS 'Customer payment intentions before provider redirect (24hr expiry)';
 
 -- Payment results
-CREATE TABLE payment_results (
+CREATE TABLE IF NOT EXISTS payment_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   intent_id UUID NOT NULL REFERENCES payment_intents(id) ON DELETE CASCADE,
   provider TEXT NOT NULL CHECK (provider IN ('stripe', 'paypal', 'cashapp', 'chime')),
@@ -71,15 +71,15 @@ CREATE TABLE payment_results (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_payment_results_intent_id ON payment_results(intent_id);
-CREATE INDEX idx_payment_results_transaction_id ON payment_results(transaction_id);
-CREATE INDEX idx_payment_results_status ON payment_results(status);
-CREATE INDEX idx_payment_results_created_at ON payment_results(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_payment_results_intent_id ON payment_results(intent_id);
+CREATE INDEX IF NOT EXISTS idx_payment_results_transaction_id ON payment_results(transaction_id);
+CREATE INDEX IF NOT EXISTS idx_payment_results_status ON payment_results(status);
+CREATE INDEX IF NOT EXISTS idx_payment_results_created_at ON payment_results(created_at DESC);
 
 COMMENT ON TABLE payment_results IS 'Outcome of payment attempts with webhook verification';
 
 -- Subscriptions
-CREATE TABLE subscriptions (
+CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_user_id UUID NOT NULL REFERENCES auth.users(id),
   provider TEXT NOT NULL CHECK (provider IN ('stripe', 'paypal')),
@@ -100,15 +100,15 @@ CREATE TABLE subscriptions (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_subscriptions_customer_email ON subscriptions(customer_email);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
-CREATE INDEX idx_subscriptions_next_billing_date ON subscriptions(next_billing_date) WHERE status = 'active';
-CREATE UNIQUE INDEX idx_subscriptions_provider_id ON subscriptions(provider, provider_subscription_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_customer_email ON subscriptions(customer_email);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_next_billing_date ON subscriptions(next_billing_date) WHERE status = 'active';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_provider_id ON subscriptions(provider, provider_subscription_id);
 
 COMMENT ON TABLE subscriptions IS 'Recurring payment subscriptions';
 
 -- Payment provider config
-CREATE TABLE payment_provider_config (
+CREATE TABLE IF NOT EXISTS payment_provider_config (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL CHECK (provider IN ('stripe', 'paypal', 'cashapp', 'chime')),
   enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -120,12 +120,12 @@ CREATE TABLE payment_provider_config (
   UNIQUE(provider)
 );
 
-CREATE INDEX idx_provider_config_enabled ON payment_provider_config(enabled, priority DESC);
+CREATE INDEX IF NOT EXISTS idx_provider_config_enabled ON payment_provider_config(enabled, priority DESC);
 
 COMMENT ON TABLE payment_provider_config IS 'Payment provider settings and failover';
 
 -- Webhook events (with retry fields from Feature 017)
-CREATE TABLE webhook_events (
+CREATE TABLE IF NOT EXISTS webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL CHECK (provider IN ('stripe', 'paypal')),
   provider_event_id TEXT NOT NULL,
@@ -147,11 +147,11 @@ CREATE TABLE webhook_events (
   last_retry_at TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX idx_webhook_events_provider_event_id ON webhook_events(provider, provider_event_id);
-CREATE INDEX idx_webhook_events_processed ON webhook_events(processed, created_at DESC);
-CREATE INDEX idx_webhook_events_event_type ON webhook_events(event_type);
-CREATE INDEX idx_webhook_events_retry ON webhook_events(next_retry_at, permanently_failed) WHERE processed = FALSE AND permanently_failed = FALSE;
-CREATE INDEX idx_webhook_events_failed ON webhook_events(permanently_failed, created_at DESC) WHERE permanently_failed = TRUE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_webhook_events_provider_event_id ON webhook_events(provider, provider_event_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_processed ON webhook_events(processed, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_event_type ON webhook_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_retry ON webhook_events(next_retry_at, permanently_failed) WHERE processed = FALSE AND permanently_failed = FALSE;
+CREATE INDEX IF NOT EXISTS idx_webhook_events_failed ON webhook_events(permanently_failed, created_at DESC) WHERE permanently_failed = TRUE;
 
 COMMENT ON TABLE webhook_events IS 'Webhook notifications with idempotency and retry';
 
@@ -160,7 +160,7 @@ COMMENT ON TABLE webhook_events IS 'Webhook notifications with idempotency and r
 -- ============================================================================
 
 -- User profiles
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   username TEXT UNIQUE CHECK (length(username) >= 3 AND length(username) <= 30),
   display_name TEXT CHECK (length(display_name) <= 100),
@@ -172,14 +172,14 @@ CREATE TABLE user_profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_profiles_username ON user_profiles(username);
-CREATE INDEX idx_user_profiles_updated_at ON user_profiles(updated_at DESC);
-CREATE INDEX idx_user_profiles_welcome_pending ON user_profiles(id) WHERE welcome_message_sent = FALSE;
+CREATE INDEX IF NOT EXISTS idx_user_profiles_username ON user_profiles(username);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_updated_at ON user_profiles(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_welcome_pending ON user_profiles(id) WHERE welcome_message_sent = FALSE;
 
 COMMENT ON TABLE user_profiles IS 'User profile information 1:1 with auth.users';
 
 -- Auth audit logs (90-day retention)
-CREATE TABLE auth_audit_logs (
+CREATE TABLE IF NOT EXISTS auth_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   event_type TEXT NOT NULL CHECK (event_type IN (
@@ -200,11 +200,11 @@ CREATE TABLE auth_audit_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_auth_audit_logs_user_id ON auth_audit_logs(user_id);
-CREATE INDEX idx_auth_audit_logs_event_type ON auth_audit_logs(event_type);
-CREATE INDEX idx_auth_audit_logs_created_at ON auth_audit_logs(created_at DESC);
-CREATE INDEX idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_address);
-CREATE INDEX idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_user_id ON auth_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_event_type ON auth_audit_logs(event_type);
+CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_created_at ON auth_audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_address);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
 
 COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events (90-day retention)';
 
@@ -213,7 +213,7 @@ COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events (9
 -- ============================================================================
 
 -- Rate limiting (brute force protection)
-CREATE TABLE rate_limit_attempts (
+CREATE TABLE IF NOT EXISTS rate_limit_attempts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   identifier TEXT NOT NULL,  -- Email or IP
   attempt_type TEXT NOT NULL CHECK (attempt_type IN ('sign_in', 'sign_up', 'password_reset')),
@@ -226,16 +226,17 @@ CREATE TABLE rate_limit_attempts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_rate_limit_identifier ON rate_limit_attempts(identifier, attempt_type);
-CREATE INDEX idx_rate_limit_window ON rate_limit_attempts(window_start);
-CREATE INDEX idx_rate_limit_locked ON rate_limit_attempts(locked_until) WHERE locked_until IS NOT NULL;
-CREATE UNIQUE INDEX idx_rate_limit_unique ON rate_limit_attempts(identifier, attempt_type);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_identifier ON rate_limit_attempts(identifier, attempt_type);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_window ON rate_limit_attempts(window_start);
+CREATE INDEX IF NOT EXISTS idx_rate_limit_locked ON rate_limit_attempts(locked_until) WHERE locked_until IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_limit_unique ON rate_limit_attempts(identifier, attempt_type);
 
 COMMENT ON TABLE rate_limit_attempts IS 'Server-side rate limiting - prevents brute force';
 
 -- Enable RLS on rate_limit_attempts (system-managed, service role only)
 ALTER TABLE rate_limit_attempts ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Service role only access" ON rate_limit_attempts;
 CREATE POLICY "Service role only access" ON rate_limit_attempts
   FOR ALL
   USING (false);
@@ -244,7 +245,7 @@ COMMENT ON POLICY "Service role only access" ON rate_limit_attempts IS
   'Rate limiting data is system-managed. Only service role can access.';
 
 -- OAuth state tracking (CSRF protection)
-CREATE TABLE oauth_states (
+CREATE TABLE IF NOT EXISTS oauth_states (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   state_token TEXT NOT NULL UNIQUE,
   provider TEXT NOT NULL CHECK (provider IN ('github', 'google')),
@@ -257,9 +258,9 @@ CREATE TABLE oauth_states (
   expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '5 minutes')
 );
 
-CREATE INDEX idx_oauth_states_token ON oauth_states(state_token) WHERE used = FALSE;
-CREATE INDEX idx_oauth_states_expires ON oauth_states(expires_at) WHERE used = FALSE;
-CREATE INDEX idx_oauth_states_session ON oauth_states(session_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_states_token ON oauth_states(state_token) WHERE used = FALSE;
+CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states(expires_at) WHERE used = FALSE;
+CREATE INDEX IF NOT EXISTS idx_oauth_states_session ON oauth_states(session_id);
 
 COMMENT ON TABLE oauth_states IS 'OAuth state tokens - prevents session hijacking';
 
@@ -267,21 +268,25 @@ COMMENT ON TABLE oauth_states IS 'OAuth state tokens - prevents session hijackin
 ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
 
 -- Allow anyone to insert state tokens (for OAuth flow initiation)
+DROP POLICY IF EXISTS "Anyone can create state tokens" ON oauth_states;
 CREATE POLICY "Anyone can create state tokens" ON oauth_states
   FOR INSERT
   WITH CHECK (true);
 
 -- Allow anyone to read state tokens (for validation during OAuth callback)
+DROP POLICY IF EXISTS "Anyone can read state tokens" ON oauth_states;
 CREATE POLICY "Anyone can read state tokens" ON oauth_states
   FOR SELECT
   USING (true);
 
 -- Allow anyone to update state tokens (for marking as used)
+DROP POLICY IF EXISTS "Anyone can update state tokens" ON oauth_states;
 CREATE POLICY "Anyone can update state tokens" ON oauth_states
   FOR UPDATE
   USING (true);
 
 -- Allow anyone to delete expired state tokens (for cleanup)
+DROP POLICY IF EXISTS "Anyone can delete expired states" ON oauth_states;
 CREATE POLICY "Anyone can delete expired states" ON oauth_states
   FOR DELETE
   USING (expires_at < NOW());
@@ -411,11 +416,13 @@ $$;
 -- PART 5: TRIGGERS
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
@@ -426,6 +433,19 @@ CREATE TRIGGER on_auth_user_created
 -- ============================================================================
 
 -- Create avatars bucket for user profile pictures
+--
+-- Local-profile caveat: the supabase/postgres image's storage-schema.sql
+-- creates storage.buckets with only (id, name, owner, created_at, updated_at).
+-- The public / file_size_limit / allowed_mime_types columns are added by the
+-- storage SERVICE's own runtime migrations on first connect -- which can't
+-- happen during initdb because storage hasn't started yet. Against Supabase
+-- Cloud this INSERT works as-is because storage has already migrated there.
+-- Forward-fill the three columns here so the INSERT succeeds; storage's own
+-- ADD COLUMN IF NOT EXISTS will no-op when it catches up later.
+ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public             boolean DEFAULT false;
+ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS file_size_limit    bigint;
+ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS allowed_mime_types text[];
+
 INSERT INTO storage.buckets (
   id,
   name,
@@ -448,13 +468,29 @@ DROP POLICY IF EXISTS "Users can update own avatar" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete own avatar" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
 
+-- These three policies used to read:  auth.uid()::text = (storage.foldername(name))[1]
+-- That expression creates a pg_depend edge on storage.foldername(text). On Cloud nobody
+-- cares because storage-api has already run its storage-schema migration by
+-- the time anybody applies app schema. On a fresh local initdb the ordering is
+-- inverted: this file runs first, pins the base-image foldername, then
+-- storage-api connects and tries DROP FUNCTION foldername(text) to install its
+-- canonical version -- and can't, because our three policies depend on it.
+-- storage-api crash-loops on "cannot drop function foldername(text) because
+-- other objects depend on it" forever.
+--
+-- split_part(name, '/', 1) is the same thing -- first path segment -- using
+-- only pg_catalog built-ins. No pg_depend edge, storage-api free to DROP.
+-- Edge cases land identically for policy purposes: bare filename with no '/'
+-- produces NULL vs the filename itself, but auth.uid() = NULL and
+-- auth.uid() = 'avatar.png' both DENY (uuids can't collide with filenames).
+
 -- Avatar RLS Policy 1: INSERT - Users can upload own avatar
 CREATE POLICY "Users can upload own avatar"
 ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  auth.uid()::text = split_part(name, '/', 1)
 );
 
 -- Avatar RLS Policy 2: UPDATE - Users can update own avatar
@@ -463,7 +499,7 @@ ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  auth.uid()::text = split_part(name, '/', 1)
 );
 
 -- Avatar RLS Policy 3: DELETE - Users can delete own avatar
@@ -472,7 +508,7 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  auth.uid()::text = (storage.foldername(name))[1]
+  auth.uid()::text = split_part(name, '/', 1)
 );
 
 -- Avatar RLS Policy 4: SELECT - Anyone can view avatars (public read)
@@ -495,19 +531,24 @@ ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auth_audit_logs ENABLE ROW LEVEL SECURITY;
 
 -- Payment intents (Feature 017: Stricter policies)
+DROP POLICY IF EXISTS "Users can view own payment intents" ON payment_intents;
 CREATE POLICY "Users can view own payment intents" ON payment_intents
   FOR SELECT USING (auth.uid() = template_user_id);
 
+DROP POLICY IF EXISTS "Users can create own payment intents" ON payment_intents;
 CREATE POLICY "Users can create own payment intents" ON payment_intents
   FOR INSERT WITH CHECK (auth.uid() = template_user_id);
 
+DROP POLICY IF EXISTS "Payment intents are immutable" ON payment_intents;
 CREATE POLICY "Payment intents are immutable" ON payment_intents
   FOR UPDATE USING (false);
 
+DROP POLICY IF EXISTS "Payment intents cannot be deleted by users" ON payment_intents;
 CREATE POLICY "Payment intents cannot be deleted by users" ON payment_intents
   FOR DELETE USING (false);
 
 -- Payment results (Feature 017: Stricter policies)
+DROP POLICY IF EXISTS "Users can view own payment results" ON payment_results;
 CREATE POLICY "Users can view own payment results" ON payment_results
   FOR SELECT USING (
     EXISTS (
@@ -517,56 +558,71 @@ CREATE POLICY "Users can view own payment results" ON payment_results
     )
   );
 
+DROP POLICY IF EXISTS "Service role can insert payment results" ON payment_results;
 CREATE POLICY "Service role can insert payment results" ON payment_results
   FOR INSERT TO service_role WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Payment results are immutable" ON payment_results;
 CREATE POLICY "Payment results are immutable" ON payment_results
   FOR UPDATE USING (false);
 
+DROP POLICY IF EXISTS "Payment results cannot be deleted by users" ON payment_results;
 CREATE POLICY "Payment results cannot be deleted by users" ON payment_results
   FOR DELETE USING (false);
 
 -- Subscriptions
+DROP POLICY IF EXISTS "Users view own subscriptions" ON subscriptions;
 CREATE POLICY "Users view own subscriptions" ON subscriptions
   FOR SELECT USING (auth.uid() = template_user_id);
 
+DROP POLICY IF EXISTS "Users create own subscriptions" ON subscriptions;
 CREATE POLICY "Users create own subscriptions" ON subscriptions
   FOR INSERT WITH CHECK (auth.uid() = template_user_id);
 
+DROP POLICY IF EXISTS "Users update own subscriptions" ON subscriptions;
 CREATE POLICY "Users update own subscriptions" ON subscriptions
   FOR UPDATE USING (auth.uid() = template_user_id);
 
 -- Webhook events
+DROP POLICY IF EXISTS "Service creates webhook events" ON webhook_events;
 CREATE POLICY "Service creates webhook events" ON webhook_events
   FOR INSERT WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Service updates webhook events" ON webhook_events;
 CREATE POLICY "Service updates webhook events" ON webhook_events
   FOR UPDATE WITH CHECK (true);
 
 -- Payment provider config
+DROP POLICY IF EXISTS "Users view provider config" ON payment_provider_config;
 CREATE POLICY "Users view provider config" ON payment_provider_config
   FOR SELECT USING (true);
 
 -- User profiles
 -- Note: "Users view own profile" provides full access to own profile
+DROP POLICY IF EXISTS "Users view own profile" ON user_profiles;
 CREATE POLICY "Users view own profile" ON user_profiles
   FOR SELECT USING (auth.uid() = id);
 
 -- Note: "Authenticated users can search profiles" enables Feature 023 friend search
 -- Users can view public profile fields (username, display_name, avatar_url) to find friends
+DROP POLICY IF EXISTS "Authenticated users can search profiles" ON user_profiles;
 CREATE POLICY "Authenticated users can search profiles" ON user_profiles
   FOR SELECT TO authenticated USING (true);
 
+DROP POLICY IF EXISTS "Users update own profile" ON user_profiles;
 CREATE POLICY "Users update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Service creates profiles" ON user_profiles;
 CREATE POLICY "Service creates profiles" ON user_profiles
   FOR INSERT WITH CHECK (true);
 
 -- Auth audit logs (Feature 017)
+DROP POLICY IF EXISTS "Users can view own audit logs" ON auth_audit_logs;
 CREATE POLICY "Users can view own audit logs" ON auth_audit_logs
   FOR SELECT USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can insert audit logs" ON auth_audit_logs;
 CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
   FOR INSERT WITH CHECK (true);
 
@@ -574,50 +630,64 @@ CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
 -- Uses JWT custom claims from auth.users.raw_app_meta_data (Supabase RBAC best practice)
 -- NEVER subquery user_profiles from its own policy — causes infinite recursion
 -- Admin status is set via: UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
+--
+-- Local-profile caveat: the supabase/postgres image ships auth.uid/role/email
+-- (init-scripts/00000000000001-auth-schema.sql) but NOT auth.jwt -- GoTrue
+-- creates that on its own first boot. CREATE POLICY checks function existence
+-- at parse time, not call time, so every policy below would fail during local
+-- initdb. Forward-fill a stub with the canonical implementation; GoTrue's
+-- CREATE OR REPLACE overwrites it at service boot. Ownership must be
+-- supabase_auth_admin or that REPLACE dies on 42501 (must be owner).
+CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
+  SELECT coalesce(
+    nullif(current_setting('request.jwt.claim', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')
+  )::jsonb
+$$;
+ALTER FUNCTION auth.jwt() OWNER TO supabase_auth_admin;
+
+DROP POLICY IF EXISTS "Admin can view all profiles" ON user_profiles;
 CREATE POLICY "Admin can view all profiles" ON user_profiles
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
+DROP POLICY IF EXISTS "Admin can view all audit logs" ON auth_audit_logs;
 CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
+DROP POLICY IF EXISTS "Admin can view all payment intents" ON payment_intents;
 CREATE POLICY "Admin can view all payment intents" ON payment_intents
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
+DROP POLICY IF EXISTS "Admin can view all payment results" ON payment_results;
 CREATE POLICY "Admin can view all payment results" ON payment_results
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
+DROP POLICY IF EXISTS "Admin can view all subscriptions" ON subscriptions;
 CREATE POLICY "Admin can view all subscriptions" ON subscriptions
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
+DROP POLICY IF EXISTS "Admin can view all rate limits" ON rate_limit_attempts;
 CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
   FOR SELECT USING (
     COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
   );
 
-CREATE POLICY "Admin can view all connections" ON user_connections
-  FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
-  );
-
-CREATE POLICY "Admin can view conversation metadata" ON conversations
-  FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
-  );
-
-CREATE POLICY "Admin can view message metadata" ON messages
-  FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
-  );
+-- The three admin-read policies for user_connections / conversations / messages
+-- belong with this block semantically but live ~400 lines down, right after
+-- the messages section finishes. Those tables are created in PART 8; placing
+-- the policies here would be a forward reference that crashes on a fresh
+-- local initdb (relation does not exist). On Cloud the tables already exist
+-- from prior runs so nobody noticed. Grep for "Admin can view all connections".
 
 -- ============================================================================
 -- Admin RPC Aggregation Functions (Feature: Admin Dashboard)
@@ -777,67 +847,100 @@ GRANT ALL ON auth_audit_logs TO service_role;
 -- Creates: test@example.com / TestPassword123!
 -- Email is already confirmed (bypasses verification requirement)
 -- Note: User was deleted at start of script for idempotency
+--
+-- Local-profile caveat: this whole block is wrapped in a DO/EXCEPTION guard.
+-- On Supabase Cloud it runs exactly as before -- nothing throws, the handler
+-- never fires. On a fresh local initdb it soft-skips, because at this point
+-- in the boot GoTrue has not yet connected and run its ~40 numbered runtime
+-- migrations. Two things are missing that this INSERT needs:
+--
+--   (1) auth.users.email_confirmed_at and .email_change_token_new -- the base
+--       image ships the original 2016-era column names (confirmed_at,
+--       email_change_token). GoTrue's migrations rename/add these later.
+--   (2) auth.identities -- the whole table. Zero hits for "identities" in the
+--       base image's initdb.d/. GoTrue creates it on first connect.
+--
+-- Unlike the storage.buckets and auth.jwt() forward-fills elsewhere in this
+-- file, forward-filling here would BREAK GoTrue: its numbered migrations are
+-- tracked in auth.schema_migrations and have no IF NOT EXISTS guards, so a
+-- pre-existing email_confirmed_at column or identities table makes GoTrue's
+-- own ADD COLUMN / CREATE TABLE crash on 42701/42P07. The DO/EXCEPTION wrap
+-- is the only shape that is a no-op in both directions.
+--
+-- Local seeding is handled post-boot by scripts/seed-test-users.ts via the
+-- admin API, after GoTrue has migrated itself. Nothing is lost.
 
--- Create the user in auth.users with confirmed email
-INSERT INTO auth.users (
-  id,
-  instance_id,
-  email,
-  encrypted_password,
-  email_confirmed_at,
-  created_at,
-  updated_at,
-  raw_app_meta_data,
-  raw_user_meta_data,
-  is_super_admin,
-  role,
-  aud,
-  confirmation_token,
-  recovery_token,
-  email_change_token_new,
-  email_change
-)
-VALUES (
-  gen_random_uuid(),
-  '00000000-0000-0000-0000-000000000000',
-  'test@example.com',
-  crypt('TestPassword123!', gen_salt('bf')),  -- Hashed password using bcrypt
-  now(),  -- Email already confirmed
-  now(),
-  now(),
-  '{"provider":"email","providers":["email"]}',
-  '{}',
-  false,
-  'authenticated',
-  'authenticated',
-  '',
-  '',
-  '',
-  ''
-);
+DO $seed_test_user$
+BEGIN
+  -- Create the user in auth.users with confirmed email
+  INSERT INTO auth.users (
+    id,
+    instance_id,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    created_at,
+    updated_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    is_super_admin,
+    role,
+    aud,
+    confirmation_token,
+    recovery_token,
+    email_change_token_new,
+    email_change
+  )
+  VALUES (
+    gen_random_uuid(),
+    '00000000-0000-0000-0000-000000000000',
+    'test@example.com',
+    crypt('TestPassword123!', gen_salt('bf')),  -- Hashed password using bcrypt
+    now(),  -- Email already confirmed
+    now(),
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    false,
+    'authenticated',
+    'authenticated',
+    '',
+    '',
+    '',
+    ''
+  );
 
--- Create identity record (required for Supabase Auth)
-INSERT INTO auth.identities (
-  provider_id,
-  id,
-  user_id,
-  identity_data,
-  provider,
-  last_sign_in_at,
-  created_at,
-  updated_at
-)
-SELECT
-  id,
-  gen_random_uuid(),
-  id,
-  jsonb_build_object('sub', id::text, 'email', email),
-  'email',
-  now(),
-  now(),
-  now()
-FROM auth.users
-WHERE email = 'test@example.com';
+  -- Create identity record (required for Supabase Auth)
+  INSERT INTO auth.identities (
+    provider_id,
+    id,
+    user_id,
+    identity_data,
+    provider,
+    last_sign_in_at,
+    created_at,
+    updated_at
+  )
+  SELECT
+    id,
+    gen_random_uuid(),
+    id,
+    jsonb_build_object('sub', id::text, 'email', email),
+    'email',
+    now(),
+    now(),
+    now()
+  FROM auth.users
+  WHERE email = 'test@example.com';
+
+EXCEPTION
+  WHEN undefined_column OR undefined_table THEN
+    RAISE NOTICE
+      'Skipping test-user seed (GoTrue has not migrated auth schema yet: %). '
+      'On the local profile this is expected -- run scripts/seed-test-users.ts '
+      'after the stack is healthy.', SQLERRM;
+END
+$seed_test_user$;
 
 -- ============================================================================
 -- PART 9: USER MESSAGING SYSTEM (PRP-023)
@@ -847,7 +950,7 @@ WHERE email = 'test@example.com';
 -- Tables: 6 (user_connections, conversations, messages, user_encryption_keys, conversation_keys, typing_indicators)
 
 -- Table 1: user_connections (Friend requests)
-CREATE TABLE user_connections (
+CREATE TABLE IF NOT EXISTS user_connections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   requester_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   addressee_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -858,28 +961,32 @@ CREATE TABLE user_connections (
   CONSTRAINT unique_connection UNIQUE (requester_id, addressee_id)
 );
 
-CREATE INDEX idx_user_connections_requester ON user_connections(requester_id, status);
-CREATE INDEX idx_user_connections_addressee ON user_connections(addressee_id, status);
-CREATE INDEX idx_user_connections_status ON user_connections(status);
+CREATE INDEX IF NOT EXISTS idx_user_connections_requester ON user_connections(requester_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_connections_addressee ON user_connections(addressee_id, status);
+CREATE INDEX IF NOT EXISTS idx_user_connections_status ON user_connections(status);
 
 ALTER TABLE user_connections ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own connections" ON user_connections;
 CREATE POLICY "Users can view own connections" ON user_connections
   FOR SELECT USING (auth.uid() = requester_id OR auth.uid() = addressee_id);
 
+DROP POLICY IF EXISTS "Users can create friend requests" ON user_connections;
 CREATE POLICY "Users can create friend requests" ON user_connections
   FOR INSERT WITH CHECK (auth.uid() = requester_id);
 
+DROP POLICY IF EXISTS "Addressee can update connection status" ON user_connections;
 CREATE POLICY "Addressee can update connection status" ON user_connections
   FOR UPDATE USING (auth.uid() = addressee_id) WITH CHECK (auth.uid() = addressee_id);
 
+DROP POLICY IF EXISTS "Users can delete own sent requests" ON user_connections;
 CREATE POLICY "Users can delete own sent requests" ON user_connections
   FOR DELETE USING (auth.uid() = requester_id AND status = 'pending');
 
 COMMENT ON TABLE user_connections IS 'Friend request management with status tracking';
 
 -- Table 2: conversations (1-to-1 chats)
-CREATE TABLE conversations (
+CREATE TABLE IF NOT EXISTS conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   participant_1_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   participant_2_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -892,16 +999,18 @@ CREATE TABLE conversations (
   CONSTRAINT unique_conversation UNIQUE (participant_1_id, participant_2_id)
 );
 
-CREATE INDEX idx_conversations_participant_1 ON conversations(participant_1_id);
-CREATE INDEX idx_conversations_participant_2 ON conversations(participant_2_id);
-CREATE INDEX idx_conversations_last_message ON conversations(last_message_at DESC);
-CREATE INDEX idx_conversations_archived ON conversations(participant_1_id, archived_by_participant_1, participant_2_id, archived_by_participant_2);
+CREATE INDEX IF NOT EXISTS idx_conversations_participant_1 ON conversations(participant_1_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_participant_2 ON conversations(participant_2_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_last_message ON conversations(last_message_at DESC);
+CREATE INDEX IF NOT EXISTS idx_conversations_archived ON conversations(participant_1_id, archived_by_participant_1, participant_2_id, archived_by_participant_2);
 
 ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own conversations" ON conversations;
 CREATE POLICY "Users can view own conversations" ON conversations
   FOR SELECT USING (auth.uid() = participant_1_id OR auth.uid() = participant_2_id);
 
+DROP POLICY IF EXISTS "Users can create conversations with connections" ON conversations;
 CREATE POLICY "Users can create conversations with connections" ON conversations
   FOR INSERT WITH CHECK (
     (auth.uid() = participant_1_id OR auth.uid() = participant_2_id) AND
@@ -915,6 +1024,7 @@ CREATE POLICY "Users can create conversations with connections" ON conversations
   );
 
 -- Admin can create conversations with any user (Feature 002 - welcome messages)
+DROP POLICY IF EXISTS "Admin can create any conversation" ON conversations;
 CREATE POLICY "Admin can create any conversation" ON conversations
   FOR INSERT WITH CHECK (
     auth.uid() = '00000000-0000-0000-0000-000000000001'::uuid
@@ -922,6 +1032,7 @@ CREATE POLICY "Admin can create any conversation" ON conversations
 
 -- Users can create conversations with admin for welcome messages (Feature 004)
 -- This allows the client-side welcome service to create the conversation
+DROP POLICY IF EXISTS "Users can create conversation with admin" ON conversations;
 CREATE POLICY "Users can create conversation with admin" ON conversations
   FOR INSERT WITH CHECK (
     (auth.uid() = participant_1_id OR auth.uid() = participant_2_id) AND
@@ -929,10 +1040,12 @@ CREATE POLICY "Users can create conversation with admin" ON conversations
      participant_2_id = '00000000-0000-0000-0000-000000000001'::uuid)
   );
 
+DROP POLICY IF EXISTS "System can update last_message_at" ON conversations;
 CREATE POLICY "System can update last_message_at" ON conversations
   FOR UPDATE TO service_role USING (true);
 
 -- Allow users to archive/unarchive their own conversations
+DROP POLICY IF EXISTS "Users can update own conversation archive status" ON conversations;
 CREATE POLICY "Users can update own conversation archive status" ON conversations
   FOR UPDATE USING (auth.uid() = participant_1_id OR auth.uid() = participant_2_id)
   WITH CHECK (auth.uid() = participant_1_id OR auth.uid() = participant_2_id);
@@ -940,7 +1053,7 @@ CREATE POLICY "Users can update own conversation archive status" ON conversation
 COMMENT ON TABLE conversations IS '1-to-1 conversations with canonical ordering';
 
 -- Table 3: messages (Encrypted content)
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   sender_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -958,13 +1071,14 @@ CREATE TABLE messages (
   CONSTRAINT unique_sequence UNIQUE (conversation_id, sequence_number)
 );
 
-CREATE INDEX idx_messages_conversation ON messages(conversation_id, sequence_number DESC);
-CREATE INDEX idx_messages_sender ON messages(sender_id);
-CREATE INDEX idx_messages_created_at ON messages(created_at DESC);
-CREATE INDEX idx_messages_unread ON messages(read_at) WHERE read_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, sequence_number DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_unread ON messages(read_at) WHERE read_at IS NULL;
 
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view messages in own conversations" ON messages;
 CREATE POLICY "Users can view messages in own conversations" ON messages
   FOR SELECT USING (
     EXISTS (
@@ -976,6 +1090,7 @@ CREATE POLICY "Users can view messages in own conversations" ON messages
     )
   );
 
+DROP POLICY IF EXISTS "Users can send messages to own conversations" ON messages;
 CREATE POLICY "Users can send messages to own conversations" ON messages
   FOR INSERT WITH CHECK (
     sender_id = auth.uid() AND
@@ -991,6 +1106,7 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
 -- Users can insert welcome messages from admin (Feature 004)
 -- Allows client-side welcome service to insert message with sender_id = admin
 -- Only allowed in conversations where user is a participant with admin
+DROP POLICY IF EXISTS "Users can insert welcome message from admin" ON messages;
 CREATE POLICY "Users can insert welcome message from admin" ON messages
   FOR INSERT WITH CHECK (
     sender_id = '00000000-0000-0000-0000-000000000001'::uuid AND
@@ -1005,12 +1121,14 @@ CREATE POLICY "Users can insert welcome message from admin" ON messages
     )
   );
 
+DROP POLICY IF EXISTS "Users can edit own messages" ON messages;
 CREATE POLICY "Users can edit own messages" ON messages
   FOR UPDATE USING (sender_id = auth.uid())
   WITH CHECK (sender_id = auth.uid() AND created_at > now() - INTERVAL '15 minutes');
 
 -- Allow recipients to mark messages as read (update read_at field)
 -- This is separate from edit policy because recipients need to update messages they didn't send
+DROP POLICY IF EXISTS "Recipients can mark messages as read" ON messages;
 CREATE POLICY "Recipients can mark messages as read" ON messages
   FOR UPDATE USING (
     EXISTS (
@@ -1033,15 +1151,39 @@ CREATE POLICY "Recipients can mark messages as read" ON messages
     AND sender_id != auth.uid()
   );
 
+DROP POLICY IF EXISTS "Users cannot delete messages" ON messages;
 CREATE POLICY "Users cannot delete messages" ON messages
   FOR DELETE USING (false);
+
+-- Admin dashboard read-only policies for the three messaging tables. These
+-- belong semantically with the other admin policies up in PART 7 (~line 608)
+-- but can't live there: user_connections / conversations / messages are
+-- forward references until this point. On Cloud nobody noticed because the
+-- tables persist across re-runs; on a fresh local initdb this was crash #3.
+DROP POLICY IF EXISTS "Admin can view all connections" ON user_connections;
+CREATE POLICY "Admin can view all connections" ON user_connections
+  FOR SELECT USING (
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+  );
+
+DROP POLICY IF EXISTS "Admin can view conversation metadata" ON conversations;
+CREATE POLICY "Admin can view conversation metadata" ON conversations
+  FOR SELECT USING (
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+  );
+
+DROP POLICY IF EXISTS "Admin can view message metadata" ON messages;
+CREATE POLICY "Admin can view message metadata" ON messages
+  FOR SELECT USING (
+    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+  );
 
 COMMENT ON TABLE messages IS 'E2E encrypted messages with 15-minute edit window';
 
 -- Table 4: user_encryption_keys (Public ECDH keys + password-derived salt)
 -- encryption_salt: Base64-encoded 16-byte Argon2 salt for password-derived keys
 -- NULL salt indicates legacy random-generated keys requiring migration (Feature 032)
-CREATE TABLE user_encryption_keys (
+CREATE TABLE IF NOT EXISTS user_encryption_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
   public_key JSONB NOT NULL,
@@ -1053,30 +1195,34 @@ CREATE TABLE user_encryption_keys (
   CONSTRAINT unique_user_device UNIQUE (user_id, device_id)
 );
 
-CREATE INDEX idx_user_encryption_keys_user ON user_encryption_keys(user_id);
-CREATE INDEX idx_user_encryption_keys_active ON user_encryption_keys(user_id, revoked, expires_at)
+CREATE INDEX IF NOT EXISTS idx_user_encryption_keys_user ON user_encryption_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_encryption_keys_active ON user_encryption_keys(user_id, revoked, expires_at)
   WHERE revoked = false;
-CREATE INDEX idx_user_encryption_keys_salt ON user_encryption_keys(user_id)
+CREATE INDEX IF NOT EXISTS idx_user_encryption_keys_salt ON user_encryption_keys(user_id)
   WHERE encryption_salt IS NOT NULL;
 
 ALTER TABLE user_encryption_keys ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view public keys" ON user_encryption_keys;
 CREATE POLICY "Anyone can view public keys" ON user_encryption_keys
   FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Users can create own keys" ON user_encryption_keys;
 CREATE POLICY "Users can create own keys" ON user_encryption_keys
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can revoke own keys" ON user_encryption_keys;
 CREATE POLICY "Users can revoke own keys" ON user_encryption_keys
   FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users cannot delete keys" ON user_encryption_keys;
 CREATE POLICY "Users cannot delete keys" ON user_encryption_keys
   FOR DELETE USING (false);
 
 COMMENT ON TABLE user_encryption_keys IS 'Public ECDH keys - private keys NEVER in database';
 
 -- Table 5: conversation_keys (Encrypted shared secrets)
-CREATE TABLE conversation_keys (
+CREATE TABLE IF NOT EXISTS conversation_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -1086,14 +1232,16 @@ CREATE TABLE conversation_keys (
   CONSTRAINT unique_conversation_user_version UNIQUE (conversation_id, user_id, key_version)
 );
 
-CREATE INDEX idx_conversation_keys_conversation ON conversation_keys(conversation_id);
-CREATE INDEX idx_conversation_keys_user ON conversation_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_keys_conversation ON conversation_keys(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_keys_user ON conversation_keys(user_id);
 
 ALTER TABLE conversation_keys ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own conversation keys" ON conversation_keys;
 CREATE POLICY "Users can view own conversation keys" ON conversation_keys
   FOR SELECT USING (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can create conversation keys" ON conversation_keys;
 CREATE POLICY "Users can create conversation keys" ON conversation_keys
   FOR INSERT WITH CHECK (
     user_id = auth.uid() AND
@@ -1106,16 +1254,18 @@ CREATE POLICY "Users can create conversation keys" ON conversation_keys
     )
   );
 
+DROP POLICY IF EXISTS "Users cannot update keys" ON conversation_keys;
 CREATE POLICY "Users cannot update keys" ON conversation_keys
   FOR UPDATE USING (false);
 
+DROP POLICY IF EXISTS "Users cannot delete keys" ON conversation_keys;
 CREATE POLICY "Users cannot delete keys" ON conversation_keys
   FOR DELETE USING (false);
 
 COMMENT ON TABLE conversation_keys IS 'Immutable encrypted shared secrets';
 
 -- Table 6: typing_indicators (Real-time typing status)
-CREATE TABLE typing_indicators (
+CREATE TABLE IF NOT EXISTS typing_indicators (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   conversation_id UUID NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -1124,10 +1274,11 @@ CREATE TABLE typing_indicators (
   CONSTRAINT unique_conversation_user UNIQUE (conversation_id, user_id)
 );
 
-CREATE INDEX idx_typing_indicators_conversation ON typing_indicators(conversation_id, updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_typing_indicators_conversation ON typing_indicators(conversation_id, updated_at DESC);
 
 ALTER TABLE typing_indicators ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view typing in own conversations" ON typing_indicators;
 CREATE POLICY "Users can view typing in own conversations" ON typing_indicators
   FOR SELECT USING (
     EXISTS (
@@ -1139,12 +1290,15 @@ CREATE POLICY "Users can view typing in own conversations" ON typing_indicators
     )
   );
 
+DROP POLICY IF EXISTS "Users can insert own typing status" ON typing_indicators;
 CREATE POLICY "Users can insert own typing status" ON typing_indicators
   FOR INSERT WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "Users can update own typing status" ON typing_indicators;
 CREATE POLICY "Users can update own typing status" ON typing_indicators
   FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 
+DROP POLICY IF EXISTS "System can clean up old indicators" ON typing_indicators;
 CREATE POLICY "System can clean up old indicators" ON typing_indicators
   FOR DELETE TO service_role USING (updated_at < now() - INTERVAL '5 seconds');
 
@@ -1159,6 +1313,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS on_message_inserted ON messages;
 CREATE TRIGGER on_message_inserted
   AFTER INSERT ON messages
   FOR EACH ROW EXECUTE FUNCTION update_conversation_timestamp();
@@ -1174,6 +1329,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS before_message_insert ON messages;
 CREATE TRIGGER before_message_insert
   BEFORE INSERT ON messages
   FOR EACH ROW EXECUTE FUNCTION assign_sequence_number();
@@ -1457,9 +1613,30 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 -- To grant admin access to a real user, run:
 --   UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb WHERE id = '<user-uuid>';
 -- The is_admin column on user_profiles is for application-level queries only.
-INSERT INTO user_profiles (id, username, display_name, welcome_message_sent, is_admin)
-VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE, TRUE)
-ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
+--
+-- Local-profile caveat, same story as PART 8: user_profiles.id has an FK to
+-- auth.users(id). On Cloud the admin auth.users row already exists, so this
+-- INSERT is fine. On a fresh local initdb the admin row is created post-boot
+-- by scripts/seed-test-users.ts -- which then fires the on_auth_user_created
+-- trigger to make a bare user_profiles row, at which point re-running this
+-- file (or just this one statement) hits the ON CONFLICT DO UPDATE branch and
+-- fills in username / is_admin. Either way, crashing initdb over it means
+-- postinit never runs and the whole stack stays on 28P01. Soft-skip instead.
+DO $seed_admin_profile$
+BEGIN
+  INSERT INTO user_profiles (id, username, display_name, welcome_message_sent, is_admin)
+  VALUES ('00000000-0000-0000-0000-000000000001', 'scripthammer', 'ScriptHammer', TRUE, TRUE)
+  ON CONFLICT (id) DO UPDATE SET is_admin = TRUE;
+EXCEPTION
+  WHEN foreign_key_violation THEN
+    RAISE NOTICE
+      'Skipping admin profile seed (no auth.users row ...001 yet: %). '
+      'On the local profile this is expected -- scripts/seed-test-users.ts '
+      'creates the admin user, then the on_auth_user_created trigger makes a '
+      'bare profile row, then re-running this statement fills in is_admin.',
+      SQLERRM;
+END
+$seed_admin_profile$;
 
 -- ============================================================================
 -- Feature 004: Populate OAuth user profiles (one-time migration)

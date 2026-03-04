@@ -45,9 +45,12 @@ function parseGitUrl(url) {
     }
   }
 
-  // Try generic git URL parsing for other hosts
+  // Try generic git URL parsing for other hosts.
+  // ^ anchor + @ in the host exclusion class are both load-bearing: without
+  // them, `git@@github.com:user/repo` matches and captures `@github.com` as
+  // the host — garbage that silently propagates into basePath/projectUrl.
   const genericPattern =
-    /(?:git@|https?:\/\/)([^:\/]+)[:\\/]([^\/]+)\/([^\/\.]+)/;
+    /^(?:git@|https?:\/\/)([^:\/@]+)[:\/]([^\/]+)\/([^\/\.]+)(?:\.git)?$/;
   const genericMatch = url.match(genericPattern);
   if (genericMatch) {
     return {
@@ -111,11 +114,12 @@ function generateConfig() {
     path.join(__dirname, '..', 'public', 'CNAME')
   );
 
-  // Generate base path for GitHub Pages - ONLY in GitHub Actions CI/CD without custom domain
+  // Base path: prefer explicit env var, fall back to auto-detection in GitHub Actions
   const basePath =
-    isGitHubActions && info.isGitHub && !cnameExists
+    process.env.NEXT_PUBLIC_BASE_PATH ||
+    (isGitHubActions && info.isGitHub && !cnameExists
       ? `/${info.projectName}`
-      : '';
+      : '');
 
   const config = {
     projectName: info.projectName,

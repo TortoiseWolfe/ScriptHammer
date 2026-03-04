@@ -53,6 +53,19 @@ jobs:
       - name: Run tests
         run: pnpm test --run
 
+      # Eight node:test files under scripts/__tests__/ cover the tooling
+      # scripts CI itself runs — detect-project.js (step above), validate-
+      # structure.js, audit-components.js (both in component-structure.yml),
+      # migrate-components.js (the command that workflow's PR-comment tells
+      # you to run on failure), plop-generator.js (the mandatory component
+      # generator). vitest.config.ts:20-21 excludes them because vitest
+      # cannot load require('node:test'). These sat dark since the initial
+      # commit with only the exclude and no corresponding runner. 86 pass,
+      # 1 intentional todo (spec-for-unbuilt-feature), 1 intentional file-
+      # skip (contract infra never provisioned). Exit 0.
+      - name: Run script tests (node:test)
+        run: pnpm test:scripts
+
       - name: Check test coverage
         run: pnpm test:coverage
 

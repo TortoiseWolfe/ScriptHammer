@@ -266,9 +266,13 @@ function validateIndexFile(content) {
  * Validate test file content
  */
 function validateTestFile(content) {
+  // `includes('test')` without the paren matches the word "test" anywhere —
+  // including comments like `// no tests`. That's how a placeholder stub with
+  // zero actual tests was passing validation. The paren is load-bearing: it
+  // distinguishes `test(...)` calls from prose containing the word.
   return (
     content.includes('describe') ||
-    content.includes('test') ||
+    content.includes('test(') ||
     content.includes('it(')
   );
 }

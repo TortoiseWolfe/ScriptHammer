@@ -44,6 +44,18 @@ paths = [
   '''.*\.spec\.ts''',
   '''docs/.*\.md''',
   '''tests/.*''',
+  '''docker-compose\.yml''',       # Supabase demo JWT defaults (public, not real secrets)
+  '''supabase/docker/.*''',        # Local Supabase stack config with demo defaults
+]
+# Supabase self-hosting demo keys — published verbatim at
+# https://supabase.com/docs/guides/self-hosting/docker. JWT payload is
+# `{"iss": "supabase-demo", ...}`, signed with the hardcoded demo secret
+# `super-secret-jwt-token-with-at-least-32-characters-long`. These two
+# signatures ONLY validate against that secret; a real project key has a
+# different signature and still trips the supabase-anon-key rule above.
+regexes = [
+  '''dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE''',  # demo anon
+  '''DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q''',  # demo service_role
 ]
 
 # To allowlist specific commits, add their SHA hashes:
