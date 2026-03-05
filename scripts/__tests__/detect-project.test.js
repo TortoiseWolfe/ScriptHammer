@@ -171,12 +171,19 @@ describe('detect-project.js', () => {
     });
 
     test('should generate correct GitHub Pages base path', () => {
+      const originalGHA = process.env.GITHUB_ACTIONS;
+      delete process.env.GITHUB_ACTIONS;
+
       const repoName = 'my-repo';
       const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
       const basePath = isGitHubPages ? `/${repoName}` : '';
 
-      // Test without GitHub Actions
+      // Test without GitHub Actions — env var cleared above
       assert.strictEqual(basePath, '');
+
+      if (originalGHA !== undefined) {
+        process.env.GITHUB_ACTIONS = originalGHA;
+      }
     });
   });
 
