@@ -68,7 +68,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .insert({
           user_id: userA.id,
           event_type: 'user.login',
-          details: { test: true },
+          event_data: { test: true },
         })
         .select()
         .single();
@@ -104,7 +104,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const { data, error } = await clientA.from('auth_audit_logs').insert({
         user_id: userA.id,
         event_type: 'user.login',
-        details: { attempted_by: 'user' },
+        event_data: { attempted_by: 'user' },
       });
 
       // Should fail - no INSERT policy for authenticated users

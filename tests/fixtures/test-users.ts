@@ -8,7 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
+import type { Database } from '@/lib/supabase/types';
 
 // Test configuration — read without non-null assertion so we can gate
 // cleanly when infra is absent rather than failing with an opaque

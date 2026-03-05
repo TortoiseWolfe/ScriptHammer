@@ -46,7 +46,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .insert({
           user_id: userA.id,
           event_type: 'profile.updated',
-          details: { field: 'display_name', old: 'Old', new: 'New' },
+          event_data: { field: 'display_name', old: 'Old', new: 'New' },
         })
         .select()
         .single();
@@ -101,7 +101,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // Try to update the audit log entry
       const { data, error } = await clientA
         .from('auth_audit_logs')
-        .update({ details: { tampered: true } })
+        .update({ event_data: { tampered: true } })
         .eq('id', testAuditLogId)
         .select();
 
@@ -147,14 +147,14 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .insert({
           user_id: userA.id,
           event_type: 'user.login',
-          details: { ip: '192.168.1.1', browser: 'Chrome' },
+          event_data: { ip: '192.168.1.1', browser: 'Chrome' },
         })
         .select()
         .single();
 
       expect(error).toBeNull();
       expect(data?.event_type).toBe('user.login');
-      expect(data?.details).toMatchObject({ ip: '192.168.1.1' });
+      expect(data?.event_data).toMatchObject({ ip: '192.168.1.1' });
     });
 
     // Additional test: Service role also cannot UPDATE (immutability enforced at trigger level)
@@ -169,7 +169,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .single();
 
       // The original details should be intact
-      expect(original?.details).toMatchObject({
+      expect(original?.event_data).toMatchObject({
         field: 'display_name',
         old: 'Old',
         new: 'New',

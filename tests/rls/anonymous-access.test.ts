@@ -136,7 +136,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       const { data, error } = await anonClient.from('auth_audit_logs').insert({
         event_type: 'user.login',
-        details: { malicious: true },
+        event_data: { malicious: true },
       });
 
       // Should fail - no INSERT policy for anon
