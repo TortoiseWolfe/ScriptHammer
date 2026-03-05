@@ -59,6 +59,10 @@ describe('validate-structure', () => {
         path.join(compliantDir, 'CompliantComponent.stories.tsx'),
         'export default { title: "CompliantComponent" };'
       );
+      fs.writeFileSync(
+        path.join(compliantDir, 'CompliantComponent.accessibility.test.tsx'),
+        'test("has no a11y violations", () => {});'
+      );
 
       // Create non-compliant component
       const nonCompliantDir = path.join(testDir, 'NonCompliant');

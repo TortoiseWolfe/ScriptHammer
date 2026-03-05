@@ -60,6 +60,10 @@ describe('audit-components', () => {
         path.join(compliantDir, 'CompliantButton.stories.tsx'),
         'export default { title: "CompliantButton" };'
       );
+      fs.writeFileSync(
+        path.join(compliantDir, 'CompliantButton.accessibility.test.tsx'),
+        'test("has no a11y violations", () => {});'
+      );
 
       // Create non-compliant component (missing files)
       const nonCompliantDir = path.join(testDir, 'NonCompliantCard');
