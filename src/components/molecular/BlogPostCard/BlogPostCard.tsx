@@ -56,11 +56,11 @@ export default function BlogPostCard({
 
   return (
     <article
-      className={`blog-post-card card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow${className ? ` ${className}` : ''}`}
+      className={`blog-post-card card bg-base-100 shadow-sm hover:shadow-md transition-shadow${className ? ` ${className}` : ''}`}
       onClick={onClick}
     >
       {featuredImageSrc && (
-        <figure className="relative h-48 w-full">
+        <figure className="relative h-48 w-full overflow-hidden rounded-t-2xl">
           <Image
             src={featuredImageSrc}
             alt={post.metadata?.featuredImageAlt || post.title}

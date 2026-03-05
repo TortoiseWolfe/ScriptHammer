@@ -80,7 +80,7 @@ export default async function BlogPage() {
                 key={post.id}
                 post={post}
                 className="h-full"
-                showSEO={true}
+                showSEO={false}
               />
             ))}
           </div>

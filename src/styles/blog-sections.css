@@ -1,118 +1,71 @@
-/* Blog Section Breaks - AGGRESSIVE VISUAL SEPARATION */
+/* Blog Section Breaks — editorial, clean separation */
 
-/* Make HR tags SUPER visible */
+/* HR: subtle divider */
 .blog-post-viewer .prose-xl hr,
 .blog-post-viewer .prose-2xl hr {
-  margin: 4rem 0 !important;
+  margin: 3rem 0 !important;
   border: none !important;
-  height: 4px !important;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    oklch(var(--p) / 0.3) 20%,
-    oklch(var(--p) / 0.3) 80%,
-    transparent
-  ) !important;
-  position: relative !important;
+  height: 1px !important;
+  background: oklch(var(--bc) / 0.15) !important;
 }
 
-/* Add decorative element to HR */
-.blog-post-viewer .prose-xl hr::after,
-.blog-post-viewer .prose-2xl hr::after {
-  content: '◆' !important;
-  position: absolute !important;
-  left: 50% !important;
-  top: 50% !important;
-  transform: translate(-50%, -50%) !important;
-  background: oklch(var(--b1)) !important;
-  color: oklch(var(--p)) !important;
-  padding: 0 1rem !important;
-  font-size: 1.5rem !important;
-}
-
-/* Style H3 headers (the numbered items) to POP */
+/* H3: light left accent, no background */
 .blog-post-viewer .prose-xl h3,
 .blog-post-viewer .prose-2xl h3 {
-  font-size: 2rem !important;
-  font-weight: 800 !important;
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
   margin-top: 0 !important;
-  margin-bottom: 2rem !important;
-  padding: 1.5rem 2rem !important;
-  background: linear-gradient(
-    135deg,
-    oklch(var(--p) / 0.1),
-    oklch(var(--p) / 0.05)
-  ) !important;
-  border-left: 6px solid oklch(var(--p)) !important;
-  border-radius: 0.5rem !important;
-  position: relative !important;
+  margin-bottom: 1.5rem !important;
+  padding: 0.75rem 1rem !important;
+  border-left: 3px solid oklch(var(--p) / 0.4) !important;
+  border-radius: 0 !important;
+  background: none !important;
 }
 
-/* Add number emphasis to H3 */
+/* H3 bold emphasis */
 .blog-post-viewer .prose-xl h3 strong,
 .blog-post-viewer .prose-2xl h3 strong {
   color: oklch(var(--p)) !important;
 }
 
-/* Style paragraphs after H3 with indentation and spacing */
-.blog-post-viewer .prose-xl h3 + p,
-.blog-post-viewer .prose-2xl h3 + p {
-  font-size: 1.25rem !important;
-  line-height: 2 !important;
-  padding: 0 2rem 2rem 2rem !important;
-  margin-bottom: 2rem !important;
-  background: oklch(var(--b2) / 0.5) !important;
-  border-radius: 0 0 0.5rem 0.5rem !important;
-  margin-top: -1rem !important;
-}
-
-/* Make the main H2 sections HUGE */
+/* H2: large but clean — no uppercase, no gradient, no box-shadow */
 .blog-post-viewer .prose-xl h2,
 .blog-post-viewer .prose-2xl h2 {
-  font-size: 3rem !important;
-  font-weight: 900 !important;
-  text-align: center !important;
-  margin: 5rem 0 3rem 0 !important;
-  padding: 2rem !important;
-  background: linear-gradient(
-    135deg,
-    oklch(var(--p) / 0.15),
-    oklch(var(--s) / 0.15)
-  ) !important;
-  border-radius: 1rem !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.1em !important;
-  box-shadow: 0 10px 30px oklch(var(--bc) / 0.1) !important;
+  font-size: 2.25rem !important;
+  font-weight: 800 !important;
+  text-align: left !important;
+  margin: 3.5rem 0 2rem 0 !important;
+  padding: 0 0 0.75rem 0 !important;
+  border-bottom: 2px solid oklch(var(--bc) / 0.1) !important;
+  border-radius: 0 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  box-shadow: none !important;
+  background: none !important;
 }
 
-/* First H2 doesn't need as much top margin */
+/* First H2 less top margin */
 .blog-post-viewer .prose-xl h2:first-of-type,
 .blog-post-viewer .prose-2xl h2:first-of-type {
-  margin-top: 2rem !important;
+  margin-top: 1.5rem !important;
 }
 
-/* Add visual boxes around list items */
+/* List items: clean, no boxes */
 .blog-post-viewer .prose-xl ul li,
 .blog-post-viewer .prose-2xl ul li,
 .blog-post-viewer .prose-xl ol li,
 .blog-post-viewer .prose-2xl ol li {
-  padding: 1rem !important;
-  margin: 1rem 0 !important;
-  background: oklch(var(--b2) / 0.3) !important;
-  border-left: 3px solid oklch(var(--p) / 0.5) !important;
-  border-radius: 0.25rem !important;
+  padding: 0.25rem 0 !important;
+  margin: 0.5rem 0 !important;
+  background: none !important;
+  border-left: none !important;
+  border-radius: 0 !important;
 }
 
-/* Space out content sections */
-.blog-post-viewer .prose-xl > *,
-.blog-post-viewer .prose-2xl > * {
-  margin-bottom: 2rem !important;
-}
-
-/* Images need breathing room */
+/* Images: breathing room, subtle shadow */
 .blog-post-viewer .prose-xl img,
 .blog-post-viewer .prose-2xl img {
-  margin: 3rem auto !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 20px 40px oklch(var(--bc) / 0.2) !important;
+  margin: 2rem auto !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 4px 12px oklch(var(--bc) / 0.1) !important;
 }

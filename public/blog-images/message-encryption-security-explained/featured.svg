@@ -1,50 +1,101 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    <linearGradient id="enc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
     </linearGradient>
+    <linearGradient id="enc-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#818cf8" stop-opacity="0.6"/>
+    </linearGradient>
+    <filter id="enc-blur">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+    <filter id="enc-blur-sm">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
   </defs>
 
-  <!-- Background - clean gradient without grid -->
-  <rect width="800" height="450" fill="url(#bg-gradient)"/>
+  <!-- Background -->
+  <rect width="800" height="450" fill="url(#enc-bg)"/>
 
-  <!-- Subtle decorative circles -->
-  <circle cx="720" cy="80" r="60" fill="white" opacity="0.03"/>
-  <circle cx="80" cy="370" r="50" fill="white" opacity="0.03"/>
+  <!-- Subtle noise texture -->
+  <filter id="enc-noise">
+    <feTurbulence baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <rect width="800" height="450" filter="url(#enc-noise)" opacity="0.03"/>
 
-  <!-- Large lock icon -->
-  <text x="400" y="140" font-family="Arial, sans-serif" font-size="72" text-anchor="middle" fill="white">🔒</text>
+  <!-- Connection lines between nodes -->
+  <g stroke="#38bdf8" stroke-width="1" opacity="0.15">
+    <line x1="120" y1="80" x2="300" y2="180"/>
+    <line x1="300" y1="180" x2="500" y2="120"/>
+    <line x1="500" y1="120" x2="680" y2="200"/>
+    <line x1="120" y1="350" x2="300" y2="270"/>
+    <line x1="300" y1="270" x2="500" y2="340"/>
+    <line x1="500" y1="340" x2="680" y2="280"/>
+    <line x1="300" y1="180" x2="300" y2="270"/>
+    <line x1="500" y1="120" x2="500" y2="340"/>
+  </g>
 
-  <!-- Main Title -->
-  <text x="400" y="220" font-family="Arial, sans-serif" font-size="38" font-weight="bold" text-anchor="middle" fill="white">
-    Message Encryption
+  <!-- Glowing nodes -->
+  <g>
+    <circle cx="120" cy="80" r="16" fill="#38bdf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="120" cy="80" r="4" fill="#38bdf8" opacity="0.6"/>
+    <circle cx="300" cy="180" r="20" fill="#818cf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="300" cy="180" r="5" fill="#818cf8" opacity="0.6"/>
+    <circle cx="500" cy="120" r="16" fill="#38bdf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="500" cy="120" r="4" fill="#38bdf8" opacity="0.6"/>
+    <circle cx="680" cy="200" r="20" fill="#818cf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="680" cy="200" r="5" fill="#818cf8" opacity="0.6"/>
+    <circle cx="120" cy="350" r="16" fill="#818cf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="120" cy="350" r="4" fill="#818cf8" opacity="0.5"/>
+    <circle cx="680" cy="280" r="16" fill="#38bdf8" opacity="0.08" filter="url(#enc-blur)"/>
+    <circle cx="680" cy="280" r="4" fill="#38bdf8" opacity="0.5"/>
+  </g>
+
+  <!-- Central padlock icon -->
+  <g transform="translate(355, 120)">
+    <!-- Lock glow -->
+    <rect x="10" y="40" width="70" height="55" rx="8" fill="#38bdf8" opacity="0.06" filter="url(#enc-blur)"/>
+    <!-- Lock body -->
+    <rect x="15" y="42" width="60" height="48" rx="6" fill="none" stroke="url(#enc-glow)" stroke-width="2.5"/>
+    <!-- Lock shackle -->
+    <path d="M 28 42 V 28 C 28 14 62 14 62 28 V 42" fill="none" stroke="url(#enc-glow)" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Keyhole -->
+    <circle cx="45" cy="62" r="6" fill="#38bdf8" opacity="0.7"/>
+    <rect x="43" y="64" width="4" height="12" rx="2" fill="#38bdf8" opacity="0.7"/>
+  </g>
+
+  <!-- Title -->
+  <text x="400" y="240" font-family="system-ui, -apple-system, sans-serif" font-size="30" font-weight="700" text-anchor="middle" fill="white" letter-spacing="0.5">
+    End-to-End Encryption
   </text>
 
   <!-- Subtitle -->
-  <text x="400" y="268" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="white" opacity="0.9">
+  <text x="400" y="272" font-family="system-ui, -apple-system, sans-serif" font-size="15" text-anchor="middle" fill="#94a3b8" letter-spacing="1">
     An Honest Look at Our Security
   </text>
 
-  <!-- Tech badges with better contrast -->
-  <g transform="translate(200, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
-    <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">AES-256</text>
+  <!-- Tech labels -->
+  <g transform="translate(190, 310)">
+    <rect x="0" y="0" width="100" height="32" rx="16" fill="#38bdf8" opacity="0.1" stroke="#38bdf8" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="50" y="21" font-family="ui-monospace, monospace" font-size="12" font-weight="600" text-anchor="middle" fill="#38bdf8" opacity="0.8">AES-256</text>
+  </g>
+  <g transform="translate(310, 310)">
+    <rect x="0" y="0" width="100" height="32" rx="16" fill="#818cf8" opacity="0.1" stroke="#818cf8" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="50" y="21" font-family="ui-monospace, monospace" font-size="12" font-weight="600" text-anchor="middle" fill="#818cf8" opacity="0.8">Argon2id</text>
+  </g>
+  <g transform="translate(430, 310)">
+    <rect x="0" y="0" width="110" height="32" rx="16" fill="#38bdf8" opacity="0.1" stroke="#38bdf8" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="55" y="21" font-family="ui-monospace, monospace" font-size="12" font-weight="600" text-anchor="middle" fill="#38bdf8" opacity="0.8">ECDH P-256</text>
   </g>
 
-  <g transform="translate(340, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
-    <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">Argon2id</text>
-  </g>
+  <!-- Bottom accent line -->
+  <rect x="300" y="370" width="200" height="1" fill="url(#enc-glow)" opacity="0.3"/>
 
-  <g transform="translate(480, 310)">
-    <rect x="0" y="0" width="120" height="40" rx="20" fill="white" opacity="0.25"/>
-    <text x="60" y="27" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">ECDH P-256</text>
-  </g>
-
-  <!-- Bottom text -->
-  <text x="400" y="410" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="white" opacity="0.6">
-    ScriptHammer Blog
+  <!-- Brand -->
+  <text x="400" y="410" font-family="system-ui, -apple-system, sans-serif" font-size="11" text-anchor="middle" fill="#475569" letter-spacing="2">
+    SCRIPTHAMMER
   </text>
 </svg>

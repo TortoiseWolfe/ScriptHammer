@@ -31,7 +31,7 @@
         "showAuthor": true,
         "showShareButtons": true,
         "featured": true,
-        "featuredImage": "/blog-images/message-encryption-security-explained/featured.png",
+        "featuredImage": "/blog-images/message-encryption-security-explained/featured.svg",
         "featuredImageAlt": "End-to-end encryption explained with lock icons and security badges showing AES-256 and Argon2id"
       },
       "seo": {
@@ -447,7 +447,7 @@
         "showAuthor": true,
         "showShareButtons": true,
         "featured": false,
-        "featuredImage": "/blog-images/scripthammer-intro/featured-og.svg",
+        "featuredImage": "/blog-images/scripthammer-intro/featured-og.png",
         "featuredImageAlt": "Scripthammer - The Opinionated Next.js PWA Template with 32 themes and Docker development"
       },
       "seo": {
@@ -481,7 +481,7 @@
           "documentation"
         ],
         "excerpt": "Opinionated Next.js 15.5 template with PWA support, 32 DaisyUI themes, Docker-first development environment, and comprehensive testing suite.",
-        "featuredImage": "/blog-images/scripthammer-intro/featured-og.svg",
+        "featuredImage": "/blog-images/scripthammer-intro/featured-og.png",
         "featuredImageAlt": "Scripthammer - The Opinionated Next.js PWA Template with 32 themes and Docker development",
         "ogImage": "/blog-images/scripthammer-intro/featured-og.png",
         "ogTitle": "Scripthammer - Opinionated Next.js PWA Template",

@@ -1,6 +1,6 @@
-/* Blog Typography Enhancements */
+/* Blog Typography — editorial, readable */
 
-/* Blog content specific styling */
+/* Blog content base */
 .blog-post-viewer .prose {
   font-size: 1.125rem;
   line-height: 1.75;
@@ -17,32 +17,31 @@
   .blog-post-viewer .prose p {
     font-size: 1.25rem;
     line-height: 1.9;
-    margin-bottom: 2em !important;
+    margin-bottom: 1.5em !important;
   }
 }
 
-/* Enhanced paragraph spacing */
+/* Paragraph spacing */
 .blog-post-viewer .prose p {
-  margin-bottom: 1.75em;
+  margin-bottom: 1.5em;
   font-weight: 400;
   line-height: 1.8;
 }
 
-/* Fix for Tailwind prose-xl and prose-2xl overrides */
+/* List items: clean spacing */
 .blog-post-viewer .prose-xl li,
 .blog-post-viewer .prose-2xl li {
-  margin-top: 2em !important;
-  margin-bottom: 2em !important;
-  padding-bottom: 2em !important;
+  margin-top: 0.75em !important;
+  margin-bottom: 0.75em !important;
+  padding-bottom: 0.5em !important;
 }
 
-/* Add visual separation for numbered list items */
+/* Numbered list items: subtle separator */
 .blog-post-viewer .prose-xl ol > li,
 .blog-post-viewer .prose-2xl ol > li {
-  border-bottom: 3px solid;
-  border-color: oklch(var(--bc) / 0.1);
-  padding-bottom: 3em !important;
-  margin-bottom: 3em !important;
+  border-bottom: 1px solid oklch(var(--bc) / 0.08);
+  padding-bottom: 1.5em !important;
+  margin-bottom: 1.5em !important;
 }
 
 .blog-post-viewer .prose-xl ol > li:last-child,
@@ -50,41 +49,40 @@
   border-bottom: none;
 }
 
-/* Make H3 inside list items stand out */
+/* H3 inside list items */
 .blog-post-viewer .prose-xl li > h3,
 .blog-post-viewer .prose-2xl li > h3 {
-  font-size: 1.75rem !important;
+  font-size: 1.5rem !important;
   font-weight: 700 !important;
   margin-top: 0 !important;
-  margin-bottom: 1.5rem !important;
+  margin-bottom: 1rem !important;
   color: oklch(var(--p));
 }
 
-/* Fix heading hierarchy for prose-xl and prose-2xl */
+/* H2 heading */
 .blog-post-viewer .prose-xl h2,
 .blog-post-viewer .prose-2xl h2 {
-  font-size: 2.5rem !important;
-  margin-top: 3rem !important;
-  margin-bottom: 2rem !important;
-  padding-top: 2rem !important;
-  border-top: 4px solid;
-  border-color: oklch(var(--p));
+  font-size: 2.25rem !important;
+  margin-top: 2.5rem !important;
+  margin-bottom: 1.5rem !important;
+  padding-top: 1.5rem !important;
+  border-top: 2px solid oklch(var(--bc) / 0.1);
 }
 
 .blog-post-viewer .prose-xl h3:not(li h3),
 .blog-post-viewer .prose-2xl h3:not(li h3) {
-  font-size: 2rem !important;
-  margin-top: 2.5rem !important;
-  margin-bottom: 1.5rem !important;
+  font-size: 1.5rem !important;
+  margin-top: 2rem !important;
+  margin-bottom: 1rem !important;
 }
 
-/* Better blockquote styling */
+/* Blockquote */
 .blog-post-viewer .prose blockquote {
   font-size: 1.125rem;
-  border-left-width: 4px;
+  border-left-width: 3px;
   padding-left: 1.5em;
   font-style: italic;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
 /* Code blocks */
@@ -105,7 +103,7 @@
   max-width: 75ch;
 }
 
-/* TOC styling - smaller and less prominent */
+/* TOC styling */
 .blog-post-viewer aside details summary {
   font-size: 0.95rem;
   opacity: 0.8;
@@ -132,7 +130,7 @@
   color: var(--primary);
 }
 
-/* Mobile optimizations */
+/* Mobile */
 @media (max-width: 640px) {
   .blog-post-viewer .prose {
     font-size: 1.0625rem;
@@ -152,28 +150,19 @@
   }
 }
 
-/* Force spacing between all elements in prose-xl and prose-2xl */
+/* Spacing between elements */
 .blog-post-viewer .prose-xl > * + *,
 .blog-post-viewer .prose-2xl > * + * {
-  margin-top: 2rem !important;
+  margin-top: 1rem !important;
 }
 
-/* Add background to sections after h2 */
-.blog-post-viewer .prose-xl h2 + *,
-.blog-post-viewer .prose-2xl h2 + * {
-  padding: 2rem;
-  background: oklch(var(--b2));
-  border-radius: 1rem;
-  margin-bottom: 2rem;
-}
-
-/* Images need more space */
+/* Images */
 .blog-post-viewer .prose img {
   margin-top: 2em;
   margin-bottom: 2em;
 }
 
-/* Dark mode adjustments */
+/* Dark mode */
 @media (prefers-color-scheme: dark) {
   .blog-post-viewer .prose {
     color: rgba(255, 255, 255, 0.9);
@@ -184,7 +173,7 @@
   }
 
   .blog-post-viewer .prose h2 {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.08);
   }
 
   .blog-post-viewer .prose h3 {
