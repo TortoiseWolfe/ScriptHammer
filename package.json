@@ -39,7 +39,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "rm -rf storybook-static && storybook build",
+    "build-storybook": "rm -rf storybook-static && STORYBOOK_SKIP_STATIC=1 storybook build && cp -r public/* storybook-static/",
     "sprint:plan": "node scripts/sprint-planning.js full",
     "sprint:spec": "node scripts/sprint-planning.js spec",
     "sprint:tasks": "node scripts/sprint-planning.js tasks",

@@ -20,7 +20,7 @@ const config: StorybookConfig = {
     name: '@storybook/nextjs-vite',
     options: {},
   },
-  staticDirs: ['../public'],
+  staticDirs: process.env.STORYBOOK_SKIP_STATIC ? [] : ['../public'],
   viteFinal: async (config) => {
     const storybookDir = path.dirname(new URL(import.meta.url).pathname);
     config.resolve = config.resolve || {};
