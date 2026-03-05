@@ -53,7 +53,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('profiles').select('*');
+      const { data, error } = await clientA.from('user_profiles').select('*');
 
       expect(error).toBeNull();
       expect(data).toHaveLength(1);
@@ -68,7 +68,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       );
 
       // Query all profiles - should only get own profile
-      const { data, error } = await clientA.from('profiles').select('*');
+      const { data, error } = await clientA.from('user_profiles').select('*');
 
       expect(error).toBeNull();
       expect(data).toHaveLength(1);
@@ -85,7 +85,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // Try to directly query User B's profile
       const { data, error } = await clientA
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', userB.id);
 
@@ -98,7 +98,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('unauthenticated user cannot query profiles', async () => {
       const anonClient = createAnonClient();
 
-      const { data, error } = await anonClient.from('profiles').select('*');
+      const { data, error } = await anonClient
+        .from('user_profiles')
+        .select('*');
 
       // RLS should return empty set for anon users (no policy grants access)
       expect(data).toHaveLength(0);
@@ -137,7 +139,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       const newDisplayName = 'Updated Name A';
       const { data, error } = await clientA
-        .from('profiles')
+        .from('user_profiles')
         .update({ display_name: newDisplayName })
         .eq('id', userA.id)
         .select()
@@ -156,7 +158,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       const newBio = 'This is my updated bio';
       const { data, error } = await clientA
-        .from('profiles')
+        .from('user_profiles')
         .update({ bio: newBio })
         .eq('id', userA.id)
         .select()
@@ -175,7 +177,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // User A tries to update User B's profile
       const { data, error } = await clientA
-        .from('profiles')
+        .from('user_profiles')
         .update({ display_name: 'Hacked Name' })
         .eq('id', userB.id)
         .select();
@@ -193,7 +195,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // Attempt to update User B's profile
       const { data, error, count } = await clientA
-        .from('profiles')
+        .from('user_profiles')
         .update({ display_name: 'Attempted Hack' })
         .eq('id', userB.id)
         .select();

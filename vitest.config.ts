@@ -44,9 +44,14 @@ export default defineConfig({
       'tests/integration/avatar/upload-flow.integration.test.ts', // 4 tests - requires real browser
       // Exclude messaging schema verification - hits real Supabase, rate limit / transient failures
       'tests/integration/messaging/database-setup.test.ts', // DB schema verification - run manually after migrations
-      // NOTE: tests/rls/** self-gate via describe.skipIf(!hasRlsTestEnvironment())
-      // so they show as "skipped" in CI instead of being invisibly excluded here.
-      // Run them locally with: docker compose --profile supabase up && pnpm test:rls
+      // Exclude RLS tests — require local Supabase instance with correct schema.
+      // CI has Supabase credentials (for build/deploy) so the skipIf guard passes,
+      // but the CI instance doesn't have the right schema for these tests.
+      // Run locally with: docker compose --profile supabase up && pnpm test:rls
+      'tests/rls/anonymous-access.test.ts',
+      'tests/rls/audit-immutability.test.ts',
+      'tests/rls/service-role.test.ts',
+      'tests/rls/user-isolation.test.ts',
       // Exclude remaining contract/integration tests requiring service role key
       'tests/contract/auth/sign-out.contract.test.ts',
       'tests/contract/auth/sign-in.contract.test.ts',

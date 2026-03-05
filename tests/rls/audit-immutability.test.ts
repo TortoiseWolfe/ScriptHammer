@@ -42,7 +42,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // Create a test audit log entry via service role
       const serviceClient = createServiceClient();
       const { data } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
           event_type: 'profile.updated',
@@ -66,7 +66,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('audit_logs').select('*');
+      const { data, error } = await clientA.from('auth_audit_logs').select('*');
 
       expect(error).toBeNull();
       expect(data!.length).toBeGreaterThan(0);
@@ -83,7 +83,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('audit_logs').select('*');
+      const { data, error } = await clientA.from('auth_audit_logs').select('*');
 
       expect(error).toBeNull();
       // User A should not see any of User B's audit logs
@@ -100,7 +100,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // Try to update the audit log entry
       const { data, error } = await clientA
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .update({ details: { tampered: true } })
         .eq('id', testAuditLogId)
         .select();
@@ -118,7 +118,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // Try to delete the audit log entry
       const { data, error } = await clientA
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .delete()
         .eq('id', testAuditLogId)
         .select();
@@ -129,7 +129,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // Verify the log still exists (check via service role)
       const serviceClient = createServiceClient();
       const { data: checkData } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .select('*')
         .eq('id', testAuditLogId)
         .single();
@@ -143,7 +143,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const serviceClient = createServiceClient();
 
       const { data, error } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
           event_type: 'user.login',
@@ -163,7 +163,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // Get the original entry
       const { data: original } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .select('*')
         .eq('id', testAuditLogId)
         .single();
@@ -181,7 +181,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const serviceClient = createServiceClient();
 
       const { data, error } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .select('event_type');
 
       expect(error).toBeNull();

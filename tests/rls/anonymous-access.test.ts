@@ -43,7 +43,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('anon user cannot SELECT from profiles', async () => {
       const anonClient = createAnonClient();
 
-      const { data, error } = await anonClient.from('profiles').select('*');
+      const { data, error } = await anonClient
+        .from('user_profiles')
+        .select('*');
 
       // RLS returns empty set for anon (no policy grants SELECT)
       expect(error).toBeNull();
@@ -54,7 +56,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('anon user cannot INSERT to profiles', async () => {
       const anonClient = createAnonClient();
 
-      const { data, error } = await anonClient.from('profiles').insert({
+      const { data, error } = await anonClient.from('user_profiles').insert({
         id: '00000000-0000-0000-0000-000000000000',
         display_name: 'Malicious User',
       });
@@ -67,7 +69,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('anon user cannot SELECT from audit_logs', async () => {
       const anonClient = createAnonClient();
 
-      const { data, error } = await anonClient.from('audit_logs').select('*');
+      const { data, error } = await anonClient
+        .from('auth_audit_logs')
+        .select('*');
 
       // RLS returns empty set for anon
       expect(error).toBeNull();
@@ -82,19 +86,19 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // 1. Direct select all
       const { data: allProfiles } = await anonClient
-        .from('profiles')
+        .from('user_profiles')
         .select('id');
       expect(allProfiles).toHaveLength(0);
 
       // 2. Count query
       const { count } = await anonClient
-        .from('profiles')
+        .from('user_profiles')
         .select('*', { count: 'exact', head: true });
       expect(count).toBe(0);
 
       // 3. Range query
       const { data: rangeData } = await anonClient
-        .from('profiles')
+        .from('user_profiles')
         .select('id')
         .range(0, 100);
       expect(rangeData).toHaveLength(0);
@@ -105,7 +109,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const anonClient = createAnonClient();
 
       const { data, error } = await anonClient
-        .from('profiles')
+        .from('user_profiles')
         .update({ display_name: 'Hacked' })
         .eq('id', testUser.id);
 
@@ -118,7 +122,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const anonClient = createAnonClient();
 
       const { data, error } = await anonClient
-        .from('profiles')
+        .from('user_profiles')
         .delete()
         .eq('id', testUser.id);
 
@@ -130,7 +134,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('anon user cannot INSERT to audit_logs', async () => {
       const anonClient = createAnonClient();
 
-      const { data, error } = await anonClient.from('audit_logs').insert({
+      const { data, error } = await anonClient.from('auth_audit_logs').insert({
         event_type: 'user.login',
         details: { malicious: true },
       });

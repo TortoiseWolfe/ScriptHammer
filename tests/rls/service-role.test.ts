@@ -48,7 +48,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('service role can SELECT all profiles', async () => {
       const serviceClient = createServiceClient();
 
-      const { data, error } = await serviceClient.from('profiles').select('*');
+      const { data, error } = await serviceClient
+        .from('user_profiles')
+        .select('*');
 
       expect(error).toBeNull();
       // Service role should see ALL profiles
@@ -62,7 +64,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const serviceClient = createServiceClient();
 
       const { data, error } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
           event_type: 'user.login',
@@ -82,7 +84,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       const adminNote = 'Updated by admin';
       const { data, error } = await serviceClient
-        .from('profiles')
+        .from('user_profiles')
         .update({ bio: adminNote })
         .eq('id', userB.id)
         .select()
@@ -99,7 +101,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('audit_logs').insert({
+      const { data, error } = await clientA.from('auth_audit_logs').insert({
         user_id: userA.id,
         event_type: 'user.login',
         details: { attempted_by: 'user' },
@@ -114,7 +116,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const serviceClient = createServiceClient();
 
       const { data, error } = await serviceClient
-        .from('audit_logs')
+        .from('auth_audit_logs')
         .select('*');
 
       expect(error).toBeNull();
@@ -129,7 +131,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('audit_logs').select('*');
+      const { data, error } = await clientA.from('auth_audit_logs').select('*');
 
       expect(error).toBeNull();
       // User A should only see their own audit logs
