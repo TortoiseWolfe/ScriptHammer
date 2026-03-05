@@ -64,6 +64,18 @@ describe('migration workflow integration', () => {
   });
 
   afterEach(() => {
+    // Restore permissions on any chmod'd directories before cleanup
+    const comp2Dir = path.join(
+      testProjectDir,
+      'src/components/atomic/ComponentTwo'
+    );
+    try {
+      if (fs.existsSync(comp2Dir)) {
+        fs.chmodSync(comp2Dir, 0o755);
+      }
+    } catch {
+      // Ignore if directory doesn't exist
+    }
     fs.rmSync(testProjectDir, { recursive: true, force: true });
   });
 
@@ -161,8 +173,8 @@ describe('migration workflow integration', () => {
     assert.ok(dryRunResult.planned, 'Should have planned actions');
     assert.strictEqual(
       dryRunResult.planned.length,
-      3,
-      'Should plan 3 migrations'
+      9,
+      'Should plan 9 file creations (across 3 components with 5-file pattern)'
     );
 
     // Verify no actual changes were made
@@ -180,9 +192,10 @@ describe('migration workflow integration', () => {
 
     const componentsPath = path.join(testProjectDir, 'src/components');
 
-    // Make one component read-only to simulate failure
+    // Make one component directory non-writable to simulate write failure
+    // Use 0o555 (r-xr-xr-x) so audit can still read/stat files but migration can't write
     const comp2Dir = path.join(componentsPath, 'atomic/ComponentTwo');
-    fs.chmodSync(comp2Dir, 0o444);
+    fs.chmodSync(comp2Dir, 0o555);
 
     const result = migrateComponents({
       path: componentsPath,

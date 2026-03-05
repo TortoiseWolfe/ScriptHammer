@@ -50,9 +50,12 @@ function parseGitUrl(url) {
     }
   }
 
-  // Try generic git URL parsing for other hosts
+  // Try generic git URL parsing for other hosts.
+  // ^ anchor + @ in the host exclusion class are both load-bearing: without
+  // them, `git@@github.com:user/repo` matches and captures `@github.com` as
+  // the host — garbage that silently propagates into basePath/projectUrl.
   const genericPattern =
-    /(?:git@|https?:\/\/)([^:\/]+)[:\\/]([^\/]+)\/([^\/\.]+)/;
+    /^(?:git@|https?:\/\/)([^:\/@]+)[:\/]([^\/]+)\/([^\/\.]+)(?:\.git)?$/;
   const genericMatch = url.match(genericPattern);
   if (genericMatch) {
     return {

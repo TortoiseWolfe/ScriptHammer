@@ -36,6 +36,7 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
       };
 
       plopfile(mockPlop);
@@ -55,6 +56,7 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
       };
 
       plopfile(mockPlop);
@@ -80,18 +82,29 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
       };
 
       plopfile(mockPlop);
       const generator = mockPlop.generators.component;
 
       assert.ok(generator.actions, 'Should have actions');
+      // actions is a function in the plopfile; invoke it to get the array
+      const actions =
+        typeof generator.actions === 'function'
+          ? generator.actions({
+              name: 'Test',
+              category: 'atomic',
+              hasProps: true,
+              withHooks: false,
+            })
+          : generator.actions;
       assert.ok(
-        generator.actions.length >= 4,
+        actions.length >= 4,
         'Should have at least 4 actions (4 files)'
       );
 
-      const paths = generator.actions.map((a) => a.path);
+      const paths = actions.map((a) => a.path);
       assert.ok(
         paths.some((p) => p.includes('index.tsx')),
         'Should create index.tsx'
@@ -112,7 +125,7 @@ describe('plop component generator', () => {
   });
 
   describe('template validation', () => {
-    const templateDir = path.join(__dirname, '../../plop-templates/component');
+    const templateDir = path.join(__dirname, '../../tools/templates/component');
 
     it('should have all required templates', () => {
       // Templates might not exist yet in TDD
@@ -180,12 +193,15 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
         renderString: function (template, data) {
-          // Simple template replacement
-          return template.replace(
-            /\{\{(\w+)\}\}/g,
-            (match, key) => data[key] || match
-          );
+          // Simple template replacement for both {{key}} and {{pascalCase key}}
+          return template
+            .replace(
+              /\{\{pascalCase (\w+)\}\}/g,
+              (match, key) => data[key] || match
+            )
+            .replace(/\{\{(\w+)\}\}/g, (match, key) => data[key] || match);
         },
       };
 
@@ -207,7 +223,12 @@ describe('plop component generator', () => {
         'src/components/atomic/TestButton/TestButton.stories.tsx',
       ];
 
-      generator.actions.forEach((action, index) => {
+      // actions is a function in the plopfile; invoke it to get the array
+      const actions =
+        typeof generator.actions === 'function'
+          ? generator.actions(answers)
+          : generator.actions;
+      actions.forEach((action, index) => {
         if (action.type === 'add') {
           const renderedPath = mockPlop.renderString(action.path, answers);
           assert.ok(
@@ -228,6 +249,7 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
       };
 
       plopfile(mockPlop);
@@ -265,6 +287,7 @@ describe('plop component generator', () => {
         setGenerator: function (name, config) {
           this.generators[name] = config;
         },
+        setHelper: function () {},
       };
 
       plopfile(mockPlop);
@@ -274,17 +297,20 @@ describe('plop component generator', () => {
       assert.ok(namePrompt, 'Should have name prompt');
 
       if (namePrompt.validate) {
-        // Test validation function
-        assert.ok(
+        // Plop validators return true for valid, or an error string for invalid
+        assert.strictEqual(
           namePrompt.validate('ValidComponent'),
+          true,
           'Should accept valid PascalCase'
         );
-        assert.ok(
-          !namePrompt.validate('invalid-component'),
+        assert.notStrictEqual(
+          namePrompt.validate('invalid-component'),
+          true,
           'Should reject kebab-case'
         );
-        assert.ok(
-          !namePrompt.validate('123Component'),
+        assert.notStrictEqual(
+          namePrompt.validate('123Component'),
+          true,
           'Should reject names starting with numbers'
         );
       }
@@ -294,8 +320,8 @@ describe('plop component generator', () => {
   describe('template content', () => {
     it('should generate proper index.tsx content', () => {
       // This would be tested with actual template content
-      const expectedContent = `export { default } from './ComponentName';
-export type { ComponentNameProps } from './ComponentName';`;
+      const expectedContent = `export { default } from './{{name}}';
+export type { {{name}}Props } from './{{name}}';`;
 
       // Mock template rendering
       const renderTemplate = (template, data) => {

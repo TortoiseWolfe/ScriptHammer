@@ -45,6 +45,10 @@ describe('audit workflow integration', () => {
       path.join(buttonDir, 'Button.stories.tsx'),
       'export default { title: "Button" };'
     );
+    fs.writeFileSync(
+      path.join(buttonDir, 'Button.accessibility.test.tsx'),
+      'test("has no a11y violations", () => {});'
+    );
 
     // Atomic components (some non-compliant)
     const cardDir = path.join(componentsDir, 'atomic/Card');
