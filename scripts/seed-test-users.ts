@@ -125,6 +125,12 @@ async function setupAdminUser(): Promise<boolean> {
     if (existingAdmin) {
       console.log(`  ℹ️  Admin user already exists (ID: ${existingAdmin.id})`);
       adminUserId = existingAdmin.id;
+      // Idempotence: a pre-existing admin still needs the JWT claim the
+      // admin_* RPC guards check. updateUserById merges into
+      // raw_app_meta_data, so this is safe to re-run.
+      await supabase.auth.admin.updateUserById(existingAdmin.id, {
+        app_metadata: { is_admin: true },
+      });
     } else {
       // Create admin auth user with fixed UUID
       console.log('  🔐 Creating admin auth user...');
@@ -134,6 +140,10 @@ async function setupAdminUser(): Promise<boolean> {
           password: 'AdminPassword123!', // Not used - no login needed
           email_confirm: true,
           user_metadata: { username: ADMIN_USER.username },
+          // Lands in auth.users.raw_app_meta_data → JWT app_metadata claim →
+          // COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::bool, false).
+          // Without this the admin_* RPCs silently return '{}' to this user.
+          app_metadata: { is_admin: true },
         });
 
       if (authError) {
@@ -147,6 +157,9 @@ async function setupAdminUser(): Promise<boolean> {
           );
           if (existing) {
             adminUserId = existing.id;
+            await supabase.auth.admin.updateUserById(existing.id, {
+              app_metadata: { is_admin: true },
+            });
           }
         } else {
           console.error(`  ❌ Auth error: ${authError.message}`);
@@ -166,6 +179,12 @@ async function setupAdminUser(): Promise<boolean> {
         username: ADMIN_USER.username,
         display_name: ADMIN_USER.displayName,
         welcome_message_sent: true, // Admin doesn't receive welcome messages
+        // Second admin flag: the /admin layout guard reads this column via
+        // AdminAuthService.checkIsAdmin() → SELECT is_admin FROM user_profiles.
+        // The JWT claim above gates the RPCs; this gates the UI. Without both,
+        // sign-in succeeds and RPCs return data but the layout returns null
+        // and redirects to / — which is exactly what the admin-smoke caught.
+        is_admin: true,
       },
       { onConflict: 'id' }
     );

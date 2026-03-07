@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { AdminUserService } from '@/services/admin/admin-user-service';
@@ -10,12 +10,20 @@ import type {
   AdminUserRow,
 } from '@/services/admin/admin-user-service';
 
+const SEARCH_DEBOUNCE_MS = 300;
+
 export default function AdminUsersPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminUserStats | null>(null);
   const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Hold the initialized service so search refetch doesn't re-initialize.
+  const serviceRef = useRef<AdminUserService | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadData = useCallback(async (userId: string) => {
     setIsLoading(true);
@@ -25,12 +33,14 @@ export default function AdminUsersPage() {
 
     try {
       await service.initialize(userId);
-      const [userStats, userRows] = await Promise.all([
+      serviceRef.current = service;
+      const [userStats, list] = await Promise.all([
         service.getStats(),
-        service.getUsers(),
+        service.listUsers(),
       ]);
       setStats(userStats);
-      setUsers(userRows);
+      setUsers(list.users);
+      setTotal(list.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load user data');
     } finally {
@@ -38,11 +48,33 @@ export default function AdminUsersPage() {
     }
   }, []);
 
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      const service = serviceRef.current;
+      if (!service) return;
+      try {
+        const list = await service.listUsers({ search: query });
+        setUsers(list.users);
+        setTotal(list.total);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Search failed');
+      }
+    }, SEARCH_DEBOUNCE_MS);
+  }, []);
+
   useEffect(() => {
     if (user?.id) {
       loadData(user.id);
     }
   }, [user?.id, loadData]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   return (
     <div>
@@ -59,6 +91,9 @@ export default function AdminUsersPage() {
       <AdminUserManagement
         stats={stats}
         users={users}
+        total={total}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
         isLoading={isLoading}
         testId="admin-users"
       />

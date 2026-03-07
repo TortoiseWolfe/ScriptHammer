@@ -3,8 +3,16 @@
 import React from 'react';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
 import { AdminDataTable } from '@/components/molecular/AdminDataTable';
+import DateRangeFilter, {
+  type DateRange,
+} from '@/components/molecular/DateRangeFilter';
+import PaymentTrendChart from '@/components/molecular/PaymentTrendChart';
 import type { AdminDataTableColumn } from '@/components/molecular/AdminDataTable';
-import type { AdminPaymentStats } from '@/services/admin/admin-payment-service';
+import type {
+  AdminPaymentStats,
+  AdminPaymentTrends,
+  ProviderBreakdown,
+} from '@/services/admin/admin-payment-service';
 import type { PaymentActivity } from '@/types/payment';
 
 export interface AdminPaymentPanelProps {
@@ -12,12 +20,27 @@ export interface AdminPaymentPanelProps {
   stats: AdminPaymentStats | null;
   /** Recent transactions */
   transactions: PaymentActivity[];
+  /** Date-ranged trends — section hidden when absent */
+  trends?: AdminPaymentTrends | null;
+  /** Current date range for the filter */
+  range?: DateRange;
+  /** Fires when the user changes the date range */
+  onRangeChange?: (range: DateRange) => void;
   /** Show loading spinner */
   isLoading?: boolean;
   /** Additional CSS classes */
   className?: string;
   /** Test ID for testing */
   testId?: string;
+}
+
+// A provider with >20% of its activity failing is worth flagging.
+// Answers the "is Stripe having issues" Monday-morning question.
+const FAILURE_FLAG_THRESHOLD = 0.2;
+
+function failureShare(p: ProviderBreakdown): number {
+  const total = p.succeeded + p.failed + p.refunded;
+  return total === 0 ? 0 : p.failed / total;
 }
 
 function formatCents(cents: number): string {
@@ -89,6 +112,9 @@ const columns: AdminDataTableColumn<TransactionRow>[] = [
 export function AdminPaymentPanel({
   stats,
   transactions,
+  trends,
+  range,
+  onRangeChange,
   isLoading = false,
   className = '',
   testId,
@@ -144,6 +170,99 @@ export function AdminPaymentPanel({
         </div>
       </section>
 
+      {/* Trends: date-ranged breakdown */}
+      {trends && (
+        <section aria-labelledby="payment-trends-heading">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <h2 id="payment-trends-heading" className="text-xl font-semibold">
+              Provider Breakdown
+            </h2>
+            {onRangeChange && (
+              <DateRangeFilter
+                value={range}
+                onChange={onRangeChange}
+                testId="payment-range-filter"
+              />
+            )}
+          </div>
+
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <AdminStatCard
+              label="Refund Rate"
+              value={`${(trends.refund_rate * 100).toFixed(2)}%`}
+              trend={trends.refund_rate > 0.05 ? 'up' : 'neutral'}
+              testId="stat-refund-rate"
+            />
+            <AdminStatCard
+              label="Succeeded"
+              value={trends.totals.succeeded}
+              description={formatCents(trends.totals.revenue_cents)}
+              testId="stat-range-succeeded"
+            />
+            <AdminStatCard
+              label="Failed"
+              value={trends.totals.failed}
+              trend={trends.totals.failed > 0 ? 'down' : 'neutral'}
+              testId="stat-range-failed"
+            />
+          </div>
+
+          <PaymentTrendChart
+            data={trends.daily_series}
+            className="text-base-content mb-4"
+            testId="payment-trend-chart"
+          />
+
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Succeeded</th>
+                  <th>Failed</th>
+                  <th>Refunded</th>
+                  <th>Revenue</th>
+                  <th>Health</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trends.provider_breakdown.map((p) => {
+                  const flagged = failureShare(p) > FAILURE_FLAG_THRESHOLD;
+                  return (
+                    <tr key={p.provider}>
+                      <td className="font-medium">{p.provider}</td>
+                      <td>{p.succeeded}</td>
+                      <td>{p.failed}</td>
+                      <td>{p.refunded}</td>
+                      <td>{formatCents(p.revenue_cents)}</td>
+                      <td>
+                        {flagged ? (
+                          <span className="badge badge-error">
+                            Elevated failures
+                          </span>
+                        ) : (
+                          <span className="badge badge-success">OK</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {trends.provider_breakdown.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="text-base-content/60 text-center"
+                    >
+                      No activity in this range
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
       {/* Transaction Table */}
       <section aria-labelledby="transaction-table-heading">
         <h2
@@ -157,6 +276,19 @@ export function AdminPaymentPanel({
           data={transactions as TransactionRow[]}
           emptyMessage="No transactions found"
           testId="payment-transactions-table"
+          renderExpandedRow={(row) => (
+            // The 3 PaymentActivity fields the column list doesn't surface.
+            // transaction_id is the one an admin actually wants — it's the
+            // pi_* / pp_* string you paste into Stripe/PayPal's dashboard.
+            <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 py-2 text-sm">
+              <dt className="text-base-content/60">Provider transaction ID</dt>
+              <dd className="font-mono">{row.transaction_id as string}</dd>
+              <dt className="text-base-content/60">Internal ID</dt>
+              <dd className="font-mono">{row.id as string}</dd>
+              <dt className="text-base-content/60">Created at</dt>
+              <dd className="font-mono">{row.created_at as string}</dd>
+            </dl>
+          )}
         />
       </section>
     </div>

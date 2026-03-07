@@ -128,6 +128,27 @@ describe('WelcomeService', () => {
   });
 
   describe('sendWelcomeMessage', () => {
+    it('skips when userId is admin — no self-welcome, no DB touch', async () => {
+      // Surfaced in live walkthrough: admin sign-in triggers the welcome
+      // flow with userId === ADMIN_USER_ID. getOrCreateConversation's
+      // canonical sort collapses (admin < admin is false) and PG rejects
+      // with 23514 on canonical_ordering. Guard before any query.
+      const result = await welcomeService.sendWelcomeMessage(
+        ADMIN_USER_ID,
+        mockPrivateKey,
+        testPublicKey
+      );
+
+      expect(result).toEqual({
+        success: true,
+        skipped: true,
+        reason: 'User is admin',
+      });
+      // Short-circuit before step 1 (profile lookup) — zero DB traffic.
+      expect(mockFns.mockSupabaseFrom).not.toHaveBeenCalled();
+      expect(mockFns.mockMessagingFrom).not.toHaveBeenCalled();
+    });
+
     it('sends welcome message with new signature (T012)', async () => {
       // Setup: User profile without welcome message sent
       mockFns.mockSupabaseFrom.mockImplementation((table: string) => {

@@ -3,6 +3,7 @@ import { AdminAuditTrail } from './AdminAuditTrail';
 import type {
   AdminAuthStats,
   AuditLogEntry,
+  AdminAuditTrends,
 } from '@/services/admin/admin-audit-service';
 
 const mockStats: AdminAuthStats = {
@@ -110,6 +111,66 @@ export const WithAnomalies: Story = {
   args: {
     stats: mockStatsWithAnomalies,
     events: mockEvents,
+    eventTypeFilter: '',
+    onEventTypeChange: () => {},
+  },
+};
+
+const mockTrends: AdminAuditTrends = {
+  range: { start: '2026-02-26T00:00:00Z', end: '2026-03-05T00:00:00Z' },
+  totals: { sign_in_failed: 18, sign_in_success: 412, bursts: 2 },
+  bursts: [
+    {
+      // distinct_users=1: someone hammering one account
+      ip_address: '203.0.113.42',
+      first_seen: '2026-03-03T14:02:11Z',
+      last_seen: '2026-03-03T14:09:47Z',
+      attempts: 11,
+      distinct_users: 1,
+    },
+    {
+      // distinct_users=4: credential stuffing across accounts
+      ip_address: '198.51.100.7',
+      first_seen: '2026-03-04T03:15:00Z',
+      last_seen: '2026-03-04T03:22:30Z',
+      attempts: 6,
+      distinct_users: 4,
+    },
+  ],
+  daily_series: [
+    { day: '2026-02-26', failed: 0, succeeded: 55 },
+    { day: '2026-02-27', failed: 1, succeeded: 60 },
+    { day: '2026-02-28', failed: 0, succeeded: 58 },
+    { day: '2026-03-01', failed: 0, succeeded: 61 },
+    { day: '2026-03-02', failed: 0, succeeded: 57 },
+    { day: '2026-03-03', failed: 11, succeeded: 59 },
+    { day: '2026-03-04', failed: 6, succeeded: 62 },
+  ],
+};
+
+export const WithBursts: Story = {
+  args: {
+    stats: mockStats,
+    events: mockEvents,
+    trends: mockTrends,
+    range: { start: '2026-02-26', end: '2026-03-05' },
+    onRangeChange: () => {},
+    eventTypeFilter: '',
+    onEventTypeChange: () => {},
+  },
+};
+
+export const NoBursts: Story = {
+  args: {
+    stats: mockStats,
+    events: mockEvents,
+    trends: {
+      ...mockTrends,
+      bursts: [],
+      totals: { ...mockTrends.totals, bursts: 0 },
+    },
+    range: { start: '2026-02-26', end: '2026-03-05' },
+    onRangeChange: () => {},
     eventTypeFilter: '',
     onEventTypeChange: () => {},
   },

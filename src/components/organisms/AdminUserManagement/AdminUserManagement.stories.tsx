@@ -12,6 +12,10 @@ const mockStats: AdminUserStats = {
   total_connections: 120,
 };
 
+// Relative to now so "2 days ago" stays accurate in Storybook.
+const daysAgo = (n: number) =>
+  new Date(Date.now() - n * 86_400_000).toISOString();
+
 const mockUsers: AdminUserRow[] = [
   {
     id: 'user-1',
@@ -19,6 +23,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Alice Wonderland',
     created_at: '2025-01-15T10:00:00Z',
     welcome_message_sent: true,
+    last_sign_in_at: daysAgo(2),
+    activity: 'active',
   },
   {
     id: 'user-2',
@@ -26,6 +32,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Bob Builder',
     created_at: '2025-03-20T14:30:00Z',
     welcome_message_sent: false,
+    last_sign_in_at: daysAgo(15),
+    activity: 'idle',
   },
   {
     id: 'user-3',
@@ -33,6 +41,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Carol Singer',
     created_at: '2025-05-10T08:00:00Z',
     welcome_message_sent: true,
+    last_sign_in_at: daysAgo(60),
+    activity: 'dormant',
   },
   {
     id: 'user-4',
@@ -40,6 +50,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: null,
     created_at: '2025-06-01T09:00:00Z',
     welcome_message_sent: false,
+    last_sign_in_at: null,
+    activity: 'dormant',
   },
 ];
 
@@ -65,6 +77,42 @@ export const Default: Story = {
   args: {
     stats: mockStats,
     users: mockUsers,
+    total: 200,
+    searchQuery: '',
+    onSearchChange: () => {},
+  },
+};
+
+export const DormantAccounts: Story = {
+  name: 'Dormant accounts (the scanning question)',
+  args: {
+    stats: mockStats,
+    users: [
+      { ...mockUsers[2] },
+      { ...mockUsers[3] },
+      {
+        id: 'user-5',
+        username: 'dave_silent',
+        display_name: 'Dave Silent',
+        created_at: '2024-11-01T00:00:00Z',
+        welcome_message_sent: true,
+        last_sign_in_at: daysAgo(120),
+        activity: 'dormant',
+      },
+    ],
+    total: 3,
+    searchQuery: '',
+    onSearchChange: () => {},
+  },
+};
+
+export const SearchFiltered: Story = {
+  args: {
+    stats: mockStats,
+    users: [mockUsers[0]],
+    total: 1,
+    searchQuery: 'alice',
+    onSearchChange: () => {},
   },
 };
 

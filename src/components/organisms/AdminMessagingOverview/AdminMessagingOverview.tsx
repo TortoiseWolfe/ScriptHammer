@@ -2,11 +2,24 @@
 
 import React from 'react';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
-import type { AdminMessagingStats } from '@/services/admin/admin-messaging-service';
+import DateRangeFilter, {
+  type DateRange,
+} from '@/components/molecular/DateRangeFilter';
+import MessagingTrendChart from '@/components/molecular/MessagingTrendChart';
+import type {
+  AdminMessagingStats,
+  AdminMessagingTrends,
+} from '@/services/admin/admin-messaging-service';
 
 export interface AdminMessagingOverviewProps {
   /** Messaging statistics */
   stats: AdminMessagingStats | null;
+  /** Date-ranged volume trends — when absent the whole trends section hides */
+  trends?: AdminMessagingTrends | null;
+  /** Controlled range for the filter */
+  range?: DateRange;
+  /** Fires when the date filter changes — omit to hide the filter */
+  onRangeChange?: (range: DateRange) => void;
   /** Show loading spinner */
   isLoading?: boolean;
   /** Additional CSS classes */
@@ -22,6 +35,9 @@ export interface AdminMessagingOverviewProps {
  */
 export function AdminMessagingOverview({
   stats,
+  trends,
+  range,
+  onRangeChange,
   isLoading = false,
   className = '',
   testId,
@@ -109,6 +125,88 @@ export function AdminMessagingOverview({
           />
         </div>
       </section>
+
+      {/* Volume Trends — count and trend, not decrypt and display.
+          Sits directly above the privacy notice so the "what you CAN see"
+          and "what you CANNOT see" land as one unit. */}
+      {trends && (
+        <section aria-labelledby="messaging-trends-heading">
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
+            <h2 id="messaging-trends-heading" className="text-xl font-semibold">
+              Volume Trends
+            </h2>
+            {onRangeChange && (
+              <DateRangeFilter
+                value={range}
+                onChange={onRangeChange}
+                testId="messaging-range-filter"
+              />
+            )}
+          </div>
+
+          <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <AdminStatCard
+              label="Messages"
+              value={trends.totals.messages}
+              testId="stat-range-messages"
+            />
+            <AdminStatCard
+              label="Conversations Created"
+              value={trends.totals.conversations_created}
+              testId="stat-range-convs"
+            />
+            <AdminStatCard
+              label="Active Senders"
+              value={trends.totals.active_senders}
+              testId="stat-range-senders"
+            />
+          </div>
+
+          <MessagingTrendChart
+            data={trends.daily_series}
+            className="text-base-content mb-6"
+            testId="messaging-trend-chart"
+          />
+
+          <h3 className="mb-2 text-lg font-semibold">Top Senders</h3>
+          {trends.top_senders.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="table-sm table" data-testid="top-senders-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th className="text-right">Messages</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trends.top_senders.map((s) => (
+                    <tr key={s.user_id}>
+                      <td>
+                        <div className="font-medium">
+                          {s.display_name ?? s.username ?? 'N/A'}
+                        </div>
+                        {s.username && s.display_name && (
+                          <div className="text-base-content/60 text-xs">
+                            @{s.username}
+                          </div>
+                        )}
+                      </td>
+                      <td className="text-right font-mono">{s.messages}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p
+              className="text-base-content/60 text-sm"
+              data-testid="top-senders-empty"
+            >
+              No messages in this range.
+            </p>
+          )}
+        </section>
+      )}
 
       {/* Privacy Notice */}
       <div className="alert alert-info">

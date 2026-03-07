@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { AdminPaymentPanel } from './AdminPaymentPanel';
-import type { AdminPaymentStats } from '@/services/admin/admin-payment-service';
+import type {
+  AdminPaymentStats,
+  AdminPaymentTrends,
+} from '@/services/admin/admin-payment-service';
 import type { PaymentActivity } from '@/types/payment';
 
 const mockStats: AdminPaymentStats = {
@@ -91,6 +94,75 @@ export const Loading: Story = {
     stats: null,
     transactions: [],
     isLoading: true,
+  },
+};
+
+const mockTrends: AdminPaymentTrends = {
+  range: { start: '2026-02-26T00:00:00Z', end: '2026-03-05T00:00:00Z' },
+  totals: { succeeded: 42, failed: 3, refunded: 2, revenue_cents: 125_000 },
+  refund_rate: 0.0476,
+  provider_breakdown: [
+    {
+      provider: 'stripe',
+      succeeded: 35,
+      failed: 2,
+      refunded: 1,
+      revenue_cents: 100_000,
+    },
+    {
+      provider: 'paypal',
+      succeeded: 7,
+      failed: 1,
+      refunded: 1,
+      revenue_cents: 25_000,
+    },
+  ],
+  daily_series: [
+    { day: '2026-02-26', succeeded: 6, failed: 0, revenue_cents: 18_000 },
+    { day: '2026-02-27', succeeded: 5, failed: 1, revenue_cents: 15_000 },
+    { day: '2026-02-28', succeeded: 8, failed: 0, revenue_cents: 22_000 },
+    { day: '2026-03-01', succeeded: 3, failed: 2, revenue_cents: 9_000 },
+    { day: '2026-03-02', succeeded: 9, failed: 0, revenue_cents: 27_000 },
+    { day: '2026-03-03', succeeded: 7, failed: 1, revenue_cents: 19_000 },
+    { day: '2026-03-04', succeeded: 4, failed: 0, revenue_cents: 12_000 },
+  ],
+};
+
+export const WithTrends: Story = {
+  args: {
+    stats: mockStats,
+    transactions: mockTransactions,
+    trends: mockTrends,
+    range: { start: '2026-02-26', end: '2026-03-05' },
+    onRangeChange: () => {},
+  },
+};
+
+export const TrendsElevatedFailures: Story = {
+  args: {
+    stats: mockStats,
+    transactions: [],
+    trends: {
+      ...mockTrends,
+      provider_breakdown: [
+        {
+          provider: 'stripe',
+          succeeded: 2,
+          failed: 10,
+          refunded: 0,
+          revenue_cents: 500,
+        },
+        {
+          provider: 'paypal',
+          succeeded: 20,
+          failed: 0,
+          refunded: 0,
+          revenue_cents: 5000,
+        },
+      ],
+    },
+    range: { start: '2026-02-26', end: '2026-03-05' },
+    onRangeChange: () => {},
   },
 };
 

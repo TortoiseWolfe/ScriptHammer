@@ -12,6 +12,34 @@ export interface AdminPaymentStats {
   revenue_by_provider: Record<string, number>;
 }
 
+export interface ProviderBreakdown {
+  provider: string;
+  succeeded: number;
+  failed: number;
+  refunded: number;
+  revenue_cents: number;
+}
+
+export interface DailyPaymentPoint {
+  day: string; // YYYY-MM-DD
+  succeeded: number;
+  failed: number;
+  revenue_cents: number;
+}
+
+export interface AdminPaymentTrends {
+  range: { start: string; end: string };
+  totals: {
+    succeeded: number;
+    failed: number;
+    refunded: number;
+    revenue_cents: number;
+  };
+  refund_rate: number;
+  provider_breakdown: ProviderBreakdown[];
+  daily_series: DailyPaymentPoint[];
+}
+
 export class AdminPaymentService {
   private supabase: SupabaseClient;
   private userId: string | null = null;
@@ -33,6 +61,26 @@ export class AdminPaymentService {
     const { data, error } = await this.supabase.rpc('admin_payment_stats');
     if (error) throw error;
     return data as AdminPaymentStats;
+  }
+
+  async getTrends(start?: Date, end?: Date): Promise<AdminPaymentTrends> {
+    this.ensureInitialized();
+
+    const params: { p_start?: string; p_end?: string } = {};
+    if (start) params.p_start = start.toISOString();
+    if (end) params.p_end = end.toISOString();
+
+    const { data, error } = await this.supabase.rpc(
+      'admin_payment_trends',
+      params
+    );
+    if (error) throw new Error(error.message);
+
+    const raw = data as Omit<AdminPaymentTrends, 'refund_rate'> & {
+      refund_rate: number | string;
+    };
+    // Postgres numeric → JSON can arrive as a string depending on driver path.
+    return { ...raw, refund_rate: Number(raw.refund_rate) };
   }
 
   async getRecentTransactions(limit = 50): Promise<PaymentActivity[]> {
