@@ -59,9 +59,9 @@ function formatTime(dateStr: string): string {
   });
 }
 
-function truncateId(id: string | null): string {
+function formatId(id: string | null): string {
   if (!id) return 'N/A';
-  return id.length > 8 ? `${id.substring(0, 8)}...` : id;
+  return id;
 }
 
 function burstSpanMinutes(b: AuditBurst): number {
@@ -113,7 +113,7 @@ const columns: AdminDataTableColumn<EventRow>[] = [
     sortable: true,
     render: (row) => (
       <span className="font-mono text-xs">
-        {truncateId(row.user_id as string | null)}
+        {formatId(row.user_id as string | null)}
       </span>
     ),
   },
@@ -230,28 +230,28 @@ export function AdminAuditTrail({
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <AdminStatCard
               label="Bursts Detected"
-              value={trends.totals.bursts}
-              trend={trends.totals.bursts > 0 ? 'down' : 'neutral'}
+              value={trends.totals?.bursts ?? 0}
+              trend={(trends.totals?.bursts ?? 0) > 0 ? 'down' : 'neutral'}
               testId="stat-bursts"
             />
             <AdminStatCard
               label="Failed Sign-ins"
-              value={trends.totals.sign_in_failed}
+              value={trends.totals?.sign_in_failed ?? 0}
               testId="stat-range-failed"
             />
             <AdminStatCard
               label="Successful Sign-ins"
-              value={trends.totals.sign_in_success}
+              value={trends.totals?.sign_in_success ?? 0}
               testId="stat-range-success"
             />
           </div>
 
-          {trends.bursts.length > 0 ? (
+          {(trends.bursts ?? []).length > 0 ? (
             <div
               className="grid grid-cols-1 gap-4 md:grid-cols-2"
               data-testid="burst-cards"
             >
-              {trends.bursts.map((b) => {
+              {(trends.bursts ?? []).map((b) => {
                 const burstKey = `${b.ip_address}-${b.first_seen}`;
                 const isExpanded = expandedBurstKey === burstKey;
                 const matched = isExpanded ? eventsInBurst(events, b) : [];
@@ -322,7 +322,7 @@ export function AdminAuditTrail({
                               >
                                 <span>{formatTime(e.created_at)}</span>
                                 <span className="text-base-content/60">
-                                  {truncateId(e.user_id)}
+                                  {formatId(e.user_id)}
                                 </span>
                               </li>
                             ))}
@@ -394,7 +394,7 @@ export function AdminAuditTrail({
                 key={entry.user_id}
                 className="card bg-warning/10 border-warning border p-4"
               >
-                <p className="font-mono text-sm">{truncateId(entry.user_id)}</p>
+                <p className="font-mono text-sm">{formatId(entry.user_id)}</p>
                 <p className="text-warning text-lg font-bold">
                   {entry.attempts} failed attempts
                 </p>

@@ -189,26 +189,26 @@ export function AdminPaymentPanel({
           <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <AdminStatCard
               label="Refund Rate"
-              value={`${(trends.refund_rate * 100).toFixed(2)}%`}
-              trend={trends.refund_rate > 0.05 ? 'up' : 'neutral'}
+              value={`${((trends.refund_rate ?? 0) * 100).toFixed(2)}%`}
+              trend={(trends.refund_rate ?? 0) > 0.05 ? 'up' : 'neutral'}
               testId="stat-refund-rate"
             />
             <AdminStatCard
               label="Succeeded"
-              value={trends.totals.succeeded}
-              description={formatCents(trends.totals.revenue_cents)}
+              value={trends.totals?.succeeded ?? 0}
+              description={formatCents(trends.totals?.revenue_cents ?? 0)}
               testId="stat-range-succeeded"
             />
             <AdminStatCard
               label="Failed"
-              value={trends.totals.failed}
-              trend={trends.totals.failed > 0 ? 'down' : 'neutral'}
+              value={trends.totals?.failed ?? 0}
+              trend={(trends.totals?.failed ?? 0) > 0 ? 'down' : 'neutral'}
               testId="stat-range-failed"
             />
           </div>
 
           <PaymentTrendChart
-            data={trends.daily_series}
+            data={trends.daily_series ?? []}
             className="text-base-content mb-4"
             testId="payment-trend-chart"
           />
@@ -226,7 +226,7 @@ export function AdminPaymentPanel({
                 </tr>
               </thead>
               <tbody>
-                {trends.provider_breakdown.map((p) => {
+                {(trends.provider_breakdown ?? []).map((p) => {
                   const flagged = failureShare(p) > FAILURE_FLAG_THRESHOLD;
                   return (
                     <tr key={p.provider}>
@@ -247,7 +247,7 @@ export function AdminPaymentPanel({
                     </tr>
                   );
                 })}
-                {trends.provider_breakdown.length === 0 && (
+                {(trends.provider_breakdown ?? []).length === 0 && (
                   <tr>
                     <td
                       colSpan={6}

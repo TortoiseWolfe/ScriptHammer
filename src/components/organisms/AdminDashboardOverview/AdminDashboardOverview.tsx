@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
 import {
   AdminTrendChart,
   type ChartColorToken,
 } from '@/components/molecular/AdminTrendChart';
-import { DateRangePicker } from '@/components/molecular/DateRangePicker';
-import type { DateRange } from '@/components/molecular/DateRangePicker';
+import DateRangeFilter from '@/components/molecular/DateRangeFilter';
+import type { DateRange } from '@/components/molecular/DateRangeFilter';
 import type {
   AdminOverview,
   OverviewTrendPoint,
@@ -320,7 +321,7 @@ export function AdminDashboardOverview({
       data-testid={testId}
     >
       {dateRange && onDateRangeChange && (
-        <DateRangePicker
+        <DateRangeFilter
           value={dateRange}
           onChange={onDateRangeChange}
           testId="overview-range"
@@ -366,13 +367,13 @@ export function AdminDashboardOverview({
                   {LEVEL_LABEL[s.attention.level]}
                 </span>
               )}
-              <a
+              <Link
                 href={s.href}
                 className="link link-hover ml-auto text-sm"
                 data-testid={`link-${s.domain}`}
               >
                 View details →
-              </a>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

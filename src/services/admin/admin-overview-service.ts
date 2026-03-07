@@ -22,6 +22,20 @@ export interface OverviewSparks {
   messages: number[];
 }
 
+/** A single day–count pair for the overview trend charts. */
+export interface OverviewTrendPoint {
+  day: string;   // YYYY-MM-DD
+  count: number;
+}
+
+/** Trend series keyed by domain, derived from sparks + range. */
+export interface OverviewTrends {
+  payments_daily: OverviewTrendPoint[];
+  logins_daily: OverviewTrendPoint[];
+  signups_daily: OverviewTrendPoint[];
+  messages_daily: OverviewTrendPoint[];
+}
+
 export interface AdminOverview {
   /**
    * Day-truncated window the SQL actually used. Echoed back even when
@@ -33,6 +47,8 @@ export interface AdminOverview {
   users: AdminUserStats;
   messaging: AdminMessagingStats;
   sparks: OverviewSparks;
+  /** Derived client-side from sparks + range for the trend charts. */
+  trends: OverviewTrends;
 }
 
 /**
@@ -68,6 +84,28 @@ export class AdminOverviewService {
 
     const { data, error } = await this.supabase.rpc('admin_overview', params);
     if (error) throw new Error(error.message);
-    return data as AdminOverview;
+
+    const raw = data as Omit<AdminOverview, 'trends'> & { sparks: OverviewSparks; range: { start: string; end: string } };
+
+    // Transform sparks (number[]) into OverviewTrendPoint[] using the range start date.
+    const startDate = new Date(raw.range.start);
+    const toPoints = (arr: number[]): OverviewTrendPoint[] =>
+      (arr ?? []).map((count, i) => {
+        const d = new Date(startDate.getTime() + i * 86_400_000);
+        const day = d.toISOString().slice(0, 10);
+        return { day, count };
+      });
+
+    const sparks = raw.sparks ?? { payments: [], logins: [], signups: [], messages: [] };
+
+    return {
+      ...raw,
+      trends: {
+        payments_daily: toPoints(sparks.payments),
+        logins_daily: toPoints(sparks.logins),
+        signups_daily: toPoints(sparks.signups),
+        messages_daily: toPoints(sparks.messages),
+      },
+    };
   }
 }

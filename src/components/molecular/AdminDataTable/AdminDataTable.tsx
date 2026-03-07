@@ -51,6 +51,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
   className = '',
   testId,
 }: AdminDataTableProps<T>) {
+  const safeData = data ?? ([] as T[]);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   // Keyed by row[keyField], not index — survives sorting.
@@ -70,9 +71,9 @@ export function AdminDataTable<T extends Record<string, unknown>>({
   };
 
   const sortedData = useMemo(() => {
-    if (!sortKey) return data;
+    if (!sortKey) return safeData;
 
-    return [...data].sort((a, b) => {
+    return [...safeData].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
 
@@ -96,7 +97,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
         ? aStr.localeCompare(bStr)
         : bStr.localeCompare(aStr);
     });
-  }, [data, sortKey, sortDir]);
+  }, [safeData, sortKey, sortDir]);
 
   if (isLoading) {
     return (
@@ -113,7 +114,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
     );
   }
 
-  if (data.length === 0) {
+  if (safeData.length === 0) {
     return (
       <div
         className={`bg-base-200 rounded-lg p-8 text-center${className ? ` ${className}` : ''}`}

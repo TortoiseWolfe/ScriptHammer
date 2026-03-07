@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import SignInForm from '@/components/auth/SignInForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 function isSafeRedirectUrl(url: string): boolean {
   if (!url || !url.startsWith('/')) return false;
@@ -17,6 +18,7 @@ function isSafeRedirectUrl(url: string): boolean {
 }
 
 export default function SignInPage() {
+  const router = useRouter();
   const [returnUrl, setReturnUrl] = useState('/profile');
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function SignInPage() {
 
         <SignInForm
           onSuccess={() =>
-            (window.location.href = decodeURIComponent(returnUrl))
+            router.push(decodeURIComponent(returnUrl))
           }
         />
 

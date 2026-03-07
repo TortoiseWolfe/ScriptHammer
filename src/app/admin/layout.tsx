@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { AdminAuthService } from '@/services/admin';
 
@@ -44,21 +45,21 @@ export default function AdminLayout({
   return (
     <div className="container mx-auto p-6">
       <nav className="tabs tabs-bordered mb-6" aria-label="Admin navigation">
-        <a href="/admin" className="tab">
+        <Link href="/admin" className="tab">
           Overview
-        </a>
-        <a href="/admin/payments" className="tab">
+        </Link>
+        <Link href="/admin/payments" className="tab">
           Payments
-        </a>
-        <a href="/admin/audit" className="tab">
+        </Link>
+        <Link href="/admin/audit" className="tab">
           Audit Trail
-        </a>
-        <a href="/admin/users" className="tab">
+        </Link>
+        <Link href="/admin/users" className="tab">
           Users
-        </a>
-        <a href="/admin/messaging" className="tab">
+        </Link>
+        <Link href="/admin/messaging" className="tab">
           Messaging
-        </a>
+        </Link>
       </nav>
       {children}
     </div>

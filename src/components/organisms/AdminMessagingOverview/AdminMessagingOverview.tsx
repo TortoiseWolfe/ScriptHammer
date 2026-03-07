@@ -147,29 +147,29 @@ export function AdminMessagingOverview({
           <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <AdminStatCard
               label="Messages"
-              value={trends.totals.messages}
+              value={trends.totals?.messages ?? 0}
               testId="stat-range-messages"
             />
             <AdminStatCard
               label="Conversations Created"
-              value={trends.totals.conversations_created}
+              value={trends.totals?.conversations_created ?? 0}
               testId="stat-range-convs"
             />
             <AdminStatCard
               label="Active Senders"
-              value={trends.totals.active_senders}
+              value={trends.totals?.active_senders ?? 0}
               testId="stat-range-senders"
             />
           </div>
 
           <MessagingTrendChart
-            data={trends.daily_series}
+            data={trends.daily_series ?? []}
             className="text-base-content mb-6"
             testId="messaging-trend-chart"
           />
 
           <h3 className="mb-2 text-lg font-semibold">Top Senders</h3>
-          {trends.top_senders.length > 0 ? (
+          {(trends.top_senders ?? []).length > 0 ? (
             <div className="overflow-x-auto">
               <table className="table-sm table" data-testid="top-senders-table">
                 <thead>
@@ -179,7 +179,7 @@ export function AdminMessagingOverview({
                   </tr>
                 </thead>
                 <tbody>
-                  {trends.top_senders.map((s) => (
+                  {(trends.top_senders ?? []).map((s) => (
                     <tr key={s.user_id}>
                       <td>
                         <div className="font-medium">
