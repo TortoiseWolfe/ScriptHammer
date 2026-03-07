@@ -24,6 +24,12 @@ export interface AdminDataTableProps<T extends Record<string, unknown>> {
   emptyMessage?: string;
   /** Key field for row identity */
   keyField?: string;
+  /**
+   * Opt-in row expansion. When provided, each row becomes a click/Enter/Space
+   * toggle. Only one row expands at a time (accordion). The returned node
+   * renders in a full-width cell immediately below the trigger row.
+   */
+  renderExpandedRow?: (row: T) => ReactNode;
   /** Additional CSS classes */
   className?: string;
   /** Test ID for testing */
@@ -41,11 +47,19 @@ export function AdminDataTable<T extends Record<string, unknown>>({
   isLoading = false,
   emptyMessage = 'No data available',
   keyField = 'id',
+  renderExpandedRow,
   className = '',
   testId,
 }: AdminDataTableProps<T>) {
+  const safeData = data ?? ([] as T[]);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  // Keyed by row[keyField], not index — survives sorting.
+  const [expandedKey, setExpandedKey] = useState<string | null>(null);
+
+  const toggleExpanded = (key: string) => {
+    setExpandedKey((prev) => (prev === key ? null : key));
+  };
 
   const handleSort = (key: string) => {
     if (sortKey === key) {
@@ -57,9 +71,9 @@ export function AdminDataTable<T extends Record<string, unknown>>({
   };
 
   const sortedData = useMemo(() => {
-    if (!sortKey) return data;
+    if (!sortKey) return safeData;
 
-    return [...data].sort((a, b) => {
+    return [...safeData].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
 
@@ -83,7 +97,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
         ? aStr.localeCompare(bStr)
         : bStr.localeCompare(aStr);
     });
-  }, [data, sortKey, sortDir]);
+  }, [safeData, sortKey, sortDir]);
 
   if (isLoading) {
     return (
@@ -100,7 +114,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
     );
   }
 
-  if (data.length === 0) {
+  if (safeData.length === 0) {
     return (
       <div
         className={`bg-base-200 rounded-lg p-8 text-center${className ? ` ${className}` : ''}`}
@@ -126,34 +140,106 @@ export function AdminDataTable<T extends Record<string, unknown>>({
       <table className="table">
         <thead>
           <tr>
+            {renderExpandedRow && (
+              <th scope="col" className="w-10">
+                <span className="sr-only">Toggle details</span>
+              </th>
+            )}
             {columns.map((col) => (
               <th
                 key={col.key}
                 scope="col"
                 aria-sort={col.sortable ? getAriaSortValue(col.key) : undefined}
-                className={col.sortable ? 'cursor-pointer select-none' : ''}
-                onClick={col.sortable ? () => handleSort(col.key) : undefined}
               >
-                {col.label}
-                {col.sortable && sortKey === col.key
-                  ? sortDir === 'asc'
-                    ? ' \u2191'
-                    : ' \u2193'
-                  : ''}
+                {col.sortable ? (
+                  // Native <button> = tab stop + Enter/Space activation.
+                  // aria-sort stays on the <th> where ARIA puts it; the
+                  // arrow glyph is visual-only (aria-sort already says it).
+                  <button
+                    type="button"
+                    onClick={() => handleSort(col.key)}
+                    className="hover:bg-base-300 -m-1 flex w-full items-center gap-1 rounded p-1 text-left font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+                  >
+                    {col.label}
+                    <span aria-hidden="true" className="text-xs">
+                      {sortKey === col.key
+                        ? sortDir === 'asc'
+                          ? '\u2191'
+                          : '\u2193'
+                        : '\u21c5'}
+                    </span>
+                  </button>
+                ) : (
+                  col.label
+                )}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {sortedData.map((row, rowIndex) => (
-            <tr key={String(row[keyField] ?? rowIndex)}>
-              {columns.map((col) => (
-                <td key={col.key}>
-                  {col.render ? col.render(row) : String(row[col.key] ?? '')}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {sortedData.map((row, rowIndex) => {
+            const rowKey = String(row[keyField] ?? rowIndex);
+            const isExpanded = expandedKey === rowKey;
+
+            if (!renderExpandedRow) {
+              return (
+                <tr key={rowKey}>
+                  {columns.map((col) => (
+                    <td key={col.key}>
+                      {col.render
+                        ? col.render(row)
+                        : String(row[col.key] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+              );
+            }
+
+            // Row-click is the mouse affordance. The button is the
+            // a11y-correct trigger — aria-expanded is only valid on
+            // button/link roles outside treegrid (axe aria-conditional-attr).
+            return (
+              <React.Fragment key={rowKey}>
+                <tr
+                  className="hover:bg-base-200 cursor-pointer"
+                  onClick={() => toggleExpanded(rowKey)}
+                >
+                  <td className="w-10">
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? 'Hide details' : 'Show details'}
+                      className="btn btn-ghost btn-xs btn-circle min-h-11 min-w-11"
+                      onClick={(e) => {
+                        // Row also listens. Without this the click bubbles
+                        // and toggles twice — open then immediately close.
+                        e.stopPropagation();
+                        toggleExpanded(rowKey);
+                      }}
+                    >
+                      <span aria-hidden="true">
+                        {isExpanded ? '\u25be' : '\u25b8'}
+                      </span>
+                    </button>
+                  </td>
+                  {columns.map((col) => (
+                    <td key={col.key}>
+                      {col.render
+                        ? col.render(row)
+                        : String(row[col.key] ?? '')}
+                    </td>
+                  ))}
+                </tr>
+                {isExpanded && (
+                  <tr>
+                    <td colSpan={columns.length + 1} className="bg-base-200">
+                      {renderExpandedRow(row)}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>

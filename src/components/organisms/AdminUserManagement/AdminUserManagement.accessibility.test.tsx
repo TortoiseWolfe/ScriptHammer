@@ -21,6 +21,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Alice Wonderland',
     created_at: '2025-01-15T10:00:00Z',
     welcome_message_sent: true,
+    last_sign_in_at: '2026-03-03T14:00:00Z',
+    activity: 'active',
   },
 ];
 
@@ -36,6 +38,20 @@ describe('AdminUserManagement Accessibility', () => {
   it('should have no axe violations when empty', async () => {
     const { container } = render(
       <AdminUserManagement stats={null} users={[]} />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should have no axe violations with search input + count', async () => {
+    const { container } = render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        searchQuery=""
+        onSearchChange={() => {}}
+      />
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();

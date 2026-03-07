@@ -109,6 +109,23 @@ export const Sortable: Story = {
   },
 };
 
+// Click any row (or tab to the chevron and hit Enter). One detail open
+// at a time — expanding a second row collapses the first.
+export const Expandable: Story = {
+  args: {
+    columns: sortableColumns as AdminDataTableColumn<Record<string, unknown>>[],
+    data: sampleData,
+    renderExpandedRow: (row) => (
+      <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 py-2 text-sm">
+        <dt className="text-base-content/60">Internal ID</dt>
+        <dd className="font-mono">{row.id as string}</dd>
+        <dt className="text-base-content/60">Email domain</dt>
+        <dd className="font-mono">{(row.email as string).split('@')[1]}</dd>
+      </dl>
+    ),
+  },
+};
+
 export const ThemeShowcase: Story = {
   args: {
     columns: sampleColumns as AdminDataTableColumn<Record<string, unknown>>[],

@@ -1,58 +1,40 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
-import { AdminPaymentService } from '@/services/admin/admin-payment-service';
-import { AdminAuditService } from '@/services/admin/admin-audit-service';
-import { AdminUserService } from '@/services/admin/admin-user-service';
-import { AdminMessagingService } from '@/services/admin/admin-messaging-service';
+import {
+  AdminOverviewService,
+  type AdminOverview,
+} from '@/services/admin/admin-overview-service';
 import { AdminDashboardOverview } from '@/components/organisms/AdminDashboardOverview';
-import type { AdminPaymentStats } from '@/services/admin/admin-payment-service';
-import type { AdminAuthStats } from '@/services/admin/admin-audit-service';
-import type { AdminUserStats } from '@/services/admin/admin-user-service';
-import type { AdminMessagingStats } from '@/services/admin/admin-messaging-service';
+import type { DateRange } from '@/components/molecular/DateRangeFilter';
 
 export default function AdminOverviewPage() {
   const { user } = useAuth();
-  const [paymentStats, setPaymentStats] = useState<AdminPaymentStats | null>(
-    null
-  );
-  const [authStats, setAuthStats] = useState<AdminAuthStats | null>(null);
-  const [userStats, setUserStats] = useState<AdminUserStats | null>(null);
-  const [messagingStats, setMessagingStats] =
-    useState<AdminMessagingStats | null>(null);
+  const [overview, setOverview] = useState<AdminOverview | null>(null);
+  const [range, setRange] = useState<DateRange>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStats = useCallback(async (userId: string) => {
+  // Hold the initialized service so range changes can re-call getOverview
+  // without re-running initialize().
+  const serviceRef = useRef<AdminOverviewService | null>(null);
+
+  // One service, one round-trip. The old page made four initialize() +
+  // four getStats() calls — eight promises to manage, four state slots to
+  // keep coherent. The composite RPC collapses that to a single awaited
+  // value that either resolves whole or throws.
+  const loadOverview = useCallback(async (userId: string) => {
     setIsLoading(true);
     setError(null);
 
-    const paymentService = new AdminPaymentService(supabase);
-    const auditService = new AdminAuditService(supabase);
-    const userService = new AdminUserService(supabase);
-    const messagingService = new AdminMessagingService(supabase);
+    const service = new AdminOverviewService(supabase);
 
     try {
-      await Promise.all([
-        paymentService.initialize(userId),
-        auditService.initialize(userId),
-        userService.initialize(userId),
-        messagingService.initialize(userId),
-      ]);
-
-      const [payments, auth, users, messaging] = await Promise.all([
-        paymentService.getStats(),
-        auditService.getStats(),
-        userService.getStats(),
-        messagingService.getStats(),
-      ]);
-
-      setPaymentStats(payments);
-      setAuthStats(auth);
-      setUserStats(users);
-      setMessagingStats(messaging);
+      await service.initialize(userId);
+      serviceRef.current = service;
+      setOverview(await service.getOverview());
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to load dashboard stats'
@@ -62,11 +44,30 @@ export default function AdminOverviewPage() {
     }
   }, []);
 
+  const handleRangeChange = useCallback(async (next: DateRange) => {
+    setRange(next);
+    // DateRangeFilter fires on every keystroke. Only hit the RPC once both
+    // ends are filled (presets always fill both).
+    if (!next.start || !next.end) return;
+    const service = serviceRef.current;
+    if (!service) return;
+    try {
+      // Unlike payments where only trends follow the range, the composite
+      // RPC re-windows sparks inside the same payload. The *_stats blocks
+      // come back identical (they're all-time); only sparks.* changes.
+      setOverview(
+        await service.getOverview(new Date(next.start), new Date(next.end))
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load overview');
+    }
+  }, []);
+
   useEffect(() => {
     if (user?.id) {
-      loadStats(user.id);
+      loadOverview(user.id);
     }
-  }, [user?.id, loadStats]);
+  }, [user?.id, loadOverview]);
 
   return (
     <div>
@@ -84,10 +85,9 @@ export default function AdminOverviewPage() {
       )}
 
       <AdminDashboardOverview
-        paymentStats={paymentStats}
-        authStats={authStats}
-        userStats={userStats}
-        messagingStats={messagingStats}
+        overview={overview}
+        range={range}
+        onRangeChange={handleRangeChange}
         isLoading={isLoading}
         testId="admin-overview"
       />

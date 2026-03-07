@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { AdminUserManagement } from './AdminUserManagement';
 import type {
   AdminUserStats,
@@ -13,6 +13,7 @@ const mockStats: AdminUserStats = {
   total_connections: 120,
 };
 
+// Three activity tiers covered: active, idle, dormant (with null last_sign_in_at)
 const mockUsers: AdminUserRow[] = [
   {
     id: 'user-1',
@@ -20,6 +21,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Alice Wonderland',
     created_at: '2025-01-15T10:00:00Z',
     welcome_message_sent: true,
+    last_sign_in_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    activity: 'active',
   },
   {
     id: 'user-2',
@@ -27,6 +30,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: 'Bob Builder',
     created_at: '2025-03-20T14:30:00Z',
     welcome_message_sent: false,
+    last_sign_in_at: new Date(Date.now() - 15 * 86_400_000).toISOString(),
+    activity: 'idle',
   },
   {
     id: 'user-3',
@@ -34,6 +39,8 @@ const mockUsers: AdminUserRow[] = [
     display_name: null,
     created_at: '2025-06-01T09:00:00Z',
     welcome_message_sent: false,
+    last_sign_in_at: null,
+    activity: 'dormant',
   },
 ];
 
@@ -92,5 +99,58 @@ describe('AdminUserManagement', () => {
   it('renders empty table message when no users', () => {
     render(<AdminUserManagement stats={mockStats} users={[]} />);
     expect(screen.getByText('No users found')).toBeInTheDocument();
+  });
+
+  it('renders activity badges with tier-specific classes', () => {
+    render(<AdminUserManagement stats={mockStats} users={mockUsers} />);
+    // One of each tier present in the fixture — badge class is the glance signal
+    const active = screen.getByText('active');
+    const idle = screen.getByText('idle');
+    const dormant = screen.getByText('dormant');
+    expect(active.className).toContain('badge-success');
+    expect(idle.className).toContain('badge-warning');
+    expect(dormant.className).toContain('badge-ghost');
+  });
+
+  it('renders relative last-login times', () => {
+    render(<AdminUserManagement stats={mockStats} users={mockUsers} />);
+    // Alice 2 days ago, Bob 15 days ago, user-3 never
+    expect(screen.getByText('2 days ago')).toBeInTheDocument();
+    expect(screen.getByText('15 days ago')).toBeInTheDocument();
+    expect(screen.getByText('Never')).toBeInTheDocument();
+  });
+
+  it('renders search input when onSearchChange provided', () => {
+    const onSearchChange = vi.fn();
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        searchQuery=""
+        onSearchChange={onSearchChange}
+      />
+    );
+    const input = screen.getByTestId('user-search');
+    fireEvent.change(input, { target: { value: 'alice' } });
+    expect(onSearchChange).toHaveBeenCalledWith('alice');
+  });
+
+  it('hides search input when onSearchChange absent', () => {
+    render(<AdminUserManagement stats={mockStats} users={mockUsers} />);
+    expect(screen.queryByTestId('user-search')).not.toBeInTheDocument();
+  });
+
+  it('renders "showing N of M" when total provided', () => {
+    render(
+      <AdminUserManagement stats={mockStats} users={mockUsers} total={234} />
+    );
+    expect(screen.getByTestId('user-count')).toHaveTextContent(
+      'Showing 3 of 234'
+    );
+  });
+
+  it('hides count line when total absent', () => {
+    render(<AdminUserManagement stats={mockStats} users={mockUsers} />);
+    expect(screen.queryByTestId('user-count')).not.toBeInTheDocument();
   });
 });

@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
 import { AdminPaymentPanel } from './AdminPaymentPanel';
-import type { AdminPaymentStats } from '@/services/admin/admin-payment-service';
+import type {
+  AdminPaymentStats,
+  AdminPaymentTrends,
+} from '@/services/admin/admin-payment-service';
 import type { PaymentActivity } from '@/types/payment';
 
 const mockStats: AdminPaymentStats = {
@@ -42,6 +45,35 @@ describe('AdminPaymentPanel Accessibility', () => {
   it('should have no axe violations when empty', async () => {
     const { container } = render(
       <AdminPaymentPanel stats={null} transactions={[]} />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should have no axe violations with trends section rendered', async () => {
+    const trends: AdminPaymentTrends = {
+      range: { start: '2026-02-26T00:00:00Z', end: '2026-03-05T00:00:00Z' },
+      totals: { succeeded: 42, failed: 3, refunded: 2, revenue_cents: 125_000 },
+      refund_rate: 0.0476,
+      provider_breakdown: [
+        {
+          provider: 'stripe',
+          succeeded: 35,
+          failed: 2,
+          refunded: 1,
+          revenue_cents: 100_000,
+        },
+      ],
+      daily_series: [],
+    };
+    const { container } = render(
+      <AdminPaymentPanel
+        stats={mockStats}
+        transactions={mockTransactions}
+        trends={trends}
+        range={{ start: '2026-02-26', end: '2026-03-05' }}
+        onRangeChange={vi.fn()}
+      />
     );
     const results = await axe(container);
     expect(results).toHaveNoViolations();

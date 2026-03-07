@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 
 export interface AdminStatCardProps {
   /** Stat label */
@@ -57,14 +58,14 @@ export function AdminStatCard({
 
   if (href) {
     return (
-      <a
+      <Link
         href={href}
         className={`stats bg-base-100 shadow hover:shadow-md${className ? ` ${className}` : ''}`}
         aria-label={ariaLabel}
         data-testid={testId}
       >
         {content}
-      </a>
+      </Link>
     );
   }
 

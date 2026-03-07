@@ -1,19 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { AdminPaymentService } from '@/services/admin/admin-payment-service';
 import { AdminPaymentPanel } from '@/components/organisms/AdminPaymentPanel';
-import type { AdminPaymentStats } from '@/services/admin/admin-payment-service';
+import type {
+  AdminPaymentStats,
+  AdminPaymentTrends,
+} from '@/services/admin/admin-payment-service';
 import type { PaymentActivity } from '@/types/payment';
+import type { DateRange } from '@/components/molecular/DateRangeFilter';
 
 export default function AdminPaymentsPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<AdminPaymentStats | null>(null);
   const [transactions, setTransactions] = useState<PaymentActivity[]>([]);
+  const [trends, setTrends] = useState<AdminPaymentTrends | null>(null);
+  const [range, setRange] = useState<DateRange>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Hold the initialized service so range changes can refetch trends alone
+  // without re-running initialize() or the stats/transactions calls.
+  const serviceRef = useRef<AdminPaymentService | null>(null);
 
   const loadData = useCallback(async (userId: string) => {
     setIsLoading(true);
@@ -23,18 +33,40 @@ export default function AdminPaymentsPage() {
 
     try {
       await service.initialize(userId);
-      const [paymentStats, recentTransactions] = await Promise.all([
-        service.getStats(),
-        service.getRecentTransactions(),
-      ]);
+      serviceRef.current = service;
+      const [paymentStats, recentTransactions, paymentTrends] =
+        await Promise.all([
+          service.getStats(),
+          service.getRecentTransactions(),
+          service.getTrends(),
+        ]);
       setStats(paymentStats);
       setTransactions(recentTransactions);
+      setTrends(paymentTrends);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to load payment data'
       );
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  const handleRangeChange = useCallback(async (next: DateRange) => {
+    setRange(next);
+    // DateRangeFilter fires on every keystroke. Only hit the RPC once both
+    // ends are filled (presets always fill both).
+    if (!next.start || !next.end) return;
+    const service = serviceRef.current;
+    if (!service) return;
+    try {
+      const paymentTrends = await service.getTrends(
+        new Date(next.start),
+        new Date(next.end)
+      );
+      setTrends(paymentTrends);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load trends');
     }
   }, []);
 
@@ -59,6 +91,9 @@ export default function AdminPaymentsPage() {
       <AdminPaymentPanel
         stats={stats}
         transactions={transactions}
+        trends={trends}
+        range={range}
+        onRangeChange={handleRangeChange}
         isLoading={isLoading}
         testId="admin-payments"
       />

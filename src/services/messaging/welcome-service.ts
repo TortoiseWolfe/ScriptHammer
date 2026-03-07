@@ -127,6 +127,14 @@ export class WelcomeService {
   ): Promise<SendWelcomeResult> {
     logger.info('sendWelcomeMessage called', { userId });
 
+    // Admin signing in shouldn't welcome themselves. Without this guard
+    // getOrCreateConversation collapses to participant_1 == participant_2
+    // (adminId < adminId is false → [admin, admin]) and PG rejects on
+    // canonical_ordering before no_self_conversation even reports.
+    if (userId === ADMIN_USER_ID) {
+      return { success: true, skipped: true, reason: 'User is admin' };
+    }
+
     try {
       const supabase = createClient();
       const msgClient = createMessagingClient(supabase);

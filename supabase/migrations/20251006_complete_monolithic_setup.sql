@@ -715,8 +715,12 @@ BEGIN
       'total_revenue_cents', (SELECT COALESCE(sum(charged_amount), 0) FROM payment_results WHERE status = 'succeeded'),
       'active_subscriptions', (SELECT count(*) FROM subscriptions WHERE status = 'active'),
       'failed_this_week', (SELECT count(*) FROM payment_results WHERE status = 'failed' AND created_at > now() - interval '7 days'),
+      -- json_object_agg keys on provider so the wire shape matches
+      -- AdminPaymentStats.revenue_by_provider: Record<string, number>.
+      -- json_agg(row_to_json(...)) here used to emit an array — every unit
+      -- mock used the Record shape so the mismatch only surfaced live.
       'revenue_by_provider', (
-        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+        SELECT COALESCE(json_object_agg(provider, total), '{}'::json)
         FROM (
           SELECT provider, sum(charged_amount) AS total
           FROM payment_results
@@ -750,12 +754,14 @@ BEGIN
       'top_failed_logins', (
         SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
         FROM (
-          SELECT user_id, count(*) AS fail_count
+          -- 'attempts' matches AdminAuthStats.top_failed_logins[].attempts
+          -- and AuditBurst.attempts — same semantic, one name.
+          SELECT user_id, count(*) AS attempts
           FROM auth_audit_logs
           WHERE event_type = 'sign_in_failed'
             AND created_at > now() - interval '7 days'
           GROUP BY user_id
-          ORDER BY fail_count DESC
+          ORDER BY attempts DESC
           LIMIT 10
         ) t
       )
@@ -807,8 +813,11 @@ BEGIN
       'messages_this_week', (SELECT count(*) FROM messages WHERE created_at > now() - interval '7 days'),
       'active_connections', (SELECT count(*) FROM user_connections WHERE status = 'accepted'),
       'blocked_connections', (SELECT count(*) FROM user_connections WHERE status = 'blocked'),
+      -- json_object_agg keys on status so Object.entries() at
+      -- AdminMessagingOverview.tsx gets {accepted: N, pending: M, ...}
+      -- not [{status, total}]. Empty case → {} not [].
       'connection_distribution', (
-        SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
+        SELECT COALESCE(json_object_agg(status, total), '{}'::json)
         FROM (
           SELECT status, count(*) AS total
           FROM user_connections
@@ -819,6 +828,527 @@ BEGIN
   );
 END;
 $$;
+
+-- admin_list_users(p_search, p_limit, p_offset): User listing for admin dashboard
+--
+-- SECURITY DEFINER: auth.users.last_sign_in_at is the activity truth source and
+-- is NOT reachable through RLS from the client. The JWT guard is the only gate.
+--
+-- activity is computed in SQL so the admin stats and this listing agree on what
+-- "active" means — same 7-day boundary as admin_user_stats.active_this_week.
+-- NULL last_sign_in_at (signed up but never returned) folds into dormant.
+--
+-- Search covers both username and display_name. Leading-wildcard ILIKE won't hit
+-- the btree index on username but at admin-dashboard scale this is a non-issue.
+--
+-- Returns {total, users[]} — total is the search-filtered count ignoring
+-- limit/offset, so the UI can render "showing N of M" without a second call.
+CREATE OR REPLACE FUNCTION admin_list_users(
+  p_search TEXT DEFAULT NULL,
+  p_limit  INT  DEFAULT 50,
+  p_offset INT  DEFAULT 0
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pattern TEXT;
+  v_total   BIGINT;
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  -- Build once, reuse twice. NULL pattern → no filter (short-circuited below).
+  v_pattern := '%' || p_search || '%';
+
+  SELECT COUNT(*) INTO v_total
+  FROM user_profiles p
+  WHERE p.is_admin = FALSE
+    AND (p_search IS NULL
+         OR p.username     ILIKE v_pattern
+         OR p.display_name ILIKE v_pattern);
+
+  RETURN json_build_object(
+    'total', v_total,
+    'users', COALESCE((
+      SELECT json_agg(row_to_json(u))
+      FROM (
+        SELECT
+          p.id,
+          p.username,
+          p.display_name,
+          p.created_at,
+          p.welcome_message_sent,
+          au.last_sign_in_at,
+          CASE
+            WHEN au.last_sign_in_at IS NULL                           THEN 'dormant'
+            WHEN au.last_sign_in_at > now() - interval '7 days'       THEN 'active'
+            WHEN au.last_sign_in_at > now() - interval '30 days'      THEN 'idle'
+            ELSE 'dormant'
+          END AS activity
+        FROM user_profiles p
+        JOIN auth.users au ON au.id = p.id
+        WHERE p.is_admin = FALSE
+          AND (p_search IS NULL
+               OR p.username     ILIKE v_pattern
+               OR p.display_name ILIKE v_pattern)
+        ORDER BY au.last_sign_in_at DESC NULLS LAST, p.created_at DESC
+        LIMIT p_limit OFFSET p_offset
+      ) u
+    ), '[]'::json)
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_list_users(TEXT, INT, INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_list_users(TEXT, INT, INT) TO authenticated;
+
+-- admin_payment_trends(p_start, p_end): Date-ranged payment breakdown for admin dashboard
+--
+-- SECURITY DEFINER: bypasses RLS by design. The JWT guard on the first line is the
+-- ONLY access check — non-admin callers get {} and never reach the aggregation.
+-- This is the pattern for admin aggregates that must work even on tables where
+-- the admin has no row-level SELECT policy (see: messaging). payment_results
+-- happens to have an admin RLS policy too, but this function does not rely on it.
+--
+-- Refund rate = refunded / succeeded (0 when succeeded = 0, no NaN).
+-- daily_series is DENSE: generate_series emits every day in range, LEFT JOIN fills
+-- gaps with zeros. Charts can render directly without client-side gap-filling.
+CREATE OR REPLACE FUNCTION admin_payment_trends(
+  p_start TIMESTAMPTZ DEFAULT (now() - interval '7 days'),
+  p_end   TIMESTAMPTZ DEFAULT now()
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_succeeded     BIGINT;
+  v_failed        BIGINT;
+  v_refunded      BIGINT;
+  v_revenue_cents BIGINT;
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  -- Single pass over the range for totals. COUNT/SUM over a condition are
+  -- expressed with FILTER so the planner scans payment_results once.
+  SELECT
+    COUNT(*) FILTER (WHERE status = 'succeeded'),
+    COUNT(*) FILTER (WHERE status = 'failed'),
+    COUNT(*) FILTER (WHERE status = 'refunded'),
+    COALESCE(SUM(charged_amount) FILTER (WHERE status = 'succeeded'), 0)
+  INTO v_succeeded, v_failed, v_refunded, v_revenue_cents
+  FROM payment_results
+  WHERE created_at >= p_start AND created_at < p_end;
+
+  RETURN json_build_object(
+    'range', json_build_object('start', p_start, 'end', p_end),
+    'totals', json_build_object(
+      'succeeded',     v_succeeded,
+      'failed',        v_failed,
+      'refunded',      v_refunded,
+      'revenue_cents', v_revenue_cents
+    ),
+    'refund_rate', CASE
+      WHEN v_succeeded = 0 THEN 0
+      ELSE round(v_refunded::numeric / v_succeeded::numeric, 4)
+    END,
+    'provider_breakdown', (
+      SELECT COALESCE(json_agg(row_to_json(p) ORDER BY p.revenue_cents DESC), '[]'::json)
+      FROM (
+        SELECT
+          provider,
+          COUNT(*) FILTER (WHERE status = 'succeeded')                        AS succeeded,
+          COUNT(*) FILTER (WHERE status = 'failed')                           AS failed,
+          COUNT(*) FILTER (WHERE status = 'refunded')                         AS refunded,
+          COALESCE(SUM(charged_amount) FILTER (WHERE status = 'succeeded'), 0) AS revenue_cents
+        FROM payment_results
+        WHERE created_at >= p_start AND created_at < p_end
+        GROUP BY provider
+      ) p
+    ),
+    'daily_series', (
+      SELECT COALESCE(json_agg(row_to_json(d) ORDER BY d.day), '[]'::json)
+      FROM (
+        SELECT
+          to_char(days.day, 'YYYY-MM-DD')               AS day,
+          COALESCE(agg.succeeded, 0)                    AS succeeded,
+          COALESCE(agg.failed, 0)                       AS failed,
+          COALESCE(agg.revenue_cents, 0)                AS revenue_cents
+        FROM generate_series(
+          date_trunc('day', p_start),
+          date_trunc('day', p_end),
+          interval '1 day'
+        ) AS days(day)
+        LEFT JOIN (
+          SELECT
+            date_trunc('day', created_at)                                        AS day,
+            COUNT(*) FILTER (WHERE status = 'succeeded')                         AS succeeded,
+            COUNT(*) FILTER (WHERE status = 'failed')                            AS failed,
+            COALESCE(SUM(charged_amount) FILTER (WHERE status = 'succeeded'), 0) AS revenue_cents
+          FROM payment_results
+          WHERE created_at >= p_start AND created_at < p_end
+          GROUP BY date_trunc('day', created_at)
+        ) agg ON agg.day = days.day
+      ) d
+    )
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
+
+-- admin_audit_trends(p_start, p_end, ...): Failed-login burst detection for admin dashboard
+--
+-- SECURITY DEFINER: JWT guard is the only gate. auth_audit_logs happens to have an
+-- admin RLS policy, but this function does not rely on it — same pattern as
+-- admin_payment_trends so messaging aggregates can follow without an RLS policy.
+--
+-- Bursts (gaps-and-islands): a burst is a contiguous run of sign_in_failed rows
+-- from one IP where no two consecutive attempts are more than p_burst_gap apart.
+-- LAG finds gaps, cumulative SUM assigns a burst_id, GROUP BY (ip, burst_id)
+-- collapses each run, HAVING count >= p_burst_min_attempts keeps the meaningful ones.
+-- An IP that fails once on Monday and 12 times in a tight cluster on Friday yields
+-- ONE burst (Friday), not a misleading 5-day span.
+--
+-- distinct_users disambiguates: 1 = targeted account, many = credential stuffing.
+-- COUNT(DISTINCT user_id) ignores NULL, which is correct — failed logins against
+-- unknown emails have user_id=NULL and shouldn't inflate the distinct count.
+CREATE OR REPLACE FUNCTION admin_audit_trends(
+  p_start              TIMESTAMPTZ DEFAULT (now() - interval '7 days'),
+  p_end                TIMESTAMPTZ DEFAULT now(),
+  p_burst_min_attempts INT         DEFAULT 5,
+  p_burst_gap          INTERVAL    DEFAULT interval '10 minutes'
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_failed    BIGINT;
+  v_succeeded BIGINT;
+  v_bursts    JSON;
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  -- Totals: single scan over the range, FILTER for multi-count
+  SELECT
+    COUNT(*) FILTER (WHERE event_type = 'sign_in_failed'),
+    COUNT(*) FILTER (WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE)
+  INTO v_failed, v_succeeded
+  FROM auth_audit_logs
+  WHERE created_at >= p_start AND created_at < p_end;
+
+  -- Burst sessionization. The first row per IP has LAG=NULL → NULL > interval
+  -- is NULL → CASE falls through to 0, so burst_id starts at 0 per IP. Correct.
+  WITH failed AS (
+    SELECT ip_address, user_id, created_at
+    FROM auth_audit_logs
+    WHERE event_type = 'sign_in_failed'
+      AND ip_address IS NOT NULL
+      AND created_at >= p_start AND created_at < p_end
+  ),
+  gapped AS (
+    SELECT *,
+      CASE
+        WHEN created_at - LAG(created_at) OVER (
+          PARTITION BY ip_address ORDER BY created_at
+        ) > p_burst_gap
+        THEN 1 ELSE 0
+      END AS gap
+    FROM failed
+  ),
+  bursted AS (
+    SELECT *,
+      SUM(gap) OVER (PARTITION BY ip_address ORDER BY created_at) AS burst_id
+    FROM gapped
+  )
+  SELECT COALESCE(json_agg(row_to_json(b) ORDER BY b.attempts DESC), '[]'::json)
+  INTO v_bursts
+  FROM (
+    SELECT
+      host(ip_address)             AS ip_address,
+      MIN(created_at)              AS first_seen,
+      MAX(created_at)              AS last_seen,
+      COUNT(*)::int                AS attempts,
+      COUNT(DISTINCT user_id)::int AS distinct_users
+    FROM bursted
+    GROUP BY ip_address, burst_id
+    HAVING COUNT(*) >= p_burst_min_attempts
+  ) b;
+
+  RETURN json_build_object(
+    'range', json_build_object('start', p_start, 'end', p_end),
+    'totals', json_build_object(
+      'sign_in_failed',  v_failed,
+      'sign_in_success', v_succeeded,
+      'bursts',          COALESCE(json_array_length(v_bursts), 0)
+    ),
+    'bursts', v_bursts,
+    'daily_series', (
+      SELECT COALESCE(json_agg(row_to_json(d) ORDER BY d.day), '[]'::json)
+      FROM (
+        SELECT
+          to_char(days.day, 'YYYY-MM-DD') AS day,
+          COALESCE(agg.failed, 0)         AS failed,
+          COALESCE(agg.succeeded, 0)      AS succeeded
+        FROM generate_series(
+          date_trunc('day', p_start),
+          date_trunc('day', p_end),
+          interval '1 day'
+        ) AS days(day)
+        LEFT JOIN (
+          SELECT
+            date_trunc('day', created_at)                                                           AS day,
+            COUNT(*) FILTER (WHERE event_type = 'sign_in_failed')                                   AS failed,
+            COUNT(*) FILTER (WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE) AS succeeded
+          FROM auth_audit_logs
+          WHERE created_at >= p_start AND created_at < p_end
+          GROUP BY date_trunc('day', created_at)
+        ) agg ON agg.day = days.day
+      ) d
+    )
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT, INTERVAL) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT, INTERVAL) TO authenticated;
+
+-- admin_messaging_trends(p_start, p_end, p_top_limit): Messaging volume for admin dashboard
+--
+-- SECURITY DEFINER: messages RLS is participant-only. Admin is not a
+-- participant in most conversations, so counting rows at all requires
+-- bypassing RLS. The JWT guard is the only gate.
+--
+-- THE ENCRYPTION BOUNDARY:
+-- messages.encrypted_content and messages.initialization_vector are NEVER
+-- named in this function. Column lists are explicit — no SELECT * anywhere.
+-- conversation_id is also excluded from output: emitting {user_id,
+-- conversation_id, count} would let an admin reconstruct the social graph
+-- by correlating rows. {user_id, count} alone is traffic volume, not
+-- who-talks-to-whom. Count and trend, not decrypt and display.
+--
+-- deleted messages are filtered out — a burst of sends-then-deletes is a
+-- user decision we shouldn't surface as "volume" in the admin view.
+--
+-- daily_series is dense (generate_series spine, two LEFT JOINs) so the UI
+-- gets a contiguous x-axis even on zero-traffic days.
+CREATE OR REPLACE FUNCTION admin_messaging_trends(
+  p_start     TIMESTAMPTZ DEFAULT now() - interval '7 days',
+  p_end       TIMESTAMPTZ DEFAULT now(),
+  p_top_limit INT         DEFAULT 10
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_messages       BIGINT;
+  v_active_senders BIGINT;
+  v_convs_created  BIGINT;
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  -- Message totals: one scan, two facts. Only sender_id/created_at/deleted
+  -- touched — the ciphertext columns are not in this query at any layer.
+  SELECT COUNT(*), COUNT(DISTINCT sender_id)
+  INTO v_messages, v_active_senders
+  FROM messages
+  WHERE deleted = FALSE
+    AND created_at >= p_start AND created_at < p_end;
+
+  SELECT COUNT(*) INTO v_convs_created
+  FROM conversations
+  WHERE created_at >= p_start AND created_at < p_end;
+
+  RETURN json_build_object(
+    'range', json_build_object('start', p_start, 'end', p_end),
+    'totals', json_build_object(
+      'messages',              v_messages,
+      'conversations_created', v_convs_created,
+      'active_senders',        v_active_senders
+    ),
+    'daily_series', (
+      SELECT COALESCE(json_agg(row_to_json(d) ORDER BY d.day), '[]'::json)
+      FROM (
+        SELECT
+          to_char(days.day, 'YYYY-MM-DD')   AS day,
+          COALESCE(m.messages, 0)           AS messages,
+          COALESCE(c.conversations_created, 0) AS conversations_created
+        FROM generate_series(
+          date_trunc('day', p_start),
+          date_trunc('day', p_end),
+          interval '1 day'
+        ) AS days(day)
+        LEFT JOIN (
+          SELECT date_trunc('day', created_at) AS day, COUNT(*) AS messages
+          FROM messages
+          WHERE deleted = FALSE
+            AND created_at >= p_start AND created_at < p_end
+          GROUP BY date_trunc('day', created_at)
+        ) m ON m.day = days.day
+        LEFT JOIN (
+          SELECT date_trunc('day', created_at) AS day, COUNT(*) AS conversations_created
+          FROM conversations
+          WHERE created_at >= p_start AND created_at < p_end
+          GROUP BY date_trunc('day', created_at)
+        ) c ON c.day = days.day
+      ) d
+    ),
+    'top_senders', (
+      -- user_id + aggregate count only. No conversation_id, no recipient
+      -- dimension. The admin sees WHO is noisy, not who they're noisy AT.
+      SELECT COALESCE(json_agg(row_to_json(s)), '[]'::json)
+      FROM (
+        SELECT
+          msg.sender_id  AS user_id,
+          p.username     AS username,
+          p.display_name AS display_name,
+          COUNT(*)::int  AS messages
+        FROM messages msg
+        JOIN user_profiles p ON p.id = msg.sender_id
+        WHERE msg.deleted = FALSE
+          AND msg.created_at >= p_start AND msg.created_at < p_end
+          AND p.is_admin = FALSE
+        GROUP BY msg.sender_id, p.username, p.display_name
+        ORDER BY COUNT(*) DESC
+        LIMIT p_top_limit
+      ) s
+    )
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) TO authenticated;
+
+-- admin_overview(p_start, p_end): Composite dashboard payload — one round-trip, all four domains
+--
+-- Calls the four existing *_stats() functions server-side rather than
+-- re-aggregating. Those functions are SECURITY INVOKER, but auth.jwt()
+-- reads from request context not function security mode, so their JWT
+-- guards still gate correctly when called from inside this DEFINER body.
+-- The win: when admin_payment_stats changes, the overview inherits it.
+--
+-- sparks: four integer arrays, one point per day in [v_start, v_end],
+-- oldest → newest, zero-filled. Plain arrays (not [{day, value}] objects)
+-- because the sparkline SVG index-maps x — it doesn't need the dates.
+-- Default 7 ticks; a 30-day range produces 30-element arrays and the
+-- Sparkline just draws a denser polyline. One generate_series spine,
+-- four LEFT JOINs.
+--
+-- DEFINER because the messages spark crosses RLS. user_profiles spark
+-- (signups) and payment_results spark would work under INVOKER with the
+-- admin's RLS policies, but making the whole function DEFINER keeps the
+-- composition uniform. The JWT check is the only gate.
+--
+-- DROP the zero-arg overload first. PG identifies functions by name+argtypes,
+-- so CREATE OR REPLACE admin_overview(p_start, p_end) doesn't touch
+-- admin_overview(). With both in pg_proc, PostgREST returns 300 Multiple
+-- Choices when called with {} since both overloads satisfy all-defaults.
+DROP FUNCTION IF EXISTS admin_overview();
+
+CREATE OR REPLACE FUNCTION admin_overview(
+  p_start TIMESTAMPTZ DEFAULT NULL,
+  p_end   TIMESTAMPTZ DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_start TIMESTAMPTZ;
+  v_end   TIMESTAMPTZ;
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  -- Day-truncate whatever bounds we got so the spine walks whole days.
+  -- NULL defaults COALESCE to the original [today-6, today] 7-tick window
+  -- — NOT the *_trends pattern of now()-7d..now() which truncates to 8
+  -- ticks depending on time-of-day. v_end resolves before v_start reads it.
+  v_end   := date_trunc('day', COALESCE(p_end, now()));
+  v_start := date_trunc('day', COALESCE(p_start, v_end - interval '6 days'));
+
+  RETURN json_build_object(
+    -- Echo the window the SQL actually used (post-COALESCE, post-trunc)
+    -- so the UI knows what range it's showing when the caller omitted
+    -- bounds. Same key as the *_trends RPCs.
+    'range', json_build_object('start', v_start, 'end', v_end),
+
+    'payments',  admin_payment_stats(),
+    'auth',      admin_auth_stats(),
+    'users',     admin_user_stats(),
+    'messaging', admin_messaging_stats(),
+
+    'sparks', (
+      -- Half-open range on each subquery: [day, day+1). Next-day traffic
+      -- doesn't bleed into today's bucket. ORDER BY days.day is load-bearing
+      -- — json_agg without it would emit whatever hash order the joins land
+      -- in and the sparkline would render scrambled.
+      SELECT json_build_object(
+        'payments', json_agg(COALESCE(p.n, 0)  ORDER BY days.day),
+        'logins',   json_agg(COALESCE(a.n, 0)  ORDER BY days.day),
+        'signups',  json_agg(COALESCE(u.n, 0)  ORDER BY days.day),
+        'messages', json_agg(COALESCE(m.n, 0)  ORDER BY days.day)
+      )
+      FROM generate_series(v_start, v_end, interval '1 day') AS days(day)
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*) AS n
+        FROM payment_results
+        WHERE status = 'succeeded'
+          AND created_at >= v_start AND created_at < v_end + interval '1 day'
+        GROUP BY 1
+      ) p ON p.day = days.day
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*) AS n
+        FROM auth_audit_logs
+        WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE
+          AND created_at >= v_start AND created_at < v_end + interval '1 day'
+        GROUP BY 1
+      ) a ON a.day = days.day
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*) AS n
+        FROM user_profiles
+        WHERE is_admin = FALSE
+          AND created_at >= v_start AND created_at < v_end + interval '1 day'
+        GROUP BY 1
+      ) u ON u.day = days.day
+      LEFT JOIN (
+        SELECT date_trunc('day', created_at) AS day, COUNT(*) AS n
+        FROM messages
+        WHERE deleted = FALSE
+          AND created_at >= v_start AND created_at < v_end + interval '1 day'
+        GROUP BY 1
+      ) m ON m.day = days.day
+    )
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
 -- ============================================================================
 -- PART 7: GRANT PERMISSIONS
@@ -1595,7 +2125,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 --   ✅ Group chat tables: conversation_members, group_keys (Feature 010)
 --   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt, update_conversation_timestamp, assign_sequence_number
---   ✅ Admin RPC functions: admin_payment_stats, admin_auth_stats, admin_user_stats, admin_messaging_stats
+--   ✅ Admin RPC functions: admin_payment_stats, admin_auth_stats, admin_user_stats, admin_messaging_stats, admin_payment_trends, admin_audit_trends, admin_list_users, admin_messaging_trends, admin_overview
 --   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert
 --   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 + 9 admin policies)
 --   ✅ Admin RLS policies: 9 read-only policies for admin dashboard (is_admin check)
