@@ -2,11 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AdminDashboardOverview } from './AdminDashboardOverview';
 import type { AdminOverview } from '@/services/admin/admin-overview-service';
-import type { DateRange } from '@/components/molecular/DateRangePicker';
+import type { DateRange } from '@/components/molecular/DateRangeFilter';
 
 // Healthy baseline: every attention scorer returns `ok`. Success rate 98%,
 // zero failed this week, zero rate-limited, block rate well under 10%.
 const healthyOverview: AdminOverview = {
+  range: { start: '2025-06-01', end: '2025-06-07' },
   payments: {
     total_payments: 150,
     successful_payments: 147,
@@ -38,6 +39,12 @@ const healthyOverview: AdminOverview = {
     active_connections: 90,
     blocked_connections: 3,
     connection_distribution: {},
+  },
+  sparks: {
+    payments: [20, 24, 18, 0, 0, 0, 0],
+    logins: [40, 52, 0, 0, 0, 0, 0],
+    signups: [3, 0, 0, 0, 0, 0, 0],
+    messages: [120, 180, 95, 0, 0, 0, 0],
   },
   trends: {
     payments_daily: [
@@ -336,8 +343,8 @@ describe('AdminDashboardOverview', () => {
     // DateRangePicker's active-preset check tolerates ±1h so DST drift in
     // the test runner's zone won't matter, but keeping it clean anyway.
     const thirtyDayRange: DateRange = {
-      from: new Date(2025, 5, 1),
-      to: new Date(2025, 6, 1),
+      start: '2025-06-01',
+      end: '2025-07-01',
     };
 
     it('defaults trend titles to (7d) when no range prop is given', () => {
@@ -362,8 +369,8 @@ describe('AdminDashboardOverview', () => {
       );
       expect(screen.getByTestId('overview-range')).toBeInTheDocument();
       // <input type="date"> — proves it's the real picker, not a stub div.
-      expect(screen.getByLabelText('From date')).toHaveValue('2025-06-01');
-      expect(screen.getByLabelText('To date')).toHaveValue('2025-07-01');
+      expect(screen.getByLabelText('Start date')).toHaveValue('2025-06-01');
+      expect(screen.getByLabelText('End date')).toHaveValue('2025-07-01');
     });
 
     it('omits the picker when either prop is absent', () => {
@@ -425,20 +432,15 @@ describe('AdminDashboardOverview', () => {
           onDateRangeChange={onChange}
         />
       );
-      fireEvent.change(screen.getByLabelText('From date'), {
+      fireEvent.change(screen.getByLabelText('Start date'), {
         target: { value: '2025-05-15' },
       });
       expect(onChange).toHaveBeenCalledTimes(1);
-      // DateRangePicker parses yyyy-mm-dd as local midnight — check the
-      // date fields, not the ms value, so the test runner's timezone
-      // doesn't flip the assertion.
+      // DateRangeFilter produces { start, end } strings. The edited
+      // bound gets the new value; the other passes through untouched.
       const [next] = onChange.mock.calls[0] as [DateRange];
-      expect(next.from?.getFullYear()).toBe(2025);
-      expect(next.from?.getMonth()).toBe(4); // May
-      expect(next.from?.getDate()).toBe(15);
-      // `to` should pass through untouched — the picker spreads the
-      // existing range and only rewrites the edited bound.
-      expect(next.to?.getTime()).toBe(thirtyDayRange.to!.getTime());
+      expect(next.start).toBe('2025-05-15');
+      expect(next.end).toBe(thirtyDayRange.end);
     });
   });
 });

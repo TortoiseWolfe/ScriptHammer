@@ -86,8 +86,8 @@ export default function AdminOverviewPage() {
 
       <AdminDashboardOverview
         overview={overview}
-        range={range}
-        onRangeChange={handleRangeChange}
+        dateRange={range}
+        onDateRangeChange={handleRangeChange}
         isLoading={isLoading}
         testId="admin-overview"
       />

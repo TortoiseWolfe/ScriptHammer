@@ -100,7 +100,7 @@ export default function SignInForm({
 
       // Log failed sign-in attempt (T033)
       await logAuthEvent({
-        event_type: 'sign_in_failed',
+        event_type: 'sign_in',
         event_data: { email, provider: 'email' },
         success: false,
         error_message: signInError.message,
@@ -121,7 +121,7 @@ export default function SignInForm({
       if (user) {
         await logAuthEvent({
           user_id: user.id,
-          event_type: 'sign_in_success',
+          event_type: 'sign_in',
           event_data: { email, provider: 'email' },
         });
       }

@@ -60,6 +60,44 @@ const sample: AdminOverview = {
     signups: [2, 0, 1, 3, 0, 0, 1],
     messages: [110, 98, 134, 122, 101, 140, 142],
   },
+  trends: {
+    payments_daily: [
+      { day: '2026-02-28', count: 12 },
+      { day: '2026-03-01', count: 15 },
+      { day: '2026-03-02', count: 9 },
+      { day: '2026-03-03', count: 18 },
+      { day: '2026-03-04', count: 14 },
+      { day: '2026-03-05', count: 20 },
+      { day: '2026-03-06', count: 17 },
+    ],
+    logins_daily: [
+      { day: '2026-02-28', count: 40 },
+      { day: '2026-03-01', count: 38 },
+      { day: '2026-03-02', count: 45 },
+      { day: '2026-03-03', count: 42 },
+      { day: '2026-03-04', count: 50 },
+      { day: '2026-03-05', count: 48 },
+      { day: '2026-03-06', count: 42 },
+    ],
+    signups_daily: [
+      { day: '2026-02-28', count: 2 },
+      { day: '2026-03-01', count: 0 },
+      { day: '2026-03-02', count: 1 },
+      { day: '2026-03-03', count: 3 },
+      { day: '2026-03-04', count: 0 },
+      { day: '2026-03-05', count: 0 },
+      { day: '2026-03-06', count: 1 },
+    ],
+    messages_daily: [
+      { day: '2026-02-28', count: 110 },
+      { day: '2026-03-01', count: 98 },
+      { day: '2026-03-02', count: 134 },
+      { day: '2026-03-03', count: 122 },
+      { day: '2026-03-04', count: 101 },
+      { day: '2026-03-05', count: 140 },
+      { day: '2026-03-06', count: 142 },
+    ],
+  },
 };
 
 describe('AdminOverviewService.getOverview', () => {

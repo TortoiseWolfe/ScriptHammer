@@ -5,6 +5,7 @@ import { AdminDashboardOverview } from './AdminDashboardOverview';
 import type { AdminOverview } from '@/services/admin/admin-overview-service';
 
 const healthyOverview: AdminOverview = {
+  range: { start: '2025-06-01', end: '2025-06-07' },
   payments: {
     total_payments: 150,
     successful_payments: 147,
@@ -36,6 +37,12 @@ const healthyOverview: AdminOverview = {
     active_connections: 90,
     blocked_connections: 3,
     connection_distribution: {},
+  },
+  sparks: {
+    payments: [20, 24, 0, 0, 0, 0, 0],
+    logins: [40, 0, 0, 0, 0, 0, 0],
+    signups: [3, 0, 0, 0, 0, 0, 0],
+    messages: [120, 180, 0, 0, 0, 0, 0],
   },
   trends: {
     payments_daily: [
@@ -90,7 +97,7 @@ describe('AdminDashboardOverview Accessibility', () => {
     const { container } = render(
       <AdminDashboardOverview
         overview={healthyOverview}
-        dateRange={{ from: new Date(2025, 5, 1), to: new Date(2025, 5, 8) }}
+        dateRange={{ start: '2025-06-01', end: '2025-06-08' }}
         onDateRangeChange={() => {}}
       />
     );

@@ -221,9 +221,11 @@ export function AdminDashboardOverview({
   // Can't derive this from trends.*.length: the RPC skips zero-activity days,
   // so a quiet 30-day window might return 4 rows.
   const windowDays =
-    dateRange?.from && dateRange?.to
+    dateRange?.start && dateRange?.end
       ? Math.round(
-          (dateRange.to.getTime() - dateRange.from.getTime()) / 86_400_000
+          (new Date(dateRange.end).getTime() -
+            new Date(dateRange.start).getTime()) /
+            86_400_000
         )
       : 7;
   const windowLabel = `(${windowDays}d)`;
@@ -237,9 +239,21 @@ export function AdminDashboardOverview({
       href: '/admin/payments',
       attention: p ? scorePayments(p) : { level: 'ok', reasons: [] },
       cards: [
-        { label: 'Total Payments', value: p?.total_payments ?? 0, testId: 'stat-total-payments' },
-        { label: 'Success Rate', value: successRate, testId: 'stat-success-rate' },
-        { label: 'Active Subscriptions', value: p?.active_subscriptions ?? 0, testId: 'stat-active-subscriptions' },
+        {
+          label: 'Total Payments',
+          value: p?.total_payments ?? 0,
+          testId: 'stat-total-payments',
+        },
+        {
+          label: 'Success Rate',
+          value: successRate,
+          testId: 'stat-success-rate',
+        },
+        {
+          label: 'Active Subscriptions',
+          value: p?.active_subscriptions ?? 0,
+          testId: 'stat-active-subscriptions',
+        },
         {
           label: 'Failed This Week',
           value: p?.failed_this_week ?? 0,
@@ -258,15 +272,28 @@ export function AdminDashboardOverview({
       href: '/admin/audit',
       attention: a ? scoreAuth(a) : { level: 'ok', reasons: [] },
       cards: [
-        { label: 'Logins Today', value: a?.logins_today ?? 0, testId: 'stat-logins-today' },
+        {
+          label: 'Logins Today',
+          value: a?.logins_today ?? 0,
+          testId: 'stat-logins-today',
+        },
         {
           label: 'Failed This Week',
           value: a?.failed_this_week ?? 0,
           testId: 'stat-auth-failed',
           trend: a && a.failed_this_week > 0 ? 'down' : undefined,
         },
-        { label: 'Rate Limited', value: a?.rate_limited_users ?? 0, testId: 'stat-rate-limited' },
-        { label: 'New Signups 30d', value: a?.signups_this_month ?? 0, testId: 'stat-signups', trend: 'up' },
+        {
+          label: 'Rate Limited',
+          value: a?.rate_limited_users ?? 0,
+          testId: 'stat-rate-limited',
+        },
+        {
+          label: 'New Signups 30d',
+          value: a?.signups_this_month ?? 0,
+          testId: 'stat-signups',
+          trend: 'up',
+        },
       ],
       trend: trends?.logins_daily ?? [],
       trendTitle: `Logins ${windowLabel}`,
@@ -278,10 +305,26 @@ export function AdminDashboardOverview({
       href: '/admin/users',
       attention: scoreUsers(),
       cards: [
-        { label: 'Total Users', value: u?.total_users ?? 0, testId: 'stat-total-users' },
-        { label: 'Active This Week', value: u?.active_this_week ?? 0, testId: 'stat-active-week' },
-        { label: 'Pending Connections', value: u?.pending_connections ?? 0, testId: 'stat-pending-connections' },
-        { label: 'Total Connections', value: u?.total_connections ?? 0, testId: 'stat-total-connections' },
+        {
+          label: 'Total Users',
+          value: u?.total_users ?? 0,
+          testId: 'stat-total-users',
+        },
+        {
+          label: 'Active This Week',
+          value: u?.active_this_week ?? 0,
+          testId: 'stat-active-week',
+        },
+        {
+          label: 'Pending Connections',
+          value: u?.pending_connections ?? 0,
+          testId: 'stat-pending-connections',
+        },
+        {
+          label: 'Total Connections',
+          value: u?.total_connections ?? 0,
+          testId: 'stat-total-connections',
+        },
       ],
       trend: trends?.signups_daily ?? [],
       trendTitle: `Signups ${windowLabel}`,
@@ -293,10 +336,26 @@ export function AdminDashboardOverview({
       href: '/admin/messaging',
       attention: m ? scoreMessaging(m) : { level: 'ok', reasons: [] },
       cards: [
-        { label: 'Conversations', value: m?.total_conversations ?? 0, testId: 'stat-conversations' },
-        { label: 'Messages This Week', value: m?.messages_this_week ?? 0, testId: 'stat-messages-week' },
-        { label: 'Group Chats', value: m?.group_conversations ?? 0, testId: 'stat-group-chats' },
-        { label: 'Active Connections', value: m?.active_connections ?? 0, testId: 'stat-active-connections' },
+        {
+          label: 'Conversations',
+          value: m?.total_conversations ?? 0,
+          testId: 'stat-conversations',
+        },
+        {
+          label: 'Messages This Week',
+          value: m?.messages_this_week ?? 0,
+          testId: 'stat-messages-week',
+        },
+        {
+          label: 'Group Chats',
+          value: m?.group_conversations ?? 0,
+          testId: 'stat-group-chats',
+        },
+        {
+          label: 'Active Connections',
+          value: m?.active_connections ?? 0,
+          testId: 'stat-active-connections',
+        },
       ],
       trend: trends?.messages_daily ?? [],
       trendTitle: `Messages ${windowLabel}`,

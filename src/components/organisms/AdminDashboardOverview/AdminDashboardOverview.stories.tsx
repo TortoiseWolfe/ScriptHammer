@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { AdminDashboardOverview } from './AdminDashboardOverview';
 import type { AdminOverview } from '@/services/admin/admin-overview-service';
-import type { DateRange } from '@/components/molecular/DateRangePicker';
+import type { DateRange } from '@/components/molecular/DateRangeFilter';
 
 // Seven days of trend data per domain. Wide value spread (3 → 2400) so the
 // chart y-axis actually has work to do across all 32 themes.
@@ -47,6 +47,7 @@ const trends: AdminOverview['trends'] = {
 
 // All-green. No banner, canonical section order.
 const healthyOverview: AdminOverview = {
+  range: { start: '2025-06-08', end: '2025-06-14' },
   payments: {
     total_payments: 150,
     successful_payments: 147,
@@ -78,6 +79,12 @@ const healthyOverview: AdminOverview = {
     active_connections: 90,
     blocked_connections: 3,
     connection_distribution: {},
+  },
+  sparks: {
+    payments: [12, 18, 9, 22, 15, 28, 19],
+    logins: [45, 62, 38, 71, 55, 80, 48],
+    signups: [3, 5, 2, 8, 4, 6, 3],
+    messages: [180, 640, 520, 2400, 890, 410, 1100],
   },
   trends,
 };
@@ -136,13 +143,16 @@ export const WithDateRange: Story = {
     const [range, setRange] = useState<DateRange>(() => {
       const to = new Date();
       const from = new Date(to.getTime() - 30 * 86_400_000);
-      return { from, to };
+      return {
+        start: from.toISOString().slice(0, 10),
+        end: to.toISOString().slice(0, 10),
+      };
     });
     return (
       <AdminDashboardOverview
         overview={noisyOverview}
         dateRange={range}
-        onDateRangeChange={setRange}
+        onDateRangeChange={(r) => setRange(r)}
       />
     );
   },
@@ -150,7 +160,7 @@ export const WithDateRange: Story = {
     docs: {
       description: {
         story:
-          'Picker mounted — trend titles derive from the window span (30d here, not the server default of 7d). The 7d/30d/90d presets edit both bounds at once; the stat cards above each sparkline are all-time counters and don\'t move with the window.',
+          "Picker mounted — trend titles derive from the window span (30d here, not the server default of 7d). The 7d/30d/90d presets edit both bounds at once; the stat cards above each sparkline are all-time counters and don't move with the window.",
       },
     },
   },
