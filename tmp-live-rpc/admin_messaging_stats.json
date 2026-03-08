@@ -1,0 +1,14 @@
+{
+  "total_conversations": 9,
+  "group_conversations": 0,
+  "direct_conversations": 9,
+  "messages_this_week": 31,
+  "active_connections": 6,
+  "blocked_connections": 1,
+  "connection_distribution": {
+    "declined": 1,
+    "pending": 3,
+    "blocked": 1,
+    "accepted": 6
+  }
+}

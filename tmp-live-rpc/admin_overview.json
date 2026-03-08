@@ -1,0 +1,89 @@
+{
+  "range": {
+    "start": "2026-02-06T00:00:00+00:00",
+    "end": "2026-03-08T00:00:00+00:00"
+  },
+  "payments": {
+    "total_payments": 29,
+    "successful_payments": 23,
+    "failed_payments": 3,
+    "pending_payments": 1,
+    "total_revenue_cents": 83997,
+    "active_subscriptions": 1,
+    "failed_this_week": 2,
+    "revenue_by_provider": {
+      "paypal": 29499,
+      "stripe": 54498
+    }
+  },
+  "auth": {
+    "logins_today": 4,
+    "failed_this_week": 13,
+    "signups_this_month": 80,
+    "rate_limited_users": 0,
+    "top_failed_logins": [
+      {
+        "user_id": "11111111-1111-1111-1111-111111111104",
+        "attempts": 4
+      },
+      {
+        "user_id": "11111111-1111-1111-1111-111111111105",
+        "attempts": 3
+      },
+      {
+        "user_id": "11111111-1111-1111-1111-111111111101",
+        "attempts": 2
+      },
+      {
+        "user_id": "11111111-1111-1111-1111-111111111106",
+        "attempts": 2
+      },
+      {
+        "user_id": "11111111-1111-1111-1111-111111111102",
+        "attempts": 1
+      },
+      {
+        "user_id": "11111111-1111-1111-1111-111111111103",
+        "attempts": 1
+      }
+    ]
+  },
+  "users": {
+    "total_users": 15,
+    "active_this_week": 8,
+    "pending_connections": 3,
+    "total_connections": 6
+  },
+  "messaging": {
+    "total_conversations": 9,
+    "group_conversations": 0,
+    "direct_conversations": 9,
+    "messages_this_week": 31,
+    "active_connections": 6,
+    "blocked_connections": 1,
+    "connection_distribution": {
+      "declined": 1,
+      "pending": 3,
+      "blocked": 1,
+      "accepted": 6
+    }
+  },
+  "sparks": {
+    "payments": [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 3, 0, 2, 2, 1,
+      3, 2, 2, 2, 3, 0
+    ],
+    "logins": [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2,
+      2, 2, 2, 2, 2, 3
+    ],
+    "signups": [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 8
+    ],
+    "messages": [
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 31, 0, 0, 0, 0, 0, 0, 0, 2, 0, 3, 1, 2, 2,
+      5, 9, 3, 7, 3, 3, 0
+    ]
+  }
+}

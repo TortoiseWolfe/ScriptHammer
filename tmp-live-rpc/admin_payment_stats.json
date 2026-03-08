@@ -1,0 +1,13 @@
+{
+  "total_payments": 29,
+  "successful_payments": 23,
+  "failed_payments": 3,
+  "pending_payments": 1,
+  "total_revenue_cents": 83997,
+  "active_subscriptions": 1,
+  "failed_this_week": 2,
+  "revenue_by_provider": {
+    "paypal": 29499,
+    "stripe": 54498
+  }
+}

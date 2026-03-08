@@ -1,0 +1,140 @@
+{
+  "total": 15,
+  "users": [
+    {
+      "id": "11111111-1111-1111-1111-111111111102",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-03-08T08:50:01.189071+00:00",
+      "activity": "active"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111101",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-03-07T10:50:01.189071+00:00",
+      "activity": "active"
+    },
+    {
+      "id": "c3ef2b8f-1167-48e3-8f78-82047d85f0e2",
+      "username": "user_1770580605233",
+      "display_name": "Test User",
+      "created_at": "2025-12-18T16:39:00.190878+00:00",
+      "welcome_message_sent": true,
+      "last_sign_in_at": "2026-03-05T22:18:24.214952+00:00",
+      "activity": "active"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111103",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-03-05T10:50:01.189071+00:00",
+      "activity": "active"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111108",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-03-03T10:50:01.189071+00:00",
+      "activity": "active"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111104",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-02-21T10:50:01.189071+00:00",
+      "activity": "idle"
+    },
+    {
+      "id": "c7b38945-c8ec-46c9-b255-2c8ca4b3cdb9",
+      "username": null,
+      "display_name": "Sam “The Creative Crowe” Crowe",
+      "created_at": "2026-02-21T00:36:59.081524+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-02-21T00:36:59.334376+00:00",
+      "activity": "idle"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111105",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-02-16T10:50:01.189071+00:00",
+      "activity": "idle"
+    },
+    {
+      "id": "de0bd6e5-3a53-42ee-8242-2a6be66b5905",
+      "username": null,
+      "display_name": null,
+      "created_at": "2025-12-18T16:39:27.166123+00:00",
+      "welcome_message_sent": true,
+      "last_sign_in_at": "2026-02-16T07:10:53.081833+00:00",
+      "activity": "idle"
+    },
+    {
+      "id": "9d425b3d-1bd9-43fc-b652-92ea7c62324a",
+      "username": null,
+      "display_name": "scripthammer.e2e+test-tertiary",
+      "created_at": "2025-12-18T16:39:51.853979+00:00",
+      "welcome_message_sent": true,
+      "last_sign_in_at": "2026-02-16T07:09:49.412815+00:00",
+      "activity": "idle"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111106",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": "2026-01-27T10:50:01.189071+00:00",
+      "activity": "dormant"
+    },
+    {
+      "id": "15c96b97-0938-48dd-89d3-deac818b41c2",
+      "username": null,
+      "display_name": null,
+      "created_at": "2025-12-26T10:10:09.080287+00:00",
+      "welcome_message_sent": true,
+      "last_sign_in_at": "2025-12-26T10:10:22.807758+00:00",
+      "activity": "dormant"
+    },
+    {
+      "id": "e3c81e9b-0cd4-4fb5-87bb-fe97c64aab63",
+      "username": null,
+      "display_name": null,
+      "created_at": "2025-12-26T09:52:16.503014+00:00",
+      "welcome_message_sent": true,
+      "last_sign_in_at": "2025-12-26T09:52:24.254005+00:00",
+      "activity": "dormant"
+    },
+    {
+      "id": "11111111-1111-1111-1111-111111111107",
+      "username": null,
+      "display_name": null,
+      "created_at": "2026-03-08T10:50:01.189071+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": null,
+      "activity": "dormant"
+    },
+    {
+      "id": "b51c2550-15f5-4f57-92bc-edb0f7a6d78c",
+      "username": null,
+      "display_name": null,
+      "created_at": "2025-12-14T10:04:21.636595+00:00",
+      "welcome_message_sent": false,
+      "last_sign_in_at": null,
+      "activity": "dormant"
+    }
+  ]
+}

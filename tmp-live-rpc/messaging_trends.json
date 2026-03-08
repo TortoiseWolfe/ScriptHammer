@@ -1,0 +1,206 @@
+{
+  "range": {
+    "start": "2026-02-06T10:52:50.145849+00:00",
+    "end": "2026-03-08T10:52:50.145849+00:00"
+  },
+  "totals": {
+    "messages": 71,
+    "conversations_created": 6,
+    "active_senders": 7
+  },
+  "daily_series": [
+    {
+      "day": "2026-02-06",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-07",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-08",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-09",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-10",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-11",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-12",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-13",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-14",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-15",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-16",
+      "messages": 31,
+      "conversations_created": 1
+    },
+    {
+      "day": "2026-02-17",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-18",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-19",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-20",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-21",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-22",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-23",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-24",
+      "messages": 2,
+      "conversations_created": 1
+    },
+    {
+      "day": "2026-02-25",
+      "messages": 0,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-26",
+      "messages": 3,
+      "conversations_created": 2
+    },
+    {
+      "day": "2026-02-27",
+      "messages": 1,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-02-28",
+      "messages": 2,
+      "conversations_created": 1
+    },
+    {
+      "day": "2026-03-01",
+      "messages": 2,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-02",
+      "messages": 5,
+      "conversations_created": 1
+    },
+    {
+      "day": "2026-03-03",
+      "messages": 9,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-04",
+      "messages": 3,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-05",
+      "messages": 7,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-06",
+      "messages": 3,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-07",
+      "messages": 3,
+      "conversations_created": 0
+    },
+    {
+      "day": "2026-03-08",
+      "messages": 0,
+      "conversations_created": 0
+    }
+  ],
+  "top_senders": [
+    {
+      "user_id": "c3ef2b8f-1167-48e3-8f78-82047d85f0e2",
+      "username": "user_1770580605233",
+      "display_name": "Test User",
+      "messages": 29
+    },
+    {
+      "user_id": "11111111-1111-1111-1111-111111111102",
+      "username": null,
+      "display_name": null,
+      "messages": 15
+    },
+    {
+      "user_id": "11111111-1111-1111-1111-111111111101",
+      "username": null,
+      "display_name": null,
+      "messages": 10
+    },
+    {
+      "user_id": "11111111-1111-1111-1111-111111111103",
+      "username": null,
+      "display_name": null,
+      "messages": 10
+    },
+    {
+      "user_id": "11111111-1111-1111-1111-111111111104",
+      "username": null,
+      "display_name": null,
+      "messages": 4
+    },
+    {
+      "user_id": "9d425b3d-1bd9-43fc-b652-92ea7c62324a",
+      "username": null,
+      "display_name": "scripthammer.e2e+test-tertiary",
+      "messages": 2
+    }
+  ]
+}
