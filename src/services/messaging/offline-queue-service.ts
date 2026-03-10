@@ -62,6 +62,7 @@ export class OfflineQueueService {
       | 'sender_id'
       | 'encrypted_content'
       | 'initialization_vector'
+      | 'content'
     >
   ): Promise<QueuedMessage> {
     const queuedMessage: QueuedMessage = {

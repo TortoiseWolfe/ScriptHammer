@@ -37,6 +37,8 @@ export interface UseOfflineQueueReturn {
   clearSynced: () => Promise<void>;
   /** Get all failed messages */
   getFailedMessages: () => Promise<QueuedMessage[]>;
+  /** Reload queue immediately (use after queuing a message to show it without waiting for poll) */
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -196,5 +198,6 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     retryFailed,
     clearSynced,
     getFailedMessages,
+    refresh: loadQueue,
   };
 }

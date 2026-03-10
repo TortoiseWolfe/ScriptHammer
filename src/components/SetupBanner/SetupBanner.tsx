@@ -81,7 +81,7 @@ export function SetupBanner({
             href={docsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="link link-primary ml-2"
+            className="link ml-2"
           >
             View setup guide
           </a>

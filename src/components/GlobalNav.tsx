@@ -42,9 +42,14 @@ export function GlobalNav() {
     service.checkIsAdmin(user.id).then(setIsAdmin);
   }, [user?.id]);
 
-  // Theme management
+  // Theme management — read existing theme, don't overwrite ThemeScript's work.
+  // ThemeScript runs before hydration and sets data-theme from localStorage
+  // or system preference; we just sync React state to it here.
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const savedTheme =
+      localStorage.getItem('theme') ||
+      document.documentElement.getAttribute('data-theme') ||
+      'scripthammer-dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
 
@@ -161,7 +166,7 @@ export function GlobalNav() {
   ];
 
   return (
-    <header className="border-base-300 bg-base-100/95 sticky top-0 z-50 border-b shadow-sm backdrop-blur-md">
+    <header className="border-base-300 bg-base-100 sticky top-0 z-50 border-b shadow-sm">
       <nav className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo & Brand */}

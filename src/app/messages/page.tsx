@@ -16,6 +16,7 @@ import { MessagingGate } from '@/components/auth/MessagingGate';
 import { messageService } from '@/services/messaging/message-service';
 import { keyManagementService } from '@/services/messaging/key-service';
 import { connectionService } from '@/services/messaging/connection-service';
+import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage, SidebarTab } from '@/types/messaging';
 
@@ -293,6 +294,15 @@ function MessagesContent() {
     }
   };
 
+  // Optimistic UI for queued outgoing messages. Plaintext is cached
+  // session-only (the IndexedDB queue stores ciphertext). When the queue
+  // poll detects a pending entry has synced, reload real messages so the
+  // synced bubble replaces the pending one.
+  const { pendingMessages, addPending, retryMessage } = usePendingMessages(
+    conversationId ?? null,
+    () => void loadMessages()
+  );
+
   const handleSendMessage = async (content: string) => {
     if (!conversationId) return;
 
@@ -300,12 +310,20 @@ function MessagesContent() {
       setSending(true);
       setError(null);
 
-      await messageService.sendMessage({
+      const result = await messageService.sendMessage({
         conversation_id: conversationId,
         content,
       });
 
-      await loadMessages();
+      if (result.queued) {
+        // Offline OR send-failed-and-queued. Show the optimistic bubble.
+        // The queue's auto-sync (on 'online' event / poll) will eventually
+        // deliver it; onSynced → loadMessages() swaps in the real one.
+        addPending(result.message.id, content);
+      } else {
+        // Direct send succeeded — refresh from Supabase.
+        await loadMessages();
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -503,6 +521,8 @@ function MessagesContent() {
                     <ChatWindow
                       conversationId={conversationId}
                       messages={messages}
+                      pendingMessages={pendingMessages}
+                      onRetryPending={retryMessage}
                       onSendMessage={handleSendMessage}
                       onEditMessage={handleEditMessage}
                       onDeleteMessage={handleDeleteMessage}

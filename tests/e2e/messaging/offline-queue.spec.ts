@@ -168,13 +168,9 @@ test.describe('Offline Message Queue', () => {
     logger.info('Offline queue test setup complete');
   });
 
-  test.skip('T146: should queue message when offline and send when online', async ({
+  test('T146: should queue message when offline and send when online', async ({
     browser,
   }) => {
-    // SKIP: Offline queue service exists (offline-queue-service.ts) but ChatWindow/MessageThread
-    // doesn't render queued messages from IndexedDB. Queued messages are stored but not shown.
-    // TODO: Implement QueuedMessageBubble component and integrate with MessageThread
-
     // Skip if setup failed
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
@@ -259,12 +255,9 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test.skip('T147: should queue multiple messages and sync all when reconnected', async ({
+  test('T147: should queue multiple messages and sync all when reconnected', async ({
     browser,
   }) => {
-    // SKIP: UI doesn't render queued messages from IndexedDB
-    // TODO: Implement QueuedMessageBubble component
-
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
@@ -345,13 +338,9 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test.skip('T148: should retry with exponential backoff on server failure', async ({
+  test('T148: should retry with exponential backoff on server failure', async ({
     browser,
   }) => {
-    // SKIP: Retry logic exists in offlineQueueService but isn't triggered from UI send flow
-    // The sendMessage function queues but doesn't retry with backoff in the browser
-    // TODO: Implement automatic sync with retry on page load / online event
-
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
@@ -440,13 +429,9 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test.skip('T149: should handle conflict resolution with server timestamp', async ({
+  test('T149: should handle conflict resolution with server timestamp', async ({
     browser,
   }) => {
-    // SKIP: Conflict resolution requires sequence_number handling in the UI
-    // The offline queue service uses sequence numbers but multi-device sync UI not implemented
-    // TODO: Add conflict resolution UI with merge/overwrite options
-
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
@@ -595,13 +580,9 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test.skip('should show failed status after max retries', async ({
+  test('should show failed status after max retries', async ({
     browser,
   }) => {
-    // SKIP: Failed status UI not implemented
-    // The offlineQueueService tracks 'failed' status but UI doesn't render failed messages
-    // TODO: Add FailedMessageBubble component with retry button
-
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;

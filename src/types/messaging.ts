@@ -92,11 +92,29 @@ export interface QueuedMessage {
   sender_id: string; // User ID who sent the message
   encrypted_content: string;
   initialization_vector: string;
+  /** Plaintext — for UI rendering while queued. Client-only, never synced. */
+  content?: string;
   status: QueueStatus; // Queue status
   synced: boolean;
   retries: number;
   created_at: number; // Unix timestamp
   sequence_number?: number; // Optional sequence number after successful send
+}
+
+/**
+ * UI-layer representation of a queued message.
+ *
+ * Holds plaintext content (in memory only, never persisted) so the
+ * thread can optimistically display outgoing messages before they sync.
+ * Status is synced from the underlying {@link QueuedMessage} in IndexedDB.
+ */
+export interface PendingMessage {
+  id: string; // Same ID as the QueuedMessage
+  conversation_id: string;
+  content: string; // Decrypted plaintext (session-only)
+  status: QueueStatus;
+  retries: number;
+  created_at: string; // ISO string for sorting alongside DecryptedMessage
 }
 
 // CachedMessage is identical to Message but stored in IndexedDB

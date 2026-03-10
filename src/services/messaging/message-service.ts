@@ -173,6 +173,7 @@ export class MessageService {
           sender_id: user.id,
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
+          content,
         });
 
         // Return a placeholder message object
@@ -275,6 +276,7 @@ export class MessageService {
           sender_id: user.id,
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
+          content,
         });
 
         // Return a placeholder message object

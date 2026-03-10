@@ -35,7 +35,7 @@ export default function PWAInstall() {
       // Skip in test environments
       if (process.env.NODE_ENV === 'test') return;
 
-      window.addEventListener('load', () => {
+      const registerSW = () => {
         // Use dynamic basePath from project config
         const swPath = projectConfig.swPath;
 
@@ -67,7 +67,16 @@ export default function PWAInstall() {
             logger.error('Service Worker registration failed', { error });
           }
         );
-      });
+      };
+
+      // By the time this effect runs, `load` has almost certainly already
+      // fired (React mounts after DOMContentLoaded). Register immediately
+      // if so; otherwise defer until load.
+      if (document.readyState === 'complete') {
+        registerSW();
+      } else {
+        window.addEventListener('load', registerSW, { once: true });
+      }
     } else {
       logger.debug('Service Worker not supported in this browser');
     }
