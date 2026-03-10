@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { pwaTester, type PWATestResult } from '@/utils/pwa-test';
 import { onFCP, onLCP, onCLS, onTTFB, type Metric } from '@/utils/web-vitals';
+import { getAssetUrl } from '@/config/project.config';
 import pkg from '../../../package.json';
 
 type State = 'pass' | 'warn' | 'fail' | 'pending';
@@ -75,7 +76,7 @@ export default function StatusPage() {
     onCLS((m) => setVitals((p) => ({ ...p, CLS: m })));
     onTTFB((m) => setVitals((p) => ({ ...p, TTFB: m })));
     pwaTester.runAllTests().then(setPwa).catch(() => setPwa([]));
-    fetch('/docs/lighthouse-scores.json')
+    fetch(getAssetUrl('/docs/lighthouse-scores.json'))
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => { setLh(d.mobile ?? d); setLhTime(d.timestamp ?? null); })
       .catch(() => {});

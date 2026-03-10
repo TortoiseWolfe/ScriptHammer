@@ -303,6 +303,7 @@ describe('useWeb3Forms Hook', () => {
         retryFailed: vi.fn(),
         clearSynced: vi.fn(),
         getFailedMessages: vi.fn().mockResolvedValue([]),
+        refresh: vi.fn().mockResolvedValue(undefined),
       });
 
       const { result } = renderHook(() => useWeb3Forms());
@@ -362,6 +363,7 @@ describe('useWeb3Forms Hook', () => {
         retryFailed: vi.fn(),
         clearSynced: vi.fn(),
         getFailedMessages: vi.fn().mockResolvedValue([]),
+        refresh: vi.fn().mockResolvedValue(undefined),
       });
 
       const { result } = renderHook(() => useWeb3Forms());

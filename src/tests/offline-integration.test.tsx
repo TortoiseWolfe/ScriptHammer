@@ -32,6 +32,7 @@ const createMockUseOfflineQueue = (overrides = {}) => ({
   retryFailed: vi.fn().mockResolvedValue(undefined),
   clearSynced: vi.fn().mockResolvedValue(undefined),
   getFailedMessages: vi.fn().mockResolvedValue([]),
+  refresh: vi.fn().mockResolvedValue(undefined),
   ...overrides,
 });
 

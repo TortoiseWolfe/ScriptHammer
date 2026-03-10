@@ -7,15 +7,17 @@ const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 
-// Assets to cache on install
+// Assets to cache on install. Paths are relative to this script's location
+// (self.registration.scope), so they resolve correctly whether the app is
+// served from root or from a basePath like /project-name/.
 const STATIC_ASSETS = [
-  '/',
-  '/offline.html',
-  '/manifest.json',
-  '/favicon.ico',
-  '/blog/',
-  '/themes/',
-  '/status/',
+  './',
+  './offline.html',
+  './manifest.json',
+  './favicon.ico',
+  './blog/',
+  './themes/',
+  './status/',
 ];
 
 // Skip waiting and claim clients immediately
@@ -143,7 +145,7 @@ self.addEventListener('fetch', (event) => {
             }
             // Return offline page if available
             if (request.destination === 'document') {
-              return caches.match('/offline.html').catch(() => {
+              return caches.match(new URL('./offline.html', self.registration.scope).href).catch(() => {
                 return new Response('Offline - Content not available', {
                   status: 503,
                   statusText: 'Service Unavailable',
@@ -241,5 +243,5 @@ self.addEventListener('push', (event) => {
 // Notification click handler
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow('/'));
+  event.waitUntil(clients.openWindow(self.registration.scope));
 });

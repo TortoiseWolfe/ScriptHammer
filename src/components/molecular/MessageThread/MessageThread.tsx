@@ -11,8 +11,9 @@ import React, {
 } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import MessageBubble from '@/components/atomic/MessageBubble';
+import QueuedMessageBubble from '@/components/atomic/QueuedMessageBubble';
 import TypingIndicator from '@/components/atomic/TypingIndicator';
-import type { DecryptedMessage } from '@/types/messaging';
+import type { DecryptedMessage, PendingMessage } from '@/types/messaging';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:molecular:MessageThread');
@@ -40,6 +41,10 @@ export interface MessageThreadProps {
   onEditMessage?: (messageId: string, newContent: string) => Promise<void>;
   /** Callback when message is deleted (Phase 6) */
   onDeleteMessage?: (messageId: string) => Promise<void>;
+  /** Pending (queued, not-yet-synced) outgoing messages — rendered after synced messages */
+  pendingMessages?: PendingMessage[];
+  /** Retry callback for a single failed queued message */
+  onRetryPending?: (id: string) => Promise<void>;
   /** Additional CSS classes */
   className?: string;
 }
@@ -73,6 +78,8 @@ export default function MessageThread({
   typingUserName = 'User',
   onEditMessage,
   onDeleteMessage,
+  pendingMessages = [],
+  onRetryPending,
   className = '',
 }: MessageThreadProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -230,9 +237,19 @@ export default function MessageThread({
     ? virtualizer.getVirtualItems()
     : null;
 
+  // Queued bubbles appended after the synced list. Memoised so the map
+  // callback identity is stable (pendingMessages is usually short).
+  const renderPendingBubbles = useMemo(
+    () =>
+      pendingMessages.map((pm) => (
+        <QueuedMessageBubble key={pm.id} message={pm} onRetry={onRetryPending} />
+      )),
+    [pendingMessages, onRetryPending]
+  );
+
   // Render virtual or standard list
   const renderMessages = () => {
-    if (messages.length === 0) {
+    if (messages.length === 0 && pendingMessages.length === 0) {
       return (
         <div className="flex h-full items-center justify-center">
           <p className="text-base-content/80">
@@ -277,7 +294,7 @@ export default function MessageThread({
               </div>
             );
           })}
-          {isTyping && (
+          {(pendingMessages.length > 0 || isTyping) && (
             <div
               style={{
                 position: 'absolute',
@@ -286,7 +303,8 @@ export default function MessageThread({
                 width: '100%',
               }}
             >
-              <div className="px-4 py-2">
+              <div className="space-y-4 px-4 py-2">
+                {renderPendingBubbles}
                 <TypingIndicator show={isTyping} userName={typingUserName} />
               </div>
             </div>
@@ -306,6 +324,7 @@ export default function MessageThread({
             onDelete={handleDeleteMessage}
           />
         ))}
+        {renderPendingBubbles}
         <TypingIndicator show={isTyping} userName={typingUserName} />
       </div>
     );

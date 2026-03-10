@@ -134,6 +134,7 @@ export default function RootLayout({
               <Footer />
               <CookieConsent />
               <ConsentModal />
+              <PWAInstall />
             </AccessibilityProvider>
           </AuthProvider>
         </ConsentProvider>

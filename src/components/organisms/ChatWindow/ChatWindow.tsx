@@ -3,7 +3,7 @@
 import React, { useRef, useEffect } from 'react';
 import MessageThread from '@/components/molecular/MessageThread';
 import MessageInput from '@/components/molecular/MessageInput';
-import type { DecryptedMessage } from '@/types/messaging';
+import type { DecryptedMessage, PendingMessage } from '@/types/messaging';
 import { cn } from '@/lib/utils';
 import { useKeyboardShortcuts, shortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useReadReceipts } from '@/hooks/useReadReceipts';
@@ -28,6 +28,10 @@ export interface ChatWindowProps {
   loading?: boolean;
   /** Whether a message is currently being sent */
   sending?: boolean;
+  /** Queued outgoing messages (optimistic UI while offline / retrying) */
+  pendingMessages?: PendingMessage[];
+  /** Retry a single failed queued message */
+  onRetryPending?: (id: string) => Promise<void>;
   /** Whether user is blocked */
   isBlocked?: boolean;
   /** Name of other participant */
@@ -58,6 +62,8 @@ export default function ChatWindow({
   hasMore = false,
   loading = false,
   sending = false,
+  pendingMessages,
+  onRetryPending,
   isBlocked = false,
   participantName = 'User',
   className = '',
@@ -170,6 +176,8 @@ export default function ChatWindow({
       <div className="h-full min-h-0">
         <MessageThread
           messages={messages}
+          pendingMessages={pendingMessages}
+          onRetryPending={onRetryPending}
           onEditMessage={onEditMessage}
           onDeleteMessage={onDeleteMessage}
           onLoadMore={onLoadMore}
