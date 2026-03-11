@@ -18,7 +18,7 @@
   ],
   "private": true,
   "scripts": {
-    "dev": "node scripts/detect-project.js && next dev",
+    "dev": "node scripts/detect-project.js && bash scripts/sync-wireframes.sh && next dev",
     "dev:clean": "rm -rf .next && node scripts/detect-project.js && next dev",
     "docker:clean": "./scripts/clean-start.sh",
     "docker:dev": "docker compose up",

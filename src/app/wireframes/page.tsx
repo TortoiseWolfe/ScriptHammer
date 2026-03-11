@@ -18,7 +18,6 @@ export default function WireframesPage() {
         src={iframeSrc}
         title="Wireframe Viewer"
         className="h-full w-full border-0"
-        sandbox="allow-scripts allow-same-origin"
         onLoad={() => setLoading(false)}
       />
     </div>
