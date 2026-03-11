@@ -35,15 +35,16 @@ git push
 
 The `scripts/rebrand.sh` script automates updating 200+ files:
 
-| Category    | Changes                                                                                                |
-| ----------- | ------------------------------------------------------------------------------------------------------ |
-| **Code**    | Replaces "ScriptHammer" with your project name in all TypeScript, JavaScript, JSON, and Markdown files |
-| **Files**   | Renames files containing "ScriptHammer" (e.g., `ScriptHammerLogo.tsx` → `MyProjectLogo.tsx`)           |
-| **Docker**  | Updates service name in `docker-compose.yml`                                                           |
-| **Git**     | Updates remote origin URL to your repository                                                           |
-| **Config**  | Updates `package.json` name, description, and repository fields                                        |
-| **Themes**  | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name                     |
-| **Cleanup** | Deletes `public/CNAME` (unless custom domain detected)                                                 |
+| Category   | Changes                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------ |
+| **Code**   | Replaces "ScriptHammer" with your project name in all TypeScript, JavaScript, JSON, and Markdown files |
+| **Files**  | Renames files containing "ScriptHammer" (e.g., `ScriptHammerLogo.tsx` → `MyProjectLogo.tsx`)           |
+| **Docker** | Updates service name in `docker-compose.yml`                                                           |
+| **Git**    | Updates remote origin URL to your repository                                                           |
+| **Config** | Updates `package.json` name, description, and repository fields                                        |
+| **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name                     |
+| **Env**    | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example`                                  |
+| **CNAME**  | Updates `public/CNAME` to your project domain (unless custom domain detected or `--keep-cname`)        |
 
 ### Script Options
 
@@ -71,7 +72,7 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 | ------------------------ | ---------------------------------------------------------- |
 | `--dry-run`              | Preview changes without modifying files                    |
 | `--force`                | Skip all confirmation prompts                              |
-| `--keep-cname`           | Don't delete `public/CNAME` file                           |
+| `--keep-cname`           | Don't update `public/CNAME` file (keep existing domain)    |
 | `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH |
 | `--preserve-attribution` | Skip Footer.tsx to keep ScriptHammer attribution link      |
 
@@ -202,12 +203,19 @@ git push  # Push from host (SSH keys on host)
 After forking, verify everything works:
 
 - [ ] `docker compose up` starts without errors
-- [ ] `docker compose exec <project> pnpm test` - all tests pass
-- [ ] `docker compose exec <project> pnpm run build` - build succeeds
+- [ ] `docker compose exec <project> pnpm test` — all tests pass
+- [ ] `docker compose exec <project> pnpm run build` — build succeeds
 - [ ] No "ScriptHammer" references in `package.json`
 - [ ] `git remote -v` shows your repository URL
+- [ ] `.env` has `COMPOSE_PROJECT_NAME=<yourproject>` (not `scripthammer`)
+- [ ] `public/CNAME` contains your domain (or is absent if no custom domain)
+- [ ] `docker compose ps` shows your project name in container names
 - [ ] GitHub Pages deployment succeeds (if enabled)
 - [ ] Site loads at `https://username.github.io/project-name/`
+
+### Port Variables
+
+The `SH_*` port environment variables (`SH_PORT`, `SH_STORYBOOK_PORT`, etc.) are inherited from the template and work as-is. They control host port bindings in `docker-compose.yml`. You can customize them in `.env` if you need fixed ports, but the defaults (ephemeral assignment) prevent collisions automatically.
 
 ## Troubleshooting
 

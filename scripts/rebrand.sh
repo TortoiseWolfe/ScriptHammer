@@ -15,7 +15,7 @@
 # Options:
 #   --force               Skip all confirmation prompts
 #   --dry-run             Show what would change without modifying files
-#   --keep-cname          Do not delete public/CNAME file
+#   --keep-cname          Do not update public/CNAME file (keep existing domain)
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
 #   --preserve-attribution Keep ScriptHammer attribution link in Footer
 #   --help                Show this help message
@@ -311,8 +311,8 @@ update_package_json() {
     fi
 }
 
-# Delete CNAME file
-delete_cname() {
+# Update CNAME file (replace scripthammer domain with new project domain)
+update_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
 
     if [ -f "$cname_file" ]; then
@@ -322,13 +322,13 @@ delete_cname() {
 
         if [[ "$domain" == *"scripthammer"* ]] || [ -z "$domain" ]; then
             if [ "$KEEP_CNAME" = true ]; then
-                log_info "Keeping CNAME file (--keep-cname flag set)"
+                log_info "Keeping CNAME file as-is (--keep-cname flag set)"
             else
                 if [ "$DRY_RUN" = true ]; then
-                    log_verbose "[DRY-RUN] Would delete public/CNAME"
+                    log_verbose "[DRY-RUN] Would update public/CNAME to ${DISPLAY_NAME}.com"
                 else
-                    rm "$cname_file"
-                    log_verbose "Deleted public/CNAME"
+                    echo "${DISPLAY_NAME}.com" > "$cname_file"
+                    log_verbose "Updated public/CNAME: ${domain} → ${DISPLAY_NAME}.com"
                 fi
             fi
         else
@@ -414,6 +414,30 @@ update_git_remote() {
         else
             git remote set-url origin "$new_url"
             log_verbose "Updated git remote: $new_url"
+        fi
+    fi
+}
+
+# Update .env.example with new project name
+update_env_example() {
+    local env_file="$REPO_ROOT/.env.example"
+
+    if [ -f "$env_file" ]; then
+        if grep -q "$ORIGINAL_NAME_LOWER" "$env_file" 2>/dev/null || grep -q "$ORIGINAL_NAME" "$env_file" 2>/dev/null; then
+            if [ "$DRY_RUN" = true ]; then
+                log_verbose "[DRY-RUN] Would update .env.example references"
+            else
+                # Update header comment
+                sed "${SED_INPLACE[@]}" "s|$ORIGINAL_NAME Environment Variables|$DISPLAY_NAME Environment Variables|g" "$env_file"
+                # Update COMPOSE_PROJECT_NAME default
+                sed "${SED_INPLACE[@]}" "s|COMPOSE_PROJECT_NAME=$ORIGINAL_NAME_LOWER|COMPOSE_PROJECT_NAME=$SANITIZED_NAME|g" "$env_file"
+                # Update example commands in comments (docker compose -p, exec, etc.)
+                sed "${SED_INPLACE[@]}" "s|$ORIGINAL_NAME_LOWER-b|${SANITIZED_NAME}-b|g" "$env_file"
+                sed "${SED_INPLACE[@]}" "s|exec $ORIGINAL_NAME_LOWER |exec $SANITIZED_NAME |g" "$env_file"
+                sed "${SED_INPLACE[@]}" "s|port $ORIGINAL_NAME_LOWER |port $SANITIZED_NAME |g" "$env_file"
+                log_verbose "Updated .env.example references"
+            fi
+            ((FILES_MODIFIED++)) || true
         fi
     fi
 }
@@ -533,6 +557,7 @@ main() {
     echo ""
     echo "Renaming files..."
     rename_files "$ORIGINAL_NAME" "$DISPLAY_NAME"
+    rename_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME"
 
     echo ""
     echo "Updating docker-compose.yml..."
@@ -551,8 +576,12 @@ main() {
     update_git_remote
 
     echo ""
-    echo "Cleaning up..."
-    delete_cname
+    echo "Updating CNAME..."
+    update_cname
+
+    echo ""
+    echo "Updating .env.example..."
+    update_env_example
 
     # Summary
     END_TIME=$(date +%s)
