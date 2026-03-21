@@ -23,7 +23,7 @@ interface Check { group: string; label: string; value: string; state: State; det
 
 // prettier-ignore
 const DOT: Record<State, string> = {
-  pass: 'text-success', warn: 'text-warning', fail: 'text-error', pending: 'text-base-content/30',
+  pass: 'text-success', warn: 'text-warning', fail: 'text-error', pending: 'text-base-content',
 };
 // prettier-ignore
 const SR: Record<State, string> = { pass: 'passing', warn: 'warning', fail: 'failing', pending: 'pending' };
@@ -53,7 +53,7 @@ function Row({ c }: { c: Check }) {
       <span className="sr-only">{SR[c.state]}:</span>
       <span className="text-base-content font-semibold">{c.label}</span>
       <span className="text-base-content font-mono text-sm tabular-nums">{c.value}</span>
-      {c.detail && <span className="text-base-content/70 order-last w-full text-xs sm:order-none sm:ml-auto sm:w-auto">{c.detail}</span>}
+      {c.detail && <span className="text-base-content order-last w-full text-xs sm:order-none sm:ml-auto sm:w-auto">{c.detail}</span>}
     </li>
   );
 }
@@ -133,14 +133,14 @@ export default function StatusPage() {
 
         {groups.map((g) => (
           <section key={g} className="mt-10 first:mt-0">
-            <h2 className="text-base-content/70 mb-3 font-mono text-xs tracking-wider uppercase">{g}</h2>
+            <h2 className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase">{g}</h2>
             <ul className="divide-base-300 divide-y">
               {checks.filter((c) => c.group === g).map((c) => <Row key={c.label} c={c} />)}
             </ul>
           </section>
         ))}
 
-        <p className="text-base-content/70 border-base-300 mt-16 border-t pt-8 font-mono text-xs">
+        <p className="text-base-content border-base-300 mt-16 border-t pt-8 font-mono text-xs">
           v{pkg.version} · {process.env.NODE_ENV}{lhTime && ` · CI scores from ${lhTime.slice(0, 10)}`}
         </p>
       </div>

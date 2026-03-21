@@ -73,7 +73,7 @@ export default function AdminOverviewPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-base-content/60 mt-1">
+        <p className="text-base-content mt-1">
           System overview across all users
         </p>
       </div>

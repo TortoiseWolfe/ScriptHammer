@@ -187,7 +187,7 @@ const MessageBubble = memo(
             <span className="text-base-content/85 text-sm">
               {message.senderName}
             </span>
-            <time className="text-base-content/75 ml-2 text-xs">
+            <time className="text-base-content ml-2 text-xs">
               {formatTimestamp(message.created_at)}
             </time>
           </div>
@@ -214,7 +214,7 @@ const MessageBubble = memo(
             <span className="text-base-content/85 text-sm">
               {message.senderName}
             </span>
-            <time className="text-base-content/75 ml-2 text-xs">
+            <time className="text-base-content ml-2 text-xs">
               {formatTimestamp(message.created_at)}
             </time>
           </div>
@@ -263,11 +263,11 @@ const MessageBubble = memo(
           <span className="text-base-content/85 text-sm">
             {message.senderName}
           </span>
-          <time className="text-base-content/75 ml-2 text-xs">
+          <time className="text-base-content ml-2 text-xs">
             {formatTimestamp(message.created_at)}
           </time>
           {message.edited && message.edited_at && (
-            <span className="text-base-content/75 ml-2 text-xs">
+            <span className="text-base-content ml-2 text-xs">
               (Edited {formatTimestamp(message.edited_at)})
             </span>
           )}

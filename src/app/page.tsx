@@ -54,6 +54,15 @@ const DEMOS: readonly TemplateDemo[] = [
 
 const STORYBOOK_URL = 'https://tortoisewolfe.github.io/ScriptHammer/storybook/';
 
+// Promoted hero card — stands alone above the grouped grid.
+const PRODUCTION_READY = {
+  emoji: '🚀',
+  label: 'Production Ready',
+  desc: 'CI/CD pipeline, 2,400+ tests, Lighthouse monitoring, GitHub Pages deploy on every push',
+  href: '/status',
+  ariaLabel: 'Rocket launch',
+} as const;
+
 const FEATURES = [
   {
     emoji: '🎨',
@@ -82,13 +91,6 @@ const FEATURES = [
     desc: 'WCAG compliant & customizable',
     href: '/accessibility',
     ariaLabel: 'Wheelchair accessibility symbol',
-  },
-  {
-    emoji: '🚀',
-    label: 'Production Ready',
-    desc: 'CI/CD, testing & monitoring',
-    href: '/status',
-    ariaLabel: 'Rocket launch',
   },
 ] as const;
 
@@ -195,14 +197,40 @@ export default function Home() {
         }}
       />
 
-      {/* ── Feature cards ────────────────────────────────────────────── */}
+      {/* ── Feature cards — 1 promoted + 4 grouped ───────────────────── */}
       <section
         aria-label="Key features"
         className="px-4 pt-4 pb-12 sm:px-6 lg:px-8"
       >
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4">
           <h2 className="sr-only">Key Features</h2>
-          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-5">
+
+          {/* Promoted: Production Ready. Full-width, primary border accent,
+              horizontal layout on sm+ so the longer copy can breathe. Border
+              uses the DaisyUI semantic token so it holds across all 32 themes. */}
+          <Link
+            href={PRODUCTION_READY.href}
+            className="card bg-base-100 border-primary focus-within:ring-primary border-2 shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
+          >
+            <div className="card-body flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
+              <div
+                className="shrink-0 text-5xl"
+                role="img"
+                aria-label={PRODUCTION_READY.ariaLabel}
+              >
+                {PRODUCTION_READY.emoji}
+              </div>
+              <div>
+                <h3 className="card-title text-lg">{PRODUCTION_READY.label}</h3>
+                <p className="text-base-content/85 text-sm">
+                  {PRODUCTION_READY.desc}
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          {/* Grouped: remaining 4 in a 2×2 / 4-wide grid */}
+          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((f) => (
               <Link
                 key={f.href}

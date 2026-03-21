@@ -102,7 +102,7 @@ const QueuedMessageBubble = memo(function QueuedMessageBubble({
               className="loading loading-spinner loading-xs"
               aria-hidden="true"
             />
-            <span className="text-base-content/75 text-xs">{statusLabel}</span>
+            <span className="text-base-content text-xs">{statusLabel}</span>
           </>
         )}
       </div>

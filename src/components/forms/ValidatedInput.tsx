@@ -189,7 +189,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
           (loading || isValidating || hasError || hasSuccess) && (
             <div className="absolute top-1/2 right-3 -translate-y-1/2">
               {loading || isValidating ? (
-                <span className="loading loading-spinner loading-xs text-base-content/50"></span>
+                <span className="loading loading-spinner loading-xs text-base-content"></span>
               ) : hasError ? (
                 <svg
                   className="text-error h-4 w-4"

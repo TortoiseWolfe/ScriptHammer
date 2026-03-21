@@ -198,7 +198,9 @@ export class OfflineQueueService {
             ? lastMessage.sequence_number + 1
             : 1;
 
-          // Insert message to Supabase
+          // Insert message to Supabase. delivered_at left NULL — same rule
+          // as message-service.ts: the recipient stamps delivery, not the
+          // sender's queue flush.
           const { data: message, error: insertError } = await msgClient
             .from('messages')
             .insert({
@@ -209,7 +211,6 @@ export class OfflineQueueService {
               sequence_number: nextSequenceNumber,
               deleted: false,
               edited: false,
-              delivered_at: new Date().toISOString(),
             })
             .select()
             .single();

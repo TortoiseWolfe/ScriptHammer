@@ -216,7 +216,7 @@ export default function DiceTray({
               />
             ))}
             {trayDice.length === 0 && (
-              <div className="text-base-content/40 italic">
+              <div className="text-base-content italic">
                 No dice in tray - drag dice here to unlock
               </div>
             )}
@@ -248,7 +248,7 @@ export default function DiceTray({
               />
             ))}
             {lockedDice.length === 0 && (
-              <div className="text-base-content/40 italic">
+              <div className="text-base-content italic">
                 Drag dice here to lock their values
               </div>
             )}

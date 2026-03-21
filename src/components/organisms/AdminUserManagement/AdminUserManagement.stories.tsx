@@ -136,6 +136,48 @@ export const Empty: Story = {
   },
 };
 
+export const WithPagination: Story = {
+  name: 'Paginated (page 1 of 4)',
+  args: {
+    stats: mockStats,
+    users: mockUsers,
+    total: 200,
+    currentPage: 0,
+    pageSize: 50,
+    searchQuery: '',
+    onSearchChange: () => {},
+    onPageChange: () => {},
+  },
+};
+
+export const PaginationMiddlePage: Story = {
+  name: 'Paginated (page 2 of 4)',
+  args: {
+    stats: mockStats,
+    users: mockUsers,
+    total: 200,
+    currentPage: 1,
+    pageSize: 50,
+    searchQuery: '',
+    onSearchChange: () => {},
+    onPageChange: () => {},
+  },
+};
+
+export const PaginationLastPage: Story = {
+  name: 'Paginated (last page)',
+  args: {
+    stats: mockStats,
+    users: mockUsers,
+    total: 200,
+    currentPage: 3,
+    pageSize: 50,
+    searchQuery: '',
+    onSearchChange: () => {},
+    onPageChange: () => {},
+  },
+};
+
 export const ThemeShowcase: Story = {
   args: {
     stats: mockStats,
@@ -144,11 +186,11 @@ export const ThemeShowcase: Story = {
   render: (args) => (
     <div className="space-y-6">
       <div className="bg-base-100 rounded-lg p-6">
-        <p className="text-base-content/60 mb-4 text-sm">base-100 surface</p>
+        <p className="text-base-content mb-4 text-sm">base-100 surface</p>
         <AdminUserManagement {...args} />
       </div>
       <div className="bg-base-200 rounded-lg p-6">
-        <p className="text-base-content/60 mb-4 text-sm">base-200 surface</p>
+        <p className="text-base-content mb-4 text-sm">base-200 surface</p>
         <AdminUserManagement {...args} />
       </div>
     </div>

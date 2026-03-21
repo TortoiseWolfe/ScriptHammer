@@ -40,6 +40,31 @@ export interface AdminMessagingTrends {
   top_senders: TopSender[];
 }
 
+/**
+ * One row per conversation for the admin drill-down list.
+ *
+ * Exposes `conversation_id` (which the trends RPC refuses to) because
+ * per-row drill-down was the explicit ask. Still does NOT expose
+ * participant identities — the admin sees which channels are noisy, not
+ * who's in them. The `Record<string, unknown>` extension is for
+ * AdminDataTable's generic constraint.
+ */
+export interface AdminConversationRow extends Record<string, unknown> {
+  conversation_id: string;
+  is_group: boolean;
+  participant_count: number;
+  message_count: number;
+  /** ISO timestamp — `last_message_at`, or `created_at` if never messaged. */
+  last_activity: string;
+  created_at: string;
+}
+
+export interface AdminConversationList {
+  /** Total rows ignoring limit/offset — drives "showing N of M". */
+  total: number;
+  conversations: AdminConversationRow[];
+}
+
 export class AdminMessagingService {
   private supabase: SupabaseClient;
   private userId: string | null = null;
@@ -76,5 +101,17 @@ export class AdminMessagingService {
     );
     if (error) throw new Error(error.message);
     return data as AdminMessagingTrends;
+  }
+
+  async getConversationList(
+    opts: { limit?: number; offset?: number } = {}
+  ): Promise<AdminConversationList> {
+    this.ensureInitialized();
+    const { data, error } = await this.supabase.rpc(
+      'admin_conversation_list',
+      { p_limit: opts.limit ?? 50, p_offset: opts.offset ?? 0 }
+    );
+    if (error) throw new Error(error.message);
+    return data as AdminConversationList;
   }
 }

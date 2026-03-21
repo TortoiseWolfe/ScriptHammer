@@ -159,6 +159,16 @@
     0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
 
+/* DaisyUI's .stat-title and .stat-desc ship with base-content at 60% alpha,
+ * which falls short of WCAG AA (3.86:1 on scripthammer-light, needs 4.5:1).
+ * Raising alpha to 80% gives ~7.1:1 on light and ~9.3:1 on dark — AAA on both. */
+[data-theme='scripthammer-dark'] .stat-title,
+[data-theme='scripthammer-dark'] .stat-desc,
+[data-theme='scripthammer-light'] .stat-title,
+[data-theme='scripthammer-light'] .stat-desc {
+  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+}
+
 /* Avatar glow/shadow — uses base-content so it auto-adapts:
  * dark themes → light glow, light themes → dark shadow.
  * Works across all 35 DaisyUI themes. */

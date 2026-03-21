@@ -207,7 +207,7 @@ export default function ConversationListItem({
                 {getDisplayName()}
               </h3>
               {isGroup && memberCount > 0 && (
-                <span className="text-base-content/75 shrink-0 text-xs">
+                <span className="text-base-content shrink-0 text-xs">
                   ({memberCount})
                 </span>
               )}

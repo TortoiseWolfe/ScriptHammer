@@ -251,7 +251,7 @@ export function AdminPaymentPanel({
                   <tr>
                     <td
                       colSpan={6}
-                      className="text-base-content/60 text-center"
+                      className="text-base-content text-center"
                     >
                       No activity in this range
                     </td>
@@ -281,11 +281,11 @@ export function AdminPaymentPanel({
             // transaction_id is the one an admin actually wants — it's the
             // pi_* / pp_* string you paste into Stripe/PayPal's dashboard.
             <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 py-2 text-sm">
-              <dt className="text-base-content/60">Provider transaction ID</dt>
+              <dt className="text-base-content">Provider transaction ID</dt>
               <dd className="font-mono">{row.transaction_id as string}</dd>
-              <dt className="text-base-content/60">Internal ID</dt>
+              <dt className="text-base-content">Internal ID</dt>
               <dd className="font-mono">{row.id as string}</dd>
-              <dt className="text-base-content/60">Created at</dt>
+              <dt className="text-base-content">Created at</dt>
               <dd className="font-mono">{row.created_at as string}</dd>
             </dl>
           )}

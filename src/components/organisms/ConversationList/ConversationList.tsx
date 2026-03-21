@@ -230,7 +230,7 @@ export default function ConversationList({
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
-              className="text-base-content/30 mb-4 h-16 w-16"
+              className="text-base-content mb-4 h-16 w-16"
             >
               <path
                 strokeLinecap="round"

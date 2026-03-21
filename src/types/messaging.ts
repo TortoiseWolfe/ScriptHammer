@@ -94,6 +94,8 @@ export interface QueuedMessage {
   initialization_vector: string;
   /** Plaintext — for UI rendering while queued. Client-only, never synced. */
   content?: string;
+  /** Plaintext content for deferred encryption during sync. Client-only. */
+  plaintext_content?: string;
   status: QueueStatus; // Queue status
   synced: boolean;
   retries: number;

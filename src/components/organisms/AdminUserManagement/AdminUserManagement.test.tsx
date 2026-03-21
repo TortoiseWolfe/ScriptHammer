@@ -153,4 +153,94 @@ describe('AdminUserManagement', () => {
     render(<AdminUserManagement stats={mockStats} users={mockUsers} />);
     expect(screen.queryByTestId('user-count')).not.toBeInTheDocument();
   });
+
+  // ── Pagination tests ───────────────────────────────────────────────────
+
+  it('renders pagination when onPageChange provided', () => {
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        currentPage={0}
+        pageSize={50}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('user-pagination')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('user-pagination-indicator')
+    ).toHaveTextContent('Page 1 of 4');
+  });
+
+  it('hides pagination when onPageChange absent', () => {
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+      />
+    );
+    expect(screen.queryByTestId('user-pagination')).not.toBeInTheDocument();
+  });
+
+  it('calls onPageChange when next clicked', () => {
+    const onPageChange = vi.fn();
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        currentPage={0}
+        pageSize={50}
+        onPageChange={onPageChange}
+      />
+    );
+    fireEvent.click(screen.getByLabelText('Next page'));
+    expect(onPageChange).toHaveBeenCalledWith(1);
+  });
+
+  it('shows range text when pagination active', () => {
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        currentPage={1}
+        pageSize={50}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('user-count')).toHaveTextContent(
+      'Showing 51\u2013100 of 200'
+    );
+  });
+
+  it('disables previous on first page', () => {
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        currentPage={0}
+        pageSize={50}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByLabelText('Previous page')).toBeDisabled();
+  });
+
+  it('disables next on last page', () => {
+    render(
+      <AdminUserManagement
+        stats={mockStats}
+        users={mockUsers}
+        total={200}
+        currentPage={3}
+        pageSize={50}
+        onPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByLabelText('Next page')).toBeDisabled();
+  });
 });

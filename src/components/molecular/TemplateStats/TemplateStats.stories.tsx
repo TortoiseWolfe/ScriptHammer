@@ -99,7 +99,7 @@ export const ThemeShowcase: Story = {
     <div className="flex flex-col">
       {(['light', 'dark', 'synthwave', 'wireframe'] as const).map((theme) => (
         <div key={theme} data-theme={theme} className="bg-base-200">
-          <div className="text-base-content/60 px-4 pt-4 font-mono text-xs">
+          <div className="text-base-content px-4 pt-4 font-mono text-xs">
             data-theme=&quot;{theme}&quot;
           </div>
           <TemplateStats {...args} />

@@ -1,15 +1,27 @@
 /**
- * Offline queue management for form submissions using IndexedDB
+ * Offline queue management for form submissions — compatibility shim.
+ *
+ * Ported to BaseOfflineQueue architecture (SpokeToWork fork Feature 050).
+ * The real implementation now lives in @/lib/offline-queue/form-adapter.
+ * This file preserves the exact pre-port API so existing consumers
+ * (background-sync.ts, useWeb3Forms.ts, offline-integration.test.tsx)
+ * keep working without changes.
+ *
+ * Shape translation:
+ *   FormQueueItem {formData, retries, createdAt, lastAttempt}
+ *     ↓
+ *   QueuedSubmission {data, retryCount, timestamp, lastAttempt}
+ *
+ * background-sync.ts reads: .id, .data, .retryCount, .lastAttempt
  */
 
-import { createLogger } from '@/lib/logger';
+import { formQueue } from '@/lib/offline-queue/form-adapter';
+import type { FormQueueItem } from '@/lib/offline-queue/types';
 
-const logger = createLogger('utils:offline-queue');
-
-const DB_NAME = 'OfflineFormSubmissions';
-const DB_VERSION = 1;
-const STORE_NAME = 'submissions';
-
+/**
+ * Consumer-facing queue item shape. Preserved from the original
+ * raw-IndexedDB implementation for background-sync.ts compatibility.
+ */
 export interface QueuedSubmission {
   id?: number;
   data: Record<string, unknown>;
@@ -18,228 +30,113 @@ export interface QueuedSubmission {
   lastAttempt?: number;
 }
 
-/**
- * Open IndexedDB database
- */
-export async function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => {
-      reject(new Error('Failed to open IndexedDB'));
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME, {
-          keyPath: 'id',
-          autoIncrement: true,
-        });
-      }
-    };
-  });
+/** Translate internal FormQueueItem → consumer-facing QueuedSubmission. */
+function toQueuedSubmission(item: FormQueueItem): QueuedSubmission {
+  return {
+    id: item.id,
+    data: item.formData,
+    timestamp: item.createdAt,
+    retryCount: item.retries,
+    lastAttempt: item.lastAttempt,
+  };
 }
 
 /**
- * Add form submission to offline queue
+ * Add form submission to offline queue.
  */
 export async function addToQueue(
   data: Record<string, unknown>
 ): Promise<boolean> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-
-    const submission: QueuedSubmission = {
-      data,
-      timestamp: Date.now(),
-      retryCount: 0,
-    };
-
-    store.add(submission);
-
-    return new Promise((resolve, reject) => {
-      transaction.oncomplete = () => {
-        db.close();
-        resolve(true);
-      };
-
-      transaction.onerror = () => {
-        db.close();
-        reject(new Error('Failed to add to queue'));
-      };
-    });
-  } catch (error) {
-    logger.error('Error adding to offline queue', { error });
+    await formQueue.queueSubmission(data);
+    return true;
+  } catch {
     return false;
   }
 }
 
 /**
- * Get all queued submissions
+ * Get all queued submissions, translated to the legacy shape.
  */
 export async function getQueuedItems(): Promise<QueuedSubmission[]> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-
-    return new Promise((resolve, reject) => {
-      const items: QueuedSubmission[] = [];
-      const request = store.openCursor();
-
-      request.onsuccess = (event) => {
-        const cursor = (event.target as IDBRequest).result;
-        if (cursor) {
-          items.push(cursor.value);
-          cursor.continue();
-        } else {
-          db.close();
-          resolve(items);
-        }
-      };
-
-      request.onerror = () => {
-        db.close();
-        reject(new Error('Failed to retrieve queued items'));
-      };
-    });
-  } catch (error) {
-    logger.error('Error getting queued items', { error });
+    const items = await formQueue.getQueue();
+    return items.map(toQueuedSubmission);
+  } catch {
     return [];
   }
 }
 
 /**
- * Remove item from queue by ID
+ * Remove item from queue by ID.
  */
 export async function removeFromQueue(id: number): Promise<boolean> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-
-    store.delete(id);
-
-    return new Promise((resolve, reject) => {
-      transaction.oncomplete = () => {
-        db.close();
-        resolve(true);
-      };
-
-      transaction.onerror = () => {
-        db.close();
-        reject(new Error('Failed to remove from queue'));
-      };
-    });
-  } catch (error) {
-    logger.error('Error removing from queue', { error });
+    await formQueue.remove(id);
+    return true;
+  } catch {
     return false;
   }
 }
 
 /**
- * Clear all items from queue
+ * Clear all items from queue.
  */
 export async function clearQueue(): Promise<boolean> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-
-    store.clear();
-
-    return new Promise((resolve, reject) => {
-      transaction.oncomplete = () => {
-        db.close();
-        resolve(true);
-      };
-
-      transaction.onerror = () => {
-        db.close();
-        reject(new Error('Failed to clear queue'));
-      };
-    });
-  } catch (error) {
-    logger.error('Error clearing queue', { error });
+    await formQueue.clear();
+    return true;
+  } catch {
     return false;
   }
 }
 
 /**
- * Get the number of items in queue
+ * Get the number of items in queue.
  */
 export async function getQueueSize(): Promise<number> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-
-    return new Promise((resolve, reject) => {
-      const request = store.count();
-
-      request.onsuccess = () => {
-        db.close();
-        resolve(request.result);
-      };
-
-      request.onerror = () => {
-        db.close();
-        reject(new Error('Failed to get queue size'));
-      };
-    });
-  } catch (error) {
-    logger.error('Error getting queue size', { error });
+    return await formQueue.getCount();
+  } catch {
     return 0;
   }
 }
 
 /**
- * Update retry count for a submission
+ * Update retry count for a submission.
+ *
+ * The new BaseOfflineQueue handles retries internally via sync(), but
+ * background-sync.ts drives retries manually via this function. Both
+ * paths update the same underlying `retries` field.
  */
 export async function updateRetryCount(
   id: number,
   retryCount: number
 ): Promise<boolean> {
   try {
-    const db = await openDatabase();
-    const transaction = db.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
+    const item = await formQueue.get(id);
+    if (!item) return false;
 
-    const getRequest = store.get(id);
-
-    return new Promise((resolve, reject) => {
-      getRequest.onsuccess = () => {
-        const submission = getRequest.result;
-        if (submission) {
-          submission.retryCount = retryCount;
-          submission.lastAttempt = Date.now();
-          store.put(submission);
-
-          transaction.oncomplete = () => {
-            db.close();
-            resolve(true);
-          };
-        } else {
-          db.close();
-          resolve(false);
-        }
-      };
-
-      getRequest.onerror = () => {
-        db.close();
-        reject(new Error('Failed to update retry count'));
-      };
+    // Reach into the Dexie table directly — formQueue.items is protected,
+    // but formQueue is a Dexie subclass so table() is public.
+    await formQueue.table('submissions').update(id, {
+      retries: retryCount,
+      lastAttempt: Date.now(),
     });
-  } catch (error) {
-    logger.error('Error updating retry count', { error });
+    return true;
+  } catch {
     return false;
   }
+}
+
+/**
+ * Open IndexedDB database.
+ *
+ * Kept for backwards compatibility — useWeb3Forms.test.ts mocks this
+ * export by name. Returns the Dexie IDBDatabase handle.
+ */
+export async function openDatabase(): Promise<IDBDatabase> {
+  await formQueue.open();
+  // Dexie exposes the raw IDBDatabase as .backendDB()
+  return formQueue.backendDB();
 }

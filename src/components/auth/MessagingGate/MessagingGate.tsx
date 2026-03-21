@@ -173,7 +173,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
             </div>
           )}
 
-          <p className="text-base-content/75 mt-4 text-xs">
+          <p className="text-base-content mt-4 text-xs">
             After verifying, refresh this page to access messaging.
           </p>
         </div>

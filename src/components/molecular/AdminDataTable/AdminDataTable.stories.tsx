@@ -117,9 +117,9 @@ export const Expandable: Story = {
     data: sampleData,
     renderExpandedRow: (row) => (
       <dl className="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-1 py-2 text-sm">
-        <dt className="text-base-content/60">Internal ID</dt>
+        <dt className="text-base-content">Internal ID</dt>
         <dd className="font-mono">{row.id as string}</dd>
-        <dt className="text-base-content/60">Email domain</dt>
+        <dt className="text-base-content">Email domain</dt>
         <dd className="font-mono">{(row.email as string).split('@')[1]}</dd>
       </dl>
     ),

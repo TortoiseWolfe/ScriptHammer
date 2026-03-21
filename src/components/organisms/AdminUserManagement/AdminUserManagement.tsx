@@ -4,6 +4,7 @@ import React from 'react';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
 import { AdminDataTable } from '@/components/molecular/AdminDataTable';
 import type { AdminDataTableColumn } from '@/components/molecular/AdminDataTable';
+import Pagination from '@/components/molecular/Pagination';
 import type {
   AdminUserStats,
   AdminUserRow,
@@ -21,6 +22,12 @@ export interface AdminUserManagementProps {
   searchQuery?: string;
   /** Fires on every search keystroke — debounce happens in the page */
   onSearchChange?: (query: string) => void;
+  /** Current page (0-indexed) for pagination */
+  currentPage?: number;
+  /** Items per page */
+  pageSize?: number;
+  /** Fires when page changes — omit to hide pagination */
+  onPageChange?: (page: number) => void;
   /** Show loading spinner */
   isLoading?: boolean;
   /** Additional CSS classes */
@@ -115,6 +122,9 @@ export function AdminUserManagement({
   total,
   searchQuery = '',
   onSearchChange,
+  currentPage = 0,
+  pageSize = 50,
+  onPageChange,
   isLoading = false,
   className = '',
   testId,
@@ -173,10 +183,12 @@ export function AdminUserManagement({
             </h2>
             {total !== undefined && (
               <p
-                className="text-base-content/60 text-sm"
+                className="text-base-content text-sm"
                 data-testid="user-count"
               >
-                Showing {users.length} of {total}
+                {onPageChange
+                  ? `Showing ${total === 0 ? 0 : currentPage * pageSize + 1}\u2013${Math.min((currentPage + 1) * pageSize, total)} of ${total}`
+                  : `Showing ${users.length} of ${total}`}
               </p>
             )}
           </div>
@@ -198,6 +210,15 @@ export function AdminUserManagement({
           emptyMessage="No users found"
           testId="user-table"
         />
+        {onPageChange && total !== undefined && (
+          <Pagination
+            currentPage={currentPage}
+            totalItems={total}
+            pageSize={pageSize}
+            onPageChange={onPageChange}
+            testId="user-pagination"
+          />
+        )}
       </section>
     </div>
   );
