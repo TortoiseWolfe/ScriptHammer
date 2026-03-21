@@ -3,7 +3,6 @@ import { AdminMessagingOverview } from './AdminMessagingOverview';
 import type {
   AdminMessagingStats,
   AdminMessagingTrends,
-  AdminConversationRow,
 } from '@/services/admin/admin-messaging-service';
 
 const mockStats: AdminMessagingStats = {
@@ -126,83 +125,6 @@ export const Empty: Story = {
   },
 };
 
-const daysAgo = (n: number) =>
-  new Date(Date.now() - n * 86_400_000).toISOString();
-
-const mockConversations: AdminConversationRow[] = [
-  {
-    id: 'conv-1',
-    is_group: false,
-    group_name: null,
-    last_message_at: daysAgo(1),
-    created_at: '2025-06-01T10:00:00Z',
-    participant_count: 2,
-    message_count: 47,
-    participants: [
-      { username: 'alice', display_name: 'Alice W' },
-      { username: 'bob', display_name: 'Bob B' },
-    ],
-  },
-  {
-    id: 'conv-2',
-    is_group: true,
-    group_name: 'Engineering',
-    last_message_at: daysAgo(3),
-    created_at: '2025-07-15T08:00:00Z',
-    participant_count: 5,
-    message_count: 231,
-    participants: null,
-  },
-  {
-    id: 'conv-3',
-    is_group: false,
-    group_name: null,
-    last_message_at: null,
-    created_at: '2025-08-20T14:00:00Z',
-    participant_count: 2,
-    message_count: 0,
-    participants: [
-      { username: 'carol', display_name: 'Carol S' },
-      { username: 'dave', display_name: 'Dave T' },
-    ],
-  },
-];
-
-export const WithConversations: Story = {
-  name: 'With conversation list',
-  args: {
-    stats: mockStats,
-    trends: mockTrends,
-    conversations: mockConversations,
-    conversationTotal: 60,
-    conversationPage: 0,
-    onConversationPageChange: () => {},
-    onConversationSearchChange: () => {},
-    onRangeChange: () => {},
-  },
-};
-
-export const ConversationsPaginated: Story = {
-  name: 'Conversations (page 2 of 3)',
-  args: {
-    stats: mockStats,
-    conversations: mockConversations,
-    conversationTotal: 60,
-    conversationPage: 1,
-    onConversationPageChange: () => {},
-    onConversationSearchChange: () => {},
-  },
-};
-
-export const ConversationsEmpty: Story = {
-  name: 'Conversations (empty)',
-  args: {
-    stats: mockStats,
-    conversations: [],
-    conversationTotal: 0,
-  },
-};
-
 export const ThemeShowcase: Story = {
   args: {
     stats: mockStats,
@@ -210,11 +132,11 @@ export const ThemeShowcase: Story = {
   render: (args) => (
     <div className="space-y-6">
       <div className="bg-base-100 rounded-lg p-6">
-        <p className="text-base-content mb-4 text-sm">base-100 surface</p>
+        <p className="text-base-content/60 mb-4 text-sm">base-100 surface</p>
         <AdminMessagingOverview {...args} />
       </div>
       <div className="bg-base-200 rounded-lg p-6">
-        <p className="text-base-content mb-4 text-sm">base-200 surface</p>
+        <p className="text-base-content/60 mb-4 text-sm">base-200 surface</p>
         <AdminMessagingOverview {...args} />
       </div>
     </div>

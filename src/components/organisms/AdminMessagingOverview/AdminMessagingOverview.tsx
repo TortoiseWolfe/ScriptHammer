@@ -2,9 +2,6 @@
 
 import React from 'react';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
-import { AdminDataTable } from '@/components/molecular/AdminDataTable';
-import type { AdminDataTableColumn } from '@/components/molecular/AdminDataTable';
-import Pagination from '@/components/molecular/Pagination';
 import DateRangeFilter, {
   type DateRange,
 } from '@/components/molecular/DateRangeFilter';
@@ -12,7 +9,6 @@ import MessagingTrendChart from '@/components/molecular/MessagingTrendChart';
 import type {
   AdminMessagingStats,
   AdminMessagingTrends,
-  AdminConversationRow,
 } from '@/services/admin/admin-messaging-service';
 
 export interface AdminMessagingOverviewProps {
@@ -24,18 +20,6 @@ export interface AdminMessagingOverviewProps {
   range?: DateRange;
   /** Fires when the date filter changes — omit to hide the filter */
   onRangeChange?: (range: DateRange) => void;
-  /** Paginated conversation list (metadata only) — when absent the section hides */
-  conversations?: AdminConversationRow[];
-  /** Total conversation count for pagination */
-  conversationTotal?: number;
-  /** Current conversation list page (0-indexed) */
-  conversationPage?: number;
-  /** Fires when conversation page changes */
-  onConversationPageChange?: (page: number) => void;
-  /** Search query for conversations */
-  conversationSearch?: string;
-  /** Fires on conversation search input */
-  onConversationSearchChange?: (query: string) => void;
   /** Show loading spinner */
   isLoading?: boolean;
   /** Additional CSS classes */
@@ -43,78 +27,6 @@ export interface AdminMessagingOverviewProps {
   /** Test ID for testing */
   testId?: string;
 }
-
-function relativeTime(iso: string | null): string {
-  if (!iso) return 'Never';
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 30) return `${days} days ago`;
-  const months = Math.floor(days / 30);
-  return months === 1 ? '1 month ago' : `${months} months ago`;
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-function formatParticipants(row: AdminConversationRow): string {
-  if (row.is_group) {
-    return row.group_name || `Group (${row.participant_count} members)`;
-  }
-  if (!row.participants || row.participants.length < 2) return 'Unknown';
-  const name = (p: { display_name: string | null; username: string | null }) =>
-    p.display_name || p.username || 'N/A';
-  return `${name(row.participants[0])} \u2194 ${name(row.participants[1])}`;
-}
-
-type ConvRow = AdminConversationRow & Record<string, unknown>;
-
-const conversationColumns: AdminDataTableColumn<ConvRow>[] = [
-  {
-    key: 'is_group',
-    label: 'Type',
-    sortable: true,
-    render: (row) => (
-      <span
-        className={
-          row.is_group ? 'badge badge-secondary badge-sm' : 'badge badge-primary badge-sm'
-        }
-      >
-        {row.is_group ? 'Group' : 'Direct'}
-      </span>
-    ),
-  },
-  {
-    key: 'participants',
-    label: 'Participants',
-    render: (row) => formatParticipants(row as unknown as AdminConversationRow),
-  },
-  {
-    key: 'message_count',
-    label: 'Messages',
-    sortable: true,
-    render: (row) => (
-      <span className="font-mono">{row.message_count as number}</span>
-    ),
-  },
-  {
-    key: 'last_message_at',
-    label: 'Last Activity',
-    sortable: true,
-    render: (row) => relativeTime(row.last_message_at as string | null),
-  },
-  {
-    key: 'created_at',
-    label: 'Created',
-    sortable: true,
-    render: (row) => formatDate(row.created_at as string),
-  },
-];
 
 /**
  * AdminMessagingOverview component - Messaging stats with connection distribution
@@ -126,12 +38,6 @@ export function AdminMessagingOverview({
   trends,
   range,
   onRangeChange,
-  conversations,
-  conversationTotal,
-  conversationPage = 0,
-  onConversationPageChange,
-  conversationSearch = '',
-  onConversationSearchChange,
   isLoading = false,
   className = '',
   testId,
@@ -220,56 +126,6 @@ export function AdminMessagingOverview({
         </div>
       </section>
 
-      {/* Conversation List — metadata only, no message content */}
-      {conversations && (
-        <section aria-labelledby="conversation-list-heading">
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2
-                id="conversation-list-heading"
-                className="text-xl font-semibold"
-              >
-                Conversation List
-              </h2>
-              {conversationTotal !== undefined && (
-                <p
-                  className="text-base-content text-sm"
-                  data-testid="conversation-count"
-                >
-                  Showing {conversations.length} of {conversationTotal}
-                </p>
-              )}
-            </div>
-            {onConversationSearchChange && (
-              <input
-                type="search"
-                value={conversationSearch}
-                onChange={(e) => onConversationSearchChange(e.target.value)}
-                placeholder="Search participants or group name"
-                aria-label="Search conversations"
-                className="input input-bordered input-sm w-full max-w-xs"
-                data-testid="conversation-search"
-              />
-            )}
-          </div>
-          <AdminDataTable<ConvRow>
-            columns={conversationColumns}
-            data={(conversations ?? []) as ConvRow[]}
-            emptyMessage="No conversations found"
-            testId="conversation-table"
-          />
-          {onConversationPageChange && conversationTotal !== undefined && (
-            <Pagination
-              currentPage={conversationPage}
-              totalItems={conversationTotal}
-              pageSize={25}
-              onPageChange={onConversationPageChange}
-              testId="conversation-pagination"
-            />
-          )}
-        </section>
-      )}
-
       {/* Volume Trends — count and trend, not decrypt and display.
           Sits directly above the privacy notice so the "what you CAN see"
           and "what you CANNOT see" land as one unit. */}
@@ -330,7 +186,7 @@ export function AdminMessagingOverview({
                           {s.display_name ?? s.username ?? 'N/A'}
                         </div>
                         {s.username && s.display_name && (
-                          <div className="text-base-content text-xs">
+                          <div className="text-base-content/60 text-xs">
                             @{s.username}
                           </div>
                         )}
@@ -343,7 +199,7 @@ export function AdminMessagingOverview({
             </div>
           ) : (
             <p
-              className="text-base-content text-sm"
+              className="text-base-content/60 text-sm"
               data-testid="top-senders-empty"
             >
               No messages in this range.
