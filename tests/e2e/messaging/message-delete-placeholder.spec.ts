@@ -1,0 +1,540 @@
+/**
+ * E2E Test: Message Delete Placeholder
+ *
+ * Verifies that a soft-deleted message renders a "[Message deleted]" placeholder
+ * instead of disappearing. Adjacent messages must remain visible and in order
+ * so the sequence gap is preserved.
+ *
+ * Uses the Docker DNS proxy + API session injection pattern so it runs inside
+ * the Docker E2E container with the default seed users.
+ *
+ * Requires: local Supabase with seed-test-user.sql and seed-test-user-b.sql applied.
+ *
+ * Run from inside the Docker container:
+ *   docker exec -e SKIP_WEBSERVER=1 -e BASE_URL=http://localhost:3000 \
+ *     sh-b-scripthammer-1 npx playwright test tests/e2e/messaging/message-delete-placeholder.spec.ts --project=chromium
+ */
+
+import { test, expect } from '@playwright/test';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import * as http from 'http';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  handleEncryptionSetup,
+} from '../utils/test-user-factory';
+
+const USER_A_EMAIL = 'test@example.com';
+const USER_A_PASSWORD = 'TestPassword123!';
+const USER_B_EMAIL = 'test-user-b@example.com';
+const USER_B_PASSWORD = 'TestPassword456!';
+const MESSAGING_PASSWORD = 'TestMessaging123!';
+
+const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+const SUPABASE_DOCKER_HOST =
+  process.env.SUPABASE_DOCKER_HOST || 'sh-b-supabase-kong-1';
+const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+const PROXY_PORT = 8000;
+
+test.use({
+  launchOptions: {
+    args: [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function signInAndInjectSession(
+  page: import('@playwright/test').Page,
+  email: string,
+  password: string
+) {
+  const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error || !data.session) {
+    throw new Error(
+      `Supabase sign-in failed for ${email}: ${error?.message ?? 'no session'}`
+    );
+  }
+
+  await page.goto(`${BP}/`);
+  await page.waitForLoadState('domcontentloaded');
+
+  const session = data.session;
+  const supabaseHost = new URL(SUPABASE_DOCKER_URL).hostname.split('.')[0];
+  const sbStorageKey = `sb-${supabaseHost}-auth-token`;
+  await page.evaluate(
+    ({ key, accessToken, refreshToken, expiresAt, user: u }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          expires_at: expiresAt,
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: u,
+        })
+      );
+    },
+    {
+      key: sbStorageKey,
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+      expiresAt: session.expires_at,
+      user: session.user,
+    }
+  );
+
+  await page.reload();
+  await page.waitForLoadState('networkidle');
+}
+
+/**
+ * Navigate to /messages, handle encryption setup or re-auth.
+ * If re-auth fails (wrong password from a previous test run), clear
+ * encryption keys and retry so fresh keys are created with MESSAGING_PASSWORD.
+ */
+async function setupEncryptionViaUI(
+  page: import('@playwright/test').Page,
+  email: string
+) {
+  await page.goto(`${BP}/messages`);
+  await page.waitForLoadState('networkidle');
+  await dismissCookieBanner(page);
+
+  // Try encryption setup (first-time user) or re-auth (returning user)
+  await handleEncryptionSetup(page, MESSAGING_PASSWORD);
+
+  // Check if re-auth modal appeared
+  const modal = page.locator('[role="dialog"]').first();
+  const modalVisible = await modal
+    .waitFor({ state: 'visible', timeout: 5000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (!modalVisible) return;
+
+  // Fill password and submit
+  const passwordInput = modal.locator('input[type="password"]').first();
+  await passwordInput.fill(MESSAGING_PASSWORD);
+  const submitBtn = modal.locator('button[type="submit"]').first();
+  await submitBtn.click();
+
+  // Wait briefly then check for "Incorrect password" error
+  await page.waitForTimeout(2000);
+  const errorVisible = await page
+    .getByText(/Incorrect password/i)
+    .isVisible()
+    .catch(() => false);
+
+  if (errorVisible) {
+    // Keys were set up with a different password — clear and re-setup
+    const adminClient = createClient(
+      SUPABASE_DOCKER_URL,
+      SUPABASE_SERVICE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data: usersData } = await adminClient.auth.admin.listUsers();
+    const user = usersData?.users?.find((u) => u.email === email);
+    if (user) {
+      await adminClient
+        .from('user_encryption_keys')
+        .delete()
+        .eq('user_id', user.id);
+    }
+
+    // Reload to get redirected to /messages/setup
+    await page.goto(`${BP}/messages`);
+    await page.waitForLoadState('networkidle');
+    await dismissCookieBanner(page);
+    await handleEncryptionSetup(page, MESSAGING_PASSWORD);
+    await handleReAuthModal(page, MESSAGING_PASSWORD);
+  } else {
+    // Password accepted — wait for modal to close
+    await modal
+      .waitFor({ state: 'hidden', timeout: 10000 })
+      .catch(() => {});
+  }
+}
+
+/**
+ * Navigate to /messages, handle re-auth, open the first conversation.
+ */
+async function openConversation(
+  page: import('@playwright/test').Page
+) {
+  await page.goto(`${BP}/messages`);
+  await page.waitForLoadState('networkidle');
+  await dismissCookieBanner(page);
+  await handleReAuthModal(page, MESSAGING_PASSWORD);
+
+  const chatsTab = page.getByRole('tab', { name: /Chats/i });
+  if (await chatsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await chatsTab.click();
+    await page.waitForTimeout(500);
+  }
+
+  const conversationItem = page
+    .getByRole('button', { name: /Conversation with/i })
+    .first();
+  await expect(conversationItem).toBeVisible({ timeout: 10000 });
+  await conversationItem.click();
+
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeVisible({ timeout: 10000 });
+}
+
+/**
+ * Type a message and click Send. Only waits for the input to clear
+ * (confirming the send was dispatched).
+ */
+async function typeAndSend(
+  page: import('@playwright/test').Page,
+  text: string
+) {
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 5000 });
+  await messageInput.fill(text);
+
+  const sendButton = page.getByRole('button', { name: /Send message/i });
+  await sendButton.click();
+
+  // Wait for input to clear — confirms the handler fired
+  await expect(messageInput).toHaveValue('', { timeout: 5000 });
+  await page.waitForTimeout(1000);
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+test.describe('Message Delete Placeholder E2E', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  let proxyServer: http.Server;
+  let adminClient: SupabaseClient;
+  let setupSucceeded = false;
+  let setupError = '';
+  let conversationId = '';
+
+  test.beforeAll(async () => {
+    proxyServer = http.createServer((req, res) => {
+      const options: http.RequestOptions = {
+        hostname: SUPABASE_DOCKER_HOST,
+        port: 8000,
+        path: req.url,
+        method: req.method,
+        headers: { ...req.headers, host: `${SUPABASE_DOCKER_HOST}:8000` },
+      };
+      const proxyReq = http.request(options, (proxyRes) => {
+        res.writeHead(proxyRes.statusCode!, proxyRes.headers);
+        proxyRes.pipe(res);
+      });
+      proxyReq.on('error', () => {
+        res.writeHead(502);
+        res.end();
+      });
+      req.pipe(proxyReq);
+    });
+    await new Promise<void>((resolve, reject) => {
+      proxyServer.once('error', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'EADDRINUSE') {
+          proxyServer = undefined as unknown as http.Server;
+          resolve();
+        } else {
+          reject(err);
+        }
+      });
+      proxyServer.listen(PROXY_PORT, '127.0.0.1', resolve);
+    });
+
+    if (!SUPABASE_SERVICE_KEY) {
+      setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+      return;
+    }
+
+    adminClient = createClient(
+      SUPABASE_DOCKER_URL,
+      SUPABASE_SERVICE_KEY,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data: usersData } = await adminClient.auth.admin.listUsers();
+    const userA = usersData?.users?.find((u) => u.email === USER_A_EMAIL);
+    const userB = usersData?.users?.find((u) => u.email === USER_B_EMAIL);
+
+    if (!userA || !userB) {
+      setupError = `Test users not found: ${!userA ? USER_A_EMAIL : ''} ${!userB ? USER_B_EMAIL : ''}`.trim();
+      return;
+    }
+
+    // Ensure accepted connection
+    const { data: existing } = await adminClient
+      .from('user_connections')
+      .select('id, status')
+      .or(
+        `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+      )
+      .maybeSingle();
+
+    if (!existing) {
+      await adminClient.from('user_connections').insert({
+        requester_id: userA.id,
+        addressee_id: userB.id,
+        status: 'accepted',
+      });
+    } else if (existing.status !== 'accepted') {
+      await adminClient
+        .from('user_connections')
+        .update({ status: 'accepted' })
+        .eq('id', existing.id);
+    }
+
+    // Ensure conversation and save its ID
+    const [p1, p2] =
+      userA.id < userB.id
+        ? [userA.id, userB.id]
+        : [userB.id, userA.id];
+    const { data: existingConv } = await adminClient
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', p1)
+      .eq('participant_2_id', p2)
+      .maybeSingle();
+
+    if (existingConv) {
+      conversationId = existingConv.id;
+    } else {
+      const { data: newConv, error: convError } = await adminClient
+        .from('conversations')
+        .insert({ participant_1_id: p1, participant_2_id: p2 })
+        .select('id')
+        .single();
+      if (convError || !newConv) {
+        setupError = `Failed to create conversation: ${convError?.message}`;
+        return;
+      }
+      conversationId = newConv.id;
+    }
+
+    // Clean up ALL previous messages in the conversation so the test
+    // starts from a clean slate (no scroll/pagination issues, no stale
+    // placeholders). Service role bypasses RLS.
+    await adminClient
+      .from('messages')
+      .delete()
+      .eq('conversation_id', conversationId);
+
+    setupSucceeded = true;
+  });
+
+  test.afterAll(async () => {
+    proxyServer?.close();
+  });
+
+  test('should show [Message deleted] placeholder and preserve adjacent messages', async ({
+    browser,
+  }) => {
+    test.setTimeout(120_000);
+    test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
+
+    // Set up encryption for User B in a temporary context
+    const tempCtx = await browser.newContext();
+    const tempPage = await tempCtx.newPage();
+    try {
+      await signInAndInjectSession(tempPage, USER_B_EMAIL, USER_B_PASSWORD);
+      await setupEncryptionViaUI(tempPage, USER_B_EMAIL);
+    } finally {
+      await tempCtx.close();
+    }
+
+    // Sign in as User A, set up encryption, navigate to conversation
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    try {
+      await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);
+      await setupEncryptionViaUI(page, USER_A_EMAIL);
+      await openConversation(page);
+
+      const ts = Date.now();
+      const msg1 = `msg-1-${ts}`;
+      const msg2 = `msg-2-${ts}`;
+      const msg3 = `msg-3-${ts}`;
+
+      // Count messages in DB before sending
+      const { count: beforeCount } = await adminClient
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId);
+
+      // Send 3 messages
+      await typeAndSend(page, msg1);
+      await typeAndSend(page, msg2);
+      await typeAndSend(page, msg3);
+
+      // Check if messages actually reached the DB
+      const { count: afterCount } = await adminClient
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conversationId);
+
+      const newMessages = (afterCount ?? 0) - (beforeCount ?? 0);
+
+      // If zero new messages, the send is failing. Capture browser errors.
+      if (newMessages === 0) {
+        const errorState = await page.evaluate(() => {
+          // Check for error toast or error state in the messaging UI
+          const errorEls = document.querySelectorAll('[role="alert"]');
+          const texts = Array.from(errorEls).map((el) => el.textContent);
+          return {
+            url: window.location.href,
+            errors: texts,
+            onLine: navigator.onLine,
+          };
+        });
+        throw new Error(
+          `Messages not stored in DB (${beforeCount} → ${afterCount}). ` +
+          `Browser state: ${JSON.stringify(errorState)}`
+        );
+      }
+
+      // Reload + re-open conversation to fetch messages from DB
+      await openConversation(page);
+
+      // All 3 should now be visible
+      await expect(page.getByText(msg1)).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(msg2)).toBeVisible({ timeout: 15000 });
+      await expect(page.getByText(msg3)).toBeVisible({ timeout: 15000 });
+
+      // --- Soft-delete the middle message via admin client ---
+      // Messages are encrypted so we can't query by content. Instead find
+      // the 3 most recent messages in this conversation sent by User A and
+      // delete the middle one (by sequence_number order).
+      const { data: recentMsgs } = await adminClient
+        .from('messages')
+        .select('id, sequence_number')
+        .eq('conversation_id', conversationId)
+        .eq('deleted', false)
+        .order('sequence_number', { ascending: false })
+        .limit(3);
+
+      // recentMsgs are newest-first; sort ascending to get [msg1, msg2, msg3]
+      const sorted = (recentMsgs ?? []).sort(
+        (a, b) => a.sequence_number - b.sequence_number
+      );
+
+      expect(sorted.length).toBe(3);
+
+      const middleMessageId = sorted[1].id;
+
+      // Soft-delete the middle message from WITHIN the browser.
+      // This uses the browser's own Supabase session, going through the
+      // same proxy + PostgREST path that loadMessages() uses.
+      const patchStatus = await page.evaluate(
+        async ({ msgId, anonKey }) => {
+          // Grab token from localStorage
+          const keys = Object.keys(localStorage).filter((k) =>
+            k.startsWith('sb-')
+          );
+          const sessionKey = keys[0];
+          if (!sessionKey) return { status: -1, error: 'no session key' };
+
+          const sessionJson = localStorage.getItem(sessionKey);
+          if (!sessionJson) return { status: -2, error: 'no session data' };
+
+          const session = JSON.parse(sessionJson);
+          const token = session.access_token;
+
+          // Supabase URL from localStorage key: sb-<host>-auth-token → http://<host>:8000
+          const hostMatch = sessionKey.match(/^sb-(.+)-auth-token$/);
+          const host = hostMatch ? hostMatch[1] : '';
+          const supabaseUrl = `http://${host}:8000`;
+
+          const res = await fetch(
+            `${supabaseUrl}/rest/v1/messages?id=eq.${msgId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                apikey: anonKey,
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=representation',
+              },
+              body: JSON.stringify({ deleted: true }),
+            }
+          );
+          const body = await res.json().catch(() => null);
+          return { status: res.status, body };
+        },
+        { msgId: middleMessageId, anonKey: SUPABASE_ANON_KEY }
+      );
+
+      // eslint-disable-next-line no-console
+      console.log(`PATCH from browser: ${JSON.stringify(patchStatus)}`);
+
+      // The PWA service worker uses a Cache-first default strategy which
+      // caches PostgREST responses. Clear all caches and unregister service
+      // workers so the next loadMessages() fetches fresh data from the DB.
+      await page.evaluate(async () => {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+      });
+
+      // Reload conversation to pick up the deleted state
+      await openConversation(page);
+
+      // Hard assert: placeholder MUST render
+      const placeholder = page.getByText('[Message deleted]');
+      await expect(placeholder).toBeVisible({ timeout: 10000 });
+
+      // Original msg-2 text must be gone
+      await expect(page.getByText(msg2)).not.toBeVisible({ timeout: 5000 });
+
+      // Adjacent messages must still be visible
+      await expect(page.getByText(msg1)).toBeVisible();
+      await expect(page.getByText(msg3)).toBeVisible();
+
+      // Verify sequence integrity: collect all message bubbles in DOM order
+      // and confirm msg-1, [Message deleted], msg-3 appear in that order
+      const allBubbles = page.locator('[data-testid="message-bubble"]');
+      const count = await allBubbles.count();
+      const bubbleTexts: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const text = await allBubbles.nth(i).innerText();
+        bubbleTexts.push(text);
+      }
+
+      // Find indices containing our markers
+      const idx1 = bubbleTexts.findIndex((t) => t.includes(msg1));
+      const idxDel = bubbleTexts.findIndex((t) =>
+        t.includes('[Message deleted]')
+      );
+      const idx3 = bubbleTexts.findIndex((t) => t.includes(msg3));
+
+      expect(idx1).toBeGreaterThanOrEqual(0);
+      expect(idxDel).toBeGreaterThanOrEqual(0);
+      expect(idx3).toBeGreaterThanOrEqual(0);
+
+      // In a chat UI messages render top-to-bottom chronologically.
+      // msg-1 should precede the placeholder, which should precede msg-3.
+      expect(idx1).toBeLessThan(idxDel);
+      expect(idxDel).toBeLessThan(idx3);
+    } finally {
+      await context.close();
+    }
+  });
+});

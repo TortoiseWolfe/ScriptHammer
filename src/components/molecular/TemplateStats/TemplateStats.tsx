@@ -44,9 +44,8 @@ export interface TemplateStatsProps {
  * eye doesn't know where to land. Hierarchy through color discipline: one
  * primary-colored thing, one decision.
  *
- * Every color is a DaisyUI semantic token. Opacity floor is /70 — synthwave's
- * base-content is ~9:1 inherent contrast, so /60 drops to 3.96 (misses AA 4.5).
- * Verified: light / dracula / synthwave in TemplateStats.stories.tsx.
+ * Every color is a DaisyUI semantic token at full opacity — no /70 or lower
+ * modifiers on readable text. Decorative arrows use aria-hidden so axe skips them.
  *
  * @category molecular
  */
@@ -83,7 +82,7 @@ export default function TemplateStats({
                 <span className="text-base-content font-semibold">
                   {stat.label}
                 </span>
-                <span className="text-base-content/70 order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
+                <span className="text-base-content order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
                   {stat.detail}
                 </span>
                 <span
@@ -103,7 +102,7 @@ export default function TemplateStats({
             aria-label="Live demos"
             className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3"
           >
-            <span className="text-base-content/70 font-mono text-xs tracking-wider uppercase">
+            <span className="text-base-content font-mono text-xs tracking-wider uppercase">
               Live demos
             </span>
             {demos.map((demo) =>
@@ -113,7 +112,7 @@ export default function TemplateStats({
                   href={demo.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="link link-hover text-base-content/80 hover:text-base-content inline-flex min-h-11 items-center text-sm"
+                  className="link link-hover text-base-content inline-flex min-h-11 items-center text-sm"
                 >
                   {demo.label}
                 </a>
@@ -121,7 +120,7 @@ export default function TemplateStats({
                 <Link
                   key={demo.href}
                   href={demo.href}
-                  className="link link-hover text-base-content/80 hover:text-base-content inline-flex min-h-11 items-center text-sm"
+                  className="link link-hover text-base-content inline-flex min-h-11 items-center text-sm"
                 >
                   {demo.label}
                 </Link>

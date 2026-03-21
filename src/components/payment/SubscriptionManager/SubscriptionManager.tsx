@@ -228,7 +228,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
         <div className="card-body items-center text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="text-base-content/30 h-16 w-16"
+            className="text-base-content h-16 w-16"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"

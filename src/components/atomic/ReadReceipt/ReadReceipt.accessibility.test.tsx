@@ -87,7 +87,7 @@ describe('ReadReceipt Accessibility', () => {
     render(<ReadReceipt status="sent" />);
 
     const svg = screen.getByTestId('read-receipt').querySelector('svg');
-    expect(svg).toHaveClass('text-base-content/40');
+    expect(svg).toHaveClass('text-base-content');
   });
 
   it('should have proper color contrast for delivered status (gray)', () => {
@@ -95,7 +95,7 @@ describe('ReadReceipt Accessibility', () => {
 
     const svgs = screen.getByTestId('read-receipt').querySelectorAll('svg');
     svgs.forEach((svg) => {
-      expect(svg).toHaveClass('text-base-content/40');
+      expect(svg).toHaveClass('text-base-content');
     });
   });
 

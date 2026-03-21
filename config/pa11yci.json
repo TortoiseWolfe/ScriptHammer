@@ -1,6 +1,7 @@
 {
   "// Note": "Pa11y requires Chromium to be installed. In Docker, update Dockerfile to include chromium package",
   "// Note2": "Next.js 15 streams metadata via JavaScript. The title element appears after hydration, not in initial HTML.",
+  "// Note3": "color-contrast is ignored here because Pa11y's axe runner hardcodes violations.concat(incomplete) — it treats 'needs review' as failure. DaisyUI .btn gradients prevent axe from resolving a flat bg color, so every button lands in incomplete (14–61 false positives per page, ratio=0). The real contrast gate is tests/e2e/color-contrast.spec.ts, which runs the same axe rule on the same pages but asserts violations only, covering both scripthammer-light and scripthammer-dark (headless Chromium's prefers-color-scheme defaults to light, so this config never tested dark).",
   "defaults": {
     "standard": "WCAG2AA",
     "timeout": 30000,

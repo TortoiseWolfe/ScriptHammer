@@ -476,6 +476,57 @@ export async function handleReAuthModal(
 }
 
 /**
+ * Handle the initial Encrypted Messaging Setup page.
+ *
+ * When a user navigates to /messages without encryption keys,
+ * they are redirected to /messages/setup. This helper fills in
+ * the messaging password and submits the form.
+ *
+ * @param page - Playwright page object
+ * @param messagingPassword - Password for messaging encryption (min 8 chars)
+ * @returns true if setup was handled, false if not on setup page
+ */
+export async function handleEncryptionSetup(
+  page: Page,
+  messagingPassword = 'TestMessaging123!'
+): Promise<boolean> {
+  // Check if we're on the setup page
+  const url = page.url();
+  if (!url.includes('/messages/setup')) {
+    // Also check if the setup page heading is visible (in case URL check is too early)
+    const heading = page.getByRole('heading', {
+      name: /Set Up Encrypted Messaging/i,
+    });
+    const isSetupVisible = await heading
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
+    if (!isSetupVisible) {
+      return false;
+    }
+  }
+
+  // Wait for the form to be ready
+  const passwordInput = page.locator('#setup-password');
+  await passwordInput.waitFor({ state: 'visible', timeout: 10000 });
+
+  // Fill password fields
+  await passwordInput.fill(messagingPassword);
+  await page.locator('#setup-confirm').fill(messagingPassword);
+
+  // Submit the form
+  const submitBtn = page.getByRole('button', {
+    name: /Set Up Encrypted Messaging/i,
+  });
+  await submitBtn.click();
+
+  // Wait for redirect to /messages (setup complete)
+  await page.waitForURL(/\/messages(?!\/setup)/, { timeout: 15000 });
+  await page.waitForLoadState('networkidle');
+
+  return true;
+}
+
+/**
  * Click the Sign Out button in GlobalNav dropdown.
  *
  * The Sign Out button is inside the user avatar dropdown menu.

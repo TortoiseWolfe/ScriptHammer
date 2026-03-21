@@ -57,7 +57,7 @@ export default function MessagingTrendChart({
   if (data.length === 0) {
     return (
       <div
-        className={`text-base-content/60 flex h-48 items-center justify-center${className ? ` ${className}` : ''}`}
+        className={`text-base-content flex h-48 items-center justify-center${className ? ` ${className}` : ''}`}
         data-testid={testId}
       >
         No activity in this range

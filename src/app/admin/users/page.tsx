@@ -11,6 +11,7 @@ import type {
 } from '@/services/admin/admin-user-service';
 
 const SEARCH_DEBOUNCE_MS = 300;
+const PAGE_SIZE = 50;
 
 export default function AdminUsersPage() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<AdminUserRow[]>([]);
   const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +38,7 @@ export default function AdminUsersPage() {
       serviceRef.current = service;
       const [userStats, list] = await Promise.all([
         service.getStats(),
-        service.listUsers(),
+        service.listUsers({ limit: PAGE_SIZE, offset: 0 }),
       ]);
       setStats(userStats);
       setUsers(list.users);
@@ -50,12 +52,17 @@ export default function AdminUsersPage() {
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
+    setCurrentPage(0);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       const service = serviceRef.current;
       if (!service) return;
       try {
-        const list = await service.listUsers({ search: query });
+        const list = await service.listUsers({
+          search: query,
+          limit: PAGE_SIZE,
+          offset: 0,
+        });
         setUsers(list.users);
         setTotal(list.total);
       } catch (err) {
@@ -63,6 +70,26 @@ export default function AdminUsersPage() {
       }
     }, SEARCH_DEBOUNCE_MS);
   }, []);
+
+  const handlePageChange = useCallback(
+    async (page: number) => {
+      setCurrentPage(page);
+      const service = serviceRef.current;
+      if (!service) return;
+      try {
+        const list = await service.listUsers({
+          search: searchQuery || undefined,
+          limit: PAGE_SIZE,
+          offset: page * PAGE_SIZE,
+        });
+        setUsers(list.users);
+        setTotal(list.total);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Page load failed');
+      }
+    },
+    [searchQuery]
+  );
 
   useEffect(() => {
     if (user?.id) {
@@ -94,6 +121,9 @@ export default function AdminUsersPage() {
         total={total}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
+        currentPage={currentPage}
+        pageSize={PAGE_SIZE}
+        onPageChange={handlePageChange}
         isLoading={isLoading}
         testId="admin-users"
       />

@@ -1240,6 +1240,85 @@ $$;
 REVOKE ALL ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) TO authenticated;
 
+-- admin_conversation_list(p_limit, p_offset): Per-conversation metadata
+--
+-- The trends RPC above deliberately omits conversation_id to prevent
+-- social-graph reconstruction from {sender, conversation, count} tuples.
+-- This function crosses that line on purpose — per-row drill-down is
+-- needed to spot spam floods and dead channels — but holds a weaker
+-- boundary: conversation_id + counts + timestamps, NO participant IDs,
+-- NO group_name. The admin sees "conversation abc has 800 messages", not
+-- "Alice and Bob have 800 messages".
+--
+-- participant_count: the check_group_participants constraint guarantees
+-- both participant columns are NOT NULL for is_group=FALSE, so direct
+-- chats are hard-coded to 2. Groups count active conversation_members.
+--
+-- message_count: non-deleted, non-system. 'member_joined' etc. are
+-- protocol noise, not user traffic.
+--
+-- SECURITY DEFINER: conversations RLS is participant-only and admins are
+-- not participants. Same JWT gate as the other admin functions. The
+-- DEFINER privilege is spent only on the SELECTs below, which name
+-- metadata columns explicitly — encrypted_content and
+-- initialization_vector appear nowhere.
+--
+-- Returns {total, conversations[]} so the caller gets "showing N of M"
+-- without a second round-trip. Same shape as admin_list_users.
+CREATE OR REPLACE FUNCTION admin_conversation_list(
+  p_limit  INT DEFAULT 50,
+  p_offset INT DEFAULT 0
+)
+RETURNS JSON
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+    RETURN '{}'::json;
+  END IF;
+
+  RETURN json_build_object(
+    'total', (SELECT COUNT(*) FROM conversations),
+    'conversations', (
+      SELECT COALESCE(json_agg(row_to_json(c)), '[]'::json)
+      FROM (
+        SELECT
+          conv.id                                         AS conversation_id,
+          conv.is_group                                   AS is_group,
+          CASE
+            WHEN conv.is_group THEN COALESCE(cm.active_members, 0)::int
+            ELSE 2
+          END                                             AS participant_count,
+          COALESCE(m.message_count, 0)::int               AS message_count,
+          COALESCE(conv.last_message_at, conv.created_at) AS last_activity,
+          conv.created_at                                 AS created_at
+        FROM conversations conv
+        LEFT JOIN (
+          SELECT conversation_id, COUNT(*) AS message_count
+          FROM messages
+          WHERE deleted = FALSE AND is_system_message = FALSE
+          GROUP BY conversation_id
+        ) m ON m.conversation_id = conv.id
+        LEFT JOIN (
+          SELECT conversation_id, COUNT(*) AS active_members
+          FROM conversation_members
+          WHERE left_at IS NULL
+          GROUP BY conversation_id
+        ) cm ON cm.conversation_id = conv.id
+        ORDER BY COALESCE(conv.last_message_at, conv.created_at) DESC
+        LIMIT p_limit OFFSET p_offset
+      ) c
+    )
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin_conversation_list(INT, INT) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_conversation_list(INT, INT) TO authenticated;
+
 -- admin_overview(p_start, p_end): Composite dashboard payload — one round-trip, all four domains
 --
 -- Calls the four existing *_stats() functions server-side rather than
@@ -2191,20 +2270,81 @@ WHERE p.id = u.id
 -- PART 10: REALTIME CONFIGURATION
 -- Enable realtime subscriptions for messaging tables
 -- ============================================================================
+--
+-- Ported from SpokeToWork fork. Required for:
+--   - useUnreadCount hook (subscribes to messages INSERT/UPDATE/DELETE)
+--   - real-time conversation list updates
+--   - typing indicator presence
+--   - group membership changes
+--   - friend request status changes
+--
+-- REPLICA IDENTITY FULL makes UPDATE/DELETE events carry the full row
+-- payload (not just the primary key), so Realtime clients can inspect
+-- what changed without a follow-up query.
+--
+-- ALTER PUBLICATION ADD TABLE is idempotent-guarded via pg_publication_tables
+-- checks — running this migration twice won't double-add.
 
--- Set replica identity to FULL for realtime updates
--- This allows Supabase Realtime to track changes to these tables
+-- Create supabase_realtime publication if it doesn't exist.
+-- Supabase Cloud normally provisions this, but the guard makes the
+-- migration portable to self-hosted Postgres.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime'
+  ) THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+
+-- REPLICA IDENTITY FULL is required for Realtime UPDATE/DELETE events
+-- to include the full row payload.
 ALTER TABLE conversations REPLICA IDENTITY FULL;
+ALTER TABLE conversation_members REPLICA IDENTITY FULL;
 ALTER TABLE messages REPLICA IDENTITY FULL;
+ALTER TABLE typing_indicators REPLICA IDENTITY FULL;
+ALTER TABLE user_connections REPLICA IDENTITY FULL;
 
--- Note: The supabase_realtime publication is managed by Supabase.
--- To enable realtime for these tables, run this in the Supabase SQL Editor
--- (outside of transaction, as publication changes require it):
---
--- ALTER PUBLICATION supabase_realtime ADD TABLE conversations;
--- ALTER PUBLICATION supabase_realtime ADD TABLE messages;
---
--- Or enable via Supabase Dashboard: Database > Replication
+-- Add tables to the supabase_realtime publication.
+-- Each ADD is guarded by a pg_publication_tables check so this block
+-- is safe to re-run.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'conversations'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.conversations;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'conversation_members'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.conversation_members;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.messages;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'typing_indicators'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.typing_indicators;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'user_connections'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.user_connections;
+  END IF;
+END $$;
 
 -- Commit the transaction - everything succeeded
 COMMIT;

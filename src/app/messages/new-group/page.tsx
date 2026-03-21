@@ -272,7 +272,7 @@ function NewGroupContent() {
               />
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="text-base-content/40 absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2"
+                className="text-base-content absolute top-1/2 left-3 h-5 w-5 -translate-y-1/2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -350,7 +350,7 @@ function NewGroupContent() {
                     </div>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="text-base-content/40 h-6 w-6"
+                      className="text-base-content h-6 w-6"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"

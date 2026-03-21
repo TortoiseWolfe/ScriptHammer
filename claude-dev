@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# claude-dev - Launch Claude Code with auto mode enabled
+# Usage: claude-dev [any claude args...]
+export CLAUDE_DEV_LAUNCHER=1
+touch "$(pwd)/.claude_dev_active"
+exec claude --enable-auto-mode --permission-mode auto "$@"

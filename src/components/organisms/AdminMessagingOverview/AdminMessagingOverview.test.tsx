@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { AdminMessagingOverview } from './AdminMessagingOverview';
 import type {
   AdminMessagingStats,
   AdminMessagingTrends,
+  AdminConversationRow,
 } from '@/services/admin/admin-messaging-service';
 
 const mockStats: AdminMessagingStats = {
@@ -195,14 +196,162 @@ describe('AdminMessagingOverview', () => {
     expect(screen.getByTestId('messaging-range-filter')).toBeInTheDocument();
   });
 
-  it('places Volume Trends directly above the privacy notice', () => {
+  it('places Volume Trends directly above the privacy notice when no conversations', () => {
     const { container } = render(
       <AdminMessagingOverview stats={mockStats} trends={mockTrends} />
     );
-    // The "what you CAN see" section should land immediately before the
-    // "what you CANNOT see" reminder.
+    // Without conversation list, trends is directly above the privacy notice.
     const trendsSection = screen.getByText('Volume Trends').closest('section')!;
     const privacyNotice = container.querySelector('.alert-info')!;
     expect(trendsSection.nextElementSibling).toBe(privacyNotice);
+  });
+
+  // ── Conversation List tests ───────────────────────────────────────────
+
+  const mockConversations: AdminConversationRow[] = [
+    {
+      id: 'conv-1',
+      is_group: false,
+      group_name: null,
+      last_message_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+      created_at: '2025-06-01T10:00:00Z',
+      participant_count: 2,
+      message_count: 47,
+      participants: [
+        { username: 'alice', display_name: 'Alice W' },
+        { username: 'bob', display_name: 'Bob B' },
+      ],
+    },
+    {
+      id: 'conv-2',
+      is_group: true,
+      group_name: 'Engineering',
+      last_message_at: null,
+      created_at: '2025-07-15T08:00:00Z',
+      participant_count: 5,
+      message_count: 0,
+      participants: null,
+    },
+  ];
+
+  it('hides conversation list when conversations absent', () => {
+    render(<AdminMessagingOverview stats={mockStats} />);
+    expect(screen.queryByText('Conversation List')).not.toBeInTheDocument();
+  });
+
+  it('renders conversation list section when conversations provided', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+      />
+    );
+    expect(screen.getByText('Conversation List')).toBeInTheDocument();
+    expect(screen.getByTestId('conversation-count')).toHaveTextContent(
+      'Showing 2 of 2'
+    );
+  });
+
+  it('renders conversation table with correct columns', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+      />
+    );
+    const table = screen.getByTestId('conversation-table');
+    const headers = Array.from(table.querySelectorAll('thead th button, thead th')).map(
+      (el) => el.textContent?.replace(/[↑↓⇅]/g, '').trim()
+    );
+    expect(headers).toContain('Type');
+    expect(headers).toContain('Participants');
+    expect(headers).toContain('Messages');
+    expect(headers).toContain('Last Activity');
+    expect(headers).toContain('Created');
+  });
+
+  it('renders direct conversation participants', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+      />
+    );
+    expect(screen.getByTestId('conversation-table')).toHaveTextContent(
+      'Alice W'
+    );
+    expect(screen.getByTestId('conversation-table')).toHaveTextContent(
+      'Bob B'
+    );
+  });
+
+  it('renders group conversation with group name', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+      />
+    );
+    expect(screen.getByTestId('conversation-table')).toHaveTextContent(
+      'Engineering'
+    );
+  });
+
+  it('renders type badges for direct and group', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+      />
+    );
+    expect(screen.getByText('Direct')).toBeInTheDocument();
+    expect(screen.getByText('Group')).toBeInTheDocument();
+  });
+
+  it('renders conversation search when handler provided', () => {
+    const onSearch = vi.fn();
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={2}
+        onConversationSearchChange={onSearch}
+      />
+    );
+    const input = screen.getByTestId('conversation-search');
+    fireEvent.change(input, { target: { value: 'alice' } });
+    expect(onSearch).toHaveBeenCalledWith('alice');
+  });
+
+  it('renders pagination for conversations when handler provided', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={mockConversations}
+        conversationTotal={60}
+        conversationPage={0}
+        onConversationPageChange={vi.fn()}
+      />
+    );
+    expect(screen.getByTestId('conversation-pagination')).toBeInTheDocument();
+    expect(
+      screen.getByTestId('conversation-pagination-indicator')
+    ).toHaveTextContent('Page 1 of 3');
+  });
+
+  it('shows empty table when conversations is empty array', () => {
+    render(
+      <AdminMessagingOverview
+        stats={mockStats}
+        conversations={[]}
+        conversationTotal={0}
+      />
+    );
+    expect(screen.getByText('No conversations found')).toBeInTheDocument();
   });
 });

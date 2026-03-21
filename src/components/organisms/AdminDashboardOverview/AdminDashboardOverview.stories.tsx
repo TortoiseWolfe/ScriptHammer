@@ -179,11 +179,11 @@ export const ThemeShowcase: Story = {
   render: (args) => (
     <div className="space-y-6">
       <div className="bg-base-100 rounded-lg p-6">
-        <p className="text-base-content/60 mb-4 text-sm">base-100 surface</p>
+        <p className="text-base-content mb-4 text-sm">base-100 surface</p>
         <AdminDashboardOverview {...args} />
       </div>
       <div className="bg-base-200 rounded-lg p-6">
-        <p className="text-base-content/60 mb-4 text-sm">base-200 surface</p>
+        <p className="text-base-content mb-4 text-sm">base-200 surface</p>
         <AdminDashboardOverview {...args} />
       </div>
     </div>

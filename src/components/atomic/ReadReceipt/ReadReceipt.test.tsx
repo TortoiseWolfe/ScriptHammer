@@ -15,7 +15,7 @@ describe('ReadReceipt', () => {
 
     // Should have gray color
     const svg = container.querySelector('svg');
-    expect(svg).toHaveClass('text-base-content/40');
+    expect(svg).toHaveClass('text-base-content');
   });
 
   it('renders double checkmarks for delivered status', () => {

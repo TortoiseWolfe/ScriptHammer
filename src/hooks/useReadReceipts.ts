@@ -91,8 +91,15 @@ export function useReadReceipts({
           if (messageId) {
             const message = messages.find((m) => m.id === messageId);
 
-            // Only mark unread messages from other users
-            if (message && !message.read_at && message.sender_id !== userId) {
+            // Only mark unread, non-deleted messages from other users.
+            // A [Message deleted] placeholder scrolling into view isn't a
+            // read event — it has no content to read.
+            if (
+              message &&
+              !message.read_at &&
+              !message.deleted &&
+              message.sender_id !== userId
+            ) {
               pendingReadRef.current.add(messageId);
               scheduleReadUpdate();
             }

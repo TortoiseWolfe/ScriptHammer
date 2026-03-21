@@ -33,7 +33,7 @@ const variantStyles: Record<TextVariant, string> = {
   small: 'text-sm text-base-content/85',
   code: 'font-mono text-sm bg-base-200 px-1 py-0.5 rounded',
   emphasis: 'text-base italic text-base-content',
-  caption: 'text-xs text-base-content/75',
+  caption: 'text-xs text-base-content',
 };
 
 const variantElements: Partial<Record<TextVariant, React.ElementType>> = {

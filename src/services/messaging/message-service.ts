@@ -219,6 +219,10 @@ export class MessageService {
             ? lastMessage.sequence_number + 1
             : 1;
 
+          // delivered_at is NOT set here. It stays NULL until the recipient's
+          // ConversationView fetches the row and calls markAsDelivered — that's
+          // when "delivered" means something. Stamping it at INSERT would mean
+          // "server accepted the write," which is what created_at already says.
           const { data: inserted, error: insertError } = await msgClient
             .from('messages')
             .insert({
@@ -229,7 +233,6 @@ export class MessageService {
               sequence_number: nextSequenceNumber,
               deleted: false,
               edited: false,
-              delivered_at: new Date().toISOString(),
             })
             .select()
             .single();
@@ -403,11 +406,15 @@ export class MessageService {
       // Online - fetch from database
       if (navigator.onLine) {
         // Build query
+        // Note: deleted messages are NOT filtered out — they render as
+        // placeholders in MessageBubble so sequence numbers and threading
+        // stay intact. MessageBubble checks `message.deleted` before
+        // `message.decryptionError`, so deleted-message rendering wins
+        // even if decryption fails.
         let query = msgClient
           .from('messages')
           .select('*')
           .eq('conversation_id', conversationId)
-          .eq('deleted', false)
           .order('sequence_number', { ascending: false })
           .limit(limit + 1); // Fetch one extra to check has_more
 
@@ -726,6 +733,58 @@ export class MessageService {
         throw error;
       }
       throw new ConnectionError('Failed to mark messages as read', error);
+    }
+  }
+
+  /**
+   * Mark messages as delivered by setting delivered_at timestamp
+   *
+   * Sets delivered_at for messages that haven't been marked delivered yet.
+   * Called when recipient's page loads messages from another user.
+   * Delivery is distinct from read — delivery means the message reached
+   * the recipient's client, read means they viewed it.
+   *
+   * Failures are logged but not thrown — delivery receipts should never
+   * break the UI.
+   *
+   * @param messageIds - Array of message UUIDs to mark as delivered
+   */
+  async markAsDelivered(messageIds: string[]): Promise<void> {
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      throw new AuthenticationError(
+        'You must be signed in to mark messages as delivered'
+      );
+    }
+
+    if (messageIds.length === 0) {
+      return;
+    }
+
+    logger.debug('markAsDelivered called', { count: messageIds.length });
+    try {
+      const now = new Date().toISOString();
+      const { error, count } = await msgClient
+        .from('messages')
+        .update({ delivered_at: now })
+        .in('id', messageIds)
+        .is('delivered_at', null); // Only update if not already delivered
+
+      if (error) {
+        logger.error('markAsDelivered error', { error: error.message });
+      } else {
+        logger.debug('markAsDelivered success', { updatedCount: count });
+      }
+    } catch (error) {
+      // Silent failure — delivery receipts shouldn't break the UI
+      logger.error('Failed to mark messages as delivered', { error });
     }
   }
 

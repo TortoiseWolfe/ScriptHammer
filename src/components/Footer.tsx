@@ -4,7 +4,7 @@ export function Footer() {
   return (
     <footer className="bg-base-300 mt-auto py-4 text-center sm:py-6">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <p className="text-base-content/80 text-sm leading-relaxed">
+        <p className="text-base-content text-sm leading-relaxed">
           Made by{' '}
           <a
             href="https://crudgames.com"
@@ -24,7 +24,7 @@ export function Footer() {
             geoLARP.com
           </a>
         </p>
-        <p className="text-base-content/80 mt-1 text-xs">
+        <p className="text-base-content mt-1 text-xs">
           Built with{' '}
           <a
             href="https://github.com/TortoiseWolfe/ScriptHammer"

@@ -18,6 +18,17 @@ interface ConnectedUser extends UserProfile {
   connectionId: string;
 }
 
+/**
+ * Shape of a profile joined via user_connections foreign key.
+ * Supabase returns joined relations as array-or-object unions depending
+ * on relationship cardinality detection, so we cast through unknown.
+ */
+interface JoinedProfile {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
 export interface UseGroupMembersReturn {
   /** List of connected users matching search query */
   searchResults: ConnectedUser[];
@@ -59,9 +70,14 @@ export function useGroupMembers(
   const supabase = useMemo(() => createClient(), []);
 
   /**
-   * Fetch all accepted connections on mount
+   * Fetch all accepted connections.
+   *
+   * Returns the loaded data directly so callers don't have to wait for
+   * a re-render to see it. Previously this only called setAllConnections,
+   * which meant searchConnections' closure still held the stale empty
+   * array on first call.
    */
-  const loadConnections = useCallback(async () => {
+  const loadConnections = useCallback(async (): Promise<ConnectedUser[]> => {
     setIsLoading(true);
     setError(null);
 
@@ -71,10 +87,10 @@ export function useGroupMembers(
       } = await supabase.auth.getUser();
       if (!user) {
         setError('Not authenticated');
-        return;
+        return [];
       }
 
-      // Get all accepted connections
+      // Get all accepted connections where the current user is either side
       const { data: connections, error: connError } = await supabase
         .from('user_connections')
         .select(
@@ -86,22 +102,25 @@ export function useGroupMembers(
           addressee:user_profiles!user_connections_addressee_id_fkey(id, display_name, avatar_url)
         `
         )
-        .eq('status', 'accepted' as ConnectionStatus);
+        .eq('status', 'accepted' as ConnectionStatus)
+        .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
       if (connError) {
         setError('Failed to load connections');
-        return;
+        return [];
       }
 
       // Map to connected users (the other person in each connection)
       const connectedUsers: ConnectedUser[] = (connections || []).map(
         (conn) => {
           const isRequester = conn.requester_id === user.id;
-          const profile = isRequester ? conn.addressee : conn.requester;
+          const profile = (
+            isRequester ? conn.addressee : conn.requester
+          ) as unknown as JoinedProfile;
           return {
-            id: (profile as any).id,
-            display_name: (profile as any).display_name,
-            avatar_url: (profile as any).avatar_url,
+            id: profile.id,
+            display_name: profile.display_name,
+            avatar_url: profile.avatar_url,
             connectionId: conn.id,
           };
         }
@@ -109,8 +128,10 @@ export function useGroupMembers(
 
       setAllConnections(connectedUsers);
       setSearchResults(connectedUsers);
+      return connectedUsers;
     } catch {
       setError('Failed to load connections');
+      return [];
     } finally {
       setIsLoading(false);
     }
@@ -121,19 +142,22 @@ export function useGroupMembers(
    */
   const searchConnections = useCallback(
     async (query: string) => {
-      // Load connections if not already loaded
-      if (allConnections.length === 0) {
-        await loadConnections();
+      // Load connections if not already loaded. Use the RETURNED data —
+      // allConnections state won't be visible in this closure until the
+      // next render.
+      let data = allConnections;
+      if (data.length === 0) {
+        data = await loadConnections();
       }
 
       const trimmedQuery = query.trim().toLowerCase();
 
       if (!trimmedQuery) {
-        setSearchResults(allConnections);
+        setSearchResults(data);
         return;
       }
 
-      const filtered = allConnections.filter(
+      const filtered = data.filter(
         (user) =>
           user.display_name?.toLowerCase().includes(trimmedQuery) ||
           user.id.toLowerCase().includes(trimmedQuery)

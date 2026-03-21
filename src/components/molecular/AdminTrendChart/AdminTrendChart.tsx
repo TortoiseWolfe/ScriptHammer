@@ -142,7 +142,7 @@ export function AdminTrendChart({
         data-testid={testId}
       >
         <figcaption className="sr-only">{title}</figcaption>
-        <p className="text-sm text-base-content/50">No data</p>
+        <p className="text-sm text-base-content">No data</p>
       </figure>
     );
   }
@@ -221,7 +221,7 @@ export function AdminTrendChart({
         </figcaption>
         {multi && (
           <ul
-            className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/70"
+            className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content"
             data-chart-legend
           >
             {allSeries.map((s) => (

@@ -159,7 +159,7 @@ export default function BlogPostPageClient({
 
           {/* Right: Share buttons - compact */}
           <div className="flex items-center gap-2">
-            <span className="text-base-content/75 border-base-300 hidden border-r pr-2 text-sm sm:inline">
+            <span className="text-base-content border-base-300 hidden border-r pr-2 text-sm sm:inline">
               Share
             </span>
             <SocialShareButtons

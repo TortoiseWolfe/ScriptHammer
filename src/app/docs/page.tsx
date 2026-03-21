@@ -68,7 +68,7 @@ function DocRow({ doc, large = false }: { doc: Doc; large?: boolean }) {
   const inner = (
     <>
       <span className="text-base-content font-semibold">{doc.label}</span>
-      <span className="text-base-content/70 order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
+      <span className="text-base-content order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
         {doc.hint}
       </span>
       <span
@@ -103,7 +103,7 @@ export default function DocsPage() {
         <h1 className="text-base-content mb-2 text-4xl font-bold tracking-tight sm:text-5xl">
           Documentation
         </h1>
-        <p className="text-base-content/70 mb-10 text-base sm:text-lg">
+        <p className="text-base-content mb-10 text-base sm:text-lg">
           Just forked? The first two links get you to{' '}
           <code className="font-mono text-sm">docker compose up</code>.
         </p>
@@ -122,7 +122,7 @@ export default function DocsPage() {
         {/* Tier 2 — reference shelf. Grouped by WHEN, not by topic. */}
         {REFERENCE.map((group) => (
           <section key={group.when} className="mt-12">
-            <h2 className="text-base-content/70 mb-3 font-mono text-xs tracking-wider uppercase">
+            <h2 className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase">
               {group.when}
             </h2>
             <ul className="divide-base-300 divide-y">
@@ -136,10 +136,10 @@ export default function DocsPage() {
         ))}
 
         {/* prettier-ignore */}
-        <p className="text-base-content/70 border-base-300 mt-16 border-t pt-8 text-sm">
+        <p className="text-base-content border-base-300 mt-16 border-t pt-8 text-sm">
           Stuck? Open
-          an <a href={`${repo}/issues`} target="_blank" rel="noopener noreferrer" className="link text-base-content/80 hover:text-base-content">issue</a> or
-          start a <a href={`${repo}/discussions`} target="_blank" rel="noopener noreferrer" className="link text-base-content/80 hover:text-base-content">discussion</a>.
+          an <a href={`${repo}/issues`} target="_blank" rel="noopener noreferrer" className="link text-base-content">issue</a> or
+          start a <a href={`${repo}/discussions`} target="_blank" rel="noopener noreferrer" className="link text-base-content">discussion</a>.
         </p>
       </div>
     </main>

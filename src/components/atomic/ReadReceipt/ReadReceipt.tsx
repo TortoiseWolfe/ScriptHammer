@@ -34,7 +34,7 @@ export default function ReadReceipt({
       case 'sent':
         return (
           <svg
-            className="text-base-content/40 h-4 w-4"
+            className="text-base-content h-4 w-4"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -51,7 +51,7 @@ export default function ReadReceipt({
         return (
           <div className="relative h-4 w-5">
             <svg
-              className="text-base-content/40 absolute left-0 h-4 w-4"
+              className="text-base-content absolute left-0 h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -64,7 +64,7 @@ export default function ReadReceipt({
               />
             </svg>
             <svg
-              className="text-base-content/40 absolute left-1 h-4 w-4"
+              className="text-base-content absolute left-1 h-4 w-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

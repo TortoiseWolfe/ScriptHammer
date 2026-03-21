@@ -10,7 +10,7 @@
     },
     "runners": ["axe", "htmlcs"],
     "hideElements": "",
-    "ignore": ["color-contrast"],
+    "ignore": [],
     "chromeLaunchConfig": {
       "args": [
         "--no-sandbox",

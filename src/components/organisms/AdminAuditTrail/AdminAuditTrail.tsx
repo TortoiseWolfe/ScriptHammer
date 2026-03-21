@@ -274,12 +274,12 @@ export function AdminAuditTrail({
                     <p className="text-error text-2xl font-bold">
                       {b.attempts} attempts
                     </p>
-                    <p className="text-base-content/70 text-sm">
+                    <p className="text-base-content text-sm">
                       {b.distinct_users}{' '}
                       {b.distinct_users === 1 ? 'user' : 'users'} ·{' '}
                       {burstSpanMinutes(b)} min span
                     </p>
-                    <p className="text-base-content/50 mt-1 text-xs">
+                    <p className="text-base-content mt-1 text-xs">
                       {formatTime(b.first_seen)} → {formatTime(b.last_seen)}
                     </p>
                     <button
@@ -309,7 +309,7 @@ export function AdminAuditTrail({
                         data-testid="burst-detail"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <p className="text-base-content/60 mb-2 text-xs">
+                        <p className="text-base-content mb-2 text-xs">
                           {matched.length} of {b.attempts} in current log
                         </p>
                         {matched.length > 0 && (
@@ -321,7 +321,7 @@ export function AdminAuditTrail({
                                 data-testid="burst-event-row"
                               >
                                 <span>{formatTime(e.created_at)}</span>
-                                <span className="text-base-content/60">
+                                <span className="text-base-content">
                                   {formatId(e.user_id)}
                                 </span>
                               </li>
@@ -336,7 +336,7 @@ export function AdminAuditTrail({
             </div>
           ) : (
             <p
-              className="text-base-content/60 text-sm"
+              className="text-base-content text-sm"
               data-testid="burst-empty"
             >
               No bursts detected in this range.
@@ -405,7 +405,7 @@ export function AdminAuditTrail({
       )}
 
       {/* Retention Notice */}
-      <p className="text-base-content/50 text-sm">
+      <p className="text-base-content text-sm">
         Audit logs are retained for 90 days.
       </p>
     </div>
