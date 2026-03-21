@@ -107,11 +107,17 @@ export class AdminMessagingService {
     opts: { limit?: number; offset?: number } = {}
   ): Promise<AdminConversationList> {
     this.ensureInitialized();
-    const { data, error } = await this.supabase.rpc(
-      'admin_conversation_list',
-      { p_limit: opts.limit ?? 50, p_offset: opts.offset ?? 0 }
-    );
+    const { data, error } = await this.supabase.rpc('admin_conversation_list', {
+      p_limit: opts.limit ?? 50,
+      p_offset: opts.offset ?? 0,
+    });
     if (error) throw new Error(error.message);
-    return data as AdminConversationList;
+    const result = data as AdminConversationList;
+    if (!Array.isArray(result?.conversations)) {
+      throw new Error(
+        'admin_conversation_list: unexpected response shape — check is_admin claim'
+      );
+    }
+    return result;
   }
 }

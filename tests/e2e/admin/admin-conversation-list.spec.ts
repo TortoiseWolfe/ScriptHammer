@@ -20,7 +20,7 @@
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import * as http from 'http';
-import { STALE_THRESHOLD_MS } from '@/components/organisms/AdminConversationList/AdminConversationList';
+import { STALE_THRESHOLD_MS } from '../../../src/components/organisms/AdminConversationList/AdminConversationList';
 
 const ADMIN_EMAIL = 'test@example.com';
 const ADMIN_PASSWORD = 'TestPassword123!';
@@ -31,11 +31,11 @@ const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 // the Docker hostname to 127.0.0.1 via --host-resolver-rules, and this
 // process proxies 127.0.0.1:8000 → the real Kong gateway.
 const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'model-b-supabase-kong-1';
+  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
 const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const PROXY_PORT = 8000;
+const PROXY_PORT = 8004;
 
 // Seed placed safely past the threshold. Using STALE_THRESHOLD_MS * 1.5
 // rather than a hardcoded "45 days" means raising the threshold in the
@@ -127,15 +127,14 @@ test.describe('Admin Conversation List E2E', () => {
         created_at: STALE_LAST_MESSAGE,
       });
     if (insertErr) {
-      throw new Error(`Failed to seed stale conversation: ${insertErr.message}`);
+      throw new Error(
+        `Failed to seed stale conversation: ${insertErr.message}`
+      );
     }
   });
 
   test.afterAll(async () => {
-    await serviceClient
-      ?.from('conversations')
-      .delete()
-      .eq('id', STALE_CONV_ID);
+    await serviceClient?.from('conversations').delete().eq('id', STALE_CONV_ID);
     proxyServer?.close();
   });
 

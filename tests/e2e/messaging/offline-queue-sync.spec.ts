@@ -33,14 +33,15 @@ const USER_B_EMAIL = 'test-user-b@example.com';
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // Docker DNS — test process resolves Docker hostnames; browser cannot
-const SUPABASE_DOCKER_HOST = process.env.SUPABASE_DOCKER_HOST || 'model-b-supabase-kong-1';
+const SUPABASE_DOCKER_HOST =
+  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
 const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // Chromium needs --host-resolver-rules to map the Docker hostname to 127.0.0.1,
 // and a local HTTP proxy on port 8000 forwards those requests to the real Kong.
-const PROXY_PORT = 8000;
+const PROXY_PORT = 8001;
 
 test.use({
   launchOptions: {
@@ -83,9 +84,13 @@ test.describe('Offline Queue Sync E2E', () => {
       return;
     }
 
-    const adminClient = createClient(SUPABASE_DOCKER_URL, SUPABASE_SERVICE_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const adminClient = createClient(
+      SUPABASE_DOCKER_URL,
+      SUPABASE_SERVICE_KEY,
+      {
+        auth: { autoRefreshToken: false, persistSession: false },
+      }
+    );
 
     // Get user IDs
     const { data: usersData } = await adminClient.auth.admin.listUsers();
@@ -93,7 +98,8 @@ test.describe('Offline Queue Sync E2E', () => {
     const userB = usersData?.users?.find((u) => u.email === USER_B_EMAIL);
 
     if (!userA || !userB) {
-      setupError = `Test users not found: ${!userA ? USER_A_EMAIL : ''} ${!userB ? USER_B_EMAIL : ''}`.trim();
+      setupError =
+        `Test users not found: ${!userA ? USER_A_EMAIL : ''} ${!userB ? USER_B_EMAIL : ''}`.trim();
       return;
     }
 
@@ -120,7 +126,8 @@ test.describe('Offline Queue Sync E2E', () => {
     }
 
     // Ensure conversation exists (canonical ordering: participant_1_id < participant_2_id)
-    const [p1, p2] = userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+    const [p1, p2] =
+      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
     const { data: existingConv } = await adminClient
       .from('conversations')
       .select('id')
@@ -129,10 +136,12 @@ test.describe('Offline Queue Sync E2E', () => {
       .maybeSingle();
 
     if (!existingConv) {
-      const { error: convError } = await adminClient.from('conversations').insert({
-        participant_1_id: p1,
-        participant_2_id: p2,
-      });
+      const { error: convError } = await adminClient
+        .from('conversations')
+        .insert({
+          participant_1_id: p1,
+          participant_2_id: p2,
+        });
       if (convError) {
         setupError = `Failed to create conversation: ${convError.message}`;
         return;
@@ -146,7 +155,9 @@ test.describe('Offline Queue Sync E2E', () => {
     proxyServer?.close();
   });
 
-  test('should queue a message offline and sync when reconnected', async ({ browser }) => {
+  test('should queue a message offline and sync when reconnected', async ({
+    browser,
+  }) => {
     test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
 
     const context = await browser.newContext();
@@ -162,7 +173,9 @@ test.describe('Offline Queue Sync E2E', () => {
         password: USER_A_PASSWORD,
       });
       if (error || !data.session) {
-        throw new Error(`Supabase sign-in failed: ${error?.message ?? 'no session'}`);
+        throw new Error(
+          `Supabase sign-in failed: ${error?.message ?? 'no session'}`
+        );
       }
 
       // Navigate to get a browsing context for localStorage
@@ -221,7 +234,9 @@ test.describe('Offline Queue Sync E2E', () => {
       await conversationItem.click();
 
       // Wait for message input
-      const messageInput = page.getByRole('textbox', { name: /Message input/i });
+      const messageInput = page.getByRole('textbox', {
+        name: /Message input/i,
+      });
       await expect(messageInput).toBeVisible({ timeout: 10000 });
 
       // ===== Go offline =====
@@ -252,8 +267,12 @@ test.describe('Offline Queue Sync E2E', () => {
       await expect(messageBubble).toBeVisible();
 
       // Optionally check that the queued/sending indicator is gone
-      const queueIndicator = page.locator('[data-testid="queued-message-indicator"]');
-      const indicatorVisible = await queueIndicator.isVisible().catch(() => false);
+      const queueIndicator = page.locator(
+        '[data-testid="queued-message-indicator"]'
+      );
+      const indicatorVisible = await queueIndicator
+        .isVisible()
+        .catch(() => false);
       if (indicatorVisible) {
         await page.waitForTimeout(5000);
       }

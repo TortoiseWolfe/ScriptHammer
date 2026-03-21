@@ -33,12 +33,12 @@ const MESSAGING_PASSWORD = 'TestMessaging123!';
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'sh-b-supabase-kong-1';
+  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
 const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-const PROXY_PORT = 8000;
+const PROXY_PORT = 8002;
 
 test.use({
   launchOptions: {
@@ -163,18 +163,14 @@ async function setupEncryptionViaUI(
     await handleReAuthModal(page, MESSAGING_PASSWORD);
   } else {
     // Password accepted — wait for modal to close
-    await modal
-      .waitFor({ state: 'hidden', timeout: 10000 })
-      .catch(() => {});
+    await modal.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
   }
 }
 
 /**
  * Navigate to /messages, handle re-auth, open the first conversation.
  */
-async function openConversation(
-  page: import('@playwright/test').Page
-) {
+async function openConversation(page: import('@playwright/test').Page) {
   await page.goto(`${BP}/messages`);
   await page.waitForLoadState('networkidle');
   await dismissCookieBanner(page);
@@ -265,18 +261,17 @@ test.describe('Message Delete Placeholder E2E', () => {
       return;
     }
 
-    adminClient = createClient(
-      SUPABASE_DOCKER_URL,
-      SUPABASE_SERVICE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
+    adminClient = createClient(SUPABASE_DOCKER_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     const { data: usersData } = await adminClient.auth.admin.listUsers();
     const userA = usersData?.users?.find((u) => u.email === USER_A_EMAIL);
     const userB = usersData?.users?.find((u) => u.email === USER_B_EMAIL);
 
     if (!userA || !userB) {
-      setupError = `Test users not found: ${!userA ? USER_A_EMAIL : ''} ${!userB ? USER_B_EMAIL : ''}`.trim();
+      setupError =
+        `Test users not found: ${!userA ? USER_A_EMAIL : ''} ${!userB ? USER_B_EMAIL : ''}`.trim();
       return;
     }
 
@@ -304,9 +299,7 @@ test.describe('Message Delete Placeholder E2E', () => {
 
     // Ensure conversation and save its ID
     const [p1, p2] =
-      userA.id < userB.id
-        ? [userA.id, userB.id]
-        : [userB.id, userA.id];
+      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
     const { data: existingConv } = await adminClient
       .from('conversations')
       .select('id')
@@ -406,7 +399,7 @@ test.describe('Message Delete Placeholder E2E', () => {
         });
         throw new Error(
           `Messages not stored in DB (${beforeCount} → ${afterCount}). ` +
-          `Browser state: ${JSON.stringify(errorState)}`
+            `Browser state: ${JSON.stringify(errorState)}`
         );
       }
 
@@ -481,7 +474,7 @@ test.describe('Message Delete Placeholder E2E', () => {
         { msgId: middleMessageId, anonKey: SUPABASE_ANON_KEY }
       );
 
-      // eslint-disable-next-line no-console
+       
       console.log(`PATCH from browser: ${JSON.stringify(patchStatus)}`);
 
       // The PWA service worker uses a Cache-first default strategy which

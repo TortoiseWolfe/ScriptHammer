@@ -26,13 +26,14 @@ const ADMIN_PASSWORD = 'TestPassword123!';
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // Docker DNS — test process resolves Docker hostnames; browser cannot
-const SUPABASE_DOCKER_HOST = process.env.SUPABASE_DOCKER_HOST || 'model-b-supabase-kong-1';
+const SUPABASE_DOCKER_HOST =
+  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
 const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 // Chromium needs --host-resolver-rules to map the Docker hostname to 127.0.0.1,
-// and a local HTTP proxy on port 8000 forwards those requests to the real Kong.
-const PROXY_PORT = 8000;
+// and a local HTTP proxy forwards those requests to the real Kong.
+const PROXY_PORT = 8003;
 
 test.use({
   launchOptions: {
@@ -85,7 +86,9 @@ test.describe('Admin User Pagination E2E', () => {
       password: ADMIN_PASSWORD,
     });
     if (error || !data.session) {
-      throw new Error(`Supabase sign-in failed: ${error?.message ?? 'no session'}`);
+      throw new Error(
+        `Supabase sign-in failed: ${error?.message ?? 'no session'}`
+      );
     }
 
     // Navigate to get a browsing context for localStorage
@@ -124,7 +127,9 @@ test.describe('Admin User Pagination E2E', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('should display pagination when more than PAGE_SIZE users exist', async ({ page }) => {
+  test('should display pagination when more than PAGE_SIZE users exist', async ({
+    page,
+  }) => {
     await page.goto(`${BP}/admin/users`);
     await page.waitForLoadState('networkidle');
 
@@ -204,7 +209,9 @@ test.describe('Admin User Pagination E2E', () => {
     await page.waitForTimeout(500);
 
     // Page should reset — either back to "Page 1 of" or pagination hidden (results fit one page)
-    const paginationStillVisible = await pagination.isVisible().catch(() => false);
+    const paginationStillVisible = await pagination
+      .isVisible()
+      .catch(() => false);
     if (paginationStillVisible) {
       await expect(indicator).toContainText('Page 1 of');
     }
@@ -300,7 +307,9 @@ test.describe('Admin User Pagination E2E', () => {
     }
 
     // Verify we're on the last page
-    await expect(indicator).toContainText(`Page ${totalPages} of ${totalPages}`);
+    await expect(indicator).toContainText(
+      `Page ${totalPages} of ${totalPages}`
+    );
 
     // Next should be disabled
     await expect(nextBtn).toBeDisabled();
