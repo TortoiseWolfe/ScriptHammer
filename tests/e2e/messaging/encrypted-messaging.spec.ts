@@ -184,19 +184,17 @@ test.describe('Encrypted Messaging Flow', () => {
   test('should send and receive encrypted message between two users', async ({
     browser,
   }) => {
-    const contextA = await browser.newContext();
+    // User A gets pre-authenticated state; User B signs in manually
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // ===== STEP 1: User A signs in =====
-      await pageA.goto(`${BASE_URL}/sign-in`);
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
+      // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
       await pageB.goto(`${BASE_URL}/sign-in`);
@@ -291,17 +289,14 @@ test.describe('Encrypted Messaging Flow', () => {
       return;
     }
 
-    const contextA = await browser.newContext();
+    // User A gets pre-authenticated state
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const pageA = await contextA.newPage();
 
     try {
-      // Sign in as User A
-      await pageA.goto(`${BASE_URL}/sign-in`);
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
-
+      // User A already authenticated via storageState
       // Navigate to messages
       await pageA.goto(`${BASE_URL}/messages`);
       await handleReAuthModal(pageA, USER_A.password);
@@ -367,20 +362,17 @@ test.describe('Encrypted Messaging Flow', () => {
   });
 
   test('should show delivery status indicators', async ({ browser }) => {
-    const contextA = await browser.newContext();
+    // User A gets pre-authenticated state; User B signs in manually
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // User A signs in and navigates to messages
-      await pageA.goto(`${BASE_URL}/sign-in`);
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
-
+      // User A already authenticated via storageState, navigate to messages
       await pageA.goto(`${BASE_URL}/messages`);
       await handleReAuthModal(pageA, USER_A.password);
       const conversationItem = pageA
@@ -468,12 +460,7 @@ test.describe('Encrypted Messaging Flow', () => {
   });
 
   test('should load message history with pagination', async ({ page }) => {
-    await page.goto(`${BASE_URL}/sign-in`);
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via storageState
     await page.goto(`${BASE_URL}/messages`);
     await handleReAuthModal(page, USER_A.password);
     const conversationItem = page
@@ -558,13 +545,7 @@ test.describe('Encryption Key Security', () => {
       }
     });
 
-    // Sign in and send a message
-    await page.goto(`${BASE_URL}/sign-in`);
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via storageState, navigate to messages
     await page.goto(`${BASE_URL}/messages`);
     await handleReAuthModal(page, USER_A.password);
 

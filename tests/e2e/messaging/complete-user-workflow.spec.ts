@@ -196,7 +196,10 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   }) => {
     test.setTimeout(120000); // 2 minutes for full workflow
 
-    const contextA = await browser.newContext();
+    // User A gets pre-authenticated state; User B signs in manually
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
@@ -207,16 +210,8 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
     let replyMessage = '';
 
     try {
-      // STEP 1: User A signs in
-      console.log('Step 1: User A signing in...');
-      await pageA.goto('/sign-in');
-      await pageA.waitForLoadState('networkidle');
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
-      console.log('Step 1: User A signed in');
+      // STEP 1: User A already authenticated via storageState
+      console.log('Step 1: User A authenticated via storageState');
 
       // STEP 2: Navigate to connections
       console.log('Step 2: Navigating to connections...');
@@ -434,15 +429,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
   }) => {
     test.setTimeout(30000);
 
-    // Sign in
-    await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
-
+    // Already authenticated via storageState
     // Navigate to messages page and time it
     const startTime = Date.now();
     await page.goto('/messages');
@@ -474,15 +461,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
   test('should show retry button on error state (FR-005)', async ({ page }) => {
     test.setTimeout(30000);
 
-    // Sign in
-    await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(USER_A.email);
-    await page.getByLabel('Password', { exact: true }).fill(USER_A.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
-
+    // Already authenticated via storageState
     // Navigate to messages
     await page.goto('/messages');
     await page.waitForLoadState('networkidle');

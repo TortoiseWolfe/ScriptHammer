@@ -16,22 +16,12 @@
 
 import { test, expect } from '@playwright/test';
 import path from 'path';
-import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
+// Auth comes from storageState (setup project) - no sign-in needed
 test.describe('Avatar Upload Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Authenticate test user
-    const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
-    const testPassword =
-      process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
-
-    await page.goto('/sign-in');
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Navigate to Account Settings
+    // Navigate to Account Settings (already authenticated via storageState)
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);

@@ -16,25 +16,12 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
+// Auth comes from storageState (setup project) - no sign-in needed
 test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
   test.beforeEach(async ({ page }) => {
-    // Authenticate test user
-    const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
-    const testPassword =
-      process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
-
-    await page.goto('/sign-in');
-    await page.waitForLoadState('networkidle');
-    await dismissCookieBanner(page);
-
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Navigate to Account Settings
+    // Already authenticated via storageState - navigate directly
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);

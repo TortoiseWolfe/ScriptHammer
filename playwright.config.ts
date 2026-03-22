@@ -70,9 +70,22 @@ export default defineConfig({
   },
 
   /* Configure projects with ordered execution for rate-limiting isolation */
+  /* Note: storageState is set per-project (setup uses base, others use authenticated) */
   projects: [
     // ============================================================
-    // ORDERED PROJECTS: Rate-limiting tests run FIRST
+    // AUTH SETUP: Runs once, saves authenticated browser state
+    // All parallel projects depend on this and reuse the cached state.
+    // ============================================================
+    {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+      use: {
+        storageState: './tests/e2e/fixtures/storage-state.json',
+      },
+    },
+
+    // ============================================================
+    // ORDERED PROJECTS: Rate-limiting tests run FIRST (unauthenticated)
     // This prevents sign-up tests from exhausting Supabase's
     // IP-based rate limits before rate-limiting tests can run.
     // ============================================================
@@ -82,7 +95,10 @@ export default defineConfig({
       name: 'rate-limiting',
       testDir: './tests/e2e/auth',
       testMatch: /rate-limiting\.spec\.ts/,
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state.json',
+      },
     },
 
     // Brute-force tests - run after rate-limiting
@@ -91,7 +107,10 @@ export default defineConfig({
       testDir: './tests/e2e/security',
       testMatch: /brute-force\.spec\.ts/,
       dependencies: ['rate-limiting'],
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state.json',
+      },
     },
 
     // Sign-up tests - run LAST (consumes rate limit quota)
@@ -100,11 +119,14 @@ export default defineConfig({
       testDir: './tests/e2e/auth',
       testMatch: /sign-up\.spec\.ts/,
       dependencies: ['brute-force'],
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state.json',
+      },
     },
 
     // ============================================================
-    // PARALLEL PROJECTS: All other tests can run in parallel
+    // PARALLEL PROJECTS: Pre-authenticated via storageState
     // These exclude rate-limiting, brute-force, and sign-up tests
     // ============================================================
 
@@ -116,7 +138,11 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
       ],
-      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
     },
 
     {
@@ -127,7 +153,11 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
       ],
-      use: { ...devices['Desktop Firefox'] },
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
     },
 
     {
@@ -138,7 +168,11 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
       ],
-      use: { ...devices['Desktop Safari'] },
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
     },
 
     /* Mobile-first test viewports (PRP-017) */
@@ -151,7 +185,11 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
         ],
-        use: createDeviceConfig(viewport),
+        dependencies: ['setup'],
+        use: {
+          ...createDeviceConfig(viewport),
+          storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        },
       })
     ),
 
@@ -165,7 +203,11 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
         ],
-        use: createDeviceConfig(viewport),
+        dependencies: ['setup'],
+        use: {
+          ...createDeviceConfig(viewport),
+          storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        },
       })
     ),
 

@@ -7,7 +7,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**
  * Wait for UI to stabilize after navigation or interaction
@@ -38,18 +38,7 @@ const TEST_USER = {
 
 test.describe('GDPR Data Export', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as test user using robust helper
-    await page.goto('/sign-in');
-    const result = await performSignIn(
-      page,
-      TEST_USER.email,
-      TEST_USER.password
-    );
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Navigate to account settings
+    // Already authenticated via storageState - navigate directly
     await page.goto('/account');
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
@@ -191,19 +180,8 @@ test.describe('GDPR Data Export', () => {
 
 test.describe('GDPR Account Deletion', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as test user using robust helper
+    // Already authenticated via storageState - navigate directly
     // NOTE: Account deletion tests use mocked responses to prevent actual deletion
-    await page.goto('/sign-in');
-    const result = await performSignIn(
-      page,
-      TEST_USER.email,
-      TEST_USER.password
-    );
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Navigate to account settings
     await page.goto('/account');
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
@@ -406,16 +384,7 @@ test.describe('GDPR Account Deletion', () => {
 
 test.describe('GDPR Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    // Sign in as test user using robust helper
-    await page.goto('/sign-in');
-    const result = await performSignIn(
-      page,
-      TEST_USER.email,
-      TEST_USER.password
-    );
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
+    // Already authenticated via storageState - navigate directly
     await page.goto('/account');
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {

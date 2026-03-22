@@ -1,0 +1,14 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "cookie-consent",
+          "value": "{\"necessary\":true,\"functional\":true,\"analytics\":true,\"marketing\":false,\"version\":\"1.0.0\"}"
+        }
+      ]
+    }
+  ]
+}

@@ -6,13 +6,13 @@
  * - Verify RLS policies enforce payment access control
  * - Verify cascade delete removes user_profiles/audit_logs/payment_intents
  *
- * Uses pre-existing test users from environment variables.
+ * Auth comes from storageState (setup project) for authenticated tests.
+ * Tests that need unauthenticated state override storageState locally.
  */
 
 import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
-  waitForAuthenticatedState,
   signOutViaDropdown,
   performSignIn,
 } from '../utils/test-user-factory';
@@ -37,12 +37,12 @@ test.beforeAll(() => {
   }
 });
 
-test.describe('Protected Routes E2E', () => {
-  // Run tests serially to avoid Supabase rate limiting
-  test.describe.configure({ mode: 'serial' });
-
-  const testEmail = testUser.email;
-  const testPassword = testUser.password;
+// ============================================================
+// Tests that require UNAUTHENTICATED state
+// ============================================================
+test.describe('Unauthenticated Access', () => {
+  // Override storageState to start without auth
+  test.use({ storageState: { cookies: [], origins: [] } });
 
   test('should redirect unauthenticated users to sign-in', async ({ page }) => {
     // Attempt to access protected routes without authentication
@@ -57,20 +57,43 @@ test.describe('Protected Routes E2E', () => {
     }
   });
 
+  test('should redirect to intended URL after authentication', async ({
+    page,
+  }) => {
+    const testEmail = testUser.email;
+    const testPassword = testUser.password;
+
+    // Attempt to access protected route while unauthenticated
+    await page.goto('/account');
+    await page.waitForURL(/\/sign-in/);
+    await dismissCookieBanner(page);
+
+    // Sign in with performSignIn helper
+    const result = await performSignIn(page, testEmail, testPassword);
+    if (!result.success) {
+      throw new Error(`Sign-in failed: ${result.error}`);
+    }
+
+    // Note: If redirect-after-auth is implemented, should redirect to /account
+    // Otherwise, redirects to default (profile)
+    await expect(page).toHaveURL(/\/(account|profile)/);
+  });
+});
+
+// ============================================================
+// Tests that use pre-authenticated state from storageState
+// ============================================================
+test.describe('Protected Routes E2E', () => {
+  // Run tests serially to avoid Supabase rate limiting
+  test.describe.configure({ mode: 'serial' });
+
+  const testEmail = testUser.email;
+  const testPassword = testUser.password;
+
   test('should allow authenticated users to access protected routes', async ({
     page,
   }) => {
-    // Step 1: Sign in with pre-existing test user
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const signInResult = await performSignIn(page, testEmail, testPassword);
-
-    // Fail fast with clear error if sign-in failed
-    if (!signInResult.success) {
-      throw new Error(`Sign-in failed: ${signInResult.error}`);
-    }
-
-    // Step 2: Access protected routes
+    // Auth comes from storageState - navigate directly to protected routes
     const protectedRoutes = [
       { path: '/profile', heading: 'Profile' },
       { path: '/account', heading: 'Account Settings' },
@@ -85,9 +108,6 @@ test.describe('Protected Routes E2E', () => {
         page.getByRole('heading', { name: route.heading })
       ).toBeVisible();
     }
-
-    // Clean up via dropdown menu
-    await signOutViaDropdown(page);
   });
 
   test('should enforce RLS policies on payment access', async ({ page }) => {
@@ -100,32 +120,19 @@ test.describe('Protected Routes E2E', () => {
       return;
     }
 
-    // Step 1: Sign in as first user
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result1 = await performSignIn(
-      page,
-      testUser.email,
-      testUser.password
-    );
-    if (!result1.success) {
-      throw new Error(`Sign-in failed for user 1: ${result1.error}`);
-    }
-
-    // Step 2: Access payment demo and verify user's own data
+    // Step 1: Already authenticated as user 1 via storageState
+    // Access payment demo and verify user's own data
     await page.goto('/payment-demo');
-    // Email appears as "Logged in as: email - User ID: ..." - look for it containing email
-    // Use {exact:false} to match substring and escape regex special chars in email
     const escapedEmail1 = testUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     await expect(
       page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
     ).toBeVisible();
 
-    // Step 3: Sign out via dropdown menu
+    // Step 2: Sign out via dropdown menu
     await signOutViaDropdown(page);
     await page.goto('/sign-in');
 
-    // Step 4: Sign in as second user
+    // Step 3: Sign in as second user
     await dismissCookieBanner(page);
     const result2 = await performSignIn(
       page,
@@ -136,7 +143,7 @@ test.describe('Protected Routes E2E', () => {
       throw new Error(`Sign-in failed for user 2: ${result2.error}`);
     }
 
-    // Step 5: Verify user 2 sees their own email, not user 1's
+    // Step 4: Verify user 2 sees their own email, not user 1's
     await page.goto('/payment-demo');
     const escapedEmail2 = testUser2.email.replace(
       /[.*+?^${}()|[\]\\]/g,
@@ -159,15 +166,7 @@ test.describe('Protected Routes E2E', () => {
   test('should show email verification notice for unverified users', async ({
     page,
   }) => {
-    // This test checks if unverified users see the verification notice
-    // Using pre-existing test user (which may or may not be verified)
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via storageState
     // Navigate to payment demo
     await page.goto('/payment-demo');
 
@@ -186,20 +185,10 @@ test.describe('Protected Routes E2E', () => {
         'Test user is already verified - verification notice not shown'
       );
     }
-
-    // Clean up via dropdown menu
-    await signOutViaDropdown(page);
   });
 
   test('should preserve session across page navigation', async ({ page }) => {
-    // Sign in with pre-existing test user
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via storageState
     // Navigate between protected routes (Next.js adds trailing slashes)
     await page.goto('/profile');
     await expect(page).toHaveURL(/\/profile\/?$/);
@@ -212,19 +201,13 @@ test.describe('Protected Routes E2E', () => {
 
     // Verify still authenticated (no redirect to sign-in)
     await expect(page).toHaveURL(/\/payment-demo\/?$/);
-
-    // Clean up via dropdown menu
-    await signOutViaDropdown(page);
   });
 
   test('should handle session expiration gracefully', async ({ page }) => {
-    // Sign in with pre-existing test user
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
+    // Already authenticated via storageState
+    // Navigate to a page first to confirm auth works
+    await page.goto('/profile');
+    await expect(page).toHaveURL(/\/profile\/?$/);
 
     // Clear session storage to simulate expired session
     await page.evaluate(() => {
@@ -238,25 +221,6 @@ test.describe('Protected Routes E2E', () => {
     // Verify redirected to sign-in (may include returnUrl query param)
     await page.waitForURL(/\/sign-in/);
     await expect(page).toHaveURL(/\/sign-in/);
-  });
-
-  test('should redirect to intended URL after authentication', async ({
-    page,
-  }) => {
-    // Attempt to access protected route while unauthenticated
-    await page.goto('/account');
-    await page.waitForURL(/\/sign-in/);
-    await dismissCookieBanner(page);
-
-    // Sign in with performSignIn helper
-    const result = await performSignIn(page, testEmail, testPassword);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Note: If redirect-after-auth is implemented, should redirect to /account
-    // Otherwise, redirects to default (profile)
-    await expect(page).toHaveURL(/\/(account|profile)/);
   });
 
   test('should verify cascade delete removes related records', async ({
@@ -294,7 +258,7 @@ test.describe('Protected Routes E2E', () => {
     }
 
     try {
-      // Sign in as the newly created user
+      // Sign in as the newly created user (not the primary user)
       await page.goto('/sign-in');
       await dismissCookieBanner(page);
       const result = await performSignIn(page, deleteEmail, testPassword);

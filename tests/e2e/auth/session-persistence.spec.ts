@@ -23,6 +23,10 @@ const testPassword =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
 test.describe('Session Persistence E2E', () => {
+  // These tests explicitly test sign-in/sign-out flows, so they need
+  // unauthenticated starting state (override the project's storageState)
+  test.use({ storageState: './tests/e2e/fixtures/storage-state.json' });
+
   // Run tests serially to avoid Supabase rate limiting
   test.describe.configure({ mode: 'serial' });
 
