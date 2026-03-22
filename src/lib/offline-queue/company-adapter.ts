@@ -14,8 +14,6 @@
  * @module lib/offline-queue/company-adapter
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { BaseOfflineQueue } from './base-queue';
 import {
   CompanyQueueItem,

@@ -160,10 +160,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
    * Clear only completed items
    */
   async clearCompleted(): Promise<number> {
-    const count = await this.items
-      .where('status')
-      .equals('completed')
-      .delete();
+    const count = await this.items.where('status').equals('completed').delete();
     this.logger.debug('Cleared completed items', { count });
     return count;
   }
@@ -215,7 +212,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
         }
 
         // Update status to processing
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         await this.items.update(item.id!, {
           status: 'processing',
           lastAttempt: Date.now(),
@@ -226,7 +223,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
           await this.processItem(item);
 
           // Mark as completed
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
           await this.items.update(item.id!, {
             status: 'completed',
           } as any);
@@ -238,7 +235,6 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error';
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await this.items.update(item.id!, {
             status: 'pending',
             retries: item.retries + 1,
@@ -292,7 +288,6 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
    * Mark item as permanently failed
    */
   protected async markAsFailed(id: number): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.items.update(id, {
       status: 'failed',
     } as any);
@@ -308,7 +303,6 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
     const failed = await this.items.where('status').equals('failed').toArray();
 
     for (const item of failed) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await this.items.update(item.id!, {
         status: 'pending',
         retries: 0,

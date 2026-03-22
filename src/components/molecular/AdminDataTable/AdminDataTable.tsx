@@ -51,7 +51,7 @@ export function AdminDataTable<T extends Record<string, unknown>>({
   className = '',
   testId,
 }: AdminDataTableProps<T>) {
-  const safeData = data ?? ([] as T[]);
+  const safeData = useMemo(() => data ?? ([] as T[]), [data]);
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   // Keyed by row[keyField], not index — survives sorting.
