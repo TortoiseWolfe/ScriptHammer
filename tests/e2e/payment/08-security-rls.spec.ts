@@ -84,23 +84,29 @@ test.describe('Row Level Security Policies', () => {
     test.skip(true, 'Stripe API keys not configured');
   });
 
-  test('should verify payment demo page is protected', async ({ page }) => {
-    // Navigate to payment demo without signing in
-    await page.goto('/payment-demo');
+  test('should verify payment demo page is protected', async ({ browser }) => {
+    // Use a fresh context with no auth state to test unauthenticated access
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
 
-    // Should be redirected to sign-in or show protected route message
-    // The ProtectedRoute component handles this
-    await page.waitForTimeout(2000);
+    try {
+      await page.goto('/payment-demo');
+      await page.waitForTimeout(2000);
 
-    const url = page.url();
-    const isProtected =
-      url.includes('sign-in') ||
-      (await page
-        .getByText(/sign in|login|unauthorized/i)
-        .isVisible()
-        .catch(() => false));
+      const url = page.url();
+      const isProtected =
+        url.includes('sign-in') ||
+        (await page
+          .getByText(/sign in|login|unauthorized/i)
+          .isVisible()
+          .catch(() => false));
 
-    expect(isProtected).toBe(true);
+      expect(isProtected).toBe(true);
+    } finally {
+      await context.close();
+    }
   });
 
   test('should allow authenticated users to access payment demo', async ({

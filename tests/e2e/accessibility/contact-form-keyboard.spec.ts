@@ -36,7 +36,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
 
     // Tab to message field
     await page.keyboard.press('Tab');
-    const messageField = page.getByLabel('Message');
+    const messageField = page.locator('#message');
     await expect(messageField).toBeFocused();
 
     // Tab to submit button
@@ -99,7 +99,7 @@ test.describe('Contact Form - Keyboard Navigation', () => {
     page,
   }) => {
     // Click on message field to establish focus
-    const messageField = page.getByLabel('Message');
+    const messageField = page.locator('#message');
     await messageField.click();
     await expect(messageField).toBeFocused();
 

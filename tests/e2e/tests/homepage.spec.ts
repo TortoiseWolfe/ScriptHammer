@@ -60,7 +60,7 @@ test.describe('Homepage Navigation', () => {
 
   test('navigate to game page', async ({ page }) => {
     // Click the Game link in demos section
-    await page.getByRole('link', { name: 'Game' }).click();
+    await page.getByRole('link', { name: 'Game' }).first().click();
 
     // Verify navigation to game page
     await expect(page).toHaveURL(/.*game/);

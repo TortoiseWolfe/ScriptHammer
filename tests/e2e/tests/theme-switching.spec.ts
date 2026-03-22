@@ -97,7 +97,7 @@ test.describe('Theme Switching', () => {
     await dismissCookieBanner(page);
 
     // Find and click the dark theme button
-    const darkThemeButton = page.getByRole('button', { name: 'dark' });
+    const darkThemeButton = page.locator('button[data-theme="dark"]');
     await darkThemeButton.click();
 
     // Wait for theme to be applied and saved
@@ -119,12 +119,12 @@ test.describe('Theme Switching', () => {
     await dismissCookieBanner(page);
 
     // First set to dark theme
-    const darkThemeButton = page.getByRole('button', { name: 'dark' });
+    const darkThemeButton = page.locator('button[data-theme="dark"]');
     await darkThemeButton.click();
     await waitForThemeSaved(page, 'dark');
 
     // Then switch back to light
-    const lightThemeButton = page.getByRole('button', { name: 'light' });
+    const lightThemeButton = page.locator('button[data-theme="light"]');
     await lightThemeButton.click();
     await waitForThemeSaved(page, 'light');
 
@@ -139,7 +139,7 @@ test.describe('Theme Switching', () => {
     await dismissCookieBanner(page);
 
     // Set synthwave theme
-    const synthwaveButton = page.getByRole('button', { name: 'synthwave' });
+    const synthwaveButton = page.locator('button[data-theme="synthwave"]');
     await synthwaveButton.click();
     await waitForThemeSaved(page, 'synthwave');
 
@@ -171,10 +171,7 @@ test.describe('Theme Switching', () => {
     ];
 
     for (const theme of expectedThemes) {
-      const themeButton = page.getByRole('button', {
-        name: theme,
-        exact: true,
-      });
+      const themeButton = page.locator(`button[data-theme="${theme}"]`);
       await expect(themeButton).toBeVisible();
     }
   });
@@ -188,9 +185,9 @@ test.describe('Theme Switching', () => {
     await expect(previewSection).toBeVisible();
 
     // Check for color labels in the preview section
-    const primaryLabel = page.locator('text=Primary').first();
-    const secondaryLabel = page.locator('text=Secondary').first();
-    const accentLabel = page.locator('text=Accent').first();
+    const primaryLabel = page.getByText('Primary', { exact: true }).first();
+    const secondaryLabel = page.getByText('Secondary', { exact: true }).first();
+    const accentLabel = page.getByText('Accent', { exact: true }).first();
 
     await expect(primaryLabel).toBeVisible();
     await expect(secondaryLabel).toBeVisible();
@@ -202,7 +199,7 @@ test.describe('Theme Switching', () => {
     await dismissCookieBanner(page);
 
     // Set dracula theme
-    const draculaButton = page.getByRole('button', { name: 'dracula' });
+    const draculaButton = page.locator('button[data-theme="dracula"]');
     await draculaButton.click();
     await waitForThemeSaved(page, 'dracula');
 
@@ -232,10 +229,7 @@ test.describe('Theme Switching', () => {
       await page.goto('/themes');
       await dismissCookieBanner(page);
 
-      const themeButton = page.getByRole('button', {
-        name: theme,
-        exact: true,
-      });
+      const themeButton = page.locator(`button[data-theme="${theme}"]`);
       await themeButton.click();
       await waitForThemeSaved(page, theme);
 

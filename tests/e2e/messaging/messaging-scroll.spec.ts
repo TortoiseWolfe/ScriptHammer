@@ -2,7 +2,6 @@ import { test, expect, Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
-  waitForAuthenticatedState,
 } from '../utils/test-user-factory';
 
 // Test user credentials
@@ -167,16 +166,11 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
 
 test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/sign-in');
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-    await page
-      .getByLabel('Email')
-      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
-    await page
-      .getByLabel('Password')
-      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('T006: Scroll container constrained to MessageThread', async ({
@@ -216,16 +210,11 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
 
 test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/sign-in');
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-    await page
-      .getByLabel('Email')
-      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
-    await page
-      .getByLabel('Password')
-      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('T007-T008: Jump button appears when scrolled and does not overlap input', async ({

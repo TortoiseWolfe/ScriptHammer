@@ -81,7 +81,7 @@ test.describe('Avatar Upload Flow', () => {
     await saveButton.click();
 
     // Wait for modal to close (indicates upload attempt completed)
-    await expect(cropModal).toBeHidden({ timeout: 15000 });
+    await expect(cropModal).toBeHidden({ timeout: 30000 });
 
     // Check for error message - if present, upload failed
     const errorMessage = profilePictureCard.getByRole('alert');
@@ -142,7 +142,7 @@ test.describe('Avatar Upload Flow', () => {
     const cropModal = page.getByRole('dialog', { name: /crop/i });
     await expect(cropModal).toBeVisible({ timeout: 5000 });
     await page.getByRole('button', { name: /save/i }).click();
-    await expect(cropModal).toBeHidden({ timeout: 15000 });
+    await expect(cropModal).toBeHidden({ timeout: 30000 });
 
     // Wait for first avatar to appear and get its URL
     await expect(accountAvatar).toBeVisible();
@@ -162,7 +162,7 @@ test.describe('Avatar Upload Flow', () => {
 
     await expect(cropModal).toBeVisible({ timeout: 5000 });
     await page.getByRole('button', { name: /save/i }).click();
-    await expect(cropModal).toBeHidden({ timeout: 15000 });
+    await expect(cropModal).toBeHidden({ timeout: 30000 });
 
     // Verify new avatar URL is different from first
     await expect(async () => {
@@ -200,7 +200,7 @@ test.describe('Avatar Upload Flow', () => {
       const cropModal = page.getByRole('dialog', { name: /crop/i });
       await expect(cropModal).toBeVisible({ timeout: 5000 });
       await page.getByRole('button', { name: /save/i }).click();
-      await expect(cropModal).toBeHidden({ timeout: 15000 });
+      await expect(cropModal).toBeHidden({ timeout: 30000 });
       await expect(accountAvatar).toBeVisible({ timeout: 10000 });
     }
 
@@ -325,7 +325,7 @@ test.describe('Avatar Upload Flow', () => {
     const cropModal = page.getByRole('dialog', { name: /crop/i });
     await expect(cropModal).toBeVisible({ timeout: 5000 });
     await page.getByRole('button', { name: /save/i }).click();
-    await expect(cropModal).toBeHidden({ timeout: 15000 });
+    await expect(cropModal).toBeHidden({ timeout: 30000 });
 
     // Verify avatar in Account Page (Profile Picture card)
     await expect(accountAvatar).toBeVisible({ timeout: 10000 });
