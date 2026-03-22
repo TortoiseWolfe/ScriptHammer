@@ -14,7 +14,6 @@ import { createClient } from '@supabase/supabase-js';
 import {
   dismissCookieBanner,
   handleReAuthModal,
-  waitForAuthenticatedState,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -176,19 +175,13 @@ test.describe('Offline Message Queue', () => {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
     }
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: User A signs in =====
-      await page.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(USER_A.email);
-      await page.getByLabel('Password').fill(USER_A.password);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(page);
-
-      // ===== STEP 2: Navigate to conversation =====
+      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
@@ -262,18 +255,13 @@ test.describe('Offline Message Queue', () => {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
     }
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Sign in and navigate to conversation =====
-      await page.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(USER_A.email);
-      await page.getByLabel('Password').fill(USER_A.password);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(page);
-
+      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
@@ -345,18 +333,13 @@ test.describe('Offline Message Queue', () => {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
     }
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Sign in and navigate to conversation =====
-      await page.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(USER_A.email);
-      await page.getByLabel('Password').fill(USER_A.password);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(page);
-
+      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
@@ -446,27 +429,23 @@ test.describe('Offline Message Queue', () => {
       return;
     }
 
-    const contextA = await browser.newContext();
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // ===== STEP 1: Both users sign in =====
-      await pageA.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(pageA);
-      await pageA.getByLabel('Email').fill(USER_A.email);
-      await pageA.getByLabel('Password').fill(USER_A.password);
-      await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageA);
-
+      // ===== STEP 1: User A uses storageState; User B must sign in manually =====
+      // USER_B sign-in is only reached when setupSucceeded=true (tertiary email configured)
       await pageB.goto(`${BASE_URL}/sign-in`);
       await dismissCookieBanner(pageB);
       await pageB.getByLabel('Email').fill(USER_B.email);
       await pageB.getByLabel('Password').fill(USER_B.password);
       await pageB.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(pageB);
+      await pageB.waitForURL(/(?!.*sign-in)/, { timeout: 15000 });
 
       // ===== STEP 2: Both navigate to same conversation =====
       await pageA.goto(`${BASE_URL}/messages`);
@@ -580,25 +559,18 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test('should show failed status after max retries', async ({
-    browser,
-  }) => {
+  test('should show failed status after max retries', async ({ browser }) => {
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
     }
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Sign in and navigate to conversation =====
-      await page.goto(`${BASE_URL}/sign-in`);
-      await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(USER_A.email);
-      await page.getByLabel('Password').fill(USER_A.password);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-      await waitForAuthenticatedState(page);
-
+      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
       await page.goto(`${BASE_URL}/messages`);
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);

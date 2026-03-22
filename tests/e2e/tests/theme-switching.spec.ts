@@ -88,7 +88,7 @@ test.describe('Theme Switching', () => {
     await expect(themeHeading).toBeVisible();
 
     // Check that theme buttons exist
-    const darkButton = page.getByRole('button', { name: 'dark' });
+    const darkButton = page.locator('button[data-theme="dark"]');
     await expect(darkButton).toBeVisible();
   });
 

@@ -10,7 +10,6 @@ import { test, expect, Page, BrowserContext } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
-  waitForAuthenticatedState,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -31,15 +30,12 @@ const TEST_USER_2 = {
 };
 
 /**
- * Sign in helper function
+ * Sign in helper — uses storageState from project config; just navigates to messages
  */
-async function signIn(page: Page, email: string, password: string) {
-  await page.goto('/sign-in');
+async function signIn(page: Page, _email: string, password: string) {
+  await page.goto('/messages');
   await dismissCookieBanner(page);
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Sign In' }).click();
-  await waitForAuthenticatedState(page);
+  await handleReAuthModal(page, password);
 }
 
 /**

@@ -13,7 +13,6 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
-  waitForAuthenticatedState,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -180,17 +179,14 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
 
 test.describe('Virtual Scrolling Performance', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to sign-in page
-    await page.goto('/sign-in');
+    // Skip auth if setup failed — test body will also skip
+    if (!setupSucceeded) return;
+
+    // Auth comes from storageState — navigate directly
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-
-    // Sign in using role-based selectors
-    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER_PASSWORD);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-
-    // Wait for authenticated state
-    await waitForAuthenticatedState(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('T172b: Virtual scrolling activates at exactly 100 messages', async ({
@@ -291,12 +287,12 @@ test.describe('Virtual Scrolling Performance', () => {
 
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/sign-in');
+    if (!setupSucceeded) return;
+
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER_PASSWORD);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('T169: Keyboard navigation through messages', async ({ page }) => {
@@ -335,12 +331,12 @@ test.describe('Keyboard Navigation', () => {
 
 test.describe('Scroll Restoration', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/sign-in');
+    if (!setupSucceeded) return;
+
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER_EMAIL);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER_PASSWORD);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('Scroll position maintained during pagination', async ({ page }) => {

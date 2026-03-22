@@ -8,11 +8,10 @@
  * - Connections between users must be established (run scripts/seed-connections.ts first)
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
-  waitForAuthenticatedState,
 } from '../utils/test-user-factory';
 
 // Always use localhost for E2E tests - we're testing local development
@@ -24,40 +23,13 @@ const PRIMARY_USER = {
   password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
 };
 
-/**
- * Helper: Sign in as the primary user and navigate to messages page
- * Handles encryption setup flow if needed
- */
-async function signInAndNavigateToMessages(page: Page) {
-  // Step 1: Navigate to sign-in page
-  await page.goto(BASE_URL + '/sign-in');
-  await dismissCookieBanner(page);
-
-  // Check if already signed in (redirected away from sign-in)
-  if (!page.url().includes('sign-in')) {
-    await page.goto(BASE_URL + '/messages');
-    await handleReAuthModal(page, PRIMARY_USER.password);
-    return;
-  }
-
-  // Step 2: Fill in credentials and submit
-  await page.getByLabel('Email').fill(PRIMARY_USER.email);
-  await page.getByLabel('Password').fill(PRIMARY_USER.password);
-  await page.getByRole('button', { name: 'Sign In' }).click();
-
-  // Step 3: Wait for authenticated state
-  await waitForAuthenticatedState(page);
-
-  // Step 4: Navigate to messages page
-  await page.goto(BASE_URL + '/messages');
-  await handleReAuthModal(page, PRIMARY_USER.password);
-}
-
 test.describe('Group Chat E2E', () => {
   test('should show New Group link in sidebar', async ({ browser }) => {
     test.setTimeout(60000);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     // Capture browser errors for debugging
@@ -66,7 +38,9 @@ test.describe('Group Chat E2E', () => {
     });
 
     try {
-      await signInAndNavigateToMessages(page);
+      await page.goto(BASE_URL + '/messages');
+      await dismissCookieBanner(page);
+      await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Wait for sidebar to appear
       const sidebar = page.locator('[data-testid="unified-sidebar"]');
@@ -93,11 +67,15 @@ test.describe('Group Chat E2E', () => {
   }) => {
     test.setTimeout(60000);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      await signInAndNavigateToMessages(page);
+      await page.goto(BASE_URL + '/messages');
+      await dismissCookieBanner(page);
+      await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Click New Group link in sidebar
       const sidebar = page.locator('[data-testid="unified-sidebar"]');
@@ -137,11 +115,15 @@ test.describe('Group Chat E2E', () => {
   test('should create group with connected users', async ({ browser }) => {
     test.setTimeout(90000);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      await signInAndNavigateToMessages(page);
+      await page.goto(BASE_URL + '/messages');
+      await dismissCookieBanner(page);
+      await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Navigate to new-group page
       const sidebar = page.locator('[data-testid="unified-sidebar"]');
@@ -236,11 +218,15 @@ test.describe('Group Chat E2E', () => {
   }) => {
     test.setTimeout(60000);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const page = await context.newPage();
 
     try {
-      await signInAndNavigateToMessages(page);
+      await page.goto(BASE_URL + '/messages');
+      await dismissCookieBanner(page);
+      await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Navigate to new-group page
       await page.goto(BASE_URL + '/messages/new-group');
