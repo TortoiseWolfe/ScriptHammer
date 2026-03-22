@@ -219,9 +219,9 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
 
-    // Use email that passes HTML5 validation but fails app's TLD validation
-    // The app validates against a set of known TLDs
-    await page.getByLabel('Email').fill('test@example.invalidtld');
+    // Use email with a single-char TLD — passes HTML5 validation but fails
+    // the app's TLD check (VALID_TLD_PATTERN requires 2+ alpha chars)
+    await page.getByLabel('Email').fill('test@example.x');
     await page
       .getByLabel('Password', { exact: true })
       .fill(DEFAULT_TEST_PASSWORD);
