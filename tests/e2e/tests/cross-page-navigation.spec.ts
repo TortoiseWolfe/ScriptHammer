@@ -45,7 +45,7 @@ test.describe('Cross-Page Navigation', () => {
     await expect(page).toHaveURL(/\/$/);
 
     // Navigate to Themes
-    await page.click('text=Browse Themes');
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/themes/);
     await expect(
@@ -74,7 +74,7 @@ test.describe('Cross-Page Navigation', () => {
     await dismissCookieBanner(page);
 
     // Navigate to themes and wait for URL
-    await page.click('text=Browse Themes');
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
     await expect(page).toHaveURL(/\/themes/);
 
     // Navigate to blog and wait for URL
@@ -310,7 +310,7 @@ test.describe('Cross-Page Navigation', () => {
     expect(hasTransitions).toBeDefined();
 
     // Navigate and observe smooth transition
-    await page.click('text=Browse Themes');
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
 
     // Just verify navigation completed
     await expect(page).toHaveURL(/\/themes/);
@@ -353,7 +353,7 @@ test.describe('Cross-Page Navigation', () => {
     await page.evaluate(() => window.scrollTo(0, 500));
 
     // Navigate to another page
-    await page.click('text=Browse Themes');
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
 
     // Check scroll position is at top
     const scrollPosition = await page.evaluate(() => window.scrollY);

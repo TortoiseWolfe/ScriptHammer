@@ -17,8 +17,8 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('navigate to themes page', async ({ page }) => {
-    // Click the Browse Themes button
-    await page.click('text=Browse Themes');
+    // Click the 32 Themes link (stats card)
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
 
     // Verify navigation to themes page
     await expect(page).toHaveURL(/.*themes/);
@@ -32,7 +32,7 @@ test.describe('Homepage Navigation', () => {
     // Storybook opens in new tab (external link)
     const [newPage] = await Promise.all([
       context.waitForEvent('page'),
-      page.click('text=View Storybook'),
+      page.click('a[href*="storybook"]'),
     ]);
 
     // Check the new tab URL contains storybook
@@ -59,8 +59,8 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('navigate to game page', async ({ page }) => {
-    // Click the Play Game link in secondary navigation
-    await page.click('text=Play Game');
+    // Click the Game link in demos section
+    await page.getByRole('link', { name: 'Game' }).click();
 
     // Verify navigation to game page
     await expect(page).toHaveURL(/.*game/);

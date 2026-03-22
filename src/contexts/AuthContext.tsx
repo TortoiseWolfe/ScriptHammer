@@ -144,10 +144,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // FR-009: Cross-tab sign-out detection
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
-        // Sign-out detected from another tab - redirect to home
-        logger.info('Cross-tab sign-out detected, redirecting to home');
-        window.location.href = '/';
-        return;
+        // Skip cross-tab redirect in E2E test mode to prevent test contamination.
+        // Concurrent tests sign out independently; without this guard, one test's
+        // sign-out fires SIGNED_OUT in every other test's page, redirecting to '/'.
+        const isE2ETest =
+          typeof localStorage !== 'undefined' &&
+          localStorage.getItem('playwright_e2e') === 'true';
+        if (!isE2ETest) {
+          // Sign-out detected from another tab - redirect to home
+          logger.info('Cross-tab sign-out detected, redirecting to home');
+          window.location.href = '/';
+          return;
+        }
+        logger.info('Cross-tab sign-out detected but suppressed in E2E mode');
       }
 
       // Reset local sign-out flag after handling and clear encryption keys

@@ -7,6 +7,10 @@
         {
           "name": "cookie-consent",
           "value": "{\"necessary\":true,\"functional\":true,\"analytics\":true,\"marketing\":false,\"version\":\"1.0.0\"}"
+        },
+        {
+          "name": "playwright_e2e",
+          "value": "true"
         }
       ]
     }

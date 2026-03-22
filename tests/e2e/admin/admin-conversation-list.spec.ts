@@ -55,6 +55,7 @@ test.use({
 });
 
 test.describe('Admin Conversation List E2E', () => {
+  test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
   let proxyServer: http.Server;

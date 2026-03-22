@@ -137,6 +137,13 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
+        // Running them in the chromium project triggers a missing webkit binary error
+        '**/tests/blog-mobile-ux-iphone.spec.ts',
+        '**/tests/blog-touch-targets.spec.ts',
+        '**/tests/mobile-horizontal-scroll.spec.ts',
+        '**/tests/mobile-navigation.spec.ts',
+        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {
@@ -152,6 +159,12 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
+        '**/tests/blog-mobile-ux-iphone.spec.ts',
+        '**/tests/blog-touch-targets.spec.ts',
+        '**/tests/mobile-horizontal-scroll.spec.ts',
+        '**/tests/mobile-navigation.spec.ts',
+        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {

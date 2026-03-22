@@ -76,8 +76,8 @@ test.describe('Theme Switching', () => {
     await page.goto('/');
     await dismissCookieBanner(page);
 
-    // Navigate to themes page
-    await page.click('text=Browse Themes');
+    // Navigate to themes page via the 32 Themes stats link
+    await page.getByRole('link', { name: '32 Themes' }).first().click();
     await expect(page).toHaveURL(/.*themes/);
 
     // Check that theme buttons are visible

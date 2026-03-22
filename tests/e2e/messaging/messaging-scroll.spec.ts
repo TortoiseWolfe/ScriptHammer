@@ -90,17 +90,12 @@ async function isElementInViewport(
 
 test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test.beforeEach(async ({ page }) => {
-    // Login as test user
-    await page.goto('/sign-in');
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('/messages');
+    await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
-    await page
-      .getByLabel('Email')
-      .fill(process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com');
-    await page
-      .getByLabel('Password')
-      .fill(process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!');
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
+    // Handle ReAuthModal if encryption keys need unlocking
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
   });
 
   test('T003: Message input visible on mobile viewport (375x667)', async ({
