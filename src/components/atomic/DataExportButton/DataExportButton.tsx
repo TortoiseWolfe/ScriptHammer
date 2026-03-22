@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { gdprService } from '@/services/messaging/gdpr-service';
 
 export interface DataExportButtonProps {
@@ -26,6 +26,13 @@ export default function DataExportButton({
 }: DataExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -56,12 +63,15 @@ export default function DataExportButton({
 
       onExportComplete?.();
     } catch (err) {
+      if (!mountedRef.current) return;
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to export data';
       setError(errorMessage);
       onExportError?.(err instanceof Error ? err : new Error(errorMessage));
     } finally {
-      setIsExporting(false);
+      if (mountedRef.current) {
+        setIsExporting(false);
+      }
     }
   };
 
