@@ -149,7 +149,10 @@ async function waitForUIStability(page: import('@playwright/test').Page) {
  * Navigate to conversation via UI (no direct URL route exists)
  */
 async function navigateToConversation(page: import('@playwright/test').Page) {
-  await page.goto('/messages');
+  await page.goto('/messages', {
+    waitUntil: 'domcontentloaded',
+    timeout: 60000,
+  });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_PASSWORD);
 

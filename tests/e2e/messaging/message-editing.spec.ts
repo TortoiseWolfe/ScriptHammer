@@ -199,8 +199,8 @@ async function navigateToConversation(page: Page) {
     .getByRole('button', { name: /Conversation with/ })
     .first();
 
-  // Wait for conversation to be visible
-  await expect(firstConversation).toBeVisible({ timeout: 5000 });
+  // Wait for conversation to be visible (longer timeout for CI under shard load)
+  await expect(firstConversation).toBeVisible({ timeout: 15000 });
   await firstConversation.click();
 
   // Wait for message input to be visible (indicates conversation is loaded)

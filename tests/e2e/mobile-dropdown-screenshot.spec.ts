@@ -36,8 +36,8 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Verify dropdown is visible
-    const dropdownMenu = page.locator('.dropdown-content.menu');
+    // Verify dropdown is visible (use .first() — authenticated users have 2 dropdown menus)
+    const dropdownMenu = page.locator('.dropdown-content.menu').first();
     await expect(dropdownMenu).toBeVisible();
   });
 });

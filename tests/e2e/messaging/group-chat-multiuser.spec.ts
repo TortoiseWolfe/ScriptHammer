@@ -12,6 +12,8 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  getAdminClient,
+  getUserByEmail,
 } from '../utils/test-user-factory';
 
 // Always use localhost for E2E tests - we're testing local development
@@ -23,8 +25,67 @@ const PRIMARY_USER = {
   password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
 };
 
+const SECONDARY_USER_EMAIL =
+  process.env.TEST_USER_SECONDARY_EMAIL ||
+  process.env.TEST_USER_TERTIARY_EMAIL ||
+  '';
+
+// Track if test data setup succeeded
+let setupSucceeded = false;
+let setupError = '';
+
+test.beforeAll(async () => {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
+    return;
+  }
+  if (!SECONDARY_USER_EMAIL || SECONDARY_USER_EMAIL === '') {
+    setupError = 'Secondary test user email not configured';
+    return;
+  }
+
+  const adminClient = getAdminClient();
+  if (!adminClient) {
+    setupError = 'Admin client unavailable';
+    return;
+  }
+
+  const userA = await getUserByEmail(PRIMARY_USER.email);
+  const userB = await getUserByEmail(SECONDARY_USER_EMAIL);
+
+  if (!userA || !userB) {
+    setupError = `Test users not found`;
+    return;
+  }
+
+  // Ensure connection exists between users
+  const { data: existing } = await adminClient
+    .from('user_connections')
+    .select('id, status')
+    .or(
+      `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
+    )
+    .maybeSingle();
+
+  if (!existing) {
+    await adminClient.from('user_connections').insert({
+      requester_id: userA.id,
+      addressee_id: userB.id,
+      status: 'accepted',
+    });
+  } else if (existing.status !== 'accepted') {
+    await adminClient
+      .from('user_connections')
+      .update({ status: 'accepted' })
+      .eq('id', existing.id);
+  }
+
+  setupSucceeded = true;
+});
+
 test.describe('Group Chat E2E', () => {
   test('should show New Group link in sidebar', async ({ browser }) => {
+    test.skip(!setupSucceeded, setupError);
     test.setTimeout(60000);
 
     const context = await browser.newContext({
@@ -65,6 +126,7 @@ test.describe('Group Chat E2E', () => {
   test('should navigate to new-group page and show connections', async ({
     browser,
   }) => {
+    test.skip(!setupSucceeded, setupError);
     test.setTimeout(60000);
 
     const context = await browser.newContext({
@@ -113,6 +175,7 @@ test.describe('Group Chat E2E', () => {
   });
 
   test('should create group with connected users', async ({ browser }) => {
+    test.skip(!setupSucceeded, setupError);
     test.setTimeout(90000);
 
     const context = await browser.newContext({
@@ -216,6 +279,7 @@ test.describe('Group Chat E2E', () => {
   test('should navigate back to messages when clicking back button', async ({
     browser,
   }) => {
+    test.skip(!setupSucceeded, setupError);
     test.setTimeout(60000);
 
     const context = await browser.newContext({
