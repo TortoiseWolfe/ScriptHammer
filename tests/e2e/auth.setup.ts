@@ -1,17 +1,17 @@
 /**
  * Auth Setup - Creates shared authenticated session for E2E tests
  *
- * This runs ONCE before all tests and saves authenticated browser state.
- * Tests then reuse this state instead of logging in repeatedly, which:
+ * This runs ONCE before all tests and saves authenticated browser state
+ * INCLUDING encryption keys for messaging. Tests reuse this state instead
+ * of logging in repeatedly, which:
  * - Eliminates Supabase rate-limiting from concurrent sign-in attempts
  * - Speeds up test execution across shards
- * - Matches the pattern used by SpokeToWork
+ * - Ensures messaging encryption keys exist in the database
  *
  * Playwright pattern: https://playwright.dev/docs/auth
  */
 
 import { test as setup, expect } from '@playwright/test';
-import * as fs from 'fs';
 import {
   dismissCookieBanner,
   performSignIn,
@@ -23,81 +23,13 @@ import {
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
 
-/**
- * Check if existing auth state is still valid.
- *
- * Validates:
- * 1. File exists
- * 2. Contains auth token for a localhost origin
- * 3. Token expires more than 10 minutes from now
- */
-function isAuthStateValid(): boolean {
-  try {
-    if (!fs.existsSync(AUTH_FILE)) {
-      console.log('Auth state file not found, will authenticate');
-      return false;
-    }
-
-    const state = JSON.parse(fs.readFileSync(AUTH_FILE, 'utf-8'));
-
-    // Find origin matching localhost
-    const origin = state.origins?.find(
-      (o: { origin: string }) =>
-        o.origin.includes('localhost') || o.origin.includes('127.0.0.1')
-    );
-
-    if (!origin) {
-      console.log('No localhost origin found in auth state');
-      return false;
-    }
-
-    // Look for Supabase auth token in localStorage
-    const authToken = origin.localStorage?.find(
-      (item: { name: string }) =>
-        item.name.includes('auth-token') || item.name.match(/sb-.*-auth-token/)
-    );
-
-    if (!authToken) {
-      console.log('No auth-token found in localStorage');
-      return false;
-    }
-
-    const tokenData = JSON.parse(authToken.value);
-    const expiresAt = tokenData.expires_at;
-
-    if (!expiresAt) {
-      console.log('Token has no expires_at field');
-      return false;
-    }
-
-    // Check if token expires more than 10 minutes from now
-    const now = Math.floor(Date.now() / 1000);
-    const timeRemaining = expiresAt - now;
-
-    if (timeRemaining < 600) {
-      console.log(
-        `Token expires in ${timeRemaining}s (< 10 min), will re-authenticate`
-      );
-      return false;
-    }
-
-    console.log(`Auth state valid, token expires in ${timeRemaining}s`);
-    return true;
-  } catch (error) {
-    console.log('Error checking auth state:', error);
-    return false;
-  }
-}
-
-// Allow extra time for static page hydration
+// Allow extra time for static page hydration + encryption setup
 setup.setTimeout(120000);
 
 setup('authenticate shared test user', async ({ page }) => {
-  // Skip login if we already have a valid auth state
-  if (isAuthStateValid()) {
-    console.log('✓ Auth setup skipped: valid session cached');
-    return;
-  }
+  // Always run fresh — never use cached auth state. Cached state from
+  // previous runs may lack encryption keys, causing all messaging tests
+  // to redirect to /messages/setup and fail.
 
   const email = process.env.TEST_USER_PRIMARY_EMAIL;
   const password = process.env.TEST_USER_PRIMARY_PASSWORD;
@@ -114,15 +46,8 @@ setup('authenticate shared test user', async ({ page }) => {
   await page.goto('/sign-in');
   await page.waitForLoadState('domcontentloaded');
 
-  // Check if already redirected (user might be logged in from cached state)
+  // If already redirected away from sign-in, navigate back
   if (!page.url().includes('/sign-in')) {
-    const userMenu = page.locator('[aria-label="User account menu"]');
-    if (await userMenu.isVisible({ timeout: 3000 }).catch(() => false)) {
-      console.log('✓ User already logged in, saving auth state');
-      await page.context().storageState({ path: AUTH_FILE });
-      return;
-    }
-    // Not actually logged in, navigate back
     await page.goto('/sign-in');
     await page.waitForLoadState('domcontentloaded');
   }
@@ -145,8 +70,6 @@ setup('authenticate shared test user', async ({ page }) => {
 
   // Verify authenticated state
   console.log('✓ Sign-in successful, verifying auth state...');
-
-  // Ensure we're on a page that confirms authentication
   await expect(page).not.toHaveURL(/\/sign-in/);
 
   // Set up encryption keys for messaging tests
@@ -191,7 +114,10 @@ setup('authenticate shared test user', async ({ page }) => {
     }
   }
 
-  // Save authenticated browser state (localStorage + cookies + encryption keys)
+  // Save authenticated browser state (localStorage + cookies)
+  // Note: encryption private keys are in-memory only (not in localStorage).
+  // Tests must call handleReAuthModal() to derive keys from password on each run.
+  // The important thing is that public keys + salt exist in the DATABASE.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 });
