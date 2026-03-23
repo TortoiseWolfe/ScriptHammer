@@ -85,7 +85,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright (chromium only)
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Download build
         uses: actions/download-artifact@v4
@@ -151,7 +156,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright (chromium only)
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Download build
         uses: actions/download-artifact@v4
@@ -208,7 +218,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright (chromium only for auth)
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Download build
         uses: actions/download-artifact@v4
@@ -276,9 +291,17 @@ jobs:
         env:
           BROWSER: ${{ matrix.browser }}
         run: |
-          pnpm exec playwright install --with-deps chromium
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: chromium install failed, retrying in 10s..."
+            sleep 10
+          done
           if [ "$BROWSER" != "chromium" ]; then
-            pnpm exec playwright install --with-deps "$BROWSER"
+            for i in 1 2 3; do
+              pnpm exec playwright install --with-deps "$BROWSER" && break
+              echo "Retry $i: $BROWSER install failed, retrying in 10s..."
+              sleep 10
+            done
           fi
 
       - name: Download build

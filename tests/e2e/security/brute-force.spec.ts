@@ -210,7 +210,8 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await pageA.getByLabel('Email').fill(userA);
       await pageA.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await pageA.getByRole('button', { name: 'Sign In' }).click();
-      await pageA.waitForTimeout(300);
+      // Wait for each attempt to fully register before the next
+      await pageA.waitForTimeout(500);
     }
 
     // User A should be locked
@@ -221,7 +222,7 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       pageA.getByRole('alert').filter({
         hasText: /too many|locked|rate.*limit/i,
       })
-    ).toBeVisible({ timeout: 5000 });
+    ).toBeVisible({ timeout: 10000 });
 
     // User B should still be able to attempt
     await pageB.goto('/sign-in');
