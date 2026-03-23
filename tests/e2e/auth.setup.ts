@@ -17,6 +17,8 @@ import {
   performSignIn,
   handleEncryptionSetup,
   handleReAuthModal,
+  getAdminClient,
+  getUserByEmail,
 } from './utils/test-user-factory';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
@@ -148,18 +150,39 @@ setup('authenticate shared test user', async ({ page }) => {
   await expect(page).not.toHaveURL(/\/sign-in/);
 
   // Set up encryption keys for messaging tests
-  // Navigate to /messages to trigger EncryptionKeyGate
+  // Delete any stale encryption keys from previous CI runs so we get a
+  // fresh setup flow with the known login password. Without this, the
+  // ReAuthModal appears but the old keys were created with an unknown
+  // password, causing the modal to never close.
   console.log('Setting up encryption keys for messaging...');
+  const adminClient = getAdminClient();
+  if (adminClient && email) {
+    const testUser = await getUserByEmail(email);
+    if (testUser) {
+      const { error: delError } = await adminClient
+        .from('user_encryption_keys')
+        .delete()
+        .eq('user_id', testUser.id);
+      if (delError) {
+        console.log(`⚠ Could not delete stale keys: ${delError.message}`);
+      } else {
+        console.log('✓ Cleared stale encryption keys');
+      }
+    }
+  }
+
+  // Navigate to /messages to trigger EncryptionKeyGate
+  // With keys deleted, this will redirect to /messages/setup
   await page.goto('/messages');
   await page.waitForLoadState('domcontentloaded');
   await dismissCookieBanner(page);
 
   // Handle first-time encryption setup (redirects to /messages/setup)
-  // or re-auth modal (keys exist but not in memory)
   const setupHandled = await handleEncryptionSetup(page, password);
   if (setupHandled) {
-    console.log('✓ Encryption keys created (first-time setup)');
+    console.log('✓ Encryption keys created with login password');
   } else {
+    // Fallback: keys might still exist (admin delete failed) — try re-auth
     const reAuthHandled = await handleReAuthModal(page, password);
     if (reAuthHandled) {
       console.log('✓ Encryption keys unlocked (re-auth)');
