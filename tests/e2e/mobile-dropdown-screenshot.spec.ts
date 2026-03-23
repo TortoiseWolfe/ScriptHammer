@@ -36,8 +36,10 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Verify dropdown is visible (use .first() — authenticated users have 2 dropdown menus)
-    const dropdownMenu = page.locator('.dropdown-content.menu').first();
+    // Verify dropdown is visible — scope to the mobile hamburger container (md:hidden)
+    const dropdownMenu = page
+      .locator('.dropdown.dropdown-end.md\\:hidden .dropdown-content.menu')
+      .first();
     await expect(dropdownMenu).toBeVisible();
   });
 });

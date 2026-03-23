@@ -12,7 +12,12 @@
 
 import { test as setup, expect } from '@playwright/test';
 import * as fs from 'fs';
-import { dismissCookieBanner, performSignIn } from './utils/test-user-factory';
+import {
+  dismissCookieBanner,
+  performSignIn,
+  handleEncryptionSetup,
+  handleReAuthModal,
+} from './utils/test-user-factory';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
 
@@ -142,7 +147,28 @@ setup('authenticate shared test user', async ({ page }) => {
   // Ensure we're on a page that confirms authentication
   await expect(page).not.toHaveURL(/\/sign-in/);
 
-  // Save authenticated browser state (localStorage + cookies)
+  // Set up encryption keys for messaging tests
+  // Navigate to /messages to trigger EncryptionKeyGate
+  console.log('Setting up encryption keys for messaging...');
+  await page.goto('/messages');
+  await page.waitForLoadState('domcontentloaded');
+  await dismissCookieBanner(page);
+
+  // Handle first-time encryption setup (redirects to /messages/setup)
+  // or re-auth modal (keys exist but not in memory)
+  const setupHandled = await handleEncryptionSetup(page, password);
+  if (setupHandled) {
+    console.log('✓ Encryption keys created (first-time setup)');
+  } else {
+    const reAuthHandled = await handleReAuthModal(page, password);
+    if (reAuthHandled) {
+      console.log('✓ Encryption keys unlocked (re-auth)');
+    } else {
+      console.log('⚠ No encryption setup needed (keys already active)');
+    }
+  }
+
+  // Save authenticated browser state (localStorage + cookies + encryption keys)
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 });
