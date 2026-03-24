@@ -24,11 +24,12 @@ import {
   handleEncryptionSetup,
 } from '../utils/test-user-factory';
 
-const USER_A_EMAIL = 'test@example.com';
-const USER_A_PASSWORD = 'TestPassword123!';
-const USER_B_EMAIL = 'test-user-b@example.com';
-const USER_B_PASSWORD = 'TestPassword456!';
-const MESSAGING_PASSWORD = 'TestMessaging123!';
+const USER_A_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL!;
+const USER_A_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD!;
+const USER_B_EMAIL = process.env.TEST_USER_TERTIARY_EMAIL!;
+const USER_B_PASSWORD = process.env.TEST_USER_TERTIARY_PASSWORD!;
+// Messaging password MUST match what auth.setup.ts uses to create encryption keys
+const MESSAGING_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD!;
 
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
@@ -474,7 +475,6 @@ test.describe('Message Delete Placeholder E2E', () => {
         { msgId: middleMessageId, anonKey: SUPABASE_ANON_KEY }
       );
 
-       
       console.log(`PATCH from browser: ${JSON.stringify(patchStatus)}`);
 
       // The PWA service worker uses a Cache-first default strategy which
