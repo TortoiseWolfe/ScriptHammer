@@ -8,6 +8,13 @@ import type { TestViewport } from './src/types/mobile-first';
  */
 require('dotenv').config();
 
+// In CI the auth-setup job runs once and uploads storage-state-auth.json as
+// an artifact.  Each shard downloads that artifact, so it must NOT re-run
+// the setup project — otherwise every shard deletes the encryption keys the
+// other shards depend on.  Locally, we still need the setup dependency.
+const isCI = !!process.env.CI;
+const setupDeps = isCI ? [] : ['setup'];
+
 /**
  * Convert TestViewport to Playwright device config
  */
@@ -145,7 +152,7 @@ export default defineConfig({
         '**/tests/mobile-navigation.spec.ts',
         '**/tests/mobile-orientation.spec.ts',
       ],
-      dependencies: ['setup'],
+      dependencies: setupDeps,
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -166,7 +173,7 @@ export default defineConfig({
         '**/tests/mobile-navigation.spec.ts',
         '**/tests/mobile-orientation.spec.ts',
       ],
-      dependencies: ['setup'],
+      dependencies: setupDeps,
       use: {
         ...devices['Desktop Firefox'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -181,7 +188,7 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
       ],
-      dependencies: ['setup'],
+      dependencies: setupDeps,
       use: {
         ...devices['Desktop Safari'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -198,7 +205,7 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
         ],
-        dependencies: ['setup'],
+        dependencies: setupDeps,
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -216,7 +223,7 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
         ],
-        dependencies: ['setup'],
+        dependencies: setupDeps,
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
