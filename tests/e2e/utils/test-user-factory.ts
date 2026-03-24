@@ -445,11 +445,12 @@ export async function handleReAuthModal(
   // Wait for ReAuthModal to potentially appear (give it time to load)
   const modal = page.locator('[role="dialog"]').first();
 
-  // Try to wait for the modal to be visible, but don't fail if it doesn't appear
+  // Wait for the modal to appear. On staggered CI shards, EncryptionKeyGate
+  // can take >5s to mount after navigation (Argon2id + React hydration).
   try {
-    await modal.waitFor({ state: 'visible', timeout: 5000 });
+    await modal.waitFor({ state: 'visible', timeout: 15000 });
   } catch {
-    // Modal didn't appear within timeout - that's fine
+    // Modal didn't appear within timeout - encryption keys already unlocked
     return false;
   }
 
@@ -470,8 +471,8 @@ export async function handleReAuthModal(
   const submitBtn = modal.locator('button[type="submit"]').first();
   await submitBtn.click();
 
-  // Wait for modal to close
-  await modal.waitFor({ state: 'hidden', timeout: 10000 });
+  // Wait for modal to close (Argon2id key derivation can take 20s+ on CI)
+  await modal.waitFor({ state: 'hidden', timeout: 30000 });
   return true;
 }
 
@@ -551,9 +552,13 @@ export async function signOutViaDropdown(page: Page): Promise<void> {
   await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
   await signOutButton.click();
 
-  // Wait for sign-out to complete (redirects to home or sign-in page)
-  // Firefox may redirect to /sign-in/?returnUrl=... instead of /
-  await page.waitForURL(/^\/(sign-in.*)?$/, { timeout: 15000 });
+  // Wait for sign-out to complete (redirects to home or sign-in page).
+  // Use callback: waitForURL matches full URL, not pathname.
+  // Firefox may redirect to /sign-in/?returnUrl=... before settling on /.
+  await page.waitForURL(
+    (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+    { timeout: 15000 }
+  );
 
   // Wait for Sign In link to appear (indicates signed out state)
   const signInLink = page.getByRole('link', { name: 'Sign In' });
