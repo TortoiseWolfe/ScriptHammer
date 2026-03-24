@@ -181,6 +181,9 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
 }
 
 test.describe('Virtual Scrolling Performance', () => {
+  // Serial: tests share a seeded conversation with Realtime subscriptions.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     // Skip auth if setup failed — test body will also skip
     if (!setupSucceeded) return;

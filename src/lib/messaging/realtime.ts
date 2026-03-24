@@ -40,7 +40,8 @@ export class RealtimeService {
   subscribeToMessages(
     conversation_id: string,
     callback: (message: Message) => void,
-    onReconnect?: () => void
+    onReconnect?: () => void,
+    onSubscribed?: () => void
   ): () => void {
     const supabase = createClient();
     const channelName = `messages:${conversation_id}`;
@@ -71,8 +72,13 @@ export class RealtimeService {
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
           if (wasSubscribed && onReconnect) {
-            logger.debug('Channel reconnected, triggering catch-up', { conversation_id });
+            logger.debug('Channel reconnected, triggering catch-up', {
+              conversation_id,
+            });
             onReconnect();
+          }
+          if (!wasSubscribed && onSubscribed) {
+            onSubscribed();
           }
           wasSubscribed = true;
         }

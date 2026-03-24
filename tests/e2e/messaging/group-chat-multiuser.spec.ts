@@ -84,6 +84,8 @@ test.beforeAll(async () => {
 });
 
 test.describe('Group Chat E2E', () => {
+  // Serial: tests create multiple browser contexts with Realtime subscriptions.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
   test('should show New Group link in sidebar', async ({ browser }) => {
     test.skip(!setupSucceeded, setupError);
     test.setTimeout(60000);

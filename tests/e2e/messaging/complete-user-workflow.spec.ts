@@ -184,6 +184,9 @@ const createConversation = async (
 };
 
 test.describe('Complete User Messaging Workflow (Feature 024)', () => {
+  // Serial: multi-user workflow creates browser contexts with Realtime subscriptions.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async () => {
     const client = getAdminClient();
     if (client) {

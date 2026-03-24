@@ -551,8 +551,9 @@ export async function signOutViaDropdown(page: Page): Promise<void> {
   await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
   await signOutButton.click();
 
-  // Wait for sign-out to complete (redirects to home page)
-  await page.waitForURL('/', { timeout: 10000 });
+  // Wait for sign-out to complete (redirects to home or sign-in page)
+  // Firefox may redirect to /sign-in/?returnUrl=... instead of /
+  await page.waitForURL(/^\/(sign-in.*)?$/, { timeout: 15000 });
 
   // Wait for Sign In link to appear (indicates signed out state)
   const signInLink = page.getByRole('link', { name: 'Sign In' });

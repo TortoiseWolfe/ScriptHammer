@@ -37,6 +37,8 @@ const TEST_USER = {
 };
 
 test.describe('GDPR Data Export', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     // Already authenticated via storageState - navigate directly
     await page.goto('/account');
@@ -179,6 +181,8 @@ test.describe('GDPR Data Export', () => {
 });
 
 test.describe('GDPR Account Deletion', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     // Already authenticated via storageState - navigate directly
     // NOTE: Account deletion tests use mocked responses to prevent actual deletion

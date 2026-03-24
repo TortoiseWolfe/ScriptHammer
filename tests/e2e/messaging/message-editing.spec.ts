@@ -267,6 +267,9 @@ function getDeleteButtonForMessage(page: Page, messageText: string) {
 }
 
 test.describe('Message Editing', () => {
+  // Serial: tests share conversation state and Realtime subscriptions.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     // Sign in as User 1
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
@@ -422,6 +425,8 @@ test.describe('Message Editing', () => {
 });
 
 test.describe('Message Deletion', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     // Sign in as User 1
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
@@ -564,6 +569,8 @@ test.describe('Message Deletion', () => {
 });
 
 test.describe('Time Window Restrictions', () => {
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   test.beforeEach(async ({ page }) => {
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
   });

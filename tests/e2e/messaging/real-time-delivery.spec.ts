@@ -39,19 +39,30 @@ async function signIn(page: Page, _email: string, password: string) {
 }
 
 /**
- * Helper to wait for message on page2, with fallback to reload if real-time doesn't work
+ * Helper to wait for message on page2, with fallback to reload if real-time doesn't work.
+ * First waits for the Realtime subscription to be ready (data-messages-subscribed attribute),
+ * then waits for the message to appear via Realtime, with reload fallback.
  */
 async function waitForMessageOnPage2(
   page2: Page,
   testMessage: string,
   password: string
 ): Promise<void> {
+  // Wait for Realtime subscription to be ready before checking for message
+  try {
+    await page2.waitForSelector('body[data-messages-subscribed]', {
+      timeout: 30000,
+    });
+  } catch {
+    // Subscription readiness signal not available — proceed with best effort
+  }
+
   try {
     await page2
       .getByText(testMessage)
-      .waitFor({ state: 'visible', timeout: 3000 });
+      .waitFor({ state: 'visible', timeout: 30000 });
   } catch {
-    // Real-time subscription may not be active; reload to fetch new messages
+    // Real-time subscription may have dropped the message; reload to fetch from DB
     await page2.reload();
     await dismissCookieBanner(page2);
     await handleReAuthModal(page2, password);
@@ -60,7 +71,7 @@ async function waitForMessageOnPage2(
       .getByRole('button', { name: /Conversation with/ })
       .first();
     await conversation2.click();
-    await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 5000 });
+    await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 15000 });
   }
 }
 
@@ -227,6 +238,10 @@ test.beforeAll(async () => {
 });
 
 test.describe('Real-time Message Delivery (T098)', () => {
+  // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
+  // Running in parallel doubles peak connection load → subscription timeouts on CI.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   let context1: BrowserContext;
   let context2: BrowserContext;
   let page1: Page;
@@ -337,6 +352,9 @@ test.describe('Real-time Message Delivery (T098)', () => {
 });
 
 test.describe('Typing Indicators (T099)', () => {
+  // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   let context1: BrowserContext;
   let context2: BrowserContext;
   let page1: Page;

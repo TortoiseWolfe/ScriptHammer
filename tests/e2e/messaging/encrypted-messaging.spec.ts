@@ -47,6 +47,10 @@ const getAdminClient = () => {
 };
 
 test.describe('Encrypted Messaging Flow', () => {
+  // Serial: tests share auth state and Realtime subscriptions.
+  // Parallel execution causes subscription contention on Supabase Cloud free tier.
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
+
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;
   let setupError = '';

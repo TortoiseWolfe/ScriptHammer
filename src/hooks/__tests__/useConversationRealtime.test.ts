@@ -135,6 +135,8 @@ describe('useConversationRealtime', () => {
     await waitFor(() => {
       expect(realtimeService.subscribeToMessages).toHaveBeenCalledWith(
         mockConversationId,
+        expect.any(Function),
+        undefined,
         expect.any(Function)
       );
     });

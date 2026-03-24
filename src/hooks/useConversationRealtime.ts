@@ -261,6 +261,9 @@ export function useConversationRealtime(
     }
   }, []);
 
+  // Track last Realtime event time for polling fallback
+  const lastRealtimeEventRef = useRef(0);
+
   /**
    * Subscribe to real-time messages and updates
    */
@@ -274,9 +277,20 @@ export function useConversationRealtime(
     const unsubscribeMessages = realtimeService.subscribeToMessages(
       conversationId,
       async (message) => {
+        lastRealtimeEventRef.current = Date.now();
         const decrypted = await decryptSingleMessage(message);
         if (decrypted && isMountedRef.current) {
           setMessages((prev) => [...prev, decrypted]);
+        }
+      },
+      undefined, // onReconnect
+      () => {
+        // Signal message subscription readiness via DOM attribute (used by E2E tests)
+        if (typeof document !== 'undefined' && conversationId) {
+          document.body.setAttribute(
+            'data-messages-subscribed',
+            conversationId
+          );
         }
       }
     );
@@ -285,6 +299,7 @@ export function useConversationRealtime(
     const unsubscribeUpdates = realtimeService.subscribeToMessageUpdates(
       conversationId,
       async (newMessage, oldMessage) => {
+        lastRealtimeEventRef.current = Date.now();
         const decrypted = await decryptSingleMessage(newMessage);
         if (decrypted && isMountedRef.current) {
           setMessages((prev) =>
@@ -294,12 +309,29 @@ export function useConversationRealtime(
       }
     );
 
+    // Polling fallback: Supabase Realtime on free tier can silently drop
+    // messages under connection contention. Re-fetch every 10s when
+    // Realtime hasn't delivered anything recently.
+    const POLL_INTERVAL_MS = 10_000;
+    const pollTimer = setInterval(() => {
+      if (!isMountedRef.current) return;
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (Date.now() - lastRealtimeEventRef.current < POLL_INTERVAL_MS) return;
+
+      logger.debug('Polling fallback — refetching messages');
+      loadMessages();
+    }, POLL_INTERVAL_MS);
+
     // Cleanup on unmount
     return () => {
       isMountedRef.current = false;
       unsubscribeMessages();
       unsubscribeUpdates();
+      clearInterval(pollTimer);
       realtimeService.unsubscribeFromConversation(conversationId);
+      if (typeof document !== 'undefined') {
+        document.body.removeAttribute('data-messages-subscribed');
+      }
     };
   }, [conversationId, loadMessages, decryptSingleMessage]);
 
