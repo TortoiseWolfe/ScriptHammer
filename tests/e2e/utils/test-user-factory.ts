@@ -442,7 +442,36 @@ export async function handleReAuthModal(
   const testPassword =
     password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
-  // Wait for ReAuthModal to potentially appear (give it time to load)
+  // EncryptionKeyGate has two paths when keys aren't in memory:
+  // 1. Keys exist in DB → shows ReAuthModal overlay
+  // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
+  // Handle both: check if we landed on /messages/setup first.
+  try {
+    await page.waitForURL('**/messages/**', { timeout: 10000 });
+  } catch {
+    // Not on messages page yet — give it more time
+  }
+
+  if (page.url().includes('/messages/setup')) {
+    // Path 2: Full setup page — fill form and submit
+    const setupPassword = page.locator('#setup-password');
+    const setupVisible = await setupPassword
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+    if (setupVisible) {
+      await setupPassword.fill(testPassword);
+      await page.locator('#setup-confirm').fill(testPassword);
+      const setupBtn = page.getByRole('button', {
+        name: /Set Up Encrypted Messaging/i,
+      });
+      await setupBtn.click();
+      await page.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
+      await page.waitForLoadState('domcontentloaded');
+      return true;
+    }
+  }
+
+  // Path 1: ReAuthModal overlay on /messages page
   const modal = page.locator('[role="dialog"]').first();
 
   // Wait for the modal to appear. On staggered CI shards, EncryptionKeyGate
