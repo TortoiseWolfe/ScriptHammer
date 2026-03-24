@@ -446,11 +446,11 @@ export async function handleReAuthModal(
   // 1. Keys exist in DB → shows ReAuthModal overlay
   // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
   // Handle both: check if we landed on /messages/setup first.
-  try {
-    await page.waitForURL('**/messages/**', { timeout: 10000 });
-  } catch {
-    // Not on messages page yet — give it more time
-  }
+
+  // Give the page time to settle — EncryptionKeyGate needs to hydrate,
+  // query Supabase, and decide which path to take.
+  await page.waitForTimeout(3000);
+  console.log(`[handleReAuthModal] URL after wait: ${page.url()}`);
 
   if (page.url().includes('/messages/setup')) {
     // Path 2: Full setup page — fill form and submit
@@ -478,8 +478,10 @@ export async function handleReAuthModal(
   // can take >5s to mount after navigation (Argon2id + React hydration).
   try {
     await modal.waitFor({ state: 'visible', timeout: 15000 });
+    console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
   } catch {
     // Modal didn't appear within timeout - encryption keys already unlocked
+    console.log(`[handleReAuthModal] No modal after 15s. URL: ${page.url()}`);
     return false;
   }
 
@@ -502,6 +504,7 @@ export async function handleReAuthModal(
 
   // Wait for modal to close (Argon2id key derivation can take 20s+ on CI)
   await modal.waitFor({ state: 'hidden', timeout: 30000 });
+  console.log(`[handleReAuthModal] ✓ Modal closed. URL: ${page.url()}`);
   return true;
 }
 
