@@ -94,23 +94,39 @@ setup('authenticate shared test user', async ({ page }) => {
     }
   }
 
-  // Navigate to /messages to trigger EncryptionKeyGate
-  // With keys deleted, this will redirect to /messages/setup
+  // Navigate to /messages — with keys deleted, EncryptionKeyGate will
+  // redirect to /messages/setup after React hydrates and queries the DB.
+  // We must WAIT for the redirect instead of racing against it.
   await page.goto('/messages');
-  await page.waitForLoadState('domcontentloaded');
   await dismissCookieBanner(page);
 
-  // Handle first-time encryption setup (redirects to /messages/setup)
-  const setupHandled = await handleEncryptionSetup(page, password);
-  if (setupHandled) {
-    console.log('✓ Encryption keys created with login password');
-  } else {
-    // Fallback: keys might still exist (admin delete failed) — try re-auth
+  try {
+    // Wait for the client-side redirect to /messages/setup (up to 15s)
+    await page.waitForURL(/\/messages\/setup/, { timeout: 15000 });
+    console.log('✓ Redirected to encryption setup page');
+
+    // Fill the setup form with the login password
+    const setupHandled = await handleEncryptionSetup(page, password);
+    if (setupHandled) {
+      console.log('✓ Encryption keys created with login password');
+    } else {
+      throw new Error(
+        'handleEncryptionSetup returned false despite being on /messages/setup'
+      );
+    }
+  } catch (e) {
+    // Did not redirect to /messages/setup — keys may still exist (delete failed)
+    // or the page is showing the ReAuthModal instead
+    console.log(
+      `⚠ Did not reach /messages/setup: ${e instanceof Error ? e.message : e}`
+    );
     const reAuthHandled = await handleReAuthModal(page, password);
     if (reAuthHandled) {
-      console.log('✓ Encryption keys unlocked (re-auth)');
+      console.log('✓ Encryption keys unlocked (re-auth fallback)');
     } else {
-      console.log('⚠ No encryption setup needed (keys already active)');
+      console.log(
+        '⚠ No encryption modal appeared — continuing without encryption setup'
+      );
     }
   }
 
