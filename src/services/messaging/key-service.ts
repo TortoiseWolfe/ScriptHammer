@@ -303,6 +303,43 @@ export class KeyManagementService {
   }
 
   /**
+   * Check if a specific user has valid (non-revoked) encryption keys.
+   * Skips auth — caller provides the user ID (e.g. from useAuth context).
+   * This avoids the getSession()/getUser() race on static exports.
+   */
+  async hasKeysForUser(userId: string): Promise<boolean> {
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
+
+    try {
+      const { data, error } = await msgClient
+        .from('user_encryption_keys')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('revoked', false)
+        .limit(1)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        logger.error('hasKeysForUser: Database error', {
+          error: error.message,
+        });
+        throw new ConnectionError(
+          'Failed to check encryption keys: ' + error.message
+        );
+      }
+
+      return data !== null;
+    } catch (error) {
+      if (error instanceof ConnectionError) {
+        throw error;
+      }
+      logger.error('hasKeysForUser: Unexpected error', { error });
+      return false;
+    }
+  }
+
+  /**
    * Check if user has any valid (non-revoked) encryption keys
    * Feature 006: Fixed to use .maybeSingle() instead of .single() to handle 0 rows without throwing
    * @returns true if user has valid keys in Supabase (where revoked=false)

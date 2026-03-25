@@ -50,11 +50,14 @@ export default function EncryptionKeyGate({
     }
 
     const checkKeys = async () => {
+      // Pass user.id directly — avoids getSession()/getUser() race condition.
+      // The auth context already confirmed the user exists (isLoading=false,
+      // user≠null), so we can skip the auth check inside hasKeys().
       let hasStoredKeys = false;
       try {
-        hasStoredKeys = await keyManagementService.hasKeys();
+        hasStoredKeys = await keyManagementService.hasKeysForUser(user!.id);
       } catch (err) {
-        console.error('[EncryptionKeyGate] hasKeys() threw:', err);
+        console.error('[EncryptionKeyGate] hasKeysForUser() threw:', err);
       }
 
       if (!hasStoredKeys) {

@@ -16,10 +16,10 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-const mockHasKeys = vi.fn().mockResolvedValue(true);
+const mockHasKeysForUser = vi.fn().mockResolvedValue(true);
 vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {
-    hasKeys: () => mockHasKeys(),
+    hasKeysForUser: (...args: unknown[]) => mockHasKeysForUser(...args),
     getCurrentKeys: vi.fn().mockReturnValue({ privateKey: {}, publicKey: {} }),
   },
 }));
@@ -54,7 +54,7 @@ describe('EncryptionKeyGate Accessibility', () => {
 
   it('loading spinner has accessible role and label', () => {
     // Force the promise to stay pending so we catch the loading state
-    mockHasKeys.mockReturnValueOnce(new Promise(() => {}));
+    mockHasKeysForUser.mockReturnValueOnce(new Promise(() => {}));
 
     const { getByRole } = render(
       <EncryptionKeyGate>

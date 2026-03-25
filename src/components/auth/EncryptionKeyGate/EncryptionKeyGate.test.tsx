@@ -12,11 +12,11 @@ vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const mockHasKeys = vi.fn();
+const mockHasKeysForUser = vi.fn();
 const mockGetCurrentKeys = vi.fn();
 vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {
-    hasKeys: () => mockHasKeys(),
+    hasKeysForUser: (...args: unknown[]) => mockHasKeysForUser(...args),
     getCurrentKeys: () => mockGetCurrentKeys(),
   },
 }));
@@ -55,7 +55,7 @@ describe('EncryptionKeyGate', () => {
   });
 
   it('shows loading spinner while checking keys', () => {
-    mockHasKeys.mockReturnValue(new Promise(() => {})); // never resolves
+    mockHasKeysForUser.mockReturnValue(new Promise(() => {})); // never resolves
     render(
       <EncryptionKeyGate>
         <div>Protected</div>
@@ -68,7 +68,7 @@ describe('EncryptionKeyGate', () => {
   });
 
   it('redirects to /messages/setup when no keys in database', async () => {
-    mockHasKeys.mockResolvedValue(false);
+    mockHasKeysForUser.mockResolvedValue(false);
     render(
       <EncryptionKeyGate>
         <div>Protected</div>
@@ -82,7 +82,7 @@ describe('EncryptionKeyGate', () => {
   });
 
   it('shows ReAuthModal when keys in DB but not in memory', async () => {
-    mockHasKeys.mockResolvedValue(true);
+    mockHasKeysForUser.mockResolvedValue(true);
     mockGetCurrentKeys.mockReturnValue(null);
     render(
       <EncryptionKeyGate>
@@ -97,7 +97,7 @@ describe('EncryptionKeyGate', () => {
   });
 
   it('renders children directly when keys are in memory', async () => {
-    mockHasKeys.mockResolvedValue(true);
+    mockHasKeysForUser.mockResolvedValue(true);
     mockGetCurrentKeys.mockReturnValue({ privateKey: {}, publicKey: {} });
     render(
       <EncryptionKeyGate>
@@ -112,7 +112,7 @@ describe('EncryptionKeyGate', () => {
   });
 
   it('closes ReAuthModal on successful re-auth', async () => {
-    mockHasKeys.mockResolvedValue(true);
+    mockHasKeysForUser.mockResolvedValue(true);
     mockGetCurrentKeys.mockReturnValue(null);
     render(
       <EncryptionKeyGate>
