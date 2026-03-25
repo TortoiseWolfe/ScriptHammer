@@ -54,33 +54,18 @@ export function ReAuthModal({
   const oauthUser = isOAuthUser(user);
   const providerName = getOAuthProvider(user);
 
-  // Check if user needs to set up encryption keys
-  // If no keys exist, this modal shouldn't be shown - redirect to /messages/setup instead
+  // EncryptionKeyGate already verified keys exist via hasKeysForUser()
+  // before showing this modal. No need to re-check — the old hasKeys()
+  // call here caused a redirect loop because getSession() raced with
+  // Supabase client initialization on static exports.
   useEffect(() => {
     if (isOpen) {
       const checkKeys = async () => {
         setCheckingKeys(true);
         try {
-          const { keyManagementService } = await import(
-            '@/services/messaging/key-service'
-          );
-          const hasKeys = await keyManagementService.hasKeys();
-
-          if (!hasKeys) {
-            // User has no keys - redirect to full-page setup for better password manager support
-            logger.info(
-              'ReAuthModal: User has no keys, redirecting to setup page'
-            );
-            window.location.href = '/messages/setup';
-            return;
-          }
-
-          // User has keys but they're not in memory - this is unlock mode
-          // No state to set - modal is already unlock-only
+          // Keys confirmed by EncryptionKeyGate — just mark as ready
         } catch (err) {
-          logger.error('Error checking keys', { error: err });
-          // On error, redirect to setup page to be safe
-          window.location.href = '/messages/setup';
+          logger.error('Error in ReAuthModal setup', { error: err });
         } finally {
           setCheckingKeys(false);
         }

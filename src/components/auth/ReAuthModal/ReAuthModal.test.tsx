@@ -633,7 +633,10 @@ describe('ReAuthModal', () => {
       });
     });
 
-    it('should redirect to setup page for OAuth user without keys', async () => {
+    it('should show unlock UI (EncryptionKeyGate handles no-keys redirect)', async () => {
+      // ReAuthModal no longer redirects to /messages/setup — that's handled
+      // by EncryptionKeyGate before the modal is shown. The modal just shows
+      // the password form for unlocking existing keys.
       render(
         <ReAuthModal
           isOpen={true}
@@ -642,9 +645,9 @@ describe('ReAuthModal', () => {
         />
       );
 
-      // Wait for key check to complete and redirect to happen
+      // Modal should render without redirecting
       await waitFor(() => {
-        expect(window.location.href).toBe('/messages/setup');
+        expect(window.location.href).not.toBe('/messages/setup');
       });
     });
   });

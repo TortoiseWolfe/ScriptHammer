@@ -59,7 +59,9 @@ export default function MessagingSetupPage() {
         const { keyManagementService } = await import(
           '@/services/messaging/key-service'
         );
-        const hasKeys = await keyManagementService.hasKeys();
+        const hasKeys = user
+          ? await keyManagementService.hasKeysForUser(user.id)
+          : false;
         setHasExistingKeys(hasKeys);
 
         if (hasKeys) {
