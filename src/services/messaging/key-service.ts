@@ -318,6 +318,9 @@ export class KeyManagementService {
         authError: authError?.message,
         hasUser: !!user,
       });
+      console.warn(
+        `[hasKeys] auth failed: error=${authError?.message || 'none'}, user=${!!user}`
+      );
       return false;
     }
 
@@ -345,6 +348,9 @@ export class KeyManagementService {
         hasData: data !== null,
         errorCode: error?.code,
       });
+      console.warn(
+        `[hasKeys] query: userId=${user.id.slice(0, 8)}, hasData=${data !== null}, err=${error?.code || 'none'}`
+      );
       return data !== null;
     } catch (error) {
       if (error instanceof ConnectionError) {
