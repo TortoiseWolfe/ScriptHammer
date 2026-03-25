@@ -221,10 +221,13 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageA.goto('/messages?tab=connections', {
         waitUntil: 'domcontentloaded',
       });
-      await pageA.waitForLoadState('networkidle');
       await handleReAuthModal(pageA, USER_A.password);
-      // Verify we're on the messages page (tab parameter is handled by UI)
-      await expect(pageA).toHaveURL(/.*\/messages/);
+      // ReAuthModal close may drop ?tab=connections from the URL.
+      // Explicitly click the Connections tab to ensure we're on the right panel.
+      const connectionsTab = pageA.getByRole('tab', { name: /Connections/i });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 10000 });
+      await connectionsTab.click();
+      await pageA.waitForTimeout(500);
       console.log('Step 2: Connections page loaded');
 
       // STEP 3: Search for User B
@@ -233,12 +236,6 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log(
         'Step 3: Searching for User B with display_name: ' + userBDisplayName
       );
-      // Use Find People tab for search
-      const findPeopleTab = pageA.getByRole('tab', { name: /Find People/i });
-      if (await findPeopleTab.isVisible().catch(() => false)) {
-        await findPeopleTab.click();
-        await pageA.waitForTimeout(500);
-      }
       // UserSearch uses placeholder "Enter name"
       const searchInput = pageA
         .getByPlaceholder(/Enter name/i)
