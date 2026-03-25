@@ -44,8 +44,16 @@ export default function EncryptionKeyGate({
     if (authLoading) return;
 
     if (!user) {
-      // Not authenticated — redirect to sign-in
-      router.push('/sign-in?redirect=/messages');
+      // On static exports, the auth context may briefly report user=null
+      // before the Supabase session restores from localStorage. Only redirect
+      // to sign-in if there's genuinely no session token in localStorage.
+      const hasStoredSession =
+        typeof window !== 'undefined' &&
+        Object.keys(localStorage).some((k) => k.includes('-auth-token'));
+      if (!hasStoredSession) {
+        router.push('/sign-in?redirect=/messages');
+      }
+      // If session exists in localStorage, wait for next auth state update
       return;
     }
 
