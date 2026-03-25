@@ -189,9 +189,14 @@ setup('authenticate shared test user', async ({ page }) => {
       } else {
         // Keys exist in DB — try ReAuth modal. If the password doesn't
         // match (keys from a previous run with different password), the
-        // modal will show an error and stay open. In that case, delete
-        // the old keys via admin client and retry with fresh setup.
-        const handled = await handleReAuthModal(p, userPwd);
+        // modal will show an error and stay open. handleReAuthModal throws
+        // on timeout, so catch it and fall through to the delete+recreate path.
+        let handled = false;
+        try {
+          handled = await handleReAuthModal(p, userPwd);
+        } catch {
+          // Modal timeout — password likely doesn't match old keys
+        }
         if (handled) {
           console.log(`✓ Encryption keys unlocked for ${userEmail}`);
         } else {
