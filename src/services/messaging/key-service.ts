@@ -60,11 +60,13 @@ export class KeyManagementService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
+    // Use getSession() — getUser() makes a server call that can fail with
+    // "Auth session missing!" on static exports before session hydration.
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -143,9 +145,10 @@ export class KeyManagementService {
     const msgClient = createMessagingClient(supabase);
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -308,10 +311,17 @@ export class KeyManagementService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
+    // Use getSession() instead of getUser() to avoid a server round-trip.
+    // getUser() validates the JWT against the Supabase server, which fails
+    // with "Auth session missing!" on static exports when the session hasn't
+    // been restored from localStorage yet. getSession() reads from local
+    // storage synchronously and is sufficient for the DB query that follows
+    // (the JWT in the session is sent with the query for RLS).
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       logger.warn('hasKeys: auth failed', {
