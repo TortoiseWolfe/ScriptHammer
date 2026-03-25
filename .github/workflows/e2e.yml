@@ -197,7 +197,7 @@ jobs:
     name: Auth Setup
     runs-on: ubuntu-latest
     needs: smoke
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -238,7 +238,7 @@ jobs:
           npx wait-on http://localhost:3000 --timeout 60000
 
       - name: Run auth setup
-        run: pnpm exec playwright test --project=setup --reporter=list
+        run: pnpm exec playwright test --project=setup --reporter=list --timeout=180000
         env:
           CI: true
           SKIP_WEBSERVER: true
@@ -246,6 +246,10 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
           TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          TEST_USER_SECONDARY_EMAIL: ${{ vars.TEST_USER_SECONDARY_EMAIL }}
+          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
+          TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
 
       - name: Upload auth state
         uses: actions/upload-artifact@v4
