@@ -447,6 +447,15 @@ export async function handleReAuthModal(
   // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
   // Handle both: check if we landed on /messages/setup first.
 
+  // Capture browser console for CI debugging (EncryptionKeyGate logs hasKeys result)
+  const consoleHandler = (msg: import('@playwright/test').ConsoleMessage) => {
+    const text = msg.text();
+    if (text.includes('EncryptionKeyGate') || text.includes('hasKeys')) {
+      console.log(`[browser] ${text}`);
+    }
+  };
+  page.on('console', consoleHandler);
+
   // Give the page time to settle — EncryptionKeyGate needs to hydrate,
   // query Supabase, and decide which path to take.
   await page.waitForTimeout(3000);
