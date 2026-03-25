@@ -35,7 +35,15 @@ export default function EncryptionKeyGate({
 
   useEffect(() => {
     const checkKeys = async () => {
-      const hasStoredKeys = await keyManagementService.hasKeys();
+      let hasStoredKeys = false;
+      try {
+        hasStoredKeys = await keyManagementService.hasKeys();
+      } catch (err) {
+        // Log the error for CI debugging — hasKeys() can throw ConnectionError
+        console.error('[EncryptionKeyGate] hasKeys() threw:', err);
+      }
+      // Use console.warn so Playwright stderr captures it for CI debugging
+      console.warn('[EncryptionKeyGate] hasKeys =', hasStoredKeys);
 
       if (!hasStoredKeys) {
         // No keys at all — first-run setup. Full page redirect (not modal)

@@ -314,6 +314,10 @@ export class KeyManagementService {
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      logger.warn('hasKeys: auth failed', {
+        authError: authError?.message,
+        hasUser: !!user,
+      });
       return false;
     }
 
@@ -336,6 +340,11 @@ export class KeyManagementService {
         );
       }
 
+      logger.info('hasKeys result', {
+        userId: user.id,
+        hasData: data !== null,
+        errorCode: error?.code,
+      });
       return data !== null;
     } catch (error) {
       if (error instanceof ConnectionError) {
