@@ -187,12 +187,47 @@ setup('authenticate shared test user', async ({ page }) => {
         await p.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
         console.log(`✓ Encryption keys created for ${userEmail}`);
       } else {
-        // Keys already exist — handle ReAuth modal
+        // Keys exist in DB — try ReAuth modal. If the password doesn't
+        // match (keys from a previous run with different password), the
+        // modal will show an error and stay open. In that case, delete
+        // the old keys via admin client and retry with fresh setup.
         const handled = await handleReAuthModal(p, userPwd);
         if (handled) {
           console.log(`✓ Encryption keys unlocked for ${userEmail}`);
         } else {
-          console.log(`⚠ No setup or modal for ${userEmail} — keys may exist`);
+          // ReAuth failed or modal didn't close — delete stale keys and
+          // create fresh ones with the correct password.
+          console.log(
+            `⚠ ReAuth failed for ${userEmail} — deleting stale keys and recreating...`
+          );
+          const admin = getAdminClient();
+          if (admin) {
+            const testUser = await getUserByEmail(userEmail);
+            if (testUser) {
+              await admin
+                .from('user_encryption_keys')
+                .delete()
+                .eq('user_id', testUser.id);
+            }
+          }
+          // Reload to trigger /messages/setup redirect (keys now deleted)
+          await p.goto('/messages');
+          await p.waitForLoadState('domcontentloaded');
+          await p.waitForTimeout(5000);
+          const setupBtn2 = p.locator(
+            'button:has-text("Set Up Encrypted Messaging")'
+          );
+          if (
+            await setupBtn2.isVisible({ timeout: 10000 }).catch(() => false)
+          ) {
+            await p.locator('#setup-password').fill(userPwd);
+            await p.locator('#setup-confirm').fill(userPwd);
+            await setupBtn2.click();
+            await p.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
+            console.log(`✓ Encryption keys recreated for ${userEmail}`);
+          } else {
+            console.log(`⚠ Could not find setup form for ${userEmail}`);
+          }
         }
       }
     } catch (err) {
