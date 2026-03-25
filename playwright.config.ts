@@ -37,8 +37,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use 4 workers on CI for faster execution (was 1, causing 30min timeouts) */
-  workers: process.env.CI ? 4 : undefined,
+  /* Use 2 workers on CI. 4 workers caused page.goto timeouts on messaging
+   * tests — 4 concurrent Argon2id key derivations + Supabase queries
+   * overwhelm the free tier, making page loads take >30s. */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],
@@ -59,8 +61,9 @@ export default defineConfig({
     video: 'retain-on-failure',
     /* Maximum time each action can take */
     actionTimeout: 10000,
-    /* Global timeout for each test */
-    navigationTimeout: 30000,
+    /* Navigation timeout — 60s to account for Argon2id key derivation
+     * during handleReAuthModal after each page.goto('/messages') */
+    navigationTimeout: 60000,
     /* Emulate mobile device capabilities */
     isMobile: false,
     /* Context options */
