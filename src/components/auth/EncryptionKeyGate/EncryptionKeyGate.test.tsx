@@ -7,6 +7,11 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+const mockUseAuth = vi.fn();
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => mockUseAuth(),
+}));
+
 const mockHasKeys = vi.fn();
 const mockGetCurrentKeys = vi.fn();
 vi.mock('@/services/messaging/key-service', () => ({
@@ -29,6 +34,24 @@ describe('EncryptionKeyGate', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     reAuthProps.length = 0;
+    // Default: authenticated user, auth loading complete
+    mockUseAuth.mockReturnValue({
+      user: { id: 'test-user-id', email: 'test@example.com' },
+      isLoading: false,
+    });
+  });
+
+  it('shows loading spinner while auth is loading', () => {
+    mockUseAuth.mockReturnValue({ user: null, isLoading: true });
+    render(
+      <EncryptionKeyGate>
+        <div>Protected</div>
+      </EncryptionKeyGate>
+    );
+    expect(
+      screen.getByTestId('encryption-key-gate-loading')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Protected')).not.toBeInTheDocument();
   });
 
   it('shows loading spinner while checking keys', () => {

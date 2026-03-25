@@ -9,6 +9,13 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'test-user-id', email: 'test@example.com' },
+    isLoading: false,
+  }),
+}));
+
 const mockHasKeys = vi.fn().mockResolvedValue(true);
 vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {

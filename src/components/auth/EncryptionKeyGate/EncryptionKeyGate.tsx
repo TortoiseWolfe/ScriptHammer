@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ReAuthModal } from '@/components/auth/ReAuthModal';
 import { keyManagementService } from '@/services/messaging/key-service';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface EncryptionKeyGateProps {
   /** Child content — rendered once keys are confirmed in memory */
@@ -21,8 +22,9 @@ export interface EncryptionKeyGateProps {
  *     but the layout mounts — avoids re-mount flash on success).
  *  3. Keys in memory → children render immediately.
  *
- * Extracted from app/messages/page.tsx so the page doesn't have to know
- * about key lifecycle.
+ * Waits for the auth session to be restored before checking keys.
+ * Without this, getUser() returns "Auth session missing!" on static
+ * exports where localStorage session restoration is asynchronous.
  *
  * @category auth
  */
@@ -30,20 +32,30 @@ export default function EncryptionKeyGate({
   children,
 }: EncryptionKeyGateProps) {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
   const [checkingKeys, setCheckingKeys] = useState(true);
   const [needsReAuth, setNeedsReAuth] = useState(false);
 
   useEffect(() => {
+    // Wait for auth context to finish loading before checking keys.
+    // On static exports, the Supabase session restores from localStorage
+    // asynchronously — calling getUser() before this completes returns
+    // "Auth session missing!" which falsely redirects to /messages/setup.
+    if (authLoading) return;
+
+    if (!user) {
+      // Not authenticated — redirect to sign-in
+      router.push('/sign-in?redirect=/messages');
+      return;
+    }
+
     const checkKeys = async () => {
       let hasStoredKeys = false;
       try {
         hasStoredKeys = await keyManagementService.hasKeys();
       } catch (err) {
-        // Log the error for CI debugging — hasKeys() can throw ConnectionError
         console.error('[EncryptionKeyGate] hasKeys() threw:', err);
       }
-      // Use console.warn so Playwright stderr captures it for CI debugging
-      console.warn('[EncryptionKeyGate] hasKeys =', hasStoredKeys);
 
       if (!hasStoredKeys) {
         // No keys at all — first-run setup. Full page redirect (not modal)
@@ -60,13 +72,13 @@ export default function EncryptionKeyGate({
       setCheckingKeys(false);
     };
     checkKeys();
-  }, [router]);
+  }, [router, authLoading, user]);
 
   const handleReAuthSuccess = useCallback(() => {
     setNeedsReAuth(false);
   }, []);
 
-  if (checkingKeys) {
+  if (authLoading || checkingKeys) {
     return (
       <div
         className="fixed inset-x-0 top-16 bottom-28 flex items-center justify-center"
