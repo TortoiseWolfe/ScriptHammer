@@ -127,4 +127,80 @@ setup('authenticate shared test user', async ({ page }) => {
   // The important thing is that public keys + salt exist in the DATABASE.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Create encryption keys for SECONDARY and TERTIARY test users.
+  // Multi-user tests (friend requests, encrypted messaging, group chat)
+  // sign these users in manually — they MUST have encryption keys in the
+  // database or they'll hit the /messages/setup → /sign-in redirect loop.
+  // ────────────────────────────────────────────────────────────────────────
+  const additionalUsers = [
+    {
+      email: process.env.TEST_USER_SECONDARY_EMAIL,
+      password: process.env.TEST_USER_SECONDARY_PASSWORD,
+    },
+    {
+      email: process.env.TEST_USER_TERTIARY_EMAIL,
+      password: process.env.TEST_USER_TERTIARY_PASSWORD,
+    },
+  ].filter(
+    (u): u is { email: string; password: string } => !!u.email && !!u.password
+  );
+
+  for (const { email: userEmail, password: userPwd } of additionalUsers) {
+    console.log(`Setting up encryption keys for ${userEmail}...`);
+    const browser = page.context().browser();
+    if (!browser) continue;
+
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+
+    try {
+      // Sign in as this user
+      await p.goto('/sign-in');
+      await p.waitForLoadState('domcontentloaded');
+      await dismissCookieBanner(p);
+      const emailInput = p.locator('input[type="email"], input[name="email"]');
+      await emailInput.waitFor({ state: 'visible', timeout: 10000 });
+      await emailInput.fill(userEmail);
+      await p.fill('input[type="password"], input[name="password"]', userPwd);
+      await p.click('button[type="submit"]');
+      await p
+        .waitForURL((url) => !url.pathname.includes('/sign-in'), {
+          timeout: 15000,
+        })
+        .catch(() => {});
+
+      // Navigate to /messages — handle setup or ReAuth
+      await p.goto('/messages');
+      await p.waitForLoadState('domcontentloaded');
+      await p.waitForTimeout(3000);
+
+      // Handle encryption setup page (no keys yet → full setup form)
+      const setupBtn = p.locator(
+        'button:has-text("Set Up Encrypted Messaging")'
+      );
+      if (await setupBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await p.locator('#setup-password').fill(userPwd);
+        await p.locator('#setup-confirm').fill(userPwd);
+        await setupBtn.click();
+        await p.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
+        console.log(`✓ Encryption keys created for ${userEmail}`);
+      } else {
+        // Keys already exist — handle ReAuth modal
+        const handled = await handleReAuthModal(p, userPwd);
+        if (handled) {
+          console.log(`✓ Encryption keys unlocked for ${userEmail}`);
+        } else {
+          console.log(`⚠ No setup or modal for ${userEmail} — keys may exist`);
+        }
+      }
+    } catch (err) {
+      console.log(
+        `⚠ Could not set up keys for ${userEmail}: ${err instanceof Error ? err.message : err}`
+      );
+    } finally {
+      await ctx.close();
+    }
+  }
 });
