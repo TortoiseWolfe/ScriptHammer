@@ -189,7 +189,7 @@ test.describe('Virtual Scrolling Performance', () => {
     if (!setupSucceeded) return;
 
     // Auth comes from storageState — navigate directly
-    await page.goto('/messages');
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
     await handleReAuthModal(page, TEST_USER_PASSWORD);
@@ -295,7 +295,7 @@ test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     if (!setupSucceeded) return;
 
-    await page.goto('/messages');
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
     await handleReAuthModal(page, TEST_USER_PASSWORD);
@@ -339,7 +339,7 @@ test.describe('Scroll Restoration', () => {
   test.beforeEach(async ({ page }) => {
     if (!setupSucceeded) return;
 
-    await page.goto('/messages');
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
     await handleReAuthModal(page, TEST_USER_PASSWORD);

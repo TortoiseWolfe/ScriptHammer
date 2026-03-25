@@ -33,7 +33,7 @@ const TEST_USER_2 = {
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
 async function signIn(page: Page, _email: string, password: string) {
-  await page.goto('/messages');
+  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
 }
@@ -81,7 +81,7 @@ async function waitForMessageOnPage2(
  */
 async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   // Both users navigate to messages page
-  await page1.goto('/messages');
+  await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page1);
   await handleReAuthModal(page1, TEST_USER_1.password);
 
@@ -116,7 +116,7 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   }
 
   // User 2: Navigate to messages and click same conversation
-  await page2.goto('/messages');
+  await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page2);
   await handleReAuthModal(page2, TEST_USER_2.password);
 

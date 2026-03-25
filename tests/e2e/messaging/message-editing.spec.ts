@@ -151,7 +151,7 @@ test.beforeAll(async () => {
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
 async function signIn(page: Page, _email: string, password: string) {
-  await page.goto('/messages');
+  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
 }
@@ -181,7 +181,7 @@ async function waitForUIStability(page: Page) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
-  await page.goto('/messages');
+  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
 

@@ -111,7 +111,7 @@ async function setupEncryptionViaUI(
   page: import('@playwright/test').Page,
   email: string
 ) {
-  await page.goto(`${BP}/messages`);
+  await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle');
   await dismissCookieBanner(page);
 
@@ -157,7 +157,7 @@ async function setupEncryptionViaUI(
     }
 
     // Reload to get redirected to /messages/setup
-    await page.goto(`${BP}/messages`);
+    await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
     await handleEncryptionSetup(page, MESSAGING_PASSWORD);
@@ -172,7 +172,7 @@ async function setupEncryptionViaUI(
  * Navigate to /messages, handle re-auth, open the first conversation.
  */
 async function openConversation(page: import('@playwright/test').Page) {
-  await page.goto(`${BP}/messages`);
+  await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle');
   await dismissCookieBanner(page);
   await handleReAuthModal(page, MESSAGING_PASSWORD);

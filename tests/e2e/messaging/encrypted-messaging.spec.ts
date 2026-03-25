@@ -208,7 +208,9 @@ test.describe('Encrypted Messaging Flow', () => {
       }
 
       // ===== STEP 3: User A navigates to messages =====
-      await pageA.goto(`${BASE_URL}/messages`);
+      await pageA.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       await expect(pageA).toHaveURL(/.*\/messages/);
 
@@ -243,7 +245,9 @@ test.describe('Encrypted Messaging Flow', () => {
       await expect(messageA).toBeVisible({ timeout: 5000 });
 
       // ===== STEP 7: User B navigates to messages =====
-      await pageB.goto(`${BASE_URL}/messages`);
+      await pageB.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB).toHaveURL(/.*\/messages/);
 
@@ -302,7 +306,9 @@ test.describe('Encrypted Messaging Flow', () => {
     try {
       // User A already authenticated via storageState
       // Navigate to messages
-      await pageA.goto(`${BASE_URL}/messages`);
+      await pageA.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       const conversationItem = pageA
         .locator('[data-testid*="conversation"]')
@@ -377,7 +383,9 @@ test.describe('Encrypted Messaging Flow', () => {
 
     try {
       // User A already authenticated via storageState, navigate to messages
-      await pageA.goto(`${BASE_URL}/messages`);
+      await pageA.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       const conversationItem = pageA
         .locator('[data-testid*="conversation"]')
@@ -425,7 +433,9 @@ test.describe('Encrypted Messaging Flow', () => {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
 
-      await pageB.goto(`${BASE_URL}/messages`);
+      await pageB.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageB, USER_B.password);
       const conversationItemB = pageB
         .locator('[data-testid*="conversation"]')
@@ -465,7 +475,7 @@ test.describe('Encrypted Messaging Flow', () => {
 
   test('should load message history with pagination', async ({ page }) => {
     // Already authenticated via storageState
-    await page.goto(`${BASE_URL}/messages`);
+    await page.goto(`${BASE_URL}/messages`, { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, USER_A.password);
     const conversationItem = page
       .locator('[data-testid*="conversation"]')
@@ -550,7 +560,7 @@ test.describe('Encryption Key Security', () => {
     });
 
     // Already authenticated via storageState, navigate to messages
-    await page.goto(`${BASE_URL}/messages`);
+    await page.goto(`${BASE_URL}/messages`, { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, USER_A.password);
 
     // Check if any conversations exist (may not exist if tests run in isolation)

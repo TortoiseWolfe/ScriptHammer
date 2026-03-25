@@ -218,7 +218,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 2: Navigate to connections
       console.log('Step 2: Navigating to connections...');
-      await pageA.goto('/messages?tab=connections');
+      await pageA.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await pageA.waitForLoadState('networkidle');
       await handleReAuthModal(pageA, USER_A.password);
       // Verify we're on the messages page (tab parameter is handled by UI)
@@ -288,7 +290,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 6: User B views pending requests
       console.log('Step 6: User B viewing pending requests...');
-      await pageB.goto('/messages?tab=connections');
+      await pageB.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await pageB.waitForLoadState('networkidle');
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB).toHaveURL(/.*\/messages/);
@@ -329,7 +333,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         throw new Error('Could not create conversation');
       }
 
-      await pageA.goto('/messages?conversation=' + conversationId);
+      await pageA.goto('/messages?conversation=' + conversationId, {
+        waitUntil: 'domcontentloaded',
+      });
       await pageA.waitForLoadState('networkidle');
       await handleReAuthModal(pageA, USER_A.password);
 
@@ -349,7 +355,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 9: User B receives message
       console.log('Step 9: User B receiving message...');
-      await pageB.goto('/messages?conversation=' + conversationId);
+      await pageB.goto('/messages?conversation=' + conversationId, {
+        waitUntil: 'domcontentloaded',
+      });
       await pageB.waitForLoadState('networkidle');
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB.getByText(testMessage)).toBeVisible({
@@ -435,7 +443,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     // Already authenticated via storageState
     // Navigate to messages page and time it
     const startTime = Date.now();
-    await page.goto('/messages');
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, USER_A.password);
 
     // Wait for page title to load - NOT spinner
@@ -466,7 +474,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
 
     // Already authenticated via storageState
     // Navigate to messages
-    await page.goto('/messages');
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     await handleReAuthModal(page, USER_A.password);
 

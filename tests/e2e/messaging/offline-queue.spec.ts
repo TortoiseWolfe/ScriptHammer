@@ -182,7 +182,9 @@ test.describe('Offline Message Queue', () => {
 
     try {
       // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`);
+      await page.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
@@ -262,7 +264,9 @@ test.describe('Offline Message Queue', () => {
 
     try {
       // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`);
+      await page.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
@@ -340,7 +344,9 @@ test.describe('Offline Message Queue', () => {
 
     try {
       // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`);
+      await page.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
@@ -448,7 +454,9 @@ test.describe('Offline Message Queue', () => {
       await pageB.waitForURL(/(?!.*sign-in)/, { timeout: 15000 });
 
       // ===== STEP 2: Both navigate to same conversation =====
-      await pageA.goto(`${BASE_URL}/messages`);
+      await pageA.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(pageA);
       await handleReAuthModal(pageA, USER_A.password);
 
@@ -473,7 +481,9 @@ test.describe('Offline Message Queue', () => {
       const urlA = pageA.url();
       const conversationId = new URL(urlA).searchParams.get('conversation');
 
-      await pageB.goto(`${BASE_URL}/messages`);
+      await pageB.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(pageB);
       await handleReAuthModal(pageB, USER_B.password);
 
@@ -571,7 +581,9 @@ test.describe('Offline Message Queue', () => {
 
     try {
       // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`);
+      await page.goto(`${BASE_URL}/messages`, {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 

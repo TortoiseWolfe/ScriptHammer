@@ -214,7 +214,7 @@ test.describe('Offline Queue Sync E2E', () => {
       await page.waitForLoadState('networkidle');
 
       // ===== Navigate to messages =====
-      await page.goto(`${BP}/messages`);
+      await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle');
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A_PASSWORD);

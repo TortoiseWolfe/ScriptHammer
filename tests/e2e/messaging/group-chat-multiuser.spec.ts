@@ -101,7 +101,9 @@ test.describe('Group Chat E2E', () => {
     });
 
     try {
-      await page.goto(BASE_URL + '/messages');
+      await page.goto(BASE_URL + '/messages', {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, PRIMARY_USER.password);
 
@@ -137,7 +139,9 @@ test.describe('Group Chat E2E', () => {
     const page = await context.newPage();
 
     try {
-      await page.goto(BASE_URL + '/messages');
+      await page.goto(BASE_URL + '/messages', {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, PRIMARY_USER.password);
 
@@ -186,7 +190,9 @@ test.describe('Group Chat E2E', () => {
     const page = await context.newPage();
 
     try {
-      await page.goto(BASE_URL + '/messages');
+      await page.goto(BASE_URL + '/messages', {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, PRIMARY_USER.password);
 
@@ -261,7 +267,9 @@ test.describe('Group Chat E2E', () => {
           'NOTE: Group creation failed (backend not fully implemented) - UI flow verified'
         );
         // Navigate back to messages for cleanup
-        await page.goto(BASE_URL + '/messages');
+        await page.goto(BASE_URL + '/messages', {
+          waitUntil: 'domcontentloaded',
+        });
       } else if (
         currentUrl.includes('/messages') &&
         currentUrl.includes('conversation=')
@@ -290,12 +298,16 @@ test.describe('Group Chat E2E', () => {
     const page = await context.newPage();
 
     try {
-      await page.goto(BASE_URL + '/messages');
+      await page.goto(BASE_URL + '/messages', {
+        waitUntil: 'domcontentloaded',
+      });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, PRIMARY_USER.password);
 
       // Navigate to new-group page
-      await page.goto(BASE_URL + '/messages/new-group');
+      await page.goto(BASE_URL + '/messages/new-group', {
+        waitUntil: 'domcontentloaded',
+      });
       await page.waitForLoadState('networkidle');
 
       // Handle any auth flow if needed

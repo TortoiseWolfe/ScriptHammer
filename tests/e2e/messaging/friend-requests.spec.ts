@@ -172,7 +172,9 @@ test.describe('Friend Request Flow', () => {
       }
 
       // ===== STEP 2: User A navigates to connections tab =====
-      await pageA.goto('/messages?tab=connections');
+      await pageA.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
@@ -214,7 +216,9 @@ test.describe('Friend Request Flow', () => {
       }
 
       // ===== STEP 6: User B navigates to connections page =====
-      await pageB.goto('/messages?tab=connections');
+      await pageB.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB).toHaveURL(/.*\/messages.*tab=connections/);
 
@@ -286,7 +290,9 @@ test.describe('Friend Request Flow', () => {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
 
-      await pageB.goto('/messages?tab=connections');
+      await pageB.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageB, USER_B.password);
       const searchInput = pageB.locator('#user-search-input');
       await expect(searchInput).toBeVisible({ timeout: 5000 });
@@ -316,7 +322,9 @@ test.describe('Friend Request Flow', () => {
         throw new Error(`User A sign-in failed: ${resultA.error}`);
       }
 
-      await pageA.goto('/messages?tab=connections');
+      await pageA.goto('/messages?tab=connections', {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       const receivedTab = pageA.getByRole('tab', {
         name: /pending received|received/i,
@@ -354,7 +362,9 @@ test.describe('Friend Request Flow', () => {
     }
 
     // Send friend request to User B
-    await page.goto('/messages?tab=connections');
+    await page.goto('/messages?tab=connections', {
+      waitUntil: 'domcontentloaded',
+    });
     await handleReAuthModal(page, USER_A.password);
     const searchInput = page.locator('#user-search-input');
     await expect(searchInput).toBeVisible({ timeout: 5000 });
@@ -405,7 +415,9 @@ test.describe('Friend Request Flow', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    await page.goto('/messages?tab=connections');
+    await page.goto('/messages?tab=connections', {
+      waitUntil: 'domcontentloaded',
+    });
     await handleReAuthModal(page, USER_A.password);
 
     // Send first request
@@ -455,7 +467,9 @@ test.describe('Accessibility', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    await page.goto('/messages?tab=connections');
+    await page.goto('/messages?tab=connections', {
+      waitUntil: 'domcontentloaded',
+    });
     await handleReAuthModal(page, USER_A.password);
 
     // Verify keyboard navigation
@@ -485,7 +499,9 @@ test.describe('Accessibility', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    await page.goto('/messages?tab=connections');
+    await page.goto('/messages?tab=connections', {
+      waitUntil: 'domcontentloaded',
+    });
     await handleReAuthModal(page, USER_A.password);
     await page.waitForLoadState('networkidle');
 
