@@ -35,6 +35,20 @@ export default function MessagingSetupPage() {
     if (authLoading) return;
 
     if (!user) {
+      // On static exports, the Supabase client restores the session from
+      // localStorage asynchronously. The auth context may report user=null
+      // briefly before session restoration completes. If we redirect to
+      // /sign-in immediately, we create an infinite redirect loop:
+      //   /messages → /messages/setup → /sign-in → /messages → …
+      //
+      // Only redirect if there's genuinely no session in localStorage.
+      const hasStoredSession =
+        typeof window !== 'undefined' &&
+        Object.keys(localStorage).some((k) => k.includes('-auth-token'));
+      if (hasStoredSession) {
+        // Session exists but hasn't hydrated yet — wait for next auth update
+        return;
+      }
       router.push('/sign-in?redirect=/messages');
       return;
     }
