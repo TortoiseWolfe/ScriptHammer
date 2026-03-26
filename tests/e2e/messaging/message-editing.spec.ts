@@ -185,14 +185,13 @@ async function navigateToConversation(page: Page) {
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
 
-  // Click on Chats tab to see conversations
+  // Wait for the Chats tab to appear (auth gates must resolve first)
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
-  if (await chatsTab.isVisible()) {
-    await chatsTab.click();
-    // Wait for tab panel to update
-    await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-    await waitForUIStability(page);
-  }
+  await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+  await chatsTab.click();
+  // Wait for tab panel to update
+  await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
+  await waitForUIStability(page);
 
   // Find first conversation button by aria-label pattern
   const firstConversation = page
