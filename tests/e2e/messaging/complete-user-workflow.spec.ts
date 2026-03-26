@@ -217,16 +217,15 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 1: User A authenticated via storageState');
 
       // STEP 2: Navigate to connections
+      // First navigate to /messages to hydrate auth + unlock encryption keys.
+      // The storageState loads the Supabase token but auth context needs a
+      // full page load to hydrate. handleReAuthModal waits for the modal.
       console.log('Step 2: Navigating to connections...');
-      await pageA.goto('/messages?tab=connections', {
-        waitUntil: 'domcontentloaded',
-      });
+      await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
-      // Wait for the messaging UI to fully render after auth gates resolve.
-      // MessagingGate + EncryptionKeyGate + Suspense all render overlays
-      // during auth hydration — the sidebar tabs appear once everything settles.
+      // Now click the Connections tab (auth is hydrated, sidebar is visible)
       const connectionsTab = pageA.getByRole('tab', { name: /Connections/i });
-      await connectionsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 15000 });
       await connectionsTab.click();
       await pageA.waitForTimeout(500);
       console.log('Step 2: Connections page loaded');
