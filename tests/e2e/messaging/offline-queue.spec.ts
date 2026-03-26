@@ -201,11 +201,23 @@ test.describe('Offline Message Queue', () => {
       await expect(conversationItem).toBeVisible({ timeout: 15000 });
       await conversationItem.click();
 
+      // Wait for conversation view to mount
+      await page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
+
+      // Wait for conversation view to mount (Supabase query 1-5s on free tier)
+      await page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
+
       // Wait for message input to confirm conversation is loaded
       const messageInput = page.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 10000 });
+      await expect(messageInput).toBeVisible({ timeout: 15000 });
 
       // ===== STEP 3: Go offline =====
       await context.setOffline(true);
@@ -282,6 +294,12 @@ test.describe('Offline Message Queue', () => {
         .first();
       await expect(conversationItem).toBeVisible({ timeout: 10000 });
       await conversationItem.click();
+
+      // Wait for conversation view to mount
+      await page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // Wait for message input
       const messageInput = page.getByRole('textbox', {
@@ -363,6 +381,12 @@ test.describe('Offline Message Queue', () => {
         .first();
       await expect(conversationItem).toBeVisible({ timeout: 10000 });
       await conversationItem.click();
+
+      // Wait for conversation view to mount
+      await page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // Wait for message input
       const msgInput = page.getByRole('textbox', { name: /Message input/i });
@@ -599,6 +623,12 @@ test.describe('Offline Message Queue', () => {
         .first();
       await expect(conversationItem).toBeVisible({ timeout: 10000 });
       await conversationItem.click();
+
+      // Wait for conversation view to mount
+      await page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // Wait for message input
       const messageInput = page.getByRole('textbox', {

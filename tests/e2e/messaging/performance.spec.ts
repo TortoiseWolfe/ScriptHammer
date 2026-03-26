@@ -169,12 +169,18 @@ async function navigateToConversation(page: import('@playwright/test').Page) {
     .first();
 
   // Wait for and click conversation
-  await expect(firstConversation).toBeVisible({ timeout: 5000 });
+  await expect(firstConversation).toBeVisible({ timeout: 15000 });
   await firstConversation.click();
+
+  // Wait for conversation view to mount (Supabase query 1-5s on free tier)
+  await page.waitForSelector('[data-testid="message-thread"]', {
+    state: 'visible',
+    timeout: 15000,
+  });
 
   // Wait for message input to confirm conversation is loaded
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeVisible({ timeout: 10000 });
+  await expect(messageInput).toBeVisible({ timeout: 15000 });
   await waitForUIStability(page);
 }
 
