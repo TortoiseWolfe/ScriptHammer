@@ -219,12 +219,11 @@ test.describe('Offline Queue Sync E2E', () => {
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A_PASSWORD);
 
-      // Click Chats tab if visible
+      // Wait for Chats tab (auth gates must resolve first)
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      if (await chatsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await chatsTab.click();
-        await page.waitForTimeout(500);
-      }
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await chatsTab.click();
+      await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
       // Click into the first conversation
       const conversationItem = page

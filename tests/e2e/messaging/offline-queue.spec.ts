@@ -461,12 +461,11 @@ test.describe('Offline Message Queue', () => {
       await dismissCookieBanner(pageA);
       await handleReAuthModal(pageA, USER_A.password);
 
-      // Click on Chats tab for user A
+      // Wait for Chats tab for user A
       const chatsTabA = pageA.getByRole('tab', { name: /Chats/i });
-      if (await chatsTabA.isVisible()) {
-        await chatsTabA.click();
-        await waitForUIStability(pageA);
-      }
+      await chatsTabA.waitFor({ state: 'visible', timeout: 30000 });
+      await chatsTabA.click();
+      await pageA.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
       const conversationA = pageA
         .getByRole('button', { name: /Conversation with/ })
@@ -488,12 +487,11 @@ test.describe('Offline Message Queue', () => {
       await dismissCookieBanner(pageB);
       await handleReAuthModal(pageB, USER_B.password);
 
-      // Click on Chats tab for user B
+      // Wait for Chats tab for user B
       const chatsTabB = pageB.getByRole('tab', { name: /Chats/i });
-      if (await chatsTabB.isVisible()) {
-        await chatsTabB.click();
-        await waitForUIStability(pageB);
-      }
+      await chatsTabB.waitFor({ state: 'visible', timeout: 30000 });
+      await chatsTabB.click();
+      await pageB.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
       const conversationB = pageB
         .getByRole('button', { name: /Conversation with/ })

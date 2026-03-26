@@ -85,12 +85,11 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   await dismissCookieBanner(page1);
   await handleReAuthModal(page1, TEST_USER_1.password);
 
-  // User 1: Click on Chats tab
+  // User 1: Wait for Chats tab (auth gates must resolve)
   const chatsTab1 = page1.getByRole('tab', { name: /Chats/i });
-  if (await chatsTab1.isVisible()) {
-    await chatsTab1.click();
-    await page1.waitForTimeout(500);
-  }
+  await chatsTab1.waitFor({ state: 'visible', timeout: 30000 });
+  await chatsTab1.click();
+  await page1.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
   // Find first conversation button by aria-label
   const conversation1 = page1
@@ -121,10 +120,9 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   await handleReAuthModal(page2, TEST_USER_2.password);
 
   const chatsTab2 = page2.getByRole('tab', { name: /Chats/i });
-  if (await chatsTab2.isVisible()) {
-    await chatsTab2.click();
-    await page2.waitForTimeout(500);
-  }
+  await chatsTab2.waitFor({ state: 'visible', timeout: 30000 });
+  await chatsTab2.click();
+  await page2.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
   const conversation2 = page2
     .getByRole('button', { name: /Conversation with/ })

@@ -178,10 +178,9 @@ async function openConversation(page: import('@playwright/test').Page) {
   await handleReAuthModal(page, MESSAGING_PASSWORD);
 
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
-  if (await chatsTab.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await chatsTab.click();
-    await page.waitForTimeout(500);
-  }
+  await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+  await chatsTab.click();
+  await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
   const conversationItem = page
     .getByRole('button', { name: /Conversation with/i })
