@@ -179,30 +179,27 @@ test.describe('Session Persistence E2E', () => {
     // Sign out via dropdown menu
     await signOutViaDropdown(page);
 
-    // Verify session cleared from storage
-    const afterSignOut = await page.evaluate(() =>
-      JSON.stringify(window.localStorage)
-    );
-
-    // Session data should be removed or cleared (check for sb-*-auth-token keys)
-    const hasActiveSession = await page.evaluate(() => {
-      for (const key of Object.keys(localStorage)) {
-        if (key.match(/sb-.*-auth-token/)) {
-          const authData = localStorage.getItem(key);
-          if (authData) {
-            try {
-              const parsed = JSON.parse(authData);
-              return parsed.access_token != null;
-            } catch {
-              return false;
+    // Wait for Supabase to clear the session from localStorage.
+    // signOut() is async — the redirect to / happens before tokens are cleared.
+    await page.waitForFunction(
+      () => {
+        for (const key of Object.keys(localStorage)) {
+          if (key.match(/sb-.*-auth-token/)) {
+            const authData = localStorage.getItem(key);
+            if (authData) {
+              try {
+                const parsed = JSON.parse(authData);
+                if (parsed.access_token != null) return false;
+              } catch {
+                /* empty or malformed — fine */
+              }
             }
           }
         }
-      }
-      return false;
-    });
-
-    expect(hasActiveSession).toBeFalsy();
+        return true;
+      },
+      { timeout: 10000 }
+    );
 
     // Verify cannot access protected routes
     await page.goto('/profile');

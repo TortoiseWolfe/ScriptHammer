@@ -188,18 +188,17 @@ test.describe('Offline Message Queue', () => {
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // Click on Chats tab to see conversations
+      // Wait for Chats tab to appear (auth gates must resolve first)
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      if (await chatsTab.isVisible()) {
-        await chatsTab.click();
-        await waitForUIStability(page);
-      }
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await chatsTab.click();
+      await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
 
       // Find first conversation button
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 15000 });
       await conversationItem.click();
 
       // Wait for message input to confirm conversation is loaded
@@ -272,7 +271,8 @@ test.describe('Offline Message Queue', () => {
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      if (await chatsTab.isVisible()) {
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      {
         await chatsTab.click();
         await waitForUIStability(page);
       }
@@ -352,7 +352,8 @@ test.describe('Offline Message Queue', () => {
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      if (await chatsTab.isVisible()) {
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      {
         await chatsTab.click();
         await waitForUIStability(page);
       }
@@ -589,7 +590,8 @@ test.describe('Offline Message Queue', () => {
 
       // Click on Chats tab to see conversations
       const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      if (await chatsTab.isVisible()) {
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      {
         await chatsTab.click();
         await waitForUIStability(page);
       }
