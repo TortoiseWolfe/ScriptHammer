@@ -31,8 +31,11 @@ export default defineConfig({
   testDir: './tests/e2e',
   /* Global setup runs once before all tests - validates prerequisites */
   globalSetup: './tests/e2e/global-setup.ts',
-  /* Run tests in files in parallel */
-  fullyParallel: true,
+  /* Run test files sequentially on CI to avoid parallel database contention.
+   * Shard 2 messaging tests share test users in Supabase — parallel execution
+   * causes page.goto timeouts, missing conversations, and Realtime failures.
+   * Locally, parallel is fine (single user, no contention). */
+  fullyParallel: !process.env.CI,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
