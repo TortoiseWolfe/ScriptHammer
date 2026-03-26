@@ -24,53 +24,49 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Determine if we should block with "Sign in required"
+  const showSignInRequired =
+    !isLoading &&
+    !user &&
+    (typeof window === 'undefined' ||
+      !Object.keys(localStorage).some((k) => k.includes('-auth-token')));
+
+  // Show overlay spinner while auth is loading or session is hydrating.
+  // Render children behind it so child components (sidebar tabs etc.) mount.
+  const showLoadingOverlay = isLoading || (!user && !showSignInRequired);
+
+  if (showSignInRequired) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <span
-          className="loading loading-spinner loading-lg"
-          role="status"
-          aria-label="Loading"
-        ></span>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
+          <p className="text-base-content/85">
+            Please sign in to access messaging.
+          </p>
+        </div>
       </div>
     );
   }
 
-  // Not logged in — but on static exports, useAuth() briefly reports
-  // user=null before the Supabase session restores from localStorage.
-  // Only block if there's genuinely no session token stored.
-  if (!user) {
-    const hasStoredSession =
-      typeof window !== 'undefined' &&
-      Object.keys(localStorage).some((k) => k.includes('-auth-token'));
-    if (!hasStoredSession) {
-      return (
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="text-center">
-            <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
-            <p className="text-base-content/85">
-              Please sign in to access messaging.
-            </p>
-          </div>
-        </div>
-      );
-    }
-    // Session exists in localStorage — show loading while auth hydrates
+  // While auth is hydrating, render children behind a loading overlay
+  if (showLoadingOverlay) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <span
-          className="loading loading-spinner loading-lg"
-          role="status"
-          aria-label="Loading"
-        ></span>
-      </div>
+      <>
+        <div className="bg-base-100/80 fixed inset-0 z-50 flex items-center justify-center">
+          <span
+            className="loading loading-spinner loading-lg"
+            role="status"
+            aria-label="Loading"
+          ></span>
+        </div>
+        {children}
+      </>
     );
   }
 
   // Check if email is verified
-  const isEmailVerified = user.email_confirmed_at != null;
-  const isOAuth = isOAuthUser(user);
+  const isEmailVerified = user!.email_confirmed_at != null;
+  const isOAuth = isOAuthUser(user!);
 
   // Allow access if verified OR OAuth user (provider-verified)
   if (isEmailVerified || isOAuth) {
@@ -79,7 +75,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
 
   // Handle resend verification email
   const handleResend = async () => {
-    if (!user.email) return;
+    if (!user?.email) return;
 
     setResending(true);
     setResendError(null);
@@ -87,7 +83,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
 
     const { error } = await supabase.auth.resend({
       type: 'signup',
-      email: user.email,
+      email: user!.email!,
     });
 
     setResending(false);
@@ -131,7 +127,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
 
           <div className="bg-base-300 mt-4 rounded-lg p-3">
             <p className="text-sm">
-              <span className="font-medium">Your email:</span> {user.email}
+              <span className="font-medium">Your email:</span> {user?.email}
             </p>
           </div>
 

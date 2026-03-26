@@ -43,7 +43,8 @@ describe('MessagingGate', () => {
     );
 
     expect(screen.getByRole('status', { hidden: true })).toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+    // Children render behind the loading overlay
+    expect(screen.getByText('Protected Content')).toBeInTheDocument();
   });
 
   it('renders sign in required when no user', () => {
