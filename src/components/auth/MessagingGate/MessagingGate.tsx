@@ -52,7 +52,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   if (showLoadingOverlay) {
     return (
       <>
-        <div className="bg-base-100/80 fixed inset-0 z-50 flex items-center justify-center">
+        <div className="bg-base-100/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
           <span
             className="loading loading-spinner loading-lg"
             role="status"

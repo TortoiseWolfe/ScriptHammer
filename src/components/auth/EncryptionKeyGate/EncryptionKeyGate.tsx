@@ -99,7 +99,7 @@ export default function EncryptionKeyGate({
     <>
       {(authLoading || checkingKeys) && (
         <div
-          className="bg-base-100/80 fixed inset-0 z-50 flex items-center justify-center"
+          className="bg-base-100/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
           data-testid="encryption-key-gate-loading"
         >
           <span
