@@ -147,7 +147,11 @@ test.describe('Friend Request Flow', () => {
     if (!userBDisplayName) {
       userBDisplayName = await getDisplayNameByEmail(USER_B.email);
     }
-    // Clean up any existing connections between test users
+  });
+
+  // Clean up AFTER each test, not before — beforeEach cleanup deletes
+  // connections that other test files depend on (parallel execution).
+  test.afterEach(async () => {
     await cleanupConnections();
   });
 
