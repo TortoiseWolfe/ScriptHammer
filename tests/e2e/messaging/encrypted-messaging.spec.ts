@@ -219,18 +219,21 @@ test.describe('Encrypted Messaging Flow', () => {
       const conversationItem = pageA
         .locator('[data-testid*="conversation"]')
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 15000 });
       await conversationItem.click();
 
-      // Wait for conversation to load
-      await pageA.waitForTimeout(1000);
+      // Wait for conversation view to mount (Supabase query 1-5s on free tier)
+      await pageA.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // ===== STEP 5: User A sends an encrypted message =====
       const testMessage = `Test encrypted message ${Date.now()}`;
       const messageInput = pageA.locator(
         'textarea[aria-label="Message input"]'
       );
-      await expect(messageInput).toBeVisible();
+      await expect(messageInput).toBeVisible({ timeout: 15000 });
       await messageInput.fill(testMessage);
 
       const sendButton = pageA.getByRole('button', { name: /send/i });
@@ -257,8 +260,10 @@ test.describe('Encrypted Messaging Flow', () => {
         .first();
       await expect(conversationItemB).toBeVisible({ timeout: 10000 });
       await conversationItemB.click();
-
-      await pageB.waitForTimeout(1000);
+      await pageB.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // ===== STEP 9: User B sees the decrypted message =====
       const messageB = pageB.getByText(testMessage);
@@ -314,7 +319,10 @@ test.describe('Encrypted Messaging Flow', () => {
         .locator('[data-testid*="conversation"]')
         .first();
       await conversationItem.click();
-      await pageA.waitForTimeout(1000);
+      await pageA.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // Send a test message with known plaintext
       const secretMessage = `Secret message for zero-knowledge test ${Date.now()}`;
@@ -391,7 +399,10 @@ test.describe('Encrypted Messaging Flow', () => {
         .locator('[data-testid*="conversation"]')
         .first();
       await conversationItem.click();
-      await pageA.waitForTimeout(1000);
+      await pageA.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 15000,
+      });
 
       // Send a message
       const testMessage = `Delivery status test ${Date.now()}`;
