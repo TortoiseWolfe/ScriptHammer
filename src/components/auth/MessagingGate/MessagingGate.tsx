@@ -37,16 +37,33 @@ export default function MessagingGate({ children }: MessagingGateProps) {
     );
   }
 
-  // Not logged in - should be handled by auth middleware, but safety check
+  // Not logged in — but on static exports, useAuth() briefly reports
+  // user=null before the Supabase session restores from localStorage.
+  // Only block if there's genuinely no session token stored.
   if (!user) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
-          <p className="text-base-content/85">
-            Please sign in to access messaging.
-          </p>
+    const hasStoredSession =
+      typeof window !== 'undefined' &&
+      Object.keys(localStorage).some((k) => k.includes('-auth-token'));
+    if (!hasStoredSession) {
+      return (
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-center">
+            <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
+            <p className="text-base-content/85">
+              Please sign in to access messaging.
+            </p>
+          </div>
         </div>
+      );
+    }
+    // Session exists in localStorage — show loading while auth hydrates
+    return (
+      <div className="flex h-full items-center justify-center">
+        <span
+          className="loading loading-spinner loading-lg"
+          role="status"
+          aria-label="Loading"
+        ></span>
       </div>
     );
   }
