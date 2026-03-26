@@ -503,7 +503,7 @@ test.describe('Accessibility', () => {
       waitUntil: 'domcontentloaded',
     });
     await handleReAuthModal(page, USER_A.password);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Verify all tabs are keyboard accessible via Tab key
     // Note: DaisyUI tabs don't implement ARIA arrow key navigation

@@ -211,11 +211,11 @@ test.describe('Offline Queue Sync E2E', () => {
 
       // Reload so AuthContext reads the injected session
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // ===== Navigate to messages =====
       await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A_PASSWORD);
 

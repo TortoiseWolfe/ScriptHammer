@@ -278,7 +278,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       // STEP 5: User B signs in
       console.log('Step 5: User B signing in...');
       await pageB.goto('/sign-in');
-      await pageB.waitForLoadState('networkidle');
+      await pageB.waitForLoadState('domcontentloaded');
       await dismissCookieBanner(pageB);
       await pageB.getByLabel('Email').fill(USER_B.email);
       await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
@@ -291,7 +291,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.goto('/messages?tab=connections', {
         waitUntil: 'domcontentloaded',
       });
-      await pageB.waitForLoadState('networkidle');
+      await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB).toHaveURL(/.*\/messages/);
 
@@ -334,7 +334,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageA.goto('/messages?conversation=' + conversationId, {
         waitUntil: 'domcontentloaded',
       });
-      await pageA.waitForLoadState('networkidle');
+      await pageA.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageA, USER_A.password);
 
       testMessage = 'Hello from User A - ' + Date.now();
@@ -356,7 +356,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.goto('/messages?conversation=' + conversationId, {
         waitUntil: 'domcontentloaded',
       });
-      await pageB.waitForLoadState('networkidle');
+      await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
       await expect(pageB.getByText(testMessage)).toBeVisible({
         timeout: 10000,
@@ -473,7 +473,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     // Already authenticated via storageState
     // Navigate to messages
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await handleReAuthModal(page, USER_A.password);
 
     // If error alert with actual error text is shown, verify retry button exists

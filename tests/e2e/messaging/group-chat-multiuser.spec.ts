@@ -308,7 +308,7 @@ test.describe('Group Chat E2E', () => {
       await page.goto(BASE_URL + '/messages/new-group', {
         waitUntil: 'domcontentloaded',
       });
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Handle any auth flow if needed
       await handleReAuthModal(page, PRIMARY_USER.password);
