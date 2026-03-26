@@ -75,7 +75,7 @@ test.describe('GDPR Data Export', () => {
     context,
   }) => {
     // Setup download listener
-    const downloadPromise = page.waitForEvent('download');
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
 
     // Click export button
     const exportButton = page.getByRole('button', {
@@ -125,7 +125,7 @@ test.describe('GDPR Data Export', () => {
     // This test requires existing conversations with messages
     // Skip if no messages exist
 
-    const downloadPromise = page.waitForEvent('download');
+    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
 
     const exportButton = page.getByRole('button', {
       name: /Download My Data/i,

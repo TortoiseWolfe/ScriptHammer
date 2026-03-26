@@ -217,7 +217,7 @@ test.describe('Encrypted Messaging Flow', () => {
       // ===== STEP 4: User A selects conversation with User B =====
       // Click on the conversation with User B (should exist from friend request acceptance)
       const conversationItem = pageA
-        .locator('[data-testid*="conversation"]')
+        .getByRole('button', { name: /Conversation with/ })
         .first();
       await expect(conversationItem).toBeVisible({ timeout: 15000 });
       await conversationItem.click();
@@ -256,7 +256,7 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== STEP 8: User B opens conversation with User A =====
       const conversationItemB = pageB
-        .locator('[data-testid*="conversation"]')
+        .getByRole('button', { name: /Conversation with/ })
         .first();
       await expect(conversationItemB).toBeVisible({ timeout: 10000 });
       await conversationItemB.click();
@@ -316,7 +316,7 @@ test.describe('Encrypted Messaging Flow', () => {
       });
       await handleReAuthModal(pageA, USER_A.password);
       const conversationItem = pageA
-        .locator('[data-testid*="conversation"]')
+        .getByRole('button', { name: /Conversation with/ })
         .first();
       await conversationItem.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
@@ -396,7 +396,7 @@ test.describe('Encrypted Messaging Flow', () => {
       });
       await handleReAuthModal(pageA, USER_A.password);
       const conversationItem = pageA
-        .locator('[data-testid*="conversation"]')
+        .getByRole('button', { name: /Conversation with/ })
         .first();
       await conversationItem.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
@@ -449,7 +449,7 @@ test.describe('Encrypted Messaging Flow', () => {
       });
       await handleReAuthModal(pageB, USER_B.password);
       const conversationItemB = pageB
-        .locator('[data-testid*="conversation"]')
+        .getByRole('button', { name: /Conversation with/ })
         .first();
       await conversationItemB.click();
       await pageB.waitForTimeout(1000);
@@ -489,7 +489,7 @@ test.describe('Encrypted Messaging Flow', () => {
     await page.goto(`${BASE_URL}/messages`, { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, USER_A.password);
     const conversationItem = page
-      .locator('[data-testid*="conversation"]')
+      .getByRole('button', { name: /Conversation with/ })
       .first();
     await conversationItem.click();
     await page.waitForTimeout(1000);
@@ -576,7 +576,7 @@ test.describe('Encryption Key Security', () => {
 
     // Check if any conversations exist (may not exist if tests run in isolation)
     const conversationItem = page
-      .locator('[data-testid*="conversation-"]')
+      .getByRole('button', { name: /Conversation with/ })
       .first();
 
     const hasConversation = await conversationItem

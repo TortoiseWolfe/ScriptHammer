@@ -156,26 +156,26 @@ test.describe('Friend Request Flow', () => {
   }) => {
     test.setTimeout(90000); // 90 seconds for full workflow
 
-    // Create two browser contexts (two separate users)
-    const contextA = await browser.newContext();
+    // User A uses storageState (avoids Supabase sign-in rate limits)
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
     const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // ===== STEP 1: User A signs in =====
-      await pageA.goto('/sign-in');
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
+      // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User A navigates to connections tab =====
-      await pageA.goto('/messages?tab=connections', {
-        waitUntil: 'domcontentloaded',
-      });
+      await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
+      const connectionsTab = pageA.getByRole('tab', {
+        name: /Connections/i,
+      });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await connectionsTab.click();
       await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
       // ===== STEP 3: User A searches for User B by display_name =====

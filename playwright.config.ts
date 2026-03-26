@@ -58,8 +58,9 @@ export default defineConfig({
     screenshot: 'on',
     /* Retain video on failure */
     video: 'retain-on-failure',
-    /* Maximum time each action can take */
-    actionTimeout: 10000,
+    /* Maximum time each action can take. 15s accounts for Supabase free tier
+     * query latency after conversation selection in messaging tests. */
+    actionTimeout: 15000,
     /* Navigation timeout — 60s to account for Argon2id key derivation
      * during handleReAuthModal after each page.goto('/messages') */
     navigationTimeout: 60000,
