@@ -322,6 +322,29 @@ export class KeyManagementService {
         const cached = await this.restoreCachedKeys(userId);
         if (cached) {
           this.derivedKeys = cached;
+
+          // Also populate IndexedDB — encryptionService.getPrivateKey()
+          // reads from there, not from keyManagementService memory.
+          // Without this, sendMessage() can't encrypt because IndexedDB
+          // is empty in new browser contexts loaded from storageState.
+          try {
+            const { encryptionService } = await import(
+              '@/lib/messaging/encryption'
+            );
+            const privateJwk = await crypto.subtle.exportKey(
+              'jwk',
+              cached.privateKey
+            );
+            await encryptionService.storePrivateKey(userId, privateJwk);
+            logger.info('Restored keys from localStorage cache + IndexedDB', {
+              userId,
+            });
+          } catch (err) {
+            logger.warn('Could not populate IndexedDB from cache', {
+              error: err,
+            });
+          }
+
           return true;
         }
       }
