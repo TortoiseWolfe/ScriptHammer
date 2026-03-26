@@ -33,12 +33,86 @@ import {
 
 const logger = createLogger('messaging:keys');
 
+/** localStorage key for caching derived keys across page loads.
+ * Enables Playwright storageState to capture keys, eliminating the need
+ * for ReAuthModal + Argon2id on every test navigation. Cleared on logout. */
+const KEY_CACHE_PREFIX = 'sh_keys_';
+
 export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
   private derivedKeys: DerivedKeyPair | null = null;
 
   /** Key derivation service (Argon2id) */
   private keyDerivationService = new KeyDerivationService();
+
+  /** Cache derived keys to localStorage for session persistence.
+   * CryptoKey objects can't be serialized — export to JWK first. */
+  private async cacheKeys(userId: string, keys: DerivedKeyPair): Promise<void> {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      const privateJwk = await crypto.subtle.exportKey('jwk', keys.privateKey);
+      const publicJwk = await crypto.subtle.exportKey('jwk', keys.publicKey);
+      localStorage.setItem(
+        `${KEY_CACHE_PREFIX}${userId}`,
+        JSON.stringify({
+          privateKeyJwk: privateJwk,
+          publicKeyJwk: publicJwk,
+          publicKeyJwkOriginal: keys.publicKeyJwk,
+          salt: keys.salt,
+        })
+      );
+    } catch {
+      // localStorage full or crypto export failed — keys still work from memory
+    }
+  }
+
+  /** Restore cached keys from localStorage. Returns null if not cached.
+   * Re-imports JWK back to CryptoKey objects. */
+  private async restoreCachedKeys(
+    userId: string
+  ): Promise<DerivedKeyPair | null> {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem(`${KEY_CACHE_PREFIX}${userId}`);
+      if (!cached) return null;
+      const data = JSON.parse(cached);
+      const privateKey = await crypto.subtle.importKey(
+        'jwk',
+        data.privateKeyJwk,
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,
+        ['deriveBits', 'deriveKey']
+      );
+      const publicKey = await crypto.subtle.importKey(
+        'jwk',
+        data.publicKeyJwk,
+        { name: 'ECDH', namedCurve: 'P-256' },
+        true,
+        []
+      );
+      return {
+        privateKey,
+        publicKey,
+        publicKeyJwk: data.publicKeyJwkOriginal || data.publicKeyJwk,
+        salt: data.salt,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /** Clear cached keys for a user from localStorage. */
+  private clearCachedKeys(userId?: string): void {
+    if (typeof localStorage === 'undefined') return;
+    if (userId) {
+      localStorage.removeItem(`${KEY_CACHE_PREFIX}${userId}`);
+    } else {
+      // Clear all cached keys
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith(KEY_CACHE_PREFIX))
+        .forEach((k) => localStorage.removeItem(k));
+    }
+  }
 
   /**
    * Initialize encryption keys for NEW user (first login after registration)
@@ -104,8 +178,9 @@ export class KeyManagementService {
         );
       }
 
-      // Step 4: Store in memory
+      // Step 4: Store in memory + localStorage cache
       this.derivedKeys = keyPair;
+      await this.cacheKeys(user.id, keyPair);
 
       logger.info('Keys initialized for user', { userId: user.id });
       return keyPair;
@@ -203,8 +278,9 @@ export class KeyManagementService {
         throw new KeyMismatchError();
       }
 
-      // Step 4: Store in memory
+      // Step 4: Store in memory + localStorage cache
       this.derivedKeys = keyPair;
+      await this.cacheKeys(user.id, keyPair);
 
       logger.info('Keys derived for user', { userId: user.id });
       return keyPair;
@@ -222,19 +298,44 @@ export class KeyManagementService {
   }
 
   /**
-   * Get current derived keys from memory
-   * @returns DerivedKeyPair or null if not derived
+   * Get current derived keys from memory (synchronous).
+   * For async restore from localStorage, use restoreKeysFromCache().
+   * @returns DerivedKeyPair or null if not in memory
    */
   getCurrentKeys(): DerivedKeyPair | null {
     return this.derivedKeys;
   }
 
   /**
-   * Clear keys from memory (call on logout)
+   * Try to restore keys from localStorage cache (async — needs crypto import).
+   * Call this on app startup before checking getCurrentKeys().
+   * @returns true if keys were restored from cache
+   */
+  async restoreKeysFromCache(): Promise<boolean> {
+    if (this.derivedKeys) return true;
+    if (typeof localStorage === 'undefined') return false;
+
+    const keys = Object.keys(localStorage);
+    for (const key of keys) {
+      if (key.startsWith(KEY_CACHE_PREFIX)) {
+        const userId = key.slice(KEY_CACHE_PREFIX.length);
+        const cached = await this.restoreCachedKeys(userId);
+        if (cached) {
+          this.derivedKeys = cached;
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Clear keys from memory and localStorage (call on logout)
    */
   clearKeys(): void {
     this.derivedKeys = null;
-    logger.debug('Keys cleared from memory');
+    this.clearCachedKeys();
+    logger.debug('Keys cleared from memory and localStorage');
   }
 
   /**
@@ -523,8 +624,9 @@ export class KeyManagementService {
         );
       }
 
-      // Update in-memory keys (password-derived keys are never persisted to IndexedDB)
+      // Update in-memory keys + localStorage cache
       this.derivedKeys = keyPair;
+      await this.cacheKeys(user.id, keyPair);
 
       logger.info('Keys rotated for user', { userId: user.id });
       return true;

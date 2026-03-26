@@ -17,6 +17,7 @@ const mockGetCurrentKeys = vi.fn();
 vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {
     hasKeysForUser: (...args: unknown[]) => mockHasKeysForUser(...args),
+    restoreKeysFromCache: () => Promise.resolve(false),
     getCurrentKeys: () => mockGetCurrentKeys(),
   },
 }));

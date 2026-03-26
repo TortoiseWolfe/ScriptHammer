@@ -75,7 +75,9 @@ export default function EncryptionKeyGate({
         return;
       }
 
-      // Keys exist in DB. Are they in memory this session?
+      // Keys exist in DB. Are they in memory or localStorage cache?
+      // Try restoring from localStorage first (covers page reload / storageState).
+      await keyManagementService.restoreKeysFromCache();
       const keys = keyManagementService.getCurrentKeys();
       if (!keys) {
         setNeedsReAuth(true);
