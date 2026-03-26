@@ -89,23 +89,24 @@ export default function EncryptionKeyGate({
     setNeedsReAuth(false);
   }, []);
 
-  if (authLoading || checkingKeys) {
-    return (
-      <div
-        className="fixed inset-x-0 top-16 bottom-28 flex items-center justify-center"
-        data-testid="encryption-key-gate-loading"
-      >
-        <span
-          className="loading loading-spinner loading-lg"
-          role="status"
-          aria-label="Checking encryption keys"
-        ></span>
-      </div>
-    );
-  }
-
+  // Always render children — blocking them behind a spinner prevented
+  // the sidebar tabs from mounting, which broke E2E tests that wait for
+  // the "Connections" tab while the gate is still checking keys.
+  // Show a loading overlay on top instead of replacing children entirely.
   return (
     <>
+      {(authLoading || checkingKeys) && (
+        <div
+          className="bg-base-100/80 fixed inset-0 z-50 flex items-center justify-center"
+          data-testid="encryption-key-gate-loading"
+        >
+          <span
+            className="loading loading-spinner loading-lg"
+            role="status"
+            aria-label="Checking encryption keys"
+          ></span>
+        </div>
+      )}
       <ReAuthModal isOpen={needsReAuth} onSuccess={handleReAuthSuccess} />
       {children}
     </>

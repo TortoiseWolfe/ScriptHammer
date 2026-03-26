@@ -41,7 +41,7 @@ describe('EncryptionKeyGate', () => {
     });
   });
 
-  it('shows loading spinner while auth is loading', () => {
+  it('shows loading overlay while auth is loading', () => {
     mockUseAuth.mockReturnValue({ user: null, isLoading: true });
     render(
       <EncryptionKeyGate>
@@ -51,10 +51,11 @@ describe('EncryptionKeyGate', () => {
     expect(
       screen.getByTestId('encryption-key-gate-loading')
     ).toBeInTheDocument();
-    expect(screen.queryByText('Protected')).not.toBeInTheDocument();
+    // Children render behind the overlay (not blocked)
+    expect(screen.getByText('Protected')).toBeInTheDocument();
   });
 
-  it('shows loading spinner while checking keys', () => {
+  it('shows loading overlay while checking keys', () => {
     mockHasKeysForUser.mockReturnValue(new Promise(() => {})); // never resolves
     render(
       <EncryptionKeyGate>
@@ -64,7 +65,8 @@ describe('EncryptionKeyGate', () => {
     expect(
       screen.getByTestId('encryption-key-gate-loading')
     ).toBeInTheDocument();
-    expect(screen.queryByText('Protected')).not.toBeInTheDocument();
+    // Children render behind the overlay
+    expect(screen.getByText('Protected')).toBeInTheDocument();
   });
 
   it('redirects to /messages/setup when no keys in database', async () => {
@@ -77,8 +79,8 @@ describe('EncryptionKeyGate', () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/messages/setup');
     });
-    // Children never render on the redirect path
-    expect(screen.queryByText('Protected')).not.toBeInTheDocument();
+    // Children render behind the overlay (redirect is client-side)
+    expect(screen.getByText('Protected')).toBeInTheDocument();
   });
 
   it('shows ReAuthModal when keys in DB but not in memory', async () => {
