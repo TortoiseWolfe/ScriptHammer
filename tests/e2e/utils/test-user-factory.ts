@@ -442,6 +442,18 @@ export async function handleReAuthModal(
   const testPassword =
     password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
+  // Quick check: if encryption keys are already cached in localStorage
+  // (from a previous auth.setup.ts run), the ReAuthModal won't appear.
+  // Skip the expensive 18s wait (3s + 15s timeout).
+  const hasCachedKeys = await page.evaluate(() =>
+    Object.keys(localStorage).some((k) => k.startsWith('sh_keys_'))
+  );
+  if (hasCachedKeys) {
+    // Keys cached — no modal needed. Just wait briefly for React to hydrate.
+    await page.waitForTimeout(1000);
+    return false;
+  }
+
   // EncryptionKeyGate has two paths when keys aren't in memory:
   // 1. Keys exist in DB → shows ReAuthModal overlay
   // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
