@@ -149,11 +149,8 @@ test.describe('Friend Request Flow', () => {
     }
   });
 
-  // Clean up AFTER each test, not before — beforeEach cleanup deletes
-  // connections that other test files depend on (parallel execution).
-  test.afterEach(async () => {
-    await cleanupConnections();
-  });
+  // DO NOT clean up connections here — with 2 parallel workers in the
+  // same shard, cleanup deletes connections that other test files depend on.
 
   test('User A sends friend request and User B accepts', async ({
     browser,

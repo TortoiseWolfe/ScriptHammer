@@ -187,16 +187,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   // Serial: multi-user workflow creates browser contexts with Realtime subscriptions.
   test.describe.configure({ mode: 'serial', timeout: 180000 });
 
-  // Clean up AFTER each test, not before. beforeEach cleanup deletes
-  // conversations/connections that other test files (message-editing,
-  // offline-queue, encrypted-messaging) depend on — they run in
-  // parallel with 2 workers in the same shard.
-  test.afterEach(async () => {
-    const client = getAdminClient();
-    if (client) {
-      await cleanupTestData(client);
-    }
-  });
+  // DO NOT clean up connections/conversations here. With 2 parallel workers
+  // in the same shard, cleanup deletes data that other test files
+  // (message-editing, offline-queue, encrypted-messaging, performance)
+  // depend on. The admin-seeded connections/conversations are idempotent —
+  // they use IF NOT EXISTS patterns and don't need cleanup between tests.
 
   test('Complete messaging workflow: sign-in -> connect -> message -> sign-out', async ({
     browser,
