@@ -37,11 +37,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use 1 worker on CI. Multiple workers cause page.goto timeouts —
-   * concurrent Argon2id key derivations + Supabase Realtime WebSocket
-   * connections exhaust CI runner resources (domcontentloaded times out
-   * at 60s on a static page). 1 worker = sequential, no resource contention. */
-  workers: process.env.CI ? 1 : undefined,
+  /* Use 2 workers on CI. 1 worker is too slow (52min per shard).
+   * 4 workers caused resource contention. 2 is the sweet spot. */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],
