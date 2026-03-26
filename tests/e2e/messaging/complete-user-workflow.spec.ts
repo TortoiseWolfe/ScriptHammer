@@ -222,10 +222,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         waitUntil: 'domcontentloaded',
       });
       await handleReAuthModal(pageA, USER_A.password);
-      // ReAuthModal close may drop ?tab=connections from the URL.
-      // Explicitly click the Connections tab to ensure we're on the right panel.
+      // Wait for the messaging UI to fully render after auth gates resolve.
+      // MessagingGate + EncryptionKeyGate + Suspense all render overlays
+      // during auth hydration — the sidebar tabs appear once everything settles.
       const connectionsTab = pageA.getByRole('tab', { name: /Connections/i });
-      await connectionsTab.waitFor({ state: 'visible', timeout: 10000 });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 30000 });
       await connectionsTab.click();
       await pageA.waitForTimeout(500);
       console.log('Step 2: Connections page loaded');
