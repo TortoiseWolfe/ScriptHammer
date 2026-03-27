@@ -211,7 +211,29 @@ export default function ConversationView({
         // deliver it; onSynced → loadMessages() swaps in the real one.
         addPending(result.message.id, content);
       } else {
-        await loadMessages();
+        // Optimistically append the sent message so it appears immediately.
+        // Supabase free tier can have read-after-write latency — an immediate
+        // loadMessages() query may return stale results (empty if first message).
+        // The background loadMessages() will eventually replace the optimistic
+        // entry with the real decrypted version.
+        const optimistic: DecryptedMessage = {
+          id: result.message.id,
+          conversation_id: result.message.conversation_id,
+          sender_id: result.message.sender_id,
+          content,
+          sequence_number: result.message.sequence_number,
+          deleted: false,
+          edited: false,
+          edited_at: null,
+          delivered_at: null,
+          read_at: null,
+          created_at: result.message.created_at,
+          isOwn: true,
+          senderName: participantName,
+        };
+        setMessages((prev) => [...prev, optimistic]);
+        // Background refresh to sync with server state
+        loadMessages().catch(() => {});
       }
     } catch (err: unknown) {
       setError(
