@@ -115,7 +115,14 @@ test.describe('PWA Installation', () => {
   test('app works offline after service worker activation', async ({
     page,
     context,
+    browserName,
   }) => {
+    // WebKit does not support page.reload() while offline with service workers —
+    // triggers "WebKit encountered an internal error". Known Playwright limitation.
+    test.skip(
+      browserName === 'webkit',
+      'WebKit does not support offline reload with service workers'
+    );
     // Check if service workers are supported
     const swSupported = await page.evaluate(() => 'serviceWorker' in navigator);
 

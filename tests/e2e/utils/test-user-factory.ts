@@ -12,6 +12,7 @@
 
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import type { Page } from '@playwright/test';
+import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 /**
  * Email domain for test users.
@@ -304,6 +305,75 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  */
 export function isAdminClientAvailable(): boolean {
   return getAdminClient() !== null;
+}
+
+/**
+ * Ensure a test user has valid encryption keys in the database.
+ *
+ * Uses the admin API to directly insert password-derived keys,
+ * bypassing the browser-based setup flow (ReAuthModal, /messages/setup)
+ * which is unreliable on Supabase free tier due to timeouts.
+ *
+ * This follows the same pattern as scripts/initialize-test-keys.ts.
+ *
+ * @param email - User email address
+ * @param password - Password to derive encryption keys from
+ * @returns true if keys exist (or were created), false on failure
+ */
+export async function ensureEncryptionKeys(
+  email: string,
+  password: string
+): Promise<boolean> {
+  const admin = getAdminClient();
+  if (!admin) {
+    console.error(`ensureEncryptionKeys: Admin client not available`);
+    return false;
+  }
+
+  const user = await getUserByEmail(email);
+  if (!user) {
+    console.error(`ensureEncryptionKeys: User ${email} not found`);
+    return false;
+  }
+
+  // Check for existing valid (non-revoked) key with a salt
+  const { data: existing } = await admin
+    .from('user_encryption_keys')
+    .select('id, encryption_salt')
+    .eq('user_id', user.id)
+    .eq('revoked', false)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (existing?.length && existing[0].encryption_salt) {
+    console.log(`✓ Encryption keys already exist for ${email}`);
+    return true;
+  }
+
+  // Delete any stale/invalid keys
+  await admin.from('user_encryption_keys').delete().eq('user_id', user.id);
+
+  // Derive new keys from password (same pattern as scripts/initialize-test-keys.ts)
+  const kds = new KeyDerivationService();
+  const salt = kds.generateSalt();
+  const keyPair = await kds.deriveKeyPair({ password, salt });
+
+  const { error } = await admin.from('user_encryption_keys').insert({
+    user_id: user.id,
+    public_key: keyPair.publicKeyJwk,
+    encryption_salt: keyPair.salt,
+    device_id: null,
+    expires_at: null,
+    revoked: false,
+  });
+
+  if (error) {
+    console.error(`ensureEncryptionKeys: Failed for ${email}:`, error.message);
+    return false;
+  }
+
+  console.log(`✓ Encryption keys created for ${email} via admin API`);
+  return true;
 }
 
 /**

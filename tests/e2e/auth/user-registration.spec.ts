@@ -157,7 +157,7 @@ test.describe('User Registration E2E', () => {
   });
 
   test('should navigate to sign-in from sign-up page', async ({ page }) => {
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Click sign-in link in the "Already have an account?" section (not the header link)

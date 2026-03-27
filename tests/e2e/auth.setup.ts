@@ -17,8 +17,7 @@ import {
   performSignIn,
   handleEncryptionSetup,
   handleReAuthModal,
-  getAdminClient,
-  getUserByEmail,
+  ensureEncryptionKeys,
 } from './utils/test-user-factory';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
@@ -133,6 +132,11 @@ setup('authenticate shared test user', async ({ page }) => {
   // Multi-user tests (friend requests, encrypted messaging, group chat)
   // sign these users in manually — they MUST have encryption keys in the
   // database or they'll hit the /messages/setup → /sign-in redirect loop.
+  //
+  // Uses admin API (service_role) to insert password-derived keys directly.
+  // This is far more reliable than the browser-based approach, which often
+  // timed out on Supabase free tier (page.goto → EncryptionKeyGate → slow
+  // hasKeysForUser query → timeout/ERR_ABORTED).
   // ────────────────────────────────────────────────────────────────────────
   const additionalUsers = [
     {
@@ -149,98 +153,15 @@ setup('authenticate shared test user', async ({ page }) => {
 
   for (const { email: userEmail, password: userPwd } of additionalUsers) {
     console.log(`Setting up encryption keys for ${userEmail}...`);
-    const browser = page.context().browser();
-    if (!browser) continue;
-
-    const ctx = await browser.newContext();
-    const p = await ctx.newPage();
-
-    try {
-      // Sign in as this user
-      await p.goto('/sign-in');
-      await p.waitForLoadState('domcontentloaded');
-      await dismissCookieBanner(p);
-      const emailInput = p.locator('input[type="email"], input[name="email"]');
-      await emailInput.waitFor({ state: 'visible', timeout: 10000 });
-      await emailInput.fill(userEmail);
-      await p.fill('input[type="password"], input[name="password"]', userPwd);
-      await p.click('button[type="submit"]');
-      await p
-        .waitForURL((url) => !url.pathname.includes('/sign-in'), {
-          timeout: 15000,
-        })
-        .catch(() => {});
-
-      // Navigate to /messages — handle setup or ReAuth
-      await p.goto('/messages');
-      await p.waitForLoadState('domcontentloaded');
-      await p.waitForTimeout(3000);
-
-      // Handle encryption setup page (no keys yet → full setup form)
-      const setupBtn = p.locator(
-        'button:has-text("Set Up Encrypted Messaging")'
-      );
-      if (await setupBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await p.locator('#setup-password').fill(userPwd);
-        await p.locator('#setup-confirm').fill(userPwd);
-        await setupBtn.click();
-        await p.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
-        console.log(`✓ Encryption keys created for ${userEmail}`);
-      } else {
-        // Keys exist in DB — try ReAuth modal. If the password doesn't
-        // match (keys from a previous run with different password), the
-        // modal will show an error and stay open. handleReAuthModal throws
-        // on timeout, so catch it and fall through to the delete+recreate path.
-        let handled = false;
-        try {
-          handled = await handleReAuthModal(p, userPwd);
-        } catch {
-          // Modal timeout — password likely doesn't match old keys
-        }
-        if (handled) {
-          console.log(`✓ Encryption keys unlocked for ${userEmail}`);
-        } else {
-          // ReAuth failed or modal didn't close — delete stale keys and
-          // create fresh ones with the correct password.
-          console.log(
-            `⚠ ReAuth failed for ${userEmail} — deleting stale keys and recreating...`
-          );
-          const admin = getAdminClient();
-          if (admin) {
-            const testUser = await getUserByEmail(userEmail);
-            if (testUser) {
-              await admin
-                .from('user_encryption_keys')
-                .delete()
-                .eq('user_id', testUser.id);
-            }
-          }
-          // Reload to trigger /messages/setup redirect (keys now deleted)
-          await p.goto('/messages');
-          await p.waitForLoadState('domcontentloaded');
-          await p.waitForTimeout(5000);
-          const setupBtn2 = p.locator(
-            'button:has-text("Set Up Encrypted Messaging")'
-          );
-          if (
-            await setupBtn2.isVisible({ timeout: 10000 }).catch(() => false)
-          ) {
-            await p.locator('#setup-password').fill(userPwd);
-            await p.locator('#setup-confirm').fill(userPwd);
-            await setupBtn2.click();
-            await p.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
-            console.log(`✓ Encryption keys recreated for ${userEmail}`);
-          } else {
-            console.log(`⚠ Could not find setup form for ${userEmail}`);
-          }
-        }
-      }
-    } catch (err) {
-      console.log(
-        `⚠ Could not set up keys for ${userEmail}: ${err instanceof Error ? err.message : err}`
-      );
-    } finally {
-      await ctx.close();
+    const ok = await ensureEncryptionKeys(userEmail, userPwd);
+    if (!ok) {
+      console.log(`⚠ Could not set up keys for ${userEmail}`);
     }
+  }
+
+  // Also ensure primary user has keys (safety net if browser-based setup
+  // was ambiguous — the "keys may already be unlocked" path)
+  if (email) {
+    await ensureEncryptionKeys(email, password);
   }
 });

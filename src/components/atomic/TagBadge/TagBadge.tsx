@@ -57,7 +57,7 @@ export default function TagBadge({
     ${sizeClasses[size]}
     ${variantClasses[variant]}
     ${activeClasses}
-    ${clickable ? 'cursor-pointer hover:scale-105 transition-transform' : ''}
+    ${clickable ? 'cursor-pointer hover:scale-105 transition-transform min-h-11 min-w-11' : ''}
     ${className}
   `.trim();
 
