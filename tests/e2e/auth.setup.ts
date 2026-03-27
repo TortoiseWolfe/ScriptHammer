@@ -159,9 +159,10 @@ setup('authenticate shared test user', async ({ page }) => {
     }
   }
 
-  // Also ensure primary user has keys (safety net if browser-based setup
-  // was ambiguous — the "keys may already be unlocked" path)
-  if (email) {
-    await ensureEncryptionKeys(email, password);
-  }
+  // NOTE: Do NOT call ensureEncryptionKeys for the primary user here.
+  // The browser-based flow above already created keys that match between
+  // localStorage (captured in storageState) and the DB. Recreating via
+  // admin API would replace DB keys with a new salt, breaking the match
+  // with the localStorage cache — causing all messaging tests to see
+  // "Encrypted with previous keys" instead of plaintext.
 });

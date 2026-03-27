@@ -336,21 +336,11 @@ export async function ensureEncryptionKeys(
     return false;
   }
 
-  // Check for existing valid (non-revoked) key with a salt
-  const { data: existing } = await admin
-    .from('user_encryption_keys')
-    .select('id, encryption_salt')
-    .eq('user_id', user.id)
-    .eq('revoked', false)
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  if (existing?.length && existing[0].encryption_salt) {
-    console.log(`✓ Encryption keys already exist for ${email}`);
-    return true;
-  }
-
-  // Delete any stale/invalid keys
+  // Always delete and recreate keys. Stale keys from previous CI runs
+  // have a different salt, causing ECDH shared secret mismatch: the
+  // browser derives keys with the DB salt, but the stored public key
+  // was derived with a different salt. This breaks sendMessage() because
+  // ECDH(sender_private_new, recipient_public_old) ≠ shared secret.
   await admin.from('user_encryption_keys').delete().eq('user_id', user.id);
 
   // Derive new keys from password (same pattern as scripts/initialize-test-keys.ts)
