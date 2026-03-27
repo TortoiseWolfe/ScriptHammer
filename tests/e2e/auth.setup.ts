@@ -15,10 +15,11 @@ import { test as setup, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   performSignIn,
-  handleEncryptionSetup,
-  handleReAuthModal,
   ensureEncryptionKeys,
+  getUserByEmail,
+  getAdminClient,
 } from './utils/test-user-factory';
+import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
 
@@ -71,59 +72,73 @@ setup('authenticate shared test user', async ({ page }) => {
   console.log('✓ Sign-in successful, verifying auth state...');
   await expect(page).not.toHaveURL(/\/sign-in/);
 
-  // Set up encryption keys for messaging tests.
-  // IMPORTANT: Do NOT delete keys unconditionally. deriveKeys() only puts
-  // keys in memory — it does NOT re-insert DB rows. If we delete keys and
-  // then derive, the DB is empty and every shard's hasKeys() returns false,
-  // causing an infinite /messages/setup ↔ /sign-in redirect loop.
-  //
-  // Instead: try to unlock existing keys first (idempotent). Only delete
-  // and recreate if derivation fails (e.g. keys from a different password).
+  // Set up encryption keys for ALL test users via admin API, then inject
+  // the primary user's key cache into localStorage so storageState captures it.
+  // This replaces the unreliable browser-based setup (ReAuthModal/setup form)
+  // which depends on EncryptionKeyGate timing and Supabase query latency.
   console.log('Setting up encryption keys for messaging...');
 
-  await page.goto('/messages');
-  await dismissCookieBanner(page);
-
-  // Wait for EncryptionKeyGate to decide: ReAuthModal or /messages/setup
-  // Give it 15s for React hydration + DB query on Supabase Cloud free tier.
-  await page.waitForTimeout(3000);
-
-  if (page.url().includes('/messages/setup')) {
-    // Path A: No keys in DB — create them via the setup form
-    console.log('No encryption keys found — running setup...');
-    const setupHandled = await handleEncryptionSetup(page, password);
-    if (setupHandled) {
-      console.log('✓ Encryption keys created via setup form');
-    } else {
-      console.log('⚠ handleEncryptionSetup returned false');
-    }
+  // Step 1: Create matching DB keys for the primary user
+  const primaryOk = await ensureEncryptionKeys(email, password);
+  if (primaryOk) {
+    console.log('✓ Primary user encryption keys ready in DB');
   } else {
-    // Path B: Keys exist in DB — unlock via ReAuthModal
-    const reAuthHandled = await handleReAuthModal(page, password);
-    if (reAuthHandled) {
-      console.log('✓ Encryption keys unlocked via ReAuthModal');
-    } else {
-      // Path C: No modal appeared — keys might already be in memory,
-      // or the page is still loading. Try waiting for setup redirect.
-      try {
-        await page.waitForURL(/\/messages\/setup/, { timeout: 10000 });
-        console.log('Late redirect to /messages/setup — running setup...');
-        const setupHandled = await handleEncryptionSetup(page, password);
-        if (setupHandled) {
-          console.log('✓ Encryption keys created via setup form (late)');
-        }
-      } catch {
+    console.log('⚠ Could not create primary user encryption keys');
+  }
+
+  // Step 2: Inject the primary user's derived keys into localStorage
+  // so storageState captures them. Tests that load this state will have
+  // sh_keys_{userId} → restoreKeysFromCache() → memory + IndexedDB.
+  const primaryUser = await getUserByEmail(email);
+  if (primaryUser) {
+    const admin = getAdminClient();
+    if (admin) {
+      // Read the salt from the DB (ensureEncryptionKeys just created it)
+      const { data: keyRow } = await admin
+        .from('user_encryption_keys')
+        .select('encryption_salt')
+        .eq('user_id', primaryUser.id)
+        .eq('revoked', false)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (keyRow?.encryption_salt) {
+        const kds = new KeyDerivationService();
+        const keyPair = await kds.deriveKeyPair({
+          password,
+          salt: keyRow.encryption_salt,
+        });
+        // Export to JWK for localStorage cache format
+        const privateJwk = await crypto.subtle.exportKey(
+          'jwk',
+          keyPair.privateKey
+        );
+        const publicJwk = await crypto.subtle.exportKey(
+          'jwk',
+          keyPair.publicKey
+        );
+        const cacheValue = JSON.stringify({
+          privateKeyJwk: privateJwk,
+          publicKeyJwk: publicJwk,
+          publicKeyJwkOriginal: keyPair.publicKeyJwk,
+          salt: keyPair.salt,
+        });
+        // Inject into browser localStorage via page.evaluate
+        await page.evaluate(
+          ({ key, value }) => localStorage.setItem(key, value),
+          { key: `sh_keys_${primaryUser.id}`, value: cacheValue }
+        );
         console.log(
-          '⚠ No encryption modal or setup page — keys may already be unlocked'
+          `✓ Injected sh_keys_${primaryUser.id.slice(0, 8)} into localStorage`
         );
       }
     }
   }
 
-  // Save authenticated browser state (localStorage + cookies)
-  // Note: encryption private keys are in-memory only (not in localStorage).
-  // Tests must call handleReAuthModal() to derive keys from password on each run.
-  // The important thing is that public keys + salt exist in the DATABASE.
+  // Save authenticated browser state (localStorage + cookies).
+  // Now includes sh_keys_{userId} so tests can restore keys from cache
+  // without needing ReAuthModal or Argon2id derivation on every test.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 
@@ -158,11 +173,4 @@ setup('authenticate shared test user', async ({ page }) => {
       console.log(`⚠ Could not set up keys for ${userEmail}`);
     }
   }
-
-  // NOTE: Do NOT call ensureEncryptionKeys for the primary user here.
-  // The browser-based flow above already created keys that match between
-  // localStorage (captured in storageState) and the DB. Recreating via
-  // admin API would replace DB keys with a new salt, breaking the match
-  // with the localStorage cache — causing all messaging tests to see
-  // "Encrypted with previous keys" instead of plaintext.
 });
