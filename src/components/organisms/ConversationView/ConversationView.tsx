@@ -232,25 +232,6 @@ export default function ConversationView({
           senderName: participantName,
         };
         setMessages((prev) => [...prev, optimistic]);
-        // Background refresh to sync with server state.
-        // Delay slightly to give Supabase time for read-after-write consistency.
-        // Use a non-replacing merge: only update if server has more messages.
-        setTimeout(async () => {
-          try {
-            const result = await messageService.getMessageHistory(
-              conversationId,
-              null,
-              50
-            );
-            // Only replace if server returned at least as many messages
-            // (avoids removing the optimistic entry due to stale reads)
-            setMessages((prev) =>
-              result.messages.length >= prev.length ? result.messages : prev
-            );
-          } catch {
-            // Ignore background refresh errors
-          }
-        }, 1000);
       }
     } catch (err: unknown) {
       setError(
