@@ -383,19 +383,9 @@ jobs:
           BROWSER: ${{ matrix.browser }}
           SHARD: ${{ matrix.shard }}
         run: |
-          # Shard 2 runs messaging tests that share Supabase state.
-          # Use 1 worker to eliminate parallel interference between
-          # tests that create/query conversations and connections.
-          SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          WORKERS_FLAG=""
-          if [ "$SHARD_NUM" = "2" ]; then
-            WORKERS_FLAG="--workers=1"
-            echo "Shard 2: using 1 worker (messaging tests share DB state)"
-          fi
           pnpm exec playwright test \
             --project="$BROWSER" \
             --shard="$SHARD" \
-            $WORKERS_FLAG \
             --reporter=blob \
             --trace=on-first-retry
 
