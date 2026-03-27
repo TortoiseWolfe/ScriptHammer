@@ -78,11 +78,15 @@ export class MessageService {
       );
     }
 
-    // Get authenticated user
+    // Get authenticated user via getSession() — avoids server round-trip
+    // that can fail when the access token is expired (getUser() calls the
+    // server, while getSession() reads from localStorage and auto-refreshes).
+    // On static exports, the Supabase client refreshes tokens transparently.
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError('You must be signed in to send messages');
@@ -362,9 +366,10 @@ export class MessageService {
 
     // Get authenticated user
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError('You must be signed in to view messages');
@@ -696,9 +701,10 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -754,9 +760,10 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -836,9 +843,10 @@ export class MessageService {
 
     // Get authenticated user
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError('You must be signed in to edit messages');
@@ -1012,9 +1020,10 @@ export class MessageService {
 
     // Get authenticated user
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError('You must be signed in to delete messages');
@@ -1098,9 +1107,10 @@ export class MessageService {
 
     // Get authenticated user
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -1190,9 +1200,10 @@ export class MessageService {
 
     // Get authenticated user
     const {
-      data: { user },
+      data: { session },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (authError || !user) {
       throw new AuthenticationError(
