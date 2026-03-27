@@ -1,3 +1,71 @@
+<!-- E2E FIX LOOP PRIMING PROMPT — paste into /loop 30m -->
+
+```
+Fix ScriptHammer E2E tests until ALL 12 shards pass. Current state: 4-6/12 green, ~20 shard-2 failures.
+
+METHODOLOGY (follow strictly, no guessing):
+
+1. PULL LOGS:
+   gh run list --limit 1 --workflow e2e.yml
+   If in_progress → report and wait.
+   If completed → gh run view <ID> 2>&1 | grep -E "(✓|X) E2E"
+   If all 12 green → DONE, celebrate.
+
+2. GET FAILURE DETAILS (for each failing shard):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -oP "\d+ failed|\d+ passed" | tail -2
+   For EVERY unique failing test, get the EXACT error:
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -A8 "  N) \[" | head -12
+
+3. CODE REVIEW (mandatory before ANY fix):
+   a. Read the PRODUCTION code that the test exercises:
+      - Trace: component → hook → service → Supabase query
+      - Read the ACTUAL function signatures, not what you think they are
+      - Check what data stores are used (memory? localStorage? IndexedDB? Supabase?)
+   b. Read the TEST code end-to-end:
+      - beforeAll/beforeEach: what data does it create? what does it clean up?
+      - The failing assertion: what EXACTLY does it check? what locator/selector?
+      - afterAll/afterEach: does cleanup delete data other tests need?
+   c. Read the TEST HELPER functions:
+      - handleReAuthModal, signIn, navigateToConversation, sendMessage
+      - What do they wait for? What timeouts? What can silently fail?
+   d. Check the E2E INFRASTRUCTURE:
+      - playwright.config.ts: workers, timeouts, fullyParallel, storageState
+      - auth.setup.ts: what keys/connections/conversations does it create?
+      - e2e.yml: what env vars, what stagger delays, what server?
+
+4. DIAGNOSE (write it down before coding):
+   - "Test X fails because [specific reason]"
+   - "The production code does [this] but the test expects [that]"
+   - "The data is missing because [specific mechanism]"
+   If you can't write a specific diagnosis, you haven't read enough code.
+
+5. CRITICAL CONTEXT (from previous session):
+   - Encryption has TWO key stores: keyManagementService (memory + localStorage sh_keys_*) AND encryptionService (IndexedDB/Dexie)
+   - Playwright storageState captures localStorage but NOT IndexedDB
+   - sendMessage() → encrypt() → getPrivateKey() reads IndexedDB → returns null → silent encryption failure
+   - restoreKeysFromCache() was updated to populate IndexedDB via storePrivateKey() — verify it actually works
+   - The useConversationRealtime hook decrypts messages using encryptionService which needs IndexedDB keys
+   - auth.setup.ts creates keys for 3 users (primary, secondary, tertiary)
+   - fullyParallel: false on CI, 2 workers, domcontentloaded, chatsTab.waitFor(30s)
+   - Key files: src/services/messaging/key-service.ts, src/lib/messaging/encryption.ts,
+     src/lib/messaging/database.ts, src/hooks/useConversationRealtime.ts
+
+6. FIX (only after diagnosis):
+   - Docker must be running: docker compose exec scripthammer echo alive
+   - Type check: docker compose exec scripthammer npx tsc --noEmit
+   - Unit test: docker compose exec scripthammer pnpm test
+   - Commit via Docker with descriptive message explaining the ROOT CAUSE
+   - Push with 10min timeout, verify new CI run starts
+
+RULES:
+- NEVER skip or ignore tests
+- NEVER guess — read code and logs first
+- NEVER increase timeouts without fixing the underlying issue
+- If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate from scratch
+- If you've tried 3+ fixes for the same test, you're missing something fundamental — do a deeper code review
+- Track: what failed, what the actual error was, what you changed, whether it helped
+```
+
 # ScriptHammer - Modern Next.js Template with PWA
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/TortoiseWolfe/ScriptHammer)
