@@ -527,7 +527,7 @@ export async function handleReAuthModal(
   // EncryptionKeyGate has two paths when keys aren't in memory:
   // 1. Keys exist in DB → shows ReAuthModal overlay
   // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
-  // Handle both: check if we landed on /messages/setup first.
+  // Handle both: wait for the gate to finish checking, then react.
 
   // Capture browser console for CI debugging (EncryptionKeyGate logs hasKeys result)
   const consoleHandler = (msg: import('@playwright/test').ConsoleMessage) => {
@@ -538,10 +538,30 @@ export async function handleReAuthModal(
   };
   page.on('console', consoleHandler);
 
-  // Give the page time to settle — EncryptionKeyGate needs to hydrate,
-  // query Supabase, and decide which path to take.
-  await page.waitForTimeout(3000);
-  console.log(`[handleReAuthModal] URL after wait: ${page.url()}`);
+  // Wait for EncryptionKeyGate to finish its async check (auth hydration +
+  // hasKeysForUser() Supabase query). The gate renders a loading overlay
+  // with data-testid="encryption-key-gate-loading" while checking. Once it
+  // disappears, the gate has decided: show ReAuthModal, redirect to setup,
+  // or keys are already unlocked.
+  const loadingOverlay = page.locator(
+    '[data-testid="encryption-key-gate-loading"]'
+  );
+  try {
+    // First wait for the overlay to appear (page may still be loading)
+    await loadingOverlay
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .catch(() => {});
+    // Then wait for it to disappear (gate finished checking)
+    await loadingOverlay.waitFor({ state: 'hidden', timeout: 30000 });
+    console.log(`[handleReAuthModal] Gate loading finished`);
+  } catch {
+    // Overlay may never appear if keys were already in memory
+    console.log(
+      `[handleReAuthModal] Gate overlay not detected (keys may be in memory)`
+    );
+  }
+
+  console.log(`[handleReAuthModal] URL after gate: ${page.url()}`);
 
   if (page.url().includes('/messages/setup')) {
     // Path 2: Full setup page — fill form and submit
