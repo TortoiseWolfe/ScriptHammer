@@ -198,6 +198,17 @@ test.describe('Encrypted Messaging Flow', () => {
     const pageB = await contextB.newPage();
 
     try {
+      // Capture browser console for debugging sendMessage flow
+      pageA.on('console', (msg) => {
+        const text = msg.text();
+        if (
+          text.includes('[ConversationView]') ||
+          text.includes('[EncryptionKeyGate]')
+        ) {
+          console.log(`[pageA] ${text}`);
+        }
+      });
+
       // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
