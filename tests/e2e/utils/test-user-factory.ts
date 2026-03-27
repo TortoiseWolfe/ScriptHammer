@@ -561,7 +561,18 @@ export async function handleReAuthModal(
     );
   }
 
-  console.log(`[handleReAuthModal] URL after gate: ${page.url()}`);
+  // Read the gate's internal state for CI debugging
+  const gateState = await page
+    .locator('[data-testid="encryption-key-gate-state"]')
+    .first()
+    .evaluate((el) => ({
+      checking: el.getAttribute('data-checking'),
+      needsReauth: el.getAttribute('data-needs-reauth'),
+    }))
+    .catch(() => ({ checking: 'unknown', needsReauth: 'unknown' }));
+  console.log(
+    `[handleReAuthModal] URL after gate: ${page.url()}, gateState: checking=${gateState.checking}, needsReauth=${gateState.needsReauth}`
+  );
 
   if (page.url().includes('/messages/setup')) {
     // Path 2: Full setup page — fill form and submit

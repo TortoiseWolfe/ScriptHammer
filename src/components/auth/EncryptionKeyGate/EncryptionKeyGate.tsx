@@ -113,6 +113,12 @@ export default function EncryptionKeyGate({
         </div>
       )}
       <ReAuthModal isOpen={needsReAuth} onSuccess={handleReAuthSuccess} />
+      <div
+        data-testid="encryption-key-gate-state"
+        data-checking={checkingKeys}
+        data-needs-reauth={needsReAuth}
+        style={{ display: 'none' }}
+      />
       {children}
     </>
   );
