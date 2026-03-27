@@ -149,6 +149,7 @@ async function waitForUIStability(page: import('@playwright/test').Page) {
  * Navigate to conversation via UI (no direct URL route exists)
  */
 async function navigateToConversation(page: import('@playwright/test').Page) {
+  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
@@ -193,6 +194,7 @@ test.describe('Virtual Scrolling Performance', () => {
     if (!setupSucceeded) return;
 
     // Auth comes from storageState — navigate directly
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
@@ -299,6 +301,7 @@ test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
     if (!setupSucceeded) return;
 
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
@@ -343,6 +346,7 @@ test.describe('Scroll Restoration', () => {
   test.beforeEach(async ({ page }) => {
     if (!setupSucceeded) return;
 
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);

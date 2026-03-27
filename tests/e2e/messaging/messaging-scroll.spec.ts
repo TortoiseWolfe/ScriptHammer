@@ -113,6 +113,7 @@ async function isElementInViewport(
 test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test.beforeEach(async ({ page }) => {
     // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
@@ -125,6 +126,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
@@ -150,6 +152,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.tablet);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
@@ -172,6 +175,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
@@ -193,6 +197,7 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
 test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => {
   test.beforeEach(async ({ page }) => {
     // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
@@ -204,6 +209,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
   }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
@@ -238,6 +244,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
 test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test.beforeEach(async ({ page }) => {
     // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('domcontentloaded');
     await dismissCookieBanner(page);
@@ -249,6 +256,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
@@ -294,6 +302,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test('T009: Jump button click scrolls to bottom', async ({ page }) => {
     test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 

@@ -151,6 +151,7 @@ test.beforeAll(async () => {
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
 async function signIn(page: Page, _email: string, password: string) {
+  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
@@ -181,19 +182,13 @@ async function waitForUIStability(page: Page) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
+  // Navigate to about:blank first to abort any hanging requests/websockets
+  // from a previous test attempt. Without this, page.goto can hang on
+  // retries because the page is stuck (realtime subscriptions, pending XHR).
+  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
-
-  // DIAGNOSTIC: Capture browser state at each step
-  const clientState = await page.evaluate(() => {
-    const lsKeys = Object.keys(localStorage).filter(
-      (k) =>
-        k.includes('supabase') || k.includes('sb-') || k.includes('sh_keys')
-    );
-    return { localStorage_keys: lsKeys, url: window.location.href };
-  });
-  console.log('[DIAG] After handleReAuthModal:', JSON.stringify(clientState));
 
   // Wait for the Chats tab to appear (auth gates must resolve first)
   const chatsTab = page.getByRole('tab', { name: /Chats/i });
@@ -202,40 +197,6 @@ async function navigateToConversation(page: Page) {
   // Wait for tab panel to update
   await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
   await waitForUIStability(page);
-
-  // DIAGNOSTIC: What's in the DOM after Chats tab?
-  const listState = await page.evaluate(() => {
-    const btns = document.querySelectorAll(
-      'button[aria-label*="Conversation"]'
-    );
-    const spinner = document.querySelector('.loading');
-    const alert = document.querySelector('[role="alert"]');
-    return {
-      conversationButtons: btns.length,
-      buttonLabels: Array.from(btns)
-        .slice(0, 3)
-        .map((b) => b.getAttribute('aria-label')),
-      hasSpinner: !!spinner,
-      alertText: alert?.textContent?.slice(0, 100) || null,
-      pageText: document.body.innerText.slice(0, 200),
-    };
-  });
-  console.log('[DIAG] Conversation list state:', JSON.stringify(listState));
-
-  // If no conversations yet, wait and check again
-  if (listState.conversationButtons === 0) {
-    await page.waitForTimeout(10000);
-    const retry = await page.evaluate(() => {
-      const btns = document.querySelectorAll(
-        'button[aria-label*="Conversation"]'
-      );
-      return {
-        conversationButtons: btns.length,
-        pageText: document.body.innerText.slice(0, 200),
-      };
-    });
-    console.log('[DIAG] After 10s retry:', JSON.stringify(retry));
-  }
 
   // Find first conversation button by aria-label pattern
   const firstConversation = page
