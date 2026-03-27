@@ -240,6 +240,19 @@ async function sendMessage(page: Page, message: string) {
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
 
+  // Wait briefly for React to process, then check for errors
+  await page.waitForTimeout(2000);
+  const errorBanner = await page
+    .locator('[role="alert"]')
+    .textContent()
+    .catch(() => null);
+  if (errorBanner) {
+    console.log(
+      '[DIAG-SEND] Error banner after send:',
+      errorBanner.slice(0, 200)
+    );
+  }
+
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
   await expect(messageElement).toBeVisible({ timeout: 10000 });
