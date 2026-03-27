@@ -224,6 +224,16 @@ async function navigateToConversation(page: Page) {
  */
 async function sendMessage(page: Page, message: string) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  // Check if input is disabled and log why
+  const isDisabled = await messageInput.isDisabled().catch(() => true);
+  if (isDisabled) {
+    const attrs = await messageInput.evaluate((el) => ({
+      disabled: el.hasAttribute('disabled'),
+      placeholder: el.getAttribute('placeholder'),
+      outerHTML: el.outerHTML.slice(0, 200),
+    }));
+    console.log('[DIAG-SEND] Input disabled:', JSON.stringify(attrs));
+  }
   await expect(messageInput).toBeEnabled({ timeout: 45000 });
   await messageInput.fill(message);
 
