@@ -216,6 +216,11 @@ async function navigateToConversation(page: Page) {
   // Wait for message input to be visible (indicates conversation is loaded)
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toBeVisible({ timeout: 45000 });
+
+  // Wait for all initial Supabase queries to complete (loadMessages,
+  // loadConversationInfo, delivery receipts). These trigger React
+  // re-renders that detach DOM elements during test interactions.
+  await page.waitForLoadState('networkidle').catch(() => {});
   await waitForUIStability(page);
 }
 
@@ -224,34 +229,18 @@ async function navigateToConversation(page: Page) {
  */
 async function sendMessage(page: Page, message: string) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  // Check if input is disabled and log why
-  const isDisabled = await messageInput.isDisabled().catch(() => true);
-  if (isDisabled) {
-    const attrs = await messageInput.evaluate((el) => ({
-      disabled: el.hasAttribute('disabled'),
-      placeholder: el.getAttribute('placeholder'),
-      outerHTML: el.outerHTML.slice(0, 200),
-    }));
-    console.log('[DIAG-SEND] Input disabled:', JSON.stringify(attrs));
-  }
   await expect(messageInput).toBeEnabled({ timeout: 45000 });
+
+  // Wait for all Supabase queries to complete before interacting.
+  // loadMessages() and loadConversationInfo() fire on mount and trigger
+  // React re-renders that detach the textarea from the DOM during fill.
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await waitForUIStability(page);
+
   await messageInput.fill(message);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
-
-  // Wait briefly for React to process, then check for errors
-  await page.waitForTimeout(2000);
-  const errorBanner = await page
-    .locator('[role="alert"]')
-    .textContent()
-    .catch(() => null);
-  if (errorBanner) {
-    console.log(
-      '[DIAG-SEND] Error banner after send:',
-      errorBanner.slice(0, 200)
-    );
-  }
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
