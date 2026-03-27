@@ -198,26 +198,26 @@ test.describe('Offline Message Queue', () => {
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 15000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Wait for conversation view to mount (Supabase query 1-5s on free tier)
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Wait for message input to confirm conversation is loaded
       const messageInput = page.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 15000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
 
       // ===== STEP 3: Go offline =====
       await context.setOffline(true);
@@ -292,20 +292,20 @@ test.describe('Offline Message Queue', () => {
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Wait for message input
       const messageInput = page.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 10000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
 
       // ===== STEP 2: Go offline =====
       await context.setOffline(true);
@@ -379,18 +379,18 @@ test.describe('Offline Message Queue', () => {
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Wait for message input
       const msgInput = page.getByRole('textbox', { name: /Message input/i });
-      await expect(msgInput).toBeVisible({ timeout: 10000 });
+      await expect(msgInput).toBeVisible({ timeout: 45000 });
 
       // ===== STEP 2: Intercept API calls and simulate failures =====
       let attemptCount = 0;
@@ -494,12 +494,12 @@ test.describe('Offline Message Queue', () => {
       const conversationA = pageA
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationA).toBeVisible({ timeout: 10000 });
+      await expect(conversationA).toBeVisible({ timeout: 45000 });
       await conversationA.click();
 
       // Wait for message input on page A
       const inputA = pageA.getByRole('textbox', { name: /Message input/i });
-      await expect(inputA).toBeVisible({ timeout: 10000 });
+      await expect(inputA).toBeVisible({ timeout: 45000 });
 
       // Extract conversation ID from URL if present
       const urlA = pageA.url();
@@ -520,12 +520,12 @@ test.describe('Offline Message Queue', () => {
       const conversationB = pageB
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationB).toBeVisible({ timeout: 10000 });
+      await expect(conversationB).toBeVisible({ timeout: 45000 });
       await conversationB.click();
 
       // Wait for message input on page B
       const inputB = pageB.getByRole('textbox', { name: /Message input/i });
-      await expect(inputB).toBeVisible({ timeout: 10000 });
+      await expect(inputB).toBeVisible({ timeout: 45000 });
 
       // ===== STEP 3: Both go offline =====
       await contextA.setOffline(true);
@@ -621,20 +621,20 @@ test.describe('Offline Message Queue', () => {
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Wait for message input
       const messageInput = page.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 10000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
 
       // ===== STEP 2: Intercept API and always fail =====
       await page.route('**/rest/v1/messages*', async (route) => {

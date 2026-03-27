@@ -79,7 +79,7 @@ async function clickFirstConversation(page: Page): Promise<void> {
     .first();
 
   // Wait for the button to be visible (give it plenty of time)
-  await conversationButton.waitFor({ state: 'visible', timeout: 10000 });
+  await conversationButton.waitFor({ state: 'visible', timeout: 45000 });
   await conversationButton.click();
 
   // Wait for chat window to load after clicking

@@ -170,11 +170,11 @@ async function openConversation(page: import('@playwright/test').Page) {
   const conversationItem = page
     .getByRole('button', { name: /Conversation with/i })
     .first();
-  await expect(conversationItem).toBeVisible({ timeout: 10000 });
+  await expect(conversationItem).toBeVisible({ timeout: 45000 });
   await conversationItem.click();
 
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeVisible({ timeout: 10000 });
+  await expect(messageInput).toBeVisible({ timeout: 45000 });
 }
 
 /**
@@ -186,7 +186,7 @@ async function typeAndSend(
   text: string
 ) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 5000 });
+  await expect(messageInput).toBeEnabled({ timeout: 45000 });
   await messageInput.fill(text);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });

@@ -328,6 +328,19 @@ jobs:
         env:
           CI: true
 
+      - name: Prime Supabase connection pool
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          # Wake Supabase free tier and warm the connection pool.
+          # Without this, the first query from each shard takes 10-30s.
+          curl -sf "${SUPABASE_URL}/rest/v1/user_profiles?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}" \
+            > /dev/null 2>&1 || true
+          echo "✓ Supabase connection pool primed"
+
       - name: Stagger browser shards to reduce Supabase Cloud contention
         env:
           BROWSER: ${{ matrix.browser }}

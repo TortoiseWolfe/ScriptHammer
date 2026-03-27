@@ -219,13 +219,13 @@ test.describe('Encrypted Messaging Flow', () => {
       const conversationItem = pageA
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 15000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for conversation view to mount (Supabase query 1-5s on free tier)
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // ===== STEP 5: User A sends an encrypted message =====
@@ -233,7 +233,7 @@ test.describe('Encrypted Messaging Flow', () => {
       const messageInput = pageA.locator(
         'textarea[aria-label="Message input"]'
       );
-      await expect(messageInput).toBeVisible({ timeout: 15000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
       await messageInput.fill(testMessage);
 
       const sendButton = pageA.getByRole('button', { name: /send/i });
@@ -258,11 +258,11 @@ test.describe('Encrypted Messaging Flow', () => {
       const conversationItemB = pageB
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItemB).toBeVisible({ timeout: 10000 });
+      await expect(conversationItemB).toBeVisible({ timeout: 45000 });
       await conversationItemB.click();
       await pageB.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
@@ -321,7 +321,7 @@ test.describe('Encrypted Messaging Flow', () => {
       await conversationItem.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Send a test message with known plaintext
@@ -401,7 +401,7 @@ test.describe('Encrypted Messaging Flow', () => {
       await conversationItem.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 15000,
+        timeout: 45000,
       });
 
       // Send a message

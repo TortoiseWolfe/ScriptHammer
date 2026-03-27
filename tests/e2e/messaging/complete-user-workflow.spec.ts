@@ -339,7 +339,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       const messageInput = pageA.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 10000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
       await messageInput.fill(testMessage);
 
       const sendButton = pageA.getByRole('button', { name: /send/i });

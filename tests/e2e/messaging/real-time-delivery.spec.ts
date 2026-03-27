@@ -98,7 +98,7 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
 
   // Wait for conversation to be visible
   try {
-    await expect(conversation1).toBeVisible({ timeout: 5000 });
+    await expect(conversation1).toBeVisible({ timeout: 45000 });
   } catch {
     // No conversations exist
     return false;
@@ -109,12 +109,12 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   // Wait for conversation view to mount
   await page1.waitForSelector('[data-testid="message-thread"]', {
     state: 'visible',
-    timeout: 15000,
+    timeout: 45000,
   });
 
   const messageInput1 = page1.getByRole('textbox', { name: /Message input/i });
   try {
-    await expect(messageInput1).toBeVisible({ timeout: 15000 });
+    await expect(messageInput1).toBeVisible({ timeout: 45000 });
   } catch {
     return false;
   }
@@ -134,16 +134,16 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
     .first();
 
   try {
-    await expect(conversation2).toBeVisible({ timeout: 15000 });
+    await expect(conversation2).toBeVisible({ timeout: 45000 });
     await conversation2.click();
     await page2.waitForSelector('[data-testid="message-thread"]', {
       state: 'visible',
-      timeout: 15000,
+      timeout: 45000,
     });
     const messageInput2 = page2.getByRole('textbox', {
       name: /Message input/i,
     });
-    await expect(messageInput2).toBeVisible({ timeout: 15000 });
+    await expect(messageInput2).toBeVisible({ timeout: 45000 });
   } catch {
     return false;
   }

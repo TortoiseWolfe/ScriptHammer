@@ -199,18 +199,18 @@ async function navigateToConversation(page: Page) {
     .first();
 
   // Wait for conversation to be visible (longer timeout for CI under shard load)
-  await expect(firstConversation).toBeVisible({ timeout: 15000 });
+  await expect(firstConversation).toBeVisible({ timeout: 45000 });
   await firstConversation.click();
 
   // Wait for conversation view to mount (Supabase query takes 1-5s on free tier)
   await page.waitForSelector('[data-testid="message-thread"]', {
     state: 'visible',
-    timeout: 15000,
+    timeout: 45000,
   });
 
   // Wait for message input to be visible (indicates conversation is loaded)
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeVisible({ timeout: 15000 });
+  await expect(messageInput).toBeVisible({ timeout: 45000 });
   await waitForUIStability(page);
 }
 
@@ -219,7 +219,7 @@ async function navigateToConversation(page: Page) {
  */
 async function sendMessage(page: Page, message: string) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 10000 });
+  await expect(messageInput).toBeEnabled({ timeout: 45000 });
   await messageInput.fill(message);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });

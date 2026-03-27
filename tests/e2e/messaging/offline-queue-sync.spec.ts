@@ -229,14 +229,14 @@ test.describe('Offline Queue Sync E2E', () => {
       const conversationItem = page
         .getByRole('button', { name: /Conversation with/i })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 10000 });
+      await expect(conversationItem).toBeVisible({ timeout: 45000 });
       await conversationItem.click();
 
       // Wait for message input
       const messageInput = page.getByRole('textbox', {
         name: /Message input/i,
       });
-      await expect(messageInput).toBeVisible({ timeout: 10000 });
+      await expect(messageInput).toBeVisible({ timeout: 45000 });
 
       // ===== Go offline =====
       await context.setOffline(true);
