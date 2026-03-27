@@ -486,25 +486,9 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
   });
 });
 
-test.describe('Test Idempotency Verification', () => {
-  test('should complete cleanup successfully', async () => {
-    const client = getAdminClient();
-    if (!client) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
-    }
-
-    await cleanupTestData(client);
-
-    const { userAId, userBId } = await getUserIds(client);
-    if (userAId && userBId) {
-      const { data: connections } = await client
-        .from('user_connections')
-        .select('id')
-        .or('requester_id.eq.' + userAId + ',addressee_id.eq.' + userBId);
-
-      expect(connections?.length || 0).toBe(0);
-      console.log('Idempotency verified');
-    }
-  });
-});
+// NOTE: The "Test Idempotency Verification" test that used to be here was
+// removed because cleanupTestData() deletes ALL messages, conversations, and
+// connections for the test users. With 2 parallel workers in the same shard,
+// this cleanup runs while other messaging tests are still executing on the
+// other worker, destroying the data they depend on. This was the root cause
+// of all shard-2 messaging test failures.

@@ -198,17 +198,6 @@ test.describe('Encrypted Messaging Flow', () => {
     const pageB = await contextB.newPage();
 
     try {
-      // Capture browser console for debugging sendMessage flow
-      pageA.on('console', (msg) => {
-        const text = msg.text();
-        if (
-          text.includes('[ConversationView]') ||
-          text.includes('[EncryptionKeyGate]')
-        ) {
-          console.log(`[pageA] ${text}`);
-        }
-      });
-
       // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
@@ -255,22 +244,6 @@ test.describe('Encrypted Messaging Flow', () => {
       await expect(sendButton).not.toContainText('Sending');
 
       // ===== STEP 6: Verify message appears in User A's view =====
-      // Debug: capture message thread content on failure
-      const threadContent = await pageA
-        .locator('[data-testid="message-thread"]')
-        .textContent()
-        .catch(() => 'THREAD NOT FOUND');
-      if (!threadContent?.includes(testMessage)) {
-        console.log(
-          `[DEBUG] Message thread content (first 500 chars): ${threadContent?.slice(0, 500)}`
-        );
-        // Also check for encryption error markers
-        const hasEncError = threadContent?.includes('Encrypted with');
-        const hasError = threadContent?.includes('error');
-        console.log(
-          `[DEBUG] hasEncryptionError=${hasEncError}, hasError=${hasError}`
-        );
-      }
       const messageA = pageA.getByText(testMessage);
       await expect(messageA).toBeVisible({ timeout: 5000 });
 

@@ -204,9 +204,6 @@ export default function ConversationView({
         conversation_id: conversationId,
         content,
       });
-      console.log(
-        `[ConversationView] sendMessage result: queued=${result.queued}, messageId=${result.message.id}`
-      );
 
       if (result.queued) {
         // Offline OR send-failed-and-queued. Show the optimistic bubble.
@@ -256,10 +253,6 @@ export default function ConversationView({
         }, 1000);
       }
     } catch (err: unknown) {
-      console.error(
-        `[ConversationView] sendMessage THREW:`,
-        err instanceof Error ? err.message : err
-      );
       setError(
         err instanceof Error
           ? err.message

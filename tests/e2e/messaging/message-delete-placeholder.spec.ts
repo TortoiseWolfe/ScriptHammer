@@ -141,26 +141,11 @@ async function setupEncryptionViaUI(
     .catch(() => false);
 
   if (errorVisible) {
-    // Keys were set up with a different password — clear and re-setup
-    const adminClient = createClient(
-      SUPABASE_DOCKER_URL,
-      SUPABASE_SERVICE_KEY,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    );
-    const { data: usersData } = await adminClient.auth.admin.listUsers();
-    const user = usersData?.users?.find((u) => u.email === email);
-    if (user) {
-      await adminClient
-        .from('user_encryption_keys')
-        .delete()
-        .eq('user_id', user.id);
-    }
-
-    // Reload to get redirected to /messages/setup
-    await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('domcontentloaded');
-    await dismissCookieBanner(page);
-    await handleEncryptionSetup(page, MESSAGING_PASSWORD);
+    // Keys were set up with a different password — wait and retry.
+    // Do NOT delete encryption keys from the DB — auth.setup.ts creates
+    // them fresh each CI run via ensureEncryptionKeys(), and deleting them
+    // here would break other messaging tests running in parallel.
+    await page.waitForTimeout(3000);
     await handleReAuthModal(page, MESSAGING_PASSWORD);
   } else {
     // Password accepted — wait for modal to close
