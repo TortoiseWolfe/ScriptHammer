@@ -24,32 +24,34 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
 
-  // Determine if we should block with "Sign in required"
-  const showSignInRequired =
-    !isLoading &&
-    !user &&
-    (typeof window === 'undefined' ||
-      !Object.keys(localStorage).some((k) => k.includes('-auth-token')));
+  // Show loading overlay while auth is hydrating.
+  // ALWAYS render children behind the overlay so child components stay
+  // mounted. Never conditionally remove children based on transient auth
+  // state — Supabase token refresh briefly removes/re-adds the auth token
+  // in localStorage, which would unmount the entire messaging tree and
+  // destroy the active conversation.
+  if (isLoading || !user) {
+    // Check localStorage for auth token to decide: loading overlay vs sign-in
+    const hasStoredToken =
+      typeof window !== 'undefined' &&
+      Object.keys(localStorage).some((k) => k.includes('-auth-token'));
 
-  // Show overlay spinner while auth is loading or session is hydrating.
-  // Render children behind it so child components (sidebar tabs etc.) mount.
-  const showLoadingOverlay = isLoading || (!user && !showSignInRequired);
-
-  if (showSignInRequired) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
-          <p className="text-base-content/85">
-            Please sign in to access messaging.
-          </p>
+    if (!isLoading && !user && !hasStoredToken) {
+      // Genuinely not signed in — no token at all
+      return (
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="text-center">
+            <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
+            <p className="text-base-content/85">
+              Please sign in to access messaging.
+            </p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  // While auth is hydrating, render children behind a loading overlay
-  if (showLoadingOverlay) {
+    // Auth is loading or token exists but user not yet hydrated — show
+    // overlay but keep children mounted
     return (
       <>
         <div className="bg-base-100/80 pointer-events-none fixed inset-0 z-50 flex items-center justify-center">
