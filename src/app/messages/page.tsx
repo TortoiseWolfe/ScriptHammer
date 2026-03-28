@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  Suspense,
+} from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MessagingGate } from '@/components/auth/MessagingGate';
 import { EncryptionKeyGate } from '@/components/auth/EncryptionKeyGate';
@@ -25,7 +31,16 @@ import SetupCompleteToast from '@/components/molecular/SetupCompleteToast';
 function MessagesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const conversationId = searchParams?.get('conversation') ?? null;
+  const rawConversationId = searchParams?.get('conversation') ?? null;
+
+  // Persist conversationId across transient searchParams=null from Suspense
+  // re-renders. Without this, ConversationView unmounts briefly when React
+  // re-renders the page component and useSearchParams() returns null.
+  const conversationIdRef = useRef(rawConversationId);
+  if (rawConversationId !== null) {
+    conversationIdRef.current = rawConversationId;
+  }
+  const conversationId = rawConversationId ?? conversationIdRef.current;
 
   // Drawer defaults open on mobile when there's no conversation yet
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(!conversationId);
