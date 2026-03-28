@@ -31,16 +31,23 @@ import SetupCompleteToast from '@/components/molecular/SetupCompleteToast';
 function MessagesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const rawConversationId = searchParams?.get('conversation') ?? null;
 
-  // Persist conversationId across transient searchParams=null from Suspense
-  // re-renders. Without this, ConversationView unmounts briefly when React
-  // re-renders the page component and useSearchParams() returns null.
-  const conversationIdRef = useRef(rawConversationId);
-  if (rawConversationId !== null) {
-    conversationIdRef.current = rawConversationId;
-  }
-  const conversationId = rawConversationId ?? conversationIdRef.current;
+  // Use React state for conversationId instead of reading from searchParams
+  // on every render. searchParams triggers Suspense re-renders in Next.js
+  // App Router, which unmounts MessagesContent (including ConversationView),
+  // destroying the message thread mid-interaction.
+  const [conversationId, setConversationId] = useState<string | null>(
+    searchParams?.get('conversation') ?? null
+  );
+
+  // Sync from URL on initial load and when searchParams change externally
+  // (e.g., browser back/forward, deep links)
+  useEffect(() => {
+    const urlConvId = searchParams?.get('conversation') ?? null;
+    if (urlConvId !== null && urlConvId !== conversationId) {
+      setConversationId(urlConvId);
+    }
+  }, [searchParams, conversationId]);
 
   // Drawer defaults open on mobile when there's no conversation yet
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(!conversationId);
@@ -52,11 +59,14 @@ function MessagesContent() {
 
   const handleConversationSelect = useCallback(
     (convId: string) => {
+      // Update local state immediately (no Suspense re-render)
+      setConversationId(convId);
+      setIsMobileDrawerOpen(false);
+      // Update URL for deep linking (async, won't cause Suspense)
       const params = new URLSearchParams(searchParams?.toString() || '');
       params.set('conversation', convId);
       params.set('tab', 'chats');
       router.push(`/messages?${params.toString()}`);
-      setIsMobileDrawerOpen(false);
     },
     [router, searchParams]
   );
