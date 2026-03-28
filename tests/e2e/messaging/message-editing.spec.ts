@@ -228,23 +228,35 @@ async function navigateToConversation(page: Page) {
  * Send a message in the current conversation
  */
 async function sendMessage(page: Page, message: string) {
-  const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 45000 });
+  // Retry fill+click up to 5 times — React re-renders from Supabase Realtime
+  // subscriptions detach the textarea from the DOM during fill/click.
+  let sent = false;
+  for (let attempt = 0; attempt < 5 && !sent; attempt++) {
+    try {
+      const messageInput = page.getByRole('textbox', {
+        name: /Message input/i,
+      });
+      await expect(messageInput).toBeEnabled({ timeout: 15000 });
+      await messageInput.fill(message, { timeout: 5000 });
 
-  // Wait for all Supabase queries to complete before interacting.
-  // loadMessages() and loadConversationInfo() fire on mount and trigger
-  // React re-renders that detach the textarea from the DOM during fill.
-  await page.waitForLoadState('networkidle').catch(() => {});
-  await waitForUIStability(page);
-
-  await messageInput.fill(message);
-
-  const sendButton = page.getByRole('button', { name: /Send message/i });
-  await sendButton.click();
+      const sendButton = page.getByRole('button', { name: /Send message/i });
+      await sendButton.click({ timeout: 5000 });
+      sent = true;
+    } catch (err) {
+      if (attempt < 4) {
+        console.log(
+          `[sendMessage] Attempt ${attempt + 1} failed (element detached?), retrying...`
+        );
+        await page.waitForTimeout(2000);
+      } else {
+        throw err;
+      }
+    }
+  }
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
-  await expect(messageElement).toBeVisible({ timeout: 10000 });
+  await expect(messageElement).toBeVisible({ timeout: 15000 });
 
   // Scroll the message into view (new messages appear at bottom)
   await messageElement.scrollIntoViewIfNeeded();
