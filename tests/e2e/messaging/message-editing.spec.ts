@@ -151,6 +151,7 @@ test.beforeAll(async () => {
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
 async function signIn(page: Page, _email: string, password: string) {
+  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
@@ -181,6 +182,10 @@ async function waitForUIStability(page: Page) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
+  // Navigate to about:blank first to abort any hanging requests/websockets
+  // from a previous test attempt. Without this, page.goto can hang on
+  // retries because the page is stuck (realtime subscriptions, pending XHR).
+  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
@@ -211,6 +216,11 @@ async function navigateToConversation(page: Page) {
   // Wait for message input to be visible (indicates conversation is loaded)
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toBeVisible({ timeout: 45000 });
+
+  // Wait for all initial Supabase queries to complete (loadMessages,
+  // loadConversationInfo, delivery receipts). These trigger React
+  // re-renders that detach DOM elements during test interactions.
+  await page.waitForLoadState('networkidle').catch(() => {});
   await waitForUIStability(page);
 }
 
@@ -218,12 +228,52 @@ async function navigateToConversation(page: Page) {
  * Send a message in the current conversation
  */
 async function sendMessage(page: Page, message: string) {
+  // Use page.evaluate to set the textarea value directly. Playwright's fill()
+  // fails because React re-renders from Supabase Realtime subscriptions
+  // continuously detach the textarea from the DOM. page.evaluate is immune
+  // to element detachment because it runs in the browser context.
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toBeEnabled({ timeout: 45000 });
-  await messageInput.fill(message);
 
-  const sendButton = page.getByRole('button', { name: /Send message/i });
-  await sendButton.click();
+  // Set value via DOM and dispatch input event so React picks it up
+  await page.evaluate((msg) => {
+    const textarea = document.querySelector(
+      'textarea[aria-label="Message input"]'
+    ) as HTMLTextAreaElement | null;
+    if (!textarea) throw new Error('Message input not found');
+    // React uses a setter to track value changes — trigger it properly
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value'
+    )?.set;
+    nativeInputValueSetter?.call(textarea, msg);
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+  }, message);
+
+  // Click send via evaluate too (immune to detachment)
+  await page.evaluate(() => {
+    const btn = document.querySelector(
+      'button[aria-label="Send message"]'
+    ) as HTMLButtonElement | null;
+    if (!btn) throw new Error('Send button not found');
+    btn.click();
+  });
+
+  // Wait for React to process the send
+  await page.waitForTimeout(3000);
+
+  // Diagnostic: what's in the message thread?
+  const threadHTML = await page
+    .locator('[data-testid="message-thread"]')
+    .innerHTML()
+    .catch(() => 'THREAD_NOT_FOUND');
+  if (!threadHTML.includes(message)) {
+    console.log(
+      `[DIAG-THREAD] Message "${message}" not in thread. Thread HTML (500 chars):`,
+      threadHTML.slice(0, 500)
+    );
+  }
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
