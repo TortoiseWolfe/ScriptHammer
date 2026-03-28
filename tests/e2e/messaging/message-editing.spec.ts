@@ -256,15 +256,15 @@ async function sendMessage(page: Page, message: string) {
   // Wait for React to process the send
   await page.waitForTimeout(3000);
 
-  // Diagnostic: what's in the message thread?
+  // Diagnostic: check URL and thread state after send
+  const postSendUrl = page.url();
   const threadHTML = await page
     .locator('[data-testid="message-thread"]')
     .innerHTML()
     .catch(() => 'THREAD_NOT_FOUND');
   if (!threadHTML.includes(message)) {
     console.log(
-      `[DIAG-THREAD] Message "${message}" not in thread. Thread HTML (500 chars):`,
-      threadHTML.slice(0, 500)
+      `[DIAG-THREAD] URL: ${postSendUrl} | Message "${message}" not in thread: ${threadHTML.slice(0, 300)}`
     );
   }
 
