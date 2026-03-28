@@ -82,10 +82,18 @@ export class MessageService {
     // that can fail when the access token is expired (getUser() calls the
     // server, while getSession() reads from localStorage and auto-refreshes).
     // On static exports, the Supabase client refreshes tokens transparently.
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -365,10 +373,18 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -700,10 +716,18 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -759,10 +783,18 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -842,10 +874,18 @@ export class MessageService {
     }
 
     // Get authenticated user
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -1019,10 +1059,18 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -1106,10 +1154,18 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
@@ -1199,10 +1255,18 @@ export class MessageService {
     const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user
-    const {
-      data: { session },
-      error: authError,
-    } = await supabase.auth.getSession();
+    // Retry getSession up to 3 times with 500ms delays.
+    // Supabase token refresh briefly sets session=null — retrying
+    // allows the refresh to complete before giving up.
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
     const user = session?.user;
 
     if (authError || !user) {
