@@ -361,6 +361,11 @@ export function useConversationList() {
       debounceTimer = setTimeout(() => loadConversations(), 1000);
     };
 
+    // Only subscribe to conversation-level changes (new conversations,
+    // metadata updates, group membership). Do NOT subscribe to individual
+    // message INSERTs/UPDATEs — those fire for ALL users globally and cause
+    // cascading React re-renders that detach DOM elements during interactions.
+    // The ConversationView handles message loading independently.
     const channel = supabase
       .channel('conversations-list')
       .on(
@@ -380,38 +385,11 @@ export function useConversationList() {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'messages',
-        },
-        (payload) => {
-          logger.debug('Realtime: new message', { event: payload.eventType });
-          debouncedLoad();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'messages',
-        },
-        (payload) => {
-          logger.debug('Realtime: message updated', {
-            event: payload.eventType,
-          });
-          debouncedLoad();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
           event: '*',
           schema: 'public',
           table: 'conversation_members',
         },
         (payload) => {
-          // Feature 010: Reload when group membership changes
           logger.debug('Realtime: conversation_members change', {
             event: payload.eventType,
           });
