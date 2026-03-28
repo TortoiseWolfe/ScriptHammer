@@ -54,17 +54,10 @@ export default function EncryptionKeyGate({
     if (authLoading) return;
 
     if (!user) {
-      // If user was previously authenticated, this is a transient state
-      // (token refresh). Don't redirect — wait for auth to restore.
-      if (wasAuthenticatedRef.current) return;
-
-      // Never been authenticated — check localStorage as final guard
-      const hasStoredSession =
-        typeof window !== 'undefined' &&
-        Object.keys(localStorage).some((k) => k.includes('-auth-token'));
-      if (!hasStoredSession) {
-        router.push('/sign-in?redirect=/messages');
-      }
+      // Don't redirect to /sign-in here — MessagingGate handles that.
+      // Redirecting from EncryptionKeyGate during Supabase token refresh
+      // (when user is transiently null) destroys the active conversation.
+      // Just wait for the auth context to restore the user.
       return;
     }
 
