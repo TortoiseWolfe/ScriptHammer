@@ -228,31 +228,37 @@ async function navigateToConversation(page: Page) {
  * Send a message in the current conversation
  */
 async function sendMessage(page: Page, message: string) {
-  // Retry fill+click up to 5 times — React re-renders from Supabase Realtime
-  // subscriptions detach the textarea from the DOM during fill/click.
-  let sent = false;
-  for (let attempt = 0; attempt < 5 && !sent; attempt++) {
-    try {
-      const messageInput = page.getByRole('textbox', {
-        name: /Message input/i,
-      });
-      await expect(messageInput).toBeEnabled({ timeout: 15000 });
-      await messageInput.fill(message, { timeout: 5000 });
+  // Use page.evaluate to set the textarea value directly. Playwright's fill()
+  // fails because React re-renders from Supabase Realtime subscriptions
+  // continuously detach the textarea from the DOM. page.evaluate is immune
+  // to element detachment because it runs in the browser context.
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 45000 });
 
-      const sendButton = page.getByRole('button', { name: /Send message/i });
-      await sendButton.click({ timeout: 5000 });
-      sent = true;
-    } catch (err) {
-      if (attempt < 4) {
-        console.log(
-          `[sendMessage] Attempt ${attempt + 1} failed (element detached?), retrying...`
-        );
-        await page.waitForTimeout(2000);
-      } else {
-        throw err;
-      }
-    }
-  }
+  // Set value via DOM and dispatch input event so React picks it up
+  await page.evaluate((msg) => {
+    const textarea = document.querySelector(
+      'textarea[aria-label="Message input"]'
+    ) as HTMLTextAreaElement | null;
+    if (!textarea) throw new Error('Message input not found');
+    // React uses a setter to track value changes — trigger it properly
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      'value'
+    )?.set;
+    nativeInputValueSetter?.call(textarea, msg);
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+  }, message);
+
+  // Click send via evaluate too (immune to detachment)
+  await page.evaluate(() => {
+    const btn = document.querySelector(
+      'button[aria-label="Send message"]'
+    ) as HTMLButtonElement | null;
+    if (!btn) throw new Error('Send button not found');
+    btn.click();
+  });
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
