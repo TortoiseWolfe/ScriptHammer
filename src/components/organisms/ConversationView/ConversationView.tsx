@@ -316,23 +316,21 @@ export default function ConversationView({
           </button>
         </div>
       )}
-      <ErrorBoundary level="component">
-        <ChatWindow
-          conversationId={conversationId}
-          messages={messages}
-          pendingMessages={pendingMessages}
-          onRetryPending={retryMessage}
-          onSendMessage={handleSendMessage}
-          onEditMessage={handleEditMessage}
-          onDeleteMessage={handleDeleteMessage}
-          onLoadMore={handleLoadMore}
-          hasMore={hasMore}
-          loading={loading}
-          sending={sending}
-          participantName={participantName}
-          className="min-h-0 flex-1"
-        />
-      </ErrorBoundary>
+      <ChatWindow
+        conversationId={conversationId}
+        messages={messages}
+        pendingMessages={pendingMessages}
+        onRetryPending={retryMessage}
+        onSendMessage={handleSendMessage}
+        onEditMessage={handleEditMessage}
+        onDeleteMessage={handleDeleteMessage}
+        onLoadMore={handleLoadMore}
+        hasMore={hasMore}
+        loading={loading}
+        sending={sending}
+        participantName={participantName}
+        className="min-h-0 flex-1"
+      />
     </div>
   );
 }
