@@ -260,6 +260,21 @@ async function sendMessage(page: Page, message: string) {
     btn.click();
   });
 
+  // Wait for React to process the send
+  await page.waitForTimeout(3000);
+
+  // Diagnostic: what's in the message thread?
+  const threadHTML = await page
+    .locator('[data-testid="message-thread"]')
+    .innerHTML()
+    .catch(() => 'THREAD_NOT_FOUND');
+  if (!threadHTML.includes(message)) {
+    console.log(
+      `[DIAG-THREAD] Message "${message}" not in thread. Thread HTML (500 chars):`,
+      threadHTML.slice(0, 500)
+    );
+  }
+
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
   await expect(messageElement).toBeVisible({ timeout: 15000 });
