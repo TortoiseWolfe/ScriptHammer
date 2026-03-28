@@ -151,7 +151,6 @@ test.beforeAll(async () => {
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
 async function signIn(page: Page, _email: string, password: string) {
-  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
@@ -182,10 +181,6 @@ async function waitForUIStability(page: Page) {
  * Navigate to conversation helper
  */
 async function navigateToConversation(page: Page) {
-  // Navigate to about:blank first to abort any hanging requests/websockets
-  // from a previous test attempt. Without this, page.goto can hang on
-  // retries because the page is stuck (realtime subscriptions, pending XHR).
-  await page.goto('about:blank').catch(() => {});
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
@@ -216,11 +211,6 @@ async function navigateToConversation(page: Page) {
   // Wait for message input to be visible (indicates conversation is loaded)
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toBeVisible({ timeout: 45000 });
-
-  // Wait for all initial Supabase queries to complete (loadMessages,
-  // loadConversationInfo, delivery receipts). These trigger React
-  // re-renders that detach DOM elements during test interactions.
-  await page.waitForLoadState('networkidle').catch(() => {});
   await waitForUIStability(page);
 }
 
@@ -228,60 +218,15 @@ async function navigateToConversation(page: Page) {
  * Send a message in the current conversation
  */
 async function sendMessage(page: Page, message: string) {
-  // Wait for textarea to exist and be enabled via DOM polling (immune to
-  // React re-renders that detach elements from Playwright's locator cache).
-  await page.waitForFunction(
-    () => {
-      const ta = document.querySelector(
-        'textarea[aria-label="Message input"]'
-      ) as HTMLTextAreaElement | null;
-      return ta && !ta.disabled;
-    },
-    { timeout: 45000 }
-  );
+  // Standard Playwright fill+click. The idle timeout fix (no more 60
+  // re-renders/minute) and auth gate fixes should prevent element
+  // detachment that previously required workarounds.
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 45000 });
+  await messageInput.fill(message);
 
-  // Focus textarea via evaluate (immune to detachment), then type message.
-  // React 19 ignores nativeInputValueSetter — must use real keystrokes.
-  await page.evaluate(() => {
-    const ta = document.querySelector(
-      'textarea[aria-label="Message input"]'
-    ) as HTMLTextAreaElement | null;
-    if (ta) ta.focus();
-  });
-  await page.keyboard.type(message, { delay: 0 });
-
-  // Send via Enter key (MessageInput sends on Enter without Shift)
-  await page.keyboard.press('Enter');
-
-  // Wait for React to process the send
-  await page.waitForTimeout(3000);
-
-  // Diagnostic: check what's actually on the page after send
-  const postSendUrl = page.url();
-  const threadHTML = await page
-    .locator('[data-testid="message-thread"]')
-    .innerHTML()
-    .catch(() => 'THREAD_NOT_FOUND');
-  if (!threadHTML.includes(message)) {
-    // Capture what IS on the page to identify what replaced the thread
-    const pageState = await page.evaluate(() => ({
-      bodyText: document.body.innerText.slice(0, 300),
-      hasConversationView: !!document.querySelector(
-        '[data-testid="conversation-view"]'
-      ),
-      hasChatWindow: !!document.querySelector('[data-testid="chat-window"]'),
-      hasThread: !!document.querySelector('[data-testid="message-thread"]'),
-      hasLoading: !!document.querySelector('.loading'),
-      hasErrorBoundary: !!document.querySelector('.error-boundary-fallback'),
-      hasSignInRequired: document.body.innerText.includes('Sign in required'),
-      hasSelectConversation: document.body.innerText.includes(
-        'Select a conversation'
-      ),
-    }));
-    console.log(
-      `[DIAG-THREAD] URL: ${postSendUrl} | pageState: ${JSON.stringify(pageState)}`
-    );
-  }
+  const sendButton = page.getByRole('button', { name: /Send message/i });
+  await sendButton.click();
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
