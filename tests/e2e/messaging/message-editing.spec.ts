@@ -256,15 +256,30 @@ async function sendMessage(page: Page, message: string) {
   // Wait for React to process the send
   await page.waitForTimeout(3000);
 
-  // Diagnostic: check URL and thread state after send
+  // Diagnostic: check what's actually on the page after send
   const postSendUrl = page.url();
   const threadHTML = await page
     .locator('[data-testid="message-thread"]')
     .innerHTML()
     .catch(() => 'THREAD_NOT_FOUND');
   if (!threadHTML.includes(message)) {
+    // Capture what IS on the page to identify what replaced the thread
+    const pageState = await page.evaluate(() => ({
+      bodyText: document.body.innerText.slice(0, 300),
+      hasConversationView: !!document.querySelector(
+        '[data-testid="conversation-view"]'
+      ),
+      hasChatWindow: !!document.querySelector('[data-testid="chat-window"]'),
+      hasThread: !!document.querySelector('[data-testid="message-thread"]'),
+      hasLoading: !!document.querySelector('.loading'),
+      hasErrorBoundary: !!document.querySelector('.error-boundary-fallback'),
+      hasSignInRequired: document.body.innerText.includes('Sign in required'),
+      hasSelectConversation: document.body.innerText.includes(
+        'Select a conversation'
+      ),
+    }));
     console.log(
-      `[DIAG-THREAD] URL: ${postSendUrl} | Message "${message}" not in thread: ${threadHTML.slice(0, 300)}`
+      `[DIAG-THREAD] URL: ${postSendUrl} | pageState: ${JSON.stringify(pageState)}`
     );
   }
 
