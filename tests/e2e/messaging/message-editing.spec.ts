@@ -256,6 +256,19 @@ async function sendMessage(page: Page, message: string) {
     textarea.dispatchEvent(new Event('change', { bubbles: true }));
   }, message);
 
+  // Verify the value was set
+  const valueSet = await page.evaluate(() => {
+    const ta = document.querySelector(
+      'textarea[aria-label="Message input"]'
+    ) as HTMLTextAreaElement;
+    return ta?.value || '';
+  });
+  if (!valueSet.includes(message)) {
+    console.log(
+      `[DIAG-SEND] Value NOT set. Got: "${valueSet.slice(0, 50)}", expected: "${message.slice(0, 50)}"`
+    );
+  }
+
   // Click send via evaluate too (immune to detachment)
   await page.evaluate(() => {
     const btn = document.querySelector(
