@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  Suspense,
+} from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { MessagingGate } from '@/components/auth/MessagingGate';
 import { EncryptionKeyGate } from '@/components/auth/EncryptionKeyGate';
@@ -140,16 +146,22 @@ function MessagesContent() {
 }
 
 export default function MessagesPage() {
-  // NOTE: No <Suspense> wrapper here. The Suspense boundary was causing
-  // EncryptionKeyGate and MessagesContent to unmount/remount during
-  // useSearchParams() transitions, destroying the wasAuthenticatedRef
-  // and triggering false redirects to /sign-in during token refresh.
-  // On static export (output: 'export'), there's no SSR streaming that
-  // needs Suspense. The loading states are handled by the gates themselves.
+  // The Suspense boundary wraps ONLY MessagesContent (which uses
+  // useSearchParams). The auth gates are OUTSIDE Suspense so their
+  // wasAuthenticatedRef survives Suspense transitions. This prevents
+  // false redirects to /sign-in during Supabase token refresh.
   return (
     <MessagingGate>
       <EncryptionKeyGate>
-        <MessagesContent />
+        <Suspense
+          fallback={
+            <div className="flex h-screen items-center justify-center">
+              <span className="loading loading-spinner loading-lg" />
+            </div>
+          }
+        >
+          <MessagesContent />
+        </Suspense>
       </EncryptionKeyGate>
     </MessagingGate>
   );
