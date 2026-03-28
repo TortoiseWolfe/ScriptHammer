@@ -240,43 +240,18 @@ async function sendMessage(page: Page, message: string) {
     { timeout: 45000 }
   );
 
-  // Set value via DOM and dispatch input event so React picks it up
-  await page.evaluate((msg) => {
-    const textarea = document.querySelector(
-      'textarea[aria-label="Message input"]'
-    ) as HTMLTextAreaElement | null;
-    if (!textarea) throw new Error('Message input not found');
-    // React uses a setter to track value changes — trigger it properly
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      HTMLTextAreaElement.prototype,
-      'value'
-    )?.set;
-    nativeInputValueSetter?.call(textarea, msg);
-    textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    textarea.dispatchEvent(new Event('change', { bubbles: true }));
-  }, message);
-
-  // Verify the value was set
-  const valueSet = await page.evaluate(() => {
+  // Focus textarea via evaluate (immune to detachment), then type message.
+  // React 19 ignores nativeInputValueSetter — must use real keystrokes.
+  await page.evaluate(() => {
     const ta = document.querySelector(
       'textarea[aria-label="Message input"]'
-    ) as HTMLTextAreaElement;
-    return ta?.value || '';
+    ) as HTMLTextAreaElement | null;
+    if (ta) ta.focus();
   });
-  if (!valueSet.includes(message)) {
-    console.log(
-      `[DIAG-SEND] Value NOT set. Got: "${valueSet.slice(0, 50)}", expected: "${message.slice(0, 50)}"`
-    );
-  }
+  await page.keyboard.type(message, { delay: 0 });
 
-  // Click send via evaluate too (immune to detachment)
-  await page.evaluate(() => {
-    const btn = document.querySelector(
-      'button[aria-label="Send message"]'
-    ) as HTMLButtonElement | null;
-    if (!btn) throw new Error('Send button not found');
-    btn.click();
-  });
+  // Send via Enter key (MessageInput sends on Enter without Shift)
+  await page.keyboard.press('Enter');
 
   // Wait for React to process the send
   await page.waitForTimeout(3000);
