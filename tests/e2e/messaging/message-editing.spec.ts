@@ -228,12 +228,17 @@ async function navigateToConversation(page: Page) {
  * Send a message in the current conversation
  */
 async function sendMessage(page: Page, message: string) {
-  // Use page.evaluate to set the textarea value directly. Playwright's fill()
-  // fails because React re-renders from Supabase Realtime subscriptions
-  // continuously detach the textarea from the DOM. page.evaluate is immune
-  // to element detachment because it runs in the browser context.
-  const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 45000 });
+  // Wait for textarea to exist and be enabled via DOM polling (immune to
+  // React re-renders that detach elements from Playwright's locator cache).
+  await page.waitForFunction(
+    () => {
+      const ta = document.querySelector(
+        'textarea[aria-label="Message input"]'
+      ) as HTMLTextAreaElement | null;
+      return ta && !ta.disabled;
+    },
+    { timeout: 45000 }
+  );
 
   // Set value via DOM and dispatch input event so React picks it up
   await page.evaluate((msg) => {
