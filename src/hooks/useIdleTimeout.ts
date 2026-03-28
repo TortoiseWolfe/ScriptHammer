@@ -32,18 +32,27 @@ export function useIdleTimeout({
       window.addEventListener(event, resetTimer);
     });
 
+    // Only update state when it matters: near warning threshold or timeout.
+    // Updating timeRemaining every 1 second causes AuthProvider to re-render
+    // the entire app 60 times per minute with zero UI change (the countdown
+    // is only shown in the idle warning modal).
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - lastActivityRef.current) / 1000);
       const remaining = timeoutMinutes * 60 - elapsed;
-      setTimeRemaining(remaining);
 
       if (remaining <= 0) {
         setIsIdle(true);
+        setTimeRemaining(0);
         onTimeout?.();
-      } else if (remaining <= warningMinutes * 60 && !warningShownRef.current) {
-        warningShownRef.current = true;
-        onWarning?.();
+      } else if (remaining <= warningMinutes * 60) {
+        // Only update state in the warning zone (last N minutes)
+        setTimeRemaining(remaining);
+        if (!warningShownRef.current) {
+          warningShownRef.current = true;
+          onWarning?.();
+        }
       }
+      // Outside warning zone: no state update, no re-render
     }, 1000);
 
     return () => {
