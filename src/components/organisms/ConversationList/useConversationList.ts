@@ -349,9 +349,17 @@ export function useConversationList() {
     loadConversations();
   }, [loadConversations]);
 
-  // Set up real-time subscription for conversation updates
+  // Set up real-time subscription for conversation updates.
+  // Debounce loadConversations to avoid cascading re-renders from
+  // rapid-fire Realtime events (e.g., multiple message INSERTs from
+  // parallel test workers or rapid conversation updates).
   useEffect(() => {
     const supabase = createClient();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedLoad = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => loadConversations(), 1000);
+    };
 
     const channel = supabase
       .channel('conversations-list')
@@ -366,7 +374,7 @@ export function useConversationList() {
           logger.debug('Realtime: conversations change', {
             event: payload.eventType,
           });
-          loadConversations();
+          debouncedLoad();
         }
       )
       .on(
@@ -378,7 +386,7 @@ export function useConversationList() {
         },
         (payload) => {
           logger.debug('Realtime: new message', { event: payload.eventType });
-          loadConversations();
+          debouncedLoad();
         }
       )
       .on(
@@ -392,7 +400,7 @@ export function useConversationList() {
           logger.debug('Realtime: message updated', {
             event: payload.eventType,
           });
-          loadConversations();
+          debouncedLoad();
         }
       )
       .on(
@@ -407,7 +415,7 @@ export function useConversationList() {
           logger.debug('Realtime: conversation_members change', {
             event: payload.eventType,
           });
-          loadConversations();
+          debouncedLoad();
         }
       )
       .subscribe((status, err) => {
@@ -423,6 +431,7 @@ export function useConversationList() {
       });
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       channel.unsubscribe();
       supabase.removeChannel(channel);
     };
