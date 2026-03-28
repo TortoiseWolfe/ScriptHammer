@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, type ReactNode } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type ReactNode,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { ReAuthModal } from '@/components/auth/ReAuthModal';
 import { keyManagementService } from '@/services/messaging/key-service';
@@ -36,24 +42,29 @@ export default function EncryptionKeyGate({
   const [checkingKeys, setCheckingKeys] = useState(true);
   const [needsReAuth, setNeedsReAuth] = useState(false);
 
+  // Track if user was ever authenticated. Supabase token refresh briefly
+  // sets user=null and removes the auth token from localStorage. Without
+  // this guard, the gate would redirect to /sign-in during refresh.
+  const wasAuthenticatedRef = useRef(false);
+  if (user) {
+    wasAuthenticatedRef.current = true;
+  }
+
   useEffect(() => {
-    // Wait for auth context to finish loading before checking keys.
-    // On static exports, the Supabase session restores from localStorage
-    // asynchronously — calling getUser() before this completes returns
-    // "Auth session missing!" which falsely redirects to /messages/setup.
     if (authLoading) return;
 
     if (!user) {
-      // On static exports, the auth context may briefly report user=null
-      // before the Supabase session restores from localStorage. Only redirect
-      // to sign-in if there's genuinely no session token in localStorage.
+      // If user was previously authenticated, this is a transient state
+      // (token refresh). Don't redirect — wait for auth to restore.
+      if (wasAuthenticatedRef.current) return;
+
+      // Never been authenticated — check localStorage as final guard
       const hasStoredSession =
         typeof window !== 'undefined' &&
         Object.keys(localStorage).some((k) => k.includes('-auth-token'));
       if (!hasStoredSession) {
         router.push('/sign-in?redirect=/messages');
       }
-      // If session exists in localStorage, wait for next auth state update
       return;
     }
 
