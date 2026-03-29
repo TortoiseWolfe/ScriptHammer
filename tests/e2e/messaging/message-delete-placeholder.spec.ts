@@ -22,6 +22,7 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   handleEncryptionSetup,
+  fillMessageInput,
 } from '../utils/test-user-factory';
 
 const USER_A_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL!;
@@ -185,14 +186,13 @@ async function typeAndSend(
   page: import('@playwright/test').Page,
   text: string
 ) {
-  const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 45000 });
-  await messageInput.fill(text);
+  await fillMessageInput(page, text);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
 
   // Wait for input to clear — confirms the handler fired
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toHaveValue('', { timeout: 5000 });
   await page.waitForTimeout(1000);
 }

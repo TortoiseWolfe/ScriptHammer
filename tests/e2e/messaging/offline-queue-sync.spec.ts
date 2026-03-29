@@ -23,6 +23,7 @@ import * as http from 'http';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  fillMessageInput,
 } from '../utils/test-user-factory';
 
 const USER_A_EMAIL = 'test@example.com';
@@ -245,7 +246,7 @@ test.describe('Offline Queue Sync E2E', () => {
 
       // ===== Send message while offline =====
       const testMessage = `Offline sync test ${Date.now()}`;
-      await messageInput.fill(testMessage);
+      await fillMessageInput(page, testMessage);
 
       const sendButton = page.getByRole('button', { name: /send/i });
       await sendButton.click();

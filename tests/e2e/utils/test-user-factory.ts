@@ -11,7 +11,7 @@
  */
 
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
-import type { Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 /**
@@ -880,4 +880,35 @@ export async function performSignIn(
       error: `Auth hydration timeout at ${currentUrl}`,
     };
   }
+}
+
+/**
+ * Fill a MessageInput textarea and wait for React to process the value.
+ *
+ * MessageInput is a controlled component (value={message}, onChange).
+ * Playwright's fill() dispatches an input event, but React batches state
+ * updates asynchronously. Without waiting, clicking Send immediately after
+ * fill reads stale state ("") and triggers "Message cannot be empty".
+ *
+ * Waits for the #char-count element to reflect the new message length,
+ * which proves React has processed the fill and updated component state.
+ */
+export async function fillMessageInput(
+  page: Page,
+  text: string
+): Promise<void> {
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 15000 });
+  await messageInput.fill(text);
+
+  // Wait for React to process the fill — char count updates when state changes
+  await page.waitForFunction(
+    (expectedLen) => {
+      const counter = document.getElementById('char-count');
+      if (!counter) return false;
+      return counter.textContent?.includes(String(expectedLen));
+    },
+    text.length,
+    { timeout: 5000 }
+  );
 }

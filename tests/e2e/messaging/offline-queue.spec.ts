@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  fillMessageInput,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -228,9 +229,7 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 4: Send message while offline =====
       const testMessage = `Offline test message ${Date.now()}`;
-      const msgInput = page.getByRole('textbox', { name: /Message input/i });
-      await expect(msgInput).toBeVisible();
-      await msgInput.fill(testMessage);
+      await fillMessageInput(page, testMessage);
 
       const sendButton = page.getByRole('button', { name: /send/i });
       await sendButton.click();
@@ -411,7 +410,7 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 3: Send message =====
       const testMessage = `Retry test message ${Date.now()}`;
-      await msgInput.fill(testMessage);
+      await fillMessageInput(page, testMessage);
 
       const sendButton = page.getByRole('button', { name: /send/i });
       await sendButton.click();
@@ -643,7 +642,7 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 3: Send message =====
       const testMessage = `Failed message ${Date.now()}`;
-      await messageInput.fill(testMessage);
+      await fillMessageInput(page, testMessage);
 
       const sendButton = page.getByRole('button', { name: /send/i });
       await sendButton.click();

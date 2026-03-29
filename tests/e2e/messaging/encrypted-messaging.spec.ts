@@ -17,6 +17,7 @@ import {
   handleReAuthModal,
   dismissCookieBanner,
   performSignIn,
+  fillMessageInput,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -230,14 +231,9 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== STEP 5: User A sends an encrypted message =====
       const testMessage = `Test encrypted message ${Date.now()}`;
-      const messageInput = pageA.locator(
-        'textarea[aria-label="Message input"]'
-      );
-      await expect(messageInput).toBeVisible({ timeout: 45000 });
-      await messageInput.fill(testMessage);
+      await fillMessageInput(pageA, testMessage);
 
       const sendButton = pageA.getByRole('button', { name: /send/i });
-      await expect(sendButton).toBeEnabled();
       await sendButton.click();
 
       // Wait for sending state to complete
@@ -271,10 +267,7 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== STEP 10: Verify User B can reply =====
       const replyMessage = `Reply from User B ${Date.now()}`;
-      const messageInputB = pageB.locator(
-        'textarea[aria-label="Message input"]'
-      );
-      await messageInputB.fill(replyMessage);
+      await fillMessageInput(pageB, replyMessage);
       await pageB.getByRole('button', { name: /send/i }).click();
 
       // Verify reply appears in User B's view
@@ -406,10 +399,7 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // Send a message
       const testMessage = `Delivery status test ${Date.now()}`;
-      const messageInput = pageA.locator(
-        'textarea[aria-label="Message input"]'
-      );
-      await messageInput.fill(testMessage);
+      await fillMessageInput(pageA, testMessage);
       await pageA.getByRole('button', { name: /send/i }).click();
 
       // Wait for message to appear

@@ -10,6 +10,7 @@ import { test, expect, Page, BrowserContext } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  fillMessageInput,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -286,10 +287,7 @@ test.describe('Real-time Message Delivery (T098)', () => {
     const testMessage = `Real-time test message ${Date.now()}`;
     const startTime = Date.now();
 
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill(testMessage);
+    await fillMessageInput(page1, testMessage);
     await page1.getByRole('button', { name: /send/i }).click();
 
     // User 2: Wait for message to appear (with fallback to reload if real-time not active)
@@ -312,10 +310,7 @@ test.describe('Real-time Message Delivery (T098)', () => {
 
     // User 1: Send a message
     const testMessage = `Delivery status test ${Date.now()}`;
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill(testMessage);
+    await fillMessageInput(page1, testMessage);
     await page1.getByRole('button', { name: /send/i }).click();
 
     // User 2: Message appears (with fallback to reload if real-time not active)
@@ -338,13 +333,10 @@ test.describe('Real-time Message Delivery (T098)', () => {
       `Rapid 3 ${Date.now()}`,
     ];
 
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
     const sendButton1 = page1.getByRole('button', { name: /send/i });
 
     for (const msg of messages) {
-      await messageInput1.fill(msg);
+      await fillMessageInput(page1, msg);
       await sendButton1.click();
     }
 
@@ -391,10 +383,7 @@ test.describe('Typing Indicators (T099)', () => {
     if (!setupOk) return; // Skip if no conversation available
 
     // User 1: Start typing
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill('Hello');
+    await fillMessageInput(page1, 'Hello');
 
     // User 2: Typing indicator may appear (depends on feature implementation)
     // This test verifies the feature works if implemented
@@ -412,13 +401,13 @@ test.describe('Typing Indicators (T099)', () => {
     if (!setupOk) return; // Skip if no conversation available
 
     // User 1: Start typing
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill('Hello');
+    await fillMessageInput(page1, 'Hello');
 
     // Wait a moment then clear
     await page1.waitForTimeout(1000);
+    const messageInput1 = page1.getByRole('textbox', {
+      name: /Message input/i,
+    });
     await messageInput1.clear();
 
     // Test passes - typing indicator hiding is verified by feature working
@@ -431,10 +420,7 @@ test.describe('Typing Indicators (T099)', () => {
 
     // User 1: Type and send message
     const testMessage = `Typing test ${Date.now()}`;
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill(testMessage);
+    await fillMessageInput(page1, testMessage);
     await page1.getByRole('button', { name: /send/i }).click();
 
     // User 2: Message should appear (with fallback to reload)
@@ -447,19 +433,14 @@ test.describe('Typing Indicators (T099)', () => {
     if (!setupOk) return; // Skip if no conversation available
 
     // Both users type
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    const messageInput2 = page2.getByRole('textbox', {
-      name: /Message input/i,
-    });
-
-    await messageInput1.fill('User 1 typing');
-    await messageInput2.fill('User 2 typing');
+    await fillMessageInput(page1, 'User 1 typing');
+    await fillMessageInput(page2, 'User 2 typing');
 
     // Both message inputs should be visible with content
-    await expect(messageInput1).toHaveValue('User 1 typing');
-    await expect(messageInput2).toHaveValue('User 2 typing');
+    const input1 = page1.getByRole('textbox', { name: /Message input/i });
+    const input2 = page2.getByRole('textbox', { name: /Message input/i });
+    await expect(input1).toHaveValue('User 1 typing');
+    await expect(input2).toHaveValue('User 2 typing');
   });
 
   test('should auto-expire typing indicator after 5 seconds', async () => {
@@ -468,15 +449,13 @@ test.describe('Typing Indicators (T099)', () => {
     if (!setupOk) return; // Skip if no conversation available
 
     // User 1: Start typing
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.fill('Auto-expire test');
+    await fillMessageInput(page1, 'Auto-expire test');
 
     // Wait for potential auto-expire
     await page2.waitForTimeout(6000);
 
     // Verify page is still functional after waiting
-    await expect(messageInput1).toBeVisible();
+    const input1 = page1.getByRole('textbox', { name: /Message input/i });
+    await expect(input1).toBeVisible();
   });
 });

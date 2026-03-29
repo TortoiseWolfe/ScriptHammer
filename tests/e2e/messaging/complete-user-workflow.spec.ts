@@ -9,6 +9,7 @@ import {
   handleReAuthModal,
   waitForAuthenticatedState,
   dismissCookieBanner,
+  fillMessageInput,
 } from '../utils/test-user-factory';
 
 const USER_A = {
@@ -336,11 +337,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await handleReAuthModal(pageA, USER_A.password);
 
       testMessage = 'Hello from User A - ' + Date.now();
-      const messageInput = pageA.getByRole('textbox', {
-        name: /Message input/i,
-      });
-      await expect(messageInput).toBeVisible({ timeout: 45000 });
-      await messageInput.fill(testMessage);
+      await fillMessageInput(pageA, testMessage);
 
       const sendButton = pageA.getByRole('button', { name: /send/i });
       await sendButton.click({ force: true });
@@ -364,10 +361,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       // STEP 10: User B replies
       console.log('Step 10: User B replying...');
       replyMessage = 'Reply from User B - ' + Date.now();
-      const messageInputB = pageB.getByRole('textbox', {
-        name: /Message input/i,
-      });
-      await messageInputB.fill(replyMessage);
+      await fillMessageInput(pageB, replyMessage);
       await pageB.getByRole('button', { name: /send/i }).click({ force: true });
       await expect(pageB.getByText(replyMessage)).toBeVisible({
         timeout: 10000,
