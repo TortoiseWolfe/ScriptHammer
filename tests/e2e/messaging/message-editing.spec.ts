@@ -225,6 +225,20 @@ async function sendMessage(page: Page, message: string) {
   await expect(messageInput).toBeEnabled({ timeout: 45000 });
   await messageInput.fill(message);
 
+  // Wait for React to process the fill — the char count updates when
+  // React's state reflects the new value. Without this, handleSend()
+  // reads stale state (empty string) and rejects with "Message cannot
+  // be empty" instead of actually sending.
+  await page.waitForFunction(
+    (expectedLen) => {
+      const counter = document.getElementById('char-count');
+      if (!counter) return false;
+      return counter.textContent?.includes(String(expectedLen));
+    },
+    message.length,
+    { timeout: 5000 }
+  );
+
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
 
