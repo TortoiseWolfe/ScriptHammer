@@ -1,13 +1,7 @@
 'use client';
 
-import React, {
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-  Suspense,
-} from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MessagingGate } from '@/components/auth/MessagingGate';
 import { EncryptionKeyGate } from '@/components/auth/EncryptionKeyGate';
 import ConversationView from '@/components/organisms/ConversationView';
@@ -16,64 +10,30 @@ import EmptyConversationPrompt from '@/components/molecular/EmptyConversationPro
 import SetupCompleteToast from '@/components/molecular/SetupCompleteToast';
 
 /**
- * Messages page — thin layout shell around extracted organisms.
- *
- * Owns: URL → conversationId, mobile drawer open/close, hamburger navbar.
- * Everything else (tab state, key checks, message state, setup toast)
- * lives in the extracted components.
- *
- * Mobile: drawer slides over chat. Tablet+: side-by-side via md:drawer-open.
- *
- * - /messages                     → Chats tab, empty prompt
- * - /messages?tab=connections     → Connections tab (MessagesSidebar reads)
- * - /messages?conversation=<id>   → ConversationView mounted
+ * Inner component that uses useSearchParams (requires Suspense).
+ * All UI state lives in the parent (MessagesLayout) and is passed
+ * in as props — so Suspense remounts of this component don't lose state.
  */
-function MessagesContent() {
+function MessagesInner({
+  conversationId,
+  onConversationIdFromUrl,
+  isMobileDrawerOpen,
+  onConversationSelect,
+  onToggleDrawer,
+}: {
+  conversationId: string | null;
+  onConversationIdFromUrl: (id: string | null) => void;
+  isMobileDrawerOpen: boolean;
+  onConversationSelect: (convId: string) => void;
+  onToggleDrawer: () => void;
+}) {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
-  // Use React state for conversationId instead of reading from searchParams
-  // on every render. searchParams triggers Suspense re-renders in Next.js
-  // App Router, which unmounts MessagesContent (including ConversationView),
-  // destroying the message thread mid-interaction.
-  const [conversationId, setConversationId] = useState<string | null>(
-    searchParams?.get('conversation') ?? null
-  );
-
-  // Sync from URL on initial load and when searchParams change externally
-  // (e.g., browser back/forward, deep links)
+  // Sync URL params to parent state on mount and URL changes
   useEffect(() => {
     const urlConvId = searchParams?.get('conversation') ?? null;
-    if (urlConvId !== null && urlConvId !== conversationId) {
-      setConversationId(urlConvId);
-    }
-  }, [searchParams, conversationId]);
-
-  // Drawer defaults open on mobile when there's no conversation yet
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(!conversationId);
-
-  // Auto-close drawer when a conversation becomes active (deep link / back)
-  useEffect(() => {
-    if (conversationId) setIsMobileDrawerOpen(false);
-  }, [conversationId]);
-
-  const handleConversationSelect = useCallback(
-    (convId: string) => {
-      // Update local state immediately (no Suspense re-render)
-      setConversationId(convId);
-      setIsMobileDrawerOpen(false);
-      // Update URL for deep linking (async, won't cause Suspense)
-      const params = new URLSearchParams(searchParams?.toString() || '');
-      params.set('conversation', convId);
-      params.set('tab', 'chats');
-      router.push(`/messages?${params.toString()}`);
-    },
-    [router, searchParams]
-  );
-
-  const toggleDrawer = useCallback(() => {
-    setIsMobileDrawerOpen((prev) => !prev);
-  }, []);
+    onConversationIdFromUrl(urlConvId);
+  }, [searchParams, onConversationIdFromUrl]);
 
   return (
     <>
@@ -86,7 +46,7 @@ function MessagesContent() {
             type="checkbox"
             className="drawer-toggle"
             checked={isMobileDrawerOpen}
-            onChange={toggleDrawer}
+            onChange={onToggleDrawer}
           />
 
           <div className="drawer-content flex h-full flex-col overflow-hidden md:ml-80 lg:ml-96">
@@ -123,7 +83,7 @@ function MessagesContent() {
               {conversationId ? (
                 <ConversationView conversationId={conversationId} />
               ) : (
-                <EmptyConversationPrompt onOpenSidebar={toggleDrawer} />
+                <EmptyConversationPrompt onOpenSidebar={onToggleDrawer} />
               )}
             </main>
           </div>
@@ -136,7 +96,7 @@ function MessagesContent() {
             />
             <MessagesSidebar
               selectedConversationId={conversationId}
-              onConversationSelect={handleConversationSelect}
+              onConversationSelect={onConversationSelect}
             />
           </div>
         </div>
@@ -145,23 +105,87 @@ function MessagesContent() {
   );
 }
 
+/**
+ * State holder that lives OUTSIDE Suspense. Survives Suspense remounts.
+ * ConversationView renders here via props passed through MessagesInner,
+ * but the conversationId state is owned here — not inside the Suspense tree.
+ */
+function MessagesLayout() {
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(true);
+
+  // Called by MessagesInner when URL params sync
+  const handleUrlConversationId = useCallback(
+    (urlConvId: string | null) => {
+      if (!initialized) {
+        setConversationId(urlConvId);
+        setInitialized(true);
+        if (urlConvId) setIsMobileDrawerOpen(false);
+      } else if (urlConvId !== null && urlConvId !== conversationId) {
+        // External URL change (back/forward)
+        setConversationId(urlConvId);
+      }
+    },
+    [initialized, conversationId]
+  );
+
+  // Auto-close drawer when conversation becomes active
+  useEffect(() => {
+    if (conversationId) setIsMobileDrawerOpen(false);
+  }, [conversationId]);
+
+  const handleConversationSelect = useCallback((convId: string) => {
+    setConversationId(convId);
+    setIsMobileDrawerOpen(false);
+    // Update URL for deep linking
+    const params = new URLSearchParams(window.location.search);
+    params.set('conversation', convId);
+    params.set('tab', 'chats');
+    window.history.pushState({}, '', `/messages?${params.toString()}`);
+  }, []);
+
+  const toggleDrawer = useCallback(() => {
+    setIsMobileDrawerOpen((prev) => !prev);
+  }, []);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <span className="loading loading-spinner loading-lg" />
+        </div>
+      }
+    >
+      <MessagesInner
+        conversationId={conversationId}
+        onConversationIdFromUrl={handleUrlConversationId}
+        isMobileDrawerOpen={isMobileDrawerOpen}
+        onConversationSelect={handleConversationSelect}
+        onToggleDrawer={toggleDrawer}
+      />
+    </Suspense>
+  );
+}
+
+/**
+ * Messages page entry point.
+ *
+ * Architecture (from outside in):
+ * 1. MessagingGate — blocks if not authenticated
+ * 2. EncryptionKeyGate — blocks if keys not available
+ * 3. MessagesLayout — owns conversationId state (OUTSIDE Suspense)
+ * 4. Suspense — wraps MessagesInner (uses useSearchParams)
+ * 5. MessagesInner — UI rendering + URL sync
+ *
+ * conversationId state survives Suspense remounts because it lives
+ * in MessagesLayout (step 3), not MessagesInner (step 5).
+ */
 export default function MessagesPage() {
-  // The Suspense boundary wraps ONLY MessagesContent (which uses
-  // useSearchParams). The auth gates are OUTSIDE Suspense so their
-  // wasAuthenticatedRef survives Suspense transitions. This prevents
-  // false redirects to /sign-in during Supabase token refresh.
   return (
     <MessagingGate>
       <EncryptionKeyGate>
-        <Suspense
-          fallback={
-            <div className="flex h-screen items-center justify-center">
-              <span className="loading loading-spinner loading-lg" />
-            </div>
-          }
-        >
-          <MessagesContent />
-        </Suspense>
+        <MessagesLayout />
       </EncryptionKeyGate>
     </MessagingGate>
   );
