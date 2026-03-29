@@ -64,7 +64,13 @@ function MessagesLayout() {
   return (
     <>
       <SetupCompleteToast />
-      <SearchParamsReader onParams={handleParams} />
+      {/* Inner Suspense catches SearchParamsReader's suspension locally.
+          The page-level Suspense satisfies Next.js but won't trigger because
+          this inner boundary catches it first. This prevents the page-level
+          Suspense from unmounting the entire MessagesLayout tree. */}
+      <Suspense fallback={null}>
+        <SearchParamsReader onParams={handleParams} />
+      </Suspense>
 
       <div className="bg-base-100 fixed inset-x-0 top-16 bottom-28 overflow-hidden">
         <div className="drawer md:drawer-open h-full">
