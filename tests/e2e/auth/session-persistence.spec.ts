@@ -32,7 +32,7 @@ test.describe('Session Persistence E2E', () => {
 
   // Each test starts fresh on sign-in page
   test.beforeEach(async ({ page }) => {
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
   });
@@ -108,7 +108,7 @@ test.describe('Session Persistence E2E', () => {
     await page.waitForTimeout(2000);
 
     // Navigate to trigger token refresh check
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
 
     // The important part is that navigation doesn't break authentication
@@ -116,7 +116,7 @@ test.describe('Session Persistence E2E', () => {
     await expect(page).toHaveURL(/\/profile\/?$/);
 
     // Navigate to another protected route to verify session is still valid
-    await page.goto('/account');
+    await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
     await expect(page).toHaveURL(/\/account\/?$/);
   });
@@ -133,7 +133,7 @@ test.describe('Session Persistence E2E', () => {
     const page = await context.newPage();
 
     // Sign in with Remember Me
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     const result = await performSignIn(page, testEmail, testPassword, {
       rememberMe: true,
@@ -153,7 +153,7 @@ test.describe('Session Persistence E2E', () => {
     const newPage = await newContext.newPage();
 
     // Access protected route without signing in again
-    await newPage.goto('/profile');
+    await newPage.goto('/profile', { waitUntil: 'domcontentloaded' });
 
     // Verify still authenticated
     await expect(newPage).toHaveURL(/\/profile\/?$/);
@@ -202,7 +202,7 @@ test.describe('Session Persistence E2E', () => {
     );
 
     // Verify cannot access protected routes
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/sign-in/);
     await expect(page).toHaveURL(/\/sign-in/);
   });
@@ -258,7 +258,7 @@ test.describe('Session Persistence E2E', () => {
 
     // Regardless of page2 state, verify sign out works on page1
     // Navigate page1 to home first to ensure clean state
-    await page1.goto('/');
+    await page1.goto('/', { waitUntil: 'domcontentloaded' });
     await page1.waitForLoadState('networkidle');
 
     // Sign out on page 1 via dropdown menu
@@ -295,7 +295,7 @@ test.describe('Session Persistence E2E', () => {
     await expect(page.locator('main').getByText(testEmail)).toBeVisible();
 
     // Navigate to another protected route
-    await page.goto('/account');
+    await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/account\/?$/);
   });
 
@@ -324,7 +324,7 @@ test.describe('Session Persistence E2E', () => {
     });
 
     // Try to access protected route
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
 
     // Should redirect to sign-in when refresh fails
     // Note: Behavior depends on auth implementation

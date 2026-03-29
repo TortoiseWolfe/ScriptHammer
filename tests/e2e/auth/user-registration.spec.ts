@@ -38,7 +38,7 @@ test.describe('User Registration E2E', () => {
   const testPassword = DEFAULT_TEST_PASSWORD;
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
   });
 
@@ -47,7 +47,7 @@ test.describe('User Registration E2E', () => {
     page,
   }) => {
     // Step 1: Navigate to sign-up page
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/sign-up\/?$/);
     await expect(
       page.getByRole('heading', { name: 'Create Account' })
@@ -78,14 +78,14 @@ test.describe('User Registration E2E', () => {
     }
 
     // Step 7: Navigate to profile (protected route)
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
 
     // Step 8: Verify user is authenticated and can access profile
     await expect(page.getByText(testEmail)).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
 
     // Step 9: Verify payment demo access (another protected route)
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/payment-demo\/?$/);
     await expect(
       page.getByRole('heading', { name: 'Payment Integration Demo' })
@@ -95,7 +95,7 @@ test.describe('User Registration E2E', () => {
     await signOutViaDropdown(page);
 
     // Step 11: Verify redirected to home then can access sign-in
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL('/sign-in');
 
     // Clean up: Delete test user (would need admin API or manual cleanup)
@@ -104,7 +104,7 @@ test.describe('User Registration E2E', () => {
   test('should show validation errors for invalid TLD email', async ({
     page,
   }) => {
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Fill with email that has invalid TLD (passes browser validation, fails our TLD check)
@@ -121,7 +121,7 @@ test.describe('User Registration E2E', () => {
   });
 
   test('should show validation errors for weak password', async ({ page }) => {
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Fill with weak password
@@ -140,7 +140,7 @@ test.describe('User Registration E2E', () => {
   });
 
   test('should show error for password mismatch', async ({ page }) => {
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Fill with mismatched passwords
@@ -173,7 +173,7 @@ test.describe('User Registration E2E', () => {
   });
 
   test('should display OAuth buttons on sign-up page', async ({ page }) => {
-    await page.goto('/sign-up');
+    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Verify OAuth buttons present (buttons say "Continue with X")

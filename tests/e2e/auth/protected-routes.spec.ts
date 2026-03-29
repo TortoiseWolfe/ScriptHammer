@@ -49,7 +49,7 @@ test.describe('Unauthenticated Access', () => {
     const protectedRoutes = ['/profile', '/account', '/payment-demo'];
 
     for (const route of protectedRoutes) {
-      await page.goto(route);
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
 
       // Verify redirected to sign-in (may include returnUrl query param)
       await page.waitForURL(/\/sign-in/);
@@ -64,7 +64,7 @@ test.describe('Unauthenticated Access', () => {
     const testPassword = testUser.password;
 
     // Attempt to access protected route while unauthenticated
-    await page.goto('/account');
+    await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await page.waitForURL(/\/sign-in/);
     await dismissCookieBanner(page);
 
@@ -101,7 +101,7 @@ test.describe('Protected Routes E2E', () => {
     ];
 
     for (const route of protectedRoutes) {
-      await page.goto(route.path);
+      await page.goto(route.path, { waitUntil: 'domcontentloaded' });
       // Next.js adds trailing slashes - match with or without
       await expect(page).toHaveURL(new RegExp(`${route.path}/?$`));
       await expect(
@@ -122,7 +122,7 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 1: Already authenticated as user 1 via storageState
     // Access payment demo and verify user's own data
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
     const escapedEmail1 = testUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     await expect(
       page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
@@ -133,7 +133,7 @@ test.describe('Protected Routes E2E', () => {
     // Wait for sign-out redirect to settle before navigating — the redirect
     // (to / or /sign-in) races with the explicit goto, causing ERR_ABORTED.
     await page.waitForLoadState('networkidle');
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
 
     // Step 3: Sign in as second user
     await dismissCookieBanner(page);
@@ -147,7 +147,7 @@ test.describe('Protected Routes E2E', () => {
     }
 
     // Step 4: Verify user 2 sees their own email, not user 1's
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
     const escapedEmail2 = testUser2.email.replace(
       /[.*+?^${}()|[\]\\]/g,
       '\\$&'
@@ -171,7 +171,7 @@ test.describe('Protected Routes E2E', () => {
   }) => {
     // Already authenticated via storageState
     // Navigate to payment demo
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
 
     // Verify EmailVerificationNotice is visible (only shown if user.email_confirmed_at is null)
     // Note: Pre-existing test users are typically verified, so this may not show
@@ -193,13 +193,13 @@ test.describe('Protected Routes E2E', () => {
   test('should preserve session across page navigation', async ({ page }) => {
     // Already authenticated via storageState
     // Navigate between protected routes (Next.js adds trailing slashes)
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/profile\/?$/);
 
-    await page.goto('/account');
+    await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/account\/?$/);
 
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/payment-demo\/?$/);
 
     // Verify still authenticated (no redirect to sign-in)
@@ -209,7 +209,7 @@ test.describe('Protected Routes E2E', () => {
   test('should handle session expiration gracefully', async ({ page }) => {
     // Already authenticated via storageState
     // Navigate to a page first to confirm auth works
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
     await expect(page).toHaveURL(/\/profile\/?$/);
 
     // Clear session storage to simulate expired session
@@ -219,7 +219,7 @@ test.describe('Protected Routes E2E', () => {
     });
 
     // Try to access protected route
-    await page.goto('/profile');
+    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
 
     // Verify redirected to sign-in (may include returnUrl query param)
     await page.waitForURL(/\/sign-in/);
@@ -262,7 +262,7 @@ test.describe('Protected Routes E2E', () => {
 
     try {
       // Sign in as the newly created user (not the primary user)
-      await page.goto('/sign-in');
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       const result = await performSignIn(page, deleteEmail, testPassword);
       if (!result.success) {
@@ -270,7 +270,7 @@ test.describe('Protected Routes E2E', () => {
       }
 
       // Navigate to account settings
-      await page.goto('/account');
+      await page.goto('/account', { waitUntil: 'domcontentloaded' });
 
       // Find and click delete account button
       const deleteButton = page.getByRole('button', {
