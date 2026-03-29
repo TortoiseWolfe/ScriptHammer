@@ -130,6 +130,9 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 2: Sign out via dropdown menu
     await signOutViaDropdown(page);
+    // Wait for sign-out redirect to settle before navigating — the redirect
+    // (to / or /sign-in) races with the explicit goto, causing ERR_ABORTED.
+    await page.waitForLoadState('networkidle');
     await page.goto('/sign-in');
 
     // Step 3: Sign in as second user

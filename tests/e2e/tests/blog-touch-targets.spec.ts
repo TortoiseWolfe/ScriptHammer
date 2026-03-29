@@ -58,7 +58,13 @@ test.describe('Blog Touch Target Standards - iPhone 12', () => {
     await page.waitForLoadState('networkidle');
 
     // Test buttons (SEO badge, TOC, etc.)
-    const buttons = await page.locator('button').all();
+    // Exclude buttons inside code examples (.mockup-code, pre, code) — these
+    // are decorative/illustrative and not real touch targets.
+    const buttons = await page
+      .locator(
+        'button:not(.mockup-code button):not(pre button):not(code button)'
+      )
+      .all();
 
     for (const button of buttons) {
       if (await button.isVisible()) {

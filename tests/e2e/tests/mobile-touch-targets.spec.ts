@@ -49,7 +49,7 @@ test.describe('Touch Target Standards', () => {
   }) => {
     // Test on most common mobile viewport
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -93,7 +93,7 @@ test.describe('Touch Target Standards', () => {
 
   test('Navigation buttons meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -122,7 +122,7 @@ test.describe('Touch Target Standards', () => {
   test('Touch targets maintain size across mobile widths', async ({ page }) => {
     for (const width of CRITICAL_MOBILE_WIDTHS) {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       await waitForLayoutStability(page);
 
@@ -147,7 +147,7 @@ test.describe('Touch Target Standards', () => {
 
   test('Links in content meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog');
+    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -186,7 +186,7 @@ test.describe('Touch Target Standards', () => {
 
   test('Form inputs meet touch target height standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -213,7 +213,7 @@ test.describe('Touch Target Standards', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 

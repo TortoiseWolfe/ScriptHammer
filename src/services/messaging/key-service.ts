@@ -182,6 +182,21 @@ export class KeyManagementService {
       this.derivedKeys = keyPair;
       await this.cacheKeys(user.id, keyPair);
 
+      // Step 5: Populate IndexedDB — sendMessage() reads private key from
+      // IndexedDB via encryptionService.getPrivateKey(), not from memory.
+      // Without this, the first message after key init fails silently.
+      try {
+        const privateJwk = await crypto.subtle.exportKey(
+          'jwk',
+          keyPair.privateKey
+        );
+        await encryptionService.storePrivateKey(user.id, privateJwk);
+      } catch (err) {
+        logger.warn('Could not populate IndexedDB after initializeKeys()', {
+          error: err,
+        });
+      }
+
       logger.info('Keys initialized for user', { userId: user.id });
       return keyPair;
     } catch (error) {
@@ -281,6 +296,21 @@ export class KeyManagementService {
       // Step 4: Store in memory + localStorage cache
       this.derivedKeys = keyPair;
       await this.cacheKeys(user.id, keyPair);
+
+      // Step 5: Populate IndexedDB — sendMessage() reads private key from
+      // IndexedDB via encryptionService.getPrivateKey(), not from memory.
+      // Without this, the first message after ReAuth fails silently.
+      try {
+        const privateJwk = await crypto.subtle.exportKey(
+          'jwk',
+          keyPair.privateKey
+        );
+        await encryptionService.storePrivateKey(user.id, privateJwk);
+      } catch (err) {
+        logger.warn('Could not populate IndexedDB after deriveKeys()', {
+          error: err,
+        });
+      }
 
       logger.info('Keys derived for user', { userId: user.id });
       return keyPair;

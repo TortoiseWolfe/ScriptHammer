@@ -40,7 +40,7 @@ const THEMES = [
 test.describe('Cross-Page Navigation', () => {
   test('navigate through all main pages', async ({ page }) => {
     // Start at homepage
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/$/);
 
@@ -70,7 +70,7 @@ test.describe('Cross-Page Navigation', () => {
 
   test('browser back/forward navigation works', async ({ page }) => {
     // Navigate through multiple pages - wait for each navigation to complete
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Navigate to themes and wait for URL
@@ -102,7 +102,7 @@ test.describe('Cross-Page Navigation', () => {
     const pages = ['/', '/themes', '/blog', '/accessibility', '/status'];
 
     for (const pagePath of pages) {
-      await page.goto(pagePath);
+      await page.goto(pagePath, { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
 
       // Check navigation elements exist
@@ -123,25 +123,25 @@ test.describe('Cross-Page Navigation', () => {
 
   test('deep linking works correctly', async ({ page }) => {
     // Direct navigation to deep pages
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/themes/);
     await expect(
       page.locator('h1').filter({ hasText: /Theme/i })
     ).toBeVisible();
 
-    await page.goto('/blog');
+    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/blog/);
 
-    await page.goto('/accessibility');
+    await page.goto('/accessibility', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/accessibility/);
     await expect(
       page.locator('h1').filter({ hasText: /Accessibility/i })
     ).toBeVisible();
 
-    await page.goto('/status');
+    await page.goto('/status', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/status/);
   });
@@ -168,7 +168,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('anchor links within pages work', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Check for anchor links (skip to main content)
@@ -189,7 +189,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('external links open in new tab', async ({ page, context }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Find View Source link which opens GitHub in new tab
@@ -210,7 +210,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('breadcrumb navigation works if present', async ({ page }) => {
-    await page.goto('/blog');
+    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Look for breadcrumb navigation
@@ -235,7 +235,7 @@ test.describe('Cross-Page Navigation', () => {
 
   test('navigation preserves theme selection', async ({ page }) => {
     // Set a theme
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Pick a random theme from all 32 DaisyUI themes
@@ -249,7 +249,7 @@ test.describe('Cross-Page Navigation', () => {
     const pages = ['/blog', '/accessibility', '/status', '/'];
 
     for (const pagePath of pages) {
-      await page.goto(pagePath);
+      await page.goto(pagePath, { waitUntil: 'domcontentloaded' });
 
       // Theme should persist
       await expect(page.locator('html')).toHaveAttribute(
@@ -260,7 +260,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('navigation menu is keyboard accessible', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Find and focus the first nav link directly
@@ -285,7 +285,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('page transitions are smooth', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Check for view transitions API or CSS transitions
@@ -319,7 +319,7 @@ test.describe('Cross-Page Navigation', () => {
   test('mobile navigation menu works', async ({ page }) => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Look for mobile menu button (hamburger) - use aria-label pattern
@@ -346,7 +346,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('scroll position resets on navigation', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Scroll down
@@ -361,7 +361,7 @@ test.describe('Cross-Page Navigation', () => {
   });
 
   test('active navigation item is highlighted', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Click Blog to navigate there

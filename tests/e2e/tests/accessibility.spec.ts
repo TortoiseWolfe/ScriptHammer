@@ -16,7 +16,7 @@ const axeOptions = {
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
   });
 
@@ -34,7 +34,7 @@ test.describe('Accessibility', () => {
   test('themes page passes automated accessibility checks', async ({
     page,
   }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page, undefined, axeOptions);
@@ -43,7 +43,7 @@ test.describe('Accessibility', () => {
   test('sign-in page passes automated accessibility checks', async ({
     page,
   }) => {
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await injectAxe(page);
     // The sign-in page includes third-party OAuth widgets (Supabase/Clerk)
@@ -64,7 +64,7 @@ test.describe('Accessibility', () => {
   test('accessibility settings page passes automated checks', async ({
     page,
   }) => {
-    await page.goto('/accessibility');
+    await page.goto('/accessibility', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await injectAxe(page);
     await checkA11y(page, undefined, axeOptions);
@@ -106,7 +106,7 @@ test.describe('Accessibility', () => {
   });
 
   test('all form inputs have labels', async ({ page }) => {
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Wait for form to be fully loaded
@@ -244,7 +244,7 @@ test.describe('Accessibility', () => {
   });
 
   test('font size controls work', async ({ page }) => {
-    await page.goto('/accessibility');
+    await page.goto('/accessibility', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Find font size controls
@@ -374,7 +374,7 @@ test.describe('Accessibility', () => {
   });
 
   test('error messages are associated with form fields', async ({ page }) => {
-    await page.goto('/sign-in');
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Wait for form to be fully loaded

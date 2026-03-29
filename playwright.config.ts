@@ -191,6 +191,10 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        // Block Service Workers in WebKit — Playwright's WebKit engine has
+        // known issues where repeated page.goto() triggers SW lifecycle
+        // events that close the browser context ("Service Worker context closed").
+        serviceWorkers: 'block',
       },
     },
 

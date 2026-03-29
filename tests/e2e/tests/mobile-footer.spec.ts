@@ -22,7 +22,7 @@ test.describe('Mobile Footer', () => {
 
   test('Footer links stack vertically on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     await scrollToFooterAndWait(page);
@@ -43,7 +43,7 @@ test.describe('Mobile Footer', () => {
 
   test('Footer links meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     await scrollToFooterAndWait(page);
@@ -77,7 +77,7 @@ test.describe('Mobile Footer', () => {
 
     for (const width of widths) {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
 
       await scrollToFooterAndWait(page);

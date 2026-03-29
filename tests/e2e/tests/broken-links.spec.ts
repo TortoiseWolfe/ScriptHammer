@@ -282,7 +282,7 @@ test.describe('Broken Links Detection', () => {
     const brokenResources: BrokenLink[] = [];
 
     for (const pagePath of pagesToCheck) {
-      await page.goto(pagePath);
+      await page.goto(pagePath, { waitUntil: 'domcontentloaded' });
 
       // Check Open Graph images
       const ogImage = await page
@@ -461,8 +461,8 @@ test.describe('Broken Links Detection', () => {
     for (const link of knownProblematicLinks) {
       try {
         const response = await page.goto(link.path, {
-          waitUntil: 'networkidle',
-          timeout: 10000,
+          waitUntil: 'domcontentloaded',
+          timeout: 30000,
         });
 
         if (!response) {

@@ -34,7 +34,7 @@ async function waitForLayoutStability(page: import('@playwright/test').Page) {
 test.describe('Mobile Card Layout', () => {
   test('Cards stack vertically on mobile (320px-767px)', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -57,7 +57,7 @@ test.describe('Mobile Card Layout', () => {
 
   test('Cards use grid layout on tablet (768px+)', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -77,7 +77,7 @@ test.describe('Mobile Card Layout', () => {
 
     for (const width of widths) {
       await page.setViewportSize({ width, height: 800 });
-      await page.goto('/');
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       await waitForLayoutStability(page);
 

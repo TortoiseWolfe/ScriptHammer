@@ -59,7 +59,7 @@ const themes = [
 test.describe('Theme Switching', () => {
   test.beforeEach(async ({ page }) => {
     // Clear localStorage to ensure clean state, but preserve consent
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Clear only theme preference, keep consent
@@ -73,7 +73,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('theme switcher is accessible from homepage', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Navigate to themes page via the 32 Themes stats link
@@ -93,7 +93,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('switch to dark theme and verify persistence', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Find and click the dark theme button
@@ -109,13 +109,13 @@ test.describe('Theme Switching', () => {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     // Navigate to another page and verify theme persists
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
 
   test('switch to light theme and verify persistence', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // First set to dark theme
@@ -135,7 +135,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('theme applies to all pages consistently', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Set synthwave theme
@@ -147,7 +147,7 @@ test.describe('Theme Switching', () => {
     const pages = ['/', '/themes', '/accessibility', '/status'];
 
     for (const pagePath of pages) {
-      await page.goto(pagePath);
+      await page.goto(pagePath, { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       await expect(page.locator('html')).toHaveAttribute(
         'data-theme',
@@ -157,7 +157,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('all theme buttons are present', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Check that all major themes have buttons
@@ -177,7 +177,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('theme preview shows correct colors', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Check that the Preview section exists (use exact match to avoid matching "Theme Preview")
@@ -195,7 +195,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('localStorage stores theme preference', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Set dracula theme
@@ -209,7 +209,7 @@ test.describe('Theme Switching', () => {
   });
 
   test('theme transition is smooth', async ({ page }) => {
-    await page.goto('/themes');
+    await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Check that html has transition class
@@ -226,7 +226,7 @@ test.describe('Theme Switching', () => {
   for (const theme of themes.slice(0, 5)) {
     // Test first 5 themes to keep test time reasonable
     test(`can switch to ${theme} theme`, async ({ page }) => {
-      await page.goto('/themes');
+      await page.goto('/themes', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
 
       const themeButton = page.locator(`button[data-theme="${theme}"]`);
