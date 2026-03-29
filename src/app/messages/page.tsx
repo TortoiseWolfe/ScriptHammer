@@ -29,16 +29,19 @@ function MessagesLayout() {
   // Called by SearchParamsReader when URL params are available
   const handleParams = useCallback(
     (urlConvId: string | null, _tab: string | null) => {
+      // NEVER set conversationId to null from URL sync — null arrives during
+      // Suspense transitions and would unmount ConversationView, destroying
+      // all messaging state (optimistic messages, sending state, etc.)
+      if (urlConvId === null) return;
+
       if (!initialized) {
         setConversationId(urlConvId);
         setInitialized(true);
-        if (urlConvId) setIsMobileDrawerOpen(false);
-      } else if (urlConvId !== null && urlConvId !== conversationId) {
-        // External navigation (back/forward) — sync URL to state
+        setIsMobileDrawerOpen(false);
+      } else if (urlConvId !== conversationId) {
+        // External navigation (back/forward)
         setConversationId(urlConvId);
       }
-      // Ignore urlConvId === null after initialization — this happens
-      // during Suspense transitions and would clear the active conversation
     },
     [initialized, conversationId]
   );
