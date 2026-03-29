@@ -1,43 +1,70 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { MessagingGate } from '@/components/auth/MessagingGate';
 import { EncryptionKeyGate } from '@/components/auth/EncryptionKeyGate';
 import ConversationView from '@/components/organisms/ConversationView';
 import MessagesSidebar from '@/components/organisms/MessagesSidebar';
 import EmptyConversationPrompt from '@/components/molecular/EmptyConversationPrompt';
 import SetupCompleteToast from '@/components/molecular/SetupCompleteToast';
+import SearchParamsReader from './SearchParamsReader';
 
 /**
- * Inner component that uses useSearchParams (requires Suspense).
- * All UI state lives in the parent (MessagesLayout) and is passed
- * in as props — so Suspense remounts of this component don't lose state.
+ * Messages page layout — owns ALL state, renders ALL UI.
+ * SearchParamsReader (uses useSearchParams) is a renderless child
+ * that syncs URL params to this component's state.
+ *
+ * Even though this whole component is inside Suspense at the page level,
+ * React preserves component state across Suspense transitions when the
+ * component key doesn't change. The key risk was external state (like
+ * useSearchParams returning null) causing conversationId to reset — but
+ * now conversationId is local state that only updates from explicit
+ * user actions or URL changes, not from Suspense transitions.
  */
-function MessagesInner({
-  conversationId,
-  onConversationIdFromUrl,
-  isMobileDrawerOpen,
-  onConversationSelect,
-  onToggleDrawer,
-}: {
-  conversationId: string | null;
-  onConversationIdFromUrl: (id: string | null) => void;
-  isMobileDrawerOpen: boolean;
-  onConversationSelect: (convId: string) => void;
-  onToggleDrawer: () => void;
-}) {
-  const searchParams = useSearchParams();
+function MessagesLayout() {
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(true);
 
-  // Sync URL params to parent state on mount and URL changes
+  // Called by SearchParamsReader when URL params are available
+  const handleParams = useCallback(
+    (urlConvId: string | null, _tab: string | null) => {
+      if (!initialized) {
+        setConversationId(urlConvId);
+        setInitialized(true);
+        if (urlConvId) setIsMobileDrawerOpen(false);
+      } else if (urlConvId !== null && urlConvId !== conversationId) {
+        // External navigation (back/forward) — sync URL to state
+        setConversationId(urlConvId);
+      }
+      // Ignore urlConvId === null after initialization — this happens
+      // during Suspense transitions and would clear the active conversation
+    },
+    [initialized, conversationId]
+  );
+
   useEffect(() => {
-    const urlConvId = searchParams?.get('conversation') ?? null;
-    onConversationIdFromUrl(urlConvId);
-  }, [searchParams, onConversationIdFromUrl]);
+    if (conversationId) setIsMobileDrawerOpen(false);
+  }, [conversationId]);
+
+  const handleConversationSelect = useCallback((convId: string) => {
+    setConversationId(convId);
+    setIsMobileDrawerOpen(false);
+    // Update URL for deep linking via history API
+    const params = new URLSearchParams(window.location.search);
+    params.set('conversation', convId);
+    params.set('tab', 'chats');
+    window.history.pushState({}, '', `/messages?${params.toString()}`);
+  }, []);
+
+  const toggleDrawer = useCallback(() => {
+    setIsMobileDrawerOpen((prev) => !prev);
+  }, []);
 
   return (
     <>
       <SetupCompleteToast />
+      <SearchParamsReader onParams={handleParams} />
 
       <div className="bg-base-100 fixed inset-x-0 top-16 bottom-28 overflow-hidden">
         <div className="drawer md:drawer-open h-full">
@@ -46,11 +73,10 @@ function MessagesInner({
             type="checkbox"
             className="drawer-toggle"
             checked={isMobileDrawerOpen}
-            onChange={onToggleDrawer}
+            onChange={toggleDrawer}
           />
 
           <div className="drawer-content flex h-full flex-col overflow-hidden md:ml-80 lg:ml-96">
-            {/* Mobile-only hamburger bar */}
             <div className="navbar bg-base-100 border-base-300 shrink-0 border-b md:hidden">
               <div className="flex-none">
                 <label
@@ -83,7 +109,7 @@ function MessagesInner({
               {conversationId ? (
                 <ConversationView conversationId={conversationId} />
               ) : (
-                <EmptyConversationPrompt onOpenSidebar={onToggleDrawer} />
+                <EmptyConversationPrompt onOpenSidebar={toggleDrawer} />
               )}
             </main>
           </div>
@@ -96,7 +122,7 @@ function MessagesInner({
             />
             <MessagesSidebar
               selectedConversationId={conversationId}
-              onConversationSelect={onConversationSelect}
+              onConversationSelect={handleConversationSelect}
             />
           </div>
         </div>
@@ -105,87 +131,19 @@ function MessagesInner({
   );
 }
 
-/**
- * State holder that lives OUTSIDE Suspense. Survives Suspense remounts.
- * ConversationView renders here via props passed through MessagesInner,
- * but the conversationId state is owned here — not inside the Suspense tree.
- */
-function MessagesLayout() {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(true);
-
-  // Called by MessagesInner when URL params sync
-  const handleUrlConversationId = useCallback(
-    (urlConvId: string | null) => {
-      if (!initialized) {
-        setConversationId(urlConvId);
-        setInitialized(true);
-        if (urlConvId) setIsMobileDrawerOpen(false);
-      } else if (urlConvId !== null && urlConvId !== conversationId) {
-        // External URL change (back/forward)
-        setConversationId(urlConvId);
-      }
-    },
-    [initialized, conversationId]
-  );
-
-  // Auto-close drawer when conversation becomes active
-  useEffect(() => {
-    if (conversationId) setIsMobileDrawerOpen(false);
-  }, [conversationId]);
-
-  const handleConversationSelect = useCallback((convId: string) => {
-    setConversationId(convId);
-    setIsMobileDrawerOpen(false);
-    // Update URL for deep linking
-    const params = new URLSearchParams(window.location.search);
-    params.set('conversation', convId);
-    params.set('tab', 'chats');
-    window.history.pushState({}, '', `/messages?${params.toString()}`);
-  }, []);
-
-  const toggleDrawer = useCallback(() => {
-    setIsMobileDrawerOpen((prev) => !prev);
-  }, []);
-
-  return (
-    <Suspense
-      fallback={
-        <div className="flex h-screen items-center justify-center">
-          <span className="loading loading-spinner loading-lg" />
-        </div>
-      }
-    >
-      <MessagesInner
-        conversationId={conversationId}
-        onConversationIdFromUrl={handleUrlConversationId}
-        isMobileDrawerOpen={isMobileDrawerOpen}
-        onConversationSelect={handleConversationSelect}
-        onToggleDrawer={toggleDrawer}
-      />
-    </Suspense>
-  );
-}
-
-/**
- * Messages page entry point.
- *
- * Architecture (from outside in):
- * 1. MessagingGate — blocks if not authenticated
- * 2. EncryptionKeyGate — blocks if keys not available
- * 3. MessagesLayout — owns conversationId state (OUTSIDE Suspense)
- * 4. Suspense — wraps MessagesInner (uses useSearchParams)
- * 5. MessagesInner — UI rendering + URL sync
- *
- * conversationId state survives Suspense remounts because it lives
- * in MessagesLayout (step 3), not MessagesInner (step 5).
- */
 export default function MessagesPage() {
   return (
     <MessagingGate>
       <EncryptionKeyGate>
-        <MessagesLayout />
+        <Suspense
+          fallback={
+            <div className="flex h-screen items-center justify-center">
+              <span className="loading loading-spinner loading-lg" />
+            </div>
+          }
+        >
+          <MessagesLayout />
+        </Suspense>
       </EncryptionKeyGate>
     </MessagingGate>
   );
