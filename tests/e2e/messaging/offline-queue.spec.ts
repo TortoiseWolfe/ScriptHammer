@@ -15,6 +15,8 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -168,6 +170,11 @@ test.describe('Offline Message Queue', () => {
     logger.info('Offline queue test setup complete');
   });
 
+  test.beforeAll(async () => {
+    if (!setupSucceeded) return;
+    await cleanupOldMessages(USER_A.email, USER_B.email);
+  });
+
   test('T146: should queue message when offline and send when online', async ({
     browser,
   }) => {
@@ -239,6 +246,7 @@ test.describe('Offline Message Queue', () => {
       const queueIndicator = page.getByText(/sending|queued/i);
 
       // Message should appear in UI
+      await scrollThreadToBottom(page);
       const messageBubble = page.getByText(testMessage);
       await expect(messageBubble).toBeVisible({ timeout: 5000 });
 
@@ -653,6 +661,7 @@ test.describe('Offline Message Queue', () => {
 
       // ===== STEP 5: Verify message is visible (may show failed or pending state) =====
       // The message should at least appear in the UI
+      await scrollThreadToBottom(page);
       await expect(page.getByText(testMessage)).toBeVisible();
     } finally {
       await context.close();

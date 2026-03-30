@@ -10,6 +10,8 @@ import {
   waitForAuthenticatedState,
   dismissCookieBanner,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
 } from '../utils/test-user-factory';
 
 const USER_A = {
@@ -194,6 +196,12 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   // depend on. The admin-seeded connections/conversations are idempotent —
   // they use IF NOT EXISTS patterns and don't need cleanup between tests.
 
+  // But DO clean up old messages — they accumulate across CI runs and trigger
+  // virtual scrolling (100+ threshold), hiding new messages from the DOM.
+  test.beforeAll(async () => {
+    await cleanupOldMessages(USER_A.email, USER_B.email);
+  });
+
   test('Complete messaging workflow: sign-in -> connect -> message -> sign-out', async ({
     browser,
   }) => {
@@ -341,6 +349,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       const sendButton = pageA.getByRole('button', { name: /send/i });
       await sendButton.click({ force: true });
+      await scrollThreadToBottom(pageA);
       await expect(pageA.getByText(testMessage)).toBeVisible({
         timeout: 10000,
       });
@@ -353,6 +362,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       });
       await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
+      await scrollThreadToBottom(pageB);
       await expect(pageB.getByText(testMessage)).toBeVisible({
         timeout: 10000,
       });
@@ -363,6 +373,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       replyMessage = 'Reply from User B - ' + Date.now();
       await fillMessageInput(pageB, replyMessage);
       await pageB.getByRole('button', { name: /send/i }).click({ force: true });
+      await scrollThreadToBottom(pageB);
       await expect(pageB.getByText(replyMessage)).toBeVisible({
         timeout: 10000,
       });
@@ -370,8 +381,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 11: User A receives reply
       console.log('Step 11: User A receiving reply...');
-      await pageA.reload();
+      await pageA.reload({ waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
+      await scrollThreadToBottom(pageA);
       await expect(pageA.getByText(replyMessage)).toBeVisible({
         timeout: 10000,
       });

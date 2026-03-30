@@ -12,6 +12,8 @@ import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  cleanupOldMessages,
+  scrollThreadToBottom,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -147,6 +149,12 @@ test.beforeAll(async () => {
   setupSucceeded = true;
 });
 
+// Clean up old messages from previous CI runs (virtual scrolling threshold fix)
+test.beforeAll(async () => {
+  if (!setupSucceeded) return;
+  await cleanupOldMessages(TEST_USER_1.email, TEST_USER_2.email);
+});
+
 /**
  * Sign in helper — uses storageState from project config; just navigates to messages
  */
@@ -241,6 +249,9 @@ async function sendMessage(page: Page, message: string) {
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
+
+  // Scroll to bottom so virtual scrolling renders the new message
+  await scrollThreadToBottom(page);
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);

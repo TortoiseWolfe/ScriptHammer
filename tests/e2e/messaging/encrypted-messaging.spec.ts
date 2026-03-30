@@ -18,6 +18,8 @@ import {
   dismissCookieBanner,
   performSignIn,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -179,6 +181,13 @@ test.describe('Encrypted Messaging Flow', () => {
     setupSucceeded = true;
   });
 
+  // Clean up old messages from previous CI runs so the conversation
+  // starts with < 100 messages (virtual scrolling threshold).
+  test.beforeAll(async () => {
+    if (!setupSucceeded) return;
+    await cleanupOldMessages(USER_A.email, USER_B.email);
+  });
+
   // Skip all tests if setup failed
   test.beforeEach(async ({}, testInfo) => {
     if (!setupSucceeded) {
@@ -240,34 +249,7 @@ test.describe('Encrypted Messaging Flow', () => {
       await expect(sendButton).not.toContainText('Sending');
 
       // ===== STEP 6: Verify message appears in User A's view =====
-      // Diagnostic: capture ALL alerts and full thread content at multiple points
-      const diagAt = async (label: string) => {
-        const alerts = await pageA.locator('[role="alert"]').all();
-        for (const a of alerts) {
-          if (await a.isVisible().catch(() => false)) {
-            const cls = await a.getAttribute('class').catch(() => '');
-            const txt = await a.textContent().catch(() => '');
-            console.error(`[DIAG:${label}] Alert (${cls}): "${txt}"`);
-          }
-        }
-        const thread = await pageA
-          .locator('[data-testid="message-thread"]')
-          .innerHTML()
-          .catch(() => 'NOT FOUND');
-        // Check if our message text exists anywhere in the thread HTML
-        const hasMsg = thread.includes(testMessage);
-        console.log(
-          `[DIAG:${label}] Thread has message: ${hasMsg}, HTML length: ${thread.length}`
-        );
-        if (!hasMsg) {
-          // Dump last 300 chars of thread to see what's at the end
-          console.log(`[DIAG:${label}] Thread tail: ${thread.slice(-300)}`);
-        }
-      };
-      await diagAt('immediate');
-      await pageA.waitForTimeout(2000);
-      await diagAt('after2s');
-
+      await scrollThreadToBottom(pageA);
       const messageA = pageA.getByText(testMessage);
       await expect(messageA).toBeVisible({ timeout: 15000 });
 

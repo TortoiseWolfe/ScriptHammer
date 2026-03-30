@@ -24,6 +24,8 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
 } from '../utils/test-user-factory';
 
 const USER_A_EMAIL = 'test@example.com';
@@ -152,6 +154,11 @@ test.describe('Offline Queue Sync E2E', () => {
     setupSucceeded = true;
   });
 
+  test.beforeAll(async () => {
+    if (!setupSucceeded) return;
+    await cleanupOldMessages(USER_A_EMAIL, USER_B_EMAIL);
+  });
+
   test.afterAll(async () => {
     proxyServer?.close();
   });
@@ -252,6 +259,7 @@ test.describe('Offline Queue Sync E2E', () => {
       await sendButton.click();
 
       // Message should appear in UI (queued state)
+      await scrollThreadToBottom(page);
       const messageBubble = page.getByText(testMessage);
       await expect(messageBubble).toBeVisible({ timeout: 5000 });
 

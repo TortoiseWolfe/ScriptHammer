@@ -912,3 +912,46 @@ export async function fillMessageInput(
     { timeout: 5000 }
   );
 }
+
+/**
+ * Delete old messages between two users via admin API.
+ *
+ * Conversations accumulate messages across CI runs. At 100+ messages,
+ * MessageThread enables virtual scrolling and newly-sent messages are
+ * appended outside the virtual viewport — Playwright's getByText()
+ * can't find them because they're not rendered in the DOM.
+ *
+ * Call this in test.beforeAll() before any messaging tests.
+ */
+export async function cleanupOldMessages(
+  userAEmail: string,
+  userBEmail: string
+): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+  const userA = await getUserByEmail(userAEmail);
+  const userB = await getUserByEmail(userBEmail);
+  if (!userA || !userB) return;
+  const { error } = await admin
+    .from('messages')
+    .delete()
+    .or(`sender_id.eq.${userA.id},sender_id.eq.${userB.id}`);
+  if (error) {
+    console.warn('cleanupOldMessages: failed:', error.message);
+  } else {
+    console.log('✓ Old messages cleaned up');
+  }
+}
+
+/**
+ * Scroll a message thread to the bottom so virtual-scrolled messages
+ * at the end of the list are rendered in the DOM.
+ */
+export async function scrollThreadToBottom(page: Page): Promise<void> {
+  const thread = page.locator('[data-testid="message-thread"]');
+  if (await thread.isVisible().catch(() => false)) {
+    await thread.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+    // Give the virtualizer time to render newly-visible items
+    await page.waitForTimeout(500);
+  }
+}

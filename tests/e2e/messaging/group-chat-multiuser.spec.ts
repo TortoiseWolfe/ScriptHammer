@@ -12,6 +12,7 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  cleanupOldMessages,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -81,6 +82,11 @@ test.beforeAll(async () => {
   }
 
   setupSucceeded = true;
+});
+
+test.beforeAll(async () => {
+  if (!setupSucceeded) return;
+  await cleanupOldMessages(PRIMARY_USER.email, SECONDARY_USER_EMAIL);
 });
 
 test.describe('Group Chat E2E', () => {

@@ -11,6 +11,8 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
   getAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -243,6 +245,11 @@ test.beforeAll(async () => {
   }
 
   setupSucceeded = true;
+});
+
+test.beforeAll(async () => {
+  if (!setupSucceeded) return;
+  await cleanupOldMessages(TEST_USER_1.email, TEST_USER_2.email);
 });
 
 test.describe('Real-time Message Delivery (T098)', () => {

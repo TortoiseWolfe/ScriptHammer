@@ -23,6 +23,8 @@ import {
   handleReAuthModal,
   handleEncryptionSetup,
   fillMessageInput,
+  cleanupOldMessages,
+  scrollThreadToBottom,
 } from '../utils/test-user-factory';
 
 const USER_A_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL!;
@@ -316,6 +318,11 @@ test.describe('Message Delete Placeholder E2E', () => {
       .eq('conversation_id', conversationId);
 
     setupSucceeded = true;
+  });
+
+  test.beforeAll(async () => {
+    if (!setupSucceeded) return;
+    await cleanupOldMessages(USER_A_EMAIL, USER_B_EMAIL);
   });
 
   test.afterAll(async () => {
