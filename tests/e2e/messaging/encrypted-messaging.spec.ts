@@ -240,20 +240,33 @@ test.describe('Encrypted Messaging Flow', () => {
       await expect(sendButton).not.toContainText('Sending');
 
       // ===== STEP 6: Verify message appears in User A's view =====
-      // Diagnostic: check if send produced an error instead of an optimistic message
-      const errorAlert = pageA.locator('.alert-error, [role="alert"]').first();
-      if (await errorAlert.isVisible({ timeout: 1000 }).catch(() => false)) {
-        const errorText = await errorAlert.textContent().catch(() => 'unknown');
-        console.error(`[DIAGNOSTIC] Send error visible: "${errorText}"`);
-      }
-      // Log message thread content to understand what's rendered
-      const threadContent = await pageA
-        .locator('[data-testid="message-thread"]')
-        .textContent()
-        .catch(() => 'thread not found');
-      console.log(
-        `[DIAGNOSTIC] Message thread content (first 500 chars): ${threadContent?.slice(0, 500)}`
-      );
+      // Diagnostic: capture ALL alerts and full thread content at multiple points
+      const diagAt = async (label: string) => {
+        const alerts = await pageA.locator('[role="alert"]').all();
+        for (const a of alerts) {
+          if (await a.isVisible().catch(() => false)) {
+            const cls = await a.getAttribute('class').catch(() => '');
+            const txt = await a.textContent().catch(() => '');
+            console.error(`[DIAG:${label}] Alert (${cls}): "${txt}"`);
+          }
+        }
+        const thread = await pageA
+          .locator('[data-testid="message-thread"]')
+          .innerHTML()
+          .catch(() => 'NOT FOUND');
+        // Check if our message text exists anywhere in the thread HTML
+        const hasMsg = thread.includes(testMessage);
+        console.log(
+          `[DIAG:${label}] Thread has message: ${hasMsg}, HTML length: ${thread.length}`
+        );
+        if (!hasMsg) {
+          // Dump last 300 chars of thread to see what's at the end
+          console.log(`[DIAG:${label}] Thread tail: ${thread.slice(-300)}`);
+        }
+      };
+      await diagAt('immediate');
+      await pageA.waitForTimeout(2000);
+      await diagAt('after2s');
 
       const messageA = pageA.getByText(testMessage);
       await expect(messageA).toBeVisible({ timeout: 15000 });
