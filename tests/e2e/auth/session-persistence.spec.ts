@@ -288,7 +288,7 @@ test.describe('Session Persistence E2E', () => {
     }
 
     // Reload page
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
 
     // Verify still authenticated
     // Email appears in profile - scope to main to avoid hidden spans in dropdowns

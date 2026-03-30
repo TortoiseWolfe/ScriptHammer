@@ -68,7 +68,7 @@ test.describe('Theme Switching', () => {
       sessionStorage.removeItem('theme');
     });
 
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
   });
 
@@ -104,7 +104,7 @@ test.describe('Theme Switching', () => {
     await waitForThemeSaved(page, 'dark');
 
     // Reload page and verify theme persists
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
@@ -129,7 +129,7 @@ test.describe('Theme Switching', () => {
     await waitForThemeSaved(page, 'light');
 
     // Verify persistence
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   });
@@ -234,7 +234,7 @@ test.describe('Theme Switching', () => {
       await waitForThemeSaved(page, theme);
 
       // Verify persistence
-      await page.reload();
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     });

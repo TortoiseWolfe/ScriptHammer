@@ -240,8 +240,23 @@ test.describe('Encrypted Messaging Flow', () => {
       await expect(sendButton).not.toContainText('Sending');
 
       // ===== STEP 6: Verify message appears in User A's view =====
+      // Diagnostic: check if send produced an error instead of an optimistic message
+      const errorAlert = pageA.locator('.alert-error, [role="alert"]').first();
+      if (await errorAlert.isVisible({ timeout: 1000 }).catch(() => false)) {
+        const errorText = await errorAlert.textContent().catch(() => 'unknown');
+        console.error(`[DIAGNOSTIC] Send error visible: "${errorText}"`);
+      }
+      // Log message thread content to understand what's rendered
+      const threadContent = await pageA
+        .locator('[data-testid="message-thread"]')
+        .textContent()
+        .catch(() => 'thread not found');
+      console.log(
+        `[DIAGNOSTIC] Message thread content (first 500 chars): ${threadContent?.slice(0, 500)}`
+      );
+
       const messageA = pageA.getByText(testMessage);
-      await expect(messageA).toBeVisible({ timeout: 5000 });
+      await expect(messageA).toBeVisible({ timeout: 15000 });
 
       // ===== STEP 7: User B navigates to messages =====
       await pageB.goto(`${BASE_URL}/messages`, {

@@ -646,7 +646,7 @@ test.describe('Time Window Restrictions', () => {
     });
 
     // Reload page to apply mock
-    await page.reload();
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await handleReAuthModal(page, TEST_USER_1.password);
     await navigateToConversation(page);
