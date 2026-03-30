@@ -255,7 +255,7 @@ async function sendMessage(page: Page, message: string) {
 
   // Wait for message to appear in the DOM
   const messageElement = page.getByText(message);
-  await expect(messageElement).toBeVisible({ timeout: 15000 });
+  await expect(messageElement).toBeVisible({ timeout: 30000 });
 
   // Scroll the message into view (new messages appear at bottom)
   await messageElement.scrollIntoViewIfNeeded();

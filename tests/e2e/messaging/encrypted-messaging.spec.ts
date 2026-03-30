@@ -245,13 +245,16 @@ test.describe('Encrypted Messaging Flow', () => {
       const sendButton = pageA.getByRole('button', { name: /send/i });
       await sendButton.click();
 
-      // Wait for sending state to complete
-      await expect(sendButton).not.toContainText('Sending');
+      // Wait for sending state to complete (Supabase free tier: up to 15s)
+      await expect(sendButton).not.toContainText('Sending', { timeout: 30000 });
 
       // ===== STEP 6: Verify message appears in User A's view =====
       await scrollThreadToBottom(pageA);
       const messageA = pageA.getByText(testMessage);
-      await expect(messageA).toBeVisible({ timeout: 15000 });
+      await expect(messageA).toBeVisible({ timeout: 30000 });
+
+      // Brief delay for Supabase replication before User B reads
+      await pageA.waitForTimeout(2000);
 
       // ===== STEP 7: User B navigates to messages =====
       await pageB.goto(`${BASE_URL}/messages`, {
@@ -272,8 +275,9 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
+      await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
-      await expect(messageB).toBeVisible({ timeout: 5000 });
+      await expect(messageB).toBeVisible({ timeout: 30000 });
 
       // ===== STEP 10: Verify User B can reply =====
       const replyMessage = `Reply from User B ${Date.now()}`;
@@ -281,14 +285,16 @@ test.describe('Encrypted Messaging Flow', () => {
       await pageB.getByRole('button', { name: /send/i }).click();
 
       // Verify reply appears in User B's view
+      await scrollThreadToBottom(pageB);
       const replyB = pageB.getByText(replyMessage);
-      await expect(replyB).toBeVisible({ timeout: 5000 });
+      await expect(replyB).toBeVisible({ timeout: 30000 });
 
       // ===== STEP 11: User A sees the reply =====
-      await pageA.reload();
+      await pageA.reload({ waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
+      await scrollThreadToBottom(pageA);
       const replyA = pageA.getByText(replyMessage);
-      await expect(replyA).toBeVisible({ timeout: 5000 });
+      await expect(replyA).toBeVisible({ timeout: 30000 });
     } finally {
       await contextA.close();
       await contextB.close();

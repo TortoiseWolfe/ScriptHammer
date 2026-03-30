@@ -351,7 +351,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await sendButton.click({ force: true });
       await scrollThreadToBottom(pageA);
       await expect(pageA.getByText(testMessage)).toBeVisible({
-        timeout: 10000,
+        timeout: 30000,
       });
       console.log('Step 8: Message sent');
 
@@ -364,7 +364,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await handleReAuthModal(pageB, USER_B.password);
       await scrollThreadToBottom(pageB);
       await expect(pageB.getByText(testMessage)).toBeVisible({
-        timeout: 10000,
+        timeout: 30000,
       });
       console.log('Step 9: Message received');
 
@@ -375,7 +375,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.getByRole('button', { name: /send/i }).click({ force: true });
       await scrollThreadToBottom(pageB);
       await expect(pageB.getByText(replyMessage)).toBeVisible({
-        timeout: 10000,
+        timeout: 30000,
       });
       console.log('Step 10: Reply sent');
 
@@ -385,7 +385,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await handleReAuthModal(pageA, USER_A.password);
       await scrollThreadToBottom(pageA);
       await expect(pageA.getByText(replyMessage)).toBeVisible({
-        timeout: 10000,
+        timeout: 30000,
       });
       console.log('Step 11: Reply received');
 

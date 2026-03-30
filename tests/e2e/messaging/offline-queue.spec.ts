@@ -248,7 +248,7 @@ test.describe('Offline Message Queue', () => {
       // Message should appear in UI
       await scrollThreadToBottom(page);
       const messageBubble = page.getByText(testMessage);
-      await expect(messageBubble).toBeVisible({ timeout: 5000 });
+      await expect(messageBubble).toBeVisible({ timeout: 30000 });
 
       // ===== STEP 6: Go online =====
       await context.setOffline(false);

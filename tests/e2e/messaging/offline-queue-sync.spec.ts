@@ -261,7 +261,7 @@ test.describe('Offline Queue Sync E2E', () => {
       // Message should appear in UI (queued state)
       await scrollThreadToBottom(page);
       const messageBubble = page.getByText(testMessage);
-      await expect(messageBubble).toBeVisible({ timeout: 5000 });
+      await expect(messageBubble).toBeVisible({ timeout: 30000 });
 
       // ===== Go back online =====
       await context.setOffline(false);
