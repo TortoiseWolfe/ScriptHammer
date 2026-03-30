@@ -40,11 +40,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use 1 worker on CI. 2 workers overload the static server (npx serve)
-   * causing page.goto timeouts (60s) that cascade through serial test
-   * groups — one server hiccup fails 20+ messaging tests. 1 worker
-   * eliminates concurrency pressure on both serve and Supabase. */
-  workers: process.env.CI ? 1 : undefined,
+  /* 2 workers on CI balances speed vs resource contention. */
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],
@@ -71,6 +68,10 @@ export default defineConfig({
     navigationTimeout: 60000,
     /* Emulate mobile device capabilities */
     isMobile: false,
+    /* Block service workers — they intercept navigations and cause
+     * ERR_ABORTED / "frame was detached" errors during page.goto()
+     * and page.reload() across all browsers, not just WebKit. */
+    serviceWorkers: 'block',
     /* Context options */
     contextOptions: {
       ignoreHTTPSErrors: true,
@@ -193,10 +194,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Safari'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        // Block Service Workers in WebKit — Playwright's WebKit engine has
-        // known issues where repeated page.goto() triggers SW lifecycle
-        // events that close the browser context ("Service Worker context closed").
-        serviceWorkers: 'block',
       },
     },
 
