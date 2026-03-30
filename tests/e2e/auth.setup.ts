@@ -72,6 +72,51 @@ setup('authenticate shared test user', async ({ page }) => {
   console.log('✓ Sign-in successful, verifying auth state...');
   await expect(page).not.toHaveURL(/\/sign-in/);
 
+  // ────────────────────────────────────────────────────────────────────────
+  // CLEAN SLATE: Delete ALL messaging state for test users.
+  // Old messages, conversations, connections, and encryption keys accumulate
+  // across CI runs. Stale encryption keys cause ECDH mismatch (messages
+  // show "Encrypted with previous keys"), and 100+ accumulated messages
+  // trigger virtual scrolling which hides new messages from the DOM.
+  // ────────────────────────────────────────────────────────────────────────
+  console.log('Cleaning up stale messaging state from previous runs...');
+  const adminClient = getAdminClient();
+  if (adminClient) {
+    const allTestEmails = [
+      email,
+      process.env.TEST_USER_SECONDARY_EMAIL,
+      process.env.TEST_USER_TERTIARY_EMAIL,
+    ].filter(Boolean) as string[];
+
+    const userIds: string[] = [];
+    for (const testEmail of allTestEmails) {
+      const u = await getUserByEmail(testEmail);
+      if (u) userIds.push(u.id);
+    }
+
+    if (userIds.length > 0) {
+      const orFilter = userIds.map((id) => `sender_id.eq.${id}`).join(',');
+      const participantFilter = userIds
+        .flatMap((id) => [
+          `participant_1_id.eq.${id}`,
+          `participant_2_id.eq.${id}`,
+        ])
+        .join(',');
+      const connectionFilter = userIds
+        .flatMap((id) => [`requester_id.eq.${id}`, `addressee_id.eq.${id}`])
+        .join(',');
+      const userFilter = userIds.map((id) => `user_id.eq.${id}`).join(',');
+
+      await adminClient.from('messages').delete().or(orFilter);
+      await adminClient.from('conversations').delete().or(participantFilter);
+      await adminClient.from('user_connections').delete().or(connectionFilter);
+      await adminClient.from('user_encryption_keys').delete().or(userFilter);
+      console.log(
+        `✓ Cleaned up messaging state for ${userIds.length} test users`
+      );
+    }
+  }
+
   // Set up encryption keys for ALL test users via admin API, then inject
   // the primary user's key cache into localStorage so storageState captures it.
   // This replaces the unreliable browser-based setup (ReAuthModal/setup form)
