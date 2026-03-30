@@ -40,9 +40,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Use 2 workers on CI. 1 worker is too slow (52min per shard).
-   * 4 workers caused resource contention. 2 is the sweet spot. */
-  workers: process.env.CI ? 2 : undefined,
+  /* Use 1 worker on CI. 2 workers overload the static server (npx serve)
+   * causing page.goto timeouts (60s) that cascade through serial test
+   * groups — one server hiccup fails 20+ messaging tests. 1 worker
+   * eliminates concurrency pressure on both serve and Supabase. */
+  workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],

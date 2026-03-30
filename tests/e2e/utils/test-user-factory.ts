@@ -955,3 +955,32 @@ export async function scrollThreadToBottom(page: Page): Promise<void> {
     await page.waitForTimeout(500);
   }
 }
+
+/**
+ * Navigate to a URL with retry logic for transient server failures.
+ *
+ * The static server (npx serve) can become temporarily unresponsive
+ * under load, causing page.goto to timeout. This wrapper retries
+ * with a shorter per-attempt timeout so tests don't burn their full
+ * 60s budget on a single navigation.
+ */
+export async function gotoWithRetry(
+  page: Page,
+  url: string,
+  options?: { maxRetries?: number; timeout?: number }
+): Promise<void> {
+  const maxRetries = options?.maxRetries ?? 2;
+  const timeout = options?.timeout ?? 30000;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      console.warn(
+        `gotoWithRetry: attempt ${attempt + 1} failed for ${url}, retrying...`
+      );
+      await page.waitForTimeout(2000);
+    }
+  }
+}
