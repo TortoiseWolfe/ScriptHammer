@@ -502,16 +502,28 @@ export async function handleReAuthModal(
   const testPassword =
     password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
-  // Quick check: if encryption keys are already cached in localStorage
-  // (from a previous auth.setup.ts run), the ReAuthModal won't appear.
-  // Skip the expensive 18s wait (3s + 15s timeout).
-  const hasCachedKeys = await page.evaluate(() =>
-    Object.keys(localStorage).some((k) => k.startsWith('sh_keys_'))
-  );
-  if (hasCachedKeys) {
-    // Keys cached — no modal needed. Just wait briefly for React to hydrate.
+  // Check if the CURRENT user's keys are cached. The key format is
+  // sh_keys_{userId} — we need to verify the cached key belongs to the
+  // authenticated user, not a different user from storageState.
+  // Extract the Supabase user ID from the session to check.
+  const currentUserKeyExists = await page.evaluate(() => {
+    // Find the Supabase session to get the current user ID
+    const sessionKey = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!sessionKey) return false;
+    try {
+      const session = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+      const userId = session?.user?.id;
+      if (!userId) return false;
+      return localStorage.getItem(`sh_keys_${userId}`) !== null;
+    } catch {
+      return false;
+    }
+  });
+  if (currentUserKeyExists) {
     console.log(
-      `[handleReAuthModal] Keys cached in localStorage — skipping modal. URL: ${page.url()}`
+      `[handleReAuthModal] Current user's keys cached — skipping modal. URL: ${page.url()}`
     );
     await page.waitForTimeout(1000);
     return false;

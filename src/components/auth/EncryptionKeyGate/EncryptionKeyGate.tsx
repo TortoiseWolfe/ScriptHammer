@@ -81,7 +81,9 @@ export default function EncryptionKeyGate({
 
       // Keys exist in DB. Are they in memory or localStorage cache?
       // Try restoring from localStorage first (covers page reload / storageState).
-      await keyManagementService.restoreKeysFromCache();
+      // Pass user.id to only restore keys belonging to THIS user — prevents
+      // User B from accidentally restoring User A's cached keys.
+      await keyManagementService.restoreKeysFromCache(user!.id);
       const keys = keyManagementService.getCurrentKeys();
       if (!keys) {
         setNeedsReAuth(true);

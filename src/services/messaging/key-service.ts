@@ -341,7 +341,7 @@ export class KeyManagementService {
    * Call this on app startup before checking getCurrentKeys().
    * @returns true if keys were restored from cache
    */
-  async restoreKeysFromCache(): Promise<boolean> {
+  async restoreKeysFromCache(currentUserId?: string): Promise<boolean> {
     if (this.derivedKeys) return true;
     if (typeof localStorage === 'undefined') return false;
 
@@ -349,6 +349,11 @@ export class KeyManagementService {
     for (const key of keys) {
       if (key.startsWith(KEY_CACHE_PREFIX)) {
         const userId = key.slice(KEY_CACHE_PREFIX.length);
+        // Only restore keys belonging to the current user. Without this
+        // guard, User B's context can restore User A's cached keys (from
+        // storageState), producing wrong ECDH shared secrets and causing
+        // all decryption to fail ("Encrypted with previous keys").
+        if (currentUserId && userId !== currentUserId) continue;
         const cached = await this.restoreCachedKeys(userId);
         if (cached) {
           this.derivedKeys = cached;
