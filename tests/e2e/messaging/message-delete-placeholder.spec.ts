@@ -44,9 +44,13 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const PROXY_PORT = 8002;
 
+// --host-resolver-rules is Chromium-only (crashes WebKit/Firefox).
+// Only needed locally for Docker DNS; CI uses cloud Supabase.
 test.use({
   launchOptions: {
-    args: [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
+    args: process.env.CI
+      ? []
+      : [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
   },
 });
 

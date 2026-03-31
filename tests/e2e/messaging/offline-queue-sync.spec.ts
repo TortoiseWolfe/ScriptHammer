@@ -46,9 +46,13 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 // and a local HTTP proxy on port 8000 forwards those requests to the real Kong.
 const PROXY_PORT = 8001;
 
+// --host-resolver-rules is Chromium-only (crashes WebKit/Firefox).
+// Only needed locally for Docker DNS; CI uses cloud Supabase.
 test.use({
   launchOptions: {
-    args: [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
+    args: process.env.CI
+      ? []
+      : [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
   },
 });
 

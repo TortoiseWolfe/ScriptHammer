@@ -962,9 +962,13 @@ export async function cleanupOldMessages(
 export async function scrollThreadToBottom(page: Page): Promise<void> {
   const thread = page.locator('[data-testid="message-thread"]');
   if (await thread.isVisible().catch(() => false)) {
-    await thread.evaluate((el) => el.scrollTo(0, el.scrollHeight));
-    // Give the virtualizer time to render newly-visible items
-    await page.waitForTimeout(500);
+    // Scroll multiple times — WebKit's rendering pipeline may not update
+    // the virtualizer on a single scrollTo call. Each iteration scrolls
+    // to the new scrollHeight (which may increase as items render).
+    for (let i = 0; i < 3; i++) {
+      await thread.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+      await page.waitForTimeout(500);
+    }
   }
 }
 

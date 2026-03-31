@@ -130,9 +130,13 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 2: Sign out via dropdown menu
     await signOutViaDropdown(page);
-    // Wait for sign-out redirect to settle before navigating — the redirect
-    // (to / or /sign-in) races with the explicit goto, causing ERR_ABORTED.
+    // Wait for sign-out redirect to fully settle — WebKit's redirect timing
+    // differs from Chromium. Wait for URL to reach / or /sign-in first.
     await page.waitForLoadState('networkidle');
+    await page.waitForURL(
+      (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+      { timeout: 10000 }
+    );
     await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
 
     // Step 3: Sign in as second user
