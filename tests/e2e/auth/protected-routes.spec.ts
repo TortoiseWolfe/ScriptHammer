@@ -130,14 +130,25 @@ test.describe('Protected Routes E2E', () => {
 
     // Step 2: Sign out via dropdown menu
     await signOutViaDropdown(page);
-    // Wait for sign-out redirect to fully settle — WebKit's redirect timing
-    // differs from Chromium. Wait for URL to reach / or /sign-in first.
+    // Wait for sign-out redirect to fully settle — WebKit may async-refresh
+    // the Supabase token after sign-out, briefly re-authenticating and
+    // triggering a middleware redirect away from /sign-in.
     await page.waitForLoadState('networkidle');
     await page.waitForURL(
       (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
       { timeout: 10000 }
     );
-    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+    // Retry goto — WebKit's async token refresh can interrupt the navigation
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+        break;
+      } catch {
+        if (attempt === 2)
+          throw new Error('Failed to navigate to /sign-in after 3 attempts');
+        await page.waitForTimeout(1000);
+      }
+    }
 
     // Step 3: Sign in as second user
     await dismissCookieBanner(page);
