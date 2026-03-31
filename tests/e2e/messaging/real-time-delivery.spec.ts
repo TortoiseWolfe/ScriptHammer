@@ -269,8 +269,12 @@ test.describe('Real-time Message Delivery (T098)', () => {
       return;
     }
     // Create two separate browser contexts (simulates two users)
-    context1 = await browser.newContext();
-    context2 = await browser.newContext();
+    context1 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    context2 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     page1 = await context1.newPage();
     page2 = await context2.newPage();
@@ -368,8 +372,12 @@ test.describe('Typing Indicators (T099)', () => {
 
   test.beforeEach(async ({ browser }) => {
     // Create two separate browser contexts
-    context1 = await browser.newContext();
-    context2 = await browser.newContext();
+    context1 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    context2 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     page1 = await context1.newPage();
     page2 = await context2.newPage();

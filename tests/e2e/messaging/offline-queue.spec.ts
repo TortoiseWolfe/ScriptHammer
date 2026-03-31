@@ -470,7 +470,9 @@ test.describe('Offline Message Queue', () => {
     const contextA = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
-    const contextB = await browser.newContext();
+    const contextB = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();

@@ -211,7 +211,9 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
     const contextA = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
-    const contextB = await browser.newContext();
+    const contextB = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();

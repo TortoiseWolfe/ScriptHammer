@@ -104,8 +104,12 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
     browser,
   }) => {
     // Create two separate browser contexts
-    const context1 = await browser.newContext();
-    const context2 = await browser.newContext();
+    const context1 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const context2 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     const page1 = await context1.newPage();
     const page2 = await context2.newPage();
@@ -190,8 +194,12 @@ test.describe('OAuth CSRF Protection - REQ-SEC-002', () => {
     browser,
   }) => {
     // Simulate attacker and victim in separate browser contexts
-    const attackerContext = await browser.newContext();
-    const victimContext = await browser.newContext();
+    const attackerContext = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const victimContext = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
 
     const attackerPage = await attackerContext.newPage();
     const victimPage = await victimContext.newPage();

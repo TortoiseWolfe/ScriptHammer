@@ -172,7 +172,9 @@ test.describe('Offline Queue Sync E2E', () => {
   }) => {
     test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
 
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page = await context.newPage();
 
     try {

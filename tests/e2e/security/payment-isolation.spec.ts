@@ -45,11 +45,15 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     browser,
   }) => {
     // User A's browser session
-    const contextA = await browser.newContext();
+    const contextA = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const pageA = await contextA.newPage();
 
     // User B's browser session
-    const contextB = await browser.newContext();
+    const contextB = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const pageB = await contextB.newPage();
 
     // Step 1: User A signs in
@@ -114,7 +118,9 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   });
 
   test('Payment history shows only own payments', async ({ browser }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page = await context.newPage();
 
     // Sign in
@@ -228,7 +234,9 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   test('Payment intent includes correct user association', async ({
     browser,
   }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page = await context.newPage();
 
     // Sign in

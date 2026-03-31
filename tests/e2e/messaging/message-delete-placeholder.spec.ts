@@ -340,7 +340,9 @@ test.describe('Message Delete Placeholder E2E', () => {
     test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
 
     // Set up encryption for User B in a temporary context
-    const tempCtx = await browser.newContext();
+    const tempCtx = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const tempPage = await tempCtx.newPage();
     try {
       await signInAndInjectSession(tempPage, USER_B_EMAIL, USER_B_PASSWORD);
@@ -350,7 +352,9 @@ test.describe('Message Delete Placeholder E2E', () => {
     }
 
     // Sign in as User A, set up encryption, navigate to conversation
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page = await context.newPage();
     try {
       await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);

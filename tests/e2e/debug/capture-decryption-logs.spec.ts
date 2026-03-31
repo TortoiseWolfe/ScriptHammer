@@ -36,7 +36,9 @@ test.describe('Capture Decryption Logs', () => {
   test('capture console output from message exchange', async ({ browser }) => {
     test.setTimeout(120000);
 
-    const contextA = await browser.newContext();
+    const contextA = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const pageA = await contextA.newPage();
 
     // Collect all console logs for User A

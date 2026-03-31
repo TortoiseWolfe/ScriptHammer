@@ -213,7 +213,9 @@ test.describe('Session Persistence E2E', () => {
     test.setTimeout(60000); // Increase timeout for multi-tab auth
 
     // Create context with one page initially
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page1 = await context.newPage();
 
     // Sign in on page 1 with proper error detection

@@ -100,7 +100,9 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     const sessionEmail = generateBruteForceEmail('session');
 
     // First browser session - trigger lockout
-    const context1 = await browser.newContext();
+    const context1 = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const page1 = await context1.newPage();
 
     await page1.goto('/sign-in');
@@ -197,10 +199,14 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
     const userA = generateBruteForceEmail('userA');
     const userB = generateBruteForceEmail('userB');
 
-    const contextA = await browser.newContext();
+    const contextA = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const pageA = await contextA.newPage();
 
-    const contextB = await browser.newContext();
+    const contextB = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
     const pageB = await contextB.newPage();
 
     // Lock out User A
