@@ -208,6 +208,27 @@ test.describe('Encrypted Messaging Flow', () => {
     const pageB = await contextB.newPage();
 
     try {
+      // Capture browser console from BOTH contexts to see encryption errors
+      const consoleErrors: string[] = [];
+      for (const p of [pageA, pageB]) {
+        p.on('console', (msg) => {
+          const text = msg.text();
+          if (
+            text.includes('Decryption FAILED') ||
+            text.includes('EncryptionLocked') ||
+            text.includes('CRITICAL') ||
+            text.includes('key') ||
+            text.includes('ERROR') ||
+            text.includes('Cannot decrypt') ||
+            text.includes('Encrypted with previous')
+          ) {
+            const label = p === pageA ? 'A' : 'B';
+            consoleErrors.push(`[User${label}] ${text}`);
+            console.log(`[BROWSER:User${label}] ${text}`);
+          }
+        });
+      }
+
       // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
@@ -275,6 +296,25 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
+      // Dump all captured console errors before the assertion
+      if (consoleErrors.length > 0) {
+        console.log(`[DIAG] ${consoleErrors.length} console errors captured:`);
+        consoleErrors.forEach((e) => console.log(`  ${e}`));
+      } else {
+        console.log('[DIAG] No console errors captured');
+      }
+      // Also dump the thread content to see what User B actually sees
+      const threadHTML = await pageB
+        .locator('[data-testid="message-thread"]')
+        .innerHTML()
+        .catch(() => 'NOT FOUND');
+      const hasPlaintext = threadHTML.includes(testMessage);
+      console.log(
+        `[DIAG] User B thread: hasPlaintext=${hasPlaintext}, length=${threadHTML.length}`
+      );
+      if (!hasPlaintext && threadHTML.length < 2000) {
+        console.log(`[DIAG] User B thread HTML: ${threadHTML}`);
+      }
       await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
       await expect(messageB).toBeVisible({ timeout: 30000 });
