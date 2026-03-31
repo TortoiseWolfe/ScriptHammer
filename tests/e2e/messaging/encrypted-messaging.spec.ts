@@ -238,6 +238,34 @@ test.describe('Encrypted Messaging Flow', () => {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
 
+      // DIAGNOSTIC: dump User B's localStorage to understand key state
+      const userBStorage = await pageB.evaluate(() => {
+        const keys = Object.keys(localStorage);
+        const shKeys = keys.filter((k) => k.startsWith('sh_keys_'));
+        const sbKeys = keys.filter(
+          (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+        );
+        let sessionUserId = 'none';
+        for (const sk of sbKeys) {
+          try {
+            const s = JSON.parse(localStorage.getItem(sk) || '{}');
+            sessionUserId = s?.user?.id || 'no-id';
+          } catch {
+            /* */
+          }
+        }
+        return {
+          totalKeys: keys.length,
+          shKeys,
+          sbKeys,
+          sessionUserId,
+          url: window.location.href,
+        };
+      });
+      console.log(
+        `[DIAG] User B localStorage after sign-in: ${JSON.stringify(userBStorage)}`
+      );
+
       // ===== STEP 3: User A navigates to messages =====
       await pageA.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
