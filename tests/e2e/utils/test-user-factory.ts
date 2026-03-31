@@ -590,14 +590,16 @@ export async function handleReAuthModal(
   // Path 1: ReAuthModal overlay on /messages page
   const modal = page.locator('[role="dialog"]').first();
 
-  // Wait for the modal to appear. On staggered CI shards, EncryptionKeyGate
-  // can take >5s to mount after navigation (Argon2id + React hydration).
+  // Wait for the modal to appear. The gate loading overlay already
+  // finished above, so if the modal is going to appear, it shows within
+  // 3s (React re-render after checkKeys resolves). 15s was too long and
+  // wasted time in tests where keys are already unlocked.
   try {
-    await modal.waitFor({ state: 'visible', timeout: 15000 });
+    await modal.waitFor({ state: 'visible', timeout: 3000 });
     console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
   } catch {
-    // Modal didn't appear within timeout - encryption keys already unlocked
-    console.log(`[handleReAuthModal] No modal after 15s. URL: ${page.url()}`);
+    // Modal didn't appear — encryption keys already unlocked
+    console.log(`[handleReAuthModal] No modal needed. URL: ${page.url()}`);
     return false;
   }
 

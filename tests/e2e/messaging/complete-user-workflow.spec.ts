@@ -355,6 +355,14 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageA.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageA, USER_A.password);
 
+      // Wait for ConversationView to mount — the message thread appears
+      // once the EncryptionKeyGate confirms keys and the conversation loads.
+      // On WebKit this can take several seconds after the gate finishes.
+      await pageA.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 30000,
+      });
+
       testMessage = 'Hello from User A - ' + Date.now();
       await fillMessageInput(pageA, testMessage);
 
