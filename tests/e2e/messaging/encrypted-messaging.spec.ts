@@ -268,6 +268,84 @@ test.describe('Encrypted Messaging Flow', () => {
         `[DIAG] User B localStorage after sign-in: ${JSON.stringify(userBStorage)}`
       );
 
+      // DIAGNOSTIC: Query DB for both users' public keys to check ECDH consistency
+      const adminDiag = getTestAdminClient();
+      if (adminDiag) {
+        const userAInfo = await getUserByEmail(USER_A.email);
+        const userBInfo = await getUserByEmail(USER_B.email);
+        if (userAInfo && userBInfo) {
+          const { data: aKey } = await adminDiag
+            .from('user_encryption_keys')
+            .select('public_key, encryption_salt, created_at')
+            .eq('user_id', userAInfo.id)
+            .eq('revoked', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          const { data: bKey } = await adminDiag
+            .from('user_encryption_keys')
+            .select('public_key, encryption_salt, created_at')
+            .eq('user_id', userBInfo.id)
+            .eq('revoked', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          const aKeyCount = await adminDiag
+            .from('user_encryption_keys')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userAInfo.id);
+          const bKeyCount = await adminDiag
+            .from('user_encryption_keys')
+            .select('id', { count: 'exact' })
+            .eq('user_id', userBInfo.id);
+          console.log(
+            `[KEY-DIAG] User A (${userAInfo.id}): keys=${aKeyCount.count}, salt=${aKey?.encryption_salt?.slice(0, 8)}..., pubkey_x=${(aKey?.public_key as Record<string, string>)?.x?.slice(0, 8)}..., created=${aKey?.created_at}`
+          );
+          console.log(
+            `[KEY-DIAG] User B (${userBInfo.id}): keys=${bKeyCount.count}, salt=${bKey?.encryption_salt?.slice(0, 8)}..., pubkey_x=${(bKey?.public_key as Record<string, string>)?.x?.slice(0, 8)}..., created=${bKey?.created_at}`
+          );
+          // Also dump what User A's cached key looks like
+          const cachedA = await pageA.evaluate(() => {
+            const keys = Object.keys(localStorage).filter((k) =>
+              k.startsWith('sh_keys_')
+            );
+            const result: Record<string, string> = {};
+            for (const k of keys) {
+              try {
+                const v = JSON.parse(localStorage.getItem(k) || '{}');
+                result[k] =
+                  `pubkey_x=${v?.publicKeyJwk?.x?.slice(0, 8)}..., salt=${v?.salt?.slice(0, 8)}...`;
+              } catch {
+                result[k] = 'parse error';
+              }
+            }
+            return result;
+          });
+          console.log(
+            `[KEY-DIAG] User A cached keys: ${JSON.stringify(cachedA)}`
+          );
+          const cachedB = await pageB.evaluate(() => {
+            const keys = Object.keys(localStorage).filter((k) =>
+              k.startsWith('sh_keys_')
+            );
+            const result: Record<string, string> = {};
+            for (const k of keys) {
+              try {
+                const v = JSON.parse(localStorage.getItem(k) || '{}');
+                result[k] =
+                  `pubkey_x=${v?.publicKeyJwk?.x?.slice(0, 8)}..., salt=${v?.salt?.slice(0, 8)}...`;
+              } catch {
+                result[k] = 'parse error';
+              }
+            }
+            return result;
+          });
+          console.log(
+            `[KEY-DIAG] User B cached keys: ${JSON.stringify(cachedB)}`
+          );
+        }
+      }
+
       // ===== STEP 3: User A navigates to messages =====
       await pageA.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
