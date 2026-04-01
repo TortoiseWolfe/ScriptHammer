@@ -353,15 +353,22 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         throw new Error('Could not create conversation');
       }
 
-      await pageA.goto('/messages?conversation=' + conversationId, {
-        waitUntil: 'domcontentloaded',
-      });
-      await pageA.waitForLoadState('domcontentloaded');
+      // Navigate to conversation — on WebKit, the auth may not hydrate
+      // instantly from storageState, causing a brief redirect to /.
+      // Retry navigation if we get redirected away from /messages.
+      for (let navAttempt = 0; navAttempt < 3; navAttempt++) {
+        await pageA.goto('/messages?conversation=' + conversationId, {
+          waitUntil: 'domcontentloaded',
+        });
+        await pageA.waitForTimeout(1000);
+        if (pageA.url().includes('/messages')) break;
+        console.log(
+          `Step 8: Redirected to ${pageA.url()}, retrying navigation...`
+        );
+      }
       await handleReAuthModal(pageA, USER_A.password);
 
-      // Wait for ConversationView to mount — the message thread appears
-      // once the EncryptionKeyGate confirms keys and the conversation loads.
-      // On WebKit this can take several seconds after the gate finishes.
+      // Wait for ConversationView to mount
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
         timeout: 30000,

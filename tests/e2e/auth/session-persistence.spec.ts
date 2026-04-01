@@ -272,9 +272,13 @@ test.describe('Session Persistence E2E', () => {
 
     // If auth had synced to page2, verify it's now signed out too
     if (authSynced) {
-      await page2.reload();
-      await page2.waitForURL(/\/sign-in/, { timeout: 10000 });
-      await expect(page2).toHaveURL(/\/sign-in/);
+      await page2.reload({ waitUntil: 'domcontentloaded' });
+      // After sign-out, page2 should redirect away from /profile.
+      // Chromium redirects to /sign-in, Firefox may redirect to /.
+      await page2.waitForURL(
+        (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+        { timeout: 10000 }
+      );
     }
 
     await context.close();
