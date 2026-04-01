@@ -66,8 +66,11 @@ function PaymentDemoContent() {
         )}
       </div>
 
-      {/* GDPR Consent Modal */}
-      {showConsent && (
+      {/* GDPR Consent — gate on mounted to prevent flash during hydration.
+          In static export, hasConsent starts false (server), then useEffect
+          reads localStorage and sets it true. Without the mounted guard,
+          the consent section flashes briefly on every reload. */}
+      {mounted && showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
@@ -120,8 +123,8 @@ function PaymentDemoContent() {
         </div>
       )}
 
-      {/* Payment Button Demo */}
-      {!showConsent && (
+      {/* Payment Button Demo — also gated on mounted for hydration safety */}
+      {mounted && !showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
