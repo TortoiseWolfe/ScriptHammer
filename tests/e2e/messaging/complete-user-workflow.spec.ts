@@ -353,22 +353,17 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         throw new Error('Could not create conversation');
       }
 
-      // Navigate to conversation — on WebKit, the auth may not hydrate
-      // instantly from storageState, causing a brief redirect to /.
-      // Retry navigation if we get redirected away from /messages.
-      for (let navAttempt = 0; navAttempt < 3; navAttempt++) {
-        await pageA.goto('/messages?conversation=' + conversationId, {
-          waitUntil: 'domcontentloaded',
-        });
-        await pageA.waitForTimeout(1000);
-        if (pageA.url().includes('/messages')) break;
-        console.log(
-          `Step 8: Redirected to ${pageA.url()}, retrying navigation...`
-        );
-      }
+      // Navigate to /messages and click the conversation in the sidebar.
+      // Don't use ?conversation=UUID in the URL — WebKit's useSearchParams()
+      // inside Suspense doesn't always fire in static exports, leaving
+      // conversationId null and ConversationView unmounted.
+      await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
-
-      // Wait for ConversationView to mount
+      const convoButton = pageA
+        .getByRole('button', { name: /Conversation with/ })
+        .first();
+      await expect(convoButton).toBeVisible({ timeout: 45000 });
+      await convoButton.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
         timeout: 30000,
