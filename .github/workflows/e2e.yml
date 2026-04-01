@@ -109,6 +109,7 @@ jobs:
           pnpm exec playwright test \
             tests/e2e/auth/sign-up.spec.ts \
             --project=signup \
+            --no-deps \
             --reporter=list \
             --timeout=30000
         env:

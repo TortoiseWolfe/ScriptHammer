@@ -113,7 +113,11 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await page1.getByLabel('Email').fill(sessionEmail);
       await page1.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page1.getByRole('button', { name: 'Sign In' }).click();
-      await page1.waitForTimeout(500);
+      await expect(
+        page1.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
 
     // Verify locked
@@ -216,8 +220,12 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await pageA.getByLabel('Email').fill(userA);
       await pageA.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await pageA.getByRole('button', { name: 'Sign In' }).click();
-      // Wait for each attempt to fully register before the next
-      await pageA.waitForTimeout(500);
+      // Wait for alert to confirm recordFailedAttempt() completed on server
+      await expect(
+        pageA.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
 
     // User A should be locked
@@ -260,7 +268,11 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await page.getByLabel('Email').fill(email);
       await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
-      await page.waitForTimeout(300);
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
 
     // sign_in should be locked
@@ -307,7 +319,11 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await page.getByLabel('Email').fill(email);
       await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
-      await page.waitForTimeout(300);
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
 
     // Clear localStorage (client-side bypass attempt)
@@ -338,7 +354,11 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       await page.getByLabel('Email').fill(email);
       await page.getByLabel('Password', { exact: true }).fill(wrongPassword);
       await page.getByRole('button', { name: 'Sign In' }).click();
-      await page.waitForTimeout(300);
+      await expect(
+        page.getByRole('alert').filter({
+          hasText: /failed|error|locked|invalid|incorrect|attempts/i,
+        })
+      ).toBeVisible({ timeout: 5000 });
     }
 
     // Attempt again

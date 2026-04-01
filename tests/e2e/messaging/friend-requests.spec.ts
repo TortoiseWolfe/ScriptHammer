@@ -106,13 +106,15 @@ const cleanupConnections = async (): Promise<void> => {
   const userBId = users?.users?.find((u) => u.email === USER_B.email)?.id;
 
   if (userAId && userBId) {
+    // Only delete the A↔B connection pair — preserve other connections
+    // (e.g. PRIMARY↔SECONDARY) that other tests in the same shard need.
     await client
       .from('user_connections')
       .delete()
       .or(
-        `requester_id.eq.${userAId},requester_id.eq.${userBId},addressee_id.eq.${userAId},addressee_id.eq.${userBId}`
+        `and(requester_id.eq.${userAId},addressee_id.eq.${userBId}),and(requester_id.eq.${userBId},addressee_id.eq.${userAId})`
       );
-    console.log('Cleaned up connections between test users');
+    console.log('Cleaned up A↔B connection for friend request test');
   }
 };
 
