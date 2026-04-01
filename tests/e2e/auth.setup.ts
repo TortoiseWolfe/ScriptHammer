@@ -218,4 +218,122 @@ setup('authenticate shared test user', async ({ page }) => {
       console.log(`⚠ Could not set up keys for ${userEmail}`);
     }
   }
+
+  // ────────────────────────────────────────────────────────────────────────
+  // CENTRALIZED SETUP: Create display_names, connections, and conversations
+  // for ALL test users. Individual test files previously raced to create
+  // these in their own beforeAll hooks (with 2 parallel workers per shard),
+  // causing duplicate key violations, missing state, and empty lists.
+  // ────────────────────────────────────────────────────────────────────────
+  if (adminClient) {
+    // Collect user IDs for all test users
+    const allTestUsers = [
+      { email: process.env.TEST_USER_PRIMARY_EMAIL, label: 'PRIMARY' },
+      { email: process.env.TEST_USER_SECONDARY_EMAIL, label: 'SECONDARY' },
+      { email: process.env.TEST_USER_TERTIARY_EMAIL, label: 'TERTIARY' },
+    ].filter((u): u is { email: string; label: string } => !!u.email);
+
+    const userMap: Record<string, { id: string; email: string }> = {};
+    for (const { email: testEmail, label } of allTestUsers) {
+      const u = await getUserByEmail(testEmail);
+      if (u) {
+        userMap[label] = { id: u.id, email: testEmail };
+      }
+    }
+
+    // Step A: Set display_names on user_profiles (required for UserSearch)
+    for (const { email: testEmail, label } of allTestUsers) {
+      const u = userMap[label];
+      if (!u) continue;
+      const displayName = testEmail.split('@')[0];
+      const { error: profileError } = await adminClient
+        .from('user_profiles')
+        .update({ display_name: displayName })
+        .eq('id', u.id);
+      if (profileError) {
+        console.log(
+          `⚠ Could not set display_name for ${label}: ${profileError.message}`
+        );
+      }
+    }
+    console.log('✓ Display names set for all test users');
+
+    // Step B: Create accepted connections between test user pairs
+    const connectionPairs: [string, string][] = [];
+    if (userMap.PRIMARY && userMap.TERTIARY) {
+      connectionPairs.push(['PRIMARY', 'TERTIARY']);
+    }
+    if (userMap.PRIMARY && userMap.SECONDARY) {
+      connectionPairs.push(['PRIMARY', 'SECONDARY']);
+    }
+
+    for (const [labelA, labelB] of connectionPairs) {
+      const uA = userMap[labelA];
+      const uB = userMap[labelB];
+      if (!uA || !uB) continue;
+
+      const { data: existing } = await adminClient
+        .from('user_connections')
+        .select('id, status')
+        .or(
+          `and(requester_id.eq.${uA.id},addressee_id.eq.${uB.id}),and(requester_id.eq.${uB.id},addressee_id.eq.${uA.id})`
+        )
+        .maybeSingle();
+
+      if (!existing) {
+        const { error } = await adminClient.from('user_connections').insert({
+          requester_id: uA.id,
+          addressee_id: uB.id,
+          status: 'accepted',
+        });
+        if (error) {
+          console.log(
+            `⚠ Failed to create ${labelA}↔${labelB} connection: ${error.message}`
+          );
+        } else {
+          console.log(`✓ Connection created: ${labelA}↔${labelB}`);
+        }
+      } else if (existing.status !== 'accepted') {
+        await adminClient
+          .from('user_connections')
+          .update({ status: 'accepted' })
+          .eq('id', existing.id);
+        console.log(`✓ Connection updated to accepted: ${labelA}↔${labelB}`);
+      } else {
+        console.log(`✓ Connection already exists: ${labelA}↔${labelB}`);
+      }
+    }
+
+    // Step C: Create conversation between PRIMARY↔TERTIARY
+    if (userMap.PRIMARY && userMap.TERTIARY) {
+      const [p1, p2] =
+        userMap.PRIMARY.id < userMap.TERTIARY.id
+          ? [userMap.PRIMARY.id, userMap.TERTIARY.id]
+          : [userMap.TERTIARY.id, userMap.PRIMARY.id];
+
+      const { data: existingConv } = await adminClient
+        .from('conversations')
+        .select('id')
+        .eq('participant_1_id', p1)
+        .eq('participant_2_id', p2)
+        .maybeSingle();
+
+      if (!existingConv) {
+        const { data: newConv, error: convError } = await adminClient
+          .from('conversations')
+          .insert({ participant_1_id: p1, participant_2_id: p2 })
+          .select('id')
+          .single();
+        if (convError) {
+          console.log(`⚠ Failed to create conversation: ${convError.message}`);
+        } else {
+          console.log(`✓ Conversation created: ${newConv.id}`);
+        }
+      } else {
+        console.log(`✓ Conversation already exists: ${existingConv.id}`);
+      }
+    }
+
+    console.log('✓ Centralized test data setup complete');
+  }
 });

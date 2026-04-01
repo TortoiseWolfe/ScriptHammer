@@ -35,6 +35,7 @@ const SECONDARY_USER_EMAIL =
 let setupSucceeded = false;
 let setupError = '';
 
+// Verify test data created by auth.setup.ts exists
 test.beforeAll(async () => {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
@@ -55,12 +56,12 @@ test.beforeAll(async () => {
   const userB = await getUserByEmail(SECONDARY_USER_EMAIL);
 
   if (!userA || !userB) {
-    setupError = `Test users not found`;
+    setupError = 'Test users not found';
     return;
   }
 
-  // Ensure connection exists between users
-  const { data: existing } = await adminClient
+  // Verify connection exists (created by auth.setup.ts)
+  const { data: conn } = await adminClient
     .from('user_connections')
     .select('id, status')
     .or(
@@ -68,17 +69,10 @@ test.beforeAll(async () => {
     )
     .maybeSingle();
 
-  if (!existing) {
-    await adminClient.from('user_connections').insert({
-      requester_id: userA.id,
-      addressee_id: userB.id,
-      status: 'accepted',
-    });
-  } else if (existing.status !== 'accepted') {
-    await adminClient
-      .from('user_connections')
-      .update({ status: 'accepted' })
-      .eq('id', existing.id);
+  if (!conn || conn.status !== 'accepted') {
+    setupError =
+      'Connection not found or not accepted (auth.setup.ts may have failed)';
+    return;
   }
 
   setupSucceeded = true;

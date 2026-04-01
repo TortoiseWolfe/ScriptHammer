@@ -76,7 +76,7 @@ test.describe('Offline Message Queue', () => {
   let setupSucceeded = false;
   let setupError = '';
 
-  // Establish connection between test users BEFORE all tests
+  // Verify test data created by auth.setup.ts exists
   test.beforeAll(async () => {
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
@@ -88,7 +88,7 @@ test.describe('Offline Message Queue', () => {
       USER_A.email === 'test@example.com' ||
       USER_B.email === 'test-user-b@example.com'
     ) {
-      setupError = 'Test user emails not configured - using fallback values';
+      setupError = 'Test user emails not configured';
       logger.error(setupError);
       return;
     }
@@ -100,7 +100,6 @@ test.describe('Offline Message Queue', () => {
       return;
     }
 
-    // Get user IDs
     const userA = await getUserByEmail(USER_A.email);
     const userB = await getUserByEmail(USER_B.email);
 
@@ -110,8 +109,8 @@ test.describe('Offline Message Queue', () => {
       return;
     }
 
-    // Check if already connected
-    const { data: existing } = await adminClient
+    // Verify connection exists (created by auth.setup.ts)
+    const { data: conn } = await adminClient
       .from('user_connections')
       .select('id, status')
       .or(
@@ -119,51 +118,11 @@ test.describe('Offline Message Queue', () => {
       )
       .maybeSingle();
 
-    if (!existing) {
-      // Create connection
-      await adminClient.from('user_connections').insert({
-        requester_id: userA.id,
-        addressee_id: userB.id,
-        status: 'accepted',
-      });
-    } else if (existing.status !== 'accepted') {
-      // Update to accepted
-      await adminClient
-        .from('user_connections')
-        .update({ status: 'accepted' })
-        .eq('id', existing.id);
-    }
-
-    // Create conversation if it doesn't exist
-    // Use canonical ordering: participant_1_id < participant_2_id
-    const [participant_1, participant_2] =
-      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-
-    const { data: existingConv } = await adminClient
-      .from('conversations')
-      .select('id')
-      .eq('participant_1_id', participant_1)
-      .eq('participant_2_id', participant_2)
-      .maybeSingle();
-
-    if (!existingConv) {
-      const { error: convError } = await adminClient
-        .from('conversations')
-        .insert({
-          participant_1_id: participant_1,
-          participant_2_id: participant_2,
-        });
-
-      if (convError) {
-        setupError = `Failed to create conversation: ${convError.message}`;
-        logger.error(setupError);
-        return;
-      }
-      logger.info('Conversation created for offline queue tests');
-    } else {
-      logger.info('Conversation already exists', {
-        conversationId: existingConv.id,
-      });
+    if (!conn || conn.status !== 'accepted') {
+      setupError =
+        'Connection not found or not accepted (auth.setup.ts may have failed)';
+      logger.error(setupError);
+      return;
     }
 
     setupSucceeded = true;

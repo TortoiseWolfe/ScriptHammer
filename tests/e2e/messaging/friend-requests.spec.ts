@@ -123,6 +123,51 @@ test.describe('Friend Request Flow', () => {
   // Track setup status
   let setupError = '';
 
+  // Delete the existing accepted connection so we can test the fresh
+  // send→receive→accept flow. auth.setup.ts creates an accepted connection,
+  // but this test needs to exercise the full friend request lifecycle.
+  test.beforeAll(async () => {
+    await cleanupConnections();
+  });
+
+  // Re-create the accepted connection after tests complete so other test
+  // files in the same shard that depend on the connection aren't affected.
+  test.afterAll(async () => {
+    const client = getAdminClient();
+    if (!client) return;
+
+    const { data: users } = await client.auth.admin.listUsers();
+    const userAId = users?.users?.find((u) => u.email === USER_A.email)?.id;
+    const userBId = users?.users?.find((u) => u.email === USER_B.email)?.id;
+
+    if (userAId && userBId) {
+      // Check if connection was re-created by the test
+      const { data: existing } = await client
+        .from('user_connections')
+        .select('id, status')
+        .or(
+          `and(requester_id.eq.${userAId},addressee_id.eq.${userBId}),and(requester_id.eq.${userBId},addressee_id.eq.${userAId})`
+        )
+        .maybeSingle();
+
+      if (!existing) {
+        // Test didn't complete — re-create the connection
+        await client.from('user_connections').insert({
+          requester_id: userAId,
+          addressee_id: userBId,
+          status: 'accepted',
+        });
+        console.log('afterAll: Re-created accepted connection for other tests');
+      } else if (existing.status !== 'accepted') {
+        await client
+          .from('user_connections')
+          .update({ status: 'accepted' })
+          .eq('id', existing.id);
+        console.log('afterAll: Updated connection to accepted for other tests');
+      }
+    }
+  });
+
   test.beforeEach(async ({}, testInfo) => {
     // Validate required environment variables
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -136,12 +181,12 @@ test.describe('Friend Request Flow', () => {
       USER_B.email === 'test-user-b@example.com'
     ) {
       setupError =
-        'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured - using fallback emails that do not exist';
+        'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured';
       testInfo.skip(true, setupError);
       return;
     }
 
-    // Look up display names dynamically (only once, then cached)
+    // Look up display names (set by auth.setup.ts, cached after first lookup)
     if (!userADisplayName) {
       userADisplayName = await getDisplayNameByEmail(USER_A.email);
     }
@@ -149,9 +194,6 @@ test.describe('Friend Request Flow', () => {
       userBDisplayName = await getDisplayNameByEmail(USER_B.email);
     }
   });
-
-  // DO NOT clean up connections here — with 2 parallel workers in the
-  // same shard, cleanup deletes connections that other test files depend on.
 
   test('User A sends friend request and User B accepts', async ({
     browser,

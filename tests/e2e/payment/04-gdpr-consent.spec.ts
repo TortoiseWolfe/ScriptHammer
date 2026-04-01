@@ -4,38 +4,24 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  dismissCookieBanner,
-  waitForAuthenticatedState,
-} from '../utils/test-user-factory';
-
-// Test user credentials
-const TEST_USER = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('GDPR Payment Consent Flow', () => {
-  test.beforeEach(async ({ page, context }) => {
-    // Clear storage to reset consent
-    await context.clearCookies();
-
-    // Sign in first - /payment-demo is a protected route
-    await page.goto('/sign-in');
+  test.beforeEach(async ({ page }) => {
+    // Navigate to payment-demo (auth provided by storageState from project config)
+    await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Clear localStorage to reset consent
+    // Clear only consent keys — NOT cookies (which contain the auth session).
+    // Clearing cookies destroys the Supabase session, causing auth failures
+    // on page.reload() in tests like "should remember consent across reloads".
     await page.evaluate(() => {
       localStorage.removeItem('payment_consent');
       localStorage.removeItem('gdpr_consent');
     });
 
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
-
-    await page.goto('/payment-demo');
+    // Reload so the page sees the cleared consent state
+    await page.reload();
     await dismissCookieBanner(page);
   });
 

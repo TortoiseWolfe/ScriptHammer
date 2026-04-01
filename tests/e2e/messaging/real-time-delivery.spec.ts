@@ -154,7 +154,7 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
   return true;
 }
 
-// Create connection and conversation before all tests
+// Verify test data created by auth.setup.ts exists
 test.beforeAll(async () => {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
@@ -187,8 +187,8 @@ test.beforeAll(async () => {
     return;
   }
 
-  // Create connection if needed
-  const { data: existing } = await adminClient
+  // Verify connection exists (created by auth.setup.ts)
+  const { data: conn } = await adminClient
     .from('user_connections')
     .select('id, status')
     .or(
@@ -196,54 +196,14 @@ test.beforeAll(async () => {
     )
     .maybeSingle();
 
-  if (!existing) {
-    const { error } = await adminClient.from('user_connections').insert({
-      requester_id: userA.id,
-      addressee_id: userB.id,
-      status: 'accepted',
-    });
-    if (error) {
-      setupError = `Failed to create connection: ${error.message}`;
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-    console.log('✓ Connection created');
-  } else if (existing.status !== 'accepted') {
-    await adminClient
-      .from('user_connections')
-      .update({ status: 'accepted' })
-      .eq('id', existing.id);
-    console.log('✓ Connection updated');
+  if (!conn || conn.status !== 'accepted') {
+    setupError =
+      'Connection not found or not accepted (auth.setup.ts may have failed)';
+    console.error(`❌ ${setupError}`);
+    return;
   }
 
-  // Create conversation with canonical ordering
-  const [p1, p2] =
-    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-
-  const { data: existingConv } = await adminClient
-    .from('conversations')
-    .select('id')
-    .eq('participant_1_id', p1)
-    .eq('participant_2_id', p2)
-    .maybeSingle();
-
-  if (!existingConv) {
-    const { error: convError } = await adminClient
-      .from('conversations')
-      .insert({
-        participant_1_id: p1,
-        participant_2_id: p2,
-      });
-    if (convError) {
-      setupError = `Failed to create conversation: ${convError.message}`;
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-    console.log('✓ Conversation created');
-  } else {
-    console.log('✓ Conversation already exists');
-  }
-
+  console.log('✓ Test data verified');
   setupSucceeded = true;
 });
 

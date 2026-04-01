@@ -34,7 +34,7 @@ let conversationId: string | null = null;
 let setupSucceeded = false;
 let setupError = '';
 
-// Setup connection, conversation, and seed messages before all tests
+// Verify test data created by auth.setup.ts exists
 test.beforeAll(async () => {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
@@ -62,13 +62,13 @@ test.beforeAll(async () => {
   const userB = await getUserByEmail(TEST_USER_B_EMAIL);
 
   if (!userA || !userB) {
-    setupError = `Test users not found`;
+    setupError = 'Test users not found';
     logger.error(setupError);
     return;
   }
 
-  // Create connection if needed
-  const { data: existing } = await adminClient
+  // Verify connection exists (created by auth.setup.ts)
+  const { data: conn } = await adminClient
     .from('user_connections')
     .select('id, status')
     .or(
@@ -76,22 +76,14 @@ test.beforeAll(async () => {
     )
     .maybeSingle();
 
-  if (!existing) {
-    await adminClient.from('user_connections').insert({
-      requester_id: userA.id,
-      addressee_id: userB.id,
-      status: 'accepted',
-    });
-    logger.info('Connection created');
-  } else if (existing.status !== 'accepted') {
-    await adminClient
-      .from('user_connections')
-      .update({ status: 'accepted' })
-      .eq('id', existing.id);
-    logger.info('Connection updated');
+  if (!conn || conn.status !== 'accepted') {
+    setupError =
+      'Connection not found or not accepted (auth.setup.ts may have failed)';
+    logger.error(setupError);
+    return;
   }
 
-  // Create/get conversation
+  // Get conversation ID for performance tests
   const [p1, p2] =
     userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
 
@@ -102,25 +94,14 @@ test.beforeAll(async () => {
     .eq('participant_2_id', p2)
     .maybeSingle();
 
-  if (existingConv) {
-    conversationId = existingConv.id;
-    logger.info('Using existing conversation', { conversationId });
-  } else {
-    const { data: newConv, error } = await adminClient
-      .from('conversations')
-      .insert({ participant_1_id: p1, participant_2_id: p2 })
-      .select('id')
-      .single();
-
-    if (error) {
-      setupError = `Failed to create conversation: ${error.message}`;
-      logger.error(setupError);
-      return;
-    }
-    conversationId = newConv.id;
-    logger.info('Conversation created', { conversationId });
+  if (!existingConv) {
+    setupError = 'Conversation not found (auth.setup.ts may have failed)';
+    logger.error(setupError);
+    return;
   }
 
+  conversationId = existingConv.id;
+  logger.info('Test data verified', { conversationId });
   setupSucceeded = true;
 });
 
