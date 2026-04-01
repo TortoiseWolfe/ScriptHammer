@@ -915,6 +915,10 @@ export async function fillMessageInput(
   await expect(messageInput).toBeEnabled({ timeout: 15000 });
   await messageInput.fill(text);
 
+  // WebKit sometimes doesn't trigger React's onChange from fill().
+  // Dispatch an input event manually to ensure React processes the value.
+  await messageInput.dispatchEvent('input', { bubbles: true });
+
   // Wait for React to process the fill — char count updates when state changes
   await page.waitForFunction(
     (expectedLen) => {
@@ -923,7 +927,7 @@ export async function fillMessageInput(
       return counter.textContent?.includes(String(expectedLen));
     },
     text.length,
-    { timeout: 5000 }
+    { timeout: 10000 }
   );
 }
 
