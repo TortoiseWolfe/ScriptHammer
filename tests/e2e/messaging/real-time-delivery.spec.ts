@@ -44,6 +44,7 @@ async function signIn(
   password: string,
   isPrimary: boolean
 ) {
+  await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
   await performSignIn(page, email, password);
   if (!isPrimary) {
     await resetEncryptionKeys(page, email, password);
