@@ -165,6 +165,14 @@ export class MessageService {
       );
 
       // Derive shared secret using sender's derived private key
+      const senderPubJwk = await crypto.subtle.exportKey(
+        'jwk',
+        senderKeys.publicKey
+      );
+      logger.info('ECDH encrypt: sender_pub_x=%s, recipient_pub_x=%s', {
+        senderPubX: String(senderPubJwk.x).slice(0, 8),
+        recipientPubX: String(recipientPublicKey.x).slice(0, 8),
+      });
       const sharedSecret = await encryptionService.deriveSharedSecret(
         senderKeys.privateKey,
         recipientPublicKeyCrypto
@@ -584,7 +592,13 @@ export class MessageService {
       logger.debug('Other user public key imported successfully');
 
       // Derive shared secret using our derived private key
-      logger.debug('Deriving ECDH shared secret', {
+      const myPubJwk = await crypto.subtle.exportKey(
+        'jwk',
+        currentKeys.publicKey
+      );
+      logger.error('ECDH decrypt: my_pub_x=%s, other_pub_x=%s', {
+        myPubX: String(myPubJwk.x).slice(0, 8),
+        otherPubX: String(otherPublicKey.x).slice(0, 8),
         currentUser: user.id,
         otherParticipant: otherParticipantId,
       });
@@ -592,7 +606,6 @@ export class MessageService {
         currentKeys.privateKey,
         otherPublicKeyCrypto
       );
-      logger.debug('Shared secret derived successfully');
 
       // Decrypt all messages
       logger.debug('Decrypting messages', {

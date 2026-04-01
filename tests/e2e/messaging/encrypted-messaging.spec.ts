@@ -219,7 +219,7 @@ test.describe('Encrypted Messaging Flow', () => {
             text.includes('Decryption FAILED') ||
             text.includes('EncryptionLocked') ||
             text.includes('CRITICAL') ||
-            text.includes('key') ||
+            text.includes('ECDH') ||
             text.includes('ERROR') ||
             text.includes('Cannot decrypt') ||
             text.includes('Encrypted with previous')
