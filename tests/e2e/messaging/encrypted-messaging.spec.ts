@@ -20,6 +20,7 @@ import {
   fillMessageInput,
   cleanupOldMessages,
   scrollThreadToBottom,
+  resetEncryptionKeys,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -210,27 +211,6 @@ test.describe('Encrypted Messaging Flow', () => {
     const pageB = await contextB.newPage();
 
     try {
-      // Capture browser console from BOTH contexts to see encryption errors
-      const consoleErrors: string[] = [];
-      for (const p of [pageA, pageB]) {
-        p.on('console', (msg) => {
-          const text = msg.text();
-          if (
-            text.includes('Decryption FAILED') ||
-            text.includes('EncryptionLocked') ||
-            text.includes('CRITICAL') ||
-            text.includes('ECDH') ||
-            text.includes('ERROR') ||
-            text.includes('Cannot decrypt') ||
-            text.includes('Encrypted with previous')
-          ) {
-            const label = p === pageA ? 'A' : 'B';
-            consoleErrors.push(`[User${label}] ${text}`);
-            console.log(`[BROWSER:User${label}] ${text}`);
-          }
-        });
-      }
-
       // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
@@ -240,111 +220,10 @@ test.describe('Encrypted Messaging Flow', () => {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
 
-      // DIAGNOSTIC: dump User B's localStorage to understand key state
-      const userBStorage = await pageB.evaluate(() => {
-        const keys = Object.keys(localStorage);
-        const shKeys = keys.filter((k) => k.startsWith('sh_keys_'));
-        const sbKeys = keys.filter(
-          (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
-        );
-        let sessionUserId = 'none';
-        for (const sk of sbKeys) {
-          try {
-            const s = JSON.parse(localStorage.getItem(sk) || '{}');
-            sessionUserId = s?.user?.id || 'no-id';
-          } catch {
-            /* */
-          }
-        }
-        return {
-          totalKeys: keys.length,
-          shKeys,
-          sbKeys,
-          sessionUserId,
-          url: window.location.href,
-        };
-      });
-      console.log(
-        `[DIAG] User B localStorage after sign-in: ${JSON.stringify(userBStorage)}`
-      );
-
-      // DIAGNOSTIC: Query DB for both users' public keys to check ECDH consistency
-      const adminDiag = getTestAdminClient();
-      if (adminDiag) {
-        const userAInfo = await getUserByEmail(USER_A.email);
-        const userBInfo = await getUserByEmail(USER_B.email);
-        if (userAInfo && userBInfo) {
-          const { data: aKey } = await adminDiag
-            .from('user_encryption_keys')
-            .select('public_key, encryption_salt, created_at')
-            .eq('user_id', userAInfo.id)
-            .eq('revoked', false)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          const { data: bKey } = await adminDiag
-            .from('user_encryption_keys')
-            .select('public_key, encryption_salt, created_at')
-            .eq('user_id', userBInfo.id)
-            .eq('revoked', false)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-          const aKeyCount = await adminDiag
-            .from('user_encryption_keys')
-            .select('id', { count: 'exact' })
-            .eq('user_id', userAInfo.id);
-          const bKeyCount = await adminDiag
-            .from('user_encryption_keys')
-            .select('id', { count: 'exact' })
-            .eq('user_id', userBInfo.id);
-          console.log(
-            `[KEY-DIAG] User A (${userAInfo.id}): keys=${aKeyCount.count}, salt=${aKey?.encryption_salt?.slice(0, 8)}..., pubkey_x=${(aKey?.public_key as Record<string, string>)?.x?.slice(0, 8)}..., created=${aKey?.created_at}`
-          );
-          console.log(
-            `[KEY-DIAG] User B (${userBInfo.id}): keys=${bKeyCount.count}, salt=${bKey?.encryption_salt?.slice(0, 8)}..., pubkey_x=${(bKey?.public_key as Record<string, string>)?.x?.slice(0, 8)}..., created=${bKey?.created_at}`
-          );
-          // Also dump what User A's cached key looks like
-          const cachedA = await pageA.evaluate(() => {
-            const keys = Object.keys(localStorage).filter((k) =>
-              k.startsWith('sh_keys_')
-            );
-            const result: Record<string, string> = {};
-            for (const k of keys) {
-              try {
-                const v = JSON.parse(localStorage.getItem(k) || '{}');
-                result[k] =
-                  `pubkey_x=${v?.publicKeyJwk?.x?.slice(0, 8)}..., salt=${v?.salt?.slice(0, 8)}...`;
-              } catch {
-                result[k] = 'parse error';
-              }
-            }
-            return result;
-          });
-          console.log(
-            `[KEY-DIAG] User A cached keys: ${JSON.stringify(cachedA)}`
-          );
-          const cachedB = await pageB.evaluate(() => {
-            const keys = Object.keys(localStorage).filter((k) =>
-              k.startsWith('sh_keys_')
-            );
-            const result: Record<string, string> = {};
-            for (const k of keys) {
-              try {
-                const v = JSON.parse(localStorage.getItem(k) || '{}');
-                result[k] =
-                  `pubkey_x=${v?.publicKeyJwk?.x?.slice(0, 8)}..., salt=${v?.salt?.slice(0, 8)}...`;
-              } catch {
-                result[k] = 'parse error';
-              }
-            }
-            return result;
-          });
-          console.log(
-            `[KEY-DIAG] User B cached keys: ${JSON.stringify(cachedB)}`
-          );
-        }
-      }
+      // Reset User B's encryption keys — SignInForm.initializeKeys() creates
+      // a duplicate key row (hasKeys() race with session persistence), breaking
+      // ECDH. This deletes duplicates and clears the stale localStorage cache.
+      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
 
       // ===== STEP 3: User A navigates to messages =====
       await pageA.goto(`${BASE_URL}/messages`, {
@@ -404,25 +283,6 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
-      // Dump all captured console errors before the assertion
-      if (consoleErrors.length > 0) {
-        console.log(`[DIAG] ${consoleErrors.length} console errors captured:`);
-        consoleErrors.forEach((e) => console.log(`  ${e}`));
-      } else {
-        console.log('[DIAG] No console errors captured');
-      }
-      // Also dump the thread content to see what User B actually sees
-      const threadHTML = await pageB
-        .locator('[data-testid="message-thread"]')
-        .innerHTML()
-        .catch(() => 'NOT FOUND');
-      const hasPlaintext = threadHTML.includes(testMessage);
-      console.log(
-        `[DIAG] User B thread: hasPlaintext=${hasPlaintext}, length=${threadHTML.length}`
-      );
-      if (!hasPlaintext && threadHTML.length < 2000) {
-        console.log(`[DIAG] User B thread HTML: ${threadHTML}`);
-      }
       await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
       await expect(messageB).toBeVisible({ timeout: 30000 });
@@ -599,6 +459,7 @@ test.describe('Encrypted Messaging Flow', () => {
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
+      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
 
       await pageB.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',

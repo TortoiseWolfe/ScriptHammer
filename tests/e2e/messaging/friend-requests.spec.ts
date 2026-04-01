@@ -21,6 +21,7 @@ import {
   handleReAuthModal,
   dismissCookieBanner,
   performSignIn,
+  resetEncryptionKeys,
 } from '../utils/test-user-factory';
 
 // Test users - use PRIMARY and TERTIARY from standardized test fixtures
@@ -217,6 +218,7 @@ test.describe('Friend Request Flow', () => {
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
+      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
 
       // ===== STEP 6: User B navigates to connections page =====
       await pageB.goto('/messages?tab=connections', {
@@ -296,6 +298,7 @@ test.describe('Friend Request Flow', () => {
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
       }
+      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
 
       await pageB.goto('/messages?tab=connections', {
         waitUntil: 'domcontentloaded',

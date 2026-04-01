@@ -1002,3 +1002,34 @@ export async function gotoWithRetry(
     }
   }
 }
+
+/**
+ * Reset encryption keys for a user after performSignIn().
+ *
+ * SignInForm.tsx calls hasKeys() which races with Supabase session
+ * persistence — getSession() returns null, hasKeys() returns false,
+ * and initializeKeys() creates a SECOND key row with a different salt.
+ * This breaks ECDH because encrypt and decrypt use different key pairs.
+ *
+ * This helper:
+ * 1. Deletes ALL encryption keys for the user via admin API
+ * 2. Re-creates exactly ONE key via ensureEncryptionKeys
+ * 3. Clears sh_keys_* from the page's localStorage so EncryptionKeyGate
+ *    shows the ReAuthModal and deriveKeys() runs with the correct salt
+ */
+export async function resetEncryptionKeys(
+  page: Page,
+  email: string,
+  password: string
+): Promise<void> {
+  // Re-create single correct key in DB
+  await ensureEncryptionKeys(email, password);
+
+  // Clear stale cached keys from localStorage
+  await page.evaluate(() => {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('sh_keys_'))
+      .forEach((k) => localStorage.removeItem(k));
+  });
+  console.log(`[resetEncryptionKeys] Reset keys for ${email}`);
+}

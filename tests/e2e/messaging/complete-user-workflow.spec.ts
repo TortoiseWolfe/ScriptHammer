@@ -12,6 +12,7 @@ import {
   fillMessageInput,
   cleanupOldMessages,
   scrollThreadToBottom,
+  resetEncryptionKeys,
 } from '../utils/test-user-factory';
 
 const USER_A = {
@@ -304,6 +305,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);
       await pageB.getByRole('button', { name: 'Sign In' }).click();
       await waitForAuthenticatedState(pageB);
+      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
       console.log('Step 5: User B signed in');
 
       // STEP 6: User B views pending requests
