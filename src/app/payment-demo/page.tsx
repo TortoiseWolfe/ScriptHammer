@@ -18,18 +18,18 @@ import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 function PaymentDemoContent() {
   const { user } = useAuth();
   const { hasConsent, grantConsent } = usePaymentConsent();
-  const [showConsent, setShowConsent] = useState(true);
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
   const [mounted, setMounted] = useState(false);
 
+  // Derive showConsent from hasConsent — no redundant state that can
+  // fall out of sync (previously showConsent defaulted to true while
+  // hasConsent started false, causing a flash of consent on reload).
+  const showConsent = !hasConsent;
+
   React.useEffect(() => {
     setMounted(true);
-    // Sync showConsent with persisted consent state
-    if (hasConsent) {
-      setShowConsent(false);
-    }
-  }, [hasConsent]);
+  }, []);
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setPaymentResultId(paymentIntentId);
@@ -101,7 +101,6 @@ function PaymentDemoContent() {
                   className="btn btn-primary min-h-11 flex-1"
                   onClick={() => {
                     grantConsent(); // Persist consent to localStorage
-                    setShowConsent(false);
                   }}
                 >
                   Accept & Continue

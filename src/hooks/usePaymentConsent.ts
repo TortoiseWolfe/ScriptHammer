@@ -42,36 +42,32 @@ export type UsePaymentConsentReturn = PaymentConsentState &
  * ```
  */
 export function usePaymentConsent(): UsePaymentConsentReturn {
-  const [hasConsent, setHasConsent] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [consentDate, setConsentDate] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Only run in browser
-    if (typeof window === 'undefined') return;
-
+  // Initialize synchronously from localStorage to avoid flash of consent
+  // section on reload (useState lazy initializer runs once, before first render).
+  const [hasConsent, setHasConsent] = useState(() => {
+    if (typeof window === 'undefined') return false;
     try {
-      const consent = localStorage.getItem('payment_consent');
-      const date = localStorage.getItem('payment_consent_date');
-
-      setConsentDate(date);
-
-      if (consent === 'granted') {
-        setHasConsent(true);
-        setShowModal(false);
-      } else {
-        // Show modal if no consent or declined
-        // Note: We retry each visit (don't permanently store 'declined' per GDPR)
-        setHasConsent(false);
-        setShowModal(true);
-      }
-    } catch (error) {
-      // localStorage blocked by tracking prevention - default to showing modal
-      logger.warn('localStorage access blocked', { error });
-      setHasConsent(false);
-      setShowModal(true);
+      return localStorage.getItem('payment_consent') === 'granted';
+    } catch {
+      return false;
     }
-  }, []);
+  });
+  const [showModal, setShowModal] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('payment_consent') !== 'granted';
+    } catch {
+      return true;
+    }
+  });
+  const [consentDate, setConsentDate] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem('payment_consent_date');
+    } catch {
+      return null;
+    }
+  });
 
   const grantConsent = () => {
     const now = new Date().toISOString();
