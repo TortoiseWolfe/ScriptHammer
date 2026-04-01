@@ -206,7 +206,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   test('Complete messaging workflow: sign-in -> connect -> message -> sign-out', async ({
     browser,
   }) => {
-    test.setTimeout(120000); // 2 minutes for full workflow
+    test.setTimeout(180000); // 3 minutes — webkit + Supabase free tier needs 60s per operation
 
     // User A gets pre-authenticated state; User B signs in manually
     const contextA = await browser.newContext({
@@ -362,11 +362,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       const convoButton = pageA
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(convoButton).toBeVisible({ timeout: 45000 });
+      await expect(convoButton).toBeVisible({ timeout: 60000 });
       await convoButton.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 30000,
+        timeout: 60000,
       });
 
       testMessage = 'Hello from User A - ' + Date.now();

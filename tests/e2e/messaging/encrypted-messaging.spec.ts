@@ -254,12 +254,13 @@ test.describe('Encrypted Messaging Flow', () => {
       await sendButton.click();
 
       // Wait for sending state to complete (Supabase free tier: up to 15s)
-      await expect(sendButton).not.toContainText('Sending', { timeout: 30000 });
+      await expect(sendButton).not.toContainText('Sending', { timeout: 60000 });
 
       // ===== STEP 6: Verify message appears in User A's view =====
+      // WebKit + Supabase free tier: INSERT can take 30+ seconds.
       await scrollThreadToBottom(pageA);
       const messageA = pageA.getByText(testMessage);
-      await expect(messageA).toBeVisible({ timeout: 30000 });
+      await expect(messageA).toBeVisible({ timeout: 60000 });
 
       // Brief delay for Supabase replication before User B reads
       await pageA.waitForTimeout(2000);
