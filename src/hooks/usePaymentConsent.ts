@@ -14,6 +14,10 @@ export interface PaymentConsentState {
   hasConsent: boolean;
   showModal: boolean;
   consentDate: string | null;
+  /** True once localStorage has been read (after hydration). Use this to
+   *  suppress rendering until the consent state is known — prevents a
+   *  flash of the consent section on reload. */
+  isReady: boolean;
 }
 
 export interface PaymentConsentActions {
@@ -45,11 +49,13 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
   const [hasConsent, setHasConsent] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [consentDate, setConsentDate] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   // Read consent from localStorage after hydration. In Next.js static
   // export, useState initializers run on the server where localStorage
   // is unavailable, and React doesn't re-run them on hydration. This
   // effect fires once on mount to sync state with persisted consent.
+  // Sets isReady=true in the same batch so consumers can gate rendering.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -68,6 +74,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       setHasConsent(false);
       setShowModal(true);
     }
+    setIsReady(true);
   }, []);
 
   const grantConsent = () => {
@@ -118,6 +125,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     hasConsent,
     showModal,
     consentDate,
+    isReady,
     grantConsent,
     declineConsent,
     resetConsent,

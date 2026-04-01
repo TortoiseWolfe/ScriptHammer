@@ -17,19 +17,15 @@ import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 
 function PaymentDemoContent() {
   const { user } = useAuth();
-  const { hasConsent, grantConsent } = usePaymentConsent();
+  const { hasConsent, isReady, grantConsent } = usePaymentConsent();
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
-  const [mounted, setMounted] = useState(false);
 
-  // Derive showConsent from hasConsent — no redundant state that can
-  // fall out of sync (previously showConsent defaulted to true while
-  // hasConsent started false, causing a flash of consent on reload).
+  // Derive showConsent from hasConsent — no redundant state.
+  // Gate on isReady to prevent flash: isReady becomes true in the same
+  // React batch as hasConsent, so the first render after hydration
+  // already knows the correct consent state from localStorage.
   const showConsent = !hasConsent;
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setPaymentResultId(paymentIntentId);
@@ -57,7 +53,7 @@ function PaymentDemoContent() {
           Explore the payment system features: Stripe integration, GDPR consent,
           offline queue, and transaction history.
         </p>
-        {mounted && (
+        {isReady && (
           <div className="alert alert-info mt-4">
             <span>
               Logged in as: {user?.email} - User ID: {user?.id}
@@ -66,11 +62,10 @@ function PaymentDemoContent() {
         )}
       </div>
 
-      {/* GDPR Consent — gate on mounted to prevent flash during hydration.
-          In static export, hasConsent starts false (server), then useEffect
-          reads localStorage and sets it true. Without the mounted guard,
-          the consent section flashes briefly on every reload. */}
-      {mounted && showConsent && (
+      {/* GDPR Consent — gate on isReady to prevent flash during hydration.
+          isReady and hasConsent are set in the same useEffect batch, so
+          the first render after hydration shows the correct section. */}
+      {isReady && showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
@@ -123,8 +118,8 @@ function PaymentDemoContent() {
         </div>
       )}
 
-      {/* Payment Button Demo — also gated on mounted for hydration safety */}
-      {mounted && !showConsent && (
+      {/* Payment Button Demo — also gated on isReady for hydration safety */}
+      {isReady && !showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
