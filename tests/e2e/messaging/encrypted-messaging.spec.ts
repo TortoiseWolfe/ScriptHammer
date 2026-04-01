@@ -203,12 +203,28 @@ test.describe('Encrypted Messaging Flow', () => {
       await handleReAuthModal(pageA, USER_A.password);
       await expect(pageA).toHaveURL(/.*\/messages/);
 
+      // Ensure we're on the Chats tab (default, but explicit click is reliable)
+      const chatsTab = pageA.getByRole('tab', { name: /Chats/i });
+      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await chatsTab.click();
+
       // ===== STEP 4: User A selects conversation with User B =====
-      // Click on the conversation with User B (should exist from friend request acceptance)
       const conversationItem = pageA
         .getByRole('button', { name: /Conversation with/ })
         .first();
-      await expect(conversationItem).toBeVisible({ timeout: 45000 });
+
+      // On Supabase free tier with 18 concurrent CI jobs, the conversation
+      // list query can take 30s+. If not found, reload to retry the query.
+      try {
+        await expect(conversationItem).toBeVisible({ timeout: 30000 });
+      } catch {
+        await pageA.reload();
+        await dismissCookieBanner(pageA);
+        await handleReAuthModal(pageA, USER_A.password);
+        await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
+        await chatsTab.click();
+        await expect(conversationItem).toBeVisible({ timeout: 45000 });
+      }
       await conversationItem.click();
 
       // Wait for conversation view to mount (Supabase query 1-5s on free tier)
