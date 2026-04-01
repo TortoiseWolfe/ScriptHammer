@@ -1,8 +1,8 @@
 <!-- E2E FIX LOOP PRIMING PROMPT — paste into /loop 30m -->
 
 ```
-Fix ScriptHammer E2E tests until ALL 12 shards pass (4 shards × 3 browsers).
-Current state: 8/12 green. Failing: all three 2/4 shards + webkit 1/4.
+Fix ScriptHammer E2E tests until ALL 18 shards pass (6 shards × 3 browsers).
+Shards split from 4→6 to spread messaging tests and reduce per-shard Supabase contention.
 
 METHODOLOGY (follow strictly, no guessing):
 
@@ -54,7 +54,7 @@ METHODOLOGY (follow strictly, no guessing):
    - Push, verify new CI run starts
 
 8. KEY FILES:
-   - .github/workflows/e2e.yml — shard config, env vars, stagger delays, smoke timeout 15m
+   - .github/workflows/e2e.yml — 6 shards per browser, env vars, stagger delays, smoke timeout 15m
    - tests/e2e/auth.setup.ts — nuclear cleanup + creates keys for 3 users + injects sh_keys_*
    - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, fillMessageInput, resetEncryptionKeys,
      scrollThreadToBottom, cleanupOldMessages, ensureEncryptionKeys, performSignIn
@@ -68,7 +68,7 @@ METHODOLOGY (follow strictly, no guessing):
    - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — restoreKeysFromCache(user.id)
    - src/components/auth/SignInForm/SignInForm.tsx:136 — hasKeys() race creates duplicate keys
    - src/components/molecular/MessageThread/MessageThread.tsx:53 — VIRTUAL_SCROLL_THRESHOLD=100
-   - playwright.config.ts — workers:2, serviceWorkers:'block', retries:2 on CI
+   - playwright.config.ts — workers:2, serviceWorkers:'block', retries:2 on CI, 6-way sharding
 
 RULES:
 - NEVER skip or ignore tests — skipping is not passing

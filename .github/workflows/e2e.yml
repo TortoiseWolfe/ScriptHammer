@@ -271,7 +271,7 @@ jobs:
       fail-fast: false
       matrix:
         browser: ${{ github.event_name == 'pull_request' && fromJSON('["chromium"]') || fromJSON('["chromium", "firefox", "webkit"]') }}
-        shard: [1/4, 2/4, 3/4, 4/4]
+        shard: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6]
 
     steps:
       - name: Checkout code
@@ -347,24 +347,16 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          # Shard 2 carries the heaviest messaging tests (dual-context, 4+ Realtime channels).
-          # Give it extra time to establish subscriptions before other shards add connections.
-          if [ "$SHARD_NUM" = "2" ]; then
-            SHARD2_EXTRA=30
-          else
-            SHARD2_EXTRA=0
-          fi
+          # Stagger browser starts to reduce Supabase Cloud contention.
+          # 6 shards spread messaging tests more evenly than 4.
           if [ "$BROWSER" = "firefox" ]; then
-            DELAY=$((45 + SHARD_NUM * 10 + SHARD2_EXTRA))
-            echo "Firefox shard $SHARD_NUM: waiting ${DELAY}s (Argon2id ~40s on CI)"
+            DELAY=$((30 + SHARD_NUM * 5))
+            echo "Firefox shard $SHARD_NUM: waiting ${DELAY}s"
             sleep $DELAY
           elif [ "$BROWSER" = "webkit" ]; then
-            DELAY=$((75 + SHARD_NUM * 10 + SHARD2_EXTRA))
+            DELAY=$((60 + SHARD_NUM * 5))
             echo "WebKit shard $SHARD_NUM: waiting ${DELAY}s"
             sleep $DELAY
-          elif [ "$SHARD2_EXTRA" -gt 0 ]; then
-            echo "Chromium shard $SHARD_NUM: waiting ${SHARD2_EXTRA}s (messaging-heavy shard)"
-            sleep $SHARD2_EXTRA
           fi
 
       - name: Run E2E tests (shard ${{ matrix.shard }})
