@@ -40,8 +40,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* 2 workers on CI balances speed vs resource contention. */
-  workers: process.env.CI ? 2 : undefined,
+  /* 1 worker on CI: with 6 shards × 3 browsers = 18 parallel jobs,
+   * intra-shard parallelism causes cross-file interference (e.g.
+   * friend-requests deletes connections while encrypted-messaging
+   * verifies they exist). Sequential execution within each shard
+   * is fast enough since load is spread across 18 jobs. */
+  workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { open: 'never' }],

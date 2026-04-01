@@ -15,6 +15,8 @@ import {
   scrollThreadToBottom,
   getAdminClient,
   getUserByEmail,
+  performSignIn,
+  resetEncryptionKeys,
 } from '../utils/test-user-factory';
 
 // Track setup status
@@ -33,9 +35,19 @@ const TEST_USER_2 = {
 };
 
 /**
- * Sign in helper — uses storageState from project config; just navigates to messages
+ * Sign in helper — performs full sign-in for fresh contexts (empty storageState),
+ * then navigates to /messages with encryption key handling.
  */
-async function signIn(page: Page, _email: string, password: string) {
+async function signIn(
+  page: Page,
+  email: string,
+  password: string,
+  isPrimary: boolean
+) {
+  await performSignIn(page, email, password);
+  if (!isPrimary) {
+    await resetEncryptionKeys(page, email, password);
+  }
   await page.goto('/messages', { waitUntil: 'domcontentloaded' });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, password);
@@ -239,9 +251,9 @@ test.describe('Real-time Message Delivery (T098)', () => {
     page1 = await context1.newPage();
     page2 = await context2.newPage();
 
-    // Sign in both users
-    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password);
-    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password);
+    // Sign in both users (fresh contexts need full sign-in)
+    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password, true);
+    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password, false);
   });
 
   test.afterEach(async () => {
@@ -342,9 +354,9 @@ test.describe('Typing Indicators (T099)', () => {
     page1 = await context1.newPage();
     page2 = await context2.newPage();
 
-    // Sign in both users
-    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password);
-    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password);
+    // Sign in both users (fresh contexts need full sign-in)
+    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password, true);
+    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password, false);
   });
 
   test.afterEach(async () => {
