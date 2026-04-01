@@ -67,8 +67,8 @@ test.beforeAll(async () => {
     return;
   }
 
-  // Verify connection exists (created by auth.setup.ts)
-  const { data: conn } = await adminClient
+  // Ensure connection exists (self-heal if missing)
+  const { data: existing } = await adminClient
     .from('user_connections')
     .select('id, status')
     .or(
@@ -76,14 +76,27 @@ test.beforeAll(async () => {
     )
     .maybeSingle();
 
-  if (!conn || conn.status !== 'accepted') {
-    setupError =
-      'Connection not found or not accepted (auth.setup.ts may have failed)';
-    logger.error(setupError);
-    return;
+  if (!existing) {
+    const { error } = await adminClient.from('user_connections').insert({
+      requester_id: userA.id,
+      addressee_id: userB.id,
+      status: 'accepted',
+    });
+    if (error) {
+      setupError = `Failed to create connection: ${error.message}`;
+      logger.error(setupError);
+      return;
+    }
+    logger.info('Connection created (self-heal)');
+  } else if (existing.status !== 'accepted') {
+    await adminClient
+      .from('user_connections')
+      .update({ status: 'accepted' })
+      .eq('id', existing.id);
+    logger.info('Connection updated to accepted');
   }
 
-  // Get conversation ID for performance tests
+  // Ensure conversation exists
   const [p1, p2] =
     userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
 
@@ -95,13 +108,23 @@ test.beforeAll(async () => {
     .maybeSingle();
 
   if (!existingConv) {
-    setupError = 'Conversation not found (auth.setup.ts may have failed)';
-    logger.error(setupError);
-    return;
+    const { data: newConv, error: convError } = await adminClient
+      .from('conversations')
+      .insert({ participant_1_id: p1, participant_2_id: p2 })
+      .select('id')
+      .single();
+    if (convError || !newConv) {
+      setupError = `Failed to create conversation: ${convError?.message}`;
+      logger.error(setupError);
+      return;
+    }
+    conversationId = newConv.id;
+    logger.info('Conversation created (self-heal)', { conversationId });
+  } else {
+    conversationId = existingConv.id;
+    logger.info('Conversation already exists', { conversationId });
   }
 
-  conversationId = existingConv.id;
-  logger.info('Test data verified', { conversationId });
   setupSucceeded = true;
 });
 

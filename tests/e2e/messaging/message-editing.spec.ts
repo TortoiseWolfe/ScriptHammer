@@ -70,8 +70,8 @@ test.beforeAll(async () => {
     return;
   }
 
-  // Verify connection exists (created by auth.setup.ts)
-  const { data: conn } = await adminClient
+  // Ensure connection exists (self-heal if missing)
+  const { data: existing } = await adminClient
     .from('user_connections')
     .select('id, status')
     .or(
@@ -79,14 +79,46 @@ test.beforeAll(async () => {
     )
     .maybeSingle();
 
-  if (!conn || conn.status !== 'accepted') {
-    setupError =
-      'Connection not found or not accepted (auth.setup.ts may have failed)';
-    logger.error(setupError);
-    return;
+  if (!existing) {
+    const { error } = await adminClient.from('user_connections').insert({
+      requester_id: userA.id,
+      addressee_id: userB.id,
+      status: 'accepted',
+    });
+    if (error) {
+      setupError = `Failed to create connection: ${error.message}`;
+      logger.error(setupError);
+      return;
+    }
+    logger.info('Connection created (self-heal)');
+  } else if (existing.status !== 'accepted') {
+    await adminClient
+      .from('user_connections')
+      .update({ status: 'accepted' })
+      .eq('id', existing.id);
+    logger.info('Connection updated to accepted');
   }
 
-  logger.info('Test data verified (connection + users exist)');
+  const [p1, p2] =
+    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+  const { data: existingConv } = await adminClient
+    .from('conversations')
+    .select('id')
+    .eq('participant_1_id', p1)
+    .eq('participant_2_id', p2)
+    .maybeSingle();
+  if (!existingConv) {
+    const { error: convError } = await adminClient
+      .from('conversations')
+      .insert({ participant_1_id: p1, participant_2_id: p2 });
+    if (convError) {
+      setupError = `Failed to create conversation: ${convError.message}`;
+      logger.error(setupError);
+      return;
+    }
+    logger.info('Conversation created (self-heal)');
+  }
+
   setupSucceeded = true;
 });
 
