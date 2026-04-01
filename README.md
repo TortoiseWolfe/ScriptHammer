@@ -1,7 +1,8 @@
 <!-- E2E FIX LOOP PRIMING PROMPT — paste into /loop 30m -->
 
 ```
-Fix ScriptHammer E2E tests until ALL 12 shards pass. Current state: 4-6/12 green, ~20 shard-2 failures.
+Fix ScriptHammer E2E tests until ALL 12 shards pass (4 shards × 3 browsers).
+Current state: 8/12 green. Failing: all three 2/4 shards + webkit 1/4.
 
 METHODOLOGY (follow strictly, no guessing):
 
@@ -13,57 +14,71 @@ METHODOLOGY (follow strictly, no guessing):
 
 2. GET FAILURE DETAILS (for each failing shard):
    gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -oP "\d+ failed|\d+ passed" | tail -2
-   For EVERY unique failing test, get the EXACT error:
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -A8 "  N) \[" | head -12
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -P "  \d+\) \[" | head -12
 
-3. CODE REVIEW (mandatory before ANY fix):
-   a. Read the PRODUCTION code that the test exercises:
-      - Trace: component → hook → service → Supabase query
-      - Read the ACTUAL function signatures, not what you think they are
-      - Check what data stores are used (memory? localStorage? IndexedDB? Supabase?)
-   b. Read the TEST code end-to-end:
-      - beforeAll/beforeEach: what data does it create? what does it clean up?
-      - The failing assertion: what EXACTLY does it check? what locator/selector?
-      - afterAll/afterEach: does cleanup delete data other tests need?
-   c. Read the TEST HELPER functions:
-      - handleReAuthModal, signIn, navigateToConversation, sendMessage
-      - What do they wait for? What timeouts? What can silently fail?
-   d. Check the E2E INFRASTRUCTURE:
-      - playwright.config.ts: workers, timeouts, fullyParallel, storageState
-      - auth.setup.ts: what keys/connections/conversations does it create?
-      - e2e.yml: what env vars, what stagger delays, what server?
+3. CHECK AUTH SETUP (did key seeding work?):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<AUTH_SETUP_JOB_ID>/logs 2>&1 | grep -E "Cleaned up|Encryption keys created|Injected sh_keys|Setting up"
+   All 3 users must show "Encryption keys created". Nuclear cleanup must show "Cleaned up messaging state".
 
-4. DIAGNOSE (write it down before coding):
-   - "Test X fails because [specific reason]"
-   - "The production code does [this] but the test expects [that]"
-   - "The data is missing because [specific mechanism]"
-   If you can't write a specific diagnosis, you haven't read enough code.
+4. CHECK KEY STATE (do test contexts have correct keys?):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<SHARD_JOB_ID>/logs 2>&1 | grep "handleReAuthModal\|resetEncryptionKeys\|Current user.*cached\|Modal found\|No modal"
+   User A should show "Current user's keys cached — skipping modal" (from storageState).
+   User B should show "Modal found" then "Modal closed" (fresh deriveKeys from ReAuthModal).
+   If User B shows "Current user's keys cached", stale keys leaked — resetEncryptionKeys failed.
 
-5. CRITICAL CONTEXT (from previous session):
-   - Encryption has TWO key stores: keyManagementService (memory + localStorage sh_keys_*) AND encryptionService (IndexedDB/Dexie)
-   - Playwright storageState captures localStorage but NOT IndexedDB
-   - sendMessage() → encrypt() → getPrivateKey() reads IndexedDB → returns null → silent encryption failure
-   - restoreKeysFromCache() was updated to populate IndexedDB via storePrivateKey() — verify it actually works
-   - The useConversationRealtime hook decrypts messages using encryptionService which needs IndexedDB keys
-   - auth.setup.ts creates keys for 3 users (primary, secondary, tertiary)
-   - fullyParallel: false on CI, 2 workers, domcontentloaded, chatsTab.waitFor(30s)
-   - Key files: src/services/messaging/key-service.ts, src/lib/messaging/encryption.ts,
-     src/lib/messaging/database.ts, src/hooks/useConversationRealtime.ts
+5. CHECK FOR DUPLICATE KEYS (root cause of ECDH mismatch):
+   SignInForm.tsx calls hasKeys() during sign-in. On Supabase free tier, getSession() races
+   with session persistence → returns null → hasKeys() returns false → initializeKeys() creates
+   a SECOND key row with a different salt. resetEncryptionKeys() was added to fix this but
+   must be called AFTER every performSignIn() for non-primary users.
+   Verify: gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep "Reset keys"
 
-6. FIX (only after diagnosis):
+6. KNOWN ROOT CAUSES (confirmed by diagnostic data):
+   a. ECDH key mismatch: User B gets keys=2 in DB because SignInForm.initializeKeys() races
+      with session persistence. resetEncryptionKeys() deletes duplicates + clears localStorage.
+   b. browser.newContext() inherits browser profile localStorage — MUST pass
+      { storageState: { cookies: [], origins: [] } } for truly empty contexts.
+   c. Virtual scrolling: 100+ accumulated messages trigger TanStack Virtual, hiding optimistic
+      messages from DOM. cleanupOldMessages() in beforeAll + scrollThreadToBottom() after send.
+   d. Service workers intercept page.goto/reload → ERR_ABORTED. serviceWorkers: 'block' in
+      playwright.config.ts shared use config.
+   e. WebKit useSearchParams() doesn't fire in static export Suspense — click conversation
+      in sidebar instead of using ?conversation=UUID URL param.
+   f. WebKit Supabase operations take 30-60s (vs 15s Chromium). Timeouts must be 60s.
+
+7. FIX (only after diagnosis):
    - Docker must be running: docker compose exec scripthammer echo alive
    - Type check: docker compose exec scripthammer npx tsc --noEmit
    - Unit test: docker compose exec scripthammer pnpm test
    - Commit via Docker with descriptive message explaining the ROOT CAUSE
-   - Push with 10min timeout, verify new CI run starts
+   - Push, verify new CI run starts
+
+8. KEY FILES:
+   - .github/workflows/e2e.yml — shard config, env vars, stagger delays, smoke timeout 15m
+   - tests/e2e/auth.setup.ts — nuclear cleanup + creates keys for 3 users + injects sh_keys_*
+   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, fillMessageInput, resetEncryptionKeys,
+     scrollThreadToBottom, cleanupOldMessages, ensureEncryptionKeys, performSignIn
+   - tests/e2e/messaging/encrypted-messaging.spec.ts — multi-user send/receive with ECDH
+   - tests/e2e/messaging/complete-user-workflow.spec.ts — friend request + messaging flow
+   - tests/e2e/messaging/message-editing.spec.ts — send + edit/delete with char-count wait
+   - src/services/messaging/key-service.ts — deriveKeys, initializeKeys, restoreKeysFromCache(userId),
+     hasKeys (races with session), getUserPublicKey (order by created_at DESC)
+   - src/services/messaging/message-service.ts — sendMessage (silent queue on RLS failure),
+     getMessageHistory (decrypt with ECDH, "Encrypted with previous keys" on failure)
+   - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — restoreKeysFromCache(user.id)
+   - src/components/auth/SignInForm/SignInForm.tsx:136 — hasKeys() race creates duplicate keys
+   - src/components/molecular/MessageThread/MessageThread.tsx:53 — VIRTUAL_SCROLL_THRESHOLD=100
+   - playwright.config.ts — workers:2, serviceWorkers:'block', retries:2 on CI
 
 RULES:
-- NEVER skip or ignore tests
-- NEVER guess — read code and logs first
+- NEVER skip or ignore tests — skipping is not passing
+- NEVER guess — read logs and code first
 - NEVER increase timeouts without fixing the underlying issue
-- If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate from scratch
-- If you've tried 3+ fixes for the same test, you're missing something fundamental — do a deeper code review
+- If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate
+- If you've tried 3+ fixes for the same test, you're missing something fundamental
 - Track: what failed, what the actual error was, what you changed, whether it helped
+- Every multi-user test MUST call resetEncryptionKeys() after performSignIn() for User B
+- Every browser.newContext() MUST use { storageState: { cookies: [], origins: [] } }
 ```
 
 # ScriptHammer - Modern Next.js Template with PWA
