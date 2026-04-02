@@ -81,16 +81,17 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Reload page
-    await page.reload();
+    // Reload page — wait for DOM to be ready before asserting
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Wait for React hydration + usePaymentConsent useEffect to fire
-    // (same wait as beforeEach — CI contention can delay hydration >5s)
+    // Wait for React hydration + usePaymentConsent useEffect to fire.
+    // Firefox under CI contention (18 jobs) can take 30s+ for ProtectedRoute
+    // auth check + React hydration + useEffect chain.
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
-      .waitFor({ state: 'visible', timeout: 15000 });
+      .waitFor({ state: 'visible', timeout: 30000 });
 
     // Consent section should not appear
     await expect(
@@ -130,15 +131,15 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Reload page
-    await page.reload();
+    // Reload page — wait for DOM before asserting
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
     // Wait for React hydration + usePaymentConsent useEffect to fire
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
-      .waitFor({ state: 'visible', timeout: 15000 });
+      .waitFor({ state: 'visible', timeout: 30000 });
 
     // GDPR section should not reappear
     const gdprHeading = page.getByRole('heading', {

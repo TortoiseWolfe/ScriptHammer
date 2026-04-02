@@ -236,7 +236,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await handleReAuthModal(pageA, USER_A.password);
       // Now click the Connections tab (auth is hydrated, sidebar is visible)
       const connectionsTab = pageA.getByRole('tab', { name: /Connections/i });
-      await connectionsTab.waitFor({ state: 'visible', timeout: 15000 });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 45000 });
       await connectionsTab.click();
       await pageA.waitForTimeout(500);
       console.log('Step 2: Connections page loaded');

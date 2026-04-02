@@ -212,10 +212,10 @@ test.describe('Encrypted Messaging Flow', () => {
       );
       await handleReAuthModal(pageA, USER_A.password);
 
-      // Wait for conversation view to mount
+      // Wait for conversation view to mount (handleReAuthModal + Argon2id can take 30-45s on CI)
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 45000,
+        timeout: 60000,
       });
 
       // ===== STEP 5: User A sends an encrypted message =====

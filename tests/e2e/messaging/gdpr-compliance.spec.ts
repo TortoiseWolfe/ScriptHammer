@@ -45,7 +45,7 @@ test.describe('GDPR Data Export', () => {
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
       state: 'visible',
-      timeout: 10000,
+      timeout: 30000,
     });
     await waitForUIStability(page);
     await dismissCookieBanner(page);
@@ -191,7 +191,7 @@ test.describe('GDPR Account Deletion', () => {
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
       state: 'visible',
-      timeout: 10000,
+      timeout: 30000,
     });
     await waitForUIStability(page);
     await dismissCookieBanner(page);
@@ -395,7 +395,7 @@ test.describe('GDPR Accessibility', () => {
     // Wait for account settings heading to be visible
     await page.waitForSelector('h1:has-text("Account Settings")', {
       state: 'visible',
-      timeout: 10000,
+      timeout: 30000,
     });
     await waitForUIStability(page);
     await dismissCookieBanner(page);

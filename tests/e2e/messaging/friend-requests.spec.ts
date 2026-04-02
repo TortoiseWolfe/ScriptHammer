@@ -222,7 +222,7 @@ test.describe('Friend Request Flow', () => {
       const connectionsTab = pageA.getByRole('tab', {
         name: /Connections/i,
       });
-      await connectionsTab.waitFor({ state: 'visible', timeout: 30000 });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 60000 });
       await connectionsTab.click();
       await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
