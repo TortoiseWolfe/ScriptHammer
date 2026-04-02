@@ -7,6 +7,10 @@ import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('GDPR Payment Consent Flow', () => {
+  // Tests with page.reload() need extra time: beforeEach hydration (15s) +
+  // in-test reload hydration (30s) + assertions exceed the default 30s timeout
+  test.describe.configure({ timeout: 60000 });
+
   test.beforeEach(async ({ page }) => {
     // Clear consent keys via JS before navigating. Using evaluate on a
     // neutral URL avoids the ProtectedRoute auth race that occurs when
