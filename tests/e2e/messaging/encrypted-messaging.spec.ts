@@ -58,6 +58,7 @@ test.describe('Encrypted Messaging Flow', () => {
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;
   let setupError = '';
+  let testConversationId = '';
 
   // Verify test data created by auth.setup.ts exists
   test.beforeAll(async () => {
@@ -137,17 +138,21 @@ test.describe('Encrypted Messaging Flow', () => {
       .maybeSingle();
 
     if (!existingConv) {
-      const { error: convError } = await adminClient
+      const { data: newConv, error: convError } = await adminClient
         .from('conversations')
-        .insert({ participant_1_id: p1, participant_2_id: p2 });
-      if (convError) {
-        setupError = `Failed to create conversation: ${convError.message}`;
+        .insert({ participant_1_id: p1, participant_2_id: p2 })
+        .select('id')
+        .single();
+      if (convError || !newConv) {
+        setupError = `Failed to create conversation: ${convError?.message}`;
         console.error(`❌ ${setupError}`);
         return;
       }
-      console.log('✓ Conversation created (self-heal)');
+      testConversationId = newConv.id;
+      console.log('✓ Conversation created (self-heal):', testConversationId);
     } else {
-      console.log('✓ Conversation already exists');
+      testConversationId = existingConv.id;
+      console.log('✓ Conversation already exists:', testConversationId);
     }
 
     setupSucceeded = true;
@@ -196,38 +201,16 @@ test.describe('Encrypted Messaging Flow', () => {
       // ECDH. This deletes duplicates and clears the stale localStorage cache.
       await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
 
-      // ===== STEP 3: User A navigates to messages =====
-      await pageA.goto(`${BASE_URL}/messages`, {
-        waitUntil: 'domcontentloaded',
-      });
+      // ===== STEP 3: User A navigates directly to conversation =====
+      // Navigate via URL with conversation ID to bypass the slow conversation
+      // list query (3+ minutes on Supabase free tier with 18 concurrent CI jobs).
+      await pageA.goto(
+        `${BASE_URL}/messages?conversation=${testConversationId}`,
+        { waitUntil: 'domcontentloaded' }
+      );
       await handleReAuthModal(pageA, USER_A.password);
-      await expect(pageA).toHaveURL(/.*\/messages/);
 
-      // Ensure we're on the Chats tab (default, but explicit click is reliable)
-      const chatsTab = pageA.getByRole('tab', { name: /Chats/i });
-      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-      await chatsTab.click();
-
-      // ===== STEP 4: User A selects conversation with User B =====
-      const conversationItem = pageA
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-
-      // On Supabase free tier with 18 concurrent CI jobs, the conversation
-      // list query can take 30s+. If not found, reload to retry the query.
-      try {
-        await expect(conversationItem).toBeVisible({ timeout: 30000 });
-      } catch {
-        await pageA.reload();
-        await dismissCookieBanner(pageA);
-        await handleReAuthModal(pageA, USER_A.password);
-        await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-        await chatsTab.click();
-        await expect(conversationItem).toBeVisible({ timeout: 45000 });
-      }
-      await conversationItem.click();
-
-      // Wait for conversation view to mount (Supabase query 1-5s on free tier)
+      // Wait for conversation view to mount
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
         timeout: 45000,
@@ -252,19 +235,12 @@ test.describe('Encrypted Messaging Flow', () => {
       // Brief delay for Supabase replication before User B reads
       await pageA.waitForTimeout(2000);
 
-      // ===== STEP 7: User B navigates to messages =====
-      await pageB.goto(`${BASE_URL}/messages`, {
-        waitUntil: 'domcontentloaded',
-      });
+      // ===== STEP 7: User B navigates directly to conversation =====
+      await pageB.goto(
+        `${BASE_URL}/messages?conversation=${testConversationId}`,
+        { waitUntil: 'domcontentloaded' }
+      );
       await handleReAuthModal(pageB, USER_B.password);
-      await expect(pageB).toHaveURL(/.*\/messages/);
-
-      // ===== STEP 8: User B opens conversation with User A =====
-      const conversationItemB = pageB
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationItemB).toBeVisible({ timeout: 45000 });
-      await conversationItemB.click();
       await pageB.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
         timeout: 45000,
