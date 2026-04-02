@@ -207,10 +207,16 @@ export default function ConversationView({
 
       if (result.queued) {
         // Offline OR send-failed-and-queued. Show the optimistic bubble.
-        // The queue's auto-sync (on 'online' event / poll) will eventually
-        // deliver it; onSynced → loadMessages() swaps in the real one.
+        console.log(
+          '[ConversationView] message queued (offline/retry):',
+          result.message.id
+        );
         addPending(result.message.id, content);
       } else {
+        console.log(
+          '[ConversationView] message sent, appending optimistic:',
+          result.message.id
+        );
         // Optimistically append the sent message so it appears immediately.
         // Supabase free tier can have read-after-write latency — an immediate
         // loadMessages() query may return stale results (empty if first message).
@@ -234,11 +240,12 @@ export default function ConversationView({
         setMessages((prev) => [...prev, optimistic]);
       }
     } catch (err: unknown) {
-      setError(
+      const msg =
         err instanceof Error
           ? err.message
-          : 'Failed to send message. Please try again.'
-      );
+          : 'Failed to send message. Please try again.';
+      console.error('[ConversationView] sendMessage failed:', msg, err);
+      setError(msg);
     } finally {
       setSending(false);
     }
