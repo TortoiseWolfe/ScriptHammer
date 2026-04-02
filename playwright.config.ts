@@ -150,6 +150,8 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        // auth.setup.ts runs via the 'setup' project dependency, not directly
+        '**/auth.setup.ts',
         // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
         // Running them in the chromium project triggers a missing webkit binary error
         '**/tests/blog-mobile-ux-iphone.spec.ts',
@@ -172,11 +174,11 @@ export default defineConfig({
     {
       name: 'firefox',
       testIgnore: [
-        '**/examples/**', // POM tutorial, not production tests
+        '**/examples/**',
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
+        '**/auth.setup.ts',
         '**/tests/blog-mobile-ux-iphone.spec.ts',
         '**/tests/blog-touch-targets.spec.ts',
         '**/tests/mobile-horizontal-scroll.spec.ts',
@@ -193,10 +195,11 @@ export default defineConfig({
     {
       name: 'webkit',
       testIgnore: [
-        '**/examples/**', // POM tutorial, not production tests
+        '**/examples/**',
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        '**/auth.setup.ts',
       ],
       dependencies: process.env.CI ? [] : ['setup'],
       use: {
@@ -210,10 +213,11 @@ export default defineConfig({
       (viewport) => ({
         name: `Mobile - ${viewport.name}`,
         testIgnore: [
-          '**/examples/**', // POM tutorial, not production tests
+          '**/examples/**',
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
+          '**/auth.setup.ts',
         ],
         dependencies: process.env.CI ? [] : ['setup'],
         use: {
@@ -228,10 +232,11 @@ export default defineConfig({
       (viewport) => ({
         name: `Tablet - ${viewport.name}`,
         testIgnore: [
-          '**/examples/**', // POM tutorial, not production tests
+          '**/examples/**',
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
+          '**/auth.setup.ts',
         ],
         dependencies: process.env.CI ? [] : ['setup'],
         use: {
