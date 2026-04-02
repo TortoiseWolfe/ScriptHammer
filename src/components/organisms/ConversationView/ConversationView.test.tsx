@@ -29,6 +29,14 @@ vi.mock('@/hooks/usePendingMessages', () => ({
   }),
 }));
 
+vi.mock('@/services/messaging/key-service', () => ({
+  keyManagementService: {
+    getCurrentKeys: vi
+      .fn()
+      .mockReturnValue({ privateKey: 'mock', publicKey: 'mock' }),
+  },
+}));
+
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
     auth: {

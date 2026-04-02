@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { messageService } from '@/services/messaging/message-service';
+import { keyManagementService } from '@/services/messaging/key-service';
 import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage } from '@/types/messaging';
@@ -44,6 +45,9 @@ export default function ConversationView({
   const [cursor, setCursor] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [participantName, setParticipantName] = useState('Unknown User');
+  const [keysReady, setKeysReady] = useState(
+    () => !!keyManagementService.getCurrentKeys()
+  );
 
   // ── Participant resolution ─────────────────────────────────────────
   // Two-hop query: conversations → user_profiles. Dynamic import keeps
@@ -107,6 +111,14 @@ export default function ConversationView({
   // ── Message history with cursor pagination ─────────────────────────
   const loadMessages = useCallback(
     async (loadMore = false) => {
+      // Skip if encryption keys aren't ready yet. EncryptionKeyGate is
+      // deriving them in parallel via ReAuthModal. Once keys are available,
+      // the Realtime subscription or EncryptionKeyGate's onSuccess callback
+      // will trigger a re-render that re-runs this effect.
+      if (!keyManagementService.getCurrentKeys()) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -164,18 +176,9 @@ export default function ConversationView({
         setHasMore(result.has_more);
         setCursor(result.cursor);
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error ? err.message : 'Failed to load messages';
-
-        // If encryption keys aren't available yet (EncryptionKeyGate is
-        // still deriving via ReAuthModal), retry after 2s instead of
-        // showing an error. Keys will be ready within a few seconds.
-        if (msg.includes('encryption keys are not available')) {
-          setTimeout(() => loadMessages(loadMore), 2000);
-          return;
-        }
-
-        setError(msg);
+        setError(
+          err instanceof Error ? err.message : 'Failed to load messages'
+        );
       } finally {
         setLoading(false);
       }
@@ -202,6 +205,22 @@ export default function ConversationView({
   useEffect(() => {
     loadConversationInfo().then(() => loadMessages());
   }, [conversationId, loadConversationInfo, loadMessages]);
+
+  // ── Detect when encryption keys become available ──────────────────
+  // loadMessages() guards against missing keys (returns early). When
+  // EncryptionKeyGate derives keys via ReAuthModal, we need to re-trigger
+  // the load. Poll briefly (only when keys aren't ready yet).
+  useEffect(() => {
+    if (keysReady) return;
+    const interval = setInterval(() => {
+      if (keyManagementService.getCurrentKeys()) {
+        setKeysReady(true);
+        clearInterval(interval);
+        loadMessages();
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [keysReady, loadMessages]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handleSendMessage = async (content: string) => {
