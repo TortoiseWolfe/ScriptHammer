@@ -412,20 +412,12 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       });
       console.log('Step 11: Reply received');
 
-      // STEP 12: Sign out both users
-      console.log('Step 12: Signing out...');
-      await pageA.goto('/profile');
-      const signOutA = pageA.getByRole('button', { name: /sign out|logout/i });
-      if (await signOutA.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await signOutA.click({ force: true });
-      }
-
-      await pageB.goto('/profile');
-      const signOutB = pageB.getByRole('button', { name: /sign out|logout/i });
-      if (await signOutB.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await signOutB.click({ force: true });
-      }
-      console.log('Step 12: Signed out');
+      // STEP 12: Skip sign-out — context.close() in finally block handles cleanup.
+      // Calling supabase.auth.signOut() revokes the refresh token server-side,
+      // which invalidates the storageState for ALL subsequent tests in this shard.
+      // This was the root cause of shard 2/6 failures: every test after this one
+      // got "invalid refresh token" → redirect to /sign-in.
+      console.log('Step 12: Skipping sign-out (context.close handles cleanup)');
 
       // STEP 13: Verify encryption
       console.log('Step 13: Verifying encryption...');
