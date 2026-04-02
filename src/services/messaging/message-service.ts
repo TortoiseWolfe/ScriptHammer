@@ -91,12 +91,29 @@ export class MessageService {
       const result = await supabase.auth.getSession();
       session = result.data?.session;
       authError = result.error;
+      console.log(`[sendMessage] getSession attempt ${attempt + 1}/3:`, {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        error: authError?.message || null,
+        expiresAt: session?.expires_at,
+        tokenPrefix: session?.access_token?.slice(0, 20),
+      });
       if (session?.user) break;
       if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
     }
     const user = session?.user;
 
     if (authError || !user) {
+      // Log localStorage keys for debugging
+      if (typeof window !== 'undefined') {
+        const authKeys = Object.keys(localStorage).filter(
+          (k) => k.includes('auth') || k.includes('sb-')
+        );
+        console.error(
+          '[sendMessage] AUTH FAILED. localStorage auth keys:',
+          authKeys
+        );
+      }
       throw new AuthenticationError('You must be signed in to send messages');
     }
 
