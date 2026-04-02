@@ -73,26 +73,20 @@ test.describe('GDPR Payment Consent Flow', () => {
   });
 
   test('should remember consent across page reloads', async ({ page }) => {
-    // Wait for consent section to fully render before clicking
-    const acceptButton = page.getByRole('button', { name: /Accept/i });
-    await expect(acceptButton).toBeVisible();
-    await acceptButton.click();
-
-    // Verify Step 2 appears (showConsent=false set synchronously in onClick)
-    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
+    // Accept consent
+    await page.getByRole('button', { name: /Accept/i }).click();
+    await page.waitForTimeout(500);
 
     // Reload page
     await page.reload();
     await dismissCookieBanner(page);
 
-    // After reload, usePaymentConsent's useEffect reads localStorage and
-    // sets isReady + hasConsent atomically. Wait for either Step heading
-    // to confirm the page has hydrated and the effect has fired, then
-    // assert Step 2 specifically. Firefox on CI needs more time for
-    // React hydration under resource contention (18 concurrent jobs).
-    await expect(page.getByRole('heading', { name: /Step [12]/i })).toBeVisible(
-      { timeout: 15000 }
-    );
+    // Consent section should not appear
+    await expect(
+      page.getByRole('heading', { name: /Step 1: GDPR Consent/i })
+    ).not.toBeVisible({ timeout: 3000 });
+
+    // Step 2 should be visible instead
     await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
   });
 
@@ -147,14 +141,13 @@ test.describe('GDPR Payment Consent Flow', () => {
   });
 
   test('should allow proceeding after consent', async ({ page }) => {
-    // Wait for Accept button to be rendered and clickable
-    const acceptButton = page.getByRole('button', { name: /Accept/i });
-    await expect(acceptButton).toBeVisible();
-    await acceptButton.click();
+    // Accept consent
+    await page.getByRole('button', { name: /Accept/i }).click();
+    await page.waitForTimeout(1000);
 
-    // onClick sets showConsent=false synchronously → Step 2 renders
+    // Should be able to see payment options (Step 2)
     const step2 = page.getByRole('heading', { name: /Step 2/i });
-    await expect(step2).toBeVisible();
+    await expect(step2).toBeVisible({ timeout: 5000 });
   });
 
   test.skip('should allow consent reset', async ({ page }) => {

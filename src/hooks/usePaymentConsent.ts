@@ -14,10 +14,6 @@ export interface PaymentConsentState {
   hasConsent: boolean;
   showModal: boolean;
   consentDate: string | null;
-  /** True once localStorage has been read (after hydration). Use this to
-   *  suppress rendering until the consent state is known — prevents a
-   *  flash of the consent section on reload. */
-  isReady: boolean;
 }
 
 export interface PaymentConsentActions {
@@ -49,32 +45,32 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
   const [hasConsent, setHasConsent] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [consentDate, setConsentDate] = useState<string | null>(null);
-  const [isReady, setIsReady] = useState(false);
 
-  // Read consent from localStorage after hydration. In Next.js static
-  // export, useState initializers run on the server where localStorage
-  // is unavailable, and React doesn't re-run them on hydration. This
-  // effect fires once on mount to sync state with persisted consent.
-  // Sets isReady=true in the same batch so consumers can gate rendering.
   useEffect(() => {
+    // Only run in browser
     if (typeof window === 'undefined') return;
+
     try {
       const consent = localStorage.getItem('payment_consent');
       const date = localStorage.getItem('payment_consent_date');
+
       setConsentDate(date);
+
       if (consent === 'granted') {
         setHasConsent(true);
         setShowModal(false);
       } else {
+        // Show modal if no consent or declined
+        // Note: We retry each visit (don't permanently store 'declined' per GDPR)
         setHasConsent(false);
         setShowModal(true);
       }
     } catch (error) {
+      // localStorage blocked by tracking prevention - default to showing modal
       logger.warn('localStorage access blocked', { error });
       setHasConsent(false);
       setShowModal(true);
     }
-    setIsReady(true);
   }, []);
 
   const grantConsent = () => {
@@ -125,7 +121,6 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     hasConsent,
     showModal,
     consentDate,
-    isReady,
     grantConsent,
     declineConsent,
     resetConsent,

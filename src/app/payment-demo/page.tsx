@@ -17,15 +17,19 @@ import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 
 function PaymentDemoContent() {
   const { user } = useAuth();
-  const { hasConsent, isReady, grantConsent } = usePaymentConsent();
+  const { hasConsent, grantConsent } = usePaymentConsent();
+  const [showConsent, setShowConsent] = useState(true);
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  // Derive showConsent from hasConsent — no redundant state.
-  // Gate on isReady to prevent flash: isReady becomes true in the same
-  // React batch as hasConsent, so the first render after hydration
-  // already knows the correct consent state from localStorage.
-  const showConsent = !hasConsent;
+  React.useEffect(() => {
+    setMounted(true);
+    // Sync showConsent with persisted consent state
+    if (hasConsent) {
+      setShowConsent(false);
+    }
+  }, [hasConsent]);
 
   const handlePaymentSuccess = (paymentIntentId: string) => {
     setPaymentResultId(paymentIntentId);
@@ -53,7 +57,7 @@ function PaymentDemoContent() {
           Explore the payment system features: Stripe integration, GDPR consent,
           offline queue, and transaction history.
         </p>
-        {isReady && (
+        {mounted && (
           <div className="alert alert-info mt-4">
             <span>
               Logged in as: {user?.email} - User ID: {user?.id}
@@ -62,10 +66,8 @@ function PaymentDemoContent() {
         )}
       </div>
 
-      {/* GDPR Consent — gate on isReady to prevent flash during hydration.
-          isReady and hasConsent are set in the same useEffect batch, so
-          the first render after hydration shows the correct section. */}
-      {isReady && showConsent && (
+      {/* GDPR Consent Modal */}
+      {showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
@@ -99,6 +101,7 @@ function PaymentDemoContent() {
                   className="btn btn-primary min-h-11 flex-1"
                   onClick={() => {
                     grantConsent(); // Persist consent to localStorage
+                    setShowConsent(false);
                   }}
                 >
                   Accept & Continue
@@ -118,8 +121,8 @@ function PaymentDemoContent() {
         </div>
       )}
 
-      {/* Payment Button Demo — also gated on isReady for hydration safety */}
-      {isReady && !showConsent && (
+      {/* Payment Button Demo */}
+      {!showConsent && (
         <div className="mb-8">
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body">
