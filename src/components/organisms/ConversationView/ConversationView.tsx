@@ -110,12 +110,6 @@ export default function ConversationView({
   // ── Message history with cursor pagination ─────────────────────────
   const loadMessages = useCallback(
     async (loadMore = false) => {
-      // Skip refresh-type loads during the send window to protect
-      // optimistic entries from read-after-write latency wipes.
-      if (!loadMore && recentSendRef.current) {
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
@@ -125,6 +119,13 @@ export default function ConversationView({
           loadMore ? cursor : null,
           50
         );
+
+        // Check send guard AFTER the async query returns — an in-flight
+        // query that started before the send must not wipe the optimistic
+        // entry with stale results.
+        if (!loadMore && recentSendRef.current) {
+          return;
+        }
 
         if (loadMore) {
           setMessages((prev) => [...result.messages, ...prev]);
@@ -254,6 +255,16 @@ export default function ConversationView({
           senderName: participantName,
         };
         setMessages((prev) => [...prev, optimistic]);
+
+        // After the send guard expires (5s), refresh messages from DB
+        // to replace the optimistic entry with the real decrypted version.
+        // Without this, the Realtime-triggered loadMessages() during the
+        // guard window is blocked, and the optimistic entry never gets
+        // reconciled with the DB.
+        setTimeout(() => {
+          recentSendRef.current = false;
+          loadMessages();
+        }, 5500);
       }
     } catch (err: unknown) {
       const msg =
