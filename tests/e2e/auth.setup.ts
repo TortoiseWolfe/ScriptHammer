@@ -80,7 +80,11 @@ setup('authenticate shared test user', async ({ page }) => {
   // Locally (single process), cleanup is safe and necessary.
   // ────────────────────────────────────────────────────────────────────────
   const adminClient = getAdminClient();
-  if (adminClient && !process.env.CI) {
+  // Run cleanup when: locally (!CI) OR in the dedicated auth-setup CI job (AUTH_SETUP_JOB).
+  // Skip in per-shard runs (CI=true, AUTH_SETUP_JOB absent) to avoid 6 concurrent cleanups.
+  const shouldDoFullSetup =
+    !process.env.CI || process.env.AUTH_SETUP_JOB === 'true';
+  if (adminClient && shouldDoFullSetup) {
     console.log('Cleaning up stale messaging state from previous runs...');
     const allTestEmails = [
       email,
@@ -115,8 +119,10 @@ setup('authenticate shared test user', async ({ page }) => {
         `✓ Cleaned up messaging state for ${userIds.length} test users`
       );
     }
-  } else if (process.env.CI) {
-    console.log('⏭ Skipping nuclear cleanup on CI (auth-setup job did it)');
+  } else {
+    console.log(
+      '⏭ Skipping nuclear cleanup (per-shard run, auth-setup job did it)'
+    );
   }
 
   // Set up encryption keys for ALL test users via admin API, then inject
@@ -195,14 +201,14 @@ setup('authenticate shared test user', async ({ page }) => {
   // Per-shard creation races with other shards and causes duplicate key
   // violations, missing state, and connection conflicts.
   // ────────────────────────────────────────────────────────────────────────
-  if (process.env.CI) {
+  if (!shouldDoFullSetup) {
     console.log(
-      '⏭ Skipping key/connection/conversation creation on CI (auth-setup job did it)'
+      '⏭ Skipping key/connection/conversation creation (auth-setup job did it)'
     );
     console.log('✓ Centralized test data setup complete');
   }
 
-  if (!process.env.CI) {
+  if (shouldDoFullSetup) {
     const additionalUsers = [
       {
         email: process.env.TEST_USER_SECONDARY_EMAIL,

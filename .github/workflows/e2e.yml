@@ -244,6 +244,7 @@ jobs:
         run: pnpm exec playwright test --project=setup --reporter=list --timeout=180000
         env:
           CI: true
+          AUTH_SETUP_JOB: true
           SKIP_WEBSERVER: true
           BASE_URL: http://localhost:3000
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
