@@ -150,8 +150,6 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        // auth.setup.ts runs via the 'setup' project dependency, not directly
-        '**/auth.setup.ts',
         // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
         // Running them in the chromium project triggers a missing webkit binary error
         '**/tests/blog-mobile-ux-iphone.spec.ts',
@@ -160,11 +158,7 @@ export default defineConfig({
         '**/tests/mobile-navigation.spec.ts',
         '**/tests/mobile-orientation.spec.ts',
       ],
-      // On CI, the auth-setup job creates storage-state-auth.json and uploads
-      // it as an artifact. Each shard downloads it. Running the setup project
-      // AGAIN inside each shard causes 6 concurrent nuclear cleanups that race
-      // and delete each other's encryption keys/connections/conversations.
-      dependencies: process.env.CI ? [] : ['setup'],
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -178,14 +172,13 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        '**/auth.setup.ts',
         '**/tests/blog-mobile-ux-iphone.spec.ts',
         '**/tests/blog-touch-targets.spec.ts',
         '**/tests/mobile-horizontal-scroll.spec.ts',
         '**/tests/mobile-navigation.spec.ts',
         '**/tests/mobile-orientation.spec.ts',
       ],
-      dependencies: process.env.CI ? [] : ['setup'],
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Firefox'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -199,9 +192,8 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        '**/auth.setup.ts',
       ],
-      dependencies: process.env.CI ? [] : ['setup'],
+      dependencies: ['setup'],
       use: {
         ...devices['Desktop Safari'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -217,9 +209,8 @@ export default defineConfig({
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
-          '**/auth.setup.ts',
         ],
-        dependencies: process.env.CI ? [] : ['setup'],
+        dependencies: ['setup'],
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -236,9 +227,8 @@ export default defineConfig({
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
-          '**/auth.setup.ts',
         ],
-        dependencies: process.env.CI ? [] : ['setup'],
+        dependencies: ['setup'],
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
