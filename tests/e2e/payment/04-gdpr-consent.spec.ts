@@ -85,24 +85,22 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Reload page — wait for DOM to be ready before asserting
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    // Re-navigate (not reload) — page.reload() loses Supabase session on
+    // Firefox/WebKit because token refresh races with ProtectedRoute.
+    // page.goto() re-applies storageState cookies from the Playwright context.
+    await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Wait for React hydration + usePaymentConsent useEffect to fire.
-    // Firefox under CI contention (18 jobs) can take 30s+ for ProtectedRoute
-    // auth check + React hydration + useEffect chain.
+    // Wait for hydration
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
       .waitFor({ state: 'visible', timeout: 30000 });
 
-    // Consent section should not appear
+    // Consent should be remembered — Step 2 visible, not Step 1
     await expect(
       page.getByRole('heading', { name: /Step 1: GDPR Consent/i })
     ).not.toBeVisible({ timeout: 3000 });
-
-    // Step 2 should be visible instead
     await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
   });
 
@@ -135,11 +133,11 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Reload page — wait for DOM before asserting
-    await page.reload({ waitUntil: 'domcontentloaded' });
+    // Re-navigate (not reload) — page.reload() loses Supabase session
+    await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
-    // Wait for React hydration + usePaymentConsent useEffect to fire
+    // Wait for hydration
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
