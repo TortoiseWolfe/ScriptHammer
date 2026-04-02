@@ -54,10 +54,13 @@ export default function EncryptionKeyGate({
     if (authLoading) return;
 
     if (!user) {
-      // Don't redirect to /sign-in here — MessagingGate handles that.
-      // Redirecting from EncryptionKeyGate during Supabase token refresh
-      // (when user is transiently null) destroys the active conversation.
-      // Just wait for the auth context to restore the user.
+      // No user after auth finished loading — let ProtectedRoute handle
+      // the redirect. Clear checkingKeys so the loading overlay disappears
+      // and the page can render (ProtectedRoute wraps this component).
+      // Previously this returned early without clearing checkingKeys,
+      // causing the loading overlay to stay forever — blocking all
+      // messaging E2E tests that waited for it to dismiss.
+      setCheckingKeys(false);
       return;
     }
 

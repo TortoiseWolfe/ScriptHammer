@@ -47,8 +47,8 @@ export default function PWAInstall() {
         navigator.serviceWorker.register(swUrl).then(
           (registration) => {
             logger.info('Service Worker registered', {
-              scope: registration.scope,
-              state: registration.active?.state || 'installing',
+              scope: registration?.scope,
+              state: registration?.active?.state || 'installing',
             });
 
             // Force update check
