@@ -8,21 +8,25 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('GDPR Payment Consent Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to payment-demo (auth provided by storageState from project config)
-    await page.goto('/payment-demo');
-    await dismissCookieBanner(page);
-
-    // Clear only consent keys — NOT cookies (which contain the auth session).
-    // Clearing cookies destroys the Supabase session, causing auth failures
-    // on page.reload() in tests like "should remember consent across reloads".
+    // Clear consent keys via JS before navigating. Using evaluate on a
+    // neutral URL avoids the ProtectedRoute auth race that occurs when
+    // clearing localStorage mid-page then reloading — the reload causes
+    // AuthContext to re-read the session while ProtectedRoute checks auth,
+    // and on slow Supabase free tier the auth check can fail.
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
     await page.evaluate(() => {
       localStorage.removeItem('payment_consent');
       localStorage.removeItem('gdpr_consent');
     });
-
-    // Reload so the page sees the cleared consent state
-    await page.reload();
+    await page.goto('/payment-demo');
     await dismissCookieBanner(page);
+
+    // Wait for either consent section or Step 2 to appear (confirms
+    // ProtectedRoute + usePaymentConsent hydration completed)
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 });
   });
 
   test('should show consent section on first visit', async ({ page }) => {

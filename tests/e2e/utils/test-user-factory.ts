@@ -1024,12 +1024,37 @@ export async function gotoWithRetry(
 export async function resetEncryptionKeys(
   page: Page,
   email: string,
-  password: string
+  _password: string
 ): Promise<void> {
-  // Re-create single correct key in DB
-  await ensureEncryptionKeys(email, password);
+  // Delete DUPLICATE keys created by SignInForm's hasKeys() race condition,
+  // keeping only the ORIGINAL key (created by auth.setup.ts with the correct
+  // salt). All 18 CI shards share the same Supabase DB — deleting+recreating
+  // with a new random salt would break any other shard mid-encryption.
+  const admin = getAdminClient();
+  if (admin) {
+    const user = await getUserByEmail(email);
+    if (user) {
+      // Keep only the OLDEST key (the one auth.setup.ts created)
+      const { data: keys } = await admin
+        .from('user_encryption_keys')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .order('created_at', { ascending: true });
 
-  // Clear stale cached keys from localStorage
+      if (keys && keys.length > 1) {
+        // Delete all but the oldest (auth.setup.ts) key
+        const idsToDelete = keys.slice(1).map((k) => k.id);
+        await admin.from('user_encryption_keys').delete().in('id', idsToDelete);
+        console.log(
+          `[resetEncryptionKeys] Deleted ${idsToDelete.length} duplicate keys for ${email}`
+        );
+      }
+    }
+  }
+
+  // Clear stale cached keys from localStorage so EncryptionKeyGate
+  // shows ReAuthModal → deriveKeys() with the correct salt from DB
   await page.evaluate(() => {
     Object.keys(localStorage)
       .filter((k) => k.startsWith('sh_keys_'))
