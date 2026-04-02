@@ -189,6 +189,18 @@ setup('authenticate shared test user', async ({ page }) => {
     }
   }
 
+  // Log localStorage keys before saving (diagnostic: are auth tokens present?)
+  const lsKeys = await page.evaluate(() => Object.keys(localStorage));
+  console.log('localStorage keys before storageState save:', lsKeys);
+  const authKey = lsKeys.find(
+    (k) => k.includes('auth-token') || k.includes('sb-')
+  );
+  if (authKey) {
+    console.log(`✓ Supabase auth token found: ${authKey}`);
+  } else {
+    console.error('✗ NO Supabase auth token in localStorage!');
+  }
+
   // Save authenticated browser state (localStorage + cookies).
   // Now includes sh_keys_{userId} so tests can restore keys from cache
   // without needing ReAuthModal or Argon2id derivation on every test.
