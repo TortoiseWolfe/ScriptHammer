@@ -120,15 +120,7 @@ export default function ConversationView({
         if (loadMore) {
           setMessages((prev) => [...result.messages, ...prev]);
         } else {
-          // Merge: preserve optimistic messages (isOwn, not yet in DB result)
-          // that were appended by handleSendMessage. A loadMessages() triggered
-          // by Realtime or the mount effect may return stale results due to
-          // read-after-write latency, wiping the optimistic entry.
-          setMessages((prev) => {
-            const dbIds = new Set(result.messages.map((m) => m.id));
-            const optimistic = prev.filter((m) => m.isOwn && !dbIds.has(m.id));
-            return [...result.messages, ...optimistic];
-          });
+          setMessages(result.messages);
           // Opportunistic: if we have messages, use the first non-own
           // sender name as participant fallback (covers the race where
           // loadConversationInfo hasn't resolved yet).
