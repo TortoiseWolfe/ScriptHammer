@@ -219,6 +219,19 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
+    // Diagnostic: check if storageState loaded the auth token
+    await pageA.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+    const lsKeys = await pageA.evaluate(() => Object.keys(localStorage));
+    const hasAuth = lsKeys.some(
+      (k) => k.includes('auth-token') || k.includes('sb-')
+    );
+    console.log(
+      `[complete-user-workflow] pageA localStorage keys: ${JSON.stringify(lsKeys)}`
+    );
+    console.log(
+      `[complete-user-workflow] auth token in localStorage: ${hasAuth}`
+    );
+
     let conversationId: string | null = null;
     let testMessage = '';
     let replyMessage = '';
