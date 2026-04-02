@@ -72,9 +72,12 @@ const getAdminClient = () => {
 };
 
 test.describe('Offline Message Queue', () => {
+  test.describe.configure({ timeout: 180000 });
+
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;
   let setupError = '';
+  let conversationId = '';
 
   // Verify test data created by auth.setup.ts exists
   test.beforeAll(async () => {
@@ -147,15 +150,20 @@ test.describe('Offline Message Queue', () => {
       .eq('participant_2_id', p2)
       .maybeSingle();
     if (!existingConv) {
-      const { error: convError } = await adminClient
+      const { data: newConv, error: convError } = await adminClient
         .from('conversations')
-        .insert({ participant_1_id: p1, participant_2_id: p2 });
-      if (convError) {
-        setupError = `Failed to create conversation: ${convError.message}`;
+        .insert({ participant_1_id: p1, participant_2_id: p2 })
+        .select('id')
+        .single();
+      if (convError || !newConv) {
+        setupError = `Failed to create conversation: ${convError?.message}`;
         logger.error(setupError);
         return;
       }
+      conversationId = newConv.id;
       logger.info('Conversation created (self-heal)');
+    } else {
+      conversationId = existingConv.id;
     }
 
     setupSucceeded = true;
@@ -181,36 +189,17 @@ test.describe('Offline Message Queue', () => {
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`, {
+      // ===== STEP 1: Navigate directly to conversation via URL =====
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // Wait for Chats tab to appear (auth gates must resolve first)
-      const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-      await chatsTab.click();
-      await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-
-      // Find first conversation button
-      const conversationItem = page
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationItem).toBeVisible({ timeout: 45000 });
-      await conversationItem.click();
-
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 45000,
-      });
-
-      // Wait for conversation view to mount (Supabase query 1-5s on free tier)
-      await page.waitForSelector('[data-testid="message-thread"]', {
-        state: 'visible',
-        timeout: 45000,
+        timeout: 60000,
       });
 
       // Wait for message input to confirm conversation is loaded
@@ -273,31 +262,17 @@ test.describe('Offline Message Queue', () => {
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`, {
+      // ===== STEP 1: Navigate directly to conversation via URL =====
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // Click on Chats tab to see conversations
-      const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-      {
-        await chatsTab.click();
-        await waitForUIStability(page);
-      }
-
-      const conversationItem = page
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationItem).toBeVisible({ timeout: 45000 });
-      await conversationItem.click();
-
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 45000,
+        timeout: 60000,
       });
 
       // Wait for message input
@@ -360,31 +335,17 @@ test.describe('Offline Message Queue', () => {
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`, {
+      // ===== STEP 1: Navigate directly to conversation via URL =====
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // Click on Chats tab to see conversations
-      const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-      {
-        await chatsTab.click();
-        await waitForUIStability(page);
-      }
-
-      const conversationItem = page
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationItem).toBeVisible({ timeout: 45000 });
-      await conversationItem.click();
-
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 45000,
+        timeout: 60000,
       });
 
       // Wait for message input
@@ -479,52 +440,28 @@ test.describe('Offline Message Queue', () => {
       await pageB.getByRole('button', { name: 'Sign In' }).click();
       await pageB.waitForURL(/(?!.*sign-in)/, { timeout: 15000 });
 
-      // ===== STEP 2: Both navigate to same conversation =====
-      await pageA.goto(`${BASE_URL}/messages`, {
+      // ===== STEP 2: Both navigate directly to conversation via URL =====
+      await pageA.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(pageA);
       await handleReAuthModal(pageA, USER_A.password);
-
-      // Wait for Chats tab for user A
-      const chatsTabA = pageA.getByRole('tab', { name: /Chats/i });
-      await chatsTabA.waitFor({ state: 'visible', timeout: 30000 });
-      await chatsTabA.click();
-      await pageA.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-
-      const conversationA = pageA
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationA).toBeVisible({ timeout: 45000 });
-      await conversationA.click();
-
-      // Wait for message input on page A
+      await pageA.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 60000,
+      });
       const inputA = pageA.getByRole('textbox', { name: /Message input/i });
       await expect(inputA).toBeVisible({ timeout: 45000 });
 
-      // Extract conversation ID from URL if present
-      const urlA = pageA.url();
-      const conversationId = new URL(urlA).searchParams.get('conversation');
-
-      await pageB.goto(`${BASE_URL}/messages`, {
+      await pageB.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(pageB);
       await handleReAuthModal(pageB, USER_B.password);
-
-      // Wait for Chats tab for user B
-      const chatsTabB = pageB.getByRole('tab', { name: /Chats/i });
-      await chatsTabB.waitFor({ state: 'visible', timeout: 30000 });
-      await chatsTabB.click();
-      await pageB.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-
-      const conversationB = pageB
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationB).toBeVisible({ timeout: 45000 });
-      await conversationB.click();
-
-      // Wait for message input on page B
+      await pageB.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 60000,
+      });
       const inputB = pageB.getByRole('textbox', { name: /Message input/i });
       await expect(inputB).toBeVisible({ timeout: 45000 });
 
@@ -604,31 +541,17 @@ test.describe('Offline Message Queue', () => {
     const page = await context.newPage();
 
     try {
-      // ===== STEP 1: Navigate to conversation (auth via storageState) =====
-      await page.goto(`${BASE_URL}/messages`, {
+      // ===== STEP 1: Navigate directly to conversation via URL =====
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // Click on Chats tab to see conversations
-      const chatsTab = page.getByRole('tab', { name: /Chats/i });
-      await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-      {
-        await chatsTab.click();
-        await waitForUIStability(page);
-      }
-
-      const conversationItem = page
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(conversationItem).toBeVisible({ timeout: 45000 });
-      await conversationItem.click();
-
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
-        timeout: 45000,
+        timeout: 60000,
       });
 
       // Wait for message input

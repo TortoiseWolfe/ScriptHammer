@@ -85,6 +85,13 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.reload();
     await dismissCookieBanner(page);
 
+    // Wait for React hydration + usePaymentConsent useEffect to fire
+    // (same wait as beforeEach — CI contention can delay hydration >5s)
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 });
+
     // Consent section should not appear
     await expect(
       page.getByRole('heading', { name: /Step 1: GDPR Consent/i })
@@ -127,6 +134,12 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.reload();
     await dismissCookieBanner(page);
 
+    // Wait for React hydration + usePaymentConsent useEffect to fire
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 });
+
     // GDPR section should not reappear
     const gdprHeading = page.getByRole('heading', {
       name: /Step 1: GDPR Consent/i,
@@ -147,11 +160,11 @@ test.describe('GDPR Payment Consent Flow', () => {
   test('should allow proceeding after consent', async ({ page }) => {
     // Accept consent
     await page.getByRole('button', { name: /Accept/i }).click();
-    await page.waitForTimeout(1000);
 
     // Should be able to see payment options (Step 2)
+    // CI contention can delay React state updates + re-render
     const step2 = page.getByRole('heading', { name: /Step 2/i });
-    await expect(step2).toBeVisible({ timeout: 5000 });
+    await expect(step2).toBeVisible({ timeout: 15000 });
   });
 
   test.skip('should allow consent reset', async ({ page }) => {

@@ -22,6 +22,7 @@ import {
 // Track setup status
 let setupSucceeded = false;
 let setupError = '';
+let testConversationId = '';
 
 // Test user credentials (from .env or defaults)
 const TEST_USER_1 = {
@@ -96,65 +97,36 @@ async function waitForMessageOnPage2(
  * Returns true if setup succeeded
  */
 async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
-  // Both users navigate to messages page
-  await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
-  await dismissCookieBanner(page1);
-  await handleReAuthModal(page1, TEST_USER_1.password);
+  if (!testConversationId) return false;
 
-  // User 1: Wait for Chats tab (auth gates must resolve)
-  const chatsTab1 = page1.getByRole('tab', { name: /Chats/i });
-  await chatsTab1.waitFor({ state: 'visible', timeout: 30000 });
-  await chatsTab1.click();
-  await page1.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-
-  // Find first conversation button by aria-label
-  const conversation1 = page1
-    .getByRole('button', { name: /Conversation with/ })
-    .first();
-
-  // Wait for conversation to be visible
+  // Navigate both users directly to conversation via URL
   try {
-    await expect(conversation1).toBeVisible({ timeout: 45000 });
-  } catch {
-    // No conversations exist
-    return false;
-  }
-
-  await conversation1.click();
-
-  // Wait for conversation view to mount
-  await page1.waitForSelector('[data-testid="message-thread"]', {
-    state: 'visible',
-    timeout: 45000,
-  });
-
-  const messageInput1 = page1.getByRole('textbox', { name: /Message input/i });
-  try {
+    await page1.goto(`/messages?conversation=${testConversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await dismissCookieBanner(page1);
+    await handleReAuthModal(page1, TEST_USER_1.password);
+    await page1.waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
+      timeout: 60000,
+    });
+    const messageInput1 = page1.getByRole('textbox', {
+      name: /Message input/i,
+    });
     await expect(messageInput1).toBeVisible({ timeout: 45000 });
   } catch {
     return false;
   }
 
-  // User 2: Navigate to messages and click same conversation
-  await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
-  await dismissCookieBanner(page2);
-  await handleReAuthModal(page2, TEST_USER_2.password);
-
-  const chatsTab2 = page2.getByRole('tab', { name: /Chats/i });
-  await chatsTab2.waitFor({ state: 'visible', timeout: 30000 });
-  await chatsTab2.click();
-  await page2.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-
-  const conversation2 = page2
-    .getByRole('button', { name: /Conversation with/ })
-    .first();
-
   try {
-    await expect(conversation2).toBeVisible({ timeout: 45000 });
-    await conversation2.click();
+    await page2.goto(`/messages?conversation=${testConversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await dismissCookieBanner(page2);
+    await handleReAuthModal(page2, TEST_USER_2.password);
     await page2.waitForSelector('[data-testid="message-thread"]', {
       state: 'visible',
-      timeout: 45000,
+      timeout: 60000,
     });
     const messageInput2 = page2.getByRole('textbox', {
       name: /Message input/i,
@@ -240,16 +212,20 @@ test.beforeAll(async () => {
     .eq('participant_2_id', p2)
     .maybeSingle();
   if (!existingConv) {
-    const { error: convError } = await adminClient
+    const { data: newConv, error: convError } = await adminClient
       .from('conversations')
-      .insert({ participant_1_id: p1, participant_2_id: p2 });
-    if (convError) {
-      setupError = `Failed to create conversation: ${convError.message}`;
+      .insert({ participant_1_id: p1, participant_2_id: p2 })
+      .select('id')
+      .single();
+    if (convError || !newConv) {
+      setupError = `Failed to create conversation: ${convError?.message}`;
       console.error(`❌ ${setupError}`);
       return;
     }
+    testConversationId = newConv.id;
     console.log('✓ Conversation created (self-heal)');
   } else {
+    testConversationId = existingConv.id;
     console.log('✓ Conversation already exists');
   }
 

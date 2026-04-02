@@ -35,6 +35,7 @@ const TEST_USER_2 = {
 // Track setup status
 let setupSucceeded = false;
 let setupError = '';
+let conversationId = '';
 
 // Verify test data created by auth.setup.ts exists
 test.beforeAll(async () => {
@@ -108,15 +109,20 @@ test.beforeAll(async () => {
     .eq('participant_2_id', p2)
     .maybeSingle();
   if (!existingConv) {
-    const { error: convError } = await adminClient
+    const { data: newConv, error: convError } = await adminClient
       .from('conversations')
-      .insert({ participant_1_id: p1, participant_2_id: p2 });
-    if (convError) {
-      setupError = `Failed to create conversation: ${convError.message}`;
+      .insert({ participant_1_id: p1, participant_2_id: p2 })
+      .select('id')
+      .single();
+    if (convError || !newConv) {
+      setupError = `Failed to create conversation: ${convError?.message}`;
       logger.error(setupError);
       return;
     }
+    conversationId = newConv.id;
     logger.info('Conversation created (self-heal)');
+  } else {
+    conversationId = existingConv.id;
   }
 
   setupSucceeded = true;
@@ -159,34 +165,19 @@ async function waitForUIStability(page: Page) {
 }
 
 /**
- * Navigate to conversation helper
+ * Navigate to conversation helper — uses direct URL to bypass slow sidebar query
  */
 async function navigateToConversation(page: Page) {
-  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+  await page.goto(`/messages?conversation=${conversationId}`, {
+    waitUntil: 'domcontentloaded',
+  });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
 
-  // Wait for the Chats tab to appear (auth gates must resolve first)
-  const chatsTab = page.getByRole('tab', { name: /Chats/i });
-  await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-  await chatsTab.click();
-  // Wait for tab panel to update
-  await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-  await waitForUIStability(page);
-
-  // Find first conversation button by aria-label pattern
-  const firstConversation = page
-    .getByRole('button', { name: /Conversation with/ })
-    .first();
-
-  // Wait for conversation to be visible (longer timeout for CI under shard load)
-  await expect(firstConversation).toBeVisible({ timeout: 45000 });
-  await firstConversation.click();
-
-  // Wait for conversation view to mount (Supabase query takes 1-5s on free tier)
+  // Wait for conversation view to mount
   await page.waitForSelector('[data-testid="message-thread"]', {
     state: 'visible',
-    timeout: 45000,
+    timeout: 60000,
   });
 
   // Wait for message input to be visible (indicates conversation is loaded)

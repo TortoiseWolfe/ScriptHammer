@@ -227,11 +227,11 @@ test.describe('Group Chat E2E', () => {
       await dismissCookieBanner(page);
       await handleReAuthModal(page, PRIMARY_USER.password);
 
-      // Navigate to new-group page
+      // Navigate to new-group page — sidebar takes longer on CI (auth gate + Supabase)
       const sidebar = page.locator('[data-testid="unified-sidebar"]');
-      await expect(sidebar).toBeVisible({ timeout: 15000 });
+      await expect(sidebar).toBeVisible({ timeout: 30000 });
       const newGroupLink = sidebar.locator('a:has-text("New Group")').first();
-      await expect(newGroupLink).toBeVisible({ timeout: 10000 });
+      await expect(newGroupLink).toBeVisible({ timeout: 30000 });
       await newGroupLink.click();
 
       // Wait for new-group page

@@ -150,37 +150,22 @@ async function waitForUIStability(page: import('@playwright/test').Page) {
 }
 
 /**
- * Navigate to conversation via UI (no direct URL route exists)
+ * Navigate directly to conversation via URL — bypasses the slow sidebar
+ * conversation list query (3+ min on Supabase free tier with 18 CI jobs)
  */
 async function navigateToConversation(page: import('@playwright/test').Page) {
   await page.goto('about:blank').catch(() => {});
-  await page.goto('/messages', {
+  await page.goto(`/messages?conversation=${conversationId}`, {
     waitUntil: 'domcontentloaded',
     timeout: 60000,
   });
   await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_PASSWORD);
 
-  // Wait for Chats tab (auth gates must resolve first)
-  const chatsTab = page.getByRole('tab', { name: /Chats/i });
-  await chatsTab.waitFor({ state: 'visible', timeout: 30000 });
-  await chatsTab.click();
-  await page.waitForSelector('[role="tabpanel"]', { state: 'visible' });
-  await waitForUIStability(page);
-
-  // Find first conversation button by aria-label pattern
-  const firstConversation = page
-    .getByRole('button', { name: /Conversation with/ })
-    .first();
-
-  // Wait for and click conversation
-  await expect(firstConversation).toBeVisible({ timeout: 45000 });
-  await firstConversation.click();
-
-  // Wait for conversation view to mount (Supabase query 1-5s on free tier)
+  // Wait for conversation view to mount
   await page.waitForSelector('[data-testid="message-thread"]', {
     state: 'visible',
-    timeout: 45000,
+    timeout: 60000,
   });
 
   // Wait for message input to confirm conversation is loaded

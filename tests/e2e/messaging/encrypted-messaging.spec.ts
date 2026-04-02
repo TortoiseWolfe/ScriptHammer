@@ -50,6 +50,9 @@ const getAdminClient = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
+// Shared across describe blocks — set in 'Encrypted Messaging Flow' beforeAll
+let testConversationId = '';
+
 test.describe('Encrypted Messaging Flow', () => {
   // Serial: tests share auth state and Realtime subscriptions.
   // Parallel execution causes subscription contention on Supabase Cloud free tier.
@@ -58,7 +61,6 @@ test.describe('Encrypted Messaging Flow', () => {
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;
   let setupError = '';
-  let testConversationId = '';
 
   // Verify test data created by auth.setup.ts exists
   test.beforeAll(async () => {
@@ -551,34 +553,31 @@ test.describe('Encryption Key Security', () => {
       }
     });
 
-    // Already authenticated via storageState, navigate to messages
-    await page.goto(`${BASE_URL}/messages`, { waitUntil: 'domcontentloaded' });
-    await handleReAuthModal(page, USER_A.password);
-
-    // Check if any conversations exist (may not exist if tests run in isolation)
-    const conversationItem = page
-      .getByRole('button', { name: /Conversation with/ })
-      .first();
-
-    const hasConversation = await conversationItem
-      .isVisible()
-      .catch(() => false);
-    if (!hasConversation) {
-      // No conversations - this test needs a conversation to be meaningful
-      // Skip with info message instead of failing
-      console.log('No conversations available - skipping key security test');
-      test.skip(true, 'No conversations exist to test with');
+    // Navigate directly to conversation via URL to bypass slow sidebar query
+    if (!testConversationId) {
+      console.log('No conversation ID — skipping key security test');
+      test.skip(true, 'No conversation ID available');
       return;
     }
 
-    await conversationItem.click();
-    await page.waitForTimeout(1000);
+    await page.goto(`${BASE_URL}/messages?conversation=${testConversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await handleReAuthModal(page, USER_A.password);
+    await page.waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
+      timeout: 60000,
+    });
 
-    const messageInput = page.locator('textarea[aria-label="Message input"]');
-    await messageInput.fill('Key security test message');
+    const messageInput = page.getByRole('textbox', { name: /Message input/i });
+    await expect(messageInput).toBeVisible({ timeout: 45000 });
+    await fillMessageInput(page, 'Key security test message');
     await page.getByRole('button', { name: /send/i }).click();
 
-    await expect(page.getByText('Key security test message')).toBeVisible();
+    await scrollThreadToBottom(page);
+    await expect(page.getByText('Key security test message')).toBeVisible({
+      timeout: 30000,
+    });
 
     // ===== VERIFY NO PRIVATE KEYS IN NETWORK REQUESTS =====
     const foundPrivateKey = networkRequests.some((req) => {

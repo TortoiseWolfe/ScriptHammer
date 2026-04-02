@@ -353,17 +353,15 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         throw new Error('Could not create conversation');
       }
 
-      // Navigate to /messages and click the conversation in the sidebar.
-      // Don't use ?conversation=UUID in the URL — WebKit's useSearchParams()
-      // inside Suspense doesn't always fire in static exports, leaving
-      // conversationId null and ConversationView unmounted.
-      await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
+      // Navigate directly to conversation via URL param — bypasses the
+      // slow sidebar conversation list query (3+ min on free tier with
+      // 18 concurrent CI jobs). The WebKit useSearchParams() issue was
+      // fixed in earlier commits; encrypted-messaging.spec.ts and User B
+      // below both use this pattern successfully.
+      await pageA.goto(`/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
-      const convoButton = pageA
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await expect(convoButton).toBeVisible({ timeout: 60000 });
-      await convoButton.click();
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
         timeout: 60000,

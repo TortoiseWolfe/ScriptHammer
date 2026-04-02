@@ -228,7 +228,7 @@ test.describe('Friend Request Flow', () => {
 
       // ===== STEP 3: User A searches for User B by display_name =====
       const searchInput = pageA.locator('#user-search-input');
-      await expect(searchInput).toBeVisible({ timeout: 5000 });
+      await expect(searchInput).toBeVisible({ timeout: 15000 });
       await searchInput.fill(userBDisplayName!);
       await searchInput.press('Enter');
 
@@ -244,7 +244,7 @@ test.describe('Friend Request Flow', () => {
       const sendRequestButton = pageA.getByRole('button', {
         name: /send request/i,
       });
-      await expect(sendRequestButton).toBeVisible();
+      await expect(sendRequestButton).toBeVisible({ timeout: 30000 });
       await sendRequestButton.click({ force: true });
 
       // Wait for success message OR "already connected" error (both mean users can chat)
@@ -253,7 +253,7 @@ test.describe('Friend Request Flow', () => {
         /friend request sent|already.*connected|duplicate key|unique_connection/i
       );
       await expect(successOrAlreadyConnected).toBeVisible({
-        timeout: 5000,
+        timeout: 15000,
       });
 
       // ===== STEP 5: User B signs in =====

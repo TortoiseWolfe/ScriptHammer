@@ -74,8 +74,9 @@ test.describe('GDPR Data Export', () => {
     page,
     context,
   }) => {
-    // Setup download listener
-    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    // Setup download listener — export queries multiple Supabase tables,
+    // which can take 30-60s under CI contention (18 concurrent jobs)
+    const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
 
     // Click export button
     const exportButton = page.getByRole('button', {
@@ -125,7 +126,7 @@ test.describe('GDPR Data Export', () => {
     // This test requires existing conversations with messages
     // Skip if no messages exist
 
-    const downloadPromise = page.waitForEvent('download', { timeout: 30000 });
+    const downloadPromise = page.waitForEvent('download', { timeout: 60000 });
 
     const exportButton = page.getByRole('button', {
       name: /Download My Data/i,
@@ -345,8 +346,9 @@ test.describe('GDPR Account Deletion', () => {
     await confirmButton.click();
 
     // Should show error alert with failure message
+    // deleteUserAccount() does multiple async steps before hitting the mocked route
     await expect(modal.getByRole('alert')).toBeVisible({
-      timeout: 5000,
+      timeout: 30000,
     });
     // The actual error message is "Failed to delete account: ..." (visible element, not sr-only)
     await expect(
