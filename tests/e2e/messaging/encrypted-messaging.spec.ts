@@ -219,6 +219,20 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 5: User A sends an encrypted message =====
+      // Capture ALL browser console for diagnostics
+      const consoleLogs: string[] = [];
+      pageA.on('console', (msg) => {
+        const text = msg.text();
+        consoleLogs.push(`[${msg.type()}] ${text}`);
+        if (
+          text.includes('ConversationView') ||
+          text.includes('sendMessage') ||
+          msg.type() === 'error'
+        ) {
+          console.log(`[pageA console.${msg.type()}] ${text}`);
+        }
+      });
+
       const testMessage = `Test encrypted message ${Date.now()}`;
       await fillMessageInput(pageA, testMessage);
 
@@ -232,7 +246,15 @@ test.describe('Encrypted Messaging Flow', () => {
       // WebKit + Supabase free tier: INSERT can take 30+ seconds.
       await scrollThreadToBottom(pageA);
       const messageA = pageA.getByText(testMessage);
-      await expect(messageA).toBeVisible({ timeout: 60000 });
+      try {
+        await expect(messageA).toBeVisible({ timeout: 60000 });
+      } catch (e) {
+        // Dump all captured console logs on failure
+        console.log('=== BROWSER CONSOLE DUMP (pageA) ===');
+        consoleLogs.forEach((l) => console.log(l));
+        console.log('=== END CONSOLE DUMP ===');
+        throw e;
+      }
 
       // Brief delay for Supabase replication before User B reads
       await pageA.waitForTimeout(2000);
