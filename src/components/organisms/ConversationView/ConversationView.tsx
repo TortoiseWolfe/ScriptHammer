@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { messageService } from '@/services/messaging/message-service';
@@ -40,6 +40,9 @@ export default function ConversationView({
   const [messages, setMessages] = useState<DecryptedMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  // Block loadMessages during/after send to protect optimistic entries
+  // from being wiped by stale DB results (read-after-write latency).
+  const recentSendRef = useRef(false);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +110,12 @@ export default function ConversationView({
   // ── Message history with cursor pagination ─────────────────────────
   const loadMessages = useCallback(
     async (loadMore = false) => {
+      // Skip refresh-type loads during the send window to protect
+      // optimistic entries from read-after-write latency wipes.
+      if (!loadMore && recentSendRef.current) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
@@ -204,6 +213,13 @@ export default function ConversationView({
         conversation_id: conversationId,
         content,
       });
+
+      // Block loadMessages refreshes for 5s to protect the optimistic entry
+      // from being wiped by stale DB results (read-after-write latency).
+      recentSendRef.current = true;
+      setTimeout(() => {
+        recentSendRef.current = false;
+      }, 5000);
 
       if (result.queued) {
         // Offline OR send-failed-and-queued. Show the optimistic bubble.
