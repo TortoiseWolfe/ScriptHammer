@@ -158,7 +158,11 @@ export default defineConfig({
         '**/tests/mobile-navigation.spec.ts',
         '**/tests/mobile-orientation.spec.ts',
       ],
-      dependencies: ['setup'],
+      // On CI, the auth-setup job creates storage-state-auth.json and uploads
+      // it as an artifact. Each shard downloads it. Running the setup project
+      // AGAIN inside each shard causes 6 concurrent nuclear cleanups that race
+      // and delete each other's encryption keys/connections/conversations.
+      dependencies: process.env.CI ? [] : ['setup'],
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
