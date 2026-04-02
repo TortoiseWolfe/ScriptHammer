@@ -1,8 +1,17 @@
 <!-- E2E FIX LOOP PRIMING PROMPT — paste into /loop 30m -->
 
 ```
-Fix ScriptHammer E2E tests until ALL 18 shards pass (6 shards × 3 browsers).
-Shards split from 4→6 to spread messaging tests and reduce per-shard Supabase contention.
+Fix ScriptHammer E2E tests until ALL 6 chromium shards pass.
+Chromium-only on push (weekly schedule runs all 3 browsers).
+
+ARCHITECTURE:
+- CI auth-setup job runs ONCE with AUTH_SETUP_JOB=true → nuclear cleanup + create keys/
+  connections/conversations + save storageState artifact
+- Each shard's Playwright setup project signs in fresh (own refresh token) but skips
+  cleanup/creation (AUTH_SETUP_JOB absent) to avoid concurrent races
+- signOut uses scope:'local' (Supabase defaults to scope:'global' which revokes ALL sessions)
+- All messaging tests navigate via ?conversation=<id> URL, not sidebar click (sidebar query
+  takes 3+ min on Supabase with concurrent shards)
 
 METHODOLOGY (follow strictly, no guessing):
 
@@ -10,72 +19,61 @@ METHODOLOGY (follow strictly, no guessing):
    gh run list --limit 1 --workflow e2e.yml
    If in_progress → report and wait.
    If completed → gh run view <ID> 2>&1 | grep -E "(✓|X) E2E"
-   If all 12 green → DONE, celebrate.
+   If all 6 green → DONE, celebrate.
 
 2. GET FAILURE DETAILS (for each failing shard):
    gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -oP "\d+ failed|\d+ passed" | tail -2
    gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -P "  \d+\) \[" | head -12
 
 3. CHECK AUTH SETUP (did key seeding work?):
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<AUTH_SETUP_JOB_ID>/logs 2>&1 | grep -E "Cleaned up|Encryption keys created|Injected sh_keys|Setting up"
-   All 3 users must show "Encryption keys created". Nuclear cleanup must show "Cleaned up messaging state".
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<AUTH_SETUP_JOB_ID>/logs 2>&1 | grep -E "Cleaned up|Encryption keys created|Injected sh_keys|Setting up|Skipping nuclear"
+   Auth-setup job (AUTH_SETUP_JOB=true) must show "Cleaned up" + "Encryption keys created".
+   Per-shard runs must show "Skipping nuclear cleanup" + "Sign-in successful".
 
-4. CHECK KEY STATE (do test contexts have correct keys?):
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<SHARD_JOB_ID>/logs 2>&1 | grep "handleReAuthModal\|resetEncryptionKeys\|Current user.*cached\|Modal found\|No modal"
-   User A should show "Current user's keys cached — skipping modal" (from storageState).
-   User B should show "Modal found" then "Modal closed" (fresh deriveKeys from ReAuthModal).
-   If User B shows "Current user's keys cached", stale keys leaked — resetEncryptionKeys failed.
+4. CHECK BROWSER CONSOLE (message send failures):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep "ConversationView\|sendMessage\|BROWSER CONSOLE DUMP"
+   "message sent, appending optimistic" = success
+   "sendMessage failed: You must be signed in" = session expired/refresh token race
+   "message queued (offline/retry)" = send failed, queued for retry
 
-5. CHECK FOR DUPLICATE KEYS (root cause of ECDH mismatch):
-   SignInForm.tsx calls hasKeys() during sign-in. On Supabase free tier, getSession() races
-   with session persistence → returns null → hasKeys() returns false → initializeKeys() creates
-   a SECOND key row with a different salt. resetEncryptionKeys() was added to fix this but
-   must be called AFTER every performSignIn() for non-primary users.
-   Verify: gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep "Reset keys"
+5. KNOWN ROOT CAUSES (confirmed by diagnostic data):
+   a. Concurrent nuclear cleanup: auth.setup.ts ran in EVERY shard, 6 concurrent DELETEs
+      racing. Fixed with AUTH_SETUP_JOB env var — only the CI job does cleanup.
+   b. Shared refresh token: Supabase refresh tokens are single-use. All shards sharing one
+      storageState meant first refresh wins, others get "invalid refresh token". Fixed by
+      per-shard sign-in (own token) with no cleanup (dependencies:['setup']).
+   c. signOut scope:'global': Supabase JS defaults to revoking ALL sessions server-side.
+      Fixed with scope:'local' in AuthContext.tsx.
+   d. EncryptionKeyGate deadlock: when user=null after auth loads, gate returned early
+      without setCheckingKeys(false) → loading overlay stuck forever. Fixed.
+   e. Direct URL navigation: sidebar conversation list query takes 3+ min under load.
+      All tests use ?conversation=<id> URL param instead.
+   f. ECDH key mismatch: SignInForm.initializeKeys() races with session persistence.
+      resetEncryptionKeys() after performSignIn() for non-primary users.
+   g. Service workers: intercept page.goto/reload → ERR_ABORTED. serviceWorkers:'block'.
 
-6. KNOWN ROOT CAUSES (confirmed by diagnostic data):
-   a. ECDH key mismatch: User B gets keys=2 in DB because SignInForm.initializeKeys() races
-      with session persistence. resetEncryptionKeys() deletes duplicates + clears localStorage.
-   b. browser.newContext() inherits browser profile localStorage — MUST pass
-      { storageState: { cookies: [], origins: [] } } for truly empty contexts.
-   c. Virtual scrolling: 100+ accumulated messages trigger TanStack Virtual, hiding optimistic
-      messages from DOM. cleanupOldMessages() in beforeAll + scrollThreadToBottom() after send.
-   d. Service workers intercept page.goto/reload → ERR_ABORTED. serviceWorkers: 'block' in
-      playwright.config.ts shared use config.
-   e. WebKit useSearchParams() doesn't fire in static export Suspense — click conversation
-      in sidebar instead of using ?conversation=UUID URL param.
-   f. WebKit Supabase operations take 30-60s (vs 15s Chromium). Timeouts must be 60s.
-
-7. FIX (only after diagnosis):
+6. FIX (only after diagnosis):
    - Docker must be running: docker compose exec scripthammer echo alive
    - Type check: docker compose exec scripthammer npx tsc --noEmit
    - Unit test: docker compose exec scripthammer pnpm test
    - Commit via Docker with descriptive message explaining the ROOT CAUSE
    - Push, verify new CI run starts
 
-8. KEY FILES:
-   - .github/workflows/e2e.yml — 6 shards per browser, env vars, stagger delays, smoke timeout 15m
-   - tests/e2e/auth.setup.ts — nuclear cleanup + creates keys for 3 users + injects sh_keys_*
-   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, fillMessageInput, resetEncryptionKeys,
-     scrollThreadToBottom, cleanupOldMessages, ensureEncryptionKeys, performSignIn
-   - tests/e2e/messaging/encrypted-messaging.spec.ts — multi-user send/receive with ECDH
-   - tests/e2e/messaging/complete-user-workflow.spec.ts — friend request + messaging flow
-   - tests/e2e/messaging/message-editing.spec.ts — send + edit/delete with char-count wait
-   - src/services/messaging/key-service.ts — deriveKeys, initializeKeys, restoreKeysFromCache(userId),
-     hasKeys (races with session), getUserPublicKey (order by created_at DESC)
-   - src/services/messaging/message-service.ts — sendMessage (silent queue on RLS failure),
-     getMessageHistory (decrypt with ECDH, "Encrypted with previous keys" on failure)
-   - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — restoreKeysFromCache(user.id)
-   - src/components/auth/SignInForm/SignInForm.tsx:136 — hasKeys() race creates duplicate keys
-   - src/components/molecular/MessageThread/MessageThread.tsx:53 — VIRTUAL_SCROLL_THRESHOLD=100
-   - playwright.config.ts — workers:2, serviceWorkers:'block', retries:2 on CI, 6-way sharding
+7. KEY FILES:
+   - .github/workflows/e2e.yml — 6 chromium shards, AUTH_SETUP_JOB=true on auth step
+   - tests/e2e/auth.setup.ts — shouldDoFullSetup guard, nuclear cleanup, key injection
+   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, resetEncryptionKeys, performSignIn
+   - src/contexts/AuthContext.tsx — signOut({ scope: 'local' })
+   - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — setCheckingKeys(false) on null user
+   - src/components/organisms/ConversationView/ConversationView.tsx — diagnostic console.log on send
+   - src/components/PWAInstall.tsx — optional chaining on registration?.scope
+   - playwright.config.ts — chromium-only on push, dependencies:['setup'], serviceWorkers:'block'
 
 RULES:
 - NEVER skip or ignore tests — skipping is not passing
 - NEVER guess — read logs and code first
 - NEVER increase timeouts without fixing the underlying issue
 - If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate
-- If you've tried 3+ fixes for the same test, you're missing something fundamental
 - Track: what failed, what the actual error was, what you changed, whether it helped
 - Every multi-user test MUST call resetEncryptionKeys() after performSignIn() for User B
 - Every browser.newContext() MUST use { storageState: { cookies: [], origins: [] } }
