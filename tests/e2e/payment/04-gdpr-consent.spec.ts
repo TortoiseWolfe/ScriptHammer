@@ -85,9 +85,14 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.reload();
     await dismissCookieBanner(page);
 
-    // After reload, useEffect reads consent from localStorage and sets
-    // showConsent=false. Wait for Step 2 to appear (initial render shows
-    // consent briefly before the effect fires).
+    // After reload, usePaymentConsent's useEffect reads localStorage and
+    // sets isReady + hasConsent atomically. Wait for either Step heading
+    // to confirm the page has hydrated and the effect has fired, then
+    // assert Step 2 specifically. Firefox on CI needs more time for
+    // React hydration under resource contention (18 concurrent jobs).
+    await expect(page.getByRole('heading', { name: /Step [12]/i })).toBeVisible(
+      { timeout: 15000 }
+    );
     await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
   });
 
