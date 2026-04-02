@@ -221,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Then attempt Supabase signOut (don't await, don't throw)
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
       // Log but don't throw - local state already cleared
       logger.error('Supabase signOut failed (local state cleared)', {
