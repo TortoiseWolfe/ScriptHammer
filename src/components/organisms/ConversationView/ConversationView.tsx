@@ -164,9 +164,18 @@ export default function ConversationView({
         setHasMore(result.has_more);
         setCursor(result.cursor);
       } catch (err: unknown) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load messages'
-        );
+        const msg =
+          err instanceof Error ? err.message : 'Failed to load messages';
+
+        // If encryption keys aren't available yet (EncryptionKeyGate is
+        // still deriving via ReAuthModal), retry after 2s instead of
+        // showing an error. Keys will be ready within a few seconds.
+        if (msg.includes('encryption keys are not available')) {
+          setTimeout(() => loadMessages(loadMore), 2000);
+          return;
+        }
+
+        setError(msg);
       } finally {
         setLoading(false);
       }
