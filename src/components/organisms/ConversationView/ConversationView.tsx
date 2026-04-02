@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { messageService } from '@/services/messaging/message-service';
-import { keyManagementService } from '@/services/messaging/key-service';
 import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage } from '@/types/messaging';
@@ -45,9 +44,6 @@ export default function ConversationView({
   const [cursor, setCursor] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [participantName, setParticipantName] = useState('Unknown User');
-  const [keysReady, setKeysReady] = useState(
-    () => !!keyManagementService.getCurrentKeys()
-  );
 
   // ── Participant resolution ─────────────────────────────────────────
   // Two-hop query: conversations → user_profiles. Dynamic import keeps
@@ -111,14 +107,6 @@ export default function ConversationView({
   // ── Message history with cursor pagination ─────────────────────────
   const loadMessages = useCallback(
     async (loadMore = false) => {
-      // Skip if encryption keys aren't ready yet. EncryptionKeyGate is
-      // deriving them in parallel via ReAuthModal. Once keys are available,
-      // the Realtime subscription or EncryptionKeyGate's onSuccess callback
-      // will trigger a re-render that re-runs this effect.
-      if (!keyManagementService.getCurrentKeys()) {
-        return;
-      }
-
       try {
         setLoading(true);
         setError(null);
@@ -132,15 +120,7 @@ export default function ConversationView({
         if (loadMore) {
           setMessages((prev) => [...result.messages, ...prev]);
         } else {
-          // Merge: keep optimistic messages (isOwn, not yet in DB result)
-          // that were appended by handleSendMessage. Without this, a
-          // loadMessages() call that races with a send wipes the optimistic
-          // entry due to Supabase read-after-write latency.
-          setMessages((prev) => {
-            const dbIds = new Set(result.messages.map((m) => m.id));
-            const optimistic = prev.filter((m) => m.isOwn && !dbIds.has(m.id));
-            return [...result.messages, ...optimistic];
-          });
+          setMessages(result.messages);
           // Opportunistic: if we have messages, use the first non-own
           // sender name as participant fallback (covers the race where
           // loadConversationInfo hasn't resolved yet).
@@ -213,22 +193,6 @@ export default function ConversationView({
   useEffect(() => {
     loadConversationInfo().then(() => loadMessages());
   }, [conversationId, loadConversationInfo, loadMessages]);
-
-  // ── Detect when encryption keys become available ──────────────────
-  // loadMessages() guards against missing keys (returns early). When
-  // EncryptionKeyGate derives keys via ReAuthModal, we need to re-trigger
-  // the load. Poll briefly (only when keys aren't ready yet).
-  useEffect(() => {
-    if (keysReady) return;
-    const interval = setInterval(() => {
-      if (keyManagementService.getCurrentKeys()) {
-        setKeysReady(true);
-        clearInterval(interval);
-        loadMessages();
-      }
-    }, 500);
-    return () => clearInterval(interval);
-  }, [keysReady, loadMessages]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handleSendMessage = async (content: string) => {
