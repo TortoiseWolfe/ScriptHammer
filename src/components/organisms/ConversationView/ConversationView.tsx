@@ -132,7 +132,15 @@ export default function ConversationView({
         if (loadMore) {
           setMessages((prev) => [...result.messages, ...prev]);
         } else {
-          setMessages(result.messages);
+          // Merge: keep optimistic messages (isOwn, not yet in DB result)
+          // that were appended by handleSendMessage. Without this, a
+          // loadMessages() call that races with a send wipes the optimistic
+          // entry due to Supabase read-after-write latency.
+          setMessages((prev) => {
+            const dbIds = new Set(result.messages.map((m) => m.id));
+            const optimistic = prev.filter((m) => m.isOwn && !dbIds.has(m.id));
+            return [...result.messages, ...optimistic];
+          });
           // Opportunistic: if we have messages, use the first non-own
           // sender name as participant fallback (covers the race where
           // loadConversationInfo hasn't resolved yet).
