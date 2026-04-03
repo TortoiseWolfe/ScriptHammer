@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { messageService } from '@/services/messaging/message-service';
@@ -40,9 +40,6 @@ export default function ConversationView({
   const [messages, setMessages] = useState<DecryptedMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
-  // Block loadMessages during/after send to protect optimistic entries
-  // from being wiped by stale DB results (read-after-write latency).
-  const recentSendRef = useRef(false);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,13 +116,6 @@ export default function ConversationView({
           loadMore ? cursor : null,
           50
         );
-
-        // Check send guard AFTER the async query returns — an in-flight
-        // query that started before the send must not wipe the optimistic
-        // entry with stale results.
-        if (!loadMore && recentSendRef.current) {
-          return;
-        }
 
         if (loadMore) {
           setMessages((prev) => [...result.messages, ...prev]);
@@ -215,13 +205,6 @@ export default function ConversationView({
         content,
       });
 
-      // Block loadMessages refreshes for 5s to protect the optimistic entry
-      // from being wiped by stale DB results (read-after-write latency).
-      recentSendRef.current = true;
-      setTimeout(() => {
-        recentSendRef.current = false;
-      }, 5000);
-
       if (result.queued) {
         // Offline OR send-failed-and-queued. Show the optimistic bubble.
         console.log(
@@ -255,16 +238,6 @@ export default function ConversationView({
           senderName: participantName,
         };
         setMessages((prev) => [...prev, optimistic]);
-
-        // After the send guard expires (5s), refresh messages from DB
-        // to replace the optimistic entry with the real decrypted version.
-        // Without this, the Realtime-triggered loadMessages() during the
-        // guard window is blocked, and the optimistic entry never gets
-        // reconciled with the DB.
-        setTimeout(() => {
-          recentSendRef.current = false;
-          loadMessages();
-        }, 5500);
       }
     } catch (err: unknown) {
       const msg =
