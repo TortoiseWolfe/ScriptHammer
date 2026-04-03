@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { messageService } from '@/services/messaging/message-service';
-import { realtimeService } from '@/lib/messaging/realtime';
 import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage } from '@/types/messaging';
@@ -204,32 +203,6 @@ export default function ConversationView({
     setOptimisticMessages([]);
     loadConversationInfo().then(() => loadMessages());
   }, [conversationId, loadConversationInfo, loadMessages]);
-
-  // ── Realtime subscription ─────────────────────────────────────────
-  // Subscribe to new messages so the receiver sees them without polling.
-  // Instead of decrypting inline (duplicating key-derivation logic),
-  // reload from DB when a new message arrives from another user.
-  const loadMessagesRef = useRef(loadMessages);
-  loadMessagesRef.current = loadMessages;
-
-  useEffect(() => {
-    const unsubscribe = realtimeService.subscribeToMessages(
-      conversationId,
-      // On new message: reload from DB to decrypt and display.
-      // Own messages are already visible via optimistic append; the
-      // reload just promotes the optimistic entry to a real DB row.
-      () => loadMessagesRef.current(),
-      // onReconnect: reload to catch messages missed during disconnect
-      () => loadMessagesRef.current(),
-      // onSubscribed: signal for E2E tests
-      () => document.body.setAttribute('data-messages-subscribed', 'true')
-    );
-
-    return () => {
-      unsubscribe();
-      document.body.removeAttribute('data-messages-subscribed');
-    };
-  }, [conversationId]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handleSendMessage = async (content: string) => {

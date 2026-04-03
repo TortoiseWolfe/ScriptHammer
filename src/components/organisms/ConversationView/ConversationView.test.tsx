@@ -50,12 +50,6 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
   }),
 }));
 
-vi.mock('@/lib/messaging/realtime', () => ({
-  realtimeService: {
-    subscribeToMessages: vi.fn().mockReturnValue(() => {}),
-  },
-}));
-
 vi.mock('@/components/organisms/ChatWindow', () => ({
   default: ({ conversationId }: { conversationId: string }) => (
     <div data-testid="chat-window-mock">conv: {conversationId}</div>

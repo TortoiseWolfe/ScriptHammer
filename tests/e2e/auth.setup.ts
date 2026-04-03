@@ -201,9 +201,18 @@ setup('authenticate shared test user', async ({ page }) => {
     console.error('✗ NO Supabase auth token in localStorage!');
   }
 
+  // Set E2E flag BEFORE saving storageState. This disables autoRefreshToken
+  // in the Supabase client for all test contexts that load this state.
+  // Without this, a 403/406 from Supabase triggers token refresh → the
+  // single-use refresh token is consumed → subsequent contexts get
+  // SIGNED_OUT → localStorage cleared → all messaging tests fail.
+  await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
+  console.log('✓ Set playwright_e2e flag in localStorage');
+
   // Save authenticated browser state (localStorage + cookies).
-  // Now includes sh_keys_{userId} so tests can restore keys from cache
-  // without needing ReAuthModal or Argon2id derivation on every test.
+  // Now includes sh_keys_{userId} and playwright_e2e flag so tests can
+  // restore keys from cache without needing ReAuthModal or Argon2id
+  // derivation on every test, and autoRefreshToken is disabled.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 
