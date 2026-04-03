@@ -217,9 +217,16 @@ async function sendMessage(page: Page, message: string) {
   // Scroll to bottom so virtual scrolling renders the new message
   await scrollThreadToBottom(page);
 
-  // Wait for message to appear in the DOM
+  // Wait for message to appear in the DOM, or fail fast on error banner
   const messageElement = page.getByText(message);
-  await expect(messageElement).toBeVisible({ timeout: 30000 });
+  const errorBanner = page.locator('[role="alert"]');
+  await Promise.race([
+    expect(messageElement).toBeVisible({ timeout: 30000 }),
+    errorBanner.waitFor({ state: 'visible', timeout: 30000 }).then(async () => {
+      const text = await errorBanner.textContent();
+      throw new Error(`Send failed with error banner: ${text}`);
+    }),
+  ]);
 
   // Scroll the message into view (new messages appear at bottom)
   await messageElement.scrollIntoViewIfNeeded();
@@ -267,6 +274,18 @@ test.describe('Message Editing', () => {
   test.describe.configure({ mode: 'serial', timeout: 180000 });
 
   test.beforeEach(async ({ page }) => {
+    // Forward browser console for CI diagnostics
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('ConversationView') ||
+        text.includes('sendMessage') ||
+        text.includes('EncryptionKeyGate') ||
+        msg.type() === 'error'
+      ) {
+        console.log(`[browser console.${msg.type()}] ${text}`);
+      }
+    });
     // Sign in as User 1
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
   });
@@ -424,6 +443,16 @@ test.describe('Message Deletion', () => {
   test.describe.configure({ mode: 'serial', timeout: 180000 });
 
   test.beforeEach(async ({ page }) => {
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('ConversationView') ||
+        text.includes('sendMessage') ||
+        msg.type() === 'error'
+      ) {
+        console.log(`[browser console.${msg.type()}] ${text}`);
+      }
+    });
     // Sign in as User 1
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
   });
@@ -568,6 +597,16 @@ test.describe('Time Window Restrictions', () => {
   test.describe.configure({ mode: 'serial', timeout: 180000 });
 
   test.beforeEach(async ({ page }) => {
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('ConversationView') ||
+        text.includes('sendMessage') ||
+        msg.type() === 'error'
+      ) {
+        console.log(`[browser console.${msg.type()}] ${text}`);
+      }
+    });
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
   });
 
@@ -691,6 +730,16 @@ test.describe('Time Window Restrictions', () => {
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('ConversationView') ||
+        text.includes('sendMessage') ||
+        msg.type() === 'error'
+      ) {
+        console.log(`[browser console.${msg.type()}] ${text}`);
+      }
+    });
     await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
   });
 

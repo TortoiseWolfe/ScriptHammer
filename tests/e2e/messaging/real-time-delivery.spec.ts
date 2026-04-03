@@ -79,15 +79,14 @@ async function waitForMessageOnPage2(
       .getByText(testMessage)
       .waitFor({ state: 'visible', timeout: 30000 });
   } catch {
-    // Real-time subscription may have dropped the message; reload to fetch from DB
-    await page2.reload();
+    // Real-time subscription may have dropped the message; navigate directly
+    // to the conversation URL to reload messages from DB. Using URL navigation
+    // instead of sidebar click avoids the slow connections query.
+    await page2.goto(`/messages?conversation=${testConversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
     await dismissCookieBanner(page2);
     await handleReAuthModal(page2, password);
-    // Click on conversation again to open it
-    const conversation2 = page2
-      .getByRole('button', { name: /Conversation with/ })
-      .first();
-    await conversation2.click();
     await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 15000 });
   }
 }

@@ -220,6 +220,14 @@ test.describe('Group Chat E2E', () => {
     });
     const page = await context.newPage();
 
+    // Forward browser console for CI diagnostics
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (msg.type() === 'error' || text.includes('connection')) {
+        console.log(`[browser console.${msg.type()}] ${text}`);
+      }
+    });
+
     try {
       await page.goto(BASE_URL + '/messages', {
         waitUntil: 'domcontentloaded',
@@ -242,15 +250,16 @@ test.describe('Group Chat E2E', () => {
       const testGroupName = `Test Group ${Date.now()}`;
       await groupNameInput.fill(testGroupName);
 
-      // Wait for connections list to load
+      // Wait for connections list to load (Supabase free tier under 6-shard
+      // load can take 15-30s to return the connections query)
       const connectionsList = page.locator(
         '[role="listbox"][aria-label="Available connections"]'
       );
-      await expect(connectionsList).toBeVisible({ timeout: 10000 });
+      await expect(connectionsList).toBeVisible({ timeout: 30000 });
 
       // Wait for at least one connection to appear
       const firstConnection = page.locator('button[role="option"]').first();
-      await expect(firstConnection).toBeVisible({ timeout: 10000 });
+      await expect(firstConnection).toBeVisible({ timeout: 30000 });
 
       // Select members by clicking on them in the available connections list
       // Members are buttons with role="option" - clicking adds them to selected list

@@ -325,6 +325,12 @@ test.describe('Friend Request Flow', () => {
     browser,
   }) => {
     test.setTimeout(90000);
+
+    // Clean up existing connection from previous test (accept test
+    // creates a connection; this test needs a fresh slate to send
+    // a new request that User A can decline).
+    await cleanupConnections();
+
     const contextA = await browser.newContext({
       storageState: { cookies: [], origins: [] },
     });

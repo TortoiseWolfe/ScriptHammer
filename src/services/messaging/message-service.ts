@@ -118,8 +118,14 @@ export class MessageService {
     }
 
     try {
-      // Get sender's derived keys from memory (derived on login)
-      const senderKeys = keyManagementService.getCurrentKeys();
+      // Get sender's derived keys from memory (derived on login).
+      // If not in memory, attempt restore from localStorage cache
+      // (covers page reload / race with EncryptionKeyGate).
+      let senderKeys = keyManagementService.getCurrentKeys();
+      if (!senderKeys) {
+        await keyManagementService.restoreKeysFromCache(user.id);
+        senderKeys = keyManagementService.getCurrentKeys();
+      }
       if (!senderKeys) {
         throw new EncryptionLockedError(
           'Your encryption keys are not available. Please sign in again to send messages.'
@@ -548,9 +554,13 @@ export class MessageService {
         };
       }
 
-      // Get private key for decryption from memory (derived on login)
+      // Get private key for decryption from memory (with cache restore fallback)
       logger.debug('Starting decryption', { conversationId });
-      const currentKeys = keyManagementService.getCurrentKeys();
+      let currentKeys = keyManagementService.getCurrentKeys();
+      if (!currentKeys) {
+        await keyManagementService.restoreKeysFromCache(user.id);
+        currentKeys = keyManagementService.getCurrentKeys();
+      }
 
       if (!currentKeys) {
         logger.error(
@@ -976,8 +986,12 @@ export class MessageService {
         );
       }
 
-      // Get sender's derived keys from memory
-      const senderKeys = keyManagementService.getCurrentKeys();
+      // Get sender's derived keys from memory (with cache restore fallback)
+      let senderKeys = keyManagementService.getCurrentKeys();
+      if (!senderKeys) {
+        await keyManagementService.restoreKeysFromCache(user.id);
+        senderKeys = keyManagementService.getCurrentKeys();
+      }
       if (!senderKeys) {
         throw new EncryptionLockedError(
           'Your encryption keys are not available. Please sign in again to edit messages.'
