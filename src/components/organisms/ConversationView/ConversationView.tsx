@@ -37,7 +37,16 @@ export default function ConversationView({
   conversationId,
   className = '',
 }: ConversationViewProps) {
-  const [messages, setMessages] = useState<DecryptedMessage[]>([]);
+  const [dbMessages, setDbMessages] = useState<DecryptedMessage[]>([]);
+  const [optimisticMessages, setOptimisticMessages] = useState<
+    DecryptedMessage[]
+  >([]);
+  // Merged view: DB messages + optimistic entries not yet in DB
+  const messages = React.useMemo(() => {
+    const dbIds = new Set(dbMessages.map((m) => m.id));
+    const pending = optimisticMessages.filter((m) => !dbIds.has(m.id));
+    return [...dbMessages, ...pending];
+  }, [dbMessages, optimisticMessages]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -118,9 +127,9 @@ export default function ConversationView({
         );
 
         if (loadMore) {
-          setMessages((prev) => [...result.messages, ...prev]);
+          setDbMessages((prev) => [...result.messages, ...prev]);
         } else {
-          setMessages(result.messages);
+          setDbMessages(result.messages);
           // Opportunistic: if we have messages, use the first non-own
           // sender name as participant fallback (covers the race where
           // loadConversationInfo hasn't resolved yet).
@@ -191,6 +200,7 @@ export default function ConversationView({
   // Chain info→messages so participant name is set before first render
   // of the message list (FR-019 from the original page).
   useEffect(() => {
+    setOptimisticMessages([]);
     loadConversationInfo().then(() => loadMessages());
   }, [conversationId, loadConversationInfo, loadMessages]);
 
@@ -237,7 +247,7 @@ export default function ConversationView({
           isOwn: true,
           senderName: participantName,
         };
-        setMessages((prev) => [...prev, optimistic]);
+        setOptimisticMessages((prev) => [...prev, optimistic]);
       }
     } catch (err: unknown) {
       const msg =
