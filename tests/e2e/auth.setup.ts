@@ -201,18 +201,30 @@ setup('authenticate shared test user', async ({ page }) => {
     console.error('✗ NO Supabase auth token in localStorage!');
   }
 
-  // Set E2E flag BEFORE saving storageState. This disables autoRefreshToken
-  // in the Supabase client for all test contexts that load this state.
-  // Without this, a 403/406 from Supabase triggers token refresh → the
-  // single-use refresh token is consumed → subsequent contexts get
-  // SIGNED_OUT → localStorage cleared → all messaging tests fail.
+  // Set E2E flag in localStorage for test-specific behavior detection.
   await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
-  console.log('✓ Set playwright_e2e flag in localStorage');
+
+  // Bump the session's expires_at to 24 hours from now. This prevents the
+  // Supabase client's autoRefreshToken from ever trying to refresh during
+  // the ~30-minute test run. Without this, a 403/406 from Supabase triggers
+  // token refresh → single-use refresh token consumed by first test context
+  // → subsequent contexts get SIGNED_OUT → localStorage wiped → all
+  // messaging tests fail. The access token JWT is still validated server-side
+  // by its real exp claim, but the client-side refresh check uses expires_at.
+  await page.evaluate(() => {
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (key) {
+      const session = JSON.parse(localStorage.getItem(key) || '{}');
+      session.expires_at = Math.floor(Date.now() / 1000) + 86400; // 24h
+      localStorage.setItem(key, JSON.stringify(session));
+    }
+  });
+  console.log('✓ Bumped session expires_at to prevent auto-refresh');
 
   // Save authenticated browser state (localStorage + cookies).
-  // Now includes sh_keys_{userId} and playwright_e2e flag so tests can
-  // restore keys from cache without needing ReAuthModal or Argon2id
-  // derivation on every test, and autoRefreshToken is disabled.
+  // Includes sh_keys_{userId}, playwright_e2e flag, and bumped expires_at.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 
