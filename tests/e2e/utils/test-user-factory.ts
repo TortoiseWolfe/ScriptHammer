@@ -522,11 +522,37 @@ export async function handleReAuthModal(
     }
   });
   if (currentUserKeyExists) {
-    console.log(
-      `[handleReAuthModal] Current user's keys cached — skipping modal. URL: ${page.url()}`
-    );
+    // Keys are in localStorage, but verify the auth session is actually valid.
+    // Supabase's single-use refresh tokens can be consumed by a previous test
+    // context, leaving localStorage keys intact but the session expired.
+    // Check if the page shows authenticated state (no "Sign In" link in nav).
     await page.waitForTimeout(1000);
-    return false;
+    const isAuthenticated = await page.evaluate(() => {
+      // Check if the Supabase session has a non-expired access token
+      const sessionKey = Object.keys(localStorage).find(
+        (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+      );
+      if (!sessionKey) return false;
+      try {
+        const stored = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+        const expiresAt = stored?.expires_at;
+        if (!expiresAt) return false;
+        // Token must have at least 60 seconds remaining
+        return expiresAt > Math.floor(Date.now() / 1000) + 60;
+      } catch {
+        return false;
+      }
+    });
+    if (isAuthenticated) {
+      console.log(
+        `[handleReAuthModal] Current user's keys cached + session valid — skipping modal. URL: ${page.url()}`
+      );
+      return false;
+    }
+    console.log(
+      `[handleReAuthModal] Keys cached but session expired — need fresh sign-in. URL: ${page.url()}`
+    );
+    // Fall through to the gate/modal handling below
   }
 
   // EncryptionKeyGate has two paths when keys aren't in memory:
@@ -598,7 +624,41 @@ export async function handleReAuthModal(
     await modal.waitFor({ state: 'visible', timeout: 3000 });
     console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
   } catch {
-    // Modal didn't appear — encryption keys already unlocked
+    // Modal didn't appear — either keys unlocked OR user not authenticated.
+    // Verify the page is actually authenticated by checking for the
+    // "You must be logged in" or "Sign in required" indicators.
+    const notAuthed = await page
+      .locator('text=/You must be (logged in|signed in)|Sign in required/i')
+      .isVisible({ timeout: 1000 })
+      .catch(() => false);
+    if (notAuthed) {
+      console.log(
+        `[handleReAuthModal] Session expired — page shows auth error. URL: ${page.url()}`
+      );
+      // Sign in fresh via the UI (performSignIn handles the /sign-in form)
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+      const result = await performSignIn(
+        page,
+        process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+        testPassword
+      );
+      if (!result.success) {
+        console.error(
+          `[handleReAuthModal] Fresh sign-in failed: ${result.error}`
+        );
+        return false;
+      }
+      console.log(
+        '[handleReAuthModal] Fresh sign-in succeeded — returning to messages'
+      );
+      // Navigate back to where we were
+      const returnUrl = page.url().includes('/messages')
+        ? page.url()
+        : '/messages';
+      await page.goto(returnUrl, { waitUntil: 'domcontentloaded' });
+      // Recursively handle the modal now that we're authenticated
+      return handleReAuthModal(page, password);
+    }
     console.log(`[handleReAuthModal] No modal needed. URL: ${page.url()}`);
     return false;
   }
