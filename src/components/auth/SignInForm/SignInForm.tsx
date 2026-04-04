@@ -133,7 +133,14 @@ export default function SignInForm({
         );
 
         // Check if user has existing keys
-        const hasKeys = await keyManagementService.hasKeys();
+        // In E2E tests, skip key initialization entirely — auth.setup.ts
+        // already created all test user keys with correct salts. Running
+        // initializeKeys() here would create duplicate keys with different
+        // salts, breaking ECDH across concurrent shards.
+        const isE2E =
+          typeof localStorage !== 'undefined' &&
+          localStorage.getItem('playwright_e2e') === 'true';
+        const hasKeys = isE2E || (await keyManagementService.hasKeys());
 
         if (!hasKeys) {
           // New user: initialize keys with password
