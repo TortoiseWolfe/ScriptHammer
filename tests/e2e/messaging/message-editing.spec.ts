@@ -12,6 +12,7 @@ import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  performSignIn,
   cleanupOldMessages,
   scrollThreadToBottom,
   getAdminClient,
@@ -184,6 +185,41 @@ async function navigateToConversation(page: Page) {
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
   await expect(messageInput).toBeVisible({ timeout: 45000 });
   await waitForUIStability(page);
+
+  // Post-navigation auth check: the Supabase client may have wiped the
+  // session during conversation loading (403/406 → token refresh → consumed
+  // refresh token → SIGNED_OUT → localStorage cleared). Detect this and
+  // re-sign-in if needed.
+  const authLost = await page
+    .locator('text=/You must be (logged in|signed in)|Sign in required/i')
+    .isVisible({ timeout: 2000 })
+    .catch(() => false);
+  if (authLost) {
+    console.log(
+      '[navigateToConversation] Auth lost after page load — re-signing in'
+    );
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+    const result = await performSignIn(
+      page,
+      TEST_USER_1.email,
+      TEST_USER_1.password
+    );
+    if (!result.success) {
+      throw new Error(`Re-sign-in failed: ${result.error}`);
+    }
+    // Navigate back to conversation
+    await page.goto(`/messages?conversation=${conversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await dismissCookieBanner(page);
+    await handleReAuthModal(page, TEST_USER_1.password);
+    await page.waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
+      timeout: 60000,
+    });
+    await expect(messageInput).toBeVisible({ timeout: 45000 });
+    await waitForUIStability(page);
+  }
 }
 
 /**
