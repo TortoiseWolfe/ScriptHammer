@@ -331,8 +331,14 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // STEP 5: User B signs in
       console.log('Step 5: User B signing in...');
+      // Set E2E flag BEFORE sign-in so SignInForm.isE2E=true → skips
+      // hasKeys() → prevents initializeKeys() from creating duplicate
+      // keys with a different salt (which breaks ECDH decryption).
       await pageB.goto('/sign-in');
       await pageB.waitForLoadState('domcontentloaded');
+      await pageB.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       await dismissCookieBanner(pageB);
       await pageB.getByLabel('Email').fill(USER_B.email);
       await pageB.getByLabel('Password', { exact: true }).fill(USER_B.password);

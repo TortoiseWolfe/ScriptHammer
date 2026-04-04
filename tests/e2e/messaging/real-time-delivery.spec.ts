@@ -46,6 +46,9 @@ async function signIn(
   isPrimary: boolean
 ) {
   await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+  // Set E2E flag before sign-in to prevent SignInForm.initializeKeys()
+  // from creating duplicate keys with a different salt.
+  await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
   await performSignIn(page, email, password);
   if (!isPrimary) {
     await resetEncryptionKeys(page, email, password);

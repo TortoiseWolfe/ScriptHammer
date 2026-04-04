@@ -476,6 +476,9 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 1: User A uses storageState; User B must sign in manually =====
       // USER_B sign-in is only reached when setupSucceeded=true (tertiary email configured)
       await pageB.goto(`${BASE_URL}/sign-in`);
+      await pageB.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       await dismissCookieBanner(pageB);
       await pageB.getByLabel('Email').fill(USER_B.email);
       await pageB.getByLabel('Password').fill(USER_B.password);

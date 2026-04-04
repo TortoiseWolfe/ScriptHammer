@@ -212,7 +212,13 @@ test.describe('Encrypted Messaging Flow', () => {
       // ===== STEP 1: User A already authenticated via storageState =====
 
       // ===== STEP 2: User B signs in (in separate context) =====
+      // Set E2E flag BEFORE sign-in so SignInForm.isE2E=true → skips
+      // hasKeys() → prevents initializeKeys() from creating duplicate
+      // keys with a different salt (which breaks ECDH decryption).
       await pageB.goto(`${BASE_URL}/sign-in`);
+      await pageB.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);

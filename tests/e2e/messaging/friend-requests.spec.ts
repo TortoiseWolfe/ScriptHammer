@@ -258,6 +258,9 @@ test.describe('Friend Request Flow', () => {
 
       // ===== STEP 5: User B signs in =====
       await pageB.goto('/sign-in');
+      await pageB.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
@@ -344,6 +347,9 @@ test.describe('Friend Request Flow', () => {
     try {
       // User B sends request to User A (searching by username of A)
       await pageB.goto('/sign-in');
+      await pageB.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
       if (!resultB.success) {
         throw new Error(`User B sign-in failed: ${resultB.error}`);
@@ -377,6 +383,9 @@ test.describe('Friend Request Flow', () => {
 
       // User A signs in and declines
       await pageA.goto('/sign-in');
+      await pageA.evaluate(() =>
+        localStorage.setItem('playwright_e2e', 'true')
+      );
       const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
       if (!resultA.success) {
         throw new Error(`User A sign-in failed: ${resultA.error}`);
