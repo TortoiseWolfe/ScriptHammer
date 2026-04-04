@@ -392,8 +392,8 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 8: Message sent');
 
       // STEP 9: User B receives message
-      // Supabase free tier may 406 the first loadMessages query. Retry
-      // with page reload if the message isn't visible within 10s.
+      // Supabase free tier may return empty results or stale reads.
+      // Retry with page reloads up to 3 times with 3s waits.
       console.log('Step 9: User B receiving message...');
       await pageB.goto('/messages?conversation=' + conversationId, {
         waitUntil: 'domcontentloaded',
@@ -401,14 +401,27 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
       await scrollThreadToBottom(pageB);
-      const msgVisible = await pageB
-        .getByText(testMessage)
-        .isVisible({ timeout: 10000 })
-        .catch(() => false);
-      if (!msgVisible) {
-        console.log('Step 9: Message not visible, reloading page...');
+      for (let retry = 0; retry < 3; retry++) {
+        const visible = await pageB
+          .getByText(testMessage)
+          .isVisible({ timeout: 10000 })
+          .catch(() => false);
+        if (visible) break;
+        // Dump thread content for diagnostics
+        const threadText = await pageB
+          .locator('[data-testid="message-thread"]')
+          .textContent()
+          .catch(() => '(not found)');
+        console.log(
+          `Step 9: Message not visible (attempt ${retry + 1}/3), thread: ${threadText?.slice(0, 200)}`
+        );
+        await pageB.waitForTimeout(3000);
         await pageB.reload({ waitUntil: 'domcontentloaded' });
         await handleReAuthModal(pageB, USER_B.password);
+        await pageB.waitForSelector('[data-testid="message-thread"]', {
+          state: 'visible',
+          timeout: 30000,
+        });
         await scrollThreadToBottom(pageB);
       }
       await expect(pageB.getByText(testMessage)).toBeVisible({
