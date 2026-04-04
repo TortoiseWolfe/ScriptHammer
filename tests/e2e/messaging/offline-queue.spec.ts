@@ -71,6 +71,22 @@ const getAdminClient = () => {
   return createClient(supabaseUrl, supabaseServiceKey);
 };
 
+/** Attach console forwarding to a page for CI diagnostics */
+function forwardConsole(page: import('@playwright/test').Page) {
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (
+      text.includes('sendMessage') ||
+      text.includes('ConversationView') ||
+      text.includes('getMessageHistory') ||
+      text.includes('AUTH FAILED') ||
+      msg.type() === 'error'
+    ) {
+      console.log(`[browser console.${msg.type()}] ${text}`);
+    }
+  });
+}
+
 test.describe('Offline Message Queue', () => {
   test.describe.configure({ timeout: 180000 });
 
@@ -187,6 +203,7 @@ test.describe('Offline Message Queue', () => {
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const page = await context.newPage();
+    forwardConsole(page);
 
     try {
       // ===== STEP 1: Navigate directly to conversation via URL =====
@@ -260,6 +277,7 @@ test.describe('Offline Message Queue', () => {
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const page = await context.newPage();
+    forwardConsole(page);
 
     try {
       // ===== STEP 1: Navigate directly to conversation via URL =====
@@ -451,6 +469,8 @@ test.describe('Offline Message Queue', () => {
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
+    forwardConsole(pageA);
+    forwardConsole(pageB);
 
     try {
       // ===== STEP 1: User A uses storageState; User B must sign in manually =====
@@ -561,6 +581,7 @@ test.describe('Offline Message Queue', () => {
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const page = await context.newPage();
+    forwardConsole(page);
 
     try {
       // ===== STEP 1: Navigate directly to conversation via URL =====

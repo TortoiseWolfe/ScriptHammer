@@ -13,60 +13,7 @@ ARCHITECTURE:
 - All messaging tests navigate via ?conversation=<id> URL, not sidebar click (sidebar query
   takes 3+ min on Supabase with concurrent shards)
 
-CURRENT STATUS (2026-04-04):
-- Shards 1, 5, 6: consistently PASS
-- Shard 4: intermittent gdpr-consent failure (unrelated to messaging)
-- Shards 2, 3: consistently FAIL (messaging tests)
-- Shard 2 failures: complete-user-workflow, encrypted-messaging (receiver can't see message),
-  friend-requests, gdpr-compliance
-- Shard 3 failures: message-editing (6), offline-queue (5), real-time-delivery (1),
-  group-chat (1) — ALL because sender's message never appears in DOM after send
-
-CONFIRMED ROOT CAUSE (proven by diagnostic console forwarding):
-  The Supabase JS client's auto-refresh mechanism wipes localStorage during page load.
-  Timeline:
-  1. auth.setup.ts signs in, saves storageState with access+refresh tokens
-  2. Each test creates a new browser context from storageState
-  3. During page load, Supabase API calls return 403/406 (free tier contention, 6 shards)
-  4. The 403 triggers the Supabase client to attempt token refresh
-  5. The refresh token is single-use — consumed by a previous test context
-  6. Refresh fails → SIGNED_OUT event fires → localStorage completely wiped
-  7. sendMessage calls getSession() → null → "You must be signed in to send messages"
-
-  Diagnostic output confirming this:
-    [sendMessage] getSession attempt 1/3: {hasSession: false, hasUser: false, localStorage auth keys: []}
-    [ConversationView] sendMessage failed: You must be signed in to send messages
-
-APPROACHES TRIED AND RESULTS:
-  ✓ autoRefreshToken: false — FIXED shard 3 (13→5 failures) but BROKE shards 1,4
-    (protected-routes and gdpr-consent need autoRefreshToken for session recovery)
-  ✗ expires_at bump to 24h — NO EFFECT. Supabase JS decodes JWT exp claim directly,
-    ignores stored expires_at for refresh decisions
-  ✗ Post-navigation auth check (isVisible for "You must be logged in") — didn't trigger,
-    auth error text behind MessagingGate overlay with pointer-events-none
-  ✗ handleReAuthModal session validity check — checks happen before Supabase client
-    finishes processing 403 errors, so session appears valid at check time
-  ✗ Realtime subscription on ConversationView — TRIPLED 406 error count (153→425),
-    accelerated the session wipe cascade. Correctly reverted.
-
-VIABLE NEXT APPROACHES (not yet tried):
-  a. Custom Supabase storage adapter that blocks removeItem for auth-token keys in E2E.
-     The session wipe happens via storage.removeItem(). A wrapper that no-ops removeItem
-     for auth tokens would keep the valid access token in localStorage even after
-     SIGNED_OUT fires. The in-memory session would still be null, but on next page load
-     the client would recover from localStorage.
-     Risk: the in-memory null session still causes ProtectedRoute redirects within the
-     same page lifecycle. May need to combine with page reload after recovery.
-  b. Make each messaging test do its own performSignIn with fresh tokens, instead of
-     relying on storageState. Each fresh sign-in gets an unconsumed refresh token.
-     Risk: Supabase rate limiting on concurrent sign-ins across 6 shards.
-  c. Reduce 403/406 errors at source. These come from Supabase REST/Realtime under load.
-     Investigate: are they from the messaging-client queries, or from auth client?
-     If from messaging-client, the auth client won't try to refresh.
-  d. Set autoRefreshToken per-page: use a different Supabase client instance for messaging
-     pages that has autoRefreshToken: false, while keeping the default client for auth pages.
-
-METHODOLOGY (follow strictly):
+METHODOLOGY (follow strictly, no guessing):
 
 1. PULL LOGS:
    gh run list --limit 1 --workflow e2e.yml
@@ -78,44 +25,58 @@ METHODOLOGY (follow strictly):
    gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -oP "\d+ failed|\d+ passed" | tail -2
    gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -P "  \d+\) \[" | head -12
 
-3. CHECK BROWSER CONSOLE (message send failures — console forwarding now active):
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep "sendMessage\|ConversationView\|AUTH FAILED\|browser console"
-   "message sent, appending optimistic" = success (session alive)
-   "AUTH FAILED. localStorage auth keys: []" = session wiped by auto-refresh
-   "sendMessage failed: You must be signed in" = auth lost
+3. CHECK AUTH SETUP (did key seeding work?):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<AUTH_SETUP_JOB_ID>/logs 2>&1 | grep -E "Cleaned up|Encryption keys created|Injected sh_keys|Setting up|Skipping nuclear"
+   Auth-setup job (AUTH_SETUP_JOB=true) must show "Cleaned up" + "Encryption keys created".
+   Per-shard runs must show "Skipping nuclear cleanup" + "Sign-in successful".
 
-4. COMPARE ACROSS RUNS (track regressions):
-   Keep a table: shard × run → pass/fail count. Any new failures = regression = revert.
+4. CHECK BROWSER CONSOLE (message send failures):
+   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep "ConversationView\|sendMessage\|BROWSER CONSOLE DUMP"
+   "message sent, appending optimistic" = success
+   "sendMessage failed: You must be signed in" = session expired/refresh token race
+   "message queued (offline/retry)" = send failed, queued for retry
 
-5. FIX (only after diagnosis):
+5. KNOWN ROOT CAUSES (confirmed by diagnostic data):
+   a. Concurrent nuclear cleanup: auth.setup.ts ran in EVERY shard, 6 concurrent DELETEs
+      racing. Fixed with AUTH_SETUP_JOB env var — only the CI job does cleanup.
+   b. Shared refresh token: Supabase refresh tokens are single-use. All shards sharing one
+      storageState meant first refresh wins, others get "invalid refresh token". Fixed by
+      per-shard sign-in (own token) with no cleanup (dependencies:['setup']).
+   c. signOut scope:'global': Supabase JS defaults to revoking ALL sessions server-side.
+      Fixed with scope:'local' in AuthContext.tsx.
+   d. EncryptionKeyGate deadlock: when user=null after auth loads, gate returned early
+      without setCheckingKeys(false) → loading overlay stuck forever. Fixed.
+   e. Direct URL navigation: sidebar conversation list query takes 3+ min under load.
+      All tests use ?conversation=<id> URL param instead.
+   f. ECDH key mismatch: SignInForm.initializeKeys() races with session persistence.
+      resetEncryptionKeys() after performSignIn() for non-primary users.
+   g. Service workers: intercept page.goto/reload → ERR_ABORTED. serviceWorkers:'block'.
+
+6. FIX (only after diagnosis):
    - Docker must be running: docker compose exec scripthammer echo alive
    - Type check: docker compose exec scripthammer npx tsc --noEmit
    - Unit test: docker compose exec scripthammer pnpm test
-   - Push (pre-push hook runs ESLint + TypeScript + full test suite)
-   - Verify new CI run starts, verify NO regressions in previously-passing shards
+   - Commit via Docker with descriptive message explaining the ROOT CAUSE
+   - Push, verify new CI run starts
 
-6. KEY FILES:
+7. KEY FILES:
    - .github/workflows/e2e.yml — 6 chromium shards, AUTH_SETUP_JOB=true on auth step
-   - tests/e2e/auth.setup.ts — per-shard sign-in, key injection, playwright_e2e flag
-   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, performSignIn, fillMessageInput
-   - src/lib/supabase/client.ts — Supabase client singleton, autoRefreshToken config
-   - src/contexts/AuthContext.tsx — onAuthStateChange SIGNED_OUT handling, scope:'local'
-   - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — key restore, user=null handling
-   - src/components/organisms/ConversationView/ConversationView.tsx — handleSendMessage, optimistic UI
-   - src/services/messaging/message-service.ts — sendMessage with restoreKeysFromCache fallback
-   - tests/e2e/messaging/message-editing.spec.ts — console forwarding, navigateToConversation
+   - tests/e2e/auth.setup.ts — shouldDoFullSetup guard, nuclear cleanup, key injection
+   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal, resetEncryptionKeys, performSignIn
+   - src/contexts/AuthContext.tsx — signOut({ scope: 'local' })
+   - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — setCheckingKeys(false) on null user
+   - src/components/organisms/ConversationView/ConversationView.tsx — diagnostic console.log on send
+   - src/components/PWAInstall.tsx — optional chaining on registration?.scope
    - playwright.config.ts — chromium-only on push, dependencies:['setup'], serviceWorkers:'block'
 
 RULES:
 - NEVER skip or ignore tests — skipping is not passing
 - NEVER guess — read logs and code first
 - NEVER increase timeouts without fixing the underlying issue
-- ZERO REGRESSIONS — if a fix breaks previously-passing shards, revert immediately
 - If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate
 - Track: what failed, what the actual error was, what you changed, whether it helped
 - Every multi-user test MUST call resetEncryptionKeys() after performSignIn() for User B
 - Every browser.newContext() MUST use { storageState: { cookies: [], origins: [] } }
-- Do NOT add realtime subscriptions — they triple 406 errors and accelerate session wipe
 ```
 
 # ScriptHammer - Modern Next.js Template with PWA

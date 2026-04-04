@@ -692,6 +692,12 @@ export class MessageService {
         otherPublicKeyCrypto
       );
 
+      // Log key fingerprints for E2E debugging (x-coordinate of ECDH public keys)
+      const otherKeyFingerprint = otherPublicKey?.x?.slice(0, 8) ?? 'null';
+      console.log(
+        `[getMessageHistory] decrypt: myId=${user.id.slice(0, 8)} otherId=${otherParticipantId.slice(0, 8)} otherPubKey=${otherKeyFingerprint} msgCount=${messagesToDecrypt.length}`
+      );
+
       // Decrypt all messages
       logger.debug('Decrypting messages', {
         count: messagesToDecrypt.length,
@@ -730,6 +736,9 @@ export class MessageService {
           } catch (decryptError) {
             // Log the decryption failure with details (but not sensitive data)
             const err = decryptError as Error;
+            console.error(
+              `[getMessageHistory] DECRYPTION FAILED: msgId=${msg.id.slice(0, 8)} sender=${msg.sender_id.slice(0, 8)} error=${err.message}`
+            );
             logger.error('Decryption FAILED for message', {
               messageId: msg.id,
               errorName: String(err.name || 'unknown'),

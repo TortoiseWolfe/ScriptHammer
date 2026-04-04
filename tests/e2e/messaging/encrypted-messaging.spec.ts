@@ -188,6 +188,26 @@ test.describe('Encrypted Messaging Flow', () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
+    // Forward browser console from BOTH pages for CI diagnostics
+    for (const [label, pg] of [
+      ['pageA', pageA],
+      ['pageB', pageB],
+    ] as const) {
+      pg.on('console', (msg) => {
+        const text = msg.text();
+        if (
+          text.includes('sendMessage') ||
+          text.includes('ConversationView') ||
+          text.includes('getMessageHistory') ||
+          text.includes('getUserPublicKey') ||
+          text.includes('DECRYPTION') ||
+          msg.type() === 'error'
+        ) {
+          console.log(`[${label} console.${msg.type()}] ${text}`);
+        }
+      });
+    }
+
     try {
       // ===== STEP 1: User A already authenticated via storageState =====
 
