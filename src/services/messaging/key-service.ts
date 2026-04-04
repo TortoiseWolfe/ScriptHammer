@@ -773,9 +773,10 @@ export class KeyManagementService {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       const cached = this.publicKeyCache.get(userId);
       if (cached) {
-        logger.debug('getUserPublicKey: Offline — using cached key', {
-          userId,
-        });
+        const fingerprint = cached?.x?.slice(0, 8) ?? 'null';
+        console.log(
+          `[getUserPublicKey] userId=${userId.slice(0, 8)} key=${fingerprint} source=offline-cache`
+        );
         return cached;
       }
     }
@@ -806,8 +807,16 @@ export class KeyManagementService {
         );
       }
 
-      logger.debug('getUserPublicKey: FOUND public key', { userId });
       const publicKey = (data?.public_key as unknown as JsonWebKey) ?? null;
+      // Log key fingerprint for E2E debugging (x-coordinate of ECDH public key)
+      const fingerprint = publicKey?.x?.slice(0, 8) ?? 'null';
+      const source =
+        typeof navigator !== 'undefined' && !navigator.onLine
+          ? 'offline-cache'
+          : 'db-fresh';
+      console.log(
+        `[getUserPublicKey] userId=${userId.slice(0, 8)} key=${fingerprint} source=${source}`
+      );
       if (publicKey) {
         this.publicKeyCache.set(userId, publicKey);
       }

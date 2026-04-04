@@ -238,6 +238,7 @@ export class MessageService {
 
       // Get or derive shared secret for this recipient
       let sharedSecret = sharedSecretCache.get(recipientId) ?? null;
+      const sharedSecretSource = sharedSecret ? 'cache' : 'derive';
       if (!sharedSecret) {
         const recipientPublicKey =
           await keyManagementService.getUserPublicKey(recipientId);
@@ -263,6 +264,10 @@ export class MessageService {
         );
         sharedSecretCache.set(recipientId, sharedSecret);
       }
+
+      console.log(
+        `[sendMessage] sharedSecret source=${sharedSecretSource} recipientId=${recipientId.slice(0, 8)} online=${navigator.onLine}`
+      );
 
       // Encrypt message content
       const encrypted = await encryptionService.encryptMessage(
