@@ -625,12 +625,23 @@ export async function handleReAuthModal(
     console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
   } catch {
     // Modal didn't appear — either keys unlocked OR user not authenticated.
-    // Verify the page is actually authenticated by checking for the
-    // "You must be logged in" or "Sign in required" indicators.
-    const notAuthed = await page
-      .locator('text=/You must be (logged in|signed in)|Sign in required/i')
+    // Wait briefly for auth to finish hydrating. ProtectedRoute may flash
+    // "Sign in" text during the ~1s auth init (Supabase reads from
+    // localStorage asynchronously). Re-check after a short delay.
+    const authErrorLocator = page.locator(
+      'text=/You must be (logged in|signed in)|Sign in required/i'
+    );
+    let notAuthed = await authErrorLocator
       .isVisible({ timeout: 1000 })
       .catch(() => false);
+    if (notAuthed) {
+      // Could be a transient flash during auth hydration. Wait 3s and
+      // re-check — if auth succeeds, the text disappears.
+      await page.waitForTimeout(3000);
+      notAuthed = await authErrorLocator
+        .isVisible({ timeout: 1000 })
+        .catch(() => false);
+    }
     if (notAuthed) {
       console.log(
         `[handleReAuthModal] Session expired — page shows auth error. URL: ${page.url()}`
