@@ -1151,12 +1151,19 @@ export async function resetEncryptionKeys(
     }
   }
 
-  // Clear stale cached keys from localStorage so EncryptionKeyGate
-  // shows ReAuthModal → deriveKeys() with the correct salt from DB
+  // Clear stale cached keys from localStorage AND force a page reload
+  // to destroy in-memory key state. Without the reload, the E2E
+  // SIGNED_OUT suppression keeps wrong-salt keys in memory — the
+  // EncryptionKeyGate sees them and skips the ReAuthModal, leaving the
+  // user with keys that don't match the DB public key.
   await page.evaluate(() => {
     Object.keys(localStorage)
       .filter((k) => k.startsWith('sh_keys_'))
       .forEach((k) => localStorage.removeItem(k));
   });
+  // Reload destroys the keyManagementService singleton + all in-memory
+  // caches. On fresh load, restoreKeysFromCache finds no sh_keys_* →
+  // EncryptionKeyGate shows ReAuthModal → correct salt from DB.
+  await page.reload({ waitUntil: 'domcontentloaded' });
   console.log(`[resetEncryptionKeys] Reset keys for ${email}`);
 }

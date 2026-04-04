@@ -54,19 +54,41 @@ let cachedSenderPrivateKey: CryptoKey | null = null;
 
 /**
  * Pre-populate conversation cache so sendMessage works offline.
- * Only caches conversation participant data — shared secrets are
- * derived lazily on first send to avoid stale key races during
- * multi-user E2E tests (resetEncryptionKeys timing).
+ * Also pre-fetches the recipient's public key so getUserPublicKey
+ * has a cache entry for offline encryption.
  */
-export function cacheConversationData(
+export async function cacheConversationData(
   conversationId: string,
   data: {
     participant_1_id: string;
     participant_2_id: string;
     is_group: boolean;
   }
-): void {
+): Promise<void> {
   conversationCache.set(conversationId, data);
+
+  // Pre-fetch recipient's public key for offline support.
+  // getUserPublicKey caches the result in keyManagementService.publicKeyCache
+  // which is only used when offline (online requests always fetch fresh).
+  if (!data.is_group) {
+    try {
+      const session = (await createClient().auth.getSession()).data?.session;
+      const currentUserId = session?.user?.id;
+      if (!currentUserId) return;
+
+      const recipientId =
+        data.participant_1_id === currentUserId
+          ? data.participant_2_id
+          : data.participant_1_id;
+
+      if (recipientId) {
+        // This populates keyManagementService.publicKeyCache as a side effect
+        await keyManagementService.getUserPublicKey(recipientId);
+      }
+    } catch {
+      // Non-fatal: public key will be fetched on first send (if online)
+    }
+  }
 }
 
 export class MessageService {
