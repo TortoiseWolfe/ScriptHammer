@@ -140,9 +140,25 @@ export function createClient(): SupabaseClient<Database> {
       auth: {
         // Use implicit flow for static sites (no server-side code exchange)
         flowType: 'implicit',
-        // Store session in localStorage
+        // In E2E tests, use a storage adapter that prevents auth token
+        // removal. Even with autoRefreshToken disabled, Supabase may clear
+        // the session on 406/403 errors from the free tier. The adapter
+        // no-ops removeItem for auth-token keys, keeping the valid access
+        // token in localStorage so the session can recover on page reload.
         storage:
-          typeof window !== 'undefined' ? window.localStorage : undefined,
+          typeof window !== 'undefined'
+            ? window.localStorage?.getItem('playwright_e2e')
+              ? {
+                  getItem: (key: string) => window.localStorage.getItem(key),
+                  setItem: (key: string, value: string) =>
+                    window.localStorage.setItem(key, value),
+                  removeItem: (key: string) => {
+                    if (key.includes('auth-token')) return;
+                    window.localStorage.removeItem(key);
+                  },
+                }
+              : window.localStorage
+            : undefined,
         // Disable auto-refresh in E2E tests. The access token is valid for
         // 1 hour — plenty for a ~30-minute test run. Auto-refresh causes
         // single-use refresh tokens to be consumed by one test context,

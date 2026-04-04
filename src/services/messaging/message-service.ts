@@ -65,18 +65,21 @@ export async function cacheConversationData(
 ): Promise<void> {
   conversationCache.set(conversationId, data);
 
-  // Pre-warm shared secret for offline encryption
+  // Pre-warm shared secret for offline encryption.
+  // Uses getSession (local, no network) instead of getUser (server call)
+  // to avoid adding 406 errors on Supabase free tier.
   if (!data.is_group) {
-    const currentUserId = (await createClient().auth.getUser()).data?.user?.id;
-    if (!currentUserId) return;
+    try {
+      const session = (await createClient().auth.getSession()).data?.session;
+      const currentUserId = session?.user?.id;
+      if (!currentUserId) return;
 
-    const recipientId =
-      data.participant_1_id === currentUserId
-        ? data.participant_2_id
-        : data.participant_1_id;
+      const recipientId =
+        data.participant_1_id === currentUserId
+          ? data.participant_2_id
+          : data.participant_1_id;
 
-    if (recipientId && !sharedSecretCache.has(recipientId)) {
-      try {
+      if (recipientId && !sharedSecretCache.has(recipientId)) {
         const senderKeys = keyManagementService.getCurrentKeys();
         if (!senderKeys) return;
 
@@ -97,9 +100,9 @@ export async function cacheConversationData(
           recipientPublicKeyCrypto
         );
         sharedSecretCache.set(recipientId, sharedSecret);
-      } catch {
-        // Non-fatal: shared secret will be derived on first send
       }
+    } catch {
+      // Non-fatal: shared secret will be derived on first send
     }
   }
 }
