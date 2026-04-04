@@ -127,16 +127,22 @@ setup('authenticate shared test user', async ({ page }) => {
 
   // Set up encryption keys for ALL test users via admin API, then inject
   // the primary user's key cache into localStorage so storageState captures it.
-  // This replaces the unreliable browser-based setup (ReAuthModal/setup form)
-  // which depends on EncryptionKeyGate timing and Supabase query latency.
-  console.log('Setting up encryption keys for messaging...');
+  // CRITICAL: Only create keys in the auth-setup JOB (shouldDoFullSetup=true).
+  // Per-shard runs must NOT recreate keys — each shard would overwrite the DB
+  // with a new random salt, but the storageState still has the original salt
+  // from the auth-setup job. This salt mismatch breaks ECDH decryption.
+  if (shouldDoFullSetup) {
+    console.log('Setting up encryption keys for messaging...');
 
-  // Step 1: Create matching DB keys for the primary user
-  const primaryOk = await ensureEncryptionKeys(email, password);
-  if (primaryOk) {
-    console.log('✓ Primary user encryption keys ready in DB');
+    // Step 1: Create matching DB keys for the primary user
+    const primaryOk = await ensureEncryptionKeys(email, password);
+    if (primaryOk) {
+      console.log('✓ Primary user encryption keys ready in DB');
+    } else {
+      console.log('⚠ Could not create primary user encryption keys');
+    }
   } else {
-    console.log('⚠ Could not create primary user encryption keys');
+    console.log('⏭ Skipping key creation (auth-setup job did it)');
   }
 
   // Step 2: Inject the primary user's derived keys into localStorage
