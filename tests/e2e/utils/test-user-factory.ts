@@ -643,6 +643,26 @@ export async function handleReAuthModal(
         .catch(() => false);
     }
     if (notAuthed) {
+      // Auth token may still be in localStorage (storage adapter protects it).
+      // Try a page reload first — Supabase client re-reads from storage on init.
+      // This avoids the full sign-in flow which navigates away from the current URL.
+      console.log(
+        `[handleReAuthModal] Session expired — trying reload first. URL: ${page.url()}`
+      );
+      const currentUrl = page.url();
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2000);
+      const stillNotAuthed = await authErrorLocator
+        .isVisible({ timeout: 3000 })
+        .catch(() => false);
+      if (!stillNotAuthed) {
+        console.log(
+          '[handleReAuthModal] Reload recovered session — continuing'
+        );
+        // Recurse to handle any modal that may now appear
+        return handleReAuthModal(page, testPassword);
+      }
+
       console.log(
         `[handleReAuthModal] Session expired — page shows auth error. URL: ${page.url()}`
       );
