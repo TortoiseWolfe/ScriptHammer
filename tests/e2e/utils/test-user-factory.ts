@@ -625,46 +625,53 @@ export async function handleReAuthModal(
     console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
   } catch {
     // Modal didn't appear — either keys unlocked OR user not authenticated.
-    // Wait briefly for auth to finish hydrating. ProtectedRoute may flash
-    // "Sign in" text during the ~1s auth init (Supabase reads from
-    // localStorage asynchronously). Re-check after a short delay.
-    const authErrorLocator = page.locator(
-      'text=/You must be (logged in|signed in)|Sign in required/i'
-    );
-    let notAuthed = await authErrorLocator
-      .isVisible({ timeout: 1000 })
-      .catch(() => false);
-    if (notAuthed) {
-      // Could be a transient flash during auth hydration. Wait 3s and
-      // re-check — if auth succeeds, the text disappears.
-      await page.waitForTimeout(3000);
-      notAuthed = await authErrorLocator
-        .isVisible({ timeout: 1000 })
-        .catch(() => false);
-    }
-    if (notAuthed) {
-      // Auth token may still be in localStorage (storage adapter protects it).
-      // Try a page reload first — Supabase client re-reads from storage on init.
-      // This avoids the full sign-in flow which navigates away from the current URL.
-      console.log(
-        `[handleReAuthModal] Session expired — trying reload first. URL: ${page.url()}`
+    // Check localStorage for a valid auth token rather than DOM text, which
+    // flashes "Sign in" during the multi-second auth hydration.
+    const hasAuthToken = await page.evaluate(() => {
+      const key = Object.keys(localStorage).find(
+        (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
       );
-      const currentUrl = page.url();
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.waitForTimeout(2000);
-      const stillNotAuthed = await authErrorLocator
-        .isVisible({ timeout: 3000 })
-        .catch(() => false);
-      if (!stillNotAuthed) {
-        console.log(
-          '[handleReAuthModal] Reload recovered session — continuing'
-        );
-        // Recurse to handle any modal that may now appear
-        return handleReAuthModal(page, testPassword);
+      if (!key) return false;
+      try {
+        const session = JSON.parse(localStorage.getItem(key) || '{}');
+        return !!session?.access_token;
+      } catch {
+        return false;
       }
+    });
 
+    if (hasAuthToken) {
+      // Auth token exists — the "Sign in" text is a transient flash during
+      // auth hydration. Wait for auth to resolve (up to 10s).
       console.log(
-        `[handleReAuthModal] Session expired — page shows auth error. URL: ${page.url()}`
+        `[handleReAuthModal] Auth token in localStorage, waiting for hydration. URL: ${page.url()}`
+      );
+      try {
+        await page.waitForFunction(
+          () => {
+            // Wait until the "Sign in" / "You must be logged in" text disappears
+            const el = document.querySelector(
+              '[data-testid="message-thread"], [data-testid="encryption-key-gate-loading"]'
+            );
+            return el !== null;
+          },
+          { timeout: 10000 }
+        );
+        console.log('[handleReAuthModal] Auth hydrated — no modal needed');
+        return false;
+      } catch {
+        // Hydration timed out — fall through to sign-in
+        console.log(
+          '[handleReAuthModal] Auth hydration timeout — falling through to sign-in'
+        );
+      }
+    }
+
+    // Check if actually not authenticated (no token in localStorage)
+    const notAuthed = !hasAuthToken;
+    if (notAuthed) {
+      console.log(
+        `[handleReAuthModal] Session expired — no auth token. URL: ${page.url()}`
       );
       // Sign in fresh via the UI (performSignIn handles the /sign-in form)
       await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
