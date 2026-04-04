@@ -13,6 +13,14 @@ ARCHITECTURE:
 - All messaging tests navigate via ?conversation=<id> URL, not sidebar click (sidebar query
   takes 3+ min on Supabase with concurrent shards)
 
+CURRENT STATUS (2026-04-04, session 2):
+- Shards 1, 4, 5, 6: PASS (shard 4 gdpr-consent is intermittent but passed latest)
+- Shards 2, 3: FAIL but with DIFFERENT issues than original baseline
+- Auth wipe root cause: FIXED via autoRefreshToken:false + E2E storage adapter
+- Decryption failures: FIXED via shared secret cache invalidation on key change
+- Remaining shard 2: session-expired race in handleReAuthModal (false positive detection)
+- Remaining shard 3: offline-queue T148/T149 route intercept issues, real-time-delivery
+
 METHODOLOGY (follow strictly, no guessing):
 
 1. PULL LOGS:
@@ -35,6 +43,7 @@ METHODOLOGY (follow strictly, no guessing):
    "message sent, appending optimistic" = success
    "sendMessage failed: You must be signed in" = session expired/refresh token race
    "message queued (offline/retry)" = send failed, queued for retry
+   "AUTH FAILED. localStorage auth keys: []" = session wiped by auto-refresh
 
 5. KNOWN ROOT CAUSES (confirmed by diagnostic data):
    a. Concurrent nuclear cleanup: auth.setup.ts ran in EVERY shard, 6 concurrent DELETEs
@@ -51,6 +60,31 @@ METHODOLOGY (follow strictly, no guessing):
    f. ECDH key mismatch: SignInForm.initializeKeys() races with session persistence.
       resetEncryptionKeys() after performSignIn() for non-primary users.
    g. Service workers: intercept page.goto/reload → ERR_ABORTED. serviceWorkers:'block'.
+   h. Auto-refresh session wipe: Supabase JS auto-refresh consumes single-use refresh
+      tokens across test contexts. 403/406 from free tier contention triggers refresh →
+      consumed token → SIGNED_OUT → localStorage wiped. Fixed with autoRefreshToken:false
+      + E2E storage adapter blocking removeItem for auth tokens. setAllowAuthTokenRemoval()
+      flag allows intentional sign-out to still work.
+   i. Decryption / stale shared secrets: sharedSecretCache held ECDH secrets from wrong
+      key pair (SignInForm salt S2 vs auth.setup salt S1). Thread showed "Encrypted with
+      previous keys". Fixed by invalidating cache when sender CryptoKey reference changes.
+   j. T148 route intercept: offline-queue T148 route handler intercepted GET requests from
+      loadMessages(), breaking conversation UI. Fixed with POST-only route filter.
+
+6. APPROACHES TRIED AND RESULTS (sessions 1-2, 2026-04-04):
+   ✓ autoRefreshToken: false — FIXED shard 3 auth wipe (13→5). Initially BROKE shards 1,4
+     but fixed by combining with E2E storage adapter.
+   ✓ E2E storage adapter — blocks removeItem for auth-token keys. Combined with
+     autoRefreshToken:false, fully fixes auth wipe without regressions.
+   ✓ Conversation data cache + shared secret cache invalidation — fixes offline encryption
+     and decryption when keys change between sessions.
+   ✗ expires_at bump to 24h — NO EFFECT. Supabase JS decodes JWT exp claim directly.
+   ✗ Post-navigation auth check (isVisible for "You must be logged in") — didn't trigger,
+     auth error text behind MessagingGate overlay with pointer-events-none.
+   ✗ handleReAuthModal session validity check — checks before Supabase client finishes
+     processing 403 errors, so session appears valid at check time.
+   ✗ Realtime subscription on ConversationView — TRIPLED 406 error count (153→425).
+     Correctly reverted.
 
 6. FIX (only after diagnosis):
    - Docker must be running: docker compose exec scripthammer echo alive
@@ -67,6 +101,14 @@ METHODOLOGY (follow strictly, no guessing):
    - src/components/auth/EncryptionKeyGate/EncryptionKeyGate.tsx — setCheckingKeys(false) on null user
    - src/components/organisms/ConversationView/ConversationView.tsx — diagnostic console.log on send
    - src/components/PWAInstall.tsx — optional chaining on registration?.scope
+   - src/lib/supabase/client.ts — Supabase singleton, autoRefreshToken, E2E storage adapter
+   - src/services/messaging/message-service.ts — sendMessage, restoreKeysFromCache,
+     conversationCache, sharedSecretCache with key invalidation
+   - tests/e2e/messaging/message-editing.spec.ts — console forwarding, navigateToConversation
+   - tests/e2e/messaging/offline-queue.spec.ts — T148 POST-only route, console forwarding
+   - tests/e2e/messaging/complete-user-workflow.spec.ts — multi-retry with diagnostics
+   - tests/e2e/messaging/encrypted-messaging.spec.ts — multi-retry with diagnostics
+   - tests/unit/auth/use-auth.test.tsx — mock for setAllowAuthTokenRemoval
    - playwright.config.ts — chromium-only on push, dependencies:['setup'], serviceWorkers:'block'
 
 RULES:
@@ -77,6 +119,9 @@ RULES:
 - Track: what failed, what the actual error was, what you changed, whether it helped
 - Every multi-user test MUST call resetEncryptionKeys() after performSignIn() for User B
 - Every browser.newContext() MUST use { storageState: { cookies: [], origins: [] } }
+- ZERO REGRESSIONS — if a fix breaks previously-passing shards, revert immediately
+- Do NOT add realtime subscriptions — they triple 406 errors and accelerate session wipe
+- Compare shard × run pass/fail counts across runs. Any new failures = regression = revert
 ```
 
 # ScriptHammer - Modern Next.js Template with PWA

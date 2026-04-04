@@ -87,7 +87,7 @@ async function waitForMessageOnPage2(
     });
     await dismissCookieBanner(page2);
     await handleReAuthModal(page2, password);
-    await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 15000 });
+    await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 60000 });
   }
 }
 

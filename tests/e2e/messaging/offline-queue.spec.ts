@@ -526,22 +526,31 @@ test.describe('Offline Message Queue', () => {
       await contextA.setOffline(false);
       await contextB.setOffline(false);
 
-      // ===== STEP 6: Wait for sync =====
-      await pageA
-        .waitForFunction(() => true, { timeout: 5000 })
-        .catch(() => {});
-      await pageB
-        .waitForFunction(() => true, { timeout: 5000 })
-        .catch(() => {});
+      // ===== STEP 6: Wait for offline queue sync =====
+      // The offline queue needs time to: detect online status, process
+      // queued messages, encrypt, send to Supabase, and get INSERT confirmed.
+      // On free tier under 6-shard load this can take 30-60s.
+      let messages: { sequence_number: number }[] | null = null;
+      for (let poll = 0; poll < 12; poll++) {
+        await pageA
+          .waitForFunction(() => true, { timeout: 5000 })
+          .catch(() => {});
+        const { data } = await adminClient
+          .from('messages')
+          .select('sequence_number')
+          .eq('conversation_id', conversationId)
+          .order('sequence_number', { ascending: true });
+        if (data && data.length >= 2) {
+          messages = data;
+          break;
+        }
+        console.log(
+          `[T149] Poll ${poll + 1}/12: ${data?.length ?? 0} messages found, waiting...`
+        );
+      }
 
       // ===== STEP 7: Verify server determined order =====
       if (conversationId) {
-        const { data: messages } = await adminClient
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', conversationId)
-          .order('sequence_number', { ascending: true });
-
         // Both messages should exist
         expect(messages).toBeDefined();
         expect(messages!.length).toBeGreaterThanOrEqual(2);

@@ -288,9 +288,16 @@ export class KeyManagementService {
 
       // Step 3: Verify public key matches stored
       // Cast Json to JsonWebKey for verification
+      const storedKey = data.public_key as unknown as JsonWebKey;
+      const derivedFingerprint = keyPair.publicKeyJwk?.x?.slice(0, 8) ?? 'null';
+      const storedFingerprint = storedKey?.x?.slice(0, 8) ?? 'null';
+      console.log(
+        `[deriveKeys] userId=${user.id.slice(0, 8)} derived=${derivedFingerprint} stored=${storedFingerprint} match=${derivedFingerprint === storedFingerprint}`
+      );
+
       const isMatch = this.keyDerivationService.verifyPublicKey(
         keyPair.publicKeyJwk,
-        data.public_key as unknown as JsonWebKey
+        storedKey
       );
 
       if (!isMatch) {
