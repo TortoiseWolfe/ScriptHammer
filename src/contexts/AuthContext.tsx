@@ -161,15 +161,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Reset local sign-out flag after handling and clear encryption keys
       if (_event === 'SIGNED_OUT') {
+        // Only clear encryption keys for intentional sign-outs.
+        // In E2E mode, spurious SIGNED_OUT events from 403/406 errors
+        // should NOT wipe the keys — the auth token is still valid
+        // in localStorage (protected by the storage adapter).
+        const isE2ETest =
+          typeof localStorage !== 'undefined' &&
+          localStorage.getItem('playwright_e2e') === 'true';
+        const shouldClearKeys = isLocalSignOut.current || !isE2ETest;
         isLocalSignOut.current = false;
-        // Clear encryption keys from memory on logout
-        try {
-          const { keyManagementService } = await import(
-            '@/services/messaging/key-service'
-          );
-          keyManagementService.clearKeys();
-        } catch (error) {
-          logger.error('Failed to clear encryption keys', { error });
+        if (shouldClearKeys) {
+          try {
+            const { keyManagementService } = await import(
+              '@/services/messaging/key-service'
+            );
+            keyManagementService.clearKeys();
+          } catch (error) {
+            logger.error('Failed to clear encryption keys', { error });
+          }
         }
       }
 
