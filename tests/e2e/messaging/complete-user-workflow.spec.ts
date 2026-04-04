@@ -392,6 +392,8 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       console.log('Step 8: Message sent');
 
       // STEP 9: User B receives message
+      // Supabase free tier may 406 the first loadMessages query. Retry
+      // with page reload if the message isn't visible within 10s.
       console.log('Step 9: User B receiving message...');
       await pageB.goto('/messages?conversation=' + conversationId, {
         waitUntil: 'domcontentloaded',
@@ -399,6 +401,16 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
       await scrollThreadToBottom(pageB);
+      const msgVisible = await pageB
+        .getByText(testMessage)
+        .isVisible({ timeout: 10000 })
+        .catch(() => false);
+      if (!msgVisible) {
+        console.log('Step 9: Message not visible, reloading page...');
+        await pageB.reload({ waitUntil: 'domcontentloaded' });
+        await handleReAuthModal(pageB, USER_B.password);
+        await scrollThreadToBottom(pageB);
+      }
       await expect(pageB.getByText(testMessage)).toBeVisible({
         timeout: 30000,
       });

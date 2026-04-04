@@ -271,8 +271,21 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
+      // Supabase free tier may 406 the first loadMessages query. Retry
+      // with page reload if the message isn't visible within 10s.
       await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
+      const msgVisible = await messageB
+        .isVisible({ timeout: 10000 })
+        .catch(() => false);
+      if (!msgVisible) {
+        console.log(
+          '[encrypted-messaging] Message not visible on User B, reloading...'
+        );
+        await pageB.reload({ waitUntil: 'domcontentloaded' });
+        await handleReAuthModal(pageB, USER_B.password);
+        await scrollThreadToBottom(pageB);
+      }
       await expect(messageB).toBeVisible({ timeout: 30000 });
 
       // ===== STEP 10: Verify User B can reply =====

@@ -334,6 +334,18 @@ test.describe('Offline Message Queue', () => {
     });
     const page = await context.newPage();
 
+    // Forward browser console for CI debugging
+    page.on('console', (msg) => {
+      const text = msg.text();
+      if (
+        text.includes('sendMessage') ||
+        text.includes('ConversationView') ||
+        msg.type() === 'error'
+      ) {
+        console.log(`[T148 console.${msg.type()}] ${text}`);
+      }
+    });
+
     try {
       // ===== STEP 1: Navigate directly to conversation via URL =====
       await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
@@ -356,7 +368,13 @@ test.describe('Offline Message Queue', () => {
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
+      // Intercept Supabase REST inserts to /messages. Also match POST
+      // to the full URL in case the glob needs the scheme.
       await page.route('**/rest/v1/messages*', async (route) => {
+        const method = route.request().method();
+        console.log(
+          `[T148 route] intercepted ${method} ${route.request().url()} (attempt ${attemptCount + 1})`
+        );
         attemptCount++;
         retryTimestamps.push(Date.now());
 
