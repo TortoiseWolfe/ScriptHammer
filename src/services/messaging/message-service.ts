@@ -47,13 +47,15 @@ const conversationCache = new Map<
 >();
 
 // Cache derived shared secrets so sendMessage can encrypt offline.
-// Keyed by recipientId. Cleared on page unload (session-only).
+// Keyed by recipientId. Invalidated when the sender's CryptoKey
+// object reference changes (new key derivation = new object).
 const sharedSecretCache = new Map<string, CryptoKey>();
+let cachedSenderPrivateKey: CryptoKey | null = null;
 
 /**
  * Pre-populate conversation cache so sendMessage works offline.
- * Call this after loading conversation data (e.g. from ConversationView).
  * Also pre-warms the shared secret cache for the recipient.
+ * Call this after loading conversation data (e.g. from ConversationView).
  */
 export async function cacheConversationData(
   conversationId: string,
@@ -66,13 +68,20 @@ export async function cacheConversationData(
   conversationCache.set(conversationId, data);
 
   // Pre-warm shared secret for offline encryption.
-  // Uses getSession (local, no network) instead of getUser (server call)
-  // to avoid adding 406 errors on Supabase free tier.
   if (!data.is_group) {
     try {
       const session = (await createClient().auth.getSession()).data?.session;
       const currentUserId = session?.user?.id;
       if (!currentUserId) return;
+
+      const senderKeys = keyManagementService.getCurrentKeys();
+      if (!senderKeys) return;
+
+      // Invalidate cache if sender keys changed
+      if (cachedSenderPrivateKey !== senderKeys.privateKey) {
+        sharedSecretCache.clear();
+        cachedSenderPrivateKey = senderKeys.privateKey;
+      }
 
       const recipientId =
         data.participant_1_id === currentUserId
@@ -80,9 +89,6 @@ export async function cacheConversationData(
           : data.participant_1_id;
 
       if (recipientId && !sharedSecretCache.has(recipientId)) {
-        const senderKeys = keyManagementService.getCurrentKeys();
-        if (!senderKeys) return;
-
         const recipientPublicKey =
           await keyManagementService.getUserPublicKey(recipientId);
         if (!recipientPublicKey) return;
@@ -245,7 +251,14 @@ export class MessageService {
         );
       }
 
-      // Get or derive cached shared secret for this recipient
+      // Invalidate shared secret cache if sender's keys changed
+      // (e.g. after resetEncryptionKeys + ReAuthModal re-derivation).
+      if (cachedSenderPrivateKey !== senderKeys.privateKey) {
+        sharedSecretCache.clear();
+        cachedSenderPrivateKey = senderKeys.privateKey;
+      }
+
+      // Get or derive shared secret for this recipient
       let sharedSecret = sharedSecretCache.get(recipientId) ?? null;
       if (!sharedSecret) {
         const recipientPublicKey =
