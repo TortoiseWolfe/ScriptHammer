@@ -14,7 +14,7 @@ import React, {
   useCallback,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase/client';
+import { supabase, setAllowAuthTokenRemoval } from '@/lib/supabase/client';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { retryWithBackoff } from '@/lib/auth/retry-utils';
 import { createLogger } from '@/lib/logger';
@@ -219,6 +219,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setError(null);
 
+    // Allow the E2E storage adapter to remove auth tokens during sign-out
+    setAllowAuthTokenRemoval(true);
+
     // Then attempt Supabase signOut (don't await, don't throw)
     try {
       await supabase.auth.signOut({ scope: 'local' });
@@ -227,6 +230,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.error('Supabase signOut failed (local state cleared)', {
         error: err,
       });
+    } finally {
+      setAllowAuthTokenRemoval(false);
     }
 
     // FR-005: Force page reload to clear any stale React state

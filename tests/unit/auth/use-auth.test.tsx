@@ -52,6 +52,7 @@ vi.mock('@/lib/supabase/client', () => {
   return {
     createClient: vi.fn(() => mockSupabaseClient),
     supabase: mockSupabaseClient,
+    setAllowAuthTokenRemoval: vi.fn(),
   };
 });
 

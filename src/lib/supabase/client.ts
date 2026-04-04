@@ -12,6 +12,16 @@ import type { Database } from '@/lib/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
+ * Flag for the E2E storage adapter: when true, auth-token removal is
+ * allowed (intentional sign-out). When false, removeItem is blocked
+ * for auth-token keys to prevent spurious session wipes.
+ */
+let _allowAuthTokenRemoval = false;
+export function setAllowAuthTokenRemoval(value: boolean): void {
+  _allowAuthTokenRemoval = value;
+}
+
+/**
  * Creates a disabled mock client for when Supabase is not configured.
  * Returns a client that won't crash but all operations return errors.
  */
@@ -153,7 +163,8 @@ export function createClient(): SupabaseClient<Database> {
                   setItem: (key: string, value: string) =>
                     window.localStorage.setItem(key, value),
                   removeItem: (key: string) => {
-                    if (key.includes('auth-token')) return;
+                    if (key.includes('auth-token') && !_allowAuthTokenRemoval)
+                      return;
                     window.localStorage.removeItem(key);
                   },
                 }
