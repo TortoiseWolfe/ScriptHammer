@@ -368,10 +368,14 @@ test.describe('Offline Message Queue', () => {
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
-      // Intercept Supabase REST inserts to /messages. Also match POST
-      // to the full URL in case the glob needs the scheme.
+      // Intercept only POST requests to /messages (inserts). GET requests
+      // for loadMessages must pass through — aborting them breaks the UI.
       await page.route('**/rest/v1/messages*', async (route) => {
         const method = route.request().method();
+        if (method !== 'POST') {
+          await route.continue();
+          return;
+        }
         console.log(
           `[T148 route] intercepted ${method} ${route.request().url()} (attempt ${attemptCount + 1})`
         );
