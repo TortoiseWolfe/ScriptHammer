@@ -42,6 +42,10 @@ export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
   private derivedKeys: DerivedKeyPair | null = null;
 
+  /** Cache for other users' public keys (keyed by userId).
+   * Populated on first fetch, enables offline message encryption. */
+  private publicKeyCache = new Map<string, JsonWebKey>();
+
   /** Key derivation service (Argon2id) */
   private keyDerivationService = new KeyDerivationService();
 
@@ -393,6 +397,7 @@ export class KeyManagementService {
   clearKeys(): void {
     this.derivedKeys = null;
     this.clearCachedKeys();
+    this.publicKeyCache.clear();
     logger.debug('Keys cleared from memory and localStorage');
   }
 
@@ -763,6 +768,17 @@ export class KeyManagementService {
    */
   async getUserPublicKey(userId: string): Promise<JsonWebKey | null> {
     logger.debug('getUserPublicKey: Fetching public key', { userId });
+
+    // If offline, fall back to cached key (populated by prior online fetch)
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      const cached = this.publicKeyCache.get(userId);
+      if (cached) {
+        logger.debug('getUserPublicKey: Offline — using cached key', {
+          userId,
+        });
+        return cached;
+      }
+    }
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
@@ -778,7 +794,6 @@ export class KeyManagementService {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // No rows returned
           logger.debug('getUserPublicKey: NO KEY FOUND', { userId });
           return null;
         }
@@ -792,8 +807,11 @@ export class KeyManagementService {
       }
 
       logger.debug('getUserPublicKey: FOUND public key', { userId });
-      // Cast Json to JsonWebKey for return type
-      return (data?.public_key as unknown as JsonWebKey) ?? null;
+      const publicKey = (data?.public_key as unknown as JsonWebKey) ?? null;
+      if (publicKey) {
+        this.publicKeyCache.set(userId, publicKey);
+      }
+      return publicKey;
     } catch (error) {
       if (error instanceof ConnectionError) {
         throw error;
@@ -801,6 +819,11 @@ export class KeyManagementService {
       logger.error('getUserPublicKey: Unexpected error', { error, userId });
       throw new ConnectionError('Failed to get user public key', error);
     }
+  }
+
+  /** Clear the public key cache (call after key reset) */
+  clearPublicKeyCache(): void {
+    this.publicKeyCache.clear();
   }
 }
 

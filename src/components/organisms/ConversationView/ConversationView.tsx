@@ -91,8 +91,8 @@ export default function ConversationView({
         return;
       }
 
-      // Cache for offline sendMessage support (fire-and-forget)
-      void cacheConversationData(conversationId, conversation);
+      // Cache for offline sendMessage support
+      cacheConversationData(conversationId, conversation);
 
       const otherParticipantId =
         conversation.participant_1_id === user.id

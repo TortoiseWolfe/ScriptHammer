@@ -54,63 +54,19 @@ let cachedSenderPrivateKey: CryptoKey | null = null;
 
 /**
  * Pre-populate conversation cache so sendMessage works offline.
- * Also pre-warms the shared secret cache for the recipient.
- * Call this after loading conversation data (e.g. from ConversationView).
+ * Only caches conversation participant data — shared secrets are
+ * derived lazily on first send to avoid stale key races during
+ * multi-user E2E tests (resetEncryptionKeys timing).
  */
-export async function cacheConversationData(
+export function cacheConversationData(
   conversationId: string,
   data: {
     participant_1_id: string;
     participant_2_id: string;
     is_group: boolean;
   }
-): Promise<void> {
+): void {
   conversationCache.set(conversationId, data);
-
-  // Pre-warm shared secret for offline encryption.
-  if (!data.is_group) {
-    try {
-      const session = (await createClient().auth.getSession()).data?.session;
-      const currentUserId = session?.user?.id;
-      if (!currentUserId) return;
-
-      const senderKeys = keyManagementService.getCurrentKeys();
-      if (!senderKeys) return;
-
-      // Invalidate cache if sender keys changed
-      if (cachedSenderPrivateKey !== senderKeys.privateKey) {
-        sharedSecretCache.clear();
-        cachedSenderPrivateKey = senderKeys.privateKey;
-      }
-
-      const recipientId =
-        data.participant_1_id === currentUserId
-          ? data.participant_2_id
-          : data.participant_1_id;
-
-      if (recipientId && !sharedSecretCache.has(recipientId)) {
-        const recipientPublicKey =
-          await keyManagementService.getUserPublicKey(recipientId);
-        if (!recipientPublicKey) return;
-
-        const recipientPublicKeyCrypto = await crypto.subtle.importKey(
-          'jwk',
-          recipientPublicKey,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          []
-        );
-
-        const sharedSecret = await encryptionService.deriveSharedSecret(
-          senderKeys.privateKey,
-          recipientPublicKeyCrypto
-        );
-        sharedSecretCache.set(recipientId, sharedSecret);
-      }
-    } catch {
-      // Non-fatal: shared secret will be derived on first send
-    }
-  }
 }
 
 export class MessageService {
