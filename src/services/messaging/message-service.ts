@@ -39,6 +39,71 @@ import {
 
 const logger = createLogger('messaging:messages');
 
+// Cache conversation participant data so sendMessage works offline after
+// the first successful fetch. Keyed by conversation_id.
+const conversationCache = new Map<
+  string,
+  { participant_1_id: string; participant_2_id: string; is_group: boolean }
+>();
+
+// Cache derived shared secrets so sendMessage can encrypt offline.
+// Keyed by recipientId. Cleared on page unload (session-only).
+const sharedSecretCache = new Map<string, CryptoKey>();
+
+/**
+ * Pre-populate conversation cache so sendMessage works offline.
+ * Call this after loading conversation data (e.g. from ConversationView).
+ * Also pre-warms the shared secret cache for the recipient.
+ */
+export async function cacheConversationData(
+  conversationId: string,
+  data: {
+    participant_1_id: string;
+    participant_2_id: string;
+    is_group: boolean;
+  }
+): Promise<void> {
+  conversationCache.set(conversationId, data);
+
+  // Pre-warm shared secret for offline encryption
+  if (!data.is_group) {
+    const currentUserId = (await createClient().auth.getUser()).data?.user?.id;
+    if (!currentUserId) return;
+
+    const recipientId =
+      data.participant_1_id === currentUserId
+        ? data.participant_2_id
+        : data.participant_1_id;
+
+    if (recipientId && !sharedSecretCache.has(recipientId)) {
+      try {
+        const senderKeys = keyManagementService.getCurrentKeys();
+        if (!senderKeys) return;
+
+        const recipientPublicKey =
+          await keyManagementService.getUserPublicKey(recipientId);
+        if (!recipientPublicKey) return;
+
+        const recipientPublicKeyCrypto = await crypto.subtle.importKey(
+          'jwk',
+          recipientPublicKey,
+          { name: 'ECDH', namedCurve: 'P-256' },
+          false,
+          []
+        );
+
+        const sharedSecret = await encryptionService.deriveSharedSecret(
+          senderKeys.privateKey,
+          recipientPublicKeyCrypto
+        );
+        sharedSecretCache.set(recipientId, sharedSecret);
+      } catch {
+        // Non-fatal: shared secret will be derived on first send
+      }
+    }
+  }
+}
+
 export class MessageService {
   /**
    * Send an encrypted message to a connection
@@ -132,15 +197,28 @@ export class MessageService {
         );
       }
 
-      // Get conversation details
-      const { data: conversation, error: convError } = await msgClient
-        .from('conversations')
-        .select('participant_1_id, participant_2_id, is_group')
-        .eq('id', input.conversation_id)
-        .single();
+      // Get conversation details (with cache for offline support)
+      let conversation = conversationCache.get(input.conversation_id) ?? null;
+      if (!conversation) {
+        const { data, error: convError } = await msgClient
+          .from('conversations')
+          .select('participant_1_id, participant_2_id, is_group')
+          .eq('id', input.conversation_id)
+          .single();
 
-      if (convError || !conversation) {
-        throw new ValidationError('Conversation not found', 'conversation_id');
+        if (convError || !data) {
+          throw new ValidationError(
+            'Conversation not found',
+            'conversation_id'
+          );
+        }
+        const cached = {
+          participant_1_id: data.participant_1_id ?? '',
+          participant_2_id: data.participant_2_id ?? '',
+          is_group: data.is_group,
+        };
+        conversation = cached;
+        conversationCache.set(input.conversation_id, cached);
       }
 
       // For 1-to-1 conversations, determine recipient ID
@@ -164,34 +242,33 @@ export class MessageService {
         );
       }
 
-      // Get recipient's public key
-      const recipientPublicKey =
-        await keyManagementService.getUserPublicKey(recipientId);
+      // Get or derive cached shared secret for this recipient
+      let sharedSecret = sharedSecretCache.get(recipientId) ?? null;
+      if (!sharedSecret) {
+        const recipientPublicKey =
+          await keyManagementService.getUserPublicKey(recipientId);
 
-      if (!recipientPublicKey) {
-        throw new ValidationError(
-          "This person needs to sign in before you can message them. Messages cannot be delivered until they've logged in at least once to set up encryption.",
-          'conversation_id'
+        if (!recipientPublicKey) {
+          throw new ValidationError(
+            "This person needs to sign in before you can message them. Messages cannot be delivered until they've logged in at least once to set up encryption.",
+            'conversation_id'
+          );
+        }
+
+        const recipientPublicKeyCrypto = await crypto.subtle.importKey(
+          'jwk',
+          recipientPublicKey,
+          { name: 'ECDH', namedCurve: 'P-256' },
+          false,
+          []
         );
+
+        sharedSecret = await encryptionService.deriveSharedSecret(
+          senderKeys.privateKey,
+          recipientPublicKeyCrypto
+        );
+        sharedSecretCache.set(recipientId, sharedSecret);
       }
-
-      // Import recipient's public key
-      const recipientPublicKeyCrypto = await crypto.subtle.importKey(
-        'jwk',
-        recipientPublicKey,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        []
-      );
-
-      // Derive shared secret using sender's derived private key
-      const sharedSecret = await encryptionService.deriveSharedSecret(
-        senderKeys.privateKey,
-        recipientPublicKeyCrypto
-      );
 
       // Encrypt message content
       const encrypted = await encryptionService.encryptMessage(

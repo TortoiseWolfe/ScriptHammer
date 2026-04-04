@@ -3,7 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
-import { messageService } from '@/services/messaging/message-service';
+import {
+  messageService,
+  cacheConversationData,
+} from '@/services/messaging/message-service';
 import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
 import type { DecryptedMessage } from '@/types/messaging';
@@ -73,19 +76,23 @@ export default function ConversationView({
 
       const result = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id')
+        .select('participant_1_id, participant_2_id, is_group')
         .eq('id', conversationId)
         .single();
 
       const conversation = result.data as {
         participant_1_id: string;
         participant_2_id: string;
+        is_group: boolean;
       } | null;
 
       if (!conversation) {
         logger.warn('Conversation not found', { conversationId });
         return;
       }
+
+      // Cache for offline sendMessage support (fire-and-forget)
+      void cacheConversationData(conversationId, conversation);
 
       const otherParticipantId =
         conversation.participant_1_id === user.id
