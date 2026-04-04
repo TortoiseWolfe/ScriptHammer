@@ -143,7 +143,14 @@ export function createClient(): SupabaseClient<Database> {
         // Store session in localStorage
         storage:
           typeof window !== 'undefined' ? window.localStorage : undefined,
-        autoRefreshToken: true,
+        // Disable auto-refresh in E2E tests. The access token is valid for
+        // 1 hour — plenty for a ~30-minute test run. Auto-refresh causes
+        // single-use refresh tokens to be consumed by one test context,
+        // leaving subsequent contexts with an invalid session (SIGNED_OUT
+        // fires → localStorage cleared → all messaging tests fail).
+        autoRefreshToken:
+          typeof window === 'undefined' ||
+          !window.localStorage?.getItem('playwright_e2e'),
         persistSession: true,
         detectSessionInUrl: true,
       },
