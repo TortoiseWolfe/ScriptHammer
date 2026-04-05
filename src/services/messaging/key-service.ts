@@ -368,6 +368,11 @@ export class KeyManagementService {
         const cached = await this.restoreCachedKeys(userId);
         if (cached) {
           this.derivedKeys = cached;
+          const cachedFingerprint =
+            cached.publicKeyJwk?.x?.slice(0, 8) ?? 'null';
+          console.log(
+            `[restoreKeysFromCache] userId=${userId.slice(0, 8)} pubKey=${cachedFingerprint} source=localStorage`
+          );
 
           // Also populate IndexedDB — encryptionService.getPrivateKey()
           // reads from there, not from keyManagementService memory.

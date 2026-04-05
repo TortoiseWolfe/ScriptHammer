@@ -231,6 +231,8 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
           text.includes('ConversationView') ||
           text.includes('getMessageHistory') ||
           text.includes('getUserPublicKey') ||
+          text.includes('restoreKeysFromCache') ||
+          text.includes('deriveKeys') ||
           text.includes('DECRYPTION') ||
           msg.type() === 'error'
         ) {

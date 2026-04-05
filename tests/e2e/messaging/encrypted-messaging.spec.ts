@@ -200,6 +200,8 @@ test.describe('Encrypted Messaging Flow', () => {
           text.includes('ConversationView') ||
           text.includes('getMessageHistory') ||
           text.includes('getUserPublicKey') ||
+          text.includes('restoreKeysFromCache') ||
+          text.includes('deriveKeys') ||
           text.includes('DECRYPTION') ||
           msg.type() === 'error'
         ) {
