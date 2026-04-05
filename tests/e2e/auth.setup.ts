@@ -114,9 +114,11 @@ setup('authenticate shared test user', async ({ page }) => {
       await adminClient.from('messages').delete().or(orFilter);
       await adminClient.from('conversations').delete().or(participantFilter);
       await adminClient.from('user_connections').delete().or(connectionFilter);
-      await adminClient.from('user_encryption_keys').delete().or(userFilter);
+      // DO NOT delete user_encryption_keys — they must persist across CI runs.
+      // Deleting and recreating with a new random salt every run was the root
+      // cause of all ECDH decryption failures (key mismatch between shards).
       console.log(
-        `✓ Cleaned up messaging state for ${userIds.length} test users`
+        `✓ Cleaned up messaging state for ${userIds.length} test users (keys preserved)`
       );
     }
   } else {
