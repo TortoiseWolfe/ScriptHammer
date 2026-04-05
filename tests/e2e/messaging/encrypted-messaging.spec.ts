@@ -299,27 +299,23 @@ test.describe('Encrypted Messaging Flow', () => {
       });
 
       // ===== STEP 9: User B sees the decrypted message =====
-      // Supabase free tier may return empty results or stale reads.
-      // Retry with page reloads up to 3 times with 3s waits.
+      // Supabase free tier read-after-write latency can be 30-60s under
+      // 6-shard load. Retry with page reloads up to 6 times with 5s waits.
       await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
-      for (let retry = 0; retry < 3; retry++) {
+      for (let retry = 0; retry < 6; retry++) {
         const visible = await messageB
           .isVisible({ timeout: 10000 })
           .catch(() => false);
         if (visible) break;
-        console.log(
-          `[encrypted-messaging] Message not visible on User B (attempt ${retry + 1}/3), reloading...`
-        );
-        // Dump page content for diagnostics
         const threadText = await pageB
           .locator('[data-testid="message-thread"]')
           .textContent()
           .catch(() => '(not found)');
         console.log(
-          `[encrypted-messaging] Thread content: ${threadText?.slice(0, 200)}`
+          `[encrypted-messaging] Attempt ${retry + 1}/6: ${threadText?.slice(0, 200)}`
         );
-        await pageB.waitForTimeout(3000);
+        await pageB.waitForTimeout(5000);
         await pageB.reload({ waitUntil: 'domcontentloaded' });
         await handleReAuthModal(pageB, USER_B.password);
         await pageB.waitForSelector('[data-testid="message-thread"]', {

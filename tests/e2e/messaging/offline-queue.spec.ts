@@ -579,7 +579,7 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 7: Verify server determined order =====
       if (conversationId) {
         // Both messages should exist
-        expect(messages).toBeDefined();
+        expect(messages).not.toBeNull();
         expect(messages!.length).toBeGreaterThanOrEqual(2);
 
         // Verify sequence numbers are unique (no duplicates)
