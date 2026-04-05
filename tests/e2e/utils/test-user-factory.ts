@@ -336,14 +336,24 @@ export async function ensureEncryptionKeys(
     return false;
   }
 
-  // Always delete and recreate keys. Stale keys from previous CI runs
-  // have a different salt, causing ECDH shared secret mismatch: the
-  // browser derives keys with the DB salt, but the stored public key
-  // was derived with a different salt. This breaks sendMessage() because
-  // ECDH(sender_private_new, recipient_public_old) ≠ shared secret.
-  await admin.from('user_encryption_keys').delete().eq('user_id', user.id);
+  // Check if keys already exist — if so, keep them. Deleting and recreating
+  // with a new random salt every CI run was the root cause of all ECDH
+  // decryption failures: the auth-setup job would create keys with salt S1,
+  // then shards would race to derive from S1, and any transient error meant
+  // a shard got wrong keys. Persistent keys eliminate this entirely.
+  const { data: existing } = await admin
+    .from('user_encryption_keys')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('revoked', false)
+    .maybeSingle();
 
-  // Derive new keys from password (same pattern as scripts/initialize-test-keys.ts)
+  if (existing) {
+    console.log(`✓ Encryption keys already exist for ${email} — keeping`);
+    return true;
+  }
+
+  // Only create if no keys exist (first-ever run for this user)
   const kds = new KeyDerivationService();
   const salt = kds.generateSalt();
   const keyPair = await kds.deriveKeyPair({ password, salt });
