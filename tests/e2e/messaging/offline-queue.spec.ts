@@ -87,6 +87,23 @@ function forwardConsole(page: import('@playwright/test').Page) {
   });
 }
 
+/** Wait for loadMessages to finish (populates conversation cache for offline). */
+async function waitForConversationLoaded(
+  page: import('@playwright/test').Page
+) {
+  await page.waitForFunction(
+    () => {
+      const thread = document.querySelector('[data-testid="message-thread"]');
+      return (
+        thread &&
+        (thread.textContent?.includes('No messages yet') ||
+          thread.querySelectorAll('[data-testid="message-bubble"]').length > 0)
+      );
+    },
+    { timeout: 30000 }
+  );
+}
+
 test.describe('Offline Message Queue', () => {
   test.describe.configure({ timeout: 180000 });
 
@@ -225,6 +242,10 @@ test.describe('Offline Message Queue', () => {
       });
       await expect(messageInput).toBeVisible({ timeout: 45000 });
 
+      // Wait for loadMessages to finish before going offline (populates
+      // conversation cache needed for offline encryption).
+      await waitForConversationLoaded(page);
+
       // ===== STEP 3: Go offline =====
       await context.setOffline(true);
 
@@ -298,6 +319,7 @@ test.describe('Offline Message Queue', () => {
         name: /Message input/i,
       });
       await expect(messageInput).toBeVisible({ timeout: 45000 });
+      await waitForConversationLoaded(page);
 
       // ===== STEP 2: Go offline =====
       await context.setOffline(true);
@@ -509,6 +531,8 @@ test.describe('Offline Message Queue', () => {
       });
       const inputB = pageB.getByRole('textbox', { name: /Message input/i });
       await expect(inputB).toBeVisible({ timeout: 45000 });
+      await waitForConversationLoaded(pageA);
+      await waitForConversationLoaded(pageB);
 
       // ===== STEP 3: Both go offline =====
       await contextA.setOffline(true);
