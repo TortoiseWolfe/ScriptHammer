@@ -166,9 +166,14 @@ setup('authenticate shared test user', async ({ page }) => {
 
       if (keyRow?.encryption_salt) {
         const kds = new KeyDerivationService();
+        // encryption_salt is stored as base64 string in DB, but
+        // deriveKeyPair expects Uint8Array. Decode it.
+        const saltBytes = Uint8Array.from(atob(keyRow.encryption_salt), (c) =>
+          c.charCodeAt(0)
+        );
         const keyPair = await kds.deriveKeyPair({
           password,
-          salt: keyRow.encryption_salt,
+          salt: saltBytes,
         });
         // Export to JWK for localStorage cache format
         const privateJwk = await crypto.subtle.exportKey(
