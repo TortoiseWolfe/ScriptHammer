@@ -52,6 +52,11 @@ const conversationCache = new Map<
 const sharedSecretCache = new Map<string, CryptoKey>();
 let cachedSenderPrivateKey: CryptoKey | null = null;
 
+/** Check if conversation data is cached (for E2E test verification). */
+export function isConversationCached(conversationId: string): boolean {
+  return conversationCache.has(conversationId);
+}
+
 /**
  * Pre-populate conversation cache so sendMessage works offline.
  * Also pre-fetches the recipient's public key so getUserPublicKey

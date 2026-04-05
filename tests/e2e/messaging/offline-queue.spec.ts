@@ -87,20 +87,42 @@ function forwardConsole(page: import('@playwright/test').Page) {
   });
 }
 
-/** Wait for loadMessages to finish (populates conversation cache for offline). */
-async function waitForConversationLoaded(
-  page: import('@playwright/test').Page
+/** Wait for conversation data to be cached (required for offline send).
+ * loadConversationInfo can fail silently on 403/406 errors, leaving the
+ * conversation cache empty. This function retries by reloading the page
+ * until the participant name resolves (proves loadConversationInfo
+ * completed and cached the conversation data). */
+async function waitForConversationCached(
+  page: import('@playwright/test').Page,
+  conversationId: string,
+  password: string
 ) {
-  await page.waitForFunction(
-    () => {
-      const thread = document.querySelector('[data-testid="message-thread"]');
-      return (
-        thread &&
-        (thread.textContent?.includes('No messages yet') ||
-          thread.querySelectorAll('[data-testid="message-bubble"]').length > 0)
-      );
-    },
-    { timeout: 30000 }
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // Wait for the thread to be mounted
+    await page.waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
+      timeout: 30000,
+    });
+    // Check if participant name resolved (not "Unknown User")
+    // This proves loadConversationInfo completed successfully
+    const nameResolved = await page.evaluate(() => {
+      const cv = document.querySelector('[data-testid="conversation-view"]');
+      return cv ? !cv.textContent?.includes('Unknown User') : false;
+    });
+    if (nameResolved) {
+      // Give cacheConversationData a tick to complete (fire-and-forget)
+      await page.waitForTimeout(500);
+      return;
+    }
+    console.log(
+      `[waitForConversationCached] Attempt ${attempt + 1}/3: participant name not resolved, reloading...`
+    );
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, password);
+  }
+  // Last resort — proceed anyway and let sendMessage fail with a clear error
+  console.warn(
+    '[waitForConversationCached] Conversation data may not be cached'
   );
 }
 
@@ -244,7 +266,7 @@ test.describe('Offline Message Queue', () => {
 
       // Wait for loadMessages to finish before going offline (populates
       // conversation cache needed for offline encryption).
-      await waitForConversationLoaded(page);
+      await waitForConversationCached(page, conversationId, USER_A.password);
 
       // ===== STEP 3: Go offline =====
       await context.setOffline(true);
@@ -319,7 +341,7 @@ test.describe('Offline Message Queue', () => {
         name: /Message input/i,
       });
       await expect(messageInput).toBeVisible({ timeout: 45000 });
-      await waitForConversationLoaded(page);
+      await waitForConversationCached(page, conversationId, USER_A.password);
 
       // ===== STEP 2: Go offline =====
       await context.setOffline(true);
@@ -531,8 +553,8 @@ test.describe('Offline Message Queue', () => {
       });
       const inputB = pageB.getByRole('textbox', { name: /Message input/i });
       await expect(inputB).toBeVisible({ timeout: 45000 });
-      await waitForConversationLoaded(pageA);
-      await waitForConversationLoaded(pageB);
+      await waitForConversationCached(pageA, conversationId, USER_A.password);
+      await waitForConversationCached(pageB, conversationId, USER_B.password);
 
       // ===== STEP 3: Both go offline =====
       await contextA.setOffline(true);
