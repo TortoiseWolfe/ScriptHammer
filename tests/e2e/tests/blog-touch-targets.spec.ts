@@ -9,10 +9,9 @@ import { TOUCH_TARGET_STANDARDS } from '@/config/touch-targets';
  * This test should FAIL initially (TDD RED phase)
  */
 
-// Device configuration at file scope (not inside describe)
-test.use({
-  ...devices['iPhone 12'],
-});
+// iPhone 12 emulation without forcing webkit. Use viewport/UA/touch only.
+const { defaultBrowserType: _, ...iPhone12Config } = devices['iPhone 12'];
+test.use(iPhone12Config);
 
 const MINIMUM = TOUCH_TARGET_STANDARDS.AAA.minWidth;
 const TOLERANCE = 1;

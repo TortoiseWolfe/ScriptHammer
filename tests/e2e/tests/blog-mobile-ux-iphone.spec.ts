@@ -9,10 +9,12 @@ import { test, expect, devices } from '@playwright/test';
  * See PRP-016: Mobile-First Visual Testing Methodology
  */
 
-// Device configuration at file scope (not inside describe)
-test.use({
-  ...devices['iPhone 12'],
-});
+// iPhone 12 emulation without forcing webkit. Spreading devices['iPhone 12']
+// directly sets defaultBrowserType: 'webkit' which breaks the chromium project
+// (missing webkit binary). We use only the viewport/UA/touch fields so the
+// test runs in whichever browser the project specifies.
+const { defaultBrowserType: _, ...iPhone12Config } = devices['iPhone 12'];
+test.use(iPhone12Config);
 
 test.describe('Blog Post Mobile UX - iPhone 12', () => {
   test.beforeEach(async ({ page }) => {

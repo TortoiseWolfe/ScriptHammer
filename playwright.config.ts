@@ -166,13 +166,13 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        // These use devices['iPhone 12'] which has defaultBrowserType: 'webkit'
-        // Running them in the chromium project triggers a missing webkit binary error
-        '**/tests/blog-mobile-ux-iphone.spec.ts',
-        '**/tests/blog-touch-targets.spec.ts',
-        '**/tests/mobile-horizontal-scroll.spec.ts',
-        '**/tests/mobile-navigation.spec.ts',
-        '**/tests/mobile-orientation.spec.ts',
+        // Previously excluded mobile tests now run on chromium:
+        // - blog-mobile-ux-iphone, blog-touch-targets: test.use() with
+        //   devices['iPhone 12'] now overrides defaultBrowserType to 'chromium'
+        // - mobile-horizontal-scroll, mobile-navigation: pure viewport tests,
+        //   no device emulation needed
+        // - mobile-orientation: uses browser.newContext() at runtime (browser
+        //   already chromium, defaultBrowserType field is ignored)
       ],
       dependencies: ['setup'],
       use: {
@@ -188,11 +188,6 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        '**/tests/blog-mobile-ux-iphone.spec.ts',
-        '**/tests/blog-touch-targets.spec.ts',
-        '**/tests/mobile-horizontal-scroll.spec.ts',
-        '**/tests/mobile-navigation.spec.ts',
-        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {
