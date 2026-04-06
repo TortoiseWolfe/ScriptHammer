@@ -299,8 +299,8 @@ test.describe('Offline Message Queue', () => {
       expect(isOnline).toBe(true);
 
       // ===== STEP 7: Wait for automatic sync =====
-      // Queue should auto-sync within a few seconds - wait for queue indicator to disappear
-      await page.waitForTimeout(3000);
+      // Queue sync + Supabase INSERT can take 10-15s under load
+      await page.waitForTimeout(10000);
 
       // ===== STEP 8: Verify message is still visible (sent successfully) =====
       await expect(messageBubble).toBeVisible();

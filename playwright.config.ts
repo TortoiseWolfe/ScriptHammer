@@ -143,9 +143,25 @@ export default defineConfig({
     // These exclude rate-limiting, brute-force, and sign-up tests
     // ============================================================
 
+    // Messaging tests isolated into their own project — sharded separately
+    // in CI to prevent state contention (friend-requests deletes connections
+    // that encrypted-messaging/group-chat/offline-queue need).
     {
-      name: 'chromium',
+      name: 'chromium-msg',
+      testMatch: '**/messaging/**',
+      testIgnore: ['**/examples/**'],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+
+    // General (non-messaging) tests
+    {
+      name: 'chromium-gen',
       testIgnore: [
+        '**/messaging/**', // handled by chromium-msg
         '**/examples/**', // POM tutorial, not production tests
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',

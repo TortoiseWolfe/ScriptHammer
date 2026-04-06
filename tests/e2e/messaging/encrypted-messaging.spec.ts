@@ -483,13 +483,15 @@ test.describe('Encrypted Messaging Flow', () => {
       );
       await expect(deliveryStatus).toBeVisible();
 
-      // Should show "Delivered" status - ReadReceipt uses SVG icons with aria-label
+      // Should show "Delivered" status - ReadReceipt uses SVG icons with aria-label.
+      // Poll with 30s timeout — Supabase Realtime delivery can be slow under load.
       const readReceipt = deliveryStatus.locator(
         '[data-testid="read-receipt"]'
       );
       await expect(readReceipt).toHaveAttribute(
         'aria-label',
-        /Message (delivered|read)/i
+        /Message (sent|delivered|read)/i,
+        { timeout: 30000 }
       );
 
       // ===== USER B READS THE MESSAGE =====

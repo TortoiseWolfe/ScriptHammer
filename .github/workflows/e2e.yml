@@ -266,16 +266,32 @@ jobs:
   # STEP 5: Full E2E tests (sharded, parallel)
   # ============================================
   e2e:
-    name: E2E (${{ matrix.browser }} ${{ matrix.shard }})
+    name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
     needs: [smoke, rate-limiting, auth-setup]
     timeout-minutes: 60
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        browser: ${{ github.event_name == 'schedule' && fromJSON('["chromium", "firefox", "webkit"]') || fromJSON('["chromium"]') }}
-        shard: [1/6, 2/6, 3/6, 4/6, 5/6, 6/6]
+        include:
+          # Messaging tests: isolated project, 2 shards (12 files / 2 = 6 per shard)
+          - project: chromium-msg
+            shard: 1/2
+          - project: chromium-msg
+            shard: 2/2
+          # General tests: 6 shards (~8 files each)
+          - project: chromium-gen
+            shard: 1/6
+          - project: chromium-gen
+            shard: 2/6
+          - project: chromium-gen
+            shard: 3/6
+          - project: chromium-gen
+            shard: 4/6
+          - project: chromium-gen
+            shard: 5/6
+          - project: chromium-gen
+            shard: 6/6
 
     steps:
       - name: Checkout code
@@ -296,21 +312,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        env:
-          BROWSER: ${{ matrix.browser }}
         run: |
           for i in 1 2 3; do
             pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: chromium install failed, retrying in 10s..."
             sleep 10
           done
-          if [ "$BROWSER" != "chromium" ]; then
-            for i in 1 2 3; do
-              pnpm exec playwright install --with-deps "$BROWSER" && break
-              echo "Retry $i: $BROWSER install failed, retrying in 10s..."
-              sleep 10
-            done
-          fi
 
       - name: Download build
         uses: actions/download-artifact@v4
@@ -345,25 +352,25 @@ jobs:
             > /dev/null 2>&1 || true
           echo "✓ Supabase connection pool primed"
 
-      - name: Stagger browser shards to reduce Supabase Cloud contention
+      - name: Stagger shards to reduce Supabase contention
         env:
-          BROWSER: ${{ matrix.browser }}
+          PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
         run: |
           SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          # Stagger browser starts to reduce Supabase Cloud contention.
-          # 6 shards spread messaging tests more evenly than 4.
-          if [ "$BROWSER" = "firefox" ]; then
-            DELAY=$((30 + SHARD_NUM * 5))
-            echo "Firefox shard $SHARD_NUM: waiting ${DELAY}s"
+          # Messaging shards start 10s apart; general shards start 5s apart.
+          # Prevents thundering herd on Supabase connection pool.
+          if [ "$PROJECT" = "chromium-msg" ]; then
+            DELAY=$((SHARD_NUM * 10))
+            echo "Messaging shard $SHARD_NUM: waiting ${DELAY}s"
             sleep $DELAY
-          elif [ "$BROWSER" = "webkit" ]; then
-            DELAY=$((60 + SHARD_NUM * 5))
-            echo "WebKit shard $SHARD_NUM: waiting ${DELAY}s"
+          else
+            DELAY=$((SHARD_NUM * 5))
+            echo "General shard $SHARD_NUM: waiting ${DELAY}s"
             sleep $DELAY
           fi
 
-      - name: Run E2E tests (shard ${{ matrix.shard }})
+      - name: Run E2E tests (${{ matrix.project }} ${{ matrix.shard }})
         env:
           CI: true
           SKIP_WEBSERVER: true
@@ -376,11 +383,11 @@ jobs:
           TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
           TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
-          BROWSER: ${{ matrix.browser }}
+          PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
         run: |
           pnpm exec playwright test \
-            --project="$BROWSER" \
+            --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry
@@ -389,7 +396,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: blob-report-${{ matrix.browser }}-${{ strategy.job-index }}
+          name: blob-report-${{ matrix.project }}-${{ strategy.job-index }}
           path: blob-report/
           retention-days: 1
 

@@ -421,7 +421,7 @@ test.describe('Friend Request Flow', () => {
   });
 
   test('User A can cancel a sent pending request', async ({ page }) => {
-    test.setTimeout(60000);
+    test.setTimeout(90000);
 
     // Sign in as User A using robust helper
     await page.goto('/sign-in');
@@ -436,15 +436,15 @@ test.describe('Friend Request Flow', () => {
     });
     await handleReAuthModal(page, USER_A.password);
     const searchInput = page.locator('#user-search-input');
-    await expect(searchInput).toBeVisible({ timeout: 5000 });
+    await expect(searchInput).toBeVisible({ timeout: 15000 });
     await searchInput.fill(userBDisplayName!);
     await searchInput.press('Enter');
     await page.waitForSelector('[data-testid="search-results"], .alert-error', {
-      timeout: 15000,
+      timeout: 30000,
     });
-    await page
-      .getByRole('button', { name: /send request/i })
-      .click({ force: true });
+    const sendReqBtn = page.getByRole('button', { name: /send request/i });
+    await expect(sendReqBtn).toBeVisible({ timeout: 15000 });
+    await sendReqBtn.click({ force: true });
 
     // Wait for success message OR "already connected" error (both mean connection exists)
     const successOrAlreadyConnected = page.getByText(
