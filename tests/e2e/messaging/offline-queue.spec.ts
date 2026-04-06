@@ -340,11 +340,15 @@ test.describe('Offline Message Queue', () => {
     forwardConsole(page);
 
     try {
-      // ===== STEP 1: Navigate directly to conversation via URL =====
-      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      // ===== STEP 1: Hydrate auth, then navigate to conversation =====
+      await page.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
+      await handleReAuthModal(page, USER_A.password);
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(page, USER_A.password);
 
       // Wait for conversation view to mount
@@ -426,11 +430,15 @@ test.describe('Offline Message Queue', () => {
     });
 
     try {
-      // ===== STEP 1: Navigate directly to conversation via URL =====
-      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      // ===== STEP 1: Hydrate auth, then navigate to conversation =====
+      await page.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
+      await handleReAuthModal(page, USER_A.password);
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(page, USER_A.password);
 
       // Wait for conversation view to mount
@@ -659,11 +667,15 @@ test.describe('Offline Message Queue', () => {
     forwardConsole(page);
 
     try {
-      // ===== STEP 1: Navigate directly to conversation via URL =====
-      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      // ===== STEP 1: Hydrate auth, then navigate to conversation =====
+      await page.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
+      await handleReAuthModal(page, USER_A.password);
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(page, USER_A.password);
 
       // Wait for conversation view to mount

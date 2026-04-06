@@ -512,9 +512,10 @@ test.describe('Encrypted Messaging Flow', () => {
       await fillMessageInput(pageA, testMessage);
       await pageA.getByRole('button', { name: /send/i }).click();
 
-      // Wait for message to appear
+      // Wait for message to appear — encryption + Supabase INSERT + optimistic
+      // render can take 15-30s on CI under load
       await expect(pageA.getByText(testMessage)).toBeVisible({
-        timeout: 15000,
+        timeout: 30000,
       });
 
       // ===== VERIFY "SENT" STATUS (✓) =====

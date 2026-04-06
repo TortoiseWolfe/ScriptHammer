@@ -467,6 +467,9 @@ test.describe('Friend Request Flow', () => {
   test('User A can cancel a sent pending request', async ({ page }) => {
     test.setTimeout(90000);
 
+    // Delete existing connection so we can send a fresh request to cancel
+    await cleanupConnections();
+
     // Sign in as User A using robust helper
     await page.goto('/sign-in');
     const result = await performSignIn(page, USER_A.email, USER_A.password);
