@@ -460,6 +460,8 @@ test.describe('Offline Message Queue', () => {
       // and retries with exponential backoff: 1s, 2s). 3rd attempt succeeds.
       await page.route(/\/rest\/v1\/messages/, async (route) => {
         const req = route.request();
+        // Log EVERY hit to verify the route handler is firing at all
+        console.log(`[T148 ROUTE-HIT] ${req.method()} ${req.url()}`);
         if (req.method() !== 'POST') {
           await route.continue();
           return;
@@ -484,9 +486,12 @@ test.describe('Offline Message Queue', () => {
       await sendButton.click();
 
       // ===== STEP 4: Wait for retries =====
-      await page
-        .waitForFunction(() => true, { timeout: 10000 })
-        .catch(() => {});
+      // Wait until 3 POST attempts have been intercepted (or 15s timeout).
+      // The retry delays in message-service.ts are 1s + 2s = 3s total minimum.
+      const waitStart = Date.now();
+      while (attemptCount < 3 && Date.now() - waitStart < 15000) {
+        await new Promise((r) => setTimeout(r, 200));
+      }
 
       // ===== STEP 5: Verify retry delays =====
       expect(attemptCount).toBeGreaterThanOrEqual(3);

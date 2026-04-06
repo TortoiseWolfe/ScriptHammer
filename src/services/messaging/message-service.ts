@@ -388,6 +388,26 @@ export class MessageService {
             continue;
           }
 
+          // Network/fetch failures may come through as insertError instead of
+          // a thrown exception. Detect by message and retry with backoff.
+          const errMsg = insertError.message || '';
+          if (
+            errMsg.includes('Failed to fetch') ||
+            errMsg.includes('NetworkError') ||
+            errMsg.includes('fetch failed')
+          ) {
+            networkAttempt++;
+            if (networkAttempt < 3) {
+              await new Promise((r) =>
+                setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
+              );
+              continue;
+            }
+            throw new ConnectionError(
+              'Failed to send message after network retries: ' + errMsg
+            );
+          }
+
           // Other errors - throw
           throw new ConnectionError(
             'Failed to send message: ' + insertError.message
