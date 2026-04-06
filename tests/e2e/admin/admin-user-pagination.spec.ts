@@ -304,7 +304,10 @@ test.describe('Admin User Pagination E2E', () => {
     const nextBtn = page.locator('button[aria-label="Next page"]');
     for (let i = 1; i < totalPages; i++) {
       await nextBtn.click();
-      await page.waitForTimeout(500);
+      // Wait for page indicator to update instead of blind sleep
+      await expect(indicator).toContainText(`Page ${i + 1} of`, {
+        timeout: 10000,
+      });
     }
 
     // Verify we're on the last page

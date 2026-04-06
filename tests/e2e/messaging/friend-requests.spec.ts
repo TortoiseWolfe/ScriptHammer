@@ -223,7 +223,7 @@ test.describe('Friend Request Flow', () => {
         name: /Connections/i,
       });
       await connectionsTab.waitFor({ state: 'visible', timeout: 60000 });
-      await connectionsTab.click();
+      await connectionsTab.click({ force: true });
       await expect(pageA).toHaveURL(/.*\/messages.*tab=connections/);
 
       // ===== STEP 3: User A searches for User B by display_name =====

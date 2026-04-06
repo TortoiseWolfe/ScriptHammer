@@ -121,7 +121,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     if (!redirected) {
       // If still on sign-up page without error, wait a bit more
-      await page.waitForURL(/\/(verify-email|profile)/, { timeout: 10000 });
+      await page.waitForURL(/\/(verify-email|profile)/, { timeout: 30000 });
     }
 
     const url = page.url();

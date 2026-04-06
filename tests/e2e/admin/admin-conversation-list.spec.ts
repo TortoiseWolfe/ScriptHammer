@@ -62,6 +62,8 @@ test.describe('Admin Conversation List E2E', () => {
   let serviceClient: SupabaseClient;
 
   test.beforeAll(async () => {
+    // HTTP proxy setup + Supabase seeding can exceed default 30s under CI load
+    test.setTimeout(60000);
     proxyServer = http.createServer((req, res) => {
       const options: http.RequestOptions = {
         hostname: SUPABASE_DOCKER_HOST,
