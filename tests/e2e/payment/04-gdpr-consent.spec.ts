@@ -104,11 +104,11 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Re-navigate (not reload) — page.reload() loses Supabase session on
-    // Firefox/WebKit because token refresh races with ProtectedRoute.
-    // page.goto() re-applies storageState cookies from the Playwright context.
-    await page.goto('/payment-demo');
-    await page.waitForLoadState('networkidle');
+    // Reload instead of goto — goto('/payment-demo') creates a fresh Supabase
+    // client and ProtectedRoute can redirect before auth hydrates. Reload
+    // preserves the existing session. (The Firefox/WebKit comment about reload
+    // doesn't apply here — this test runs on chromium-gen only.)
+    await page.reload({ waitUntil: 'networkidle' });
     await dismissCookieBanner(page);
 
     // Wait for consent state to hydrate from localStorage before checking UI.
@@ -190,9 +190,8 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.getByRole('button', { name: /Accept/i }).click();
     await page.waitForTimeout(500);
 
-    // Re-navigate (not reload) — page.reload() loses Supabase session
-    await page.goto('/payment-demo');
-    await page.waitForLoadState('networkidle');
+    // Reload instead of goto — same auth race fix as "remember consent" test
+    await page.reload({ waitUntil: 'networkidle' });
     await dismissCookieBanner(page);
 
     // Wait for consent state to hydrate from localStorage
