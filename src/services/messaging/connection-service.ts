@@ -38,6 +38,29 @@ import {
 
 export class ConnectionService {
   /**
+   * Get authenticated user via getSession() with retries.
+   * Uses getSession() instead of getUser() because getUser() makes a server
+   * round-trip that can fail when the access token is mid-refresh. getSession()
+   * reads from localStorage and auto-refreshes transparently.
+   * Retries 3 times with 500ms delays to handle token refresh cycles where
+   * session is briefly null.
+   */
+  private async getAuthenticatedUser(
+    supabase: ReturnType<typeof createClient>
+  ) {
+    let session = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      session = result.data?.session;
+      authError = result.error;
+      if (session?.user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
+    return { user: session?.user ?? null, error: authError };
+  }
+
+  /**
    * Send a friend request to another user
    * Task: T017
    *
@@ -67,11 +90,9 @@ export class ConnectionService {
     // Validate UUID format
     validateUUID(input.addressee_id, 'addressee_id');
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -173,11 +194,9 @@ export class ConnectionService {
       );
     }
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -287,11 +306,9 @@ export class ConnectionService {
       );
     }
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -364,11 +381,9 @@ export class ConnectionService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -465,11 +480,9 @@ export class ConnectionService {
     // Validate connection_id
     validateUUID(connection_id, 'connection_id');
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -543,11 +556,9 @@ export class ConnectionService {
     // Validate UUID format
     validateUUID(otherUserId, 'otherUserId');
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user (with retry for token refresh races)
+    const { user, error: authError } =
+      await this.getAuthenticatedUser(supabase);
 
     if (authError || !user) {
       throw new AuthenticationError(

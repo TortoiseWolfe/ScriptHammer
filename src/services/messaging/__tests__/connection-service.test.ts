@@ -20,6 +20,7 @@ const mockSupabase = {
   from: vi.fn(),
   auth: {
     getUser: vi.fn(),
+    getSession: vi.fn(),
   },
 } as unknown as SupabaseClient;
 
@@ -51,7 +52,11 @@ describe('ConnectionService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default: mock authenticated user
+    // Default: mock authenticated user (getSession used by getAuthenticatedUser helper)
+    vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: CURRENT_USER_ID } } },
+      error: null,
+    } as any);
     vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
       data: { user: { id: CURRENT_USER_ID } },
       error: null,
@@ -66,6 +71,10 @@ describe('ConnectionService', () => {
     });
 
     it('should handle authentication errors', async () => {
+      vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Not authenticated' },
+      } as any);
       vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: { message: 'Not authenticated' },
@@ -79,6 +88,10 @@ describe('ConnectionService', () => {
 
   describe('sendFriendRequest', () => {
     it('should require authentication', async () => {
+      vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Not authenticated' },
+      } as any);
       vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: { message: 'Not authenticated' },
@@ -114,6 +127,10 @@ describe('ConnectionService', () => {
 
   describe('getConnections', () => {
     it('should require authentication', async () => {
+      vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Not authenticated' },
+      } as any);
       vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: { message: 'Not authenticated' },
@@ -137,6 +154,10 @@ describe('ConnectionService', () => {
     const CONVERSATION_ID = '00000000-0000-0000-0000-000000000100';
 
     it('should require authentication', async () => {
+      vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
+        data: { session: null },
+        error: { message: 'Not authenticated' },
+      } as any);
       vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
         data: { user: null },
         error: { message: 'Not authenticated' },

@@ -12,33 +12,40 @@ test.describe('GDPR Payment Consent Flow', () => {
   test.describe.configure({ timeout: 60000 });
 
   test.beforeEach(async ({ page }) => {
-    // Clear consent keys via JS before navigating. Using evaluate on a
-    // neutral URL avoids the ProtectedRoute auth race that occurs when
-    // clearing localStorage mid-page then reloading — the reload causes
-    // AuthContext to re-read the session while ProtectedRoute checks auth,
-    // and on slow Supabase free tier the auth check can fail.
-    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-    await page.evaluate(() => {
-      localStorage.removeItem('payment_consent');
-      localStorage.removeItem('gdpr_consent');
-    });
+    // Navigate directly to /payment-demo — the Playwright context has
+    // storageState-auth.json with valid Supabase tokens. Going to /sign-in
+    // first causes an auth race: the new page creates a fresh Supabase client,
+    // onAuthStateChange can fire SIGNED_OUT before getSession retries complete,
+    // and ProtectedRoute redirects to /sign-in before auth hydrates.
+    //
+    // Instead: go to /payment-demo, wait for auth + page to load, THEN clear
+    // consent keys and reload. This ensures the Supabase session is already
+    // established before the ProtectedRoute check on reload.
+    await page.goto('/payment-demo', { waitUntil: 'networkidle' });
 
-    // Navigate to /payment-demo and handle ProtectedRoute auth redirect.
-    // Static export ProtectedRoute checks auth synchronously — if the
-    // Supabase session hasn't hydrated from localStorage yet, it redirects
-    // to /sign-in. Retry up to 3 times to allow auth initialization.
-    for (let attempt = 0; attempt < 3; attempt++) {
+    // If redirected to sign-in, auth hasn't hydrated yet — wait and retry
+    if (page.url().includes('/sign-in')) {
+      await page.waitForTimeout(3000);
       await page.goto('/payment-demo', { waitUntil: 'networkidle' });
-      if (!page.url().includes('/sign-in')) break;
-      console.log(
-        `[gdpr-consent] Redirected to sign-in (attempt ${attempt + 1}/3), retrying...`
-      );
-      await page.waitForTimeout(2000);
     }
     await dismissCookieBanner(page);
 
-    // Wait for either consent section or Step 2 to appear (confirms
-    // ProtectedRoute + usePaymentConsent hydration completed)
+    // Wait for auth to hydrate (Step 1 or Step 2 heading appears)
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 30000 });
+
+    // NOW clear consent and reload — auth is already established
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('payment_consent_date');
+      localStorage.removeItem('gdpr_consent');
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    // Wait for consent section to appear (should show Step 1 since we cleared it)
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
