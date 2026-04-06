@@ -202,56 +202,30 @@ test.describe('Friend Request Flow', () => {
   }) => {
     test.setTimeout(90000); // 90 seconds for full workflow
 
-    // User A uses storageState (avoids Supabase sign-in rate limits)
-    const contextA = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    const contextB = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
-    });
+    // Fresh sign-in for both users — storageState tokens can be consumed
+    // by earlier tests' refresh token usage, making them invalid.
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // ===== STEP 1: User A already authenticated via storageState =====
+      // ===== STEP 1: User A signs in fresh =====
+      await pageA.goto('/sign-in');
+      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
+      if (!resultA.success) {
+        throw new Error(`User A sign-in failed: ${resultA.error}`);
+      }
 
       // ===== STEP 2: User A navigates to connections tab =====
-      // Navigate to /messages first to hydrate auth context, then click tab.
-      // Retry if "You must be signed in" appears — auth context hydration
-      // can be slower than the first render on CI.
       await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
-
-      let connectionsReady = false;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const connectionsTab = pageA.getByRole('tab', {
-          name: /Connections/i,
-        });
-        await connectionsTab.waitFor({ state: 'visible', timeout: 60000 });
-        await connectionsTab.click({ force: true });
-        await pageA.waitForTimeout(1000);
-
-        // Check if connections loaded or shows auth error
-        const notSignedIn = await pageA
-          .getByText(/must be signed in/i)
-          .isVisible()
-          .catch(() => false);
-        if (!notSignedIn) {
-          connectionsReady = true;
-          break;
-        }
-        console.log(
-          `[friend-req] Connections shows "must be signed in" (attempt ${attempt + 1}/3), reloading...`
-        );
-        await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
-        await handleReAuthModal(pageA, USER_A.password);
-      }
-      if (!connectionsReady) {
-        throw new Error(
-          'Connections tab still shows "must be signed in" after 3 retries'
-        );
-      }
+      const connectionsTab = pageA.getByRole('tab', {
+        name: /Connections/i,
+      });
+      await connectionsTab.waitFor({ state: 'visible', timeout: 60000 });
+      await connectionsTab.click({ force: true });
 
       // ===== STEP 3: User A searches for User B by display_name =====
       const searchInput = pageA.locator('#user-search-input');
