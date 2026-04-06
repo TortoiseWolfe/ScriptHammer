@@ -319,10 +319,15 @@ export class MessageService {
 
       // Online - attempt to send to database
       try {
-        // Atomic sequence number assignment with retry on conflict
-        let retries = 3;
+        // Atomic sequence number assignment with retry on conflict (23505)
+        // AND network failures (TypeError: Failed to fetch). Network retries
+        // use exponential backoff: 1s, 2s, 4s before falling through to the
+        // offline queue.
+        let conflictRetries = 3;
+        let networkAttempt = 0;
+        const networkDelays = [1000, 2000, 4000];
         let message = null;
-        while (retries > 0) {
+        while (conflictRetries > 0) {
           const { data: lastMessage } = await msgClient
             .from('messages')
             .select('sequence_number')
@@ -339,19 +344,38 @@ export class MessageService {
           // ConversationView fetches the row and calls markAsDelivered — that's
           // when "delivered" means something. Stamping it at INSERT would mean
           // "server accepted the write," which is what created_at already says.
-          const { data: inserted, error: insertError } = await msgClient
-            .from('messages')
-            .insert({
-              conversation_id: input.conversation_id,
-              sender_id: user.id,
-              encrypted_content: encrypted.ciphertext,
-              initialization_vector: encrypted.iv,
-              sequence_number: nextSequenceNumber,
-              deleted: false,
-              edited: false,
-            })
-            .select()
-            .single();
+          let inserted = null;
+          let insertError: { code?: string; message: string } | null = null;
+          try {
+            const result = await msgClient
+              .from('messages')
+              .insert({
+                conversation_id: input.conversation_id,
+                sender_id: user.id,
+                encrypted_content: encrypted.ciphertext,
+                initialization_vector: encrypted.iv,
+                sequence_number: nextSequenceNumber,
+                deleted: false,
+                edited: false,
+              })
+              .select()
+              .single();
+            inserted = result.data;
+            insertError = result.error;
+          } catch (fetchErr) {
+            // Network-level failure (TypeError: Failed to fetch from
+            // page.route abort, or actual connectivity issue). Retry with
+            // exponential backoff before giving up.
+            networkAttempt++;
+            if (networkAttempt < 3) {
+              await new Promise((r) =>
+                setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
+              );
+              continue;
+            }
+            // Out of network retries — propagate to fall through to offline queue
+            throw fetchErr;
+          }
 
           if (!insertError) {
             message = inserted;
@@ -360,7 +384,7 @@ export class MessageService {
 
           // If unique constraint violation, retry with fresh sequence number
           if (insertError.code === '23505') {
-            retries--;
+            conflictRetries--;
             continue;
           }
 

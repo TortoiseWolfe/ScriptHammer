@@ -451,54 +451,29 @@ test.describe('Offline Message Queue', () => {
       const msgInput = page.getByRole('textbox', { name: /Message input/i });
       await expect(msgInput).toBeVisible({ timeout: 45000 });
 
-      // ===== STEP 2: Intercept API calls and simulate failures =====
+      // ===== STEP 2: Intercept POST to /messages and simulate failures =====
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
-      // DIAGNOSTIC: Log EVERY request to see what Playwright observes
-      let requestCount = 0;
-      page.on('request', (req) => {
-        requestCount++;
-        const url = req.url();
-        // Only log non-static requests to keep logs manageable
-        if (
-          url.includes('supabase.co') ||
-          url.includes('/rest/v1/') ||
-          url.includes('/auth/v1/') ||
-          req.method() === 'POST'
-        ) {
-          console.log(`[T148 request #${requestCount}] ${req.method()} ${url}`);
-        }
-      });
-
-      // Catch-all route — track every routed request
-      let routeCount = 0;
-      await page.route('**/*', async (route) => {
-        routeCount++;
+      // First 2 attempts fail with network error to trigger retry logic in
+      // message-service.sendMessage (which catches TypeError: Failed to fetch
+      // and retries with exponential backoff: 1s, 2s). 3rd attempt succeeds.
+      await page.route(/\/rest\/v1\/messages/, async (route) => {
         const req = route.request();
-        const url = req.url();
-        const method = req.method();
-
-        // Log all Supabase routes
-        if (url.includes('supabase.co') || url.includes('/rest/v1/')) {
-          console.log(`[T148 route #${routeCount}] ${method} ${url}`);
+        if (req.method() !== 'POST') {
+          await route.continue();
+          return;
         }
-
-        // Only intercept POST to messages endpoint
-        if (method === 'POST' && url.includes('/rest/v1/messages')) {
-          attemptCount++;
-          retryTimestamps.push(Date.now());
-          console.log(
-            `[T148 INTERCEPT] attempt ${attemptCount}: ${method} ${url}`
-          );
-
-          if (attemptCount < 3) {
-            await route.abort('failed');
-            return;
-          }
+        attemptCount++;
+        retryTimestamps.push(Date.now());
+        console.log(
+          `[T148 route] intercepted POST attempt ${attemptCount}: ${req.url()}`
+        );
+        if (attemptCount < 3) {
+          await route.abort('failed');
+        } else {
+          await route.continue();
         }
-
-        await route.continue();
       });
 
       // ===== STEP 3: Send message =====
