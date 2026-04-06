@@ -192,7 +192,7 @@ export class OfflineQueueService {
             .eq('conversation_id', queuedMsg.conversation_id)
             .order('sequence_number', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const nextSequenceNumber = lastMessage
             ? lastMessage.sequence_number + 1

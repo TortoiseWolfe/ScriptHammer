@@ -196,7 +196,7 @@ export class MessageService {
           .from('conversations')
           .select('participant_1_id, participant_2_id, is_group')
           .eq('id', input.conversation_id)
-          .single();
+          .maybeSingle();
 
         if (convError || !data) {
           throw new ValidationError(
@@ -329,7 +329,7 @@ export class MessageService {
             .eq('conversation_id', input.conversation_id)
             .order('sequence_number', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           const nextSequenceNumber = lastMessage
             ? lastMessage.sequence_number + 1

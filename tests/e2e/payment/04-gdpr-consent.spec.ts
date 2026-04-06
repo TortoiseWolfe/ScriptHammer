@@ -92,17 +92,21 @@ test.describe('GDPR Payment Consent Flow', () => {
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
 
-    // Wait for hydration — 60s accounts for slow CI + Supabase session refresh
-    await page
-      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
-      .first()
-      .waitFor({ state: 'visible', timeout: 60000 });
+    // Wait for consent state to hydrate from localStorage before checking UI.
+    // React renders initial state (showConsent=true → Step 1) before the
+    // usePaymentConsent hook reads localStorage and updates to Step 2.
+    await page.waitForFunction(
+      () => localStorage.getItem('payment_consent') === 'granted',
+      { timeout: 10000 }
+    );
 
     // Consent should be remembered — Step 2 visible, not Step 1
+    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
+      timeout: 15000,
+    });
     await expect(
       page.getByRole('heading', { name: /Step 1: GDPR Consent/i })
     ).not.toBeVisible({ timeout: 3000 });
-    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible();
   });
 
   test('should handle consent decline gracefully', async ({ page }) => {
@@ -136,15 +140,19 @@ test.describe('GDPR Payment Consent Flow', () => {
 
     // Re-navigate (not reload) — page.reload() loses Supabase session
     await page.goto('/payment-demo');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
 
-    // Wait for hydration
-    await page
-      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
-      .first()
-      .waitFor({ state: 'visible', timeout: 30000 });
+    // Wait for consent state to hydrate from localStorage
+    await page.waitForFunction(
+      () => localStorage.getItem('payment_consent') === 'granted',
+      { timeout: 10000 }
+    );
 
-    // GDPR section should not reappear
+    // GDPR section should not reappear — Step 2 should be visible
+    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
+      timeout: 15000,
+    });
     const gdprHeading = page.getByRole('heading', {
       name: /Step 1: GDPR Consent/i,
     });

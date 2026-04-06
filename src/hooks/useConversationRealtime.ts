@@ -65,7 +65,7 @@ export function useConversationRealtime(
           .from('conversations')
           .select('participant_1_id, participant_2_id')
           .eq('id', conversationId)
-          .single();
+          .maybeSingle();
 
         const conversation = result.data as {
           participant_1_id: string;
@@ -123,7 +123,7 @@ export function useConversationRealtime(
           .from('user_profiles')
           .select('username, display_name')
           .eq('id', msg.sender_id)
-          .single();
+          .maybeSingle();
 
         return {
           id: msg.id,

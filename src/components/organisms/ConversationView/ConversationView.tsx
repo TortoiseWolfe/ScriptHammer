@@ -78,7 +78,7 @@ export default function ConversationView({
         .from('conversations')
         .select('participant_1_id, participant_2_id, is_group')
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
       const conversation = result.data as {
         participant_1_id: string;

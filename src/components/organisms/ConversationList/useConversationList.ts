@@ -147,7 +147,7 @@ export function useConversationList() {
             .from('user_profiles')
             .select('id, username, display_name, avatar_url')
             .eq('id', otherParticipantId)
-            .single();
+            .maybeSingle();
 
           const { count: unreadCount } = await msgClient
             .from('messages')
@@ -162,7 +162,7 @@ export function useConversationList() {
             .eq('conversation_id', conv.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           return {
             id: conv.id,
@@ -228,7 +228,7 @@ export function useConversationList() {
             .eq('conversation_id', conv.id)
             .order('created_at', { ascending: false })
             .limit(1)
-            .single();
+            .maybeSingle();
 
           return {
             id: conv.id,
