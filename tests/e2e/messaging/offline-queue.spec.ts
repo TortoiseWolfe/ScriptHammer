@@ -455,25 +455,41 @@ test.describe('Offline Message Queue', () => {
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
-      // DIAGNOSTIC: Log ALL POST requests to find the actual Supabase URL
+      // DIAGNOSTIC: Log EVERY request to see what Playwright observes
+      let requestCount = 0;
       page.on('request', (req) => {
-        if (req.method() === 'POST') {
-          console.log(`[T148 request POST] ${req.url()}`);
+        requestCount++;
+        const url = req.url();
+        // Only log non-static requests to keep logs manageable
+        if (
+          url.includes('supabase.co') ||
+          url.includes('/rest/v1/') ||
+          url.includes('/auth/v1/') ||
+          req.method() === 'POST'
+        ) {
+          console.log(`[T148 request #${requestCount}] ${req.method()} ${url}`);
         }
       });
 
-      // Catch-all route — match every request, only intercept POST to messages
+      // Catch-all route — track every routed request
+      let routeCount = 0;
       await page.route('**/*', async (route) => {
+        routeCount++;
         const req = route.request();
         const url = req.url();
         const method = req.method();
+
+        // Log all Supabase routes
+        if (url.includes('supabase.co') || url.includes('/rest/v1/')) {
+          console.log(`[T148 route #${routeCount}] ${method} ${url}`);
+        }
 
         // Only intercept POST to messages endpoint
         if (method === 'POST' && url.includes('/rest/v1/messages')) {
           attemptCount++;
           retryTimestamps.push(Date.now());
           console.log(
-            `[T148 route] intercepted ${method} ${url} (attempt ${attemptCount})`
+            `[T148 INTERCEPT] attempt ${attemptCount}: ${method} ${url}`
           );
 
           if (attemptCount < 3) {
