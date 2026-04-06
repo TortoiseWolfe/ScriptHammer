@@ -22,7 +22,19 @@ test.describe('GDPR Payment Consent Flow', () => {
       localStorage.removeItem('payment_consent');
       localStorage.removeItem('gdpr_consent');
     });
-    await page.goto('/payment-demo');
+
+    // Navigate to /payment-demo and handle ProtectedRoute auth redirect.
+    // Static export ProtectedRoute checks auth synchronously — if the
+    // Supabase session hasn't hydrated from localStorage yet, it redirects
+    // to /sign-in. Retry up to 3 times to allow auth initialization.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+      if (!page.url().includes('/sign-in')) break;
+      console.log(
+        `[gdpr-consent] Redirected to sign-in (attempt ${attempt + 1}/3), retrying...`
+      );
+      await page.waitForTimeout(2000);
+    }
     await dismissCookieBanner(page);
 
     // Wait for either consent section or Step 2 to appear (confirms

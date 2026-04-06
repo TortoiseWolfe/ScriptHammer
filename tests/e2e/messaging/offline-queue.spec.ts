@@ -251,42 +251,21 @@ test.describe('Offline Message Queue', () => {
     forwardConsole(page);
 
     try {
-      // ===== STEP 1: Navigate directly to conversation via URL =====
-      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      // ===== STEP 1: Hydrate auth, then navigate to conversation =====
+      // Navigate to /messages first to initialize auth context (static export
+      // ProtectedRoute checks auth synchronously — going directly to
+      // ?conversation=X shows "You must be logged in" before session hydrates).
+      await page.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
 
-      // DIAGNOSTIC: Log DOM state + auth after navigation
-      const t146Diag = await page.evaluate(() => {
-        const thread = document.querySelector('[data-testid="message-thread"]');
-        const input = document.querySelector(
-          'textarea[aria-label="Message input"]'
-        );
-        const authKeys = Object.keys(localStorage).filter(
-          (k) => k.includes('auth') || k.includes('sb-')
-        );
-        const errors = Array.from(
-          document.querySelectorAll('.alert-error, [role="alert"]')
-        );
-        return {
-          threadExists: !!thread,
-          inputExists: !!input,
-          authKeyCount: authKeys.length,
-          firstAuthKey: authKeys[0] || 'none',
-          errorCount: errors.length,
-          errorTexts: errors
-            .map((e) => e.textContent?.substring(0, 80))
-            .slice(0, 3),
-          bodyText: document.body.textContent?.substring(0, 300) || '',
-          url: window.location.href,
-        };
+      // Now navigate to the specific conversation
+      await page.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
       });
-      console.log(
-        '[DIAG:T146] After handleReAuthModal:',
-        JSON.stringify(t146Diag)
-      );
+      await handleReAuthModal(page, USER_A.password);
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {
