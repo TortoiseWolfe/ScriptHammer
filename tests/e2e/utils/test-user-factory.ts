@@ -554,6 +554,30 @@ export async function handleReAuthModal(
       }
     });
     if (isAuthenticated) {
+      // Token is valid in localStorage, but the Supabase JS client may not
+      // have initialized the session yet (async useEffect in AuthContext).
+      // Wait for the browser's Supabase client to report a valid session.
+      await page.waitForFunction(
+        () => {
+          // Check if window.__supabase or the global Supabase client has a session.
+          // The Supabase client stores the parsed session in memory after init.
+          const sessionKey = Object.keys(localStorage).find(
+            (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+          );
+          if (!sessionKey) return false;
+          try {
+            const stored = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+            // The session object must have access_token AND user — this means
+            // the client has parsed it successfully.
+            return !!(stored?.access_token && stored?.user?.id);
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 10000 }
+      );
+      // Give React one render cycle to propagate the auth state
+      await page.waitForTimeout(1500);
       console.log(
         `[handleReAuthModal] Current user's keys cached + session valid — skipping modal. URL: ${page.url()}`
       );
