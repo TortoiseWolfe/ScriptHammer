@@ -455,9 +455,10 @@ test.describe('Offline Message Queue', () => {
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
-      // Intercept only POST requests to /messages (inserts). GET requests
-      // for loadMessages must pass through — aborting them breaks the UI.
-      await page.route('**/rest/v1/messages*', async (route) => {
+      // Intercept only POST requests to /messages (inserts). Use a regex
+      // because glob '**/rest/v1/messages*' doesn't reliably match Supabase
+      // URLs with query strings (?select=*) on all Playwright versions.
+      await page.route(/\/rest\/v1\/messages/, async (route) => {
         const method = route.request().method();
         if (method !== 'POST') {
           await route.continue();
@@ -554,11 +555,15 @@ test.describe('Offline Message Queue', () => {
       await pageB.getByRole('button', { name: 'Sign In' }).click();
       await pageB.waitForURL(/(?!.*sign-in)/, { timeout: 15000 });
 
-      // ===== STEP 2: Both navigate directly to conversation via URL =====
-      await pageA.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      // ===== STEP 2: pageA hydrate auth, then navigate =====
+      await pageA.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(pageA);
+      await handleReAuthModal(pageA, USER_A.password);
+      await pageA.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageA, USER_A.password);
       await pageA.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
@@ -567,10 +572,14 @@ test.describe('Offline Message Queue', () => {
       const inputA = pageA.getByRole('textbox', { name: /Message input/i });
       await expect(inputA).toBeVisible({ timeout: 45000 });
 
-      await pageB.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+      await pageB.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
       await dismissCookieBanner(pageB);
+      await handleReAuthModal(pageB, USER_B.password);
+      await pageB.goto(`${BASE_URL}/messages?conversation=${conversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
       await handleReAuthModal(pageB, USER_B.password);
       await pageB.waitForSelector('[data-testid="message-thread"]', {
         state: 'visible',
