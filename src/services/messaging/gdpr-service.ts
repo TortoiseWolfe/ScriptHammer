@@ -97,11 +97,17 @@ export class GDPRService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user with retry (getUser makes server round-trip
+    // that can fail during token refresh cycles)
+    let user = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      user = result.data?.session?.user ?? null;
+      authError = result.error;
+      if (user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
 
     if (authError || !user) {
       throw new AuthenticationError(
@@ -391,11 +397,17 @@ export class GDPRService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // Get authenticated user with retry (getUser makes server round-trip
+    // that can fail during token refresh cycles)
+    let user = null;
+    let authError = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const result = await supabase.auth.getSession();
+      user = result.data?.session?.user ?? null;
+      authError = result.error;
+      if (user) break;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
 
     if (authError || !user) {
       throw new AuthenticationError(

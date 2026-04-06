@@ -32,6 +32,7 @@ describe('GDPRService', () => {
     mockSupabase = {
       auth: {
         getUser: vi.fn(),
+        getSession: vi.fn(),
         signOut: vi.fn(),
       },
       from: vi.fn(),
@@ -47,6 +48,14 @@ describe('GDPRService', () => {
   describe('exportUserData()', () => {
     it('should export user data with decrypted messages (T189)', async () => {
       // Mock authenticated user
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: {
+          session: {
+            user: { id: 'user-123', email: 'test@example.com' },
+          },
+        },
+        error: null,
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
@@ -226,6 +235,10 @@ describe('GDPRService', () => {
     });
 
     it('should throw AuthenticationError if user not signed in (T189)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: new Error('Not authenticated'),
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: null },
         error: new Error('Not authenticated'),
@@ -238,6 +251,14 @@ describe('GDPRService', () => {
 
     it('should handle messages with decryption errors gracefully (T189)', async () => {
       // Mock authenticated user
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: {
+          session: {
+            user: { id: 'user-123', email: 'test@example.com' },
+          },
+        },
+        error: null,
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
@@ -370,6 +391,14 @@ describe('GDPRService', () => {
   describe('deleteUserAccount()', () => {
     it('should delete all user data and sign out (T190)', async () => {
       // Mock authenticated user
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: {
+          session: {
+            user: { id: 'user-123', email: 'test@example.com' },
+          },
+        },
+        error: null,
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {
@@ -437,6 +466,10 @@ describe('GDPRService', () => {
     });
 
     it('should throw AuthenticationError if user not signed in (T190)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: new Error('Not authenticated'),
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: null },
         error: new Error('Not authenticated'),
@@ -449,6 +482,14 @@ describe('GDPRService', () => {
 
     it('should throw ConnectionError if deletion fails (T190)', async () => {
       // Mock authenticated user
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: {
+          session: {
+            user: { id: 'user-123', email: 'test@example.com' },
+          },
+        },
+        error: null,
+      });
       mockSupabase.auth.getUser.mockResolvedValue({
         data: {
           user: {

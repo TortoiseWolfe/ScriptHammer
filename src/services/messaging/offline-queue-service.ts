@@ -144,11 +144,17 @@ export class OfflineQueueService {
       const supabase = createClient();
       const msgClient = createMessagingClient(supabase);
 
-      // Check authentication
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      // Check authentication with retry (getUser makes server round-trip
+      // that can fail during token refresh cycles)
+      let user = null;
+      let authError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await supabase.auth.getSession();
+        user = result.data?.session?.user ?? null;
+        authError = result.error;
+        if (user) break;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
 
       if (authError || !user) {
         throw new AuthenticationError('You must be signed in to sync messages');

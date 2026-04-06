@@ -35,11 +35,14 @@ export function useTypingIndicator(
    */
   useEffect(() => {
     const getCurrentUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
+      // Use getSession() with retry — getUser() can fail during token refresh
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session?.user) {
+          setCurrentUserId(data.session.user.id);
+          return;
+        }
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
       }
     };
 

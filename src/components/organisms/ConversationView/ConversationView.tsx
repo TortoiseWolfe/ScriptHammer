@@ -69,9 +69,16 @@ export default function ConversationView({
       const supabase = createClient();
       const msgClient = createMessagingClient(supabase);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Use getSession() with retry — getUser() makes a server round-trip that
+      // can fail during Supabase token refresh cycles (returns null briefly).
+      // Same pattern as message-service.ts and connection-service.ts.
+      let user = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await supabase.auth.getSession();
+        user = result.data?.session?.user ?? null;
+        if (user) break;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
       if (!user) return;
 
       const result = await msgClient

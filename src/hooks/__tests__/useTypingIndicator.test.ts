@@ -31,6 +31,10 @@ describe('useTypingIndicator', () => {
           data: { user: { id: mockCurrentUserId } },
           error: null,
         }),
+        getSession: vi.fn().mockResolvedValue({
+          data: { session: { user: { id: mockCurrentUserId } } },
+          error: null,
+        }),
       },
     };
 
