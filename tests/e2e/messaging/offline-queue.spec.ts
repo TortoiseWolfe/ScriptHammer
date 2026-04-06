@@ -405,14 +405,9 @@ test.describe('Offline Message Queue', () => {
     }
   });
 
-  test.skip('T148: should retry with exponential backoff on server failure', async ({
+  test('T148: should retry with exponential backoff on server failure', async ({
     browser,
   }) => {
-    // SKIPPED: Playwright page.route() does not intercept Supabase JS client
-    // POST requests in the static export build. The route handler never fires
-    // (verified across 5+ commits and pattern variations: glob, regex, etc).
-    // The retry mechanism IS implemented in offline-queue-service.ts and
-    // verified by unit tests + T146/T147/T149 (all passing).
     if (!setupSucceeded) {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
@@ -460,28 +455,34 @@ test.describe('Offline Message Queue', () => {
       let attemptCount = 0;
       const retryTimestamps: number[] = [];
 
-      // Intercept only POST requests to /messages (inserts). Use a regex
-      // because glob '**/rest/v1/messages*' doesn't reliably match Supabase
-      // URLs with query strings (?select=*) on all Playwright versions.
-      await page.route(/\/rest\/v1\/messages/, async (route) => {
-        const method = route.request().method();
-        if (method !== 'POST') {
-          await route.continue();
-          return;
+      // DIAGNOSTIC: Log ALL POST requests to find the actual Supabase URL
+      page.on('request', (req) => {
+        if (req.method() === 'POST') {
+          console.log(`[T148 request POST] ${req.url()}`);
         }
-        console.log(
-          `[T148 route] intercepted ${method} ${route.request().url()} (attempt ${attemptCount + 1})`
-        );
-        attemptCount++;
-        retryTimestamps.push(Date.now());
+      });
 
-        if (attemptCount < 3) {
-          // Fail first 2 attempts
-          await route.abort('failed');
-        } else {
-          // Succeed on 3rd attempt
-          await route.continue();
+      // Catch-all route — match every request, only intercept POST to messages
+      await page.route('**/*', async (route) => {
+        const req = route.request();
+        const url = req.url();
+        const method = req.method();
+
+        // Only intercept POST to messages endpoint
+        if (method === 'POST' && url.includes('/rest/v1/messages')) {
+          attemptCount++;
+          retryTimestamps.push(Date.now());
+          console.log(
+            `[T148 route] intercepted ${method} ${url} (attempt ${attemptCount})`
+          );
+
+          if (attemptCount < 3) {
+            await route.abort('failed');
+            return;
+          }
         }
+
+        await route.continue();
       });
 
       // ===== STEP 3: Send message =====
