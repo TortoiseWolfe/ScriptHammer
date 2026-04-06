@@ -16,6 +16,10 @@ vi.mock('@/lib/supabase/client', () => ({
         data: { user: { id: 'user-123' } },
         error: null,
       }),
+      getSession: vi.fn().mockResolvedValue({
+        data: { session: { user: { id: 'user-123' } } },
+        error: null,
+      }),
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -217,6 +221,10 @@ describe('useGroupMembers', () => {
         auth: {
           getUser: vi.fn().mockResolvedValue({
             data: { user: { id: 'user-123' } },
+            error: null,
+          }),
+          getSession: vi.fn().mockResolvedValue({
+            data: { session: { user: { id: 'user-123' } } },
             error: null,
           }),
         },

@@ -82,9 +82,15 @@ export function useGroupMembers(
     setError(null);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Use getSession() with retry — getUser() makes a server round-trip
+      // that can fail during Supabase token refresh cycles
+      let user = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await supabase.auth.getSession();
+        user = result.data?.session?.user ?? null;
+        if (user) break;
+        if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+      }
       if (!user) {
         setError('Not authenticated');
         return [];
@@ -114,9 +120,9 @@ export function useGroupMembers(
       const connectedUsers: ConnectedUser[] = (connections || []).map(
         (conn) => {
           const isRequester = conn.requester_id === user.id;
-          const profile = (
-            isRequester ? conn.addressee : conn.requester
-          ) as unknown as JoinedProfile;
+          const profile = (isRequester
+            ? conn.addressee
+            : conn.requester) as unknown as JoinedProfile;
           return {
             id: profile.id,
             display_name: profile.display_name,
