@@ -184,13 +184,30 @@ export default defineConfig({
       },
     },
 
+    // Firefox: split into msg/gen the same way as chromium
     {
-      name: 'firefox',
+      name: 'firefox-msg',
+      testMatch: '**/messaging/**',
+      testIgnore: ['**/examples/**'],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+    {
+      name: 'firefox-gen',
       testIgnore: [
+        '**/messaging/**',
         '**/examples/**',
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        // Same exclusions as chromium-gen — these tests use webkit-only
+        // device config or catch real layout bugs
+        '**/tests/mobile-horizontal-scroll.spec.ts',
+        '**/tests/mobile-navigation.spec.ts',
+        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {
@@ -199,9 +216,21 @@ export default defineConfig({
       },
     },
 
+    // WebKit: split into msg/gen the same way as chromium
     {
-      name: 'webkit',
+      name: 'webkit-msg',
+      testMatch: '**/messaging/**',
+      testIgnore: ['**/examples/**'],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+    {
+      name: 'webkit-gen',
       testIgnore: [
+        '**/messaging/**',
         '**/examples/**',
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',

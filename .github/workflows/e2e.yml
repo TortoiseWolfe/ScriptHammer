@@ -274,23 +274,82 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Messaging tests: isolated project, 2 shards (12 files / 2 = 6 per shard)
+          # ===== CHROMIUM (every push) =====
+          # Messaging: 2 shards
           - project: chromium-msg
+            browser: chromium
             shard: 1/2
           - project: chromium-msg
+            browser: chromium
             shard: 2/2
-          # General tests: 6 shards (~8 files each)
+          # General: 6 shards
           - project: chromium-gen
+            browser: chromium
             shard: 1/6
           - project: chromium-gen
+            browser: chromium
             shard: 2/6
           - project: chromium-gen
+            browser: chromium
             shard: 3/6
           - project: chromium-gen
+            browser: chromium
             shard: 4/6
           - project: chromium-gen
+            browser: chromium
             shard: 5/6
           - project: chromium-gen
+            browser: chromium
+            shard: 6/6
+          # ===== FIREFOX (every push) =====
+          - project: firefox-msg
+            browser: firefox
+            shard: 1/2
+          - project: firefox-msg
+            browser: firefox
+            shard: 2/2
+          - project: firefox-gen
+            browser: firefox
+            shard: 1/6
+          - project: firefox-gen
+            browser: firefox
+            shard: 2/6
+          - project: firefox-gen
+            browser: firefox
+            shard: 3/6
+          - project: firefox-gen
+            browser: firefox
+            shard: 4/6
+          - project: firefox-gen
+            browser: firefox
+            shard: 5/6
+          - project: firefox-gen
+            browser: firefox
+            shard: 6/6
+          # ===== WEBKIT (every push) =====
+          - project: webkit-msg
+            browser: webkit
+            shard: 1/2
+          - project: webkit-msg
+            browser: webkit
+            shard: 2/2
+          - project: webkit-gen
+            browser: webkit
+            shard: 1/6
+          - project: webkit-gen
+            browser: webkit
+            shard: 2/6
+          - project: webkit-gen
+            browser: webkit
+            shard: 3/6
+          - project: webkit-gen
+            browser: webkit
+            shard: 4/6
+          - project: webkit-gen
+            browser: webkit
+            shard: 5/6
+          - project: webkit-gen
+            browser: webkit
             shard: 6/6
 
     steps:
@@ -312,10 +371,12 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
+        env:
+          BROWSER: ${{ matrix.browser }}
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: chromium install failed, retrying in 10s..."
+            pnpm exec playwright install --with-deps "$BROWSER" && break
+            echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
 
@@ -355,20 +416,23 @@ jobs:
       - name: Stagger shards to reduce Supabase contention
         env:
           PROJECT: ${{ matrix.project }}
+          BROWSER: ${{ matrix.browser }}
           SHARD: ${{ matrix.shard }}
         run: |
           SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          # Messaging shards start 10s apart; general shards start 5s apart.
-          # Prevents thundering herd on Supabase connection pool.
-          if [ "$PROJECT" = "chromium-msg" ]; then
-            DELAY=$((SHARD_NUM * 10))
-            echo "Messaging shard $SHARD_NUM: waiting ${DELAY}s"
-            sleep $DELAY
+          # Browser offsets prevent 24 shards from hammering Supabase at once:
+          #   chromium: 0s base, firefox: 60s base, webkit: 120s base
+          # Within a browser: messaging 10s/shard, general 5s/shard
+          BROWSER_OFFSET=0
+          if [ "$BROWSER" = "firefox" ]; then BROWSER_OFFSET=60; fi
+          if [ "$BROWSER" = "webkit" ]; then BROWSER_OFFSET=120; fi
+          if echo "$PROJECT" | grep -q "msg"; then
+            DELAY=$((BROWSER_OFFSET + SHARD_NUM * 10))
           else
-            DELAY=$((SHARD_NUM * 5))
-            echo "General shard $SHARD_NUM: waiting ${DELAY}s"
-            sleep $DELAY
+            DELAY=$((BROWSER_OFFSET + SHARD_NUM * 5))
           fi
+          echo "$BROWSER $PROJECT shard $SHARD_NUM: waiting ${DELAY}s"
+          sleep $DELAY
 
       - name: Run E2E tests (${{ matrix.project }} ${{ matrix.shard }})
         env:
