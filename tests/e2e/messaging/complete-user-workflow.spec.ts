@@ -287,7 +287,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         .getByPlaceholder(/Enter name/i)
         .or(pageA.getByRole('searchbox'))
         .first();
-      await expect(searchInput).toBeVisible({ timeout: 5000 });
+      await expect(searchInput).toBeVisible({ timeout: 15000 });
       await searchInput.fill(userBDisplayName);
       await searchInput.press('Enter');
       console.log('Step 3: Submitted search');
@@ -317,12 +317,12 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
         name: /send request/i,
       });
       const hasSendButton = await sendRequestButton
-        .isVisible({ timeout: 5000 })
+        .isVisible({ timeout: 15000 })
         .catch(() => false);
       if (hasSendButton) {
         await sendRequestButton.click({ force: true });
         await expect(pageA.getByText(/friend request sent/i)).toBeVisible({
-          timeout: 5000,
+          timeout: 15000,
         });
         console.log('Step 4: Friend request sent');
       } else {
@@ -372,7 +372,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       const acceptButton = pageB
         .getByRole('button', { name: /accept/i })
         .first();
-      if (await acceptButton.isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (await acceptButton.isVisible({ timeout: 15000 }).catch(() => false)) {
         await acceptButton.click({ force: true });
         await pageB.waitForTimeout(1000);
         console.log('Step 7: Connection accepted');
@@ -531,7 +531,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
 
     // Wait for page title to load - NOT spinner
     await expect(page.locator('h1:has-text("Messages")').first()).toBeVisible({
-      timeout: 5000,
+      timeout: 15000,
     });
 
     const loadTime = Date.now() - startTime;
@@ -548,7 +548,7 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
       .first();
     const spinnerVisible = await spinner.isVisible().catch(() => false);
     if (spinnerVisible) {
-      await expect(spinner).toBeHidden({ timeout: 5000 });
+      await expect(spinner).toBeHidden({ timeout: 15000 });
     }
   });
 

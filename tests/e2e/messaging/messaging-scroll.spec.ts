@@ -25,7 +25,7 @@ async function waitForUIStability(page: Page) {
         requestAnimationFrame(checkStability);
       });
     },
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 }
 

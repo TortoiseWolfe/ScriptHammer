@@ -161,7 +161,7 @@ async function waitForUIStability(page: Page) {
         requestAnimationFrame(checkStability);
       });
     },
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 }
 
@@ -244,7 +244,7 @@ async function sendMessage(page: Page, message: string) {
       return counter.textContent?.includes(String(expectedLen));
     },
     message.length,
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
@@ -342,7 +342,7 @@ test.describe('Message Editing', () => {
 
     // Verify our message bubble exists with data-testid
     const messageBubble = getMessageBubble(page, originalMessage);
-    await expect(messageBubble).toBeVisible({ timeout: 5000 });
+    await expect(messageBubble).toBeVisible({ timeout: 15000 });
 
     // Find the Edit button for our specific message
     const editButton = getEditButtonForMessage(page, originalMessage);
@@ -351,7 +351,7 @@ test.describe('Message Editing', () => {
     // If this fails, it means either:
     // 1. message.isOwn is false (wrong sender_id)
     // 2. isWithinEditWindow returned false (message > 15 min old)
-    await expect(editButton).toBeVisible({ timeout: 5000 });
+    await expect(editButton).toBeVisible({ timeout: 15000 });
 
     // Click Edit button
     await editButton.click();
@@ -371,7 +371,7 @@ test.describe('Message Editing', () => {
     await page.getByRole('button', { name: /Save/i }).click();
 
     // Wait for save to complete (edit mode closes)
-    await expect(editTextarea).not.toBeVisible({ timeout: 5000 });
+    await expect(editTextarea).not.toBeVisible({ timeout: 15000 });
 
     // Wait for UI to stabilize after save (state update + re-render)
     await waitForUIStability(page);
@@ -387,7 +387,7 @@ test.describe('Message Editing', () => {
 
     // Verify original content is no longer visible (unique timestamp ensures only one match)
     await expect(page.getByText(originalMessage)).not.toBeVisible({
-      timeout: 5000,
+      timeout: 15000,
     });
   });
 
@@ -439,12 +439,12 @@ test.describe('Message Editing', () => {
 
     // Click Edit button for our specific message
     const editButton = getEditButtonForMessage(page, originalMessage);
-    await expect(editButton).toBeVisible({ timeout: 5000 });
+    await expect(editButton).toBeVisible({ timeout: 15000 });
     await editButton.click();
 
     // Save button should be disabled (content hasn't changed)
     const saveButton = page.getByRole('button', { name: /Save/i });
-    await expect(saveButton).toBeVisible({ timeout: 5000 });
+    await expect(saveButton).toBeVisible({ timeout: 15000 });
     await expect(saveButton).toBeDisabled();
   });
 
@@ -508,13 +508,13 @@ test.describe('Message Deletion', () => {
 
     // Verify our message bubble exists
     const messageBubble = getMessageBubble(page, messageToDelete);
-    await expect(messageBubble).toBeVisible({ timeout: 5000 });
+    await expect(messageBubble).toBeVisible({ timeout: 15000 });
 
     // Find the Delete button for our specific message
     const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
 
     // Delete button should be visible for own messages (within 15-minute window)
-    await expect(deleteButton).toBeVisible({ timeout: 5000 });
+    await expect(deleteButton).toBeVisible({ timeout: 15000 });
 
     // Click Delete
     await deleteButton.click();

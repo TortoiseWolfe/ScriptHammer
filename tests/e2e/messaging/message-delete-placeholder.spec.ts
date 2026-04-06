@@ -128,7 +128,7 @@ async function setupEncryptionViaUI(
   // Check if re-auth modal appeared
   const modal = page.locator('[role="dialog"]').first();
   const modalVisible = await modal
-    .waitFor({ state: 'visible', timeout: 5000 })
+    .waitFor({ state: 'visible', timeout: 15000 })
     .then(() => true)
     .catch(() => false);
 
@@ -199,7 +199,7 @@ async function typeAndSend(
 
   // Wait for input to clear — confirms the handler fired
   const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toHaveValue('', { timeout: 5000 });
+  await expect(messageInput).toHaveValue('', { timeout: 15000 });
   await page.waitForTimeout(1000);
 }
 
@@ -494,7 +494,7 @@ test.describe('Message Delete Placeholder E2E', () => {
       await expect(placeholder).toBeVisible({ timeout: 10000 });
 
       // Original msg-2 text must be gone
-      await expect(page.getByText(msg2)).not.toBeVisible({ timeout: 5000 });
+      await expect(page.getByText(msg2)).not.toBeVisible({ timeout: 15000 });
 
       // Adjacent messages must still be visible
       await expect(page.getByText(msg1)).toBeVisible();

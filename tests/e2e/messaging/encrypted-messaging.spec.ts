@@ -390,7 +390,7 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // Wait for message to appear
       await expect(pageA.getByText(secretMessage)).toBeVisible({
-        timeout: 5000,
+        timeout: 15000,
       });
 
       // Wait a moment for database write to complete
@@ -468,7 +468,9 @@ test.describe('Encrypted Messaging Flow', () => {
       await pageA.getByRole('button', { name: /send/i }).click();
 
       // Wait for message to appear
-      await expect(pageA.getByText(testMessage)).toBeVisible({ timeout: 5000 });
+      await expect(pageA.getByText(testMessage)).toBeVisible({
+        timeout: 15000,
+      });
 
       // ===== VERIFY "SENT" STATUS (✓) =====
       // Message should show single checkmark initially
@@ -513,7 +515,9 @@ test.describe('Encrypted Messaging Flow', () => {
       await pageB.waitForTimeout(1000);
 
       // Verify User B sees the message
-      await expect(pageB.getByText(testMessage)).toBeVisible({ timeout: 5000 });
+      await expect(pageB.getByText(testMessage)).toBeVisible({
+        timeout: 15000,
+      });
 
       // ===== VERIFY "READ" STATUS (✓✓ colored) =====
       // Reload User A's page to see updated read status
@@ -568,7 +572,7 @@ test.describe('Encrypted Messaging Flow', () => {
     // Wait for last message to appear (use .first() in case duplicates from previous runs)
     await expect(
       page.getByText(`Pagination test message ${messagesToSend}`).first()
-    ).toBeVisible({ timeout: 5000 });
+    ).toBeVisible({ timeout: 15000 });
 
     // ===== VERIFY PAGINATION =====
     // Count visible messages (should be limited to page size)

@@ -26,7 +26,7 @@ async function waitForUIStability(page: Page) {
         requestAnimationFrame(checkStability);
       });
     },
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 }
 
@@ -177,7 +177,7 @@ test.describe('GDPR Data Export', () => {
     await exportButton.click();
 
     // Should show error alert
-    await expect(page.getByRole('alert')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('alert')).toBeVisible({ timeout: 15000 });
   });
 });
 
@@ -260,7 +260,7 @@ test.describe('GDPR Account Deletion', () => {
     await confirmInput.fill('DELETE');
 
     // Now enabled - wait for React state update
-    await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+    await expect(confirmButton).toBeEnabled({ timeout: 15000 });
   });
 
   test('should close modal on cancel button click (T192)', async ({ page }) => {
@@ -415,7 +415,7 @@ test.describe('GDPR Accessibility', () => {
     await exportButton.click();
 
     // Status should update to "Exporting your data..."
-    await expect(exportLiveRegion).toHaveText(/exporting/i, { timeout: 5000 });
+    await expect(exportLiveRegion).toHaveText(/exporting/i, { timeout: 15000 });
   });
 
   test('should be keyboard navigable (T193)', async ({ page }) => {

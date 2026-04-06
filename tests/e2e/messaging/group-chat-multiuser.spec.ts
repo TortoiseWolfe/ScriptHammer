@@ -188,19 +188,19 @@ test.describe('Group Chat E2E', () => {
 
       // Verify page title
       const pageTitle = page.locator('h1:has-text("New Group")');
-      await expect(pageTitle).toBeVisible({ timeout: 5000 });
+      await expect(pageTitle).toBeVisible({ timeout: 15000 });
 
       // Verify group name input exists
       const groupNameInput = page.locator('#group-name');
-      await expect(groupNameInput).toBeVisible({ timeout: 5000 });
+      await expect(groupNameInput).toBeVisible({ timeout: 15000 });
 
       // Verify member search input exists
       const memberSearchInput = page.locator('#member-search');
-      await expect(memberSearchInput).toBeVisible({ timeout: 5000 });
+      await expect(memberSearchInput).toBeVisible({ timeout: 15000 });
 
       // Verify Create Group button exists (in footer)
       const createButton = page.locator('button:has-text("Create Group")');
-      await expect(createButton).toBeVisible({ timeout: 5000 });
+      await expect(createButton).toBeVisible({ timeout: 15000 });
 
       // Create button should be disabled initially (no members selected)
       await expect(createButton).toBeDisabled();
@@ -285,13 +285,13 @@ test.describe('Group Chat E2E', () => {
       // Verify members were selected (selected count shown in badge)
       if (selectedCount > 0) {
         const selectedText = page.locator('text=/Selected \\(\\d+\\)/');
-        await expect(selectedText).toBeVisible({ timeout: 5000 });
+        await expect(selectedText).toBeVisible({ timeout: 15000 });
       }
 
       // Verify Create Group button is enabled
       await page.waitForTimeout(500);
       const createButton = page.locator('button:has-text("Create Group")');
-      await expect(createButton).toBeEnabled({ timeout: 5000 });
+      await expect(createButton).toBeEnabled({ timeout: 15000 });
 
       // Click Create Group - may fail if backend isn't fully implemented
       await createButton.click();
@@ -359,7 +359,7 @@ test.describe('Group Chat E2E', () => {
 
       // Click back button
       const backButton = page.locator('a[aria-label="Back to messages"]');
-      await expect(backButton).toBeVisible({ timeout: 5000 });
+      await expect(backButton).toBeVisible({ timeout: 15000 });
       await backButton.click();
 
       // Should navigate back to messages

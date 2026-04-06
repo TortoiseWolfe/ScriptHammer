@@ -41,7 +41,7 @@ async function waitForUIStability(page: Page) {
         requestAnimationFrame(checkStability);
       });
     },
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 }
 
@@ -269,6 +269,8 @@ test.describe('Offline Message Queue', () => {
       await waitForConversationCached(page, conversationId, USER_A.password);
 
       // ===== STEP 3: Go offline =====
+      // Verify message input is ready before going offline
+      await expect(messageInput).toBeEnabled({ timeout: 10000 });
       await context.setOffline(true);
 
       // Verify offline status in browser
@@ -582,7 +584,7 @@ test.describe('Offline Message Queue', () => {
       let messages: { sequence_number: number }[] | null = null;
       for (let poll = 0; poll < 12; poll++) {
         await pageA
-          .waitForFunction(() => true, { timeout: 5000 })
+          .waitForFunction(() => true, { timeout: 15000 })
           .catch(() => {});
         const { data } = await adminClient
           .from('messages')

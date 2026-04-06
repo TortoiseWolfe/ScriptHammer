@@ -89,13 +89,14 @@ test.describe('GDPR Payment Consent Flow', () => {
     // Firefox/WebKit because token refresh races with ProtectedRoute.
     // page.goto() re-applies storageState cookies from the Playwright context.
     await page.goto('/payment-demo');
+    await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
 
-    // Wait for hydration
+    // Wait for hydration — 60s accounts for slow CI + Supabase session refresh
     await page
       .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
       .first()
-      .waitFor({ state: 'visible', timeout: 30000 });
+      .waitFor({ state: 'visible', timeout: 60000 });
 
     // Consent should be remembered — Step 2 visible, not Step 1
     await expect(

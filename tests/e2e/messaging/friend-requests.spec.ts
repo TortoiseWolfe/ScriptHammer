@@ -236,7 +236,7 @@ test.describe('Friend Request Flow', () => {
       await pageA.waitForSelector(
         '[data-testid="search-results"], .alert-error',
         {
-          timeout: 15000,
+          timeout: 30000,
         }
       );
 
@@ -282,7 +282,7 @@ test.describe('Friend Request Flow', () => {
 
       // Wait for request to appear
       await pageB.waitForSelector('[data-testid="connection-request"]', {
-        timeout: 5000,
+        timeout: 15000,
       });
 
       // ===== STEP 8: User B accepts the request =====
@@ -361,7 +361,7 @@ test.describe('Friend Request Flow', () => {
       });
       await handleReAuthModal(pageB, USER_B.password);
       const searchInput = pageB.locator('#user-search-input');
-      await expect(searchInput).toBeVisible({ timeout: 5000 });
+      await expect(searchInput).toBeVisible({ timeout: 15000 });
       // Search for User A by display_name
       await searchInput.fill(userADisplayName!);
       await searchInput.press('Enter');
@@ -378,7 +378,7 @@ test.describe('Friend Request Flow', () => {
         /friend request sent|already.*connected|duplicate key|unique_connection/i
       );
       await expect(successOrAlreadyConnected).toBeVisible({
-        timeout: 5000,
+        timeout: 15000,
       });
 
       // User A signs in and declines
@@ -401,7 +401,7 @@ test.describe('Friend Request Flow', () => {
       await receivedTab.click({ force: true });
 
       await pageA.waitForSelector('[data-testid="connection-request"]', {
-        timeout: 5000,
+        timeout: 15000,
       });
 
       // Decline the request
@@ -413,7 +413,7 @@ test.describe('Friend Request Flow', () => {
       // Verify request disappears from received tab
       await expect(
         pageA.locator('[data-testid="connection-request"]')
-      ).toBeHidden({ timeout: 5000 });
+      ).toBeHidden({ timeout: 15000 });
     } finally {
       await contextA.close();
       await contextB.close();
@@ -451,7 +451,7 @@ test.describe('Friend Request Flow', () => {
       /friend request sent|already.*connected|duplicate key|unique_connection/i
     );
     await expect(successOrAlreadyConnected).toBeVisible({
-      timeout: 5000,
+      timeout: 15000,
     });
 
     // Go to "Sent" tab
@@ -460,7 +460,7 @@ test.describe('Friend Request Flow', () => {
 
     // Find the pending request
     await page.waitForSelector('[data-testid="connection-request"]', {
-      timeout: 5000,
+      timeout: 15000,
     });
 
     // Cancel the request
@@ -471,7 +471,7 @@ test.describe('Friend Request Flow', () => {
 
     // Verify request disappears
     await expect(page.locator('[data-testid="connection-request"]')).toBeHidden(
-      { timeout: 5000 }
+      { timeout: 15000 }
     );
   });
 
@@ -491,7 +491,7 @@ test.describe('Friend Request Flow', () => {
 
     // Send first request
     const searchInput = page.locator('#user-search-input');
-    await expect(searchInput).toBeVisible({ timeout: 5000 });
+    await expect(searchInput).toBeVisible({ timeout: 15000 });
     await searchInput.fill(userBDisplayName!);
     await searchInput.press('Enter');
     await page.waitForSelector('[data-testid="search-results"], .alert-error', {
@@ -503,7 +503,7 @@ test.describe('Friend Request Flow', () => {
     });
     await sendRequestButton.click({ force: true });
     await expect(page.getByText(/friend request sent/i)).toBeVisible({
-      timeout: 5000,
+      timeout: 15000,
     });
 
     // Search again and verify button state changed

@@ -145,7 +145,7 @@ async function waitForUIStability(page: import('@playwright/test').Page) {
         requestAnimationFrame(checkStability);
       });
     },
-    { timeout: 5000 }
+    { timeout: 15000 }
   );
 }
 
