@@ -238,6 +238,12 @@ test.describe('Offline Message Queue', () => {
       test.skip(!setupSucceeded, `Setup failed: ${setupError}`);
       return;
     }
+
+    // DIAGNOSTIC: Log setup state
+    console.log(
+      `[DIAG:T146] conversationId=${conversationId}, setupSucceeded=${setupSucceeded}, BASE_URL=${BASE_URL}`
+    );
+
     const context = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
@@ -251,6 +257,36 @@ test.describe('Offline Message Queue', () => {
       });
       await dismissCookieBanner(page);
       await handleReAuthModal(page, USER_A.password);
+
+      // DIAGNOSTIC: Log DOM state + auth after navigation
+      const t146Diag = await page.evaluate(() => {
+        const thread = document.querySelector('[data-testid="message-thread"]');
+        const input = document.querySelector(
+          'textarea[aria-label="Message input"]'
+        );
+        const authKeys = Object.keys(localStorage).filter(
+          (k) => k.includes('auth') || k.includes('sb-')
+        );
+        const errors = Array.from(
+          document.querySelectorAll('.alert-error, [role="alert"]')
+        );
+        return {
+          threadExists: !!thread,
+          inputExists: !!input,
+          authKeyCount: authKeys.length,
+          firstAuthKey: authKeys[0] || 'none',
+          errorCount: errors.length,
+          errorTexts: errors
+            .map((e) => e.textContent?.substring(0, 80))
+            .slice(0, 3),
+          bodyText: document.body.textContent?.substring(0, 300) || '',
+          url: window.location.href,
+        };
+      });
+      console.log(
+        '[DIAG:T146] After handleReAuthModal:',
+        JSON.stringify(t146Diag)
+      );
 
       // Wait for conversation view to mount
       await page.waitForSelector('[data-testid="message-thread"]', {

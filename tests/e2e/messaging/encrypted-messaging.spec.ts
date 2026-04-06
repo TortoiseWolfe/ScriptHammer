@@ -370,7 +370,51 @@ test.describe('Encrypted Messaging Flow', () => {
       await pageA.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });
+
+      // DIAGNOSTIC: Log auth state to understand 403 errors
+      const authDiag = await pageA.evaluate(() => {
+        const keys = Object.keys(localStorage).filter(
+          (k) =>
+            k.includes('auth') || k.includes('supabase') || k.includes('sb-')
+        );
+        const cookies = document.cookie;
+        return {
+          authKeys: keys,
+          hasAuthToken: keys.some((k) => k.includes('auth-token')),
+          cookieLength: cookies.length,
+          url: window.location.href,
+          supabaseUrl:
+            (window as any).__NEXT_DATA__?.props?.pageProps?.supabaseUrl ||
+            'unknown',
+        };
+      });
+      console.log(
+        '[DIAG:zero-knowledge] Auth state after goto:',
+        JSON.stringify(authDiag)
+      );
+
       await handleReAuthModal(pageA, USER_A.password);
+
+      // DIAGNOSTIC: Check if conversation list loaded
+      const sidebarHTML = await pageA.evaluate(() => {
+        const sidebar = document.querySelector(
+          '[data-testid="unified-sidebar"]'
+        );
+        const convBtns = document.querySelectorAll(
+          'button[aria-label^="Conversation with"]'
+        );
+        return {
+          sidebarExists: !!sidebar,
+          sidebarVisible: sidebar?.checkVisibility?.() ?? false,
+          conversationCount: convBtns.length,
+          firstConvText: convBtns[0]?.textContent?.substring(0, 50) || 'none',
+        };
+      });
+      console.log(
+        '[DIAG:zero-knowledge] Sidebar state:',
+        JSON.stringify(sidebarHTML)
+      );
+
       const conversationItem = pageA
         .getByRole('button', { name: /Conversation with/ })
         .first();

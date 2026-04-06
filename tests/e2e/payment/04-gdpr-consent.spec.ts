@@ -100,6 +100,39 @@ test.describe('GDPR Payment Consent Flow', () => {
       { timeout: 10000 }
     );
 
+    // DIAGNOSTIC: Log what the page actually shows after localStorage check
+    const consentDiag = await page.evaluate(() => {
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3'));
+      const consent = localStorage.getItem('payment_consent');
+      const consentDate = localStorage.getItem('payment_consent_date');
+      return {
+        consent,
+        consentDate,
+        headingTexts: headings.map((h) => h.textContent?.trim()).slice(0, 5),
+        bodyClasses: document.body.className,
+        url: window.location.href,
+      };
+    });
+    console.log(
+      '[DIAG:gdpr-consent] After localStorage check:',
+      JSON.stringify(consentDiag)
+    );
+
+    // Wait a bit for React to process the state change
+    await page.waitForTimeout(2000);
+
+    // DIAGNOSTIC: Log again after waiting
+    const consentDiag2 = await page.evaluate(() => {
+      const headings = Array.from(document.querySelectorAll('h1, h2, h3'));
+      return {
+        headingTexts: headings.map((h) => h.textContent?.trim()).slice(0, 5),
+      };
+    });
+    console.log(
+      '[DIAG:gdpr-consent] After 2s wait:',
+      JSON.stringify(consentDiag2)
+    );
+
     // Consent should be remembered — Step 2 visible, not Step 1
     await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
       timeout: 15000,

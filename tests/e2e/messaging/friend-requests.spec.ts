@@ -229,6 +229,22 @@ test.describe('Friend Request Flow', () => {
       // ===== STEP 3: User A searches for User B by display_name =====
       const searchInput = pageA.locator('#user-search-input');
       await expect(searchInput).toBeVisible({ timeout: 15000 });
+
+      // DIAGNOSTIC: Log auth state and search context
+      const searchDiag = await pageA.evaluate(() => {
+        const authKeys = Object.keys(localStorage).filter(
+          (k) => k.includes('auth') || k.includes('sb-')
+        );
+        return {
+          authKeys,
+          url: window.location.href,
+          searchInputExists: !!document.querySelector('#user-search-input'),
+        };
+      });
+      console.log(
+        `[DIAG:friend-req] Searching for "${userBDisplayName}", auth: ${JSON.stringify(searchDiag)}`
+      );
+
       await searchInput.fill(userBDisplayName!);
       await searchInput.press('Enter');
 
@@ -238,6 +254,33 @@ test.describe('Friend Request Flow', () => {
         {
           timeout: 30000,
         }
+      );
+
+      // DIAGNOSTIC: Log what search returned
+      const searchResultDiag = await pageA.evaluate(() => {
+        const results = document.querySelector(
+          '[data-testid="search-results"]'
+        );
+        const error = document.querySelector('.alert-error');
+        const sendBtns = document.querySelectorAll('button');
+        const sendReqBtns = Array.from(sendBtns).filter((b) =>
+          /send request/i.test(b.textContent || '')
+        );
+        return {
+          hasResults: !!results,
+          resultsHTML: results?.innerHTML?.substring(0, 200) || 'none',
+          hasError: !!error,
+          errorText: error?.textContent?.substring(0, 100) || 'none',
+          sendRequestBtnCount: sendReqBtns.length,
+          allBtnTexts: Array.from(sendBtns)
+            .map((b) => b.textContent?.trim())
+            .filter((t) => t && t.length < 30)
+            .slice(0, 10),
+        };
+      });
+      console.log(
+        '[DIAG:friend-req] Search results:',
+        JSON.stringify(searchResultDiag)
       );
 
       // ===== STEP 4: User A sends friend request =====
