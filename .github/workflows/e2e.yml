@@ -273,11 +273,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # On push: chromium only (8 shards). On schedule: all 3 browsers
-        # (24 shards). 24 concurrent shards saturate Supabase free tier rate
-        # limits, causing chromium tests to fail intermittently. Schedule
-        # runs are weekly (Monday 6 AM UTC) and have less collision risk.
-        include: ${{ fromJSON(github.event_name == 'schedule' && '[
+        # On push/PR: chromium only (8 shards). On schedule OR manual dispatch:
+        # all 3 browsers (24 shards). 24 concurrent shards saturate Supabase
+        # free tier rate limits, causing chromium tests to fail intermittently.
+        include: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '[
           {"project":"chromium-msg","browser":"chromium","shard":"1/2"},
           {"project":"chromium-msg","browser":"chromium","shard":"2/2"},
           {"project":"chromium-gen","browser":"chromium","shard":"1/6"},
