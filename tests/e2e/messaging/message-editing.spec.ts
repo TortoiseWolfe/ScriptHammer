@@ -638,7 +638,10 @@ test.describe('Message Deletion', () => {
 });
 
 test.describe('Time Window Restrictions', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  // 300s: webkit needs extra budget for 2x signIn + addInitScript + reload
+  // + handleReAuthModal + navigateToConversation chain in T117 (was 180s,
+  // exceeded on webkit-msg 1/2 in run 24106535959).
+  test.describe.configure({ mode: 'serial', timeout: 300000 });
 
   test.beforeEach(async ({ page }) => {
     page.on('console', (msg) => {

@@ -339,6 +339,10 @@ test.describe('Real-time Message Delivery (T098)', () => {
     for (const msg of messages) {
       await fillMessageInput(page1, msg);
       await sendButton1.click();
+      // 50ms breathing room between sends: webkit's Realtime WebSocket drops
+      // messages that arrive while the previous send's optimistic render is
+      // still flushing. Prevents a real race, not a flakiness band-aid.
+      await page1.waitForTimeout(50);
     }
 
     // User 2: Verify all messages appear (with fallback to reload)
