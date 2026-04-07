@@ -25,12 +25,10 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
 
     // Open the dropdown. DaisyUI's CSS-only dropdown uses :focus-within on
     // the parent <div class="dropdown">, which requires the tabindex=0 label
-    // to actually receive focus. Playwright's synthetic click on a <label>
-    // without an associated form control does NOT transfer focus, so we must
-    // call .focus() explicitly. Without this, the dropdown-content stays
-    // visibility:hidden across all browsers.
+    // to receive focus. Use .focus() alone — do NOT click: once the dropdown
+    // opens, the dropdown-content <ul> intercepts pointer events on the
+    // label, causing Playwright's click to time out.
     await menuLabel.focus();
-    await menuLabel.click();
 
     // Wait for dropdown to be visible
     await page.waitForTimeout(500); // Animation time
