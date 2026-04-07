@@ -120,14 +120,15 @@ async function signInAndInjectSession(
  */
 async function setupEncryptionViaUI(
   page: import('@playwright/test').Page,
-  email: string
+  email: string,
+  password: string = MESSAGING_PASSWORD
 ) {
   await page.goto(`${BP}/messages`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('domcontentloaded');
   await dismissCookieBanner(page);
 
   // Try encryption setup (first-time user) or re-auth (returning user)
-  await handleEncryptionSetup(page, MESSAGING_PASSWORD);
+  await handleEncryptionSetup(page, password);
 
   // Check if re-auth modal appeared
   const modal = page.locator('[role="dialog"]').first();
@@ -140,7 +141,7 @@ async function setupEncryptionViaUI(
 
   // Fill password and submit
   const passwordInput = modal.locator('input[type="password"]').first();
-  await passwordInput.fill(MESSAGING_PASSWORD);
+  await passwordInput.fill(password);
   const submitBtn = modal.locator('button[type="submit"]').first();
   await submitBtn.click();
 
@@ -157,7 +158,7 @@ async function setupEncryptionViaUI(
     // them fresh each CI run via ensureEncryptionKeys(), and deleting them
     // here would break other messaging tests running in parallel.
     await page.waitForTimeout(3000);
-    await handleReAuthModal(page, MESSAGING_PASSWORD);
+    await handleReAuthModal(page, password);
   } else {
     // Password accepted — wait for modal to close
     await modal.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
@@ -350,7 +351,7 @@ test.describe('Message Delete Placeholder E2E', () => {
     const tempPage = await tempCtx.newPage();
     try {
       await signInAndInjectSession(tempPage, USER_B_EMAIL, USER_B_PASSWORD);
-      await setupEncryptionViaUI(tempPage, USER_B_EMAIL);
+      await setupEncryptionViaUI(tempPage, USER_B_EMAIL, USER_B_PASSWORD);
     } finally {
       await tempCtx.close();
     }
@@ -362,7 +363,7 @@ test.describe('Message Delete Placeholder E2E', () => {
     const page = await context.newPage();
     try {
       await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);
-      await setupEncryptionViaUI(page, USER_A_EMAIL);
+      await setupEncryptionViaUI(page, USER_A_EMAIL, USER_A_PASSWORD);
       await openConversation(page);
 
       const ts = Date.now();
