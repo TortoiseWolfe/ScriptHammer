@@ -614,12 +614,12 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 6: Wait for offline queue sync =====
       // The offline queue needs time to: detect online status, process
       // queued messages, encrypt, send to Supabase, and get INSERT confirmed.
-      // On free tier under 6-shard load this can take 30-60s.
+      // On free tier under load this can take 30-60s. Poll DB up to 90s.
       let messages: { sequence_number: number }[] | null = null;
-      for (let poll = 0; poll < 12; poll++) {
-        await pageA
-          .waitForFunction(() => true, { timeout: 15000 })
-          .catch(() => {});
+      for (let poll = 0; poll < 18; poll++) {
+        // Real 5-second wait between polls (waitForFunction(() => true)
+        // is a no-op that returns immediately).
+        await new Promise((r) => setTimeout(r, 5000));
         const { data } = await adminClient
           .from('messages')
           .select('sequence_number')
@@ -630,7 +630,7 @@ test.describe('Offline Message Queue', () => {
           break;
         }
         console.log(
-          `[T149] Poll ${poll + 1}/12: ${data?.length ?? 0} messages found, waiting...`
+          `[T149] Poll ${poll + 1}/18: ${data?.length ?? 0} messages found, waiting...`
         );
       }
 
