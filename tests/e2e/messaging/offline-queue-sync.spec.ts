@@ -38,7 +38,11 @@ const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 // Docker DNS — test process resolves Docker hostnames; browser cannot
 const SUPABASE_DOCKER_HOST =
   process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
-const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
+// In CI, use the cloud Supabase URL. Locally, use the Docker URL.
+const SUPABASE_URL = process.env.CI
+  ? process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  : `http://${SUPABASE_DOCKER_HOST}:8000`;
+const SUPABASE_DOCKER_URL = SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 

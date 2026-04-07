@@ -8,10 +8,15 @@ import { test, expect, devices } from '@playwright/test';
  * See PRP-016: Mobile-First Visual Testing Methodology
  */
 
-// Device configuration at file scope (not inside describe)
-test.use({
-  ...devices['Pixel 5'],
-});
+// Pixel 5 emulation, stripped of fields that break specific browsers:
+// - defaultBrowserType: 'chromium' is fine but explicit destructure for clarity
+// - isMobile: true is not supported by Firefox (throws on newContext)
+const {
+  defaultBrowserType: _dbt,
+  isMobile: _im,
+  ...pixel5Config
+} = devices['Pixel 5'];
+test.use(pixel5Config);
 
 test.describe('Blog Post Mobile UX - Pixel 5', () => {
   test('should display footer at bottom', async ({ page }) => {

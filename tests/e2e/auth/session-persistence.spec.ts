@@ -27,8 +27,9 @@ test.describe('Session Persistence E2E', () => {
   // unauthenticated starting state (override the project's storageState)
   test.use({ storageState: './tests/e2e/fixtures/storage-state.json' });
 
-  // Run tests serially to avoid Supabase rate limiting
-  test.describe.configure({ mode: 'serial' });
+  // 60s per test — sign-in + sign-out + cookie checks need extra headroom
+  // when Supabase is cold and 24 shards are competing for the connection pool
+  test.describe.configure({ mode: 'serial', timeout: 60000 });
 
   // Each test starts fresh on sign-in page
   test.beforeEach(async ({ page }) => {
@@ -170,6 +171,14 @@ test.describe('Session Persistence E2E', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
+    // Wait for redirect away from sign-in before evaluating localStorage —
+    // page.evaluate can fail if the page is still navigating.
+    await page
+      .waitForURL((url) => !url.pathname.includes('/sign-in'), {
+        timeout: 30000,
+      })
+      .catch(() => {});
+
     // Verify localStorage has session data (modern Supabase uses sb-*-auth-token keys)
     const beforeSignOut = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
@@ -198,7 +207,7 @@ test.describe('Session Persistence E2E', () => {
         }
         return true;
       },
-      { timeout: 10000 }
+      { timeout: 30000 }
     );
 
     // Verify cannot access protected routes — ProtectedRoute may redirect
@@ -206,7 +215,7 @@ test.describe('Session Persistence E2E', () => {
     await page
       .goto('/profile', { waitUntil: 'domcontentloaded' })
       .catch(() => {});
-    await page.waitForURL(/\/(sign-in|$)/, { timeout: 10000 });
+    await page.waitForURL(/\/(sign-in|$)/, { timeout: 30000 });
     // Should have landed on sign-in (or root if redirect goes to /)
     const url = page.url();
     expect(url).toMatch(/\/(sign-in|$)/);
@@ -249,7 +258,7 @@ test.describe('Session Persistence E2E', () => {
     await dismissCookieBanner(page2);
 
     // Wait for either profile (success) or sign-in (redirect)
-    await page2.waitForURL(/\/(profile|sign-in)/, { timeout: 10000 });
+    await page2.waitForURL(/\/(profile|sign-in)/, { timeout: 30000 });
 
     // Check if auth synced
     const page2Url = page2.url();
@@ -282,7 +291,7 @@ test.describe('Session Persistence E2E', () => {
       // Chromium redirects to /sign-in, Firefox may redirect to /.
       await page2.waitForURL(
         (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
-        { timeout: 10000 }
+        { timeout: 30000 }
       );
     }
 

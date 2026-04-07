@@ -23,6 +23,8 @@ const TEST_USER = {
 const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 
 test.describe('Stripe One-Time Payment Flow', () => {
+  test.describe.configure({ timeout: 60000 });
+
   test.beforeEach(async ({ page, context }) => {
     // Clear cookies and storage to reset consent state
     await context.clearCookies();
@@ -42,8 +44,13 @@ test.describe('Stripe One-Time Payment Flow', () => {
     await page.getByRole('button', { name: 'Sign In' }).click();
     await waitForAuthenticatedState(page);
 
-    // Navigate to payment page
-    await page.goto('/payment-demo');
+    // Navigate to payment page. ProtectedRoute may redirect to /sign-in if
+    // auth context hasn't hydrated yet — retry up to 3 times.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+      if (!page.url().includes('/sign-in')) break;
+      await page.waitForTimeout(2000);
+    }
     await dismissCookieBanner(page);
   });
 

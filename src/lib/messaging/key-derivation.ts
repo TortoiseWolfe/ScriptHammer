@@ -228,69 +228,46 @@ export class KeyDerivationService {
     privateKeyBytes: Uint8Array
   ): Promise<CryptoKey> {
     try {
-      // First, compute the public key point from the private key scalar
-      // We need to import as JWK which requires both d (private) and x,y (public)
+      // Always use the JWK path with noble-curves to compute the public key.
+      // The PKCS#8 path used to be the primary, but Firefox/WebKit reject the
+      // hand-rolled PKCS#8 structure (they require the public key to be
+      // embedded per RFC 5958). Chromium accepted it without the public key.
+      // Using JWK with d+x+y works in all browsers consistently.
 
       // Convert private key bytes to base64url (d parameter)
       const d = this.toBase64Url(privateKeyBytes);
 
-      // To get x,y we need to derive them from d
-      // We'll use a two-step process: import as raw, then export as JWK to get x,y
-      // Alternative: compute the public point mathematically
+      // Use noble-curves to get uncompressed public key (65 bytes: 0x04 + x + y)
+      const publicKeyBytes = p256.getPublicKey(privateKeyBytes, false);
 
-      // Create PKCS#8 formatted key for initial import
-      const pkcs8 = this.createPKCS8(privateKeyBytes);
-      const pkcs8Buffer = new ArrayBuffer(pkcs8.length);
-      new Uint8Array(pkcs8Buffer).set(pkcs8);
+      // Extract x and y from uncompressed format (skip the 0x04 prefix)
+      const xBytes = publicKeyBytes.slice(1, 33);
+      const yBytes = publicKeyBytes.slice(33, 65);
 
-      // Try PKCS#8 import first (works in most browsers)
-      try {
-        return await crypto.subtle.importKey(
-          'pkcs8',
-          pkcs8Buffer,
-          {
-            name: CRYPTO_PARAMS.ALGORITHM,
-            namedCurve: CRYPTO_PARAMS.CURVE,
-          },
-          true,
-          ['deriveKey', 'deriveBits']
-        );
-      } catch (pkcs8Error) {
-        // PKCS#8 failed, use @noble/curves to compute public key from private key
-        logger.warn('PKCS#8 import failed, using @noble/curves fallback');
+      // Convert to base64url
+      const x = this.toBase64Url(xBytes);
+      const y = this.toBase64Url(yBytes);
 
-        // Use noble-curves to get uncompressed public key (65 bytes: 0x04 + x + y)
-        const publicKeyBytes = p256.getPublicKey(privateKeyBytes, false);
+      // Create complete JWK with computed public key
+      const jwk: JsonWebKey = {
+        kty: 'EC',
+        crv: CRYPTO_PARAMS.CURVE,
+        d,
+        x,
+        y,
+      };
 
-        // Extract x and y from uncompressed format (skip the 0x04 prefix)
-        const xBytes = publicKeyBytes.slice(1, 33);
-        const yBytes = publicKeyBytes.slice(33, 65);
-
-        // Convert to base64url
-        const x = this.toBase64Url(xBytes);
-        const y = this.toBase64Url(yBytes);
-
-        // Create complete JWK with computed public key
-        const jwk: JsonWebKey = {
-          kty: 'EC',
-          crv: CRYPTO_PARAMS.CURVE,
-          d,
-          x,
-          y,
-        };
-
-        // Import the JWK as a CryptoKey
-        return await crypto.subtle.importKey(
-          'jwk',
-          jwk,
-          {
-            name: CRYPTO_PARAMS.ALGORITHM,
-            namedCurve: CRYPTO_PARAMS.CURVE,
-          },
-          true,
-          ['deriveKey', 'deriveBits']
-        );
-      }
+      // Import the JWK as a CryptoKey (works in all browsers)
+      return await crypto.subtle.importKey(
+        'jwk',
+        jwk,
+        {
+          name: CRYPTO_PARAMS.ALGORITHM,
+          namedCurve: CRYPTO_PARAMS.CURVE,
+        },
+        true,
+        ['deriveKey', 'deriveBits']
+      );
     } catch (error) {
       if (error instanceof KeyDerivationError) {
         throw error;
