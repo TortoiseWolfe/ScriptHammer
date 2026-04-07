@@ -115,11 +115,16 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
       );
     }
 
-    // Take screenshot to verify visually
-    await page.screenshot({
-      path: 'test-results/mobile-no-hscroll.png',
-      fullPage: true,
-    });
+    // Take a viewport-only screenshot (not fullPage) for visual debugging.
+    // Firefox refuses fullPage screenshots taller than 32767px (long blog
+    // posts trigger this). The assertion above already validated the
+    // important thing — no horizontal scroll.
+    await page
+      .screenshot({
+        path: 'test-results/mobile-no-hscroll.png',
+        fullPage: false,
+      })
+      .catch(() => {});
   });
 
   test('should allow code blocks to scroll internally', async ({ page }) => {
