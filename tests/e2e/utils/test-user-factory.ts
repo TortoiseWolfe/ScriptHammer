@@ -752,8 +752,10 @@ export async function handleReAuthModal(
   const submitBtn = modal.locator('button[type="submit"]').first();
   await submitBtn.click();
 
-  // Wait for modal to close (Argon2id key derivation can take 20s+ on CI)
-  await modal.waitFor({ state: 'hidden', timeout: 30000 });
+  // Wait for modal to close. Argon2id key derivation is CPU-intensive
+  // and under 24-shard CI load with WebCrypto thread contention can take
+  // 60+ seconds. Generous timeout prevents flaky failures.
+  await modal.waitFor({ state: 'hidden', timeout: 90000 });
   console.log(`[handleReAuthModal] ✓ Modal closed. URL: ${page.url()}`);
   return true;
 }
