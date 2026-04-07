@@ -273,84 +273,45 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # ===== CHROMIUM (every push) =====
-          # Messaging: 2 shards
-          - project: chromium-msg
-            browser: chromium
-            shard: 1/2
-          - project: chromium-msg
-            browser: chromium
-            shard: 2/2
-          # General: 6 shards
-          - project: chromium-gen
-            browser: chromium
-            shard: 1/6
-          - project: chromium-gen
-            browser: chromium
-            shard: 2/6
-          - project: chromium-gen
-            browser: chromium
-            shard: 3/6
-          - project: chromium-gen
-            browser: chromium
-            shard: 4/6
-          - project: chromium-gen
-            browser: chromium
-            shard: 5/6
-          - project: chromium-gen
-            browser: chromium
-            shard: 6/6
-          # ===== FIREFOX (every push) =====
-          - project: firefox-msg
-            browser: firefox
-            shard: 1/2
-          - project: firefox-msg
-            browser: firefox
-            shard: 2/2
-          - project: firefox-gen
-            browser: firefox
-            shard: 1/6
-          - project: firefox-gen
-            browser: firefox
-            shard: 2/6
-          - project: firefox-gen
-            browser: firefox
-            shard: 3/6
-          - project: firefox-gen
-            browser: firefox
-            shard: 4/6
-          - project: firefox-gen
-            browser: firefox
-            shard: 5/6
-          - project: firefox-gen
-            browser: firefox
-            shard: 6/6
-          # ===== WEBKIT (every push) =====
-          - project: webkit-msg
-            browser: webkit
-            shard: 1/2
-          - project: webkit-msg
-            browser: webkit
-            shard: 2/2
-          - project: webkit-gen
-            browser: webkit
-            shard: 1/6
-          - project: webkit-gen
-            browser: webkit
-            shard: 2/6
-          - project: webkit-gen
-            browser: webkit
-            shard: 3/6
-          - project: webkit-gen
-            browser: webkit
-            shard: 4/6
-          - project: webkit-gen
-            browser: webkit
-            shard: 5/6
-          - project: webkit-gen
-            browser: webkit
-            shard: 6/6
+        # On push: chromium only (8 shards). On schedule: all 3 browsers
+        # (24 shards). 24 concurrent shards saturate Supabase free tier rate
+        # limits, causing chromium tests to fail intermittently. Schedule
+        # runs are weekly (Monday 6 AM UTC) and have less collision risk.
+        include: ${{ fromJSON(github.event_name == 'schedule' && '[
+          {"project":"chromium-msg","browser":"chromium","shard":"1/2"},
+          {"project":"chromium-msg","browser":"chromium","shard":"2/2"},
+          {"project":"chromium-gen","browser":"chromium","shard":"1/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"2/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"3/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"4/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"5/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"6/6"},
+          {"project":"firefox-msg","browser":"firefox","shard":"1/2"},
+          {"project":"firefox-msg","browser":"firefox","shard":"2/2"},
+          {"project":"firefox-gen","browser":"firefox","shard":"1/6"},
+          {"project":"firefox-gen","browser":"firefox","shard":"2/6"},
+          {"project":"firefox-gen","browser":"firefox","shard":"3/6"},
+          {"project":"firefox-gen","browser":"firefox","shard":"4/6"},
+          {"project":"firefox-gen","browser":"firefox","shard":"5/6"},
+          {"project":"firefox-gen","browser":"firefox","shard":"6/6"},
+          {"project":"webkit-msg","browser":"webkit","shard":"1/2"},
+          {"project":"webkit-msg","browser":"webkit","shard":"2/2"},
+          {"project":"webkit-gen","browser":"webkit","shard":"1/6"},
+          {"project":"webkit-gen","browser":"webkit","shard":"2/6"},
+          {"project":"webkit-gen","browser":"webkit","shard":"3/6"},
+          {"project":"webkit-gen","browser":"webkit","shard":"4/6"},
+          {"project":"webkit-gen","browser":"webkit","shard":"5/6"},
+          {"project":"webkit-gen","browser":"webkit","shard":"6/6"}
+        ]' || '[
+          {"project":"chromium-msg","browser":"chromium","shard":"1/2"},
+          {"project":"chromium-msg","browser":"chromium","shard":"2/2"},
+          {"project":"chromium-gen","browser":"chromium","shard":"1/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"2/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"3/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"4/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"5/6"},
+          {"project":"chromium-gen","browser":"chromium","shard":"6/6"}
+        ]') }}
 
     steps:
       - name: Checkout code
