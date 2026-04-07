@@ -10,6 +10,21 @@
 import { test, expect, devices } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
+// Strip defaultBrowserType (forces webkit, breaks chromium project) and
+// isMobile (Firefox throws "options.isMobile is not supported in Firefox").
+// Mobile emulation still works in all browsers via viewport/UA/touch fields.
+const {
+  defaultBrowserType: _iPhoneDbt,
+  isMobile: _iPhoneIm,
+  ...iPhone12Base
+} = devices['iPhone 12'];
+
+const {
+  defaultBrowserType: _iPadDbt,
+  isMobile: _iPadIm,
+  ...iPadMiniLandscapeBase
+} = devices['iPad Mini landscape'];
+
 /**
  * Wait for layout to stabilize after viewport/page change
  */
@@ -33,7 +48,10 @@ async function waitForLayoutStability(page: import('@playwright/test').Page) {
 
 test.describe('Mobile Orientation Detection', () => {
   test('iPhone 12 portrait uses mobile styles', async ({ browser }) => {
-    const context = await browser.newContext({ ...devices['iPhone 12'] });
+    const context = await browser.newContext({
+      ...iPhone12Base,
+      viewport: { width: 390, height: 844 },
+    });
     const page = await context.newPage();
 
     await page.goto('/');
@@ -71,7 +89,7 @@ test.describe('Mobile Orientation Detection', () => {
   }) => {
     // This is the KEY test: landscape mobile should NOT switch to tablet layout
     const context = await browser.newContext({
-      ...devices['iPhone 12'],
+      ...iPhone12Base,
       viewport: { width: 844, height: 390 }, // Landscape: width > height
     });
     const page = await context.newPage();
@@ -112,7 +130,7 @@ test.describe('Mobile Orientation Detection', () => {
   test('Tablet landscape uses tablet/desktop layout', async ({ browser }) => {
     // iPad Mini landscape should use tablet layout
     const context = await browser.newContext({
-      ...devices['iPad Mini landscape'],
+      ...iPadMiniLandscapeBase,
     });
     const page = await context.newPage();
 
@@ -132,35 +150,52 @@ test.describe('Mobile Orientation Detection', () => {
   test('Orientation change triggers responsive adjustments', async ({
     browser,
   }) => {
-    const context = await browser.newContext({ ...devices['iPhone 12'] });
-    const page = await context.newPage();
+    // Use SEPARATE contexts for portrait and landscape instead of
+    // setViewportSize() mid-test. When a context is created with a device
+    // descriptor (deviceScaleFactor: 3), Chromium/Firefox don't reliably
+    // honor setViewportSize() afterward — innerWidth comes back wrong
+    // (e.g. 881 instead of 844 due to DPR rounding).
 
-    await page.goto('/');
-    await waitForLayoutStability(page);
-
-    // Get initial layout info
-    const portraitWidth = await page.evaluate(() => window.innerWidth);
+    // Portrait context — verify mobile dimensions
+    const portraitContext = await browser.newContext({
+      ...iPhone12Base,
+      viewport: { width: 390, height: 844 },
+    });
+    const portraitPage = await portraitContext.newPage();
+    await portraitPage.goto('/');
+    await waitForLayoutStability(portraitPage);
+    const portraitWidth = await portraitPage.evaluate(() => window.innerWidth);
     expect(portraitWidth).toBe(390);
+    await portraitContext.close();
 
-    // Simulate orientation change to landscape
-    await page.setViewportSize({ width: 844, height: 390 });
-    await waitForLayoutStability(page);
+    // Landscape context — verify mobile-in-landscape dimensions and layout
+    const landscapeContext = await browser.newContext({
+      ...iPhone12Base,
+      viewport: { width: 844, height: 390 },
+    });
+    const landscapePage = await landscapeContext.newPage();
+    await landscapePage.goto('/');
+    await waitForLayoutStability(landscapePage);
 
-    const landscapeWidth = await page.evaluate(() => window.innerWidth);
+    const landscapeWidth = await landscapePage.evaluate(
+      () => window.innerWidth
+    );
     expect(landscapeWidth).toBe(844);
 
-    // Navigation should still be visible after rotation
-    const nav = page.locator('nav').first();
+    // Navigation should be visible in landscape
+    const nav = landscapePage.locator('nav').first();
     await expect(nav).toBeVisible();
 
-    // Page should not have horizontal scroll
-    const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+    // Page should not have horizontal scroll in landscape
+    const scrollWidth = await landscapePage.evaluate(
+      () => document.body.scrollWidth
+    );
     expect(
       scrollWidth,
       'No horizontal scroll in landscape'
     ).toBeLessThanOrEqual(844 + 1);
 
-    await context.close();
+    await landscapeContext.close();
   });
 
   test('matchMedia detects orientation correctly', async ({ page }) => {

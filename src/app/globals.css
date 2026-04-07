@@ -6,7 +6,7 @@
 @theme {
   /* Mobile-first breakpoints (PRP-017) */
   --breakpoint-xs: 20rem; /* 320px - Small phones (minimum supported) */
-  --breakpoint-sm: 26.75rem; /* 428px - Standard phones */
+  --breakpoint-sm: 26.875rem; /* 430px - Standard phones (must NOT match 428px exactly) */
   --breakpoint-md: 48rem; /* 768px - Tablets */
   --breakpoint-lg: 64rem; /* 1024px - Desktop */
   --breakpoint-xl: 80rem; /* 1280px - Large desktop */

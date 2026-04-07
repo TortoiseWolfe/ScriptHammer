@@ -166,16 +166,6 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        // KNOWN-FAILING on chromium — these catch real issues that need fixing:
-        // - mobile-horizontal-scroll: pages have 2px overflow at 428px viewport
-        //   (real layout bug previously hidden because tests only ran in webkit)
-        // - mobile-navigation: navigation doesn't fit in 428px viewport (real layout bug)
-        // - mobile-orientation: setViewportSize() in chromium doesn't apply to
-        //   contexts created with devices['iPhone 12'] (Playwright behavior diff)
-        // TODO: fix the layout bugs and reconfigure mobile-orientation tests
-        '**/tests/mobile-horizontal-scroll.spec.ts',
-        '**/tests/mobile-navigation.spec.ts',
-        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {
@@ -203,11 +193,6 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
-        // Same exclusions as chromium-gen — these tests use webkit-only
-        // device config or catch real layout bugs
-        '**/tests/mobile-horizontal-scroll.spec.ts',
-        '**/tests/mobile-navigation.spec.ts',
-        '**/tests/mobile-orientation.spec.ts',
       ],
       dependencies: ['setup'],
       use: {
