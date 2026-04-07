@@ -269,48 +269,38 @@ jobs:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
     needs: [smoke, rate-limiting, auth-setup]
-    timeout-minutes: 60
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        # On push/PR: chromium only (8 shards). On schedule OR manual dispatch:
-        # all 3 browsers (24 shards). 24 concurrent shards saturate Supabase
-        # free tier rate limits, causing chromium tests to fail intermittently.
-        include: ${{ fromJSON((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && '[
-          {"project":"chromium-msg","browser":"chromium","shard":"1/2"},
-          {"project":"chromium-msg","browser":"chromium","shard":"2/2"},
-          {"project":"chromium-gen","browser":"chromium","shard":"1/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"2/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"3/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"4/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"5/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"6/6"},
-          {"project":"firefox-msg","browser":"firefox","shard":"1/2"},
-          {"project":"firefox-msg","browser":"firefox","shard":"2/2"},
-          {"project":"firefox-gen","browser":"firefox","shard":"1/6"},
-          {"project":"firefox-gen","browser":"firefox","shard":"2/6"},
-          {"project":"firefox-gen","browser":"firefox","shard":"3/6"},
-          {"project":"firefox-gen","browser":"firefox","shard":"4/6"},
-          {"project":"firefox-gen","browser":"firefox","shard":"5/6"},
-          {"project":"firefox-gen","browser":"firefox","shard":"6/6"},
-          {"project":"webkit-msg","browser":"webkit","shard":"1/2"},
-          {"project":"webkit-msg","browser":"webkit","shard":"2/2"},
-          {"project":"webkit-gen","browser":"webkit","shard":"1/6"},
-          {"project":"webkit-gen","browser":"webkit","shard":"2/6"},
-          {"project":"webkit-gen","browser":"webkit","shard":"3/6"},
-          {"project":"webkit-gen","browser":"webkit","shard":"4/6"},
-          {"project":"webkit-gen","browser":"webkit","shard":"5/6"},
-          {"project":"webkit-gen","browser":"webkit","shard":"6/6"}
-        ]' || '[
-          {"project":"chromium-msg","browser":"chromium","shard":"1/2"},
-          {"project":"chromium-msg","browser":"chromium","shard":"2/2"},
-          {"project":"chromium-gen","browser":"chromium","shard":"1/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"2/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"3/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"4/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"5/6"},
-          {"project":"chromium-gen","browser":"chromium","shard":"6/6"}
-        ]') }}
+        include:
+          # ===== CHROMIUM (8 shards) =====
+          - { project: chromium-msg, browser: chromium, shard: 1/2 }
+          - { project: chromium-msg, browser: chromium, shard: 2/2 }
+          - { project: chromium-gen, browser: chromium, shard: 1/6 }
+          - { project: chromium-gen, browser: chromium, shard: 2/6 }
+          - { project: chromium-gen, browser: chromium, shard: 3/6 }
+          - { project: chromium-gen, browser: chromium, shard: 4/6 }
+          - { project: chromium-gen, browser: chromium, shard: 5/6 }
+          - { project: chromium-gen, browser: chromium, shard: 6/6 }
+          # ===== FIREFOX (8 shards) =====
+          - { project: firefox-msg, browser: firefox, shard: 1/2 }
+          - { project: firefox-msg, browser: firefox, shard: 2/2 }
+          - { project: firefox-gen, browser: firefox, shard: 1/6 }
+          - { project: firefox-gen, browser: firefox, shard: 2/6 }
+          - { project: firefox-gen, browser: firefox, shard: 3/6 }
+          - { project: firefox-gen, browser: firefox, shard: 4/6 }
+          - { project: firefox-gen, browser: firefox, shard: 5/6 }
+          - { project: firefox-gen, browser: firefox, shard: 6/6 }
+          # ===== WEBKIT (8 shards) =====
+          - { project: webkit-msg, browser: webkit, shard: 1/2 }
+          - { project: webkit-msg, browser: webkit, shard: 2/2 }
+          - { project: webkit-gen, browser: webkit, shard: 1/6 }
+          - { project: webkit-gen, browser: webkit, shard: 2/6 }
+          - { project: webkit-gen, browser: webkit, shard: 3/6 }
+          - { project: webkit-gen, browser: webkit, shard: 4/6 }
+          - { project: webkit-gen, browser: webkit, shard: 5/6 }
+          - { project: webkit-gen, browser: webkit, shard: 6/6 }
 
     steps:
       - name: Checkout code
@@ -380,16 +370,23 @@ jobs:
           SHARD: ${{ matrix.shard }}
         run: |
           SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          # Browser offsets prevent 24 shards from hammering Supabase at once:
-          #   chromium: 0s base, firefox: 60s base, webkit: 120s base
-          # Within a browser: messaging 10s/shard, general 5s/shard
+          # Spread 24 shards across ~12 minutes so Supabase free tier only
+          # sees 2-3 new connections per minute. Browser offsets give each
+          # browser a 4-minute window:
+          #   chromium: 0-240s    (chromium-msg first, then chromium-gen)
+          #   firefox:  240-480s
+          #   webkit:   480-720s
+          # Within a browser: msg shards offset by 30s, gen shards by 30s
+          # starting 60s after the msg shards.
           BROWSER_OFFSET=0
-          if [ "$BROWSER" = "firefox" ]; then BROWSER_OFFSET=60; fi
-          if [ "$BROWSER" = "webkit" ]; then BROWSER_OFFSET=120; fi
+          if [ "$BROWSER" = "firefox" ]; then BROWSER_OFFSET=240; fi
+          if [ "$BROWSER" = "webkit" ]; then BROWSER_OFFSET=480; fi
           if echo "$PROJECT" | grep -q "msg"; then
-            DELAY=$((BROWSER_OFFSET + SHARD_NUM * 10))
+            # msg shards: 0s, 30s within browser window
+            DELAY=$((BROWSER_OFFSET + (SHARD_NUM - 1) * 30))
           else
-            DELAY=$((BROWSER_OFFSET + SHARD_NUM * 5))
+            # gen shards: start 90s into browser window, 30s apart
+            DELAY=$((BROWSER_OFFSET + 90 + (SHARD_NUM - 1) * 30))
           fi
           echo "$BROWSER $PROJECT shard $SHARD_NUM: waiting ${DELAY}s"
           sleep $DELAY
