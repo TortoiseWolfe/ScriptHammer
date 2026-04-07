@@ -78,6 +78,49 @@ test.describe('Mobile Navigation', () => {
       const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
       const clientWidth = await page.evaluate(() => document.body.clientWidth);
 
+      // DIAGNOSTIC: When overflow is detected, dump the top offending elements
+      // so we can identify which DOM node is causing the horizontal scroll.
+      if (scrollWidth > clientWidth + 1) {
+        const offenders = await page.evaluate((vw) => {
+          const all = Array.from(document.querySelectorAll('*'));
+          const wide: Array<{
+            tag: string;
+            id: string;
+            cls: string;
+            w: number;
+            x: number;
+            right: number;
+          }> = [];
+          for (const el of all) {
+            const r = el.getBoundingClientRect();
+            // Element extends beyond the viewport's right edge
+            if (r.right > vw + 1 && r.width > 0) {
+              wide.push({
+                tag: el.tagName.toLowerCase(),
+                id: (el as HTMLElement).id || '',
+                cls: ((el as HTMLElement).className || '')
+                  .toString()
+                  .slice(0, 80),
+                w: Math.round(r.width),
+                x: Math.round(r.left),
+                right: Math.round(r.right),
+              });
+            }
+          }
+          // Sort by rightmost edge (worst overflow first)
+          wide.sort((a, b) => b.right - a.right);
+          return wide.slice(0, 10);
+        }, viewport.width);
+        console.log(
+          `[OVERFLOW DIAG] ${viewport.name} (${viewport.width}px): top offenders:\n${offenders
+            .map(
+              (o, i) =>
+                `  ${i + 1}. <${o.tag}${o.id ? ' id="' + o.id + '"' : ''}> right=${o.right}px x=${o.x}px w=${o.w}px class="${o.cls}"`
+            )
+            .join('\n')}`
+        );
+      }
+
       expect(
         scrollWidth,
         `Horizontal scroll detected (scrollWidth: ${scrollWidth}px, viewport: ${viewport.width}px)`
