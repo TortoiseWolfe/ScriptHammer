@@ -441,7 +441,7 @@ test.describe('Message Delete Placeholder E2E', () => {
       // This uses the browser's own Supabase session, going through the
       // same proxy + PostgREST path that loadMessages() uses.
       const patchStatus = await page.evaluate(
-        async ({ msgId, anonKey }) => {
+        async ({ msgId, anonKey, supabaseUrl }) => {
           // Grab token from localStorage
           const keys = Object.keys(localStorage).filter((k) =>
             k.startsWith('sb-')
@@ -454,11 +454,6 @@ test.describe('Message Delete Placeholder E2E', () => {
 
           const session = JSON.parse(sessionJson);
           const token = session.access_token;
-
-          // Supabase URL from localStorage key: sb-<host>-auth-token → http://<host>:8000
-          const hostMatch = sessionKey.match(/^sb-(.+)-auth-token$/);
-          const host = hostMatch ? hostMatch[1] : '';
-          const supabaseUrl = `http://${host}:8000`;
 
           const res = await fetch(
             `${supabaseUrl}/rest/v1/messages?id=eq.${msgId}`,
@@ -476,7 +471,11 @@ test.describe('Message Delete Placeholder E2E', () => {
           const body = await res.json().catch(() => null);
           return { status: res.status, body };
         },
-        { msgId: middleMessageId, anonKey: SUPABASE_ANON_KEY }
+        {
+          msgId: middleMessageId,
+          anonKey: SUPABASE_ANON_KEY,
+          supabaseUrl: SUPABASE_URL,
+        }
       );
 
       console.log(`PATCH from browser: ${JSON.stringify(patchStatus)}`);
