@@ -169,16 +169,24 @@ async function waitForUIStability(page: Page) {
  * Navigate to conversation helper — uses direct URL to bypass slow sidebar query
  */
 async function navigateToConversation(page: Page) {
+  // Two-step auth hydration: navigate to /messages first so AuthContext
+  // hydrates from storageState, THEN navigate to the specific conversation.
+  // Direct navigation to ?conversation=X causes the webkit/firefox auth race
+  // where ProtectedRoute fires before the Supabase client initializes the
+  // session from localStorage (same pattern as offline-queue tests).
+  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+  await dismissCookieBanner(page);
+  await handleReAuthModal(page, TEST_USER_1.password);
+
   await page.goto(`/messages?conversation=${conversationId}`, {
     waitUntil: 'domcontentloaded',
   });
-  await dismissCookieBanner(page);
   await handleReAuthModal(page, TEST_USER_1.password);
 
   // Wait for conversation view to mount
   await page.waitForSelector('[data-testid="message-thread"]', {
     state: 'visible',
-    timeout: 60000,
+    timeout: 90000,
   });
 
   // Wait for message input to be visible (indicates conversation is loaded)

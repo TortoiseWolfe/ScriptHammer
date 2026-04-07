@@ -3,7 +3,7 @@ import { dismissCookieBanner } from './utils/test-user-factory';
 
 test.describe('Mobile Dropdown Menu Screenshots', () => {
   test('should capture dropdown menu on mobile', async ({ page }) => {
-    // Set mobile viewport (iPhone 12 size) - required for md:hidden elements to be visible
+    // Set mobile viewport — hamburger menu is visible below lg (1024px)
     await page.setViewportSize({ width: 390, height: 844 });
 
     // Navigate to the home page
@@ -13,10 +13,9 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
     // Wait for page to load
     await page.waitForLoadState('networkidle');
 
-    // Find the mobile hamburger menu (it's a label, not a button)
-    const menuLabel = page
-      .locator('.dropdown.dropdown-end.md\\:hidden label')
-      .first();
+    // Find the mobile/tablet hamburger menu (it's a label, not a button).
+    // Use the aria-label to match, independent of the responsive class name.
+    const menuLabel = page.getByLabel('Navigation menu').first();
 
     // Take screenshot before opening
     await page.screenshot({
@@ -36,10 +35,9 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Verify dropdown is visible — scope to the mobile hamburger container (md:hidden)
-    const dropdownMenu = page
-      .locator('.dropdown.dropdown-end.md\\:hidden .dropdown-content.menu')
-      .first();
+    // Verify dropdown is visible — DaisyUI dropdown-content appears after
+    // clicking the trigger label with tabIndex=0.
+    const dropdownMenu = page.locator('.dropdown-content.menu').first();
     await expect(dropdownMenu).toBeVisible();
   });
 });
