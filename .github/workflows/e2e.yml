@@ -450,11 +450,17 @@ jobs:
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
         run: |
+          # --no-deps: skip the 'setup' project dependency. The auth-setup
+          # job already ran setup once (with chromium) and uploaded the
+          # auth-state artifact, which we downloaded above. Without --no-deps,
+          # Playwright tries to re-run setup with the matrix browser, which
+          # fails because firefox/webkit shards don't install chromium.
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
-            --trace=on-first-retry
+            --trace=on-first-retry \
+            --no-deps
 
       - name: Upload blob report
         if: always()
