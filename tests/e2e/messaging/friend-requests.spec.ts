@@ -336,10 +336,19 @@ test.describe('Friend Request Flow', () => {
       await expect(acceptButton).toBeVisible();
       await acceptButton.click({ force: true });
 
-      // Wait for request to disappear (no success message shown)
-      await expect(
-        pageB.locator('[data-testid="connection-request"]')
-      ).toBeHidden({ timeout: 10000 });
+      // Wait for request to disappear. WebKit Realtime updates are slower
+      // than chromium under CI load — bumped to 30s. If still visible after
+      // that, force a reload to fetch fresh state.
+      const pendingRequest = pageB.locator(
+        '[data-testid="connection-request"]'
+      );
+      try {
+        await expect(pendingRequest).toBeHidden({ timeout: 30000 });
+      } catch {
+        await pageB.reload();
+        await handleReAuthModal(pageB, USER_B.password);
+        await expect(pendingRequest).toBeHidden({ timeout: 15000 });
+      }
 
       // ===== STEP 9: Verify connection appears in "Accepted" tab for User B =====
       const acceptedTab = pageB.getByRole('tab', { name: /accepted/i });

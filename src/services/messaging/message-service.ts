@@ -390,11 +390,18 @@ export class MessageService {
 
           // Network/fetch failures may come through as insertError instead of
           // a thrown exception. Detect by message and retry with backoff.
+          // Different browsers use different error messages:
+          // - Chromium: "Failed to fetch"
+          // - Firefox:  "NetworkError when attempting to fetch resource"
+          // - WebKit:   "Load failed" or "fetch failed"
           const errMsg = insertError.message || '';
           if (
             errMsg.includes('Failed to fetch') ||
             errMsg.includes('NetworkError') ||
-            errMsg.includes('fetch failed')
+            errMsg.includes('fetch failed') ||
+            errMsg.includes('Load failed') ||
+            errMsg.includes('cancelled') ||
+            errMsg.includes('aborted')
           ) {
             networkAttempt++;
             if (networkAttempt < 3) {
