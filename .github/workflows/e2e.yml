@@ -272,9 +272,16 @@ jobs:
     timeout-minutes: 90
     strategy:
       fail-fast: false
+      # max-parallel: 8 means only 8 shards run concurrently across all 24
+      # matrix entries. Since the matrix is ordered (chromium first, then
+      # firefox, then webkit), this effectively serializes the browsers:
+      # all 8 chromium shards run together, then all 8 firefox, then webkit.
+      # Result: Supabase only sees 8 concurrent shards at a time, matching
+      # the proven-stable chromium-only run.
+      max-parallel: 8
       matrix:
         include:
-          # ===== CHROMIUM (8 shards) =====
+          # ===== CHROMIUM (8 shards) — runs first =====
           - { project: chromium-msg, browser: chromium, shard: 1/2 }
           - { project: chromium-msg, browser: chromium, shard: 2/2 }
           - { project: chromium-gen, browser: chromium, shard: 1/6 }
@@ -283,7 +290,7 @@ jobs:
           - { project: chromium-gen, browser: chromium, shard: 4/6 }
           - { project: chromium-gen, browser: chromium, shard: 5/6 }
           - { project: chromium-gen, browser: chromium, shard: 6/6 }
-          # ===== FIREFOX (8 shards) =====
+          # ===== FIREFOX (8 shards) — runs second =====
           - { project: firefox-msg, browser: firefox, shard: 1/2 }
           - { project: firefox-msg, browser: firefox, shard: 2/2 }
           - { project: firefox-gen, browser: firefox, shard: 1/6 }
@@ -292,7 +299,7 @@ jobs:
           - { project: firefox-gen, browser: firefox, shard: 4/6 }
           - { project: firefox-gen, browser: firefox, shard: 5/6 }
           - { project: firefox-gen, browser: firefox, shard: 6/6 }
-          # ===== WEBKIT (8 shards) =====
+          # ===== WEBKIT (8 shards) — runs third =====
           - { project: webkit-msg, browser: webkit, shard: 1/2 }
           - { project: webkit-msg, browser: webkit, shard: 2/2 }
           - { project: webkit-gen, browser: webkit, shard: 1/6 }
@@ -363,32 +370,21 @@ jobs:
             > /dev/null 2>&1 || true
           echo "✓ Supabase connection pool primed"
 
-      - name: Stagger shards to reduce Supabase contention
+      - name: Stagger shards within batch to reduce Supabase contention
         env:
           PROJECT: ${{ matrix.project }}
-          BROWSER: ${{ matrix.browser }}
           SHARD: ${{ matrix.shard }}
         run: |
           SHARD_NUM=$(echo "$SHARD" | cut -d/ -f1)
-          # Spread 24 shards across ~12 minutes so Supabase free tier only
-          # sees 2-3 new connections per minute. Browser offsets give each
-          # browser a 4-minute window:
-          #   chromium: 0-240s    (chromium-msg first, then chromium-gen)
-          #   firefox:  240-480s
-          #   webkit:   480-720s
-          # Within a browser: msg shards offset by 30s, gen shards by 30s
-          # starting 60s after the msg shards.
-          BROWSER_OFFSET=0
-          if [ "$BROWSER" = "firefox" ]; then BROWSER_OFFSET=240; fi
-          if [ "$BROWSER" = "webkit" ]; then BROWSER_OFFSET=480; fi
+          # max-parallel: 8 already serializes browsers. Within each batch
+          # of 8, stagger by 5-10 seconds to spread the initial connection
+          # burst on Supabase.
           if echo "$PROJECT" | grep -q "msg"; then
-            # msg shards: 0s, 30s within browser window
-            DELAY=$((BROWSER_OFFSET + (SHARD_NUM - 1) * 30))
+            DELAY=$(((SHARD_NUM - 1) * 10))
           else
-            # gen shards: start 90s into browser window, 30s apart
-            DELAY=$((BROWSER_OFFSET + 90 + (SHARD_NUM - 1) * 30))
+            DELAY=$(((SHARD_NUM - 1) * 5))
           fi
-          echo "$BROWSER $PROJECT shard $SHARD_NUM: waiting ${DELAY}s"
+          echo "$PROJECT shard $SHARD_NUM: waiting ${DELAY}s"
           sleep $DELAY
 
       - name: Run E2E tests (${{ matrix.project }} ${{ matrix.shard }})
