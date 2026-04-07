@@ -193,7 +193,7 @@ export function GlobalNav() {
           </div>
 
           {/* Main Navigation */}
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-1 lg:flex">
             {navItems.map((item) => (
               <Link
                 key={item.href}
@@ -321,21 +321,21 @@ export function GlobalNav() {
               <>
                 <Link
                   href="/sign-in"
-                  className="btn btn-ghost btn-sm hidden min-h-11 min-w-11 md:inline-flex"
+                  className="btn btn-ghost btn-sm hidden min-h-11 min-w-11 lg:inline-flex"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="btn btn-primary btn-sm hidden min-h-11 min-w-11 md:inline-flex"
+                  className="btn btn-primary btn-sm hidden min-h-11 min-w-11 lg:inline-flex"
                 >
                   Sign Up
                 </Link>
               </>
             )}
 
-            {/* Mobile Menu - 44px touch target */}
-            <div className="dropdown dropdown-end md:hidden">
+            {/* Mobile/tablet menu (visible below lg) - 44px touch target */}
+            <div className="dropdown dropdown-end lg:hidden">
               <label
                 tabIndex={0}
                 className="btn btn-ghost btn-circle min-h-11 min-w-11"
@@ -461,18 +461,18 @@ export function GlobalNav() {
               </button>
             )}
 
-            {/* Font Size Control - Hidden on mobile, shown at md (768px+) */}
-            <div className="hidden md:block">
+            {/* Font Size Control - Hidden below lg (1024px) — accessible via hamburger */}
+            <div className="hidden lg:block">
               <FontSizeControl />
             </div>
 
-            {/* Color Vision Control - Hidden on mobile, shown at md (768px+) */}
-            <div className="hidden md:block">
+            {/* Color Vision Control - Hidden below lg (1024px) */}
+            <div className="hidden lg:block">
               <ColorblindToggle className="compact" />
             </div>
 
-            {/* Theme Selector - Hidden on mobile, shown at md (768px+) */}
-            <div className="dropdown dropdown-end hidden md:block">
+            {/* Theme Selector - Hidden below lg (1024px) */}
+            <div className="dropdown dropdown-end hidden lg:block">
               <label
                 tabIndex={0}
                 className="btn btn-ghost btn-circle min-h-11 min-w-11"
