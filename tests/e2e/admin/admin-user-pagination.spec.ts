@@ -217,10 +217,9 @@ test.describe('Admin User Pagination E2E', () => {
       await expect(indicator).toContainText('Page 1 of');
     }
 
-    // Table should show filtered results (may be fewer rows or no rows for "alice")
-    const rows = table.locator('tbody tr');
-    const rowCount = await rows.count();
-    expect(rowCount).toBeGreaterThanOrEqual(0);
+    // Table should still be present after search (results may be empty or
+    // filtered — both are valid; the real assertion is the page-reset above).
+    await expect(table).toBeVisible();
   });
 
   test('should search, page forward, and confirm results update at each step', async ({

@@ -200,10 +200,20 @@ test.describe('Accessibility', () => {
     expect(await footer.count()).toBeGreaterThan(0);
   });
 
-  test('color contrast meets WCAG standards', async ({ page }) => {
-    // This test uses axe-core for contrast checking
-    // NOTE: Color contrast is theme-dependent. DaisyUI has 32 themes and not all
-    // meet WCAG AA contrast ratios. This test logs warnings but doesn't fail.
+  test('color contrast advisory (axe-core executes successfully)', async ({
+    page,
+  }) => {
+    // ADVISORY TEST — does NOT enforce WCAG AA contrast ratios.
+    //
+    // DaisyUI ships 32 themes, not all of which meet AA. The team has chosen
+    // to surface contrast issues as warnings rather than CI failures so theme
+    // experimentation isn't blocked. This test asserts that:
+    //   1. axe-core injects and runs without throwing
+    //   2. The results object is well-formed (has a .violations array)
+    //
+    // It does NOT pretend to enforce contrast. To enforce AA, replace the
+    // advisory log below with `expect(contrastViolations.length).toBe(0)`
+    // after the team commits to an AA-compliant default theme.
     await injectAxe(page);
 
     const results = await page.evaluate(async () => {
@@ -226,21 +236,21 @@ test.describe('Accessibility', () => {
       return axeResults;
     });
 
-    // Check for color contrast violations
+    // Real assertion: axe-core ran and returned a structured result.
+    expect(results).toBeDefined();
+    expect(Array.isArray(results.violations)).toBe(true);
+
     const contrastViolations = results.violations.filter(
       (v) => v.id === 'color-contrast'
     );
 
-    // Log warnings but don't fail - contrast depends on active theme
     if (contrastViolations.length > 0) {
       console.warn(
         `[Advisory] ${contrastViolations[0].nodes.length} color contrast issues found. ` +
-          `This may be theme-dependent. Consider testing with a high-contrast theme.`
+          `This is theme-dependent and does NOT fail CI. ` +
+          `To enforce: change this test to expect(contrastViolations.length).toBe(0).`
       );
     }
-
-    // Test passes regardless - this is informational
-    expect(true).toBe(true);
   });
 
   test('font size controls work', async ({ page }) => {

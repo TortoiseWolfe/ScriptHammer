@@ -373,13 +373,14 @@ test.describe('Group Chat E2E', () => {
 });
 
 test('contract - test users configured', async () => {
-  console.log(
-    'Primary email:',
-    process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com (default)'
-  );
-  console.log(
-    'Tertiary email:',
-    process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com (default)'
-  );
-  expect(true).toBe(true);
+  // Both env vars must resolve to a non-empty string. Falls back to the
+  // documented test users when not set, but never accepts empty/undefined.
+  const primary =
+    process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com (default)';
+  const tertiary =
+    process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com (default)';
+  console.log('Primary email:', primary);
+  console.log('Tertiary email:', tertiary);
+  expect(primary).toMatch(/@/);
+  expect(tertiary).toMatch(/@/);
 });

@@ -115,7 +115,13 @@ test.describe('Capture Decryption Logs', () => {
       }
       console.log('========== END LOGS ==========\n');
 
-      expect(true).toBe(true);
+      // This is a diagnostic capture test — its purpose is to print logs
+      // for human inspection, not enforce behavior. Real assertion: the
+      // signed-in page made it to /conversations or an existing thread
+      // (proves the auth + decryption pipeline didn't crash before logs
+      // could be captured). consoleLogs is an array, even when empty.
+      expect(Array.isArray(consoleLogs)).toBe(true);
+      expect(pageA.url()).toMatch(/messages|conversations/);
     } finally {
       await contextA.close();
     }

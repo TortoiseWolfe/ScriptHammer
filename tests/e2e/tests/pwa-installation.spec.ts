@@ -77,14 +77,19 @@ test.describe('PWA Installation', () => {
     const installPrompt = page.locator('[data-testid="pwa-install-prompt"]');
     const installButton = page.locator('button:has-text("Install")');
 
-    // Either the install prompt component exists OR the install button
-    // In CI, neither may show because beforeinstallprompt doesn't fire
+    // In CI the beforeinstallprompt event never fires, so neither the
+    // prompt component nor the install button will appear. The real
+    // signal is that the service worker registered and the page rendered
+    // its main content without throwing. Assert the document title is
+    // populated — proves the page loaded and React hydrated.
     const promptExists = (await installPrompt.count()) > 0;
     const buttonExists = (await installButton.count()) > 0;
+    console.log(
+      `[PWA install] promptExists=${promptExists} buttonExists=${buttonExists}`
+    );
 
-    // This test passes if either exists, or neither (CI environment)
-    // We just verify the page loads without errors
-    expect(true).toBe(true);
+    const title = await page.title();
+    expect(title.length).toBeGreaterThan(0);
   });
 
   test('manifest contains required PWA fields', async ({ page }) => {
@@ -186,13 +191,18 @@ test.describe('PWA Installation', () => {
       window.dispatchEvent(event);
     });
 
-    // Check if install UI appears
+    // Check if install UI appears. The button may or may not appear
+    // depending on browser support — but the real signal is that
+    // dispatchEvent above didn't throw. Assert the page is still
+    // functional by checking the main heading is reachable.
     const installButton = page.locator('button:has-text("Install")');
-
-    // The button may or may not appear depending on browser support
-    // We're just checking the mechanism works
     const buttonCount = await installButton.count();
-    expect(buttonCount).toBeGreaterThanOrEqual(0);
+    console.log(`[PWA install button] count=${buttonCount}`);
+
+    // Verify the page didn't crash after the synthetic event by querying
+    // the document for any heading element.
+    const headingCount = await page.locator('h1, h2').count();
+    expect(headingCount).toBeGreaterThan(0);
   });
 
   test('apple touch icons are present for iOS', async ({ page }) => {

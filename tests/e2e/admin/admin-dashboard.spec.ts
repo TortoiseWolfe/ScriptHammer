@@ -402,10 +402,11 @@ test.describe('Admin Dashboard E2E', () => {
         await searchInput.fill('alice');
         await page.waitForTimeout(1000);
 
+        // Table should remain present after search (filtered results may be
+        // empty or non-empty — both are valid; we're asserting the search
+        // didn't crash the view).
         const table = page.locator('table').first();
-        const rows = table.locator('tbody tr');
-        const rowCount = await rows.count();
-        expect(rowCount).toBeGreaterThanOrEqual(0);
+        await expect(table).toBeVisible();
       }
     });
 
@@ -450,13 +451,9 @@ test.describe('Admin Dashboard E2E', () => {
       if (
         await topSendersHeading.isVisible({ timeout: 5000 }).catch(() => false)
       ) {
-        const table = page.locator('table');
-        const tableCount = await table.count();
-        if (tableCount > 0) {
-          const rows = table.first().locator('tbody tr');
-          const rowCount = await rows.count();
-          expect(rowCount).toBeGreaterThanOrEqual(0);
-        }
+        // The heading rendered without crashing — that's the real signal.
+        // Top-senders rows depend on seed data and are tested elsewhere.
+        await expect(topSendersHeading).toBeVisible();
       }
     });
 
@@ -465,15 +462,11 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
-      // Look for visible SVG charts (exclude hidden utility SVGs like icon sprites)
-      const visibleCharts = page.locator(
-        'svg:visible, canvas:visible, [data-testid*="trend"]:visible, [data-testid*="chart"]:visible'
-      );
-      const chartCount = await visibleCharts.count();
-
-      // Messaging volume trends may or may not have chart data depending on seed data range.
-      // Just verify the page loaded without crashing - the stat cards test above covers data presence.
-      expect(chartCount).toBeGreaterThanOrEqual(0);
+      // The messaging admin page should render its main heading. Volume
+      // trend charts depend on seed data range — covered by stat cards
+      // test above. Here we just verify the page loaded without crashing.
+      const heading = page.getByRole('heading').first();
+      await expect(heading).toBeVisible({ timeout: 10000 });
     });
   });
 

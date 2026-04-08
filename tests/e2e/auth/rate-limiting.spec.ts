@@ -205,14 +205,18 @@ test.describe('Rate Limiting - Password Reset', () => {
     await page.getByRole('button', { name: /reset|send|submit/i }).click();
     await page.waitForTimeout(500);
 
-    // Any response is acceptable - we're just verifying the endpoint works
-    // Use filter to avoid Next.js route announcer conflict
+    // Capture whatever alert shows (success, error, or rate-limit) for log
+    // visibility — content varies by Supabase rate-limit config.
     const alert = await page
       .getByRole('alert')
-      .filter({ hasText: /.+/ }) // Any non-empty alert
+      .filter({ hasText: /.+/ })
       .textContent()
       .catch(() => null);
-    // Test passes if no crash - rate limiting behavior varies by config
-    expect(true).toBe(true);
+    console.log(`[rate-limit reset] post-submit alert: ${alert ?? '(none)'}`);
+
+    // Real assertion: the page is still alive after the rapid submits.
+    // We assert by checking the URL is still on a forgot/reset path —
+    // proves no crash, no unexpected redirect to error page.
+    expect(page.url()).toMatch(/forgot-password|reset-password/);
   });
 });
