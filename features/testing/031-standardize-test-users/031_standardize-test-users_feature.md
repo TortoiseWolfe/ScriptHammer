@@ -3,7 +3,7 @@
 **Feature ID**: 031
 **Category**: testing
 **Source**: ScriptHammer/docs/specs/026-standardize-test-users
-**Status**: Ready for SpecKit (Completed in v_001)
+**Status**: Complete (2026-04-08) — `scripts/seed-test-users.ts`, `tests/e2e/utils/test-user-factory.ts`, standardized TEST_USER_PRIMARY/SECONDARY/TERTIARY env vars used across all E2E tests. Documented in README + `.env.example`.
 
 ## Description
 

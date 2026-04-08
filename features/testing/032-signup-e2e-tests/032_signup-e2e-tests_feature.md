@@ -3,7 +3,7 @@
 **Feature ID**: 032
 **Category**: testing
 **Source**: ScriptHammer/docs/specs/027-signup-e2e-tests
-**Status**: Ready for SpecKit (Completed in v_001)
+**Status**: Complete (2026-04-08) — `tests/e2e/auth/sign-up.spec.ts` and `tests/e2e/auth/user-registration.spec.ts` cover the full sign-up flow. Supporting utilities in `tests/e2e/utils/test-user-factory.ts`. Dedicated Playwright project for sign-up due to rate limiting. Passing consistently on all three browsers.
 
 ## Description
 

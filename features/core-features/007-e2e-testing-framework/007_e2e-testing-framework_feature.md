@@ -3,7 +3,7 @@
 **Feature Number**: 007
 **Category**: core-features
 **Priority**: P0 (Constitutional Requirement)
-**Status**: Draft
+**Status**: Complete (2026-04-08) — Playwright framework fully deployed. 60 `*.spec.ts` files under `tests/e2e/`, 6 Playwright projects (chromium/firefox/webkit × msg/gen) running 24 parallel shards in CI via `.github/workflows/e2e.yml`. 3-job sequential chain (chromium → firefox → webkit) keeps Supabase free tier at 8 concurrent shards. `tests/e2e/auth.setup.ts` handles once-per-shard auth injection. Run 24113858375 achieved 24/24 green (2026-04-08). Extensive debugging methodology captured in `docs/e2e-loop-priming.md` with 24 already-fixed root causes.
 **Source**: Migrated from ScriptHammer docs/specs/003
 
 ---

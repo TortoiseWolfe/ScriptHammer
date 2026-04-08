@@ -3,7 +3,7 @@
 **Feature ID**: 022
 **Category**: integrations
 **Source**: ScriptHammer/docs/specs/009-web3forms-integration
-**Status**: Ready for SpecKit (Completed in v_001)
+**Status**: Complete (2026-04-08) — `src/hooks/useWeb3Forms.ts` with unit tests, `ContactForm` component integrates the hook, form E2E tested in `tests/e2e/form-submission.spec.ts`. Activates when `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` is set (per-fork configuration).
 
 ## Description
 

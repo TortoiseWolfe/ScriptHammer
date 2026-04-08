@@ -3,7 +3,7 @@
 **Feature Number**: 011
 **Category**: core-features
 **Priority**: P2
-**Status**: Draft
+**Status**: Complete (2026-04-08) — Group chat implementation in production: `src/services/messaging/group-key-service.ts` (group encryption key management), `src/services/messaging/group-service.ts` (membership, roles), `CreateGroupModal` organism with full 5-file test coverage. Route `/messages/new-group`. E2E tested in `tests/e2e/messaging/group-chat-multiuser.spec.ts`. See also feature 043 (Group Service method implementation) — misfiled under payments, should move to core-features.
 **Source**: Migrated from ScriptHammer specs/010
 
 ---

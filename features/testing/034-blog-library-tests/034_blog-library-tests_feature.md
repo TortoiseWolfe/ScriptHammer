@@ -3,7 +3,7 @@
 **Feature ID**: 034
 **Category**: testing
 **Source**: ScriptHammer README (SPEC-051)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — `src/lib/blog/` has 4 production modules (markdown-processor, seo-analyzer, toc-generator, blog-data.json) but **zero unit test files**. This is a real gap — the blog library is used across `/blog` routes in production but has no direct test coverage. Adding `*.test.ts` for each module would establish a safety net for blog content changes.
 
 ## Description
 

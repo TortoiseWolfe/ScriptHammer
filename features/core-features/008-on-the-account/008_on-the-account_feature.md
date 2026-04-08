@@ -3,7 +3,7 @@
 **Feature Number**: 008
 **Category**: core-features
 **Priority**: P1
-**Status**: Draft
+**Status**: Complete (2026-04-08) — Avatar upload fully implemented: 10 Avatar component files across `src/components/` covering display, picker, crop interface, upload flow, and persistence. E2E test in `tests/e2e/avatar/upload.spec.ts` validates the complete user flow. Integrated with profile management at `/profile` and `/account` routes.
 **Source**: Migrated from ScriptHammer docs/specs/022
 
 ---

@@ -3,7 +3,7 @@
 **Feature ID**: 025
 **Category**: integrations
 **Source**: ScriptHammer/docs/specs/019-blog-social-features
-**Status**: Ready for SpecKit
+**Status**: Complete (2026-04-08) — `src/components/molecular/SocialShareButtons/` with full 5-file pattern. Author bio rendering in `src/app/blog/[slug]/BlogPostPageClient.tsx` pulling from author config. OpenGraph + Twitter card metadata generated in `src/app/blog/[slug]/page.tsx` (line 350), `src/app/blog/tags/page.tsx`, `src/app/blog/tags/[tag]/page.tsx`. Social platform config in `src/config/social-platforms.ts` and `src/config/social.ts`.
 
 ## Description
 

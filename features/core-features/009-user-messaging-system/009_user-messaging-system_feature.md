@@ -3,7 +3,7 @@
 **Feature Number**: 009
 **Category**: core-features
 **Priority**: P1
-**Status**: Draft
+**Status**: Complete (2026-04-08) — Full E2E-encrypted messaging system in production: 23 files across `src/lib/messaging/` (key derivation via noble-curves JWK, ECDH shared secrets, symmetric encryption) and `src/services/messaging/` (message-service, connection-service, key-service, offline-queue-service, gdpr-service). UI: `ConversationView` organism, `MessageThread`, `MessageBubble`, unified messaging sidebar. Routes: `/messages`, `/messages/setup`, `/messages/new-group`, `/conversations`. Extensively tested in `tests/e2e/messaging/` (12 spec files covering encrypted-messaging, friend-requests, offline-queue, real-time-delivery, message-editing, message-deletion, group-chat, etc.). Cross-browser validated on chromium/firefox/webkit in run 24113858375.
 **Source**: Migrated from ScriptHammer docs/specs/023
 
 ---

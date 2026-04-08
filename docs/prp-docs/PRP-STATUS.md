@@ -2,10 +2,53 @@
 
 **Last Updated**: 2026-04-08
 **Total PRPs**: 16 (legacy) + 46 (SpecKit features)
-**Completed**: 15 legacy PRPs (v0.3.0)
-**In Progress**: 024 Payment Integration (partial)
-**Not Started**: 038–042 Payment features, 046 Admin Dashboard
-**Current Phase**: v0.4.0 Payments (planning) — v0.3.0 legacy complete
+**Completed**: 15 legacy PRPs (v0.3.0) + much of v0.4.0 Foundation/Messaging/Content (silently, see below)
+**In Progress**: 024 Payment Integration (awaiting API keys), 033 SEO lib tests (3 of 4 files covered)
+**Not Started**: 034 Blog library tests, 038–042 Payment feature routes + UX
+**Current Phase**: v0.4.0 — Payments activation + testing coverage gaps
+
+---
+
+## v0.4.0 — Foundation & Core (2026-04-08 audit)
+
+A direct-verification audit found that **~70% of non-payment feature status fields were stale** — many features marked "Draft" or "Ready for SpecKit" are actually fully implemented in production. Below is the corrected state based on reading the code (not the status fields).
+
+### ✅ Complete — verified in production
+
+| Feature                                                                                                                  | Evidence                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [003 User Authentication](../../features/foundation/003-user-authentication/003_user-authentication_feature.md)          | 82 files across `src/lib/auth/`, `src/components/auth/`, `src/contexts/AuthContext.tsx`. Email/password + OAuth. `tests/e2e/auth/` covers all flows. |
+| [007 E2E Testing Framework](../../features/core-features/007-e2e-testing-framework/007_e2e-testing-framework_feature.md) | 60 `*.spec.ts` files, 6 Playwright projects, 24-shard CI matrix. Run 24113858375 (2026-04-08) achieved 24/24 green across chromium/firefox/webkit.   |
+| [008 Avatar Upload](../../features/core-features/008-on-the-account/008_on-the-account_feature.md)                       | 10 avatar component files, crop interface, persistence, `tests/e2e/avatar/upload.spec.ts`.                                                           |
+| [009 User Messaging](../../features/core-features/009-user-messaging-system/009_user-messaging-system_feature.md)        | 23 files in `src/lib/messaging/` + `src/services/messaging/`. E2E-encrypted (JWK+noble-curves). 12 E2E spec files cross-browser validated.           |
+| [011 Group Chats](../../features/core-features/011-group-chats/011_group-chats_feature.md)                               | group-key-service, group-service, CreateGroupModal, `tests/e2e/messaging/group-chat-multiuser.spec.ts`.                                              |
+| [018 Font Switcher](../../features/enhancements/018-font-switcher/018_font-switcher_feature.md)                          | `src/components/molecular/FontSwitcher/` full 5-file pattern.                                                                                        |
+| [022 Web3Forms](../../features/integrations/022-web3forms-integration/022_web3forms-integration_feature.md)              | `useWeb3Forms.ts` hook + ContactForm + `form-submission.spec.ts` E2E.                                                                                |
+| [025 Blog Social](../../features/integrations/025-blog-social-features/025_blog-social-features_feature.md)              | SocialShareButtons component, author bio rendering, OpenGraph + Twitter card metadata in blog routes.                                                |
+| [031 Test Users](../../features/testing/031-standardize-test-users/031_standardize-test-users_feature.md)                | `scripts/seed-test-users.ts`, `tests/e2e/utils/test-user-factory.ts`, standardized env var naming.                                                   |
+| [032 Signup E2E](../../features/testing/032-signup-e2e-tests/032_signup-e2e-tests_feature.md)                            | Dedicated Playwright project, full sign-up flow coverage.                                                                                            |
+| [046 Admin Dashboard](../../features/admin/046-admin-dashboard/046_admin-dashboard_feature.md)                           | 4 admin domains (audit, messaging, payments, users). JWT claim-based RLS enforcement.                                                                |
+
+### 🛠️ Mostly Implemented — minor gaps or per-fork config
+
+| Feature                                                                                                             | What's done / what's missing                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [006 Template Fork](../../features/foundation/006-template-fork-experience/006_template-fork-experience_feature.md) | `scripts/rebrand.sh` (615 lines) + `docs/FORKING.md` in production. Gap: Supabase missing-config first-run banner.                               |
+| [019 Google Analytics 4](../../features/enhancements/019-google-analytics/019_google-analytics_feature.md)          | `src/lib/analytics/GoogleAnalytics/` full 5-file pattern, consent-gated. Awaits per-fork `NEXT_PUBLIC_GA_MEASUREMENT_ID`.                        |
+| [030 Calendar Integration](../../features/polish/030-calendar-integration/030_calendar-integration_feature.md)      | CalendarEmbed + CalendarConsent + providers dir + `/schedule` route. Awaits per-fork `NEXT_PUBLIC_CALENDAR_PROVIDER`/`NEXT_PUBLIC_CALENDAR_URL`. |
+| [033 SEO Library Tests](../../features/testing/033-seo-library-tests/033_seo-library-tests_feature.md)              | 3 of 4 modules tested (keywords, content, readability). Gap: `src/lib/seo/technical.ts` untested.                                                |
+
+### ❌ Not Started — real gaps
+
+| Feature                                                                                                   | Reality                                                                                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [034 Blog Library Tests](../../features/testing/034-blog-library-tests/034_blog-library-tests_feature.md) | `src/lib/blog/` has 4 production modules (markdown-processor, seo-analyzer, toc-generator, blog-data.json) with **zero unit test files**. Real gap — blog library has no direct test coverage despite being used across production `/blog` routes. |
+
+### 🗂️ Known tracking issues (out of scope for this audit, noted for later)
+
+- **043 Group Service** — moved from `features/payments/` to `features/core-features/` on 2026-04-08. Depends on 009 messaging system. Has 8 unimplemented methods in `src/services/messaging/group-service.ts` (addMembers, getMembers, removeMember, leaveGroup, transferOwnership, upgradeToGroup, renameGroup, deleteGroup) — messaging UI exists but these methods are the backing work.
+- **Other features not in the tables above** had their status fields reviewed and were either already accurate (rare) or could not be verified with direct file reads in limited time. A future audit pass should cover 001, 002, 004, 005, 010, 012–017, 020, 021, 023, 026–029, 035–037, 044, 045.
+- **An initial audit via an Explore agent was unreliable** — it reported ~40% false-positive "Not Started" claims for features that actually have substantial code (006, 019, 025, 030 among others). The entries in the tables above were verified directly, not via the agent.
 
 ---
 
@@ -47,7 +90,7 @@
 | [040 Payment Retry UI](../../features/payments/040-payment-retry-ui/040_payment-retry-ui_feature.md)                | **Backend Ready, Routes + UX Missing**     | 2                                                | 14                                  | Retry logic in `payment-service.ts`; missing: `/payment/result` page, offline error banner, retry surface                                                                                                                                             |
 | [041 PayPal Subscriptions](../../features/payments/041-paypal-subscriptions/041_paypal-subscriptions_feature.md)    | **Backend Ready, UX Missing**              | 2                                                | 12                                  | `paypal.ts` lib + `paypal-webhook` Edge Function + `subscriptions` table exist; missing: `/payment/subscriptions` page, grace period, duplicate prevention                                                                                            |
 | [042 Payment RLS Policies](../../features/payments/042-payment-rls-policies/042_payment-rls-policies_feature.md)    | **Policies Written, Unverified**           | 2                                                | 25                                  | 20+ policies exist in monolithic migration; work is "un-skip tests, run them, fix any policies that fail" rather than "write from scratch". Also: rate-limit UI                                                                                       |
-| 043 Group Service                                                                                                   | N/A                                        | —                                                | —                                   | Miscategorized — belongs in `core-features/`, not payments                                                                                                                                                                                            |
+| 043 Group Service                                                                                                   | N/A                                        | —                                                | —                                   | Moved to `features/core-features/` on 2026-04-08 — it's a messaging feature, not a payment feature                                                                                                                                                    |
 | 07 Payment Performance                                                                                              | (no feature file)                          | 2                                                | 14                                  | `07-performance.spec.ts` — needs a feature file or merge into 038                                                                                                                                                                                     |
 
 **Recommended next actions** (rough ordering):

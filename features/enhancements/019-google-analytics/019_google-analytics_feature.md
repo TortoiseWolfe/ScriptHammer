@@ -3,7 +3,7 @@
 **Feature ID**: 019
 **Category**: enhancements
 **Source**: ScriptHammer/docs/specs/008-google-analytics
-**Status**: Ready for SpecKit
+**Status**: Implemented — Awaiting Measurement ID (2026-04-08) — `src/lib/analytics/GoogleAnalytics/` has full 5-file pattern (component, test, stories, accessibility.test). GA4 script injection ready; activates when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set. Consent-gated via the cookie consent framework. Each template fork provides their own measurement ID.
 
 ## Description
 

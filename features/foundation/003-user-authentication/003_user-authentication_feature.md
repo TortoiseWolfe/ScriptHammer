@@ -2,7 +2,7 @@
 
 **Feature Branch**: `016-user-authentication`
 **Created**: 2025-10-05
-**Status**: Draft
+**Status**: Complete (2026-04-08) — Full auth stack implemented: 82 files across `src/lib/auth/`, `src/components/auth/`, `src/contexts/AuthContext.tsx`. Supports email/password, OAuth (GitHub, Google), protected routes, session persistence, password reset, email verification. Extensively E2E tested in `tests/e2e/auth/` (sign-up, sign-in, session-persistence, protected-routes, rate-limiting, brute-force). Feature is in production use.
 **Input**: User description: "PRP-016 User Authentication"
 
 ## Execution Flow (main)

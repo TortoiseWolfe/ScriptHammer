@@ -2,7 +2,7 @@
 
 **Feature Branch**: `011-feature-038-template`
 **Created**: 2025-12-10
-**Status**: Draft
+**Status**: Mostly Implemented (2026-04-08) — `scripts/rebrand.sh` is a 615-line automation script with `--dry-run`, `--force`, `--preserve-ssh`, `--preserve-attribution` flags; documented in README "Forking This Template" section. `docs/FORKING.md` + `docs/FORKING-FEEDBACK.md` cover the workflow. Template auto-detects project name from git remote. Remaining gaps (per original spec clarifications): Supabase missing-config banner for first-run experience, automated test user seed improvements. Core rebrand flow is in production use.
 **Input**: User description: "Feature 038: Template Fork Experience - Improve the forking experience based on real-world feedback from SpokeToWork fork."
 
 ## Clarifications

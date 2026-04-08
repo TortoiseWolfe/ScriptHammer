@@ -3,7 +3,7 @@
 **Feature ID**: 033
 **Category**: testing
 **Source**: ScriptHammer README (SPEC-050)
-**Status**: Ready for SpecKit
+**Status**: Partial (2026-04-08) — 3 of 4 SEO library modules have unit tests: `src/lib/seo/keywords.test.ts`, `content.test.ts`, `readability.test.ts`. **Gap**: `src/lib/seo/technical.ts` has no corresponding test file. Adding `technical.test.ts` would close the remaining coverage gap.
 
 ## Description
 

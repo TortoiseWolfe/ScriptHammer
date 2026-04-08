@@ -10,7 +10,7 @@
 
 Complete 8 unimplemented methods in `src/services/messaging/group-service.ts`: addMembers (T043), getMembers (T074), removeMember (T060), leaveGroup (T061), transferOwnership (T062), upgradeToGroup (T054), renameGroup (T093), deleteGroup (T092).
 
-**Note**: This feature was incorrectly categorized under "payments" - it belongs in "core-features" as it extends the messaging system. The folder should be moved to `features/core-features/043-group-service/`.
+**Note**: Moved from `features/payments/` to `features/core-features/` on 2026-04-08 to match its actual category (messaging extension, not payment).
 
 ## User Scenarios
 
