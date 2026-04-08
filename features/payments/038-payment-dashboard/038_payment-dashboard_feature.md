@@ -3,7 +3,7 @@
 **Feature ID**: 038
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-054)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — 20 E2E test stubs in `tests/e2e/payment/06-realtime-dashboard.spec.ts` document required behavior: real-time payment list updates, webhook verification status, subscription management, transaction counter, connection loss/reconnect UI, batch updates, error notifications, charts. Routes `/payment/dashboard` and `/payment/subscriptions` do not exist. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 

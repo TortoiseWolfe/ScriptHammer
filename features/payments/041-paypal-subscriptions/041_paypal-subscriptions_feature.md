@@ -3,7 +3,7 @@
 **Feature ID**: 041
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-057)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — 12 E2E test stubs in `tests/e2e/payment/02-paypal-subscription.spec.ts` document required behavior: full PayPal subscription flow (requires PayPal API keys), `/payment/subscriptions` page, grace period handling, duplicate subscription prevention. Blocked on both PayPal API credentials and the `/payment/subscriptions` route. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 

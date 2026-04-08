@@ -3,7 +3,7 @@
 **Feature ID**: 040
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-056)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — 14 E2E test stubs in `tests/e2e/payment/03-failed-payment-retry.spec.ts` document required behavior: `/payment/result` page, offline error display and handling, subscription-management retry surface. Routes `/payment/result` and `/payment/subscriptions` do not exist. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 

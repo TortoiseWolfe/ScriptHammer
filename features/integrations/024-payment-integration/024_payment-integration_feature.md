@@ -3,7 +3,7 @@
 **Feature ID**: 024
 **Category**: integrations
 **Source**: ScriptHammer/docs/specs/015-payment-integration
-**Status**: Ready for SpecKit
+**Status**: In Progress (2026-04-08) — Stripe one-time + GDPR consent flow implemented and passing E2E. 8 E2E stubs remain across `tests/e2e/payment/01-stripe-onetime.spec.ts` (1 stub: offline queue indicator), `02-paypal-subscription.spec.ts` (12 stubs, full PayPal flow), `03-failed-payment-retry.spec.ts` (14 stubs, result page + offline handling), `04-gdpr-consent.spec.ts` (2 stubs: consent reset). Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 

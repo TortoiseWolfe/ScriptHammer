@@ -1,11 +1,43 @@
 # PRP Implementation Status Dashboard
 
-**Last Updated**: 2025-10-05
-**Total PRPs**: 16
-**Completed**: 15 (v0.3.0)
-**In Progress**: 0
-**Pending**: 1 (v0.4.0)
-**Current Phase**: v0.3.0 Complete! Ready for production deployment ✨
+**Last Updated**: 2026-04-08
+**Total PRPs**: 16 (legacy) + 46 (SpecKit features)
+**Completed**: 15 legacy PRPs (v0.3.0)
+**In Progress**: 024 Payment Integration (partial)
+**Not Started**: 038–042 Payment features, 046 Admin Dashboard
+**Current Phase**: v0.4.0 Payments (planning) — v0.3.0 legacy complete
+
+---
+
+## v0.4.0 — Payments (Active Tracking)
+
+**Status**: 1/6 payment features in progress (024), 5/6 not started (038–042). Feature 043 misfiled under payments — it's a messaging feature.
+
+**Key insight**: The E2E test suite already contains **~47 skipped test stubs** in `tests/e2e/payment/*.spec.ts` that document required behavior for each feature. These stubs ARE the acceptance criteria — when a feature lands, its corresponding skipped tests should be un-skipped and made to pass. This is the cleanest path to reducing scope creep and measuring "done".
+
+| Feature                                                                                                             | Status            | Active Tests                           | Skipped Stubs                       | Test File                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
+| [024 Payment Integration](../../features/integrations/024-payment-integration/024_payment-integration_feature.md)   | In Progress       | 3 Stripe + 9 GDPR + 2 PayPal + 2 retry | 1 + 12 + 14 + 2 = 29 across 4 files | `01-stripe-onetime`, `02-paypal-subscription`, `03-failed-payment-retry`, `04-gdpr-consent` |
+| [038 Payment Dashboard](../../features/payments/038-payment-dashboard/038_payment-dashboard_feature.md)             | Not Started       | 2                                      | 20                                  | `06-realtime-dashboard.spec.ts`                                                             |
+| [039 Payment Offline Queue](../../features/payments/039-payment-offline-queue/039_payment-offline-queue_feature.md) | Not Started       | 2                                      | 18                                  | `05-offline-queue.spec.ts`                                                                  |
+| [040 Payment Retry UI](../../features/payments/040-payment-retry-ui/040_payment-retry-ui_feature.md)                | Not Started       | 2                                      | 14                                  | `03-failed-payment-retry.spec.ts` (shared with 024)                                         |
+| [041 PayPal Subscriptions](../../features/payments/041-paypal-subscriptions/041_paypal-subscriptions_feature.md)    | Not Started       | 2                                      | 12                                  | `02-paypal-subscription.spec.ts` (shared with 024)                                          |
+| [042 Payment RLS Policies](../../features/payments/042-payment-rls-policies/042_payment-rls-policies_feature.md)    | Not Started       | 2                                      | 25                                  | `08-security-rls.spec.ts`                                                                   |
+| 043 Group Service                                                                                                   | N/A               | —                                      | —                                   | Miscategorized — belongs in `core-features/`, not payments                                  |
+| 07 Payment Performance                                                                                              | (no feature file) | 2                                      | 14                                  | `07-performance.spec.ts` — needs a feature file or merge into 038                           |
+
+**Missing routes** (referenced by multiple skipped tests):
+
+- `/payment/dashboard` — blocks 038
+- `/payment/subscriptions` — blocks 038, 040, 041
+- `/payment/history` — blocks 039
+- `/payment/result` — blocks 040
+
+**Tracking source of truth**: The status lines in each `*_feature.md` file were updated 2026-04-08 to reflect actual state. When any payment feature progresses, update:
+
+1. Its `**Status**:` line in the feature file
+2. The row in this table
+3. Un-skip the corresponding E2E tests and make them pass on the next CI run
 
 ---
 

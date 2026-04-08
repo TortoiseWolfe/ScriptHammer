@@ -3,7 +3,7 @@
 **Feature ID**: 042
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-058)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — 25 E2E test stubs in `tests/e2e/payment/08-security-rls.spec.ts` document required behavior: payment table existence confirmation, RLS policy enforcement (anonymous writes, cross-user reads, webhook_events modification, payment_results deletion), service-role write path, currency validation constraints, SQL injection prevention, rate-limit UI. Multiple stubs are blocked on `SUPABASE_SERVICE_ROLE_KEY` availability in E2E context. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 

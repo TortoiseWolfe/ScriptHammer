@@ -3,7 +3,7 @@
 **Feature ID**: 039
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-055)
-**Status**: Ready for SpecKit
+**Status**: Not Started (2026-04-08) — 18 E2E test stubs in `tests/e2e/payment/05-offline-queue.spec.ts` document required behavior: queue status UI, sync indicator, count display, persistence status, retry status with max-retry UI, overflow alert handling, clear-queue button, payment history page. Route `/payment/history` does not exist. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
 
 ## Description
 
