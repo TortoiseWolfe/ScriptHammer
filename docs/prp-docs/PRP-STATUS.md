@@ -52,7 +52,7 @@
 
 **Recommended next actions** (rough ordering):
 
-1. **Unblock 024**: uncomment Stripe + PayPal keys in `.env`, add them to Supabase Vault, verify `/payment-demo` still works end-to-end against real APIs. (1 hour)
+1. **Unblock 024**: obtain Stripe + PayPal keys (create test-mode Stripe account + PayPal developer sandbox app, configure webhook endpoints), populate `.env` (public `NEXT_PUBLIC_*` vars) and Supabase Vault (server secrets), verify `/payment-demo` works end-to-end against sandbox APIs. (~1-2 hours including account setup)
 2. **042 verification**: un-skip the 25 RLS tests one at a time, fix policies where assertions disagree. No new code, just verification + policy tweaks. (half-day)
 3. **038 + 039 routes**: create `/payment/dashboard`, `/payment/history`, `/payment/result`, `/payment/subscriptions` page.tsx files wiring existing components. Some stubs will go green immediately. (1 day)
 4. **039 UI affordances**: build missing queue-status / retry / clear-queue components. (1 day)
