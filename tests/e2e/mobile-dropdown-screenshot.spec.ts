@@ -23,18 +23,23 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Open the dropdown deterministically. DaisyUI v5's CSS-only dropdown
-    // keeps .dropdown-content display:none unless one of these is true on
-    // the .dropdown parent: :focus-within, :hover (with .dropdown-hover),
-    // or the .dropdown-open class. Relying on :focus-within via click or
-    // .focus() is unreliable in Playwright headless because <label> focus
-    // semantics differ, and clicking a label after it opens triggers
-    // "intercepts pointer events" errors (DaisyUI sets pointer-events:none
-    // on the open dropdown's tabindex child). Instead, add .dropdown-open
-    // directly to the parent — this is an officially supported DaisyUI class.
-    await menuLabel.evaluate((el) => {
-      const parent = el.closest('.dropdown');
-      parent?.classList.add('dropdown-open');
+    // Get the hamburger's .dropdown parent — NOT the user account dropdown.
+    // When the test runs logged-in (auth storageState is loaded), the nav
+    // shows TWO dropdowns: the user account avatar (first in DOM) AND the
+    // hamburger menu. The previous selector `.dropdown-content.menu`.first()
+    // was matching the user account dropdown-content instead of the
+    // hamburger's, which is why toBeVisible() always failed — we opened
+    // the hamburger but asserted against a different dropdown.
+    const hamburgerDropdown = page
+      .locator('.dropdown', { has: menuLabel })
+      .first();
+
+    // Open the dropdown deterministically via DaisyUI's .dropdown-open class.
+    // CSS-only :focus-within is unreliable because <label> focus semantics
+    // differ across browsers/headless modes, and clicking a label after
+    // the dropdown opens triggers "intercepts pointer events" errors.
+    await hamburgerDropdown.evaluate((el) => {
+      el.classList.add('dropdown-open');
     });
 
     // Wait for dropdown to be visible
@@ -46,9 +51,9 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Verify dropdown is visible — DaisyUI dropdown-content appears after
-    // clicking the trigger label with tabIndex=0.
-    const dropdownMenu = page.locator('.dropdown-content.menu').first();
+    // Verify the hamburger's dropdown-content is visible (scoped to the
+    // hamburger parent, not the user account dropdown).
+    const dropdownMenu = hamburgerDropdown.locator('.dropdown-content.menu');
     await expect(dropdownMenu).toBeVisible();
   });
 });
