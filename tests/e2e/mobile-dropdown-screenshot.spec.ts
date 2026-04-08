@@ -23,12 +23,19 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
       fullPage: false,
     });
 
-    // Open the dropdown. DaisyUI's CSS-only dropdown uses :focus-within on
-    // the parent <div class="dropdown">, which requires the tabindex=0 label
-    // to receive focus. Use .focus() alone — do NOT click: once the dropdown
-    // opens, the dropdown-content <ul> intercepts pointer events on the
-    // label, causing Playwright's click to time out.
-    await menuLabel.focus();
+    // Open the dropdown deterministically. DaisyUI v5's CSS-only dropdown
+    // keeps .dropdown-content display:none unless one of these is true on
+    // the .dropdown parent: :focus-within, :hover (with .dropdown-hover),
+    // or the .dropdown-open class. Relying on :focus-within via click or
+    // .focus() is unreliable in Playwright headless because <label> focus
+    // semantics differ, and clicking a label after it opens triggers
+    // "intercepts pointer events" errors (DaisyUI sets pointer-events:none
+    // on the open dropdown's tabindex child). Instead, add .dropdown-open
+    // directly to the parent — this is an officially supported DaisyUI class.
+    await menuLabel.evaluate((el) => {
+      const parent = el.closest('.dropdown');
+      parent?.classList.add('dropdown-open');
+    });
 
     // Wait for dropdown to be visible
     await page.waitForTimeout(500); // Animation time
