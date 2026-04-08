@@ -637,85 +637,6 @@ test.describe('Message Deletion', () => {
   });
 });
 
-// T117 lives in its own describe with its own beforeEach so the Date
-// mock only applies to this single test. Previously it shared a describe
-// with "should show Edit/Delete buttons only for own recent messages",
-// and moving the mock into a shared beforeEach broke the sibling test
-// because the +16min clock shift made recent messages appear "old" and
-// hid Edit/Delete buttons the sibling test expected to see.
-test.describe('Time Window Restrictions — Old Messages (T117)', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
-
-  test.beforeEach(async ({ page, context }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (
-        text.includes('ConversationView') ||
-        text.includes('sendMessage') ||
-        msg.type() === 'error'
-      ) {
-        console.log(`[browser console.${msg.type()}] ${text}`);
-      }
-    });
-
-    // Apply the Date mock BEFORE signIn so Supabase stores tokens with
-    // consistent mocked time. Previously this was done inside the test body
-    // after a reload — that caused webkit to hit 403 Forbidden because tokens
-    // were minted with real time but then validated against mocked time after
-    // the reload, cascading into "TypeError: Load failed" on all subsequent
-    // fetches and timing out the message-thread waitForSelector.
-    await context.addInitScript(() => {
-      const originalDateNow = Date.now;
-      const originalDate = Date;
-      Date.now = () => originalDateNow() + 16 * 60 * 1000;
-      (window as any).Date = class extends originalDate {
-        constructor(...args: any[]) {
-          if (args.length === 0) {
-            super(Date.now());
-          } else if (args.length === 1) {
-            super(args[0]);
-          } else {
-            super(
-              args[0],
-              args[1],
-              args[2],
-              args[3],
-              args[4],
-              args[5],
-              args[6]
-            );
-          }
-        }
-        static override now() {
-          return originalDateNow() + 16 * 60 * 1000;
-        }
-      };
-    });
-
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
-  });
-
-  test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
-    page,
-  }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
-
-    await navigateToConversation(page);
-
-    // Check that existing messages (if any) from older than 15 minutes don't
-    // have Edit/Delete. With the +16min Date mock from beforeEach, all
-    // messages should appear "old" and no Edit buttons should be visible.
-    const editButtons = page.getByRole('button', { name: 'Edit message' });
-    const count = await editButtons.count();
-
-    // Best-effort check: test passes as long as the count query doesn't
-    // throw (the real assertion is that the page loaded without the Date
-    // mock breaking Supabase auth — which is what the previous bug was).
-    expect(count).toBeGreaterThanOrEqual(0);
-  });
-});
-
 test.describe('Time Window Restrictions', () => {
   test.describe.configure({ mode: 'serial', timeout: 180000 });
 
@@ -753,6 +674,71 @@ test.describe('Time Window Restrictions', () => {
     // Wait for buttons with longer timeout (may need to scroll into view)
     await expect(editButton).toBeVisible({ timeout: 10000 });
     await expect(deleteButton).toBeVisible({ timeout: 10000 });
+  });
+
+  test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
+    page,
+  }) => {
+    // Skip if setup failed
+    test.skip(!setupSucceeded, setupError);
+
+    const adminClient = getAdminClient();
+    if (!adminClient) {
+      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
+      return;
+    }
+
+    await navigateToConversation(page);
+
+    // Step 1: send a fresh message via the real encrypted UI path. This
+    // produces a proper encrypted row in the messages table that matches
+    // how real users send messages.
+    const timestamp = Date.now();
+    const testMessage = `T117 window ${timestamp}`;
+    await sendMessage(page, testMessage);
+
+    // Step 2: sanity-check the recent message shows Edit/Delete buttons.
+    // If this fails, the test is meaningless because we never established
+    // the "buttons visible on recent messages" baseline.
+    const editButtonBefore = getEditButtonForMessage(page, testMessage);
+    await expect(editButtonBefore).toBeVisible({ timeout: 10000 });
+
+    // Step 3: find that message in the DB and backdate its created_at by
+    // 16 minutes. Messages are encrypted so we match by sequence_number —
+    // the most recent message for this conversation/sender is ours.
+    const { data: latest } = await adminClient
+      .from('messages')
+      .select('id, sequence_number')
+      .eq('conversation_id', conversationId)
+      .eq('deleted', false)
+      .order('sequence_number', { ascending: false })
+      .limit(1);
+
+    expect(latest?.length).toBe(1);
+    const messageId = latest![0].id;
+
+    const sixteenMinutesAgo = new Date(
+      Date.now() - 16 * 60 * 1000
+    ).toISOString();
+    const { error: updateError } = await adminClient
+      .from('messages')
+      .update({ created_at: sixteenMinutesAgo })
+      .eq('id', messageId);
+    expect(updateError).toBeNull();
+
+    // Step 4: reload the conversation so the UI re-reads created_at from DB.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page);
+    await handleReAuthModal(page, TEST_USER_1.password);
+    await navigateToConversation(page);
+
+    // Step 5: the same message should still be visible, but its Edit/Delete
+    // buttons should now be HIDDEN because the 15-minute window has elapsed.
+    await expect(page.getByText(testMessage)).toBeVisible({ timeout: 10000 });
+    const editButtonAfter = getEditButtonForMessage(page, testMessage);
+    const deleteButtonAfter = getDeleteButtonForMessage(page, testMessage);
+    await expect(editButtonAfter).not.toBeVisible();
+    await expect(deleteButtonAfter).not.toBeVisible();
   });
 
   test('should not show Edit/Delete buttons on received messages', async ({
