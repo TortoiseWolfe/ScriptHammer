@@ -78,6 +78,31 @@ docker compose up --build
 
 **NOTE**: Local pnpm/npm commands are NOT supported. All development MUST use Docker.
 
+## 💳 Payment Integration Setup
+
+**Heads-up for forkers**: Payment integration (Stripe one-time + PayPal subscriptions + GDPR consent flow) is **built into this template** but is **NOT activated out of the box**. No API keys are committed — you must create your own accounts and configure them before `/payment-demo` will work against live sandbox APIs.
+
+**Security — where keys go**:
+
+- **`.env.example`** is committed to git. NEVER put real values here. Only placeholders.
+- **`.env`** is gitignored. Safe for `NEXT_PUBLIC_*` public keys (e.g. Stripe publishable key, PayPal client ID — these ship in the client bundle by design).
+- **Supabase Vault** is where server secrets live (Stripe secret + webhook secret, PayPal secret + webhook ID). This is a static export to GitHub Pages — there's no Next.js server runtime, so anything without a `NEXT_PUBLIC_` prefix in `.env` is unused. Server secrets are only readable by Supabase Edge Functions via `Deno.env.get(...)`.
+
+**Quick setup** (~30-60 minutes of external account work):
+
+1. **Stripe** — create an account at [dashboard.stripe.com](https://dashboard.stripe.com), grab **test-mode** publishable key (`pk_test_...`) and secret key (`sk_test_...`) from Developers → API keys. Set up a webhook endpoint pointing to your Supabase `stripe-webhook` Edge Function URL and copy the signing secret (`whsec_...`).
+2. **PayPal** — create a sandbox app at [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox → Create App. Grab client ID and secret. Create a sandbox webhook and copy its webhook ID.
+3. **Populate the two places**:
+   - Public keys (`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_PAYPAL_CLIENT_ID`) → `.env`
+   - Server secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`) → Supabase Vault via `supabase secrets set` or the Supabase dashboard → Project Settings → Edge Functions → Secrets
+4. **Test** — Stripe test card `4242 4242 4242 4242`, PayPal sandbox buyer accounts. No real money moves in test/sandbox mode.
+
+Once configured, `/payment-demo` should work end-to-end against sandbox APIs. The payment E2E test stubs (~47 skipped tests under `tests/e2e/payment/`) can then be un-skipped as each dependent feature is implemented.
+
+**Full deployment guide**: [docs/PAYMENT-DEPLOYMENT.md](./docs/PAYMENT-DEPLOYMENT.md) covers the complete 256-line walkthrough including Supabase project setup, database migrations, Edge Function deployment, webhook event subscriptions, and production cutover.
+
+**Current payment implementation status**: [docs/prp-docs/PRP-STATUS.md#v040--payments-active-tracking](./docs/prp-docs/PRP-STATUS.md) — shows which features are built, which need routes, and which need UI work.
+
 ## 🔐 GitHub Actions Secrets
 
 Add these secrets to your repository at **Settings → Secrets and variables → Actions → Repository secrets**.

@@ -25,7 +25,7 @@
 
 **What's actually missing (the real backlog)**:
 
-1. **Obtain API keys** — create Stripe account + PayPal developer sandbox, set up webhook endpoints, populate 6 values: Stripe publishable + secret + webhook secret, PayPal client ID + secret + webhook ID. Public keys go in `.env` as `NEXT_PUBLIC_*`; server secrets go in Supabase Vault (accessed by Edge Functions via `Deno.env.get`). Budget 30-60 min of external account setup.
+1. **Obtain API keys** — create Stripe account + PayPal developer sandbox, set up webhook endpoints, populate 6 values: Stripe publishable + secret + webhook secret, PayPal client ID + secret + webhook ID. Public keys go in `.env` as `NEXT_PUBLIC_*`; server secrets go in Supabase Vault (accessed by Edge Functions via `Deno.env.get`). Budget 30-60 min of external account setup. Full walkthrough: [docs/PAYMENT-DEPLOYMENT.md](../PAYMENT-DEPLOYMENT.md). Forker-facing overview: [README.md "Payment Integration Setup"](../../README.md).
 2. **4 route files** — wire existing components into new page.tsx files:
    - `/payment/dashboard` (038) — compose `PaymentHistory` + `PaymentTrendChart` + live-update subscription
    - `/payment/subscriptions` (038/040/041) — new component, list active subs, cancel/upgrade
