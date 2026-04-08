@@ -11,33 +11,56 @@
 
 ## v0.4.0 — Payments (Active Tracking)
 
-**Status**: 1/6 payment features in progress (024), 5/6 not started (038–042). Feature 043 misfiled under payments — it's a messaging feature.
+**Reality check (2026-04-08)**: Payments are **far more built than initial status labels implied**. Most of the code exists — what's missing is activating API keys, writing 4 route files, and filling targeted UI gaps. An earlier version of this section labeled 038-042 "Not Started" — that was wrong; the foundations are there. This update corrects the picture.
 
-**Key insight**: The E2E test suite already contains **~47 skipped test stubs** in `tests/e2e/payment/*.spec.ts` that document required behavior for each feature. These stubs ARE the acceptance criteria — when a feature lands, its corresponding skipped tests should be un-skipped and made to pass. This is the cleanest path to reducing scope creep and measuring "done".
+**What exists**:
 
-| Feature                                                                                                             | Status            | Active Tests                           | Skipped Stubs                       | Test File                                                                                   |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------- | -------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------------- |
-| [024 Payment Integration](../../features/integrations/024-payment-integration/024_payment-integration_feature.md)   | In Progress       | 3 Stripe + 9 GDPR + 2 PayPal + 2 retry | 1 + 12 + 14 + 2 = 29 across 4 files | `01-stripe-onetime`, `02-paypal-subscription`, `03-failed-payment-retry`, `04-gdpr-consent` |
-| [038 Payment Dashboard](../../features/payments/038-payment-dashboard/038_payment-dashboard_feature.md)             | Not Started       | 2                                      | 20                                  | `06-realtime-dashboard.spec.ts`                                                             |
-| [039 Payment Offline Queue](../../features/payments/039-payment-offline-queue/039_payment-offline-queue_feature.md) | Not Started       | 2                                      | 18                                  | `05-offline-queue.spec.ts`                                                                  |
-| [040 Payment Retry UI](../../features/payments/040-payment-retry-ui/040_payment-retry-ui_feature.md)                | Not Started       | 2                                      | 14                                  | `03-failed-payment-retry.spec.ts` (shared with 024)                                         |
-| [041 PayPal Subscriptions](../../features/payments/041-paypal-subscriptions/041_paypal-subscriptions_feature.md)    | Not Started       | 2                                      | 12                                  | `02-paypal-subscription.spec.ts` (shared with 024)                                          |
-| [042 Payment RLS Policies](../../features/payments/042-payment-rls-policies/042_payment-rls-policies_feature.md)    | Not Started       | 2                                      | 25                                  | `08-security-rls.spec.ts`                                                                   |
-| 043 Group Service                                                                                                   | N/A               | —                                      | —                                   | Miscategorized — belongs in `core-features/`, not payments                                  |
-| 07 Payment Performance                                                                                              | (no feature file) | 2                                      | 14                                  | `07-performance.spec.ts` — needs a feature file or merge into 038                           |
+- **Client libraries** (`src/lib/payments/`, 1124 lines): `payment-service.ts`, `stripe.ts`, `paypal.ts`, `offline-queue.ts`, `metadata-validator.ts`, `connection-listener.ts`
+- **Supabase Edge Functions** (742 lines Deno): `stripe-webhook`, `paypal-webhook`, `send-payment-email`
+- **Database schema**: 5 tables (`payment_intents`, `payment_results`, `subscriptions`, `payment_provider_config`, `webhook_events`) with 20+ RLS policies
+- **React components**: `PaymentButton`, `PaymentConsentModal`, `PaymentStatusDisplay`, `PaymentHistory`, `PaymentTrendChart`, `AdminPaymentPanel` — all with 5-file test coverage
+- **Working routes**: `/payment-demo` (has passing Stripe + GDPR E2E tests), `/admin/payments`
+- **Type definitions** + config: `src/types/payment.ts`, `src/config/payment.ts`
+- **Env var contract**: All 6 keys listed in `.env.example`; 3 secret keys set in `.env` but commented out
 
-**Missing routes** (referenced by multiple skipped tests):
+**What's actually missing (the real backlog)**:
 
-- `/payment/dashboard` — blocks 038
-- `/payment/subscriptions` — blocks 038, 040, 041
-- `/payment/history` — blocks 039
-- `/payment/result` — blocks 040
+1. **Activate API keys** — uncomment Stripe + PayPal keys in `.env` and mirror them into Supabase Vault for Edge Functions
+2. **4 route files** — wire existing components into new page.tsx files:
+   - `/payment/dashboard` (038) — compose `PaymentHistory` + `PaymentTrendChart` + live-update subscription
+   - `/payment/subscriptions` (038/040/041) — new component, list active subs, cancel/upgrade
+   - `/payment/history` (039) — wrapper around `PaymentHistory` component
+   - `/payment/result` (040) — post-redirect result page with retry CTA
+3. **Targeted UI affordances** — some components don't exist yet:
+   - Offline queue status indicator / sync pill / count badge / retry button / clear-queue (039)
+   - Grace period banner, duplicate-subscription prevention (041)
+   - Rate-limit UI for payment endpoints (042)
+4. **Verify RLS policies** — policies are written; 25 E2E stubs in `08-security-rls.spec.ts` need to be un-skipped and run to prove each policy enforces what it claims (042)
 
-**Tracking source of truth**: The status lines in each `*_feature.md` file were updated 2026-04-08 to reflect actual state. When any payment feature progresses, update:
+**The 47 skipped E2E tests are still the acceptance criteria** — un-skip them as each gap closes. But "un-skip a test" sometimes means "just flip the skip flag" (if the code already works) and sometimes means "build the missing page/component first".
 
-1. Its `**Status**:` line in the feature file
-2. The row in this table
-3. Un-skip the corresponding E2E tests and make them pass on the next CI run
+| Feature                                                                                                             | Real Status                                | Active Tests                                     | Stubs Remaining                     | Notes                                                                                                                                                             |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [024 Payment Integration](../../features/integrations/024-payment-integration/024_payment-integration_feature.md)   | **Mostly Implemented — awaiting API keys** | 3 Stripe + 9 GDPR + 2 PayPal + 2 retry = 16 live | 1 + 12 + 14 + 2 = 29 across 4 files | Libs + Edge Functions + DB + components all exist; Stripe/PayPal keys commented out in `.env`. Child features 038–042 hold the remaining work.                    |
+| [038 Payment Dashboard](../../features/payments/038-payment-dashboard/038_payment-dashboard_feature.md)             | **Components Built, Route Missing**        | 2                                                | 20                                  | `PaymentHistory`, `PaymentTrendChart`, `AdminPaymentPanel` all exist; `/payment/dashboard` page.tsx does not; also needs real-time subscription wiring.           |
+| [039 Payment Offline Queue](../../features/payments/039-payment-offline-queue/039_payment-offline-queue_feature.md) | **Logic Built, UI Affordances Missing**    | 2                                                | 18                                  | `offline-queue.ts` + `payment-adapter.ts` + `connection-listener.ts` work; missing: status indicator, sync pill, count, retry, overflow alert, `/payment/history` |
+| [040 Payment Retry UI](../../features/payments/040-payment-retry-ui/040_payment-retry-ui_feature.md)                | **Backend Ready, Routes + UX Missing**     | 2                                                | 14                                  | Retry logic in `payment-service.ts`; missing: `/payment/result` page, offline error banner, retry surface                                                         |
+| [041 PayPal Subscriptions](../../features/payments/041-paypal-subscriptions/041_paypal-subscriptions_feature.md)    | **Backend Ready, UX Missing**              | 2                                                | 12                                  | `paypal.ts` lib + `paypal-webhook` Edge Function + `subscriptions` table exist; missing: `/payment/subscriptions` page, grace period, duplicate prevention        |
+| [042 Payment RLS Policies](../../features/payments/042-payment-rls-policies/042_payment-rls-policies_feature.md)    | **Policies Written, Unverified**           | 2                                                | 25                                  | 20+ policies exist in monolithic migration; work is "un-skip tests, run them, fix any policies that fail" rather than "write from scratch". Also: rate-limit UI   |
+| 043 Group Service                                                                                                   | N/A                                        | —                                                | —                                   | Miscategorized — belongs in `core-features/`, not payments                                                                                                        |
+| 07 Payment Performance                                                                                              | (no feature file)                          | 2                                                | 14                                  | `07-performance.spec.ts` — needs a feature file or merge into 038                                                                                                 |
+
+**Recommended next actions** (rough ordering):
+
+1. **Unblock 024**: uncomment Stripe + PayPal keys in `.env`, add them to Supabase Vault, verify `/payment-demo` still works end-to-end against real APIs. (1 hour)
+2. **042 verification**: un-skip the 25 RLS tests one at a time, fix policies where assertions disagree. No new code, just verification + policy tweaks. (half-day)
+3. **038 + 039 routes**: create `/payment/dashboard`, `/payment/history`, `/payment/result`, `/payment/subscriptions` page.tsx files wiring existing components. Some stubs will go green immediately. (1 day)
+4. **039 UI affordances**: build missing queue-status / retry / clear-queue components. (1 day)
+5. **040 + 041 UX**: result page polish, grace period handling, duplicate subscription prevention. (1 day)
+
+Each step should land its corresponding E2E tests un-skipped and green on the next CI run — that's how we measure "done" honestly.
+
+**Tracking source of truth**: when work progresses, update (1) the `**Status**:` line in the feature file, (2) the row in this table, (3) un-skip the corresponding E2E tests and make them pass.
 
 ---
 

@@ -3,7 +3,7 @@
 **Feature ID**: 041
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-057)
-**Status**: Not Started (2026-04-08) — 12 E2E test stubs in `tests/e2e/payment/02-paypal-subscription.spec.ts` document required behavior: full PayPal subscription flow (requires PayPal API keys), `/payment/subscriptions` page, grace period handling, duplicate subscription prevention. Blocked on both PayPal API credentials and the `/payment/subscriptions` route. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
+**Status**: Backend Ready, UX Missing (2026-04-08). Built: `src/lib/payments/paypal.ts` (204 lines — PayPal SDK wrapper), `supabase/functions/paypal-webhook/index.ts` (317 lines — webhook handler), `subscriptions` table in DB, `PaymentButton` supports PayPal flow. Missing: `/payment/subscriptions` page (lists active subs, offers cancel/upgrade), grace period handling UI for failed renewals, duplicate subscription prevention (business logic check before creating new sub). PayPal API keys are present in `.env` but commented out. 12 E2E stubs in `tests/e2e/payment/02-paypal-subscription.spec.ts` define the required subscription management surface.
 
 ## Description
 

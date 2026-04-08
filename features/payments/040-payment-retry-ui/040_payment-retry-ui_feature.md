@@ -3,7 +3,7 @@
 **Feature ID**: 040
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-056)
-**Status**: Not Started (2026-04-08) — 14 E2E test stubs in `tests/e2e/payment/03-failed-payment-retry.spec.ts` document required behavior: `/payment/result` page, offline error display and handling, subscription-management retry surface. Routes `/payment/result` and `/payment/subscriptions` do not exist. Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
+**Status**: Backend Ready, Routes + UX Missing (2026-04-08). Built: `payment-service.ts` handles retry logic, `PaymentStatusDisplay` component exists. Missing: `/payment/result` page (for post-redirect result handling), offline error display surface (no "payment failed, retry when online" banner component), subscription-management retry surface (shared with 041). 14 E2E stubs in `tests/e2e/payment/03-failed-payment-retry.spec.ts` define the failure-recovery UX. Depends on 024 API keys.
 
 ## Description
 

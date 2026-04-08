@@ -3,7 +3,7 @@
 **Feature ID**: 024
 **Category**: integrations
 **Source**: ScriptHammer/docs/specs/015-payment-integration
-**Status**: In Progress (2026-04-08) — Stripe one-time + GDPR consent flow implemented and passing E2E. 8 E2E stubs remain across `tests/e2e/payment/01-stripe-onetime.spec.ts` (1 stub: offline queue indicator), `02-paypal-subscription.spec.ts` (12 stubs, full PayPal flow), `03-failed-payment-retry.spec.ts` (14 stubs, result page + offline handling), `04-gdpr-consent.spec.ts` (2 stubs: consent reset). Skipped tests serve as living acceptance criteria — un-skip + make green when implementing.
+**Status**: Mostly Implemented — Awaiting API Keys (2026-04-08). Built: `src/lib/payments/` (stripe.ts, paypal.ts, payment-service.ts, offline-queue.ts, metadata-validator.ts, connection-listener.ts — 1124 lines); Supabase Edge Functions `stripe-webhook` (425 lines), `paypal-webhook` (317 lines), `send-payment-email`; DB schema `payment_intents`, `payment_results`, `subscriptions`, `payment_provider_config`, `webhook_events`; components `PaymentButton`, `PaymentConsentModal`, `PaymentStatusDisplay`, `PaymentHistory`; working `/payment-demo` route (3 Stripe + 9 GDPR E2E tests green). Missing: Stripe/PayPal API keys are present in `.env` but commented out; must be uncommented and mirrored into Supabase Vault for Edge Functions. After keys are activated, remaining 29 E2E stubs across `01-stripe-onetime.spec.ts` (1), `02-paypal-subscription.spec.ts` (12), `03-failed-payment-retry.spec.ts` (14), `04-gdpr-consent.spec.ts` (2) will need feature work per their child features 038–042.
 
 ## Description
 
