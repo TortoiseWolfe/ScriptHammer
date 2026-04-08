@@ -638,12 +638,9 @@ test.describe('Message Deletion', () => {
 });
 
 test.describe('Time Window Restrictions', () => {
-  // 300s: webkit needs extra budget for 2x signIn + addInitScript + reload
-  // + handleReAuthModal + navigateToConversation chain in T117 (was 180s,
-  // exceeded on webkit-msg 1/2 in run 24106535959).
-  test.describe.configure({ mode: 'serial', timeout: 300000 });
+  test.describe.configure({ mode: 'serial', timeout: 180000 });
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, context }) => {
     page.on('console', (msg) => {
       const text = msg.text();
       if (
@@ -654,33 +651,19 @@ test.describe('Time Window Restrictions', () => {
         console.log(`[browser console.${msg.type()}] ${text}`);
       }
     });
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
-  });
 
-  test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
-    page,
-    context,
-  }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
-
-    await navigateToConversation(page);
-
-    // For this test, we'll simulate an old message by manually setting the created_at timestamp
-    // In a real scenario, we'd need to either:
-    // 1. Wait 15 minutes (too slow for tests)
-    // 2. Use a test fixture with pre-created old messages
-    // 3. Mock the browser time
-
-    // Mock the current time to be 16 minutes in the future
+    // T117 needs the browser clock shifted +16 minutes so existing messages
+    // appear "older than 15 minutes" to the Edit/Delete window check. Apply
+    // the init script BEFORE signIn so Supabase stores tokens with consistent
+    // mocked time. Previously this was done inside the test body after a
+    // reload — that caused webkit to hit 403 Forbidden because tokens were
+    // minted with real time but then validated against mocked time after the
+    // reload, cascading into "TypeError: Load failed" on all subsequent
+    // fetches and timing out the message-thread waitForSelector.
     await context.addInitScript(() => {
       const originalDateNow = Date.now;
       const originalDate = Date;
-
-      // Override Date.now to return time 16 minutes in the future
       Date.now = () => originalDateNow() + 16 * 60 * 1000;
-
-      // Also override new Date() to use the mocked time
       (window as any).Date = class extends originalDate {
         constructor(...args: any[]) {
           if (args.length === 0) {
@@ -699,17 +682,24 @@ test.describe('Time Window Restrictions', () => {
             );
           }
         }
-
         static override now() {
           return originalDateNow() + 16 * 60 * 1000;
         }
       };
     });
 
-    // Reload page to apply mock
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page);
-    await handleReAuthModal(page, TEST_USER_1.password);
+    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
+  });
+
+  test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
+    page,
+  }) => {
+    // Skip if setup failed
+    test.skip(!setupSucceeded, setupError);
+
+    // Date mock is applied in beforeEach via addInitScript before signIn,
+    // so no reload is needed here — everything has been running in mocked
+    // time from the moment the page loaded.
     await navigateToConversation(page);
 
     // Check that existing messages (if any) from older than 15 minutes don't have Edit/Delete
