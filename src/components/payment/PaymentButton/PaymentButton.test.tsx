@@ -7,6 +7,19 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PaymentButton } from './PaymentButton';
 
+// Mock feature flags so tests run as if both providers are configured.
+// The component gates on featureFlags.stripeEnabled/paypalEnabled and
+// renders a "not configured" banner when both are false — real behavior
+// for a fresh fork but not what these component tests are exercising.
+vi.mock('@/config/payment', () => ({
+  featureFlags: {
+    stripeEnabled: true,
+    paypalEnabled: true,
+    cashAppEnabled: false,
+    chimeEnabled: false,
+  },
+}));
+
 // Mock hooks and services
 vi.mock('@/hooks/usePaymentButton', () => ({
   usePaymentButton: vi.fn(() => ({

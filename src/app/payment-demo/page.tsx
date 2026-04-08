@@ -14,6 +14,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePaymentConsent } from '@/hooks/usePaymentConsent';
+import { featureFlags } from '@/config/payment';
 
 function PaymentDemoContent() {
   const { user } = useAuth();
@@ -41,6 +42,9 @@ function PaymentDemoContent() {
     setPaymentResultId(null);
   };
 
+  const noProvidersConfigured =
+    !featureFlags.stripeEnabled && !featureFlags.paypalEnabled;
+
   return (
     <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Email verification notice */}
@@ -65,6 +69,39 @@ function PaymentDemoContent() {
           </div>
         )}
       </div>
+
+      {/* Missing-config banner — shown prominently at the top when no
+          payment provider is configured. Without this, clicking a Pay
+          button produces opaque SDK errors. */}
+      {noProvidersConfigured && (
+        <div role="alert" className="alert alert-warning mb-8">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 shrink-0 stroke-current"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <div>
+            <p className="font-semibold">Payment providers not configured</p>
+            <p className="text-sm">
+              This demo requires Stripe or PayPal API keys. Set{' '}
+              <code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> and/or{' '}
+              <code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code> in <code>.env</code>,
+              plus their server secrets in Supabase Vault. See{' '}
+              <code>docs/PAYMENT-DEPLOYMENT.md</code> for the full setup
+              walkthrough (~30-60 min including account signup).
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* GDPR Consent Modal */}
       {showConsent && (

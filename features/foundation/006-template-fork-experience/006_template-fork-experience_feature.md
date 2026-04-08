@@ -2,7 +2,7 @@
 
 **Feature Branch**: `011-feature-038-template`
 **Created**: 2025-12-10
-**Status**: Mostly Implemented (2026-04-08) — `scripts/rebrand.sh` is a 615-line automation script with `--dry-run`, `--force`, `--preserve-ssh`, `--preserve-attribution` flags; documented in README "Forking This Template" section. `docs/FORKING.md` + `docs/FORKING-FEEDBACK.md` cover the workflow. Template auto-detects project name from git remote. Remaining gaps (per original spec clarifications): Supabase missing-config banner for first-run experience, automated test user seed improvements. Core rebrand flow is in production use.
+**Status**: Mostly Implemented (2026-04-08) — `scripts/rebrand.sh` is a 615-line automation script with `--dry-run`, `--force`, `--preserve-ssh`, `--preserve-attribution` flags; documented in README "Forking This Template" section. `docs/FORKING.md` + `docs/FORKING-FEEDBACK.md` cover the workflow. Template auto-detects project name from git remote. **Payment missing-config UX landed 2026-04-08** (`PaymentButton` gates on `featureFlags.stripeEnabled/paypalEnabled` from `src/config/payment.ts`, `/payment-demo` shows a prominent top-of-page banner when no providers are configured, linking to `docs/PAYMENT-DEPLOYMENT.md`). Remaining gaps: Supabase missing-config banner for first-run experience (same pattern as payment banner, not yet applied to Supabase), automated test user seed improvements. Core rebrand flow is in production use.
 **Input**: User description: "Feature 038: Template Fork Experience - Improve the forking experience based on real-world feedback from SpokeToWork fork."
 
 ## Clarifications
