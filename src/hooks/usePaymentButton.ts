@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePaymentConsent } from './usePaymentConsent';
 import { createPaymentIntent } from '@/lib/payments/payment-service';
 import { createCheckoutSession as createStripeCheckout } from '@/lib/payments/stripe';
@@ -72,16 +72,23 @@ export function usePaymentButton(
 
   const { hasConsent } = usePaymentConsent();
 
-  // Poll for queued operations count
-  useState(() => {
+  // Poll for queued operations count. Prior implementation used `useState`
+  // with a function initializer, which runs once but discards the returned
+  // cleanup — leaking the interval and causing re-renders that detached
+  // child DOM nodes (e.g. provider tabs) mid-interaction.
+  useEffect(() => {
+    let cancelled = false;
     const checkQueue = async () => {
       const count = await getPendingCount();
-      setQueuedCount(count);
+      if (!cancelled) setQueuedCount(count);
     };
     checkQueue();
     const interval = setInterval(checkQueue, 5000);
-    return () => clearInterval(interval);
-  });
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   const selectProvider = (provider: PaymentProvider) => {
     setSelectedProvider(provider);
