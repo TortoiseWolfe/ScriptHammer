@@ -52,9 +52,23 @@ test.describe('Failed Payment Retry Logic', () => {
     );
   });
 
-  test.skip('should retry failed payment successfully', async ({ page }) => {
-    // Skip: /payment/result route doesn't exist
-    test.skip(true, 'Payment result page not yet implemented');
+  test('should render payment result page with missing session', async ({
+    page,
+  }) => {
+    // Navigate to payment result with no query param
+    await page.goto('/payment-result');
+    await dismissCookieBanner(page);
+    await waitForAuthenticatedState(page);
+
+    // Should show the "no payment session" empty state
+    await expect(page.getByText(/no payment session found/i)).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Should have a link back to the payment demo
+    await expect(
+      page.getByRole('link', { name: /go to payment demo/i })
+    ).toBeVisible();
   });
 
   test.skip('should display error message for network failure', async ({
@@ -72,11 +86,18 @@ test.describe('Failed Payment Retry Logic', () => {
     test.skip(true, 'Subscription management page not yet implemented');
   });
 
-  test.skip('should prevent retry after max attempts exceeded', async ({
+  test('should render payment result page with malformed ID', async ({
     page,
   }) => {
-    // Skip: /payment/result route doesn't exist
-    test.skip(true, 'Payment result page not yet implemented');
+    // Navigate with a malformed (non-UUID) id parameter
+    await page.goto('/payment-result?id=not-a-valid-uuid');
+    await dismissCookieBanner(page);
+    await waitForAuthenticatedState(page);
+
+    // Malformed ID should trigger the missing-id empty state
+    await expect(page.getByText(/no payment session found/i)).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test.skip('should log error details for debugging', async ({ page }) => {
