@@ -130,13 +130,16 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .getByRole('heading', { name: /Step 2/i })
       .waitFor({ timeout: 5000 });
 
-    // Select Stripe tab
+    // Step 2 heading can appear before PaymentButton children finish rendering
+    // their tablists. Wait for the tabs themselves before interacting.
     const stripeTab = page.getByRole('tab', { name: /stripe/i }).first();
+    const paypalTab = page.getByRole('tab', { name: /paypal/i }).first();
+    await expect(stripeTab).toBeVisible({ timeout: 15000 });
+    await expect(paypalTab).toBeVisible({ timeout: 15000 });
+
     await stripeTab.click();
     await expect(stripeTab).toHaveClass(/tab-active/);
 
-    // Select PayPal tab
-    const paypalTab = page.getByRole('tab', { name: /paypal/i }).first();
     await paypalTab.click();
     await expect(paypalTab).toHaveClass(/tab-active/);
   });
