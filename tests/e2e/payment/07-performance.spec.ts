@@ -9,16 +9,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  dismissCookieBanner,
-  waitForAuthenticatedState,
-} from '../utils/test-user-factory';
-
-// Test user credentials
-const TEST_USER = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Payment System Performance', () => {
   test.skip('should handle concurrent payment requests', async ({
@@ -60,20 +51,16 @@ test.describe('Payment System Performance', () => {
   test('should load payment demo page within reasonable time', async ({
     page,
   }) => {
-    // Sign in first
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
-
-    // Measure page load time
+    // storage-state-auth.json already carries a valid Supabase session;
+    // measure cold navigation to /payment-demo directly.
     const startTime = Date.now();
-    await page.goto('/payment-demo');
+    await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+    if (page.url().includes('/sign-in')) {
+      await page.waitForTimeout(3000);
+      await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+    }
     await dismissCookieBanner(page);
 
-    // Wait for main heading to appear
     await page
       .getByRole('heading', { name: /Payment Integration Demo/i })
       .waitFor();
@@ -86,16 +73,18 @@ test.describe('Payment System Performance', () => {
   });
 
   test('should grant consent within reasonable time', async ({ page }) => {
-    // Sign in first
-    await page.goto('/sign-in');
+    // storage-state-auth.json already carries a valid Supabase session.
+    await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+    if (page.url().includes('/sign-in')) {
+      await page.waitForTimeout(3000);
+      await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+    }
     await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
 
-    await page.goto('/payment-demo');
-    await dismissCookieBanner(page);
+    // Wait for GDPR consent section to be ready before timing the click
+    await page
+      .getByRole('heading', { name: /GDPR Consent/i })
+      .waitFor({ state: 'visible', timeout: 30000 });
 
     // Measure consent flow time
     const startTime = Date.now();

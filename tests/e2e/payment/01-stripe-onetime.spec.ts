@@ -8,16 +8,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import {
-  dismissCookieBanner,
-  waitForAuthenticatedState,
-} from '../utils/test-user-factory';
-
-// Test user credentials
-const TEST_USER = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Check if Stripe is configured
 const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -25,33 +16,33 @@ const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 test.describe('Stripe One-Time Payment Flow', () => {
   test.describe.configure({ timeout: 60000 });
 
-  test.beforeEach(async ({ page, context }) => {
-    // Clear cookies and storage to reset consent state
-    await context.clearCookies();
-
-    // Sign in first - /payment-demo is a protected route
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-
-    // Clear localStorage to reset consent state
-    await page.evaluate(() => {
-      localStorage.removeItem('payment_consent');
-      localStorage.removeItem('gdpr_consent');
-    });
-
-    await page.getByLabel('Email').fill(TEST_USER.email);
-    await page.getByLabel('Password', { exact: true }).fill(TEST_USER.password);
-    await page.getByRole('button', { name: 'Sign In' }).click();
-    await waitForAuthenticatedState(page);
-
-    // Navigate to payment page. ProtectedRoute may redirect to /sign-in if
-    // auth context hasn't hydrated yet — retry up to 3 times.
-    for (let attempt = 0; attempt < 3; attempt++) {
+  test.beforeEach(async ({ page }) => {
+    // storage-state-auth.json already carries a valid Supabase session.
+    // Direct nav avoids the /sign-in hop; auth-hydration race handled by retry.
+    await page.goto('/payment-demo', { waitUntil: 'networkidle' });
+    if (page.url().includes('/sign-in')) {
+      await page.waitForTimeout(3000);
       await page.goto('/payment-demo', { waitUntil: 'networkidle' });
-      if (!page.url().includes('/sign-in')) break;
-      await page.waitForTimeout(2000);
     }
     await dismissCookieBanner(page);
+
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 30000 });
+
+    await page.evaluate(() => {
+      localStorage.removeItem('payment_consent');
+      localStorage.removeItem('payment_consent_date');
+      localStorage.removeItem('gdpr_consent');
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    await page
+      .getByRole('heading', { name: /Step [12]|GDPR Consent/i })
+      .first()
+      .waitFor({ state: 'visible', timeout: 15000 });
   });
 
   // Skip tests that require actual Stripe integration
