@@ -30,6 +30,8 @@ export interface UsePaymentButtonReturn {
   error: Error | null;
   queuedCount: number;
   hasConsent: boolean;
+  /** False until the underlying consent hook has read localStorage. */
+  consentReady: boolean;
   selectProvider: (provider: PaymentProvider) => void;
   initiatePayment: () => Promise<void>;
   clearError: () => void;
@@ -70,7 +72,7 @@ export function usePaymentButton(
   const [error, setError] = useState<Error | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
 
-  const { hasConsent } = usePaymentConsent();
+  const { hasConsent, ready: consentReady } = usePaymentConsent();
 
   // Poll for queued operations count. Prior implementation used `useState`
   // with a function initializer, which runs once but discards the returned
@@ -156,6 +158,7 @@ export function usePaymentButton(
     error,
     queuedCount,
     hasConsent,
+    consentReady,
     selectProvider,
     initiatePayment,
     clearError,

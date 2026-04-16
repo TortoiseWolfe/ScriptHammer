@@ -14,6 +14,8 @@ export interface PaymentConsentState {
   hasConsent: boolean;
   showModal: boolean;
   consentDate: string | null;
+  /** False until the localStorage read in the mount effect completes. */
+  ready: boolean;
 }
 
 export interface PaymentConsentActions {
@@ -45,6 +47,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
   const [hasConsent, setHasConsent] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [consentDate, setConsentDate] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // Only run in browser
@@ -70,6 +73,8 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
       logger.warn('localStorage access blocked', { error });
       setHasConsent(false);
       setShowModal(true);
+    } finally {
+      setReady(true);
     }
   }, []);
 
@@ -87,6 +92,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     setHasConsent(true);
     setConsentDate(now);
     setShowModal(false);
+    setReady(true);
     logger.info('Payment consent granted');
   };
 
@@ -102,6 +108,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     }
     setHasConsent(false);
     setShowModal(false);
+    setReady(true);
     logger.info('Payment consent declined');
   };
 
@@ -121,6 +128,7 @@ export function usePaymentConsent(): UsePaymentConsentReturn {
     hasConsent,
     showModal,
     consentDate,
+    ready,
     grantConsent,
     declineConsent,
     resetConsent,

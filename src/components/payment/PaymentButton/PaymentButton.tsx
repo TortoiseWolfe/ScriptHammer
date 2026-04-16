@@ -49,6 +49,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
     error,
     queuedCount,
     hasConsent,
+    consentReady,
     selectProvider,
     initiatePayment,
     clearError,
@@ -198,8 +199,11 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         </div>
       )}
 
-      {/* No Consent Warning */}
-      {!hasConsent && (
+      {/* No Consent Warning — wait for hook to finish reading localStorage
+          before rendering, otherwise the warning briefly flashes on mount
+          and causes a layout shift that detaches provider-tab DOM nodes
+          mid-click in E2E tests. */}
+      {consentReady && !hasConsent && (
         <div role="alert" className="alert alert-warning">
           <svg
             xmlns="http://www.w3.org/2000/svg"
