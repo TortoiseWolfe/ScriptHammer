@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -26,30 +26,13 @@ export default function ProtectedRoute({
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
-  // Once the user has been authenticated in this mount, ignore transient
-  // isAuthenticated=false flips caused by Supabase token refresh races,
-  // onAuthStateChange reconnection, or brief getSession() nulls. Without
-  // this, the redirect useEffect fires mid-interaction and navigates
-  // away from the page the user is actively using (observed as tab-click
-  // failures in Firefox CI shards on /payment-demo).
-  const wasAuthenticated = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      wasAuthenticated.current = true;
+    if (!isLoading && !isAuthenticated) {
+      // Preserve return URL for post-auth redirect
+      const returnUrl = encodeURIComponent(pathname);
+      router.push(`${redirectTo}?returnUrl=${returnUrl}`);
     }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (isLoading) return;
-    if (isAuthenticated) return;
-    // Skip redirect if we were authenticated at some point in this mount —
-    // the flip is almost certainly a transient refresh race. The auth
-    // provider will re-settle; don't navigate away from the user's work.
-    if (wasAuthenticated.current) return;
-
-    const returnUrl = encodeURIComponent(pathname);
-    router.push(`${redirectTo}?returnUrl=${returnUrl}`);
   }, [isAuthenticated, isLoading, router, redirectTo, pathname]);
 
   if (isLoading) {
@@ -60,10 +43,7 @@ export default function ProtectedRoute({
     );
   }
 
-  // Same rationale as the redirect effect above: if this mount has ever
-  // been authenticated, keep rendering children during transient flips
-  // rather than unmounting them into the sign-in card.
-  if (!isAuthenticated && !wasAuthenticated.current) {
+  if (!isAuthenticated) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="card bg-base-100 w-full max-w-md shadow-xl">
