@@ -48,10 +48,7 @@ export default defineConfig({
       // CI has Supabase credentials (for build/deploy) so the skipIf guard passes,
       // but the CI instance doesn't have the right schema for these tests.
       // Run locally with: docker compose --profile supabase up && pnpm test:rls
-      'tests/rls/anonymous-access.test.ts',
-      'tests/rls/audit-immutability.test.ts',
-      'tests/rls/service-role.test.ts',
-      'tests/rls/user-isolation.test.ts',
+      'tests/rls/**',
       // Exclude remaining contract/integration tests requiring service role key
       'tests/contract/auth/sign-out.contract.test.ts',
       'tests/contract/auth/sign-in.contract.test.ts',
