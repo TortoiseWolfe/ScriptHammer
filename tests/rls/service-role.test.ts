@@ -67,14 +67,14 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
-          event_type: 'user.login',
+          event_type: 'sign_in',
           event_data: { test: true },
         })
         .select()
         .single();
 
       expect(error).toBeNull();
-      expect(data?.event_type).toBe('user.login');
+      expect(data?.event_type).toBe('sign_in');
       expect(data?.user_id).toBe(userA.id);
     });
 
@@ -103,7 +103,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       const { data, error } = await clientA.from('auth_audit_logs').insert({
         user_id: userA.id,
-        event_type: 'user.login',
+        event_type: 'sign_in',
         event_data: { attempted_by: 'user' },
       });
 

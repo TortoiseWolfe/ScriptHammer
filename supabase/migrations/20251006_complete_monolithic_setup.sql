@@ -586,11 +586,11 @@ CREATE POLICY "Users update own subscriptions" ON subscriptions
 -- Webhook events
 DROP POLICY IF EXISTS "Service creates webhook events" ON webhook_events;
 CREATE POLICY "Service creates webhook events" ON webhook_events
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT TO service_role WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Service updates webhook events" ON webhook_events;
 CREATE POLICY "Service updates webhook events" ON webhook_events
-  FOR UPDATE WITH CHECK (true);
+  FOR UPDATE TO service_role WITH CHECK (true);
 
 -- Payment provider config
 DROP POLICY IF EXISTS "Users view provider config" ON payment_provider_config;
@@ -624,7 +624,7 @@ CREATE POLICY "Users can view own audit logs" ON auth_audit_logs
 
 DROP POLICY IF EXISTS "Service role can insert audit logs" ON auth_audit_logs;
 CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT TO service_role WITH CHECK (true);
 
 -- Admin read-only policies (Feature: Admin Dashboard)
 -- Uses JWT custom claims from auth.users.raw_app_meta_data (Supabase RBAC best practice)

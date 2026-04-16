@@ -45,8 +45,8 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
-          event_type: 'profile.updated',
-          event_data: { field: 'display_name', old: 'Old', new: 'New' },
+          event_type: 'password_change',
+          event_data: { field: 'password', changed: true },
         })
         .select()
         .single();
@@ -146,14 +146,14 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .insert({
           user_id: userA.id,
-          event_type: 'user.login',
+          event_type: 'sign_in',
           event_data: { ip: '192.168.1.1', browser: 'Chrome' },
         })
         .select()
         .single();
 
       expect(error).toBeNull();
-      expect(data?.event_type).toBe('user.login');
+      expect(data?.event_type).toBe('sign_in');
       expect(data?.event_data).toMatchObject({ ip: '192.168.1.1' });
     });
 
@@ -170,9 +170,8 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       // The original details should be intact
       expect(original?.event_data).toMatchObject({
-        field: 'display_name',
-        old: 'Old',
-        new: 'New',
+        field: 'password',
+        changed: true,
       });
     });
 
@@ -187,13 +186,21 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(error).toBeNull();
 
       const validEventTypes = [
-        'user.login',
-        'user.logout',
-        'user.signup',
-        'user.delete',
-        'policy.violation',
-        'session.expired',
-        'profile.updated',
+        'sign_up',
+        'sign_in',
+        'sign_in_success',
+        'sign_in_failed',
+        'sign_out',
+        'password_change',
+        'password_reset_request',
+        'password_reset_complete',
+        'email_verification',
+        'email_verification_sent',
+        'email_verification_complete',
+        'token_refresh',
+        'account_delete',
+        'oauth_link',
+        'oauth_unlink',
       ];
 
       data!.forEach((log) => {

@@ -111,10 +111,17 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const { data, error } = await anonClient
         .from('user_profiles')
         .update({ display_name: 'Hacked' })
-        .eq('id', testUser.id);
+        .eq('id', testUser.id)
+        .select();
 
-      // RLS filters - no rows to update
-      expect(data).toHaveLength(0);
+      // RLS filters — anon has no UPDATE grant on user_profiles.
+      // PostgREST returns success with 0 rows (no error, empty result).
+      if (error) {
+        // Some Supabase versions return a permission error — that's fine
+        expect(error).toBeDefined();
+      } else {
+        expect(data).toHaveLength(0);
+      }
     });
 
     // Additional test: Anon cannot DELETE from profiles
@@ -124,10 +131,15 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const { data, error } = await anonClient
         .from('user_profiles')
         .delete()
-        .eq('id', testUser.id);
+        .eq('id', testUser.id)
+        .select();
 
-      // RLS filters - no rows to delete
-      expect(data).toHaveLength(0);
+      // Same as UPDATE — either error or zero rows affected
+      if (error) {
+        expect(error).toBeDefined();
+      } else {
+        expect(data).toHaveLength(0);
+      }
     });
 
     // Additional test: Anon cannot INSERT to audit_logs

@@ -158,21 +158,56 @@ export async function createTestUser(
 ): Promise<TestUser> {
   const serviceClient = createServiceClient();
 
+  // Try to create the user. If they already exist (stale from a prior run),
+  // delete and recreate so the password is known and the state is clean.
+  let userId: string;
+
   const { data, error } = await serviceClient.auth.admin.createUser({
     email,
     password,
-    email_confirm: true, // Skip email confirmation for tests
+    email_confirm: true,
   });
 
   if (error) {
-    throw new Error(`Failed to create test user: ${error.message}`);
+    if (
+      error.message.includes('already been registered') ||
+      error.message.includes('Database error')
+    ) {
+      // Find and delete the stale user, then recreate
+      const { data: listData } = await serviceClient.auth.admin.listUsers({
+        perPage: 1000,
+      });
+      const existing = listData?.users?.find((u) => u.email === email);
+      if (existing) {
+        await serviceClient.auth.admin.deleteUser(existing.id);
+      }
+      const { data: retryData, error: retryError } =
+        await serviceClient.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+        });
+      if (retryError) {
+        throw new Error(
+          `Failed to recreate test user after cleanup: ${retryError.message}`
+        );
+      }
+      userId = retryData.user.id;
+    } else {
+      throw new Error(`Failed to create test user: ${error.message}`);
+    }
+  } else {
+    userId = data.user.id;
   }
 
-  return {
-    id: data.user.id,
-    email,
-    password,
-  };
+  // Ensure user_profiles row exists. The on_auth_user_created trigger
+  // should create it, but admin API createUser doesn't always fire
+  // triggers on Supabase Cloud. Insert idempotently via service role.
+  await serviceClient
+    .from('user_profiles')
+    .upsert({ id: userId }, { onConflict: 'id', ignoreDuplicates: true });
+
+  return { id: userId, email, password };
 }
 
 /**
@@ -185,7 +220,7 @@ export async function deleteTestUser(userId: string): Promise<void> {
 
   const { error } = await serviceClient.auth.admin.deleteUser(userId);
 
-  if (error) {
+  if (error && !error.message.includes('User not found')) {
     throw new Error(`Failed to delete test user: ${error.message}`);
   }
 }

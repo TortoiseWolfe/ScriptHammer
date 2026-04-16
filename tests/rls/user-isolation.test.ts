@@ -53,45 +53,35 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
-      const { data, error } = await clientA.from('user_profiles').select('*');
+      const { data, error } = await clientA
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userA.id);
 
       expect(error).toBeNull();
       expect(data).toHaveLength(1);
       expect(data![0].id).toBe(userA.id);
     });
 
-    // T018: Authenticated user cannot query other user's profile
-    it('authenticated user cannot query other user profile', async () => {
+    // T018: Authenticated users CAN see other profiles (search policy)
+    // The "Authenticated users can search profiles" policy grants SELECT
+    // to all authenticated users so friend search works (Feature 023).
+    // This test verifies that policy works as designed.
+    it('authenticated user can see other profiles via search policy', async () => {
       const clientA = await createAuthenticatedClient(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
       );
 
-      // Query all profiles - should only get own profile
-      const { data, error } = await clientA.from('user_profiles').select('*');
-
-      expect(error).toBeNull();
-      expect(data).toHaveLength(1);
-      // User A should NOT see User B's profile
-      expect(data!.find((p) => p.id === userB.id)).toBeUndefined();
-    });
-
-    // T018 (continued): Direct query for other user's profile returns empty
-    it('direct query for other user profile returns empty set', async () => {
-      const clientA = await createAuthenticatedClient(
-        TEST_USERS.userA.email,
-        TEST_USERS.userA.password
-      );
-
-      // Try to directly query User B's profile
       const { data, error } = await clientA
         .from('user_profiles')
-        .select('*')
+        .select('id')
         .eq('id', userB.id);
 
       expect(error).toBeNull();
-      // Should return empty array, not an error
-      expect(data).toHaveLength(0);
+      // Search policy allows reading other profiles
+      expect(data).toHaveLength(1);
+      expect(data![0].id).toBe(userB.id);
     });
 
     // T019: Unauthenticated user cannot query any profiles
