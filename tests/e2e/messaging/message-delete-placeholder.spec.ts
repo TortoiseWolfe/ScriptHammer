@@ -387,6 +387,32 @@ test.describe('Message Delete Placeholder E2E', () => {
       });
     });
 
+    // Firefox still served msg-2 from somewhere even after the route
+    // intercept rewrote /rest/v1/messages responses — most likely the
+    // newly-registered PWA service worker intercepted the fetch BEFORE
+    // it reached Playwright's route handler. Disable the SW registration
+    // entirely for this test context so nothing can cache PostgREST
+    // responses between the soft-delete and the subsequent conversation
+    // reload.
+    await context.addInitScript(() => {
+      if ('serviceWorker' in navigator) {
+        Object.defineProperty(navigator, 'serviceWorker', {
+          configurable: true,
+          get() {
+            return {
+              register: () => Promise.reject(new Error('SW disabled in test')),
+              getRegistrations: () => Promise.resolve([]),
+              getRegistration: () => Promise.resolve(undefined),
+              ready: new Promise(() => {}),
+              controller: null,
+              addEventListener: () => {},
+              removeEventListener: () => {},
+            };
+          },
+        });
+      }
+    });
+
     let page = await context.newPage();
     try {
       await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);
