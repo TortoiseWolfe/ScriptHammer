@@ -481,14 +481,31 @@ test.describe('Message Delete Placeholder E2E', () => {
       console.log(`PATCH from browser: ${JSON.stringify(patchStatus)}`);
 
       // The PWA service worker uses a Cache-first default strategy which
-      // caches PostgREST responses. Clear all caches and unregister service
-      // workers so the next loadMessages() fetches fresh data from the DB.
+      // caches PostgREST responses. We need the next loadMessages() to hit
+      // the DB (not a cached response) so the deleted=true flag is observed.
+      //
+      // Order matters:
+      //   1. Delete the Cache-API caches (stored responses)
+      //   2. Unregister every SW registration
+      //   3. Reload the current document to detach its SW controller
+      //   4. Wait for navigator.serviceWorker.controller to be null
+      //
+      // Without step 4, openConversation's page.goto runs while the old
+      // controller is still serving cached PostgREST responses, and msg-2
+      // renders from stale cache even though the DB says deleted=true.
       await page.evaluate(async () => {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
         const names = await caches.keys();
         await Promise.all(names.map((n) => caches.delete(n)));
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((r) => r.unregister()));
       });
+
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForFunction(
+        () => !navigator.serviceWorker.controller,
+        null,
+        { timeout: 10000 }
+      );
 
       // Reload conversation to pick up the deleted state
       await openConversation(page);
