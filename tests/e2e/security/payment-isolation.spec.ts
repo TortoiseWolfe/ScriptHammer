@@ -103,14 +103,18 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Step 5: Verify session isolation - User IDs should be different
     expect(userAId).not.toBe(userBId);
 
-    // Step 6: Verify each user sees their own payment history section
-    // Both should see the Payment History heading (use exact match)
+    // Step 6: Verify each user sees their own payment history section.
+    // Step 4's heading is gated on !showConsent && user?.id. On firefox,
+    // AuthContext's getSession() can lag the render by several seconds
+    // under shard load, briefly leaving user=null after consent was
+    // accepted. Use a generous timeout so the hydration has time to
+    // complete before we declare the heading missing.
     await expect(
       pageA.getByRole('heading', { name: /Step 4.*Payment History/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
     await expect(
       pageB.getByRole('heading', { name: /Step 4.*Payment History/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
 
     // Cleanup
     await contextA.close();

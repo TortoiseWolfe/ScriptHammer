@@ -360,7 +360,7 @@ test.describe('Message Delete Placeholder E2E', () => {
     const context = await browser.newContext({
       storageState: { cookies: [], origins: [] },
     });
-    const page = await context.newPage();
+    let page = await context.newPage();
     try {
       await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);
       await setupEncryptionViaUI(page, USER_A_EMAIL, USER_A_PASSWORD);
@@ -377,23 +377,25 @@ test.describe('Message Delete Placeholder E2E', () => {
         .select('id', { count: 'exact', head: true })
         .eq('conversation_id', conversationId);
 
-      // Send 3 messages
-      await typeAndSend(page, msg1);
-      await typeAndSend(page, msg2);
-      await typeAndSend(page, msg3);
-
-      // Check if messages actually reached the DB
-      const { count: afterCount } = await adminClient
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', conversationId);
-
-      const newMessages = (afterCount ?? 0) - (beforeCount ?? 0);
-
-      // If zero new messages, the send is failing. Capture browser errors.
-      if (newMessages === 0) {
+      // Send 3 messages and wait for EACH to land in the DB before moving
+      // on. typeAndSend only waits for the input to clear (handler fired);
+      // on Supabase free-tier under 24-shard load, the INSERT round-trip
+      // can outlast the next typeAndSend, and the server stores 2 of 3 by
+      // the time we read — breaking the later msg1/msg2/msg3 visibility
+      // assertions non-deterministically.
+      const expectNewCount = async (expected: number) => {
+        const deadline = Date.now() + 30000;
+        let lastCount = -1;
+        while (Date.now() < deadline) {
+          const { count } = await adminClient
+            .from('messages')
+            .select('id', { count: 'exact', head: true })
+            .eq('conversation_id', conversationId);
+          lastCount = (count ?? 0) - (beforeCount ?? 0);
+          if (lastCount >= expected) return;
+          await new Promise((r) => setTimeout(r, 500));
+        }
         const errorState = await page.evaluate(() => {
-          // Check for error toast or error state in the messaging UI
           const errorEls = document.querySelectorAll('[role="alert"]');
           const texts = Array.from(errorEls).map((el) => el.textContent);
           return {
@@ -403,10 +405,17 @@ test.describe('Message Delete Placeholder E2E', () => {
           };
         });
         throw new Error(
-          `Messages not stored in DB (${beforeCount} → ${afterCount}). ` +
-            `Browser state: ${JSON.stringify(errorState)}`
+          `Expected ${expected} new messages but only ${lastCount} landed ` +
+            `within 30s. Browser state: ${JSON.stringify(errorState)}`
         );
-      }
+      };
+
+      await typeAndSend(page, msg1);
+      await expectNewCount(1);
+      await typeAndSend(page, msg2);
+      await expectNewCount(2);
+      await typeAndSend(page, msg3);
+      await expectNewCount(3);
 
       // Reload + re-open conversation to fetch messages from DB
       await openConversation(page);
@@ -484,28 +493,25 @@ test.describe('Message Delete Placeholder E2E', () => {
       // caches PostgREST responses. We need the next loadMessages() to hit
       // the DB (not a cached response) so the deleted=true flag is observed.
       //
-      // Order matters:
-      //   1. Delete the Cache-API caches (stored responses)
-      //   2. Unregister every SW registration
-      //   3. Reload the current document to detach its SW controller
-      //   4. Wait for navigator.serviceWorker.controller to be null
+      // Earlier attempts:
+      //   1. caches.delete + sw.unregister — insufficient: the current
+      //      document still has an SW controller until navigation.
+      //   2. Add page.reload + waitForFunction(!controller) — improved
+      //      chromium but firefox still served msg-2 from somewhere
+      //      (HTTP cache / in-flight activating SW).
       //
-      // Without step 4, openConversation's page.goto runs while the old
-      // controller is still serving cached PostgREST responses, and msg-2
-      // renders from stale cache even though the DB says deleted=true.
+      // Most reliable: wipe caches, unregister SWs, CLOSE the page entirely,
+      // and open a fresh one on the same context. A fresh page starts with
+      // no SW controller; PWAInstall will re-register, but the caches are
+      // gone, so its first loadMessages fetch hits the DB.
       await page.evaluate(async () => {
         const names = await caches.keys();
         await Promise.all(names.map((n) => caches.delete(n)));
         const regs = await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map((r) => r.unregister()));
       });
-
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.waitForFunction(
-        () => !navigator.serviceWorker.controller,
-        null,
-        { timeout: 10000 }
-      );
+      await page.close();
+      page = await context.newPage();
 
       // Reload conversation to pick up the deleted state
       await openConversation(page);
