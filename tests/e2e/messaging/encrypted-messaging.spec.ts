@@ -312,10 +312,12 @@ test.describe('Encrypted Messaging Flow', () => {
 
       // ===== STEP 9: User B sees the decrypted message =====
       // Supabase free tier read-after-write latency can be 30-60s under
-      // 6-shard load. Retry with page reloads up to 6 times with 5s waits.
+      // 6-shard load. Retry with page reloads up to 10 times with 5s waits.
+      // (Bumped from 6 to 10 because Supabase free-tier tail latency under
+      // 24-shard concurrent load occasionally exceeds 6×30s = 180s.)
       await scrollThreadToBottom(pageB);
       const messageB = pageB.getByText(testMessage);
-      for (let retry = 0; retry < 6; retry++) {
+      for (let retry = 0; retry < 10; retry++) {
         const visible = await messageB
           .isVisible({ timeout: 10000 })
           .catch(() => false);
@@ -325,7 +327,7 @@ test.describe('Encrypted Messaging Flow', () => {
           .textContent()
           .catch(() => '(not found)');
         console.log(
-          `[encrypted-messaging] Attempt ${retry + 1}/6: ${threadText?.slice(0, 200)}`
+          `[encrypted-messaging] Attempt ${retry + 1}/10: ${threadText?.slice(0, 200)}`
         );
         await pageB.waitForTimeout(5000);
         await pageB.reload({ waitUntil: 'domcontentloaded' });
@@ -577,7 +579,7 @@ test.describe('Encrypted Messaging Flow', () => {
       // wait — use the same retry-with-reload pattern as the sibling test
       // "should send and receive encrypted message between two users".
       const messageOnB = pageB.getByText(testMessage);
-      for (let retry = 0; retry < 6; retry++) {
+      for (let retry = 0; retry < 10; retry++) {
         const visible = await messageOnB
           .isVisible({ timeout: 10000 })
           .catch(() => false);

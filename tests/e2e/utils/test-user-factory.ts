@@ -847,12 +847,13 @@ export async function signOutViaDropdown(page: Page): Promise<void> {
   // Wait for Sign In link to appear (indicates signed out state). After
   // window.location.href='/' navigates, the new page's AuthContext
   // re-runs getSession() which on Supabase Cloud under shard load can
-  // take 5-10s to return (and the cookies only fully clear mid-way).
+  // take 5-20s to return (and the cookies only fully clear mid-way).
   // Until that resolves, GlobalNav may still render the authenticated
-  // links. 5s was too tight and flaked on chromium-gen 1/6; 15s
-  // comfortably covers the hydration.
+  // links. 15s still flaked on chromium-gen 1/6 under load; 30s gives
+  // comfortable headroom without masking real failures (a truly stuck
+  // sign-out would sit past 30s too).
   const signInLink = page.getByRole('link', { name: 'Sign In' });
-  await signInLink.waitFor({ state: 'visible', timeout: 15000 });
+  await signInLink.waitFor({ state: 'visible', timeout: 30000 });
 }
 
 /**

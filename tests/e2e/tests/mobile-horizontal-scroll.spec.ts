@@ -97,27 +97,29 @@ test.describe('Horizontal Scroll Detection', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    // Get all elements
-    const allElements = await page.locator('*').all();
-    const overflowingElements: string[] = [];
-
-    for (const element of allElements) {
-      const box = await element.boundingBox();
-
-      if (box) {
-        // Check if element extends beyond viewport
-        if (box.x + box.width > width + 1) {
-          const tagName = await element.evaluate((el) => el.tagName);
-          const className = await element.evaluate(
-            (el) => el.className || 'no-class'
-          );
-
-          overflowingElements.push(
-            `${tagName}.${className}: x=${box.x.toFixed(0)} width=${box.width.toFixed(0)} right=${(box.x + box.width).toFixed(0)}`
+    // Compute overflow entirely in-browser. Iterating via Playwright's
+    // boundingBox() round-trips over the CDP/WebDriver for each of ~500
+    // DOM nodes, which on Firefox exceeded the 15s locator timeout and
+    // flaked firefox-gen 5/6. page.evaluate runs in one shot.
+    const overflowingElements = await page.evaluate((vpWidth) => {
+      const results: string[] = [];
+      const all = document.querySelectorAll('*');
+      for (const el of Array.from(all)) {
+        const rect = (el as HTMLElement).getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+        if (rect.x + rect.width > vpWidth + 1) {
+          const cls =
+            (el as HTMLElement).className &&
+            typeof (el as HTMLElement).className === 'string'
+              ? (el as HTMLElement).className
+              : 'no-class';
+          results.push(
+            `${el.tagName}.${cls}: x=${rect.x.toFixed(0)} width=${rect.width.toFixed(0)} right=${(rect.x + rect.width).toFixed(0)}`
           );
         }
       }
-    }
+      return results;
+    }, width);
 
     if (overflowingElements.length > 0) {
       const summary = `${overflowingElements.length} elements overflow viewport at 320px:\n${overflowingElements.slice(0, 10).join('\n')}`;

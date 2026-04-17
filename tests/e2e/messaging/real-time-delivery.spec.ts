@@ -81,17 +81,38 @@ async function waitForMessageOnPage2(
     await page2
       .getByText(testMessage)
       .waitFor({ state: 'visible', timeout: 30000 });
+    return;
   } catch {
-    // Real-time subscription may have dropped the message; navigate directly
-    // to the conversation URL to reload messages from DB. Using URL navigation
-    // instead of sidebar click avoids the slow connections query.
-    await page2.goto(`/messages?conversation=${testConversationId}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await dismissCookieBanner(page2);
-    await handleReAuthModal(page2, password);
-    await expect(page2.getByText(testMessage)).toBeVisible({ timeout: 60000 });
+    // Fall through to reload-retry path below
   }
+
+  // Real-time subscription may have dropped the message, or Supabase Cloud
+  // replication is lagging. Navigate+reload up to 3 times, waiting 15s
+  // between attempts. Total budget: ~60s (goto+reload) × 3 attempts × 15s =
+  // ~3 minutes worst case, which covers observed Supabase free-tier tail
+  // latency under 24-shard concurrent load (the prior single-fallback
+  // 60s timeout flaked at this line on chromium/webkit/firefox msg shards).
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page2.goto(`/messages?conversation=${testConversationId}`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await dismissCookieBanner(page2);
+      await handleReAuthModal(page2, password);
+      await expect(page2.getByText(testMessage)).toBeVisible({
+        timeout: 60000,
+      });
+      return;
+    } catch (e) {
+      lastErr = e;
+      console.log(
+        `[waitForMessageOnPage2] reload-retry ${attempt + 1}/3 failed; waiting 15s`
+      );
+      await page2.waitForTimeout(15000);
+    }
+  }
+  throw lastErr;
 }
 
 /**

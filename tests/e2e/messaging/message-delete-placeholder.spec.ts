@@ -513,6 +513,23 @@ test.describe('Message Delete Placeholder E2E', () => {
       await page.close();
       page = await context.newPage();
 
+      // Force every Supabase REST response to bypass HTTP cache for the
+      // rest of this test. On Firefox, even with SW unregistered and a
+      // fresh page, the browser's HTTP cache continued to serve pre-PATCH
+      // /rest/v1/messages responses. Playwright's request interception
+      // lets us rewrite response headers so the new page's loadMessages
+      // gets a freshly-fetched copy from Supabase.
+      await context.route('**/rest/v1/messages**', async (route) => {
+        const response = await route.fetch();
+        const headers = { ...response.headers() };
+        headers['cache-control'] = 'no-store, no-cache, must-revalidate';
+        headers['pragma'] = 'no-cache';
+        await route.fulfill({
+          response,
+          headers,
+        });
+      });
+
       // Reload conversation to pick up the deleted state
       await openConversation(page);
 
