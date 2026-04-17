@@ -306,10 +306,12 @@ export function GlobalNav() {
                         if (document.activeElement instanceof HTMLElement) {
                           document.activeElement.blur();
                         }
-                        // Sign out and redirect
-                        signOut().then(() => {
-                          window.location.href = '/';
-                        });
+                        // signOut() handles the window.location.href='/'
+                        // redirect internally; setting it again here races
+                        // with the in-flight navigation on Firefox and
+                        // manifests as NS_BINDING_ABORTED in Playwright's
+                        // page.waitForURL.
+                        void signOut();
                       }}
                     >
                       Sign Out
@@ -411,10 +413,8 @@ export function GlobalNav() {
                           if (document.activeElement instanceof HTMLElement) {
                             document.activeElement.blur();
                           }
-                          // Sign out and redirect
-                          signOut().then(() => {
-                            window.location.href = '/';
-                          });
+                          // signOut() handles the redirect internally.
+                          void signOut();
                         }}
                       >
                         Sign Out
