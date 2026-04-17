@@ -138,6 +138,20 @@ async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
     return false;
   }
 
+  // Both pages are in the conversation; wait for each page's Realtime
+  // subscription to actually be listening before the test body sends a
+  // message. Without this, a send that fires between mount and SUBSCRIBE
+  // publishes to nobody — the receiver then has to discover it via the
+  // slower reload-fallback path, eating into the flake budget.
+  await Promise.all([
+    page1
+      .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
+      .catch(() => {}),
+    page2
+      .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
+      .catch(() => {}),
+  ]);
+
   return true;
 }
 
