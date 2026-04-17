@@ -285,20 +285,48 @@ test.describe('Friend Request Flow', () => {
       );
 
       // ===== STEP 4: User A sends friend request =====
+      // In parallel test runs and repeat CI runs, User A and User B may
+      // already be connected. The search result card shows a different
+      // button in that case ("Friends", "Request Pending", "Cancel Request")
+      // — waiting 30s for a "Send Request" button that will never appear
+      // was the source of this test's flake on chromium-msg 1/2. Detect
+      // which state the pair is in, and skip the send step when the users
+      // are already connected or have a pending request (both terminal
+      // states that allow the rest of the test to proceed).
       const sendRequestButton = pageA.getByRole('button', {
         name: /send request/i,
       });
-      await expect(sendRequestButton).toBeVisible({ timeout: 30000 });
-      await sendRequestButton.click({ force: true });
-
-      // Wait for success message OR "already connected" error (both mean users can chat)
-      // In parallel test runs, connection might already exist from other tests
-      const successOrAlreadyConnected = pageA.getByText(
-        /friend request sent|already.*connected|duplicate key|unique_connection/i
-      );
-      await expect(successOrAlreadyConnected).toBeVisible({
-        timeout: 15000,
+      const alreadyStateButton = pageA.getByRole('button', {
+        name: /friends|pending|cancel request|requested/i,
       });
+      const sendVisible = await sendRequestButton
+        .first()
+        .isVisible({ timeout: 5000 })
+        .catch(() => false);
+
+      if (sendVisible) {
+        await sendRequestButton.click({ force: true });
+        const successOrAlreadyConnected = pageA.getByText(
+          /friend request sent|already.*connected|duplicate key|unique_connection/i
+        );
+        await expect(successOrAlreadyConnected).toBeVisible({
+          timeout: 15000,
+        });
+      } else {
+        const alreadyVisible = await alreadyStateButton
+          .first()
+          .isVisible({ timeout: 10000 })
+          .catch(() => false);
+        if (!alreadyVisible) {
+          throw new Error(
+            'Search result card renders no known action button: ' +
+              'expected Send Request / Friends / Pending / Cancel / Requested'
+          );
+        }
+        console.log(
+          '[friend-req] Users already in a connected state, skipping send step'
+        );
+      }
 
       // ===== STEP 5: User B signs in =====
       await pageB.goto('/sign-in');
