@@ -354,7 +354,24 @@ test.describe('Cross-Page Navigation', () => {
 
     // Navigate to another page
     await page.getByRole('link', { name: '32 Themes' }).first().click();
-    await page.waitForLoadState('domcontentloaded');
+
+    // Wait for the destination page to actually render its content and for
+    // Next.js App Router's scroll restoration to complete. Measuring at
+    // `domcontentloaded` is too early on WebKit — the document has parsed
+    // but the framework hasn't yet run its onRouteChangeComplete scroll
+    // reset, so window.scrollY is still the pre-navigation value (500).
+    // Wait for a destination-page-specific element, then for network idle
+    // so the scroll restoration has settled.
+    await page.waitForURL(
+      (url) =>
+        url.pathname.endsWith('/themes/') || url.pathname.endsWith('/themes'),
+      { timeout: 10000 }
+    );
+    await page
+      .getByRole('heading', { level: 1 })
+      .first()
+      .waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForLoadState('networkidle').catch(() => {});
 
     // Check scroll position is near top (allow offset for fixed headers and
     // browser-specific scroll restoration behavior — WebKit can report up
