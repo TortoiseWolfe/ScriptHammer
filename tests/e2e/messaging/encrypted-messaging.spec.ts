@@ -246,6 +246,18 @@ test.describe('Encrypted Messaging Flow', () => {
         timeout: 60000,
       });
 
+      // Wait for the Realtime subscription to actually be listening before
+      // sending. Without this, a send that fires between mount and SUBSCRIBE
+      // publishes to nobody and the receiver's reload-fallback has to do
+      // the heavy lifting — which under 24-shard Supabase free-tier load
+      // occasionally exceeds the 6x30s retry budget on the receiver side.
+      await pageA
+        .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
+        .catch(() => {
+          // Readiness signal absent (feature flag off or hook not mounted) —
+          // proceed with best effort; the existing retry loop handles drops.
+        });
+
       // ===== STEP 5: User A sends an encrypted message =====
       // Capture ALL browser console for diagnostics
       const consoleLogs: string[] = [];
@@ -560,10 +572,25 @@ test.describe('Encrypted Messaging Flow', () => {
       await conversationItemB.click();
       await pageB.waitForTimeout(1000);
 
-      // Verify User B sees the message
-      await expect(pageB.getByText(testMessage)).toBeVisible({
-        timeout: 15000,
-      });
+      // Verify User B sees the message. Supabase Cloud free-tier realtime
+      // delivery under 24-shard concurrent load can exceed a single 15s
+      // wait — use the same retry-with-reload pattern as the sibling test
+      // "should send and receive encrypted message between two users".
+      const messageOnB = pageB.getByText(testMessage);
+      for (let retry = 0; retry < 6; retry++) {
+        const visible = await messageOnB
+          .isVisible({ timeout: 10000 })
+          .catch(() => false);
+        if (visible) break;
+        await pageB.waitForTimeout(5000);
+        await pageB.reload({ waitUntil: 'domcontentloaded' });
+        await handleReAuthModal(pageB, USER_B.password);
+        const conversationRetry = pageB
+          .getByRole('button', { name: /Conversation with/ })
+          .first();
+        await conversationRetry.click({ timeout: 10000 }).catch(() => {});
+      }
+      await expect(messageOnB).toBeVisible({ timeout: 30000 });
 
       // ===== VERIFY "READ" STATUS (✓✓ colored) =====
       // Reload User A's page to see updated read status
