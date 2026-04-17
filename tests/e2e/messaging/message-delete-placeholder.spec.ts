@@ -368,12 +368,23 @@ test.describe('Message Delete Placeholder E2E', () => {
     // and msg-2 still rendering after soft-delete (stale cache served
     // pre-PATCH data). Routing via Playwright's Node-side fetch sidesteps
     // the browser cache entirely.
+    //
+    // Explicitly pull body + status + headers and fulfill fresh rather
+    // than passing the Response object through. WebKit appeared to still
+    // serve the old body in some cases when we passed `response` through
+    // route.fulfill, even with headers rewritten.
     await context.route('**/rest/v1/messages**', async (route) => {
       const response = await route.fetch();
+      const body = await response.body();
       const headers = { ...response.headers() };
       headers['cache-control'] = 'no-store, no-cache, must-revalidate';
       headers['pragma'] = 'no-cache';
-      await route.fulfill({ response, headers });
+      headers['expires'] = '0';
+      await route.fulfill({
+        status: response.status(),
+        headers,
+        body,
+      });
     });
 
     let page = await context.newPage();
@@ -387,51 +398,55 @@ test.describe('Message Delete Placeholder E2E', () => {
       const msg2 = `msg-2-${ts}`;
       const msg3 = `msg-3-${ts}`;
 
-      // Count messages in DB before sending
-      const { count: beforeCount } = await adminClient
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .eq('conversation_id', conversationId);
-
       // Send 3 messages and wait for EACH to land in the DB before moving
       // on. typeAndSend only waits for the input to clear (handler fired);
       // on Supabase free-tier under 24-shard load, the INSERT round-trip
       // can outlast the next typeAndSend, and the server stores 2 of 3 by
       // the time we read — breaking the later msg1/msg2/msg3 visibility
       // assertions non-deterministically.
-      const expectNewCount = async (expected: number) => {
-        const deadline = Date.now() + 30000;
-        let lastCount = -1;
-        while (Date.now() < deadline) {
-          const { count } = await adminClient
-            .from('messages')
-            .select('id', { count: 'exact', head: true })
-            .eq('conversation_id', conversationId);
-          lastCount = (count ?? 0) - (beforeCount ?? 0);
-          if (lastCount >= expected) return;
-          await new Promise((r) => setTimeout(r, 500));
-        }
-        const errorState = await page.evaluate(() => {
-          const errorEls = document.querySelectorAll('[role="alert"]');
-          const texts = Array.from(errorEls).map((el) => el.textContent);
-          return {
-            url: window.location.href,
-            errors: texts,
-            onLine: navigator.onLine,
-          };
-        });
-        throw new Error(
-          `Expected ${expected} new messages but only ${lastCount} landed ` +
-            `within 30s. Browser state: ${JSON.stringify(errorState)}`
-        );
+      //
+      // We can't use a fixed pre-send baseline because the test runs on
+      // chromium-msg, firefox-msg, and webkit-msg shards CONCURRENTLY
+      // against the same user pair & conversation, and each shard's
+      // beforeAll calls `messages.delete()` — which concurrently shrinks
+      // the row count out from under the other shards and caused the
+      // "-2 new messages landed" flake on firefox-msg.
+      //
+      // Instead: snapshot the count immediately before each send, then
+      // poll for strict >= baseline + 1. Concurrent deletions can only
+      // increase our baseline (we re-snapshot), never decrease it below
+      // our just-sent message.
+      const waitForOneNewMessage = async () => {
+        const { count: baseline } = await adminClient
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('conversation_id', conversationId);
+        return async () => {
+          const deadline = Date.now() + 30000;
+          while (Date.now() < deadline) {
+            const { count } = await adminClient
+              .from('messages')
+              .select('id', { count: 'exact', head: true })
+              .eq('conversation_id', conversationId);
+            if ((count ?? 0) > (baseline ?? 0)) return;
+            await new Promise((r) => setTimeout(r, 500));
+          }
+          throw new Error(
+            `New message never landed within 30s (baseline=${baseline}, ` +
+              `last=${0})`
+          );
+        };
       };
 
+      const wait1 = await waitForOneNewMessage();
       await typeAndSend(page, msg1);
-      await expectNewCount(1);
+      await wait1();
+      const wait2 = await waitForOneNewMessage();
       await typeAndSend(page, msg2);
-      await expectNewCount(2);
+      await wait2();
+      const wait3 = await waitForOneNewMessage();
       await typeAndSend(page, msg3);
-      await expectNewCount(3);
+      await wait3();
 
       // Reload + re-open conversation to fetch messages from DB
       await openConversation(page);

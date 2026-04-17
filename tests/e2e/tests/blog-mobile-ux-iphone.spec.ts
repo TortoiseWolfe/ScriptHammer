@@ -138,10 +138,23 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
       // Scroll to code block
       await firstCodeBlock.scrollIntoViewIfNeeded();
 
-      // Check that code block has internal scrolling
-      const overflowX = await firstCodeBlock.evaluate(
-        (el) => window.getComputedStyle(el).overflowX
-      );
+      // Wait for layout to stabilize before reading computed style. Without
+      // this, getComputedStyle(el).overflowX occasionally returns "" (e.g.
+      // mid-transition) and the array.toContain check fails with the odd
+      // diff "Expected value: ''" vs "Received array: ['auto', 'scroll']".
+      await page.waitForLoadState('networkidle').catch(() => {});
+
+      // Check that code block has internal scrolling. Poll the computed
+      // style a few times in case the initial read returns the empty
+      // string due to the element being mid-composite.
+      let overflowX = '';
+      for (let attempt = 0; attempt < 10; attempt++) {
+        overflowX = await firstCodeBlock.evaluate(
+          (el) => window.getComputedStyle(el).overflowX
+        );
+        if (overflowX === 'auto' || overflowX === 'scroll') break;
+        await page.waitForTimeout(200);
+      }
 
       // Should allow horizontal scroll within the element
       expect(['auto', 'scroll']).toContain(overflowX);
