@@ -452,16 +452,26 @@ test.describe('Encrypted Messaging Flow', () => {
         timeout: 30000,
       });
 
-      // Wait a moment for database write to complete
-      await pageA.waitForTimeout(2000);
-
       // ===== VERIFY DATABASE ENCRYPTION =====
-      // Query messages table directly as admin
-      const { data: messages, error } = await adminClient
-        .from('messages')
-        .select('encrypted_content, initialization_vector')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      // pageA's optimistic UI render can precede the actual Supabase INSERT
+      // commit by several seconds on free tier under shard load. A single
+      // waitForTimeout(2000) + admin query occasionally saw 0 rows back.
+      // Poll the admin query until the INSERT has actually landed.
+      let messages:
+        | { encrypted_content: string; initialization_vector: string }[]
+        | null = null;
+      let error: unknown = null;
+      for (let attempt = 0; attempt < 15; attempt++) {
+        const result = await adminClient
+          .from('messages')
+          .select('encrypted_content, initialization_vector')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        messages = result.data;
+        error = result.error;
+        if (messages && messages.length > 0) break;
+        await pageA.waitForTimeout(2000);
+      }
 
       expect(error).toBeNull();
       expect(messages).toBeTruthy();

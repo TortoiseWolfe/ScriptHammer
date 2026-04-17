@@ -360,6 +360,22 @@ test.describe('Message Delete Placeholder E2E', () => {
     const context = await browser.newContext({
       storageState: { cookies: [], origins: [] },
     });
+
+    // Force Supabase REST responses to bypass browser HTTP cache for the
+    // whole test. Both chromium and firefox under shard load occasionally
+    // served stale /rest/v1/messages responses — msg-1 missing after
+    // typeAndSend (read-after-write lag masked by cached earlier reads)
+    // and msg-2 still rendering after soft-delete (stale cache served
+    // pre-PATCH data). Routing via Playwright's Node-side fetch sidesteps
+    // the browser cache entirely.
+    await context.route('**/rest/v1/messages**', async (route) => {
+      const response = await route.fetch();
+      const headers = { ...response.headers() };
+      headers['cache-control'] = 'no-store, no-cache, must-revalidate';
+      headers['pragma'] = 'no-cache';
+      await route.fulfill({ response, headers });
+    });
+
     let page = await context.newPage();
     try {
       await signInAndInjectSession(page, USER_A_EMAIL, USER_A_PASSWORD);
@@ -513,22 +529,9 @@ test.describe('Message Delete Placeholder E2E', () => {
       await page.close();
       page = await context.newPage();
 
-      // Force every Supabase REST response to bypass HTTP cache for the
-      // rest of this test. On Firefox, even with SW unregistered and a
-      // fresh page, the browser's HTTP cache continued to serve pre-PATCH
-      // /rest/v1/messages responses. Playwright's request interception
-      // lets us rewrite response headers so the new page's loadMessages
-      // gets a freshly-fetched copy from Supabase.
-      await context.route('**/rest/v1/messages**', async (route) => {
-        const response = await route.fetch();
-        const headers = { ...response.headers() };
-        headers['cache-control'] = 'no-store, no-cache, must-revalidate';
-        headers['pragma'] = 'no-cache';
-        await route.fulfill({
-          response,
-          headers,
-        });
-      });
+      // context.route above already forces no-store on every
+      // /rest/v1/messages response for the whole context, so the new
+      // page's loadMessages gets fresh data from Supabase.
 
       // Reload conversation to pick up the deleted state
       await openConversation(page);

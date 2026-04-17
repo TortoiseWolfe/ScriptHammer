@@ -277,7 +277,9 @@ test.beforeAll(async () => {
 test.describe('Real-time Message Delivery (T098)', () => {
   // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
   // Running in parallel doubles peak connection load → subscription timeouts on CI.
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  // Timeout 300000ms: waitForMessageOnPage2 fallback does up to 3 reload-retry
+  // cycles (~75s each on Supabase free-tier tail latency) before throwing.
+  test.describe.configure({ mode: 'serial', timeout: 300000 });
 
   let context1: BrowserContext;
   let context2: BrowserContext;

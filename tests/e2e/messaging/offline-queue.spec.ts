@@ -127,7 +127,7 @@ async function waitForConversationCached(
 }
 
 test.describe('Offline Message Queue', () => {
-  test.describe.configure({ timeout: 180000 });
+  test.describe.configure({ timeout: 300000 });
 
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;
@@ -614,9 +614,10 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 6: Wait for offline queue sync =====
       // The offline queue needs time to: detect online status, process
       // queued messages, encrypt, send to Supabase, and get INSERT confirmed.
-      // On free tier under load this can take 30-60s. Poll DB up to 90s.
+      // On free tier under 24-shard load the full cycle can exceed 90s;
+      // bumped poll budget from 18 × 5s = 90s to 36 × 5s = 180s.
       let messages: { sequence_number: number }[] | null = null;
-      for (let poll = 0; poll < 18; poll++) {
+      for (let poll = 0; poll < 36; poll++) {
         // Real 5-second wait between polls (waitForFunction(() => true)
         // is a no-op that returns immediately).
         await new Promise((r) => setTimeout(r, 5000));
@@ -630,7 +631,7 @@ test.describe('Offline Message Queue', () => {
           break;
         }
         console.log(
-          `[T149] Poll ${poll + 1}/18: ${data?.length ?? 0} messages found, waiting...`
+          `[T149] Poll ${poll + 1}/36: ${data?.length ?? 0} messages found, waiting...`
         );
       }
 

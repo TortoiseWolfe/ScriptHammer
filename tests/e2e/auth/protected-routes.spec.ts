@@ -121,6 +121,11 @@ test.describe('Protected Routes E2E', () => {
   });
 
   test('should enforce RLS policies on payment access', async ({ page }) => {
+    // Two sign-outs + two sign-ins + payment-demo navigations; with 30s
+    // waitFor budgets inside signOutViaDropdown this easily exceeds the
+    // default 30s test timeout on Supabase Cloud under shard load.
+    test.setTimeout(120000);
+
     // Skip if secondary user not configured
     if (!process.env.TEST_USER_SECONDARY_EMAIL) {
       test.skip(
