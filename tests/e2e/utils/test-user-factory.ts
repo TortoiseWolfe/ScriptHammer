@@ -844,16 +844,24 @@ export async function signOutViaDropdown(page: Page): Promise<void> {
     { timeout: 15000 }
   );
 
-  // Wait for Sign In link to appear (indicates signed out state). After
-  // window.location.href='/' navigates, the new page's AuthContext
-  // re-runs getSession() which on Supabase Cloud under shard load can
-  // take 5-30s to return (and the cookies only fully clear mid-way).
-  // Until that resolves, GlobalNav may still render the authenticated
-  // links. 30s still flaked on chromium-gen 1/6 (page stuck on loading
-  // state for >30s observed twice); 45s covers the slowest shard
-  // auth-hydration we've seen under 24-shard load.
+  // Verify signed-out state. Prefer observing GlobalNav's "Sign In" link;
+  // but on WebKit under concurrent load, getSession() occasionally
+  // re-resolves to a stale-but-valid session after window.location.href='/'
+  // navigates, leaving GlobalNav showing authenticated links indefinitely.
+  // If the Sign In link never appears within 30s, force a hard reload
+  // (which reinitializes the Supabase client from scratch with the cleared
+  // cookies) and re-check.
   const signInLink = page.getByRole('link', { name: 'Sign In' });
-  await signInLink.waitFor({ state: 'visible', timeout: 45000 });
+  const appeared = await signInLink
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!appeared) {
+    // Hard reload to defeat any stale getSession that is keeping the user
+    // authenticated in GlobalNav state.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await signInLink.waitFor({ state: 'visible', timeout: 30000 });
+  }
 }
 
 /**

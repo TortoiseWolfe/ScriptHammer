@@ -277,9 +277,10 @@ test.beforeAll(async () => {
 test.describe('Real-time Message Delivery (T098)', () => {
   // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
   // Running in parallel doubles peak connection load → subscription timeouts on CI.
-  // Timeout 300000ms: waitForMessageOnPage2 fallback does up to 3 reload-retry
-  // cycles (~75s each on Supabase free-tier tail latency) before throwing.
-  test.describe.configure({ mode: 'serial', timeout: 300000 });
+  // Timeout 450000ms: waitForMessageOnPage2 fallback does up to 3 reload-retry
+  // cycles (~75s each on Supabase free-tier tail latency) plus setup + assertions.
+  // 300s was just barely enough and flaked on firefox-msg 2/2 run 24589602201.
+  test.describe.configure({ mode: 'serial', timeout: 450000 });
 
   let context1: BrowserContext;
   let context2: BrowserContext;
@@ -398,7 +399,10 @@ test.describe('Real-time Message Delivery (T098)', () => {
 
 test.describe('Typing Indicators (T099)', () => {
   // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  // 450000ms: matches Real-time Message Delivery describe — waitForMessageOnPage2
+  // used by 'should remove typing indicator when message is sent' can take up to
+  // 3 × ~75s reload-retries under Supabase Cloud tail latency.
+  test.describe.configure({ mode: 'serial', timeout: 450000 });
 
   let context1: BrowserContext;
   let context2: BrowserContext;
