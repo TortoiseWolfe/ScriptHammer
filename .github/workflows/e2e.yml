@@ -283,9 +283,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # ===== CHROMIUM (8 shards) =====
-          - { project: chromium-msg, browser: chromium, shard: 1/2 }
-          - { project: chromium-msg, browser: chromium, shard: 2/2 }
+          # ===== CHROMIUM (7 shards) =====
+          # msg runs as a single shard, not 2, because two concurrent msg
+          # shards hit the same shared user-pair + conversation and race
+          # each other's beforeAll `messages.delete()`. Serializing the
+          # messaging tests within ONE shard per browser eliminates the
+          # cross-shard data race we spent 9 rounds patching piecemeal.
+          - { project: chromium-msg, browser: chromium, shard: 1/1 }
           - { project: chromium-gen, browser: chromium, shard: 1/6 }
           - { project: chromium-gen, browser: chromium, shard: 2/6 }
           - { project: chromium-gen, browser: chromium, shard: 3/6 }
@@ -420,8 +424,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { project: firefox-msg, browser: firefox, shard: 1/2 }
-          - { project: firefox-msg, browser: firefox, shard: 2/2 }
+          # msg runs as a single shard (see chromium matrix note above).
+          - { project: firefox-msg, browser: firefox, shard: 1/1 }
           - { project: firefox-gen, browser: firefox, shard: 1/6 }
           - { project: firefox-gen, browser: firefox, shard: 2/6 }
           - { project: firefox-gen, browser: firefox, shard: 3/6 }
@@ -532,8 +536,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { project: webkit-msg, browser: webkit, shard: 1/2 }
-          - { project: webkit-msg, browser: webkit, shard: 2/2 }
+          # msg runs as a single shard (see chromium matrix note above).
+          - { project: webkit-msg, browser: webkit, shard: 1/1 }
           - { project: webkit-gen, browser: webkit, shard: 1/6 }
           - { project: webkit-gen, browser: webkit, shard: 2/6 }
           - { project: webkit-gen, browser: webkit, shard: 3/6 }
