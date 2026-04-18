@@ -120,6 +120,11 @@ test.describe('Touch Target Standards', () => {
   });
 
   test('Touch targets maintain size across mobile widths', async ({ page }) => {
+    // Iterates through multiple mobile widths, reloading each time.
+    // Default 30s test timeout is too tight when each goto takes ~5-10s
+    // under shard load. webkit-gen hit the timeout on setViewportSize.
+    test.setTimeout(120000);
+
     for (const width of CRITICAL_MOBILE_WIDTHS) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/', { waitUntil: 'domcontentloaded' });

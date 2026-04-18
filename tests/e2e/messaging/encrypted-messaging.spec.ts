@@ -56,14 +56,14 @@ let testConversationId = '';
 test.describe('Encrypted Messaging Flow', () => {
   // Serial: tests share auth state and Realtime subscriptions.
   // Parallel execution causes subscription contention on Supabase Cloud free tier.
-  // Timeout 600000ms: "should send and receive encrypted message between
-  // two users" has a 10-retry × (30s visibility + 5s wait + reload +
-  // handleReAuthModal ~20s) reload loop to survive Supabase Cloud
-  // free-tier tail latency under 24-shard load. Worst-case budget
-  // approaches 550s, so 180s describe timeout caused early test
-  // termination before retries could complete. 600s gives comfortable
-  // headroom.
-  test.describe.configure({ mode: 'serial', timeout: 600000 });
+  // Timeout 900000ms: "should send and receive encrypted message between
+  // two users" has a 10-retry × (10s isVisible + 5s wait + reload +
+  // handleReAuthModal ~20s + message-thread wait ~30s) reload loop to
+  // survive Supabase Cloud free-tier tail latency under 24-shard load.
+  // Worst-case budget ≈ 650s; 600s was just barely not enough on
+  // webkit-msg (test timed at final toBeVisible after all 10 retries).
+  // 900s = 15 min buys comfortable margin without being unreasonable.
+  test.describe.configure({ mode: 'serial', timeout: 900000 });
 
   // Track if setup succeeded - tests will skip if not
   let setupSucceeded = false;

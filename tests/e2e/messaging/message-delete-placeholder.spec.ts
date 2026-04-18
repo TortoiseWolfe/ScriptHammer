@@ -577,9 +577,13 @@ test.describe('Message Delete Placeholder E2E', () => {
       // Reload conversation to pick up the deleted state
       await openConversation(page);
 
-      // Hard assert: placeholder MUST render
+      // Hard assert: placeholder MUST render. After the close-page +
+      // fresh-page + openConversation round-trip, the initial render on
+      // firefox can take longer than 10s to show the decrypted messages
+      // (and thus the [Message deleted] placeholder for the middle one).
+      // 30s gives comfortable margin for shard-load page hydration.
       const placeholder = page.getByText('[Message deleted]');
-      await expect(placeholder).toBeVisible({ timeout: 10000 });
+      await expect(placeholder).toBeVisible({ timeout: 30000 });
 
       // Original msg-2 text must be gone
       await expect(page.getByText(msg2)).not.toBeVisible({ timeout: 15000 });

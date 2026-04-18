@@ -189,7 +189,7 @@ const createConversation = async (
 
 test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   // Serial: multi-user workflow creates browser contexts with Realtime subscriptions.
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  test.describe.configure({ mode: 'serial', timeout: 600000 });
 
   // DO NOT clean up connections/conversations here. With 2 parallel workers
   // in the same shard, cleanup deletes data that other test files
@@ -206,7 +206,8 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
   test('Complete messaging workflow: sign-in -> connect -> message -> sign-out', async ({
     browser,
   }) => {
-    test.setTimeout(180000); // 3 minutes — webkit + Supabase free tier needs 60s per operation
+    test.setTimeout(600000); // 10 minutes — 10-retry pageB-visibility loop
+    // under Supabase free-tier tail latency can take ~500s worst case.
 
     // User A gets pre-authenticated state; User B signs in manually
     const contextA = await browser.newContext({
@@ -429,7 +430,11 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
       await pageB.waitForLoadState('domcontentloaded');
       await handleReAuthModal(pageB, USER_B.password);
       await scrollThreadToBottom(pageB);
-      for (let retry = 0; retry < 3; retry++) {
+      // 10 retries (was 3): Supabase Cloud free-tier tail latency under
+      // 24-shard load occasionally exceeds a 3-retry budget. Matches the
+      // pattern already used in encrypted-messaging:177 for the same
+      // pageB-visibility race.
+      for (let retry = 0; retry < 10; retry++) {
         const visible = await pageB
           .getByText(testMessage)
           .isVisible({ timeout: 10000 })
@@ -441,7 +446,7 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
           .textContent()
           .catch(() => '(not found)');
         console.log(
-          `Step 9: Message not visible (attempt ${retry + 1}/3), thread: ${threadText?.slice(0, 200)}`
+          `Step 9: Message not visible (attempt ${retry + 1}/10), thread: ${threadText?.slice(0, 200)}`
         );
         await pageB.waitForTimeout(3000);
         await pageB.reload({ waitUntil: 'domcontentloaded' });

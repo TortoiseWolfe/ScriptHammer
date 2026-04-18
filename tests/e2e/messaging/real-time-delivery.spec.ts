@@ -87,13 +87,12 @@ async function waitForMessageOnPage2(
   }
 
   // Real-time subscription may have dropped the message, or Supabase Cloud
-  // replication is lagging. Navigate+reload up to 3 times, waiting 15s
-  // between attempts. Total budget: ~60s (goto+reload) × 3 attempts × 15s =
-  // ~3 minutes worst case, which covers observed Supabase free-tier tail
-  // latency under 24-shard concurrent load (the prior single-fallback
-  // 60s timeout flaked at this line on chromium/webkit/firefox msg shards).
+  // replication is lagging. Navigate+reload up to 5 times, waiting 15s
+  // between attempts. Total budget: ~60s (goto+reload) × 5 attempts × 15s =
+  // ~6 minutes worst case — 3 attempts × 60s (~3 min) had flaked under
+  // 24-shard Supabase free-tier tail latency; 5 is the headroom.
   let lastErr: unknown;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt < 5; attempt++) {
     try {
       await page2.goto(`/messages?conversation=${testConversationId}`, {
         waitUntil: 'domcontentloaded',
@@ -107,7 +106,7 @@ async function waitForMessageOnPage2(
     } catch (e) {
       lastErr = e;
       console.log(
-        `[waitForMessageOnPage2] reload-retry ${attempt + 1}/3 failed; waiting 15s`
+        `[waitForMessageOnPage2] reload-retry ${attempt + 1}/5 failed; waiting 15s`
       );
       await page2.waitForTimeout(15000);
     }
@@ -277,10 +276,10 @@ test.beforeAll(async () => {
 test.describe('Real-time Message Delivery (T098)', () => {
   // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
   // Running in parallel doubles peak connection load → subscription timeouts on CI.
-  // Timeout 450000ms: waitForMessageOnPage2 fallback does up to 3 reload-retry
-  // cycles (~75s each on Supabase free-tier tail latency) plus setup + assertions.
-  // 300s was just barely enough and flaked on firefox-msg 2/2 run 24589602201.
-  test.describe.configure({ mode: 'serial', timeout: 450000 });
+  // Timeout 600000ms: waitForMessageOnPage2 fallback does up to 5 reload-retry
+  // cycles (~75s each on Supabase free-tier tail latency). 450s was just
+  // barely enough before the 3→5 retry bump; 600s covers the new budget.
+  test.describe.configure({ mode: 'serial', timeout: 600000 });
 
   let context1: BrowserContext;
   let context2: BrowserContext;
@@ -399,10 +398,10 @@ test.describe('Real-time Message Delivery (T098)', () => {
 
 test.describe('Typing Indicators (T099)', () => {
   // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
-  // 450000ms: matches Real-time Message Delivery describe — waitForMessageOnPage2
+  // 600000ms: matches Real-time Message Delivery describe — waitForMessageOnPage2
   // used by 'should remove typing indicator when message is sent' can take up to
-  // 3 × ~75s reload-retries under Supabase Cloud tail latency.
-  test.describe.configure({ mode: 'serial', timeout: 450000 });
+  // 5 × ~75s reload-retries under Supabase Cloud tail latency.
+  test.describe.configure({ mode: 'serial', timeout: 600000 });
 
   let context1: BrowserContext;
   let context2: BrowserContext;
