@@ -431,37 +431,61 @@ test.describe('Message Delete Placeholder E2E', () => {
       // the time we read — breaking the later msg1/msg2/msg3 visibility
       // assertions non-deterministically.
       //
-      // We can't use a fixed pre-send baseline because the test runs on
-      // chromium-msg, firefox-msg, and webkit-msg shards CONCURRENTLY
-      // against the same user pair & conversation, and each shard's
-      // beforeAll calls `messages.delete()` — which concurrently shrinks
-      // the row count out from under the other shards and caused the
-      // "-2 new messages landed" flake on firefox-msg.
+      // The test runs on chromium-msg, firefox-msg, and webkit-msg shards
+      // CONCURRENTLY against the same user pair & conversation, and each
+      // shard's beforeAll calls `messages.delete()` then sends its own
+      // msg-1/2/3. Using "the 3 most recent messages in the conversation"
+      // to identify this shard's messages is fundamentally racy:
+      //   - chromium shard sends msg-1..3, count=3
+      //   - firefox shard's beforeAll fires `messages.delete()` → count=0
+      //     while chromium still needs to find its 3 rows
       //
-      // Instead: snapshot the count immediately before each send, then
-      // poll for strict >= baseline + 1. Concurrent deletions can only
-      // increase our baseline (we re-snapshot), never decrease it below
-      // our just-sent message.
+      // Fix: identify THIS shard's messages by created_at > testStartIso.
+      // Records inserted by other shards before our ts won't match;
+      // records they delete after our sends don't affect our query
+      // (they're gone). Cross-shard deletes of OUR rows still break us,
+      // but the `beforeAll.delete()` only fires once per shard (pre-test)
+      // so after our sends land, no concurrent delete of our rows can
+      // happen until another shard's next test run — which serial mode
+      // prevents from overlapping our single test.
+      const testStartIso = new Date().toISOString();
       const waitForOneNewMessage = async () => {
-        const { count: baseline } = await adminClient
-          .from('messages')
-          .select('id', { count: 'exact', head: true })
-          .eq('conversation_id', conversationId);
         return async () => {
           const deadline = Date.now() + 30000;
+          let lastCount = 0;
           while (Date.now() < deadline) {
-            const { count } = await adminClient
+            const { data } = await adminClient
               .from('messages')
-              .select('id', { count: 'exact', head: true })
-              .eq('conversation_id', conversationId);
-            if ((count ?? 0) > (baseline ?? 0)) return;
+              .select('id')
+              .eq('conversation_id', conversationId)
+              .gte('created_at', testStartIso);
+            lastCount = data?.length ?? 0;
+            if (lastCount > 0) return;
             await new Promise((r) => setTimeout(r, 500));
           }
           throw new Error(
-            `New message never landed within 30s (baseline=${baseline}, ` +
-              `last=${0})`
+            `New message never landed within 30s (post-ts count=${lastCount})`
           );
         };
+      };
+
+      // Helper that waits specifically for at-least-N of our own messages
+      const waitForOurCount = async (expected: number) => {
+        const deadline = Date.now() + 30000;
+        let lastCount = 0;
+        while (Date.now() < deadline) {
+          const { data } = await adminClient
+            .from('messages')
+            .select('id')
+            .eq('conversation_id', conversationId)
+            .gte('created_at', testStartIso);
+          lastCount = data?.length ?? 0;
+          if (lastCount >= expected) return;
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        throw new Error(
+          `Expected ${expected} of our messages within 30s, got ${lastCount}`
+        );
       };
 
       const wait1 = await waitForOneNewMessage();
@@ -469,10 +493,12 @@ test.describe('Message Delete Placeholder E2E', () => {
       await wait1();
       const wait2 = await waitForOneNewMessage();
       await typeAndSend(page, msg2);
-      await wait2();
+      await waitForOurCount(2);
+      void wait2;
       const wait3 = await waitForOneNewMessage();
       await typeAndSend(page, msg3);
-      await wait3();
+      await waitForOurCount(3);
+      void wait3;
 
       // Reload + re-open conversation to fetch messages from DB
       await openConversation(page);
@@ -483,21 +509,21 @@ test.describe('Message Delete Placeholder E2E', () => {
       await expect(page.getByText(msg3)).toBeVisible({ timeout: 15000 });
 
       // --- Soft-delete the middle message via admin client ---
-      // Messages are encrypted so we can't query by content. Instead find
-      // the 3 most recent messages in this conversation sent by User A and
-      // delete the middle one (by sequence_number order).
-      const { data: recentMsgs } = await adminClient
+      // Messages are encrypted so we can't query by content. Find the 3
+      // messages WE inserted in THIS test run (filtered by created_at)
+      // and delete the middle one (by sequence_number order). Without
+      // the time filter, a concurrent shard's beforeAll.delete() could
+      // wipe the rows and the query returns 0, breaking the test.
+      const { data: ourMsgs } = await adminClient
         .from('messages')
         .select('id, sequence_number')
         .eq('conversation_id', conversationId)
         .eq('deleted', false)
-        .order('sequence_number', { ascending: false })
+        .gte('created_at', testStartIso)
+        .order('sequence_number', { ascending: true })
         .limit(3);
 
-      // recentMsgs are newest-first; sort ascending to get [msg1, msg2, msg3]
-      const sorted = (recentMsgs ?? []).sort(
-        (a, b) => a.sequence_number - b.sequence_number
-      );
+      const sorted = ourMsgs ?? [];
 
       expect(sorted.length).toBe(3);
 
