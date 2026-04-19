@@ -222,7 +222,13 @@ describe('useOfflineQueue', () => {
       });
     });
 
-    it('should not sync when offline', async () => {
+    it('should still attempt sync when navigator.onLine is false', async () => {
+      // Intentionally no longer gated on navigator.onLine — Playwright's
+      // setOffline(false) on firefox/webkit does not always flip the flag
+      // back to true, so relying on it stalls the queue indefinitely. The
+      // underlying REST insert will fail fast if truly offline, which is
+      // the right place to decide. See useOfflineQueue.ts for the full
+      // rationale and the run that forced this change.
       Object.defineProperty(navigator, 'onLine', {
         writable: true,
         value: false,
@@ -239,7 +245,7 @@ describe('useOfflineQueue', () => {
         await result.current.syncQueue();
       });
 
-      expect(offlineQueueService.syncQueue).not.toHaveBeenCalled();
+      expect(offlineQueueService.syncQueue).toHaveBeenCalled();
     });
 
     it('should not sync when already syncing', async () => {

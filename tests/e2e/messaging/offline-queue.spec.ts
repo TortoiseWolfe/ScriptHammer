@@ -611,16 +611,28 @@ test.describe('Offline Message Queue', () => {
       await contextA.setOffline(false);
       await contextB.setOffline(false);
 
-      // Playwright's setOffline(false) on firefox does not always dispatch
-      // window.online (observed in run 24633398118 / commit aef59b7). The
-      // product's useOfflineQueue now also syncs on visibility/focus/30s-
-      // poll, so any of those paths will flush the queue — this explicit
-      // dispatch just shortens the wait in CI where we can't afford 30s
-      // per stuck test.
-      await Promise.all([
-        pageA.evaluate(() => window.dispatchEvent(new Event('online'))),
-        pageB.evaluate(() => window.dispatchEvent(new Event('online'))),
+      // Playwright's setOffline(false) on firefox and webkit does not
+      // reliably flip navigator.onLine or dispatch window.online (run
+      // 24638748630 T149 failed on both browsers because syncQueue
+      // early-returned on stale navigator.onLine=false). The product
+      // useOfflineQueue now no longer gates on navigator.onLine, but we
+      // still need to TRIGGER sync — the window online-event listener is
+      // one path; we also dispatch it explicitly here for speed in CI.
+      const [onlineA, onlineB] = await Promise.all([
+        pageA.evaluate(() => {
+          const before = navigator.onLine;
+          window.dispatchEvent(new Event('online'));
+          return { before, after: navigator.onLine };
+        }),
+        pageB.evaluate(() => {
+          const before = navigator.onLine;
+          window.dispatchEvent(new Event('online'));
+          return { before, after: navigator.onLine };
+        }),
       ]);
+      console.log(
+        `[T149] navigator.onLine after setOffline(false): A=${JSON.stringify(onlineA)} B=${JSON.stringify(onlineB)}`
+      );
 
       // ===== STEP 6: Wait for offline queue sync =====
       // The offline queue needs time to: detect online status, process

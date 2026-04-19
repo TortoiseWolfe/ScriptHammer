@@ -209,7 +209,11 @@ describe('useOfflineQueue', () => {
       });
     });
 
-    it('should not sync when offline', async () => {
+    it('should still attempt sync when navigator.onLine is false', async () => {
+      // See useOfflineQueue.ts: we no longer gate on navigator.onLine
+      // because Playwright's setOffline(false) on firefox/webkit doesn't
+      // reliably flip it. Offline-queue-service's REST insert fails fast
+      // if truly offline; no need to pre-check.
       Object.defineProperty(navigator, 'onLine', {
         writable: true,
         value: false,
@@ -221,7 +225,7 @@ describe('useOfflineQueue', () => {
         await result.current.syncQueue();
       });
 
-      expect(mockSyncQueue).not.toHaveBeenCalled();
+      expect(mockSyncQueue).toHaveBeenCalled();
     });
 
     it('should not sync when already syncing', async () => {

@@ -91,9 +91,19 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     }
   }, []);
 
-  // Sync queue with server
+  // Sync queue with server.
+  //
+  // Guard only on the in-flight flag. Historically this also early-returned
+  // on `!navigator.onLine`, but Playwright's `context.setOffline(false)` on
+  // firefox and webkit does not reliably flip `navigator.onLine` back to
+  // true — meaning tests that queue messages while offline then reconnect
+  // never flush, because this gate sees the stale `false` (observed in run
+  // 24638748630 T149: both firefox-msg and webkit-msg fail here; the
+  // offline-queue-service insert POSTs never fire). If we actually are
+  // offline at this moment, the underlying REST insert will fail and the
+  // queued entry gets retried — same outcome, one fewer layer of staleness.
   const syncQueue = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) {
+    if (isSyncing) {
       return;
     }
 
@@ -151,18 +161,23 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // Handle online/offline/visibility/focus events - opportunistic sync.
   //
   // The window 'online' event is the primary trigger, but Playwright's
-  // context.setOffline(false) on firefox does not reliably dispatch it
-  // (observed in run 24633398118, firefox-msg T149: messages queued
-  // correctly when offline, no 'Network online' log on reconnect, no
-  // INSERT ever fired). Belt-and-suspenders: also trigger sync on tab
-  // visibility change and window focus — both cheap, both idempotent
-  // (offline-queue-service.ts guards against concurrent syncs via
-  // `syncInProgress`, and our own syncQueue() bails when isSyncing is
-  // true or navigator.onLine is false).
+  // context.setOffline(false) on firefox and webkit does not reliably flip
+  // navigator.onLine back to true or dispatch the window 'online' event
+  // (run 24638748630 T149: both firefox-msg and webkit-msg fail here after
+  // offline-queuing two messages; the offline-queue-service insert POSTs
+  // never fire). Belt-and-suspenders: also trigger sync on tab visibility
+  // change and window focus. All guarded by the in-flight flag in
+  // syncQueue itself (and offline-queue-service.ts has its own
+  // syncInProgress guard), so duplicate triggers are idempotent. We do NOT
+  // gate on navigator.onLine here — let the REST insert decide.
   useEffect(() => {
     const trigger = (reason: string) => {
-      if (!navigator.onLine) return;
-      console.debug(`[useOfflineQueue] sync trigger: ${reason}`);
+      // Use console.log so Playwright's browser-console capture picks this up.
+      // `console.debug` is filtered out of the default Playwright browser
+      // console stream, which blinded us during T149 debugging (run
+      // 24638748630). Leave as log until we're confident the trigger path
+      // is reliable on all three browsers.
+      console.log(`[useOfflineQueue] sync trigger: ${reason}`);
       syncQueue();
     };
 
@@ -209,10 +224,8 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
     const interval = setInterval(() => {
       loadQueue();
-      if (navigator.onLine) {
-        console.debug('[useOfflineQueue] sync trigger: 30s-poll');
-        syncQueue();
-      }
+      console.log('[useOfflineQueue] sync trigger: 30s-poll');
+      syncQueue();
     }, 30000);
 
     return () => clearInterval(interval);
