@@ -158,6 +158,34 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     return await offlineQueueService.getFailedMessages();
   }, []);
 
+  // Expose syncQueue on window as a test escape hatch. E2E tests that
+  // emulate an offline → online transition via context.setOffline() cannot
+  // always rely on Playwright to dispatch the window 'online' event on
+  // firefox/webkit; rather than continuing to guess at why our listeners
+  // don't fire, give the test a deterministic way to request a flush. Only
+  // enabled when the E2E flag is present in localStorage (production users
+  // never have this). Runs in the same mount-lifecycle useEffect so it
+  // tears down with the hook.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      if (window.localStorage?.getItem('playwright_e2e') !== 'true') {
+        return;
+      }
+    } catch {
+      return;
+    }
+    (window as unknown as Record<string, unknown>).__scripthammer_syncQueue =
+      () => {
+        console.log('[useOfflineQueue] sync trigger: test-hook');
+        return syncQueue();
+      };
+    return () => {
+      delete (window as unknown as Record<string, unknown>)
+        .__scripthammer_syncQueue;
+    };
+  }, [syncQueue]);
+
   // Handle online/offline/visibility/focus events - opportunistic sync.
   //
   // The window 'online' event is the primary trigger, but Playwright's

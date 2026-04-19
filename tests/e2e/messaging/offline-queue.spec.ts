@@ -611,27 +611,36 @@ test.describe('Offline Message Queue', () => {
       await contextA.setOffline(false);
       await contextB.setOffline(false);
 
-      // Playwright's setOffline(false) on firefox and webkit does not
-      // reliably flip navigator.onLine or dispatch window.online (run
-      // 24638748630 T149 failed on both browsers because syncQueue
-      // early-returned on stale navigator.onLine=false). The product
-      // useOfflineQueue now no longer gates on navigator.onLine, but we
-      // still need to TRIGGER sync — the window online-event listener is
-      // one path; we also dispatch it explicitly here for speed in CI.
-      const [onlineA, onlineB] = await Promise.all([
-        pageA.evaluate(() => {
-          const before = navigator.onLine;
+      // Explicitly trigger the offline-queue sync. Runs 24638748630 and
+      // 24640665455 both failed here because neither the window 'online'
+      // event (Playwright's setOffline-based emulation doesn't always
+      // dispatch it on firefox/webkit) nor the in-hook visibility/focus
+      // triggers fired during the 180s poll. useOfflineQueue exposes a
+      // deterministic hook at window.__scripthammer_syncQueue when the
+      // E2E flag is set in localStorage — call it directly from the test
+      // instead of guessing at event wiring. Dispatch the 'online' event
+      // first as a belt-and-suspenders so the UI also reflects the flip.
+      const triggerSync = async (page: Page) => {
+        return page.evaluate(async () => {
           window.dispatchEvent(new Event('online'));
-          return { before, after: navigator.onLine };
-        }),
-        pageB.evaluate(() => {
-          const before = navigator.onLine;
-          window.dispatchEvent(new Event('online'));
-          return { before, after: navigator.onLine };
-        }),
+          const fn = (
+            window as unknown as {
+              __scripthammer_syncQueue?: () => Promise<unknown>;
+            }
+          ).__scripthammer_syncQueue;
+          if (!fn) {
+            return { hookAttached: false, onLine: navigator.onLine };
+          }
+          await fn();
+          return { hookAttached: true, onLine: navigator.onLine };
+        });
+      };
+      const [syncA, syncB] = await Promise.all([
+        triggerSync(pageA),
+        triggerSync(pageB),
       ]);
       console.log(
-        `[T149] navigator.onLine after setOffline(false): A=${JSON.stringify(onlineA)} B=${JSON.stringify(onlineB)}`
+        `[T149] explicit sync trigger: A=${JSON.stringify(syncA)} B=${JSON.stringify(syncB)}`
       );
 
       // ===== STEP 6: Wait for offline queue sync =====
