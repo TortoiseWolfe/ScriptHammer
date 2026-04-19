@@ -494,13 +494,29 @@ MIT - See [LICENSE](./LICENSE) for details
 <details>
 <summary>🧰 E2E Fix Loop Priming Prompt (for maintainers)</summary>
 
-If the E2E test suite breaks across shards and you need to run `/loop` to systematically
-fix it, paste the priming prompt from [docs/e2e-loop-priming.md](./docs/e2e-loop-priming.md)
-into the loop command. It encapsulates the debugging methodology, architecture context,
-24 previously-fixed root causes, and the key files to read — context that took multiple
-sessions to discover.
+If the E2E test suite is broken and you want to run `/loop` to keep iterating on it,
+paste the priming prompt from [docs/e2e-loop-priming.md](./docs/e2e-loop-priming.md)
+into the loop command. It lists the **current open issues** (not a baseline) with
+concrete symptoms, what's been tried, what failed, and rules for not regressing.
 
-**Current baseline**: 24/24 shards green on `main`. Use the loop only when something
-regresses against this baseline.
+**Current state (2026-04-19, commit `4b003d5`)**: NOT green. Latest run `24624967629`
+failed. The GoTrue brute-force lockouts that plagued rounds 1-10 are solved (pre-auth
+User B fixture, commit `1477816`), but 3 categories of hard-fail remain:
+
+1. **`payment-isolation.spec.ts`** on chromium-gen/firefox-gen/webkit-gen 4/6 —
+   storageState-based auth hydration is unreliable in manually-created
+   `browser.newContext()` on these tests. Tests 44, 113, 184, 216 see user=null
+   where project-level `{ page }` storageState works fine.
+2. **Firefox realtime WebSocket** rejects Cloudflare's `__cf_bm` cookie on
+   Supabase's `/realtime/v1/websocket` endpoint — firefox-msg-specific, infrastructure.
+3. **Webkit shard cancellation cascade** when one upstream webkit shard fails —
+   workflow-level artifact propagation, not test content.
+
+**Also required (user action, not code)**: Supabase dashboard rate-limit exemption
+per [`docs/testing/CI-SETUP.md`](./docs/testing/CI-SETUP.md). Without it, the ~15
+legitimate live `performSignIn` calls in auth/ tests can still trigger lockouts.
+
+Do not treat the priming doc as a clean baseline — read its "Current Open Issues"
+section for where things actually stand.
 
 </details>

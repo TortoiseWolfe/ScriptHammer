@@ -1,147 +1,244 @@
 # E2E Fix Loop — Priming Prompt
 
 > **When to use this**: paste into `/loop 20m` (or `/loop 15m` for faster cycles) when the E2E
-> test suite is flaky or broken across shards. This prompt encapsulates the debugging methodology,
-> architecture context, previously-fixed root causes, and key files that took multiple sessions to
-> discover. Starting from scratch without this context tends to rediscover the same dead ends.
+> test suite is broken on CI. This prompt encapsulates the current architectural state, the
+> real open issues, what has been tried and why it failed, and the rules for not regressing.
 >
-> **Current baseline (2026-04-08)**: 24/24 shards green on `main` (run 24113858375). When the loop
-> is needed, it means something regressed that needs debugging against this baseline.
->
-> **Historical session**: commits `73cb860..a22a6d6` document the debugging chain that produced
-> the priming content below. Six iterations on three root causes — the methodology below was
-> forged during that session.
+> **Current state (2026-04-19)**: NOT green. Latest run `24624967629` on commit `4b003d5`
+> finished with conclusion=failure. Zero rate-limit / lockout errors (big win from
+> commit `1477816` pre-auth User B refactor), but 3 hard-fail categories remain. This doc
+> is honest about what's still broken — do not treat anything below as "stable baseline."
 
 ---
 
 ```
-Fix ScriptHammer E2E tests until ALL 24 shards pass on every push.
-Cross-browser: chromium → firefox → webkit, sequential, 8 shards each.
+Fix ScriptHammer E2E tests. The goal is every shard passing with 0 hard-failures and 0 flakies.
+"Flaky" means the test failed once then passed on retry; it counts as failing.
 
-ARCHITECTURE:
-- Sequential job chain: e2e (chromium) → e2e-firefox → e2e-webkit
-  Each job has its own 8-shard matrix. needs: dependency serializes them.
-  Result: Supabase free tier only ever sees 8 concurrent shards (proven stable).
-- Each browser has 2 Playwright projects: {browser}-msg (12 messaging files
-  in 2 shards) and {browser}-gen (47 general files in 6 shards) = 8 shards.
-- CI auth-setup job runs ONCE with chromium → uploads storageState artifact.
-  Shard runs use --no-deps to skip the 'setup' Playwright project (would
-  re-launch chromium on firefox/webkit shards and fail).
-- AUTH_SETUP_JOB env var distinguishes the cleanup job from per-shard sign-ins.
-- All messaging tests navigate via ?conversation=<id> URL (sidebar query
-  takes 3+ min on Supabase free tier under concurrent load).
+================================================================================
+CURRENT OPEN ISSUES (run 24624967629, commit 4b003d5)
+================================================================================
 
-CURRENT STATUS (2026-04-07):
-- chromium 8/8 ✅ stable
-- firefox 8/8 ✅ stable as of latest fixes (PKCS#8→JWK, isMobile destructure)
-- webkit 6-8/8 — gen all 6 pass; msg shards intermittent on
-  cross-page-navigation, real-time-delivery, T148/T149
-- Target: 24/24 GREEN consistently
+ISSUE 1 — payment-isolation.spec.ts storageState hydration unreliable
+  Shards: chromium-gen 4/6, firefox-gen 4/6, webkit-gen 4/6
+  Failing tests: :44 "User A and User B have isolated payment sessions"
+                 :113 "Payment history shows only own payments"
+                 :184 "Payment buttons require GDPR consent" (webkit only)
+                 :216 "Payment intent includes correct user association" (webkit only)
+  Symptom: "Logged in as: - User ID:" empty, Sign In link in nav. AuthContext
+           never populates `user` from storageState. On chromium/firefox the
+           initial hydration wait passes briefly, then user becomes null by
+           the time Step 4 assertion runs. On webkit the wait never passes
+           at all (30s timeout).
+  What was tried: commit 4b003d5 added
+    await expect(page.locator('text=/Logged in as.*User ID:\\s*[a-f0-9-]{36}/i'))
+      .toBeVisible({ timeout: 30000 });
+  before handlePaymentConsent. Did NOT fix it. Pattern suggests the async
+  getSession() hydration is racing with consent flow, or the manually-created
+  browser.newContext({ storageState: '...auth.json' }) doesn't reliably
+  hydrate the way { page } fixture with project-level storageState does.
+  Next steps to try:
+    - Revert just these 5 tests back to live performSignIn (they worked that
+      way before; would increase lockout pressure but once the Supabase
+      dashboard exemption is in place it doesn't matter)
+    - Or: after the goto, explicitly page.reload() and wait for user to
+      hydrate — so the Supabase JS client runs its getSession() twice
+    - Or: call page.evaluate to manually trigger a session refresh before
+      consent. The E2E storage adapter in src/lib/supabase/client.ts may
+      be relevant.
 
-METHODOLOGY (follow strictly, NO guessing):
+ISSUE 2 — firefox-msg 1/1 Cloudflare Bot Management on realtime WebSocket
+  Shard: firefox-msg 1/1
+  Symptom: repeated "Cookie __cf_bm has been rejected for invalid domain"
+           console errors on the /realtime/v1/websocket URL, causing
+           the messaging tests to never receive realtime events.
+  This is INFRASTRUCTURE, not code. __cf_bm is Cloudflare's bot cookie.
+  Firefox rejects it because the Supabase realtime endpoint sets it with a
+  domain scope Firefox considers invalid. Not reproducible on chromium or
+  webkit. Options:
+    - Disable Cloudflare Bot Management for the Supabase project's realtime
+      endpoint (Supabase dashboard, if possible)
+    - Route firefox realtime through the reload-fallback path and skip the
+      websocket assertions
+    - Accept firefox-msg as occasionally flaky on this one test
 
-1. PULL LOGS:
-   gh run list --limit 1 --workflow e2e.yml
-   If in_progress → report which shards are done and which are running, wait.
-   If completed → gh run view <ID> 2>&1 | grep -E "^(✓|X)" | grep "E2E "
-   Report tally: chromium X/8, firefox X/8, webkit X/8 = N/24
-   If 24/24 green → DONE, celebrate, cancel loop with CronDelete.
+ISSUE 3 — webkit cascade failures when one webkit shard fails
+  When webkit-gen 4/6 hard-fails (usually from ISSUE 1), later webkit
+  shards can get cancelled with "No files were found with the provided
+  path: blob-report/". This is workflow-level, not test-level. The
+  cancelled shards didn't actually run, so we have no data on what
+  would have happened. Once ISSUE 1 is resolved, this should disappear.
 
-2. GET FAILURE DETAILS (for each failing shard):
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -P "  \d+\) \[" | head -8
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -E "(passed|failed|flaky)" | tail -3
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -B 1 -A 12 "<TEST_FILE>:<LINE>" | head -25
+ISSUE 4 — ACTION REQUIRED ON USER'S END: Supabase rate-limit exemption
+  docs/testing/CI-SETUP.md documents the step. Supabase Dashboard →
+  Project Settings → Authentication → Rate Limits → add the 3 test
+  user emails to the allowlist (or raise sign-in threshold to ≥100).
+  Without this, the ~15 remaining legitimate performSignIn calls in
+  auth/ tests can still trigger GoTrue's 5-per-4-min lockout on repeat
+  CI runs. No code fix can cover this.
 
-3. CHECK BROWSER CONSOLE on send failures:
-   gh api repos/TortoiseWolfe/ScriptHammer/actions/jobs/<JOB_ID>/logs 2>&1 | grep -E "ConversationView|sendMessage|deriveKeys|deriveKey"
-   "message sent, appending optimistic" = success
-   "Failed to initialize/derive encryption keys" = browser-specific crypto issue
-   "Failed to fetch" / "Load failed" = network failure (need retry in message-service)
-   "must be signed in" = auth context not hydrated (needs getSession() retry, not getUser())
+================================================================================
+ARCHITECTURE (as of commit 4b003d5)
+================================================================================
 
-4. ROOT CAUSES ALREADY FIXED (do NOT re-investigate):
-   a. Concurrent nuclear cleanup → AUTH_SETUP_JOB guard
-   b. Shared refresh token → per-shard sign-in
-   c. signOut scope:'global' → scope:'local'
-   d. EncryptionKeyGate deadlock → setCheckingKeys(false) on null user
-   e. Sidebar query timeout → ?conversation=<id> URL navigation
-   f. ECDH key mismatch → resetEncryptionKeys() after sign-in
-   g. Service workers intercepting → serviceWorkers:'block'
-   h. Auto-refresh session wipe → autoRefreshToken:false + E2E storage adapter
-   i. Stale shared secret cache → invalidate on CryptoKey ref change
-   j. T148 GET intercept → POST-only route filter
-   k. PKCS#8 import in firefox/webkit → always use JWK with noble-curves
-   l. .single() returning 406 on 0 rows → .maybeSingle() across messaging code
-   m. getUser() server round-trip during refresh → getSession() with 3-retry pattern
-   n. Argon2id WebCrypto starvation → ReAuth modal timeout 30s→90s
-   o. Cross-browser load saturation → 3 sequential jobs (chromium/firefox/webkit)
-   p. devices['iPhone 12'] isMobile not in Firefox → destructure isMobile
-   q. Hand-rolled PKCS#8 missing public key → switch to JWK + p256.getPublicKey
-   r. Supabase JS doesn't throw on Failed to fetch → check insertError.message too
-   s. WebKit fetch error msg "Load failed" not detected → expanded regex
-   t. Test password mismatch (USER_B with USER_A password) → param per call site
-   u. Docker URL hardcoded in CI → SUPABASE_URL CI/local switch
-   v. Firefox screenshot 32767px limit → fullPage:false on long blog pages
-   w. Hand-rolled `host` reconstruction in page.evaluate → pass SUPABASE_URL via context
-   x. waitForFunction(()=>true) is a no-op → real setTimeout-based poll loops
+CI matrix — 21 shards total:
+- Chromium (7): 1 msg (shard 1/1, was 1/2+2/2), 6 gen
+- Firefox  (7): 1 msg, 6 gen
+- WebKit   (7): 1 msg, 6 gen
+- max-parallel: 3 per browser job (prevents Supabase rate limits)
+- Browsers serialized via needs: chain (e2e → e2e-firefox → e2e-webkit)
 
-5. FIX (only after diagnosis):
-   - Docker must be running: docker compose exec scripthammer echo alive
-   - Type check: docker compose exec scripthammer pnpm run type-check
-   - Unit test: docker compose exec scripthammer pnpm test -- --run
-   - Commit via Docker with descriptive message explaining the ROOT CAUSE
-   - Push and verify new CI run starts
+Auth fixtures (produced by auth.setup.ts):
+- storage-state-auth.json   — TEST_USER_PRIMARY (User A, USER_A)
+- storage-state-auth-b.json — TEST_USER_TERTIARY (User B)
+Both uploaded as the `auth-state` artifact, downloaded per shard into
+tests/e2e/fixtures/.
 
-6. KEY FILES:
-   - .github/workflows/e2e.yml — 3 sequential jobs (e2e/e2e-firefox/e2e-webkit),
-     8 shards each, --no-deps, AUTH_SETUP_JOB=true on auth step
-   - playwright.config.ts — 6 projects (chromium-msg/gen, firefox-msg/gen,
-     webkit-msg/gen), dependencies:['setup'], serviceWorkers:'block'
-   - tests/e2e/auth.setup.ts — shouldDoFullSetup guard, key injection
-   - tests/e2e/utils/test-user-factory.ts — handleReAuthModal (90s modal timeout),
-     resetEncryptionKeys, performSignIn
-   - src/lib/messaging/key-derivation.ts — JWK-only path with noble-curves
-     (do NOT add PKCS#8 back, breaks firefox/webkit)
-   - src/services/messaging/connection-service.ts — getAuthenticatedUser helper
-     using getSession() with 3 retries
-   - src/services/messaging/message-service.ts — sendMessage with network retry
-     on Failed to fetch / Load failed / NetworkError / cancelled / aborted
-   - src/services/messaging/offline-queue-service.ts — getSession retry pattern
-   - src/services/messaging/gdpr-service.ts — getSession retry pattern
-   - src/components/organisms/ConversationView/ConversationView.tsx — getSession retry
-   - src/hooks/useTypingIndicator.ts — getSession retry
-   - src/hooks/useGroupMembers.ts — getSession retry
-   - src/hooks/useConversationRealtime.ts — getSession retry, .maybeSingle
-   - src/contexts/AuthContext.tsx — signOut({ scope: 'local' })
-   - src/lib/supabase/client.ts — autoRefreshToken:false + E2E storage adapter
-   - tests/e2e/payment/04-gdpr-consent.spec.ts — auth retry loop on /payment-demo
-   - tests/e2e/payment/01-stripe-onetime.spec.ts — same retry loop
-   - tests/e2e/auth/session-persistence.spec.ts — 60s describe-level timeout
-   - tests/e2e/messaging/offline-queue.spec.ts — auth two-step navigation,
-     T148 regex route filter, T149 real setTimeout poll loop
-   - tests/e2e/messaging/message-delete-placeholder.spec.ts — per-user password,
-     SUPABASE_URL passed into page.evaluate
-   - tests/e2e/messaging/friend-requests.spec.ts — 30s timeout + reload fallback
-     on connection-request hidden check (webkit Realtime is slow)
-   - tests/e2e/messaging/encrypted-messaging.spec.ts — 30s message visibility
-   - tests/e2e/tests/blog-mobile-ux-iphone.spec.ts — destructure isMobile + dbt,
-     fullPage:false screenshot
-   - tests/e2e/tests/blog-mobile-ux-pixel.spec.ts — destructure isMobile + dbt
-   - tests/e2e/tests/blog-touch-targets.spec.ts — destructure isMobile + dbt
-   - tests/e2e/mobile-check.spec.ts — destructure isMobile + dbt
+Tests that do live performSignIn (down from ~30 to 15):
+- tests/e2e/auth/session-persistence.spec.ts — 8 sites (tests Remember Me,
+  expiry, refresh — MUST be live, verifies sign-in behavior itself)
+- tests/e2e/auth/protected-routes.spec.ts — 3 sites (tests redirect flows)
+- tests/e2e/security/payment-isolation.spec.ts — 1 site (":154" test
+  verifies UNauthenticated flow, needs to start empty)
+- tests/e2e/messaging/message-editing.spec.ts — 1 site (fallback re-sign-in
+  only fires on auth-lost detection, not per-test)
+- Others removed in commit 1477816 — those tests now load storageState directly
 
-RULES:
-- NEVER skip or ignore tests — skipping is not passing
-- NEVER guess — read logs and code first
-- NEVER increase timeouts without fixing the underlying issue (only when load is the actual issue)
-- If the same fix doesn't work twice, the diagnosis is WRONG — stop and re-investigate
-- Track: what failed, what the actual error was, what you changed, whether it helped
-- Every multi-user test MUST call resetEncryptionKeys() after performSignIn() for non-primary users
-- Every browser.newContext() for fresh-sign-in MUST use { storageState: { cookies: [], origins: [] } }
-- ZERO REGRESSIONS — if a fix breaks previously-passing shards, revert immediately
-- Do NOT add realtime subscriptions — they triple 406 errors and accelerate session wipe
-- Do NOT add PKCS#8 back to key-derivation.ts — JWK with noble-curves is the only cross-browser path
-- Compare shard pass/fail across runs. Any new failures = regression = revert
-- Webkit Realtime is genuinely slower than chromium — bumping its timeouts is legitimate
-- Always destructure both `defaultBrowserType` AND `isMobile` from device specs (Firefox rejects isMobile)
+Tests that use storageState via browser.newContext (refactored in 1477816):
+- encrypted-messaging.spec.ts (2 sites)
+- friend-requests.spec.ts (6 sites)
+- real-time-delivery.spec.ts (signIn helper removed)
+- payment-isolation.spec.ts (4 sites) — CURRENTLY FAILING, see ISSUE 1
+
+================================================================================
+ROUND HISTORY — DO NOT RE-TRY THESE DEAD ENDS
+================================================================================
+
+Round 1-2: retry loops, cache route intercepts, SW registration blocks,
+           cross-shard created_at filters — legit fixes for specific flakes,
+           still in place and valuable
+Round 3-5: describe timeout bumps (some to 900s), retry budget expansions —
+           band-aids over the real issue (auth lockouts)
+Round 6-7: ProtectedRoute reload fallback, msg sharding 2→1 — good
+Round 8-9: more timeout bumps, more retry expansions — still band-aids
+Round 10:  max-parallel: 3 — helped chromium, didn't help webkit
+Round 11:  pre-auth User B, halve live performSignIn — FIXED lockouts
+           definitively, commit 1477816
+Round 12:  hydration wait for payment-isolation refactor — did NOT work,
+           commit 4b003d5 — this is where we stopped
+
+What we have NOT tried:
+- Reverting just the payment-isolation.spec.ts refactor (keep User B fixture
+  + other spec refactors, revert that one file)
+- Digging into why storageState context hydration differs from project-
+  level storageState. The { page } fixture path works; browser.newContext()
+  with explicit storageState does not reliably hydrate on webkit.
+- Adding an explicit page.reload() after the first goto to give Supabase
+  JS client a second chance to read localStorage and hydrate.
+
+================================================================================
+METHODOLOGY (follow strictly, NO guessing)
+================================================================================
+
+1. PULL LATEST RUN:
+   gh run list --limit 1 --workflow "E2E Tests" --json databaseId,status,conclusion,headSha
+   If in_progress → ScheduleWakeup for 20-30 min. NEVER poll tighter than 5 min.
+   If completed → fetch per-shard logs.
+
+2. COLLECT LOGS:
+   mkdir -p /tmp/run-logs
+   for id in $(gh run view <RUN_ID> --json jobs -q '.jobs[] | select(.name|startswith("E2E")) | .databaseId'); do
+     curl -sS -L -H "Authorization: token $(gh auth token)" \
+       "https://api.github.com/repos/TortoiseWolfe/ScriptHammer/actions/jobs/$id/logs" \
+       -o /tmp/run-logs/job-$id.log
+   done
+
+3. CATEGORIZE FAILURES BY PATTERN, NOT BY TEST NAME:
+   - "Too many failed attempts" → ISSUE 4, need dashboard exemption
+   - "Cookie __cf_bm rejected" → ISSUE 2, firefox Cloudflare, infra
+   - "Logged in as: - User ID:" empty + "Sign In" link visible → ISSUE 1,
+     storageState hydration race
+   - page.goto timeout on webkit-gen after another webkit failure → ISSUE 3,
+     cascade, ignore until upstream is fixed
+
+4. IF ALL FAILURES ARE KNOWN ISSUES AND NOTHING NEW:
+   Don't patch. Report status to user. Stop.
+
+5. IF NEW PATTERN APPEARS:
+   Dig in — fetch the error-context markdown from the blob-report, inspect
+   the page state at failure, identify root cause. Then patch.
+
+6. VERIFY BEFORE COMMITTING:
+   docker compose exec scripthammer pnpm run type-check
+   docker compose exec scripthammer pnpm run lint
+   Commit via Docker. Push from host.
+
+================================================================================
+RULES (non-negotiable)
+================================================================================
+
+- NEVER skip or ignore tests. Flaky counts as failing.
+- NEVER bump timeouts to cover a real bug. Only when infrastructure latency
+  is actually the bottleneck (e.g. Supabase free-tier realtime tail latency
+  on ResponsiveMessaging tests is real — see round 4-5 commits).
+- NEVER guess. Read the error-context.md from the blob-report. If user is
+  showing as null, check storageState contents by downloading the auth-state
+  artifact and decoding the JWT.
+- If the same fix doesn't work twice, DIAGNOSIS IS WRONG. Stop and
+  re-investigate.
+- ZERO REGRESSIONS. If a commit breaks previously-passing shards, revert
+  before iterating further.
+- Do NOT re-add PKCS#8 key derivation. Firefox and webkit reject it. JWK
+  via noble-curves is the only cross-browser path.
+- Do NOT attempt max-parallel: 1 or serializing all shards — the problem
+  isn't raw concurrency, it's cumulative per-account sign-in attempts.
+  The fix for that was pre-auth + dashboard exemption, not serialization.
+- Every manual browser.newContext() for multi-user tests takes explicit
+  storageState. NEVER pass { cookies: [], origins: [] } for a user that
+  has a pre-auth fixture available.
+
+================================================================================
+KEY FILES
+================================================================================
+
+CI:
+- .github/workflows/e2e.yml — 3-browser matrix, max-parallel: 3, uploads both
+  storage-state-auth*.json as the auth-state artifact
+
+Auth setup:
+- tests/e2e/auth.setup.ts — primary + User B pre-auth, produces 2 JSON fixtures
+
+Helpers:
+- tests/e2e/utils/test-user-factory.ts — performSignIn, handleReAuthModal
+  (90s modal timeout), signOutViaDropdown (reload fallback for post-sign-out
+  hydration), dismissCookieBanner
+
+Test fixtures:
+- tests/e2e/fixtures/storage-state-auth.json   — USER_A
+- tests/e2e/fixtures/storage-state-auth-b.json — USER_B / TERTIARY
+
+Refactored multi-user specs (using storageState contexts):
+- tests/e2e/messaging/encrypted-messaging.spec.ts
+- tests/e2e/messaging/friend-requests.spec.ts
+- tests/e2e/messaging/real-time-delivery.spec.ts
+- tests/e2e/security/payment-isolation.spec.ts — BROKEN, see ISSUE 1
+
+Still-live-sign-in specs (correct, don't touch):
+- tests/e2e/auth/session-persistence.spec.ts
+- tests/e2e/auth/protected-routes.spec.ts
+
+Product files that can matter:
+- src/lib/supabase/client.ts — autoRefreshToken:false + E2E storage adapter
+- src/contexts/AuthContext.tsx — signOut({scope:'local'}), onAuthStateChange
+- src/components/auth/ProtectedRoute/ProtectedRoute.tsx — 500ms debounce
+  on auth-flip redirects, reload fallback
+- src/hooks/usePaymentButton.ts — useEffect with proper cleanup (not
+  useState initializer leak)
+- src/hooks/usePaymentConsent.ts — ready flag so consent warning doesn't
+  flash before SSR hydration
+
+Documentation:
+- docs/testing/CI-SETUP.md — Supabase dashboard rate-limit exemption step
+  (required one-time user action)
+- docs/testing/KNOWN-TEST-ISSUES.md — list of flaky tests and status
 ```
