@@ -16,11 +16,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   handleReAuthModal,
   dismissCookieBanner,
-  performSignIn,
   fillMessageInput,
   cleanupOldMessages,
   scrollThreadToBottom,
-  resetEncryptionKeys,
   getAdminClient as getTestAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
@@ -184,12 +182,14 @@ test.describe('Encrypted Messaging Flow', () => {
   test('should send and receive encrypted message between two users', async ({
     browser,
   }) => {
-    // User A gets pre-authenticated state; User B signs in manually
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts. Live performSignIn across concurrent CI shards was
+    // cumulatively exceeding Supabase's 5-attempt brute-force lockout.
     const contextA = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const contextB = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
 
     const pageA = await contextA.newPage();
@@ -218,25 +218,9 @@ test.describe('Encrypted Messaging Flow', () => {
     }
 
     try {
-      // ===== STEP 1: User A already authenticated via storageState =====
-
-      // ===== STEP 2: User B signs in (in separate context) =====
-      // Set E2E flag BEFORE sign-in so SignInForm.isE2E=true → skips
-      // hasKeys() → prevents initializeKeys() from creating duplicate
-      // keys with a different salt (which breaks ECDH decryption).
-      await pageB.goto(`${BASE_URL}/sign-in`);
-      await pageB.evaluate(() =>
-        localStorage.setItem('playwright_e2e', 'true')
-      );
-      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
-      if (!resultB.success) {
-        throw new Error(`User B sign-in failed: ${resultB.error}`);
-      }
-
-      // Reset User B's encryption keys — SignInForm.initializeKeys() creates
-      // a duplicate key row (hasKeys() race with session persistence), breaking
-      // ECDH. This deletes duplicates and clears the stale localStorage cache.
-      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
+      // ===== STEP 1: User A already authenticated via storage-state-auth =====
+      // ===== STEP 2: User B already authenticated via storage-state-auth-b =====
+      // Both pre-authenticated by auth.setup.ts; no live sign-in needed here.
 
       // ===== STEP 3: User A navigates directly to conversation =====
       // Navigate via URL with conversation ID to bypass the slow conversation
@@ -512,12 +496,14 @@ test.describe('Encrypted Messaging Flow', () => {
   });
 
   test('should show delivery status indicators', async ({ browser }) => {
-    // User A gets pre-authenticated state; User B signs in manually
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts. Live performSignIn across concurrent CI shards was
+    // cumulatively exceeding Supabase's 5-attempt brute-force lockout.
     const contextA = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const contextB = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
 
     const pageA = await contextA.newPage();
@@ -574,13 +560,8 @@ test.describe('Encrypted Messaging Flow', () => {
       );
 
       // ===== USER B READS THE MESSAGE =====
-      await pageB.goto(`${BASE_URL}/sign-in`);
-      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
-      if (!resultB.success) {
-        throw new Error(`User B sign-in failed: ${resultB.error}`);
-      }
-      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
-
+      // User B is already authenticated via storage-state-auth-b (no live
+      // sign-in). Navigate directly to /messages.
       await pageB.goto(`${BASE_URL}/messages`, {
         waitUntil: 'domcontentloaded',
       });

@@ -268,7 +268,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: auth-state
-          path: tests/e2e/fixtures/storage-state-auth.json
+          # Include both the primary (USER_A / PRIMARY) and User B (TERTIARY)
+          # pre-authenticated fixtures. Multi-user messaging and security
+          # specs load storage-state-auth-b.json into a second browser
+          # context instead of calling performSignIn live, which cumulatively
+          # exceeded Supabase GoTrue's 5-attempt brute-force lockout.
+          path: |
+            tests/e2e/fixtures/storage-state-auth.json
+            tests/e2e/fixtures/storage-state-auth-b.json
           retention-days: 1
 
   # ============================================

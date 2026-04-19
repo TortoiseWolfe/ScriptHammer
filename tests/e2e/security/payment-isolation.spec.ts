@@ -3,7 +3,7 @@
 // Purpose: Test end-to-end payment data isolation between users
 
 import { test, expect, type Page } from '@playwright/test';
-import { dismissCookieBanner, performSignIn } from '../utils/test-user-factory';
+import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Test users
 const USER_A = {
@@ -44,27 +44,20 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   test('User A and User B have isolated payment sessions', async ({
     browser,
   }) => {
-    // User A's browser session
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts. Prior live performSignIn across concurrent CI shards
+    // was exceeding Supabase's 5-attempt brute-force lockout.
     const contextA = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const pageA = await contextA.newPage();
 
-    // User B's browser session
     const contextB = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
     const pageB = await contextB.newPage();
 
-    // Step 1: User A signs in
-    await pageA.goto('/sign-in');
-    await dismissCookieBanner(pageA);
-    const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-    if (!resultA.success) {
-      throw new Error(`User A sign-in failed: ${resultA.error}`);
-    }
-
-    // Step 2: User A accesses payment demo
+    // Step 1 & 2: User A (already authenticated) accesses payment demo
     await pageA.goto('/payment-demo');
     await dismissCookieBanner(pageA);
     await handlePaymentConsent(pageA);
@@ -78,15 +71,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     const userAId = userAText?.match(/User ID:\s*([a-f0-9-]+)/i)?.[1];
     expect(userAId).toBeTruthy();
 
-    // Step 3: User B signs in (different session)
-    await pageB.goto('/sign-in');
-    await dismissCookieBanner(pageB);
-    const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
-    if (!resultB.success) {
-      throw new Error(`User B sign-in failed: ${resultB.error}`);
-    }
-
-    // Step 4: User B accesses payment demo
+    // Step 3 & 4: User B (already authenticated) accesses payment demo
     await pageB.goto('/payment-demo');
     await dismissCookieBanner(pageB);
     await handlePaymentConsent(pageB);
@@ -122,18 +107,11 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   });
 
   test('Payment history shows only own payments', async ({ browser }) => {
+    // User A pre-authenticated via auth.setup.ts.
     const context = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const page = await context.newPage();
-
-    // Sign in
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
 
     // Access payment demo
     await page.goto('/payment-demo');
@@ -196,15 +174,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   });
 
   test('Payment buttons require GDPR consent', async ({ page }) => {
-    // Sign in first
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Access payment demo
+    // Already authenticated via project storage-state-auth.
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
 
@@ -238,18 +208,11 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   test('Payment intent includes correct user association', async ({
     browser,
   }) => {
+    // User A pre-authenticated via auth.setup.ts.
     const context = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const page = await context.newPage();
-
-    // Sign in
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
 
     // Track payment-related network requests
     const paymentRequests: string[] = [];

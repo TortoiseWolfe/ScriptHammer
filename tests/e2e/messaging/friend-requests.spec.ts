@@ -20,8 +20,6 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   handleReAuthModal,
   dismissCookieBanner,
-  performSignIn,
-  resetEncryptionKeys,
 } from '../utils/test-user-factory';
 
 // Test users - use PRIMARY and TERTIARY from standardized test fixtures
@@ -202,23 +200,21 @@ test.describe('Friend Request Flow', () => {
   }) => {
     test.setTimeout(90000); // 90 seconds for full workflow
 
-    // Fresh sign-in for both users — storageState tokens can be consumed
-    // by earlier tests' refresh token usage, making them invalid.
-    const contextA = await browser.newContext();
-    const contextB = await browser.newContext();
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts. Live performSignIn across concurrent CI shards was
+    // exceeding Supabase's 5-attempt brute-force lockout.
+    const contextA = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
+    });
+    const contextB = await browser.newContext({
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
+    });
 
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
     try {
-      // ===== STEP 1: User A signs in fresh =====
-      await pageA.goto('/sign-in');
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
-
-      // ===== STEP 2: User A navigates to connections tab =====
+      // ===== STEP 1 & 2: User A navigates to connections tab =====
       await pageA.goto('/messages', { waitUntil: 'domcontentloaded' });
       await handleReAuthModal(pageA, USER_A.password);
       const connectionsTab = pageA.getByRole('tab', {
@@ -328,16 +324,7 @@ test.describe('Friend Request Flow', () => {
         );
       }
 
-      // ===== STEP 5: User B signs in =====
-      await pageB.goto('/sign-in');
-      await pageB.evaluate(() =>
-        localStorage.setItem('playwright_e2e', 'true')
-      );
-      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
-      if (!resultB.success) {
-        throw new Error(`User B sign-in failed: ${resultB.error}`);
-      }
-      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
+      // ===== STEP 5: User B already authenticated via storage-state-auth-b =====
 
       // ===== STEP 6: User B navigates to connections page =====
       await pageB.goto('/messages?tab=connections', {
@@ -415,11 +402,13 @@ test.describe('Friend Request Flow', () => {
     // a new request that User A can decline).
     await cleanupConnections();
 
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts (see rationale in "User A sends friend request" test).
     const contextA = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     const contextB = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
 
     const pageA = await contextA.newPage();
@@ -427,16 +416,6 @@ test.describe('Friend Request Flow', () => {
 
     try {
       // User B sends request to User A (searching by username of A)
-      await pageB.goto('/sign-in');
-      await pageB.evaluate(() =>
-        localStorage.setItem('playwright_e2e', 'true')
-      );
-      const resultB = await performSignIn(pageB, USER_B.email, USER_B.password);
-      if (!resultB.success) {
-        throw new Error(`User B sign-in failed: ${resultB.error}`);
-      }
-      await resetEncryptionKeys(pageB, USER_B.email, USER_B.password);
-
       await pageB.goto('/messages?tab=connections', {
         waitUntil: 'domcontentloaded',
       });
@@ -462,16 +441,7 @@ test.describe('Friend Request Flow', () => {
         timeout: 15000,
       });
 
-      // User A signs in and declines
-      await pageA.goto('/sign-in');
-      await pageA.evaluate(() =>
-        localStorage.setItem('playwright_e2e', 'true')
-      );
-      const resultA = await performSignIn(pageA, USER_A.email, USER_A.password);
-      if (!resultA.success) {
-        throw new Error(`User A sign-in failed: ${resultA.error}`);
-      }
-
+      // User A (already authenticated via storage-state-auth) declines
       await pageA.goto('/messages?tab=connections', {
         waitUntil: 'domcontentloaded',
       });
@@ -507,14 +477,8 @@ test.describe('Friend Request Flow', () => {
     // Delete existing connection so we can send a fresh request to cancel
     await cleanupConnections();
 
-    // Sign in as User A using robust helper
-    await page.goto('/sign-in');
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
-    // Send friend request to User B
+    // User A already authenticated via the project's storage-state-auth
+    // fixture. No live sign-in.
     await page.goto('/messages?tab=connections', {
       waitUntil: 'domcontentloaded',
     });
@@ -562,12 +526,7 @@ test.describe('Friend Request Flow', () => {
   test('User cannot send duplicate requests', async ({ page }) => {
     test.setTimeout(60000);
 
-    await page.goto('/sign-in');
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // User A already authenticated via the project's storage-state-auth.
     await page.goto('/messages?tab=connections', {
       waitUntil: 'domcontentloaded',
     });
@@ -628,12 +587,7 @@ test.describe('Friend Request Flow', () => {
 
 test.describe('Accessibility', () => {
   test('connections page meets WCAG standards', async ({ page }) => {
-    await page.goto('/sign-in');
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via project storage-state-auth.
     await page.goto('/messages?tab=connections', {
       waitUntil: 'domcontentloaded',
     });
@@ -660,12 +614,7 @@ test.describe('Accessibility', () => {
   });
 
   test('tab navigation works correctly', async ({ page }) => {
-    await page.goto('/sign-in');
-    const result = await performSignIn(page, USER_A.email, USER_A.password);
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
-    }
-
+    // Already authenticated via project storage-state-auth.
     await page.goto('/messages?tab=connections', {
       waitUntil: 'domcontentloaded',
     });

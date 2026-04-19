@@ -22,11 +22,12 @@ import {
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
+const AUTH_FILE_B = 'tests/e2e/fixtures/storage-state-auth-b.json';
 
 // Allow extra time for static page hydration + encryption setup
-setup.setTimeout(120000);
+setup.setTimeout(180000);
 
-setup('authenticate shared test user', async ({ page }) => {
+setup('authenticate shared test user', async ({ page, browser }) => {
   // Always run fresh — never use cached auth state. Cached state from
   // previous runs may lack encryption keys, causing all messaging tests
   // to redirect to /messages/setup and fail.
@@ -257,6 +258,101 @@ setup('authenticate shared test user', async ({ page }) => {
       if (!ok) {
         console.log(`⚠ Could not set up keys for ${userEmail}`);
       }
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Pre-authenticate User B (TERTIARY) and save its storageState to
+    // AUTH_FILE_B. Messaging and multi-user security specs load this fixture
+    // into a second browser.newContext() instead of calling performSignIn
+    // live — which was cumulatively exceeding Supabase GoTrue's 5-attempt
+    // brute-force lockout across concurrent CI shards.
+    // ────────────────────────────────────────────────────────────────────────
+    const userBEmail = process.env.TEST_USER_TERTIARY_EMAIL;
+    const userBPassword = process.env.TEST_USER_TERTIARY_PASSWORD;
+    if (userBEmail && userBPassword) {
+      console.log(`Pre-authenticating User B: ${userBEmail}`);
+      const ctxB = await browser.newContext();
+      const pageB = await ctxB.newPage();
+      try {
+        await pageB.goto('/sign-in');
+        await pageB.waitForLoadState('domcontentloaded');
+        if (!pageB.url().includes('/sign-in')) {
+          await pageB.goto('/sign-in');
+          await pageB.waitForLoadState('domcontentloaded');
+        }
+        await dismissCookieBanner(pageB);
+
+        const resultB = await performSignIn(pageB, userBEmail, userBPassword, {
+          timeout: 30000,
+        });
+        if (!resultB.success) {
+          await pageB
+            .screenshot({ path: 'test-results/auth-setup-b-failure.png' })
+            .catch(() => {});
+          throw new Error(`User B auth-setup sign-in failed: ${resultB.error}`);
+        }
+
+        await expect(pageB).not.toHaveURL(/\/sign-in/);
+
+        // Inject User B's derived key cache into localStorage so
+        // storageState captures it (mirrors the primary block above).
+        const userB = await getUserByEmail(userBEmail);
+        if (userB && adminClient) {
+          const { data: keyRowB } = await adminClient
+            .from('user_encryption_keys')
+            .select('encryption_salt')
+            .eq('user_id', userB.id)
+            .eq('revoked', false)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (keyRowB?.encryption_salt) {
+            const kds = new KeyDerivationService();
+            const saltBytes = Uint8Array.from(
+              atob(keyRowB.encryption_salt),
+              (c) => c.charCodeAt(0)
+            );
+            const keyPair = await kds.deriveKeyPair({
+              password: userBPassword,
+              salt: saltBytes,
+            });
+            const privateJwk = await crypto.subtle.exportKey(
+              'jwk',
+              keyPair.privateKey
+            );
+            const publicJwk = await crypto.subtle.exportKey(
+              'jwk',
+              keyPair.publicKey
+            );
+            const cacheValue = JSON.stringify({
+              privateKeyJwk: privateJwk,
+              publicKeyJwk: publicJwk,
+              publicKeyJwkOriginal: keyPair.publicKeyJwk,
+              salt: keyPair.salt,
+            });
+            await pageB.evaluate(
+              ({ key, value }) => localStorage.setItem(key, value),
+              { key: `sh_keys_${userB.id}`, value: cacheValue }
+            );
+            console.log(
+              `✓ Injected sh_keys_${userB.id.slice(0, 8)} into User B localStorage`
+            );
+          }
+        }
+
+        // Set E2E flag for cross-tab sign-out suppression, matching primary.
+        await pageB.evaluate(() =>
+          localStorage.setItem('playwright_e2e', 'true')
+        );
+
+        await ctxB.storageState({ path: AUTH_FILE_B });
+        console.log(`✓ User B auth state saved to ${AUTH_FILE_B}`);
+      } finally {
+        await ctxB.close();
+      }
+    } else {
+      console.log('⏭ User B env vars missing; skipping AUTH_FILE_B');
     }
 
     // ────────────────────────────────────────────────────────────────────────

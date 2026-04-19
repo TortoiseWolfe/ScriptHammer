@@ -15,8 +15,6 @@ import {
   scrollThreadToBottom,
   getAdminClient,
   getUserByEmail,
-  performSignIn,
-  resetEncryptionKeys,
 } from '../utils/test-user-factory';
 
 // Track setup status
@@ -39,24 +37,9 @@ const TEST_USER_2 = {
  * Sign in helper — performs full sign-in for fresh contexts (empty storageState),
  * then navigates to /messages with encryption key handling.
  */
-async function signIn(
-  page: Page,
-  email: string,
-  password: string,
-  isPrimary: boolean
-) {
-  await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-  // Set E2E flag before sign-in to prevent SignInForm.initializeKeys()
-  // from creating duplicate keys with a different salt.
-  await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
-  await performSignIn(page, email, password);
-  if (!isPrimary) {
-    await resetEncryptionKeys(page, email, password);
-  }
-  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
-  await dismissCookieBanner(page);
-  await handleReAuthModal(page, password);
-}
+// Note: `signIn(page, ...)` helper removed. Both test users are now loaded
+// from pre-authenticated storage states (storage-state-auth.json for User A,
+// storage-state-auth-b.json for User B) seeded by auth.setup.ts.
 
 /**
  * Helper to wait for message on page2, with fallback to reload if real-time doesn't work.
@@ -292,20 +275,31 @@ test.describe('Real-time Message Delivery (T098)', () => {
       testInfo.skip(true, `Test setup failed: ${setupError}`);
       return;
     }
-    // Create two separate browser contexts (simulates two users)
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts (primary = storage-state-auth.json; User B =
+    // storage-state-auth-b.json). Prior approach of signing in two fresh
+    // contexts per test cumulatively exceeded Supabase's 5-attempt
+    // brute-force lockout across concurrent CI shards.
     context1 = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     context2 = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
 
     page1 = await context1.newPage();
     page2 = await context2.newPage();
 
-    // Sign in both users (fresh contexts need full sign-in)
-    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password, true);
-    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password, false);
+    // Navigate both pages to /messages and handle ReAuthModal (keys come
+    // from storageState's sh_keys_* localStorage; modal only appears if
+    // the Supabase session refreshed in a way that requires re-auth).
+    await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page1);
+    await handleReAuthModal(page1, TEST_USER_1.password);
+
+    await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page2);
+    await handleReAuthModal(page2, TEST_USER_2.password);
   });
 
   test.afterEach(async () => {
@@ -409,20 +403,25 @@ test.describe('Typing Indicators (T099)', () => {
   let page2: Page;
 
   test.beforeEach(async ({ browser }) => {
-    // Create two separate browser contexts
+    // Both users come from pre-authenticated storage states seeded by
+    // auth.setup.ts; see the matching beforeEach above for rationale.
     context1 = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });
     context2 = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
+      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
     });
 
     page1 = await context1.newPage();
     page2 = await context2.newPage();
 
-    // Sign in both users (fresh contexts need full sign-in)
-    await signIn(page1, TEST_USER_1.email, TEST_USER_1.password, true);
-    await signIn(page2, TEST_USER_2.email, TEST_USER_2.password, false);
+    await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page1);
+    await handleReAuthModal(page1, TEST_USER_1.password);
+
+    await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page2);
+    await handleReAuthModal(page2, TEST_USER_2.password);
   });
 
   test.afterEach(async () => {
