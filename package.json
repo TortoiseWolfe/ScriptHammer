@@ -25,6 +25,7 @@
     "docker:down": "docker compose down",
     "docker:rebuild": "docker compose build --no-cache",
     "prime": "tsx scripts/prime-supabase.ts",
+    "supabase:auth-config": "tsx scripts/supabase/set-auth-config.ts",
     "db:reset": "tsx scripts/reset-database.ts",
     "generate:sitemap": "node scripts/generate-sitemap.js",
     "generate:rss": "node scripts/generate-rss.js",

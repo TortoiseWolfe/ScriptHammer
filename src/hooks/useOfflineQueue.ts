@@ -148,12 +148,28 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     return await offlineQueueService.getFailedMessages();
   }, []);
 
-  // Handle online event - automatic sync
+  // Handle online/offline/visibility/focus events - opportunistic sync.
+  //
+  // The window 'online' event is the primary trigger, but Playwright's
+  // context.setOffline(false) on firefox does not reliably dispatch it
+  // (observed in run 24633398118, firefox-msg T149: messages queued
+  // correctly when offline, no 'Network online' log on reconnect, no
+  // INSERT ever fired). Belt-and-suspenders: also trigger sync on tab
+  // visibility change and window focus — both cheap, both idempotent
+  // (offline-queue-service.ts guards against concurrent syncs via
+  // `syncInProgress`, and our own syncQueue() bails when isSyncing is
+  // true or navigator.onLine is false).
   useEffect(() => {
+    const trigger = (reason: string) => {
+      if (!navigator.onLine) return;
+      console.debug(`[useOfflineQueue] sync trigger: ${reason}`);
+      syncQueue();
+    };
+
     const handleOnline = () => {
       logger.info('Network online - triggering queue sync');
       setIsOnline(true);
-      syncQueue();
+      trigger('online-event');
     };
 
     const handleOffline = () => {
@@ -161,24 +177,46 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       setIsOnline(false);
     };
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        trigger('visibility-change');
+      }
+    };
+
+    const handleFocus = () => {
+      trigger('window-focus');
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [syncQueue]);
 
-  // Load queue on mount and set up polling
+  // Load queue on mount and set up polling.
+  // Every poll tick also tries to flush pending messages if we're online —
+  // a safety net for when the browser's online event is missed (see the
+  // visibility/focus listeners above for the same reason).
   useEffect(() => {
     loadQueue();
 
-    // Poll queue every 30 seconds to keep count updated
-    const interval = setInterval(loadQueue, 30000);
+    const interval = setInterval(() => {
+      loadQueue();
+      if (navigator.onLine) {
+        console.debug('[useOfflineQueue] sync trigger: 30s-poll');
+        syncQueue();
+      }
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, [loadQueue]);
+  }, [loadQueue, syncQueue]);
 
   // Trigger sync on mount if online and queue has items
   useEffect(() => {

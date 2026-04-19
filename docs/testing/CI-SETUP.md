@@ -22,11 +22,46 @@ In concurrent CI, even legitimate test sign-ins (which succeed individually)
 can accumulate past the threshold — GoTrue counts consecutive attempts, not
 failures. This manifests as hard-failures that cascade to downstream tests.
 
-## The fix — one-time Supabase dashboard config
+## The fix — code-as-config via Supabase Management API
 
-Add the three test users to GoTrue's rate-limit allowlist so they're exempt
-from per-account lockout. In the Supabase dashboard for the ScriptHammer
-project:
+Preferred path: apply the desired auth config from code, not the dashboard.
+Commit the desired state to `scripts/supabase/auth-config.json`, then run:
+
+```bash
+# Dry-run (default) — shows proposed diff against remote config
+pnpm supabase:auth-config
+
+# Apply — PATCH the Management API and verify each field stuck
+pnpm supabase:auth-config --apply
+```
+
+Required environment variables (in `.env.local`, gitignored):
+
+- `SUPABASE_ACCESS_TOKEN` — generate at
+  https://supabase.com/dashboard/account/tokens
+- `NEXT_PUBLIC_SUPABASE_PROJECT_REF` — short project ref (e.g. `abcd1234`)
+
+The current `auth-config.json` raises `jwt_exp` from the default 3600s (1 h)
+to 7200s (2 h) so the access token outlasts the ~1 h E2E pipeline (chromium
+→ firefox → webkit serialized).
+
+To also raise the sign-in rate limit in-code, add to `auth-config.json`:
+
+```json
+{
+  "jwt_exp": 7200,
+  "rate_limit_verify": 100
+}
+```
+
+and re-run with `--apply`. The script verifies each field stuck; if the
+Management API rejects a field on your Supabase plan, the script exits
+nonzero with a clear error and the dashboard fallback below still works.
+
+## Fallback — manual dashboard config
+
+If the Management API doesn't accept a rate-limit field on your plan, you
+can still raise it by hand:
 
 1. **Project Settings → Authentication → Rate Limits**
 2. Under **Sign-in attempts**, either:
@@ -35,7 +70,6 @@ project:
      - `TEST_USER_PRIMARY_EMAIL` (from GitHub secrets)
      - `TEST_USER_SECONDARY_EMAIL`
      - `TEST_USER_TERTIARY_EMAIL`
-
 3. Save. Rate-limit exemption is effective immediately.
 
 ## What this does NOT exempt

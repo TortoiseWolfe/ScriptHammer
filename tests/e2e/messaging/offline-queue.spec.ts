@@ -611,6 +611,17 @@ test.describe('Offline Message Queue', () => {
       await contextA.setOffline(false);
       await contextB.setOffline(false);
 
+      // Playwright's setOffline(false) on firefox does not always dispatch
+      // window.online (observed in run 24633398118 / commit aef59b7). The
+      // product's useOfflineQueue now also syncs on visibility/focus/30s-
+      // poll, so any of those paths will flush the queue — this explicit
+      // dispatch just shortens the wait in CI where we can't afford 30s
+      // per stuck test.
+      await Promise.all([
+        pageA.evaluate(() => window.dispatchEvent(new Event('online'))),
+        pageB.evaluate(() => window.dispatchEvent(new Event('online'))),
+      ]);
+
       // ===== STEP 6: Wait for offline queue sync =====
       // The offline queue needs time to: detect online status, process
       // queued messages, encrypt, send to Supabase, and get INSERT confirmed.
