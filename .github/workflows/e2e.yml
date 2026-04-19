@@ -425,13 +425,98 @@ jobs:
           retention-days: 1
 
   # ============================================
+  # STEP 5a-refresh: Refresh auth fixtures before Firefox matrix
+  #
+  # Supabase default JWT TTL is 3600s (1 hour). The chromium matrix
+  # (STEP 5) runs for ~25 min, then firefox queues until e2e completes.
+  # By the time firefox-gen 4/6 reaches payment-isolation.spec.ts, the
+  # access token in `auth-state` can be >55 min old, well past or near
+  # expiry. supabase-js then tries to refresh; the single-use refresh
+  # token may have been consumed by another test/shard, 400s, then
+  # rate-limit 429 storms — flaking the whole browser matrix.
+  #
+  # Generating a fresh fixture here guarantees firefox shards start
+  # with a token that won't expire during their ~20-30 min runtime.
+  # The fixture format is browser-agnostic (localStorage + cookies),
+  # so it's safe to produce with chromium and consume with firefox.
+  # ============================================
+  auth-setup-firefox:
+    name: Auth Setup (firefox refresh)
+    runs-on: ubuntu-latest
+    needs: e2e
+    if: always() && !cancelled()
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium only for auth)
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: out/
+
+      - name: Start server
+        run: |
+          npx serve out -l 3000 &
+          sleep 5
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run auth setup
+        run: pnpm exec playwright test --project=setup --reporter=list --timeout=180000
+        env:
+          CI: true
+          AUTH_SETUP_JOB: true
+          SKIP_WEBSERVER: true
+          BASE_URL: http://localhost:3000
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          TEST_USER_SECONDARY_EMAIL: ${{ vars.TEST_USER_SECONDARY_EMAIL }}
+          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
+          TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
+
+      - name: Upload auth state
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-state-firefox
+          path: |
+            tests/e2e/fixtures/storage-state-auth.json
+            tests/e2e/fixtures/storage-state-auth-b.json
+          retention-days: 1
+
+  # ============================================
   # STEP 5b: Firefox E2E (waits for chromium to release Supabase)
   # ============================================
   e2e-firefox:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs: e2e
-    if: always() && !cancelled()
+    needs: [e2e, auth-setup-firefox]
+    if: always() && !cancelled() && needs.auth-setup-firefox.result == 'success'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -478,7 +563,7 @@ jobs:
       - name: Download auth state
         uses: actions/download-artifact@v4
         with:
-          name: auth-state
+          name: auth-state-firefox
           path: tests/e2e/fixtures/
       - name: Start server
         run: |
@@ -539,13 +624,89 @@ jobs:
           retention-days: 1
 
   # ============================================
+  # STEP 5b-refresh: Refresh auth fixtures before WebKit matrix
+  #
+  # Same rationale as auth-setup-firefox (STEP 5a-refresh): by the time
+  # webkit shards run, the token is >55 min old — see that job's comment
+  # for details.
+  # ============================================
+  auth-setup-webkit:
+    name: Auth Setup (webkit refresh)
+    runs-on: ubuntu-latest
+    needs: e2e-firefox
+    if: always() && !cancelled()
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium only for auth)
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: out/
+
+      - name: Start server
+        run: |
+          npx serve out -l 3000 &
+          sleep 5
+          npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run auth setup
+        run: pnpm exec playwright test --project=setup --reporter=list --timeout=180000
+        env:
+          CI: true
+          AUTH_SETUP_JOB: true
+          SKIP_WEBSERVER: true
+          BASE_URL: http://localhost:3000
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          TEST_USER_SECONDARY_EMAIL: ${{ vars.TEST_USER_SECONDARY_EMAIL }}
+          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
+          TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
+
+      - name: Upload auth state
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-state-webkit
+          path: |
+            tests/e2e/fixtures/storage-state-auth.json
+            tests/e2e/fixtures/storage-state-auth-b.json
+          retention-days: 1
+
+  # ============================================
   # STEP 5c: WebKit E2E (waits for firefox to release Supabase)
   # ============================================
   e2e-webkit:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs: e2e-firefox
-    if: always() && !cancelled()
+    needs: [e2e-firefox, auth-setup-webkit]
+    if: always() && !cancelled() && needs.auth-setup-webkit.result == 'success'
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -592,7 +753,7 @@ jobs:
       - name: Download auth state
         uses: actions/download-artifact@v4
         with:
-          name: auth-state
+          name: auth-state-webkit
           path: tests/e2e/fixtures/
       - name: Start server
         run: |
