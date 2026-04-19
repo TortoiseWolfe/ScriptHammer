@@ -14,12 +14,15 @@ import {
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     auth: {
-      getUser: vi.fn(() =>
+      getSession: vi.fn(() =>
         Promise.resolve({
           data: {
-            user: {
-              id: 'test-user-123',
-              email: 'test@example.com',
+            session: {
+              user: {
+                id: 'test-user-123',
+                email: 'test@example.com',
+              },
+              access_token: 'test-access-token',
             },
           },
           error: null,
