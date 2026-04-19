@@ -57,14 +57,18 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     });
     const pageB = await contextB.newPage();
 
-    // Step 1 & 2: User A (already authenticated) accesses payment demo
+    // Step 1 & 2: User A (already authenticated) accesses payment demo.
+    // Wait for AuthContext's getSession() to populate the user BEFORE
+    // accepting consent. storageState's Supabase token takes a moment to
+    // hydrate via the Supabase JS client on page load; accepting consent
+    // before user is resolved leaves Step 4 (gated on user?.id) unrendered.
     await pageA.goto('/payment-demo');
     await dismissCookieBanner(pageA);
+    const userAInfo = pageA.locator(
+      'text=/Logged in as.*User ID:\\s*[a-f0-9-]{36}/i'
+    );
+    await expect(userAInfo).toBeVisible({ timeout: 30000 });
     await handlePaymentConsent(pageA);
-
-    // Verify User A sees the payment page with their user ID
-    const userAInfo = pageA.locator('text=/Logged in as.*User ID/i');
-    await expect(userAInfo).toBeVisible({ timeout: 5000 });
 
     // Extract User A's ID from the page
     const userAText = await userAInfo.textContent();
@@ -74,11 +78,11 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     // Step 3 & 4: User B (already authenticated) accesses payment demo
     await pageB.goto('/payment-demo');
     await dismissCookieBanner(pageB);
+    const userBInfo = pageB.locator(
+      'text=/Logged in as.*User ID:\\s*[a-f0-9-]{36}/i'
+    );
+    await expect(userBInfo).toBeVisible({ timeout: 30000 });
     await handlePaymentConsent(pageB);
-
-    // Verify User B sees the payment page with their user ID
-    const userBInfo = pageB.locator('text=/Logged in as.*User ID/i');
-    await expect(userBInfo).toBeVisible({ timeout: 5000 });
 
     // Extract User B's ID from the page
     const userBText = await userBInfo.textContent();
@@ -113,15 +117,19 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
     });
     const page = await context.newPage();
 
-    // Access payment demo
+    // Access payment demo. Wait for auth to hydrate from storageState
+    // before consenting — Step 4 is gated on user?.id.
     await page.goto('/payment-demo');
     await dismissCookieBanner(page);
+    await expect(
+      page.locator('text=/Logged in as.*User ID:\\s*[a-f0-9-]{36}/i')
+    ).toBeVisible({ timeout: 30000 });
     await handlePaymentConsent(page);
 
     // Verify payment history section exists (use exact match to avoid "No payment history")
     await expect(
       page.getByRole('heading', { name: /Step 4.*Payment History/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 15000 });
 
     // Verify user-specific info is shown
     const userInfo = page.locator('text=/Logged in as/i');
