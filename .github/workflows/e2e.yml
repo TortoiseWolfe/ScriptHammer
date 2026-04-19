@@ -281,6 +281,12 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      # max-parallel: 3 — run at most 3 shards concurrently against Supabase.
+      # Prior default (unbounded) ran all 7 shards simultaneously, which
+      # overwhelmed free-tier rate limits on webkit ("Sign-in failed:
+      # Request rate limit reached"). Browsers are serialized via
+      # `needs:` chain, so this caps total concurrent Supabase load at 3.
+      max-parallel: 3
       matrix:
         include:
           # ===== CHROMIUM (7 shards) =====
@@ -422,6 +428,8 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      # Cap concurrent shards to avoid Supabase free-tier rate limits.
+      max-parallel: 3
       matrix:
         include:
           # msg runs as a single shard (see chromium matrix note above).
@@ -534,6 +542,8 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
+      # Cap concurrent shards to avoid Supabase free-tier rate limits.
+      max-parallel: 3
       matrix:
         include:
           # msg runs as a single shard (see chromium matrix note above).
