@@ -68,7 +68,7 @@ export class OfflineQueueService {
     const queuedMessage: QueuedMessage = {
       ...message,
       status: 'pending' as QueueStatus,
-      synced: false,
+      synced: 0,
       retries: 0,
       created_at: Date.now(),
     };
@@ -236,7 +236,7 @@ export class OfflineQueueService {
           // Mark as synced
           await messagingDb.messaging_queued_messages.update(queuedMsg.id, {
             status: 'sent' as QueueStatus,
-            synced: true,
+            synced: 1,
             sequence_number: nextSequenceNumber,
           });
 

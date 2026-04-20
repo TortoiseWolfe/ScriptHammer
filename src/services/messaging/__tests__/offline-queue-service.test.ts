@@ -83,7 +83,7 @@ describe('OfflineQueueService', () => {
       expect(queued).toBeDefined();
       expect(queued.id).toBe(messageData.id);
       expect(queued.status).toBe('pending');
-      expect(queued.synced).toBe(false);
+      expect(queued.synced).toBe(0);
       expect(queued.retries).toBe(0);
       expect(queued.created_at).toBeGreaterThan(0);
 
@@ -130,14 +130,14 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'sent' as QueueStatus,
-        synced: true,
+        synced: 1,
         retries: 0,
         created_at: Date.now(),
       });
 
       // Use filter instead of where().equals() for boolean values (fake-indexeddb compatibility)
       const queue = await messagingDb.messaging_queued_messages
-        .filter((msg) => msg.synced === false)
+        .filter((msg) => msg.synced === 0)
         .sortBy('created_at');
 
       expect(queue).toHaveLength(1);
@@ -154,7 +154,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'pending' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 0,
         created_at: now + 1000,
       });
@@ -166,14 +166,14 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'pending' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 0,
         created_at: now,
       });
 
       // Use filter instead of service.getQueue() for test
       const queue = await messagingDb.messaging_queued_messages
-        .filter((msg) => msg.synced === false)
+        .filter((msg) => msg.synced === 0)
         .sortBy('created_at');
 
       expect(queue).toHaveLength(2);
@@ -183,7 +183,7 @@ describe('OfflineQueueService', () => {
 
     it('should return empty array when queue is empty', async () => {
       const queue = await messagingDb.messaging_queued_messages
-        .filter((msg) => msg.synced === false)
+        .filter((msg) => msg.synced === 0)
         .sortBy('created_at');
       expect(queue).toEqual([]);
     });
@@ -209,7 +209,7 @@ describe('OfflineQueueService', () => {
 
       // Use filter for count instead of where().equals() for boolean
       const count = await messagingDb.messaging_queued_messages
-        .filter((msg) => msg.synced === false)
+        .filter((msg) => msg.synced === 0)
         .count();
       expect(count).toBe(2);
     });
@@ -222,7 +222,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'pending' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 0,
         created_at: Date.now(),
       });
@@ -234,7 +234,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'failed' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 5,
         created_at: Date.now(),
       });
@@ -292,14 +292,14 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'sent' as QueueStatus,
-        synced: true,
+        synced: 1,
         retries: 0,
         created_at: Date.now(),
       });
 
       // Manually clear synced messages using filter (test database operation)
       const syncedMessages = await messagingDb.messaging_queued_messages
-        .filter((msg) => msg.synced === true)
+        .filter((msg) => msg.synced === 1)
         .toArray();
 
       for (const msg of syncedMessages) {
@@ -387,7 +387,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'failed' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 5,
         created_at: Date.now(),
       });
@@ -410,7 +410,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'failed' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 5,
         created_at: Date.now(),
       });
@@ -422,7 +422,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'failed' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 5,
         created_at: Date.now(),
       });
@@ -447,7 +447,7 @@ describe('OfflineQueueService', () => {
         encrypted_content: 'content',
         initialization_vector: 'iv',
         status: 'failed' as QueueStatus,
-        synced: false,
+        synced: 0,
         retries: 5,
         created_at: Date.now(),
       });

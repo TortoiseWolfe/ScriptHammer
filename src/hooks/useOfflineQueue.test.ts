@@ -39,7 +39,7 @@ describe('useOfflineQueue', () => {
     encrypted_content: 'encrypted',
     initialization_vector: 'iv',
     status: 'pending',
-    synced: false,
+    synced: 0,
     retries: 0,
     created_at: Date.now(),
   };

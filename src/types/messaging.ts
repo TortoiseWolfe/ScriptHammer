@@ -97,7 +97,17 @@ export interface QueuedMessage {
   /** Plaintext content for deferred encryption during sync. Client-only. */
   plaintext_content?: string;
   status: QueueStatus; // Queue status
-  synced: boolean;
+  /**
+   * Synced flag. Stored as 0/1 rather than boolean because IndexedDB does
+   * not permit booleans as index key values — Dexie's `.where('synced')
+   * .equals(0)` query never matched records written with `synced: false`,
+   * leaving getQueue() permanently returning []. That broke the offline-
+   * queue sync flow silently (T149 on firefox-msg kept finding zero
+   * messages in the DB after reconnect; run 24643471992 diagnostic
+   * confirmed `queueBefore: []` even after two offline queueMessage()
+   * calls). 0 = unsynced, 1 = synced.
+   */
+  synced: 0 | 1;
   retries: number;
   created_at: number; // Unix timestamp
   sequence_number?: number; // Optional sequence number after successful send
