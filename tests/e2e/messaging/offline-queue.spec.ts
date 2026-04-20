@@ -80,6 +80,11 @@ function forwardConsole(page: import('@playwright/test').Page) {
       text.includes('ConversationView') ||
       text.includes('getMessageHistory') ||
       text.includes('AUTH FAILED') ||
+      text.includes('useOfflineQueue') ||
+      text.includes('sync trigger') ||
+      text.includes('syncQueue') ||
+      text.includes('Sync complete') ||
+      text.includes('offline-queue') ||
       msg.type() === 'error'
     ) {
       console.log(`[browser console.${msg.type()}] ${text}`);
@@ -622,17 +627,23 @@ test.describe('Offline Message Queue', () => {
       // first as a belt-and-suspenders so the UI also reflects the flip.
       const triggerSync = async (page: Page) => {
         return page.evaluate(async () => {
+          const w = window as unknown as Record<string, unknown>;
           window.dispatchEvent(new Event('online'));
-          const fn = (
-            window as unknown as {
-              __scripthammer_syncQueue?: () => Promise<unknown>;
-            }
-          ).__scripthammer_syncQueue;
+          const fn = w.__scripthammer_syncQueue as
+            | (() => Promise<unknown>)
+            | undefined;
           if (!fn) {
-            return { hookAttached: false, onLine: navigator.onLine };
+            return {
+              hookAttached: false,
+              onLine: navigator.onLine,
+            };
           }
-          await fn();
-          return { hookAttached: true, onLine: navigator.onLine };
+          const details = await fn();
+          return {
+            hookAttached: true,
+            onLine: navigator.onLine,
+            details,
+          };
         });
       };
       const [syncA, syncB] = await Promise.all([

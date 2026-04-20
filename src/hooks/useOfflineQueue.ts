@@ -175,14 +175,36 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     } catch {
       return;
     }
-    (window as unknown as Record<string, unknown>).__scripthammer_syncQueue =
-      () => {
-        console.log('[useOfflineQueue] sync trigger: test-hook');
-        return syncQueue();
-      };
+    const win = window as unknown as Record<string, unknown>;
+    win.__scripthammer_syncQueue = async () => {
+      console.log('[useOfflineQueue] sync trigger: test-hook');
+      const queueBefore = await offlineQueueService
+        .getQueue()
+        .catch((e: Error) => ({ error: e.message }));
+      console.log(
+        `[useOfflineQueue] queue-before: ${JSON.stringify(queueBefore).slice(0, 400)}`
+      );
+      let result: unknown = null;
+      let error: string | null = null;
+      try {
+        await syncQueue();
+        result = 'ok';
+      } catch (e) {
+        error = (e as Error).message || String(e);
+      }
+      const queueAfter = await offlineQueueService
+        .getQueue()
+        .catch((e: Error) => ({ error: e.message }));
+      console.log(
+        `[useOfflineQueue] queue-after: ${JSON.stringify(queueAfter).slice(0, 400)}`
+      );
+      console.log(
+        `[useOfflineQueue] sync-result: ${JSON.stringify({ result, error })}`
+      );
+      return { queueBefore, queueAfter, error };
+    };
     return () => {
-      delete (window as unknown as Record<string, unknown>)
-        .__scripthammer_syncQueue;
+      delete win.__scripthammer_syncQueue;
     };
   }, [syncQueue]);
 
