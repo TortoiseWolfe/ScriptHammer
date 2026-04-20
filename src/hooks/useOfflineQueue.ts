@@ -91,17 +91,9 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     }
   }, []);
 
-  // Sync queue with server.
-  //
-  // Guard only on the in-flight flag. Historically this also early-returned
-  // on `!navigator.onLine`, but Playwright's `context.setOffline(false)` on
-  // firefox and webkit does not reliably flip `navigator.onLine` back to
-  // true — meaning tests that queue messages while offline then reconnect
-  // never flush, because this gate sees the stale `false` (observed in run
-  // 24638748630 T149: both firefox-msg and webkit-msg fail here; the
-  // offline-queue-service insert POSTs never fire). If we actually are
-  // offline at this moment, the underlying REST insert will fail and the
-  // queued entry gets retried — same outcome, one fewer layer of staleness.
+  // Sync queue with server. Guard only on the in-flight flag, not on
+  // navigator.onLine — the latter is unreliable under Playwright emulation
+  // and the underlying REST insert fails fast if truly offline anyway.
   const syncQueue = useCallback(async () => {
     if (isSyncing) {
       return;
@@ -158,14 +150,11 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     return await offlineQueueService.getFailedMessages();
   }, []);
 
-  // Expose syncQueue on window as a test escape hatch. E2E tests that
-  // emulate an offline → online transition via context.setOffline() cannot
-  // always rely on Playwright to dispatch the window 'online' event on
-  // firefox/webkit; rather than continuing to guess at why our listeners
-  // don't fire, give the test a deterministic way to request a flush. Only
-  // enabled when the E2E flag is present in localStorage (production users
-  // never have this). Runs in the same mount-lifecycle useEffect so it
-  // tears down with the hook.
+  // E2E test escape hatch: expose syncQueue on window so tests can request
+  // a flush deterministically after emulated offline → online transitions,
+  // without depending on browser-specific event dispatch. Only installed
+  // when the playwright_e2e flag is in localStorage; production users never
+  // have it.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -176,65 +165,23 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       return;
     }
     const win = window as unknown as Record<string, unknown>;
-    win.__scripthammer_syncQueue = async () => {
-      console.log('[useOfflineQueue] sync trigger: test-hook');
-      const queueBefore = await offlineQueueService
-        .getQueue()
-        .catch((e: Error) => ({ error: e.message }));
-      console.log(
-        `[useOfflineQueue] queue-before: ${JSON.stringify(queueBefore).slice(0, 400)}`
-      );
-      let result: unknown = null;
-      let error: string | null = null;
-      try {
-        await syncQueue();
-        result = 'ok';
-      } catch (e) {
-        error = (e as Error).message || String(e);
-      }
-      const queueAfter = await offlineQueueService
-        .getQueue()
-        .catch((e: Error) => ({ error: e.message }));
-      console.log(
-        `[useOfflineQueue] queue-after: ${JSON.stringify(queueAfter).slice(0, 400)}`
-      );
-      console.log(
-        `[useOfflineQueue] sync-result: ${JSON.stringify({ result, error })}`
-      );
-      return { queueBefore, queueAfter, error };
-    };
+    win.__scripthammer_syncQueue = () => syncQueue();
     return () => {
       delete win.__scripthammer_syncQueue;
     };
   }, [syncQueue]);
 
-  // Handle online/offline/visibility/focus events - opportunistic sync.
-  //
-  // The window 'online' event is the primary trigger, but Playwright's
-  // context.setOffline(false) on firefox and webkit does not reliably flip
-  // navigator.onLine back to true or dispatch the window 'online' event
-  // (run 24638748630 T149: both firefox-msg and webkit-msg fail here after
-  // offline-queuing two messages; the offline-queue-service insert POSTs
-  // never fire). Belt-and-suspenders: also trigger sync on tab visibility
-  // change and window focus. All guarded by the in-flight flag in
-  // syncQueue itself (and offline-queue-service.ts has its own
-  // syncInProgress guard), so duplicate triggers are idempotent. We do NOT
-  // gate on navigator.onLine here — let the REST insert decide.
+  // Opportunistic sync on online / visibility / focus events. The window
+  // 'online' event is the primary trigger; visibility-change and focus act
+  // as belt-and-suspenders for real-world cases where the online event
+  // isn't emitted (laptop wake, tab reactivation, some browser emulation).
+  // All idempotent — syncQueue bails when isSyncing is true, and the
+  // underlying service has its own syncInProgress guard.
   useEffect(() => {
-    const trigger = (reason: string) => {
-      // Use console.log so Playwright's browser-console capture picks this up.
-      // `console.debug` is filtered out of the default Playwright browser
-      // console stream, which blinded us during T149 debugging (run
-      // 24638748630). Leave as log until we're confident the trigger path
-      // is reliable on all three browsers.
-      console.log(`[useOfflineQueue] sync trigger: ${reason}`);
-      syncQueue();
-    };
-
     const handleOnline = () => {
       logger.info('Network online - triggering queue sync');
       setIsOnline(true);
-      trigger('online-event');
+      syncQueue();
     };
 
     const handleOffline = () => {
@@ -244,12 +191,12 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        trigger('visibility-change');
+        syncQueue();
       }
     };
 
     const handleFocus = () => {
-      trigger('window-focus');
+      syncQueue();
     };
 
     window.addEventListener('online', handleOnline);
@@ -265,16 +212,13 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     };
   }, [syncQueue]);
 
-  // Load queue on mount and set up polling.
-  // Every poll tick also tries to flush pending messages if we're online —
-  // a safety net for when the browser's online event is missed (see the
-  // visibility/focus listeners above for the same reason).
+  // Load queue on mount and set up polling. Every poll tick also attempts
+  // a sync as a safety net for any missed event trigger above.
   useEffect(() => {
     loadQueue();
 
     const interval = setInterval(() => {
       loadQueue();
-      console.log('[useOfflineQueue] sync trigger: 30s-poll');
       syncQueue();
     }, 30000);
 

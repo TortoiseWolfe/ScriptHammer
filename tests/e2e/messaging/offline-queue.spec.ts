@@ -80,11 +80,6 @@ function forwardConsole(page: import('@playwright/test').Page) {
       text.includes('ConversationView') ||
       text.includes('getMessageHistory') ||
       text.includes('AUTH FAILED') ||
-      text.includes('useOfflineQueue') ||
-      text.includes('sync trigger') ||
-      text.includes('syncQueue') ||
-      text.includes('Sync complete') ||
-      text.includes('offline-queue') ||
       msg.type() === 'error'
     ) {
       console.log(`[browser console.${msg.type()}] ${text}`);
@@ -616,43 +611,21 @@ test.describe('Offline Message Queue', () => {
       await contextA.setOffline(false);
       await contextB.setOffline(false);
 
-      // Explicitly trigger the offline-queue sync. Runs 24638748630 and
-      // 24640665455 both failed here because neither the window 'online'
-      // event (Playwright's setOffline-based emulation doesn't always
-      // dispatch it on firefox/webkit) nor the in-hook visibility/focus
-      // triggers fired during the 180s poll. useOfflineQueue exposes a
-      // deterministic hook at window.__scripthammer_syncQueue when the
-      // E2E flag is set in localStorage — call it directly from the test
-      // instead of guessing at event wiring. Dispatch the 'online' event
-      // first as a belt-and-suspenders so the UI also reflects the flip.
+      // Explicitly trigger the offline-queue sync via the test-only hook
+      // exposed in src/hooks/useOfflineQueue.ts. Playwright's emulated
+      // offline → online transition does not reliably fire the window
+      // 'online' event on firefox/webkit, so we call syncQueue() directly
+      // instead of relying on event-driven triggers. Dispatch 'online'
+      // first so the UI-level isOnline state also flips.
       const triggerSync = async (page: Page) => {
-        return page.evaluate(async () => {
-          const w = window as unknown as Record<string, unknown>;
+        await page.evaluate(async () => {
           window.dispatchEvent(new Event('online'));
-          const fn = w.__scripthammer_syncQueue as
-            | (() => Promise<unknown>)
-            | undefined;
-          if (!fn) {
-            return {
-              hookAttached: false,
-              onLine: navigator.onLine,
-            };
-          }
-          const details = await fn();
-          return {
-            hookAttached: true,
-            onLine: navigator.onLine,
-            details,
-          };
+          const fn = (window as unknown as Record<string, unknown>)
+            .__scripthammer_syncQueue as (() => Promise<unknown>) | undefined;
+          if (fn) await fn();
         });
       };
-      const [syncA, syncB] = await Promise.all([
-        triggerSync(pageA),
-        triggerSync(pageB),
-      ]);
-      console.log(
-        `[T149] explicit sync trigger: A=${JSON.stringify(syncA)} B=${JSON.stringify(syncB)}`
-      );
+      await Promise.all([triggerSync(pageA), triggerSync(pageB)]);
 
       // ===== STEP 6: Wait for offline queue sync =====
       // The offline queue needs time to: detect online status, process

@@ -1,3 +1,4 @@
 {
-  "jwt_exp": 7200
+  "jwt_exp": 7200,
+  "rate_limit_verify": 100
 }

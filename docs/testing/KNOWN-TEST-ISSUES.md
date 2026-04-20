@@ -185,6 +185,105 @@ _No other known test issues at this time._
 
 ---
 
+## Resolved E2E Issues
+
+This section documents previously-failing E2E tests that are now green,
+so future debugging doesn't relearn the root causes. Keep entries brief;
+commit messages have the full detail.
+
+### payment-isolation on chromium / firefox (resolved in `aef59b7`)
+
+**Symptom**: `tests/e2e/security/payment-isolation.spec.ts` tests at `:44`,
+`:113` failed on chromium-gen 4/6 and firefox-gen 4/6 with the Step 4
+heading never becoming visible (or flicking visible then disappearing),
+and the failure-time page snapshot showed an empty "Logged in as: - User
+ID:" with Sign In links in the nav.
+
+**Root cause**: `getAuthenticatedUserId()` in `src/lib/payments/payment-service.ts`
+called `supabase.auth.getUser()` which hits `/auth/v1/user`. Under CI shard
+load Supabase rate-limited that endpoint with 403, and supabase-js treated
+the 403 as "session gone" — firing SIGNED_OUT. AuthContext cleared `user`
+mid-render, the payment-demo Step 4 block (gated on `user?.id`) unmounted,
+and the test's `toBeVisible` timed out.
+
+**Fix**: switch `getAuthenticatedUserId()` to `supabase.auth.getSession()`
+— reads from localStorage, no server round-trip, can't 403. RLS still
+enforces auth at DB-query time. This mirrors the pattern already in
+`src/services/messaging/key-service.ts` for the same reason.
+
+### payment-isolation on webkit (resolved via JWT TTL bump)
+
+**Symptom**: webkit-gen 4/6 flaked randomly with redirects to `/sign-in`
+and a refresh-token storm (400 then 429s for ~30s) visible in the blob
+report network trace.
+
+**Root cause**: Supabase JWT default TTL is 3600s. The `needs:` chain in
+`.github/workflows/e2e.yml` runs chromium → firefox → webkit serially,
+so webkit starts ~50–60 min after `auth-setup` produced the fixture.
+Access token was near or past expiry when webkit tests ran; supabase-js
+attempted to refresh; the single-use refresh token had been consumed by
+an earlier shard; and the 400 triggered the retry/backoff storm.
+
+**Fix**: raised `jwt_exp` from 3600s to 7200s via the Supabase Management
+API. Config is committed as code in `scripts/supabase/auth-config.json`
+and can be reapplied with `pnpm supabase:auth-config --apply` against
+any environment — no dashboard click required.
+
+### firefox-msg / webkit-msg T149 conflict resolution (resolved in `40f0d0e`)
+
+**Symptom**: `offline-queue.spec.ts` T149 failed with
+`expect(messages).not.toBeNull()` — after both users went offline, sent
+a message, and came back online, neither message ever reached the
+database. 36 × 5s polls against `adminClient.from('messages')` returned
+at most the leftover count from `beforeAll`.
+
+**Wrong diagnoses that cost ~10 rounds** (recorded so I don't repeat):
+
+1. Cloudflare `__cf_bm` cookie rejection blocking realtime. _Red herring_
+   — realtime isn't load-bearing for the offline-queue send path; the
+   insert is a straight REST POST triggered by the online event.
+2. `navigator.onLine` not flipping under Playwright's emulated offline →
+   online transition. _Partly true, but not the root cause_ — Playwright
+   does flip it, we just had a stale-closure suspicion that didn't pan
+   out. Verified via trace.
+3. Window `online` event listener not firing. _Also partly true on some
+   runs, but fixing that only got us to "sync runs, still no insert"._
+
+**Actual root cause**: `QueuedMessage.synced` was declared as `boolean`
+and written as `synced: false` in `queueMessage()`, but the Dexie query
+in `getQueue()` used `.where('synced').equals(0)`. IndexedDB does not
+permit booleans as index key values — Dexie silently failed to index the
+records, so the query never matched. `getQueue()` returned `[]`
+indefinitely. The offline-queue E2E tests T146-T148 passed because they
+verify only the optimistic UI bubble (rendered from React state), not
+the database round-trip. T149 is the only test that exercises the full
+queue → sync → INSERT path, so it was the only test to expose the bug —
+which had been present since the feature shipped.
+
+**Fix**: `QueuedMessage.synced: boolean → 0 | 1`. Write sites
+(`queueMessage` and the `syncQueue` success branch) updated to write
+0/1. Query sites already used `.equals(0)` / `.equals(1)` and now match.
+
+**Diagnostic tooling left in place**:
+
+- `window.__scripthammer_syncQueue` in `src/hooks/useOfflineQueue.ts` —
+  installed only when `playwright_e2e=true` is in localStorage. E2E
+  tests call it to trigger sync deterministically, avoiding dependence
+  on browser-specific event dispatch semantics.
+- Visibility-change and focus event triggers in the same hook — these
+  help real users who close/reopen tabs or whose browser misses an
+  online event, not just tests.
+
+### Related CI-only changes
+
+- `scripts/supabase/set-auth-config.ts` + `auth-config.json`: GET/diff/apply
+  script for Supabase Management API `/config/auth`. Dry-run by default;
+  `--apply` to commit. First use raised `jwt_exp` to 7200; second raised
+  `rate_limit_verify` to 100 to absorb the ~14 legitimate
+  `performSignIn` calls the auth spec suite still makes.
+
+---
+
 ## Test Health Metrics
 
 - **Total Tests**: 666
@@ -196,4 +295,4 @@ All failing tests are documented above and don't affect production.
 
 ---
 
-_Last Updated: 2025-09-17_
+_Last Updated: 2026-04-20_
