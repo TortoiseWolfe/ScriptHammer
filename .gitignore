@@ -90,7 +90,13 @@ storybook-static/
 # Project-local viewer branding (project_name, repo URL).
 !.specify/extensions/*/viewer/
 !.specify/extensions/*/viewer/viewer-config.json
+# Registered wireframe-extension skills. The payload is installed by
+# `./specify extension add wireframe`, but we track the SKILL.md copies so
+# local ScriptHammer-specific preamble (path conventions) persists across
+# forks. An extension update overwrites these — re-apply from git log.
 .claude/skills/speckit-wireframe-*/
+!.claude/skills/speckit-wireframe-*/
+!.claude/skills/speckit-wireframe-*/SKILL.md
 
 # Brainstorm scratch (superpowers visual-companion sessions)
 .superpowers/

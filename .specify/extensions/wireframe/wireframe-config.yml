@@ -2,24 +2,18 @@
 # Only values that diverge from config-template.yml are set here.
 #
 # ─── ScriptHammer integration pattern (honored by Claude on every generate) ─
-# The homegrown validator at docs/design/wireframes/validate-wireframe.py
-# enforces rules that extension-authored SVGs must also pass. Two apply
-# specifically to chrome (header/footer):
+# A shipped-with-the-extension validator enforces chrome-consistency rules
+# on every SVG. Two apply specifically to header/footer layout:
 #
-#   1. Before authoring a feature's first wireframe, copy
-#      docs/design/wireframes/includes/ into
-#      features/<category>/<feature>/wireframes/includes/ so the relative
-#      `<use href="includes/...">` paths resolve.
-#
-#   2. Use the shared chrome via <use href> — do NOT inline header/footer
-#      rects. Canonical references (exact snippets in the reference SVG
-#      docs/design/wireframes/003-user-authentication/01-registration-sign-in.svg):
+#   1. Use the shared chrome via <use href> — do NOT inline header/footer
+#      rects. Canonical references (reference implementation at
+#      features/foundation/003-user-authentication/wireframes/01-registration-sign-in.svg):
 #        <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
 #        <use href="includes/footer-desktop.svg#site-footer"   x="0" y="640"/>
 #        <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
 #        <use href="includes/footer-mobile.svg#mobile-bottom-nav"  x="0" y="664"/>
 #
-#   3. Overlay a single purple <rect> + white <text> on the desktop-header
+#   2. Overlay a single purple <rect> + white <text> on the desktop-header
 #      include to mark the active nav slot for the current page. Slot coords
 #      inside the header (after translate(400, 3)):
 #        Home:     x=0    y=3 w=70 h=44
@@ -27,22 +21,31 @@
 #        Docs:     x=180  y=3 w=70 h=44
 #        Account:  x=260  y=3 w=80 h=44   (add 400 to x for absolute: 660)
 #
-# The reference implementation of all three rules is
-# features/enhancements/018-font-switcher/wireframes/01-font-selection.svg.
+# The `includes/` directory is maintained per-feature. `scripts/sync-wireframes.sh`
+# automatically copies shared chrome into each feature's `wireframes/includes/`
+# when it syncs for the viewer — so forkers get working <use href> refs without
+# any manual setup. When authoring a NEW feature's first wireframe, copy the
+# reference implementation's `includes/` to your feature's `wireframes/` dir
+# once; subsequent SVGs in the same feature reuse it.
 # ────────────────────────────────────────────────────────────────────────────
 
 # Output paths
-# ScriptHammer uses `features/NNN-name/` (not the upstream `specs/` default).
-# Wireframes live in a `wireframes/` subdir inside each feature directory,
-# so they co-exist with spec.md, plan.md, tasks.md without polluting the
-# feature's root listing.
+# ScriptHammer uses `features/<category>/<NNN-name>/` (not the upstream `specs/`
+# default). Wireframes live in a `wireframes/` subdir inside each feature
+# directory, co-located with spec.md, plan.md, tasks.md.
 output:
   svg_dir: 'features/{feature}/wireframes'
   screenshot_dir: 'features/{feature}/wireframes/screenshots'
 
-# Canvas: 1920x1080 matches the homegrown wireframe convention (see
-# docs/design/wireframes/templates/light-theme.svg). Extension default is
-# already 1920x1080; pinning it here makes the intent explicit.
+# Canvas: 1920x1080. Extension default; pinned here for explicitness.
 canvas:
   width: 1920
   height: 1080
+
+# Validator shipped with this project. review/prep commands invoke this to
+# enforce the 40+ rules the homegrown pipeline developed over a year of
+# iteration; the path-agnostic refactor lets it validate files anywhere in
+# the repo. See .specify/extensions/wireframe/scripts/validate.py.
+validator:
+  enabled: true
+  script: '.specify/extensions/wireframe/scripts/validate.py'
