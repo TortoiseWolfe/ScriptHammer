@@ -20,15 +20,17 @@ repos:
       - id: check-merge-conflict
       - id: detect-private-key
 
-  # Python linting with Ruff (fast, modern)
+  # Python linting with Ruff (fast, modern). Scoped to SpecKit extension
+  # scripts and repo-root scripts (wireframes Python lives in the extension
+  # after consolidation).
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.3.0
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        files: ^docs/design/wireframes/.*\.py$
+        files: ^(\.specify/extensions/wireframe/scripts|scripts)/.*\.py$
       - id: ruff-format
-        files: ^docs/design/wireframes/.*\.py$
+        files: ^(\.specify/extensions/wireframe/scripts|scripts)/.*\.py$
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
@@ -52,9 +54,9 @@ repos:
     hooks:
       - id: validate-wireframes
         name: Validate SVG wireframes
-        entry: python docs/design/wireframes/validate-wireframe.py
+        entry: python .specify/extensions/wireframe/scripts/validate.py
         language: system
-        files: ^docs/design/wireframes/.*\.svg$
+        files: ^features/.+/wireframes/.+\.svg$
         pass_filenames: true
 
   # Conventional commits (install with: pre-commit install --hook-type commit-msg)

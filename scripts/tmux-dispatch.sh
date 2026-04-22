@@ -6,6 +6,10 @@
 # See AUTOMATION.md for patterns and edge case documentation.
 
 SESSION="scripthammer"
+# NOTE: the wireframe queue at docs/design/wireframes/.terminal-status.json
+# was retired during the wireframe subsystem consolidation. The --queue mode
+# below now reports "status file not found" and exits cleanly. --vote and
+# --tasks modes still work against their own state files.
 STATUS_FILE="docs/design/wireframes/.terminal-status.json"
 AUDIT_FILE="docs/interoffice/audits/2026-01-14-organizational-review.md"
 PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
