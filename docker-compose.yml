@@ -344,6 +344,53 @@ services:
       MP_SMTP_AUTH_ACCEPT_ANY: 'true'
       MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
 
+  # ──────────────────────────────────────────────────────────────────────
+  # SpecKit — Docker-first wrapper for the Python `specify` CLI.
+  #
+  # Invoked exclusively via `./specify <args>` (see ./specify wrapper).
+  # Never started with `docker compose up` — the service has no long-running
+  # process. It runs one-shot via `docker compose run --rm speckit ...`.
+  #
+  # State persistence (bind-mounted host dirs — inherit the host user's UID,
+  # so no root-owned-file cleanup dance):
+  #   - ./.speckit-tools holds uv's tool install (UV_TOOL_DIR) so `specify`
+  #     survives across `--rm` container teardowns.
+  #   - ./.speckit-cache holds uv's download cache so subsequent `./specify
+  #     update` runs don't re-fetch specify-cli from scratch.
+  #   - The repo itself is bind-mounted at /workspace; the CLI acts on it
+  #     in-place.
+  # ──────────────────────────────────────────────────────────────────────
+  speckit:
+    profiles: ['speckit']
+    # Non-slim image ships git, which `uv tool install ... --from git+https://…`
+    # requires when fetching specify-cli. Avoids an apt-get step that would
+    # otherwise need root inside the container.
+    image: python:3.12
+    working_dir: /workspace
+    # Run as the host user so files written into the mounted repo (e.g.
+    # .specify/extensions/, .claude/skills/, wireframe-config.yml) don't
+    # end up root-owned and unreadable to the host-side editor.
+    # The ./specify wrapper exports UID/GID from `id -u`/`id -g`.
+    user: '${SPECKIT_UID:-1000}:${SPECKIT_GID:-1000}'
+    volumes:
+      - .:/workspace
+      # Tool + cache dirs are bind-mounted from the repo root (gitignored) so
+      # they inherit the host user's UID automatically — avoids the classic
+      # "named volume is root-owned, non-root container can't write" trap.
+      - ./.speckit-tools:/speckit/tools
+      - ./.speckit-cache:/speckit/cache
+    environment:
+      # uv tool install target (writable by non-root user) + PATH entry.
+      - UV_TOOL_DIR=/speckit/tools
+      - UV_TOOL_BIN_DIR=/speckit/tools/bin
+      - UV_CACHE_DIR=/speckit/cache
+      - PATH=/speckit/tools/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - HOME=/tmp
+      - GIT_AUTHOR_NAME
+      - GIT_AUTHOR_EMAIL
+      - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
+      - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
+
 volumes:
   node_modules:
     name: '${COMPOSE_PROJECT_NAME:-scripthammer}_node_modules'

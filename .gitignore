@@ -67,9 +67,22 @@ public/manifest.json
 .specify/scripts/
 .specify/templates/
 plan
-specify
 tasks
 storybook-static/
+
+# SpecKit installed extensions — payload is reinstalled via `./specify
+# extension add …`. We commit: the registry (`.specify/extensions.yml`) and
+# any project-local `wireframe-config.yml`. We ignore everything else.
+# Negation requires the parent pattern to match files (no trailing slash) so
+# the !-rule below actually re-includes the config.
+.specify/extensions/**
+!.specify/extensions/
+!.specify/extensions/*/
+!.specify/extensions/*/wireframe-config.yml
+.claude/skills/speckit-wireframe-*/
+
+# Brainstorm scratch (superpowers visual-companion sessions)
+.superpowers/
 .component-backup-*
 docs/visual-testing/
 
@@ -81,3 +94,7 @@ mobile-check.png
 # If afterEach fails they linger; never commit them (see fixtures/README.md).
 scripts/__tests__/fixtures/*
 !scripts/__tests__/fixtures/README.md
+
+# SpecKit wrapper (Docker-first) — tool + cache state, never commit
+.speckit-tools/
+.speckit-cache/

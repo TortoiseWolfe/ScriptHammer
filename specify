@@ -1,0 +1,77 @@
+#!/bin/bash
+# SpecKit wrapper — Docker-first invocation of the `specify` CLI.
+#
+# First run auto-installs specify-cli into a bind-mounted tool dir and
+# initializes the project. Subsequent runs reuse the dir (fast).
+#
+#   ./specify <subcommand> [args]   → run a specify command
+#   ./specify update                → reinstall specify-cli from upstream main
+#                                     and re-init the project (preserves
+#                                     .specify/memory/ by backing it up)
+#
+# Requires the `speckit` service from docker-compose.yml (profile: speckit).
+# The service runs as the host user (SPECKIT_UID/GID → id -u/-g), mounts the
+# repo at /workspace, persists uv tool data in ./.speckit-tools (bind mount,
+# gitignored), and puts /speckit/tools/bin on PATH so `specify` resolves
+# directly without an activation step.
+set -euo pipefail
+
+export SPECKIT_UID="$(id -u)"
+export SPECKIT_GID="$(id -g)"
+
+COMPOSE="docker compose --profile speckit"
+
+# Install specify-cli into the tools volume. Idempotent: if already present,
+# `specify --help` short-circuits. uv, installed via pip as a user package
+# to a writable temp dir, drives the CLI install into /speckit/tools.
+ensure_installed() {
+    if $COMPOSE run --rm speckit bash -c 'command -v specify >/dev/null 2>&1'; then
+        return 0
+    fi
+    echo "Installing SpecKit into speckit_tools volume..."
+    $COMPOSE run --rm speckit bash -c '
+        set -e
+        pip install --quiet --user --no-warn-script-location uv
+        export PATH="$HOME/.local/bin:$PATH"
+        uv tool install specify-cli --from git+https://github.com/github/spec-kit.git
+    '
+}
+
+if [ "${1-}" = "update" ]; then
+    echo "Updating SpecKit..."
+
+    # Preserve user-edited state before --force init rewrites it.
+    if [ -f .specify/memory/constitution.md ]; then
+        cp .specify/memory/constitution.md /tmp/speckit-constitution.backup.md
+        echo "  Backed up constitution.md to /tmp/speckit-constitution.backup.md"
+    fi
+
+    echo "  Reinstalling specify-cli from upstream main..."
+    $COMPOSE run --rm speckit bash -c '
+        set -e
+        pip install --quiet --user --no-warn-script-location uv
+        export PATH="$HOME/.local/bin:$PATH"
+        uv tool install --force specify-cli --from git+https://github.com/github/spec-kit.git
+    '
+
+    echo "  Re-initializing project..."
+    $COMPOSE run --rm speckit specify init --here --ai claude --force --ignore-agent-tools
+
+    if [ -f /tmp/speckit-constitution.backup.md ]; then
+        cp /tmp/speckit-constitution.backup.md .specify/memory/constitution.md
+        echo "  Restored constitution.md from backup."
+    fi
+
+    echo "Update complete."
+    exit 0
+fi
+
+ensure_installed
+
+# Initialize the project on first run (detected by absence of .specify/).
+if [ ! -d .specify ]; then
+    echo "Initializing SpecKit project..."
+    $COMPOSE run --rm speckit specify init --here --ai claude --force --ignore-agent-tools
+fi
+
+$COMPOSE run --rm speckit specify "$@"
