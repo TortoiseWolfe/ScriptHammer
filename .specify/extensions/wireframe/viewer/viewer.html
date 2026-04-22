@@ -994,12 +994,14 @@
         feature.wireframes.forEach(wf => {
           const a = document.createElement('a');
           a.href = '#';
-          // Prefer the manifest's path verbatim. Manifest emits relative paths
-          // (sibling of viewer.html) so the viewer works under any basePath.
-          // Legacy absolute /specs/... fallback is kept for upstream installs.
-          const svgUrl = wf.path && wf.path.startsWith('/')
-            ? wf.path
-            : (wf.path || `/specs/${feature.id}/wireframes/${wf.svg_file}`);
+          // CRITICAL: data-svg must match the flat `wireframes[].path` because
+          // the click handler does `wireframes.findIndex(w => w.path === path)`.
+          // The per-feature entry's `path` field is just the SVG basename, so
+          // we reconstruct the full relative path here:
+          //   feature_id ('foundation-003-user-authentication')
+          //   + '/' + wf.svg_file ('01-registration-sign-in.svg')
+          // matches the flat manifest's path shape exactly.
+          const svgUrl = `${feature.id}/${wf.svg_file || wf.path}`;
           a.setAttribute('data-svg', svgUrl);
           a.appendChild(document.createTextNode(wf.title + ' '));
 
