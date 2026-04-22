@@ -83,6 +83,13 @@ storybook-static/
 !.specify/extensions/*/scripts/
 !.specify/extensions/*/scripts/validate.py
 !.specify/extensions/*/scripts/inspect-wireframes.py
+# ScriptHammer-local patches to extension-shipped scripts. Extension update
+# will overwrite these; re-apply the diff from git log afterwards (or better,
+# upstream the change so it becomes the shipped version).
+!.specify/extensions/*/scripts/generate-manifest.py
+# Project-local viewer branding (project_name, repo URL).
+!.specify/extensions/*/viewer/
+!.specify/extensions/*/viewer/viewer-config.json
 .claude/skills/speckit-wireframe-*/
 
 # Brainstorm scratch (superpowers visual-companion sessions)
