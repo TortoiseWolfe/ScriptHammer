@@ -71,14 +71,18 @@ tasks
 storybook-static/
 
 # SpecKit installed extensions — payload is reinstalled via `./specify
-# extension add …`. We commit: the registry (`.specify/extensions.yml`) and
-# any project-local `wireframe-config.yml`. We ignore everything else.
-# Negation requires the parent pattern to match files (no trailing slash) so
-# the !-rule below actually re-includes the config.
+# extension add …`. We commit a small allow-list: the registry, the
+# project's wireframe-config.yml, and a hand-picked set of scripts that
+# ScriptHammer ships INTO the extension (not bundled by upstream). Any
+# script shipped BY the extension stays gitignored so `specify extension
+# update wireframe` can overwrite it without producing a diff.
 .specify/extensions/**
 !.specify/extensions/
 !.specify/extensions/*/
 !.specify/extensions/*/wireframe-config.yml
+!.specify/extensions/*/scripts/
+!.specify/extensions/*/scripts/validate.py
+!.specify/extensions/*/scripts/inspect-wireframes.py
 .claude/skills/speckit-wireframe-*/
 
 # Brainstorm scratch (superpowers visual-companion sessions)
