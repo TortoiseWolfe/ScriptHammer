@@ -1,0 +1,18 @@
+# Wireframe Extension Configuration — ScriptHammer
+# Only values that diverge from config-template.yml are set here.
+
+# Output paths
+# ScriptHammer uses `features/NNN-name/` (not the upstream `specs/` default).
+# Wireframes live in a `wireframes/` subdir inside each feature directory,
+# so they co-exist with spec.md, plan.md, tasks.md without polluting the
+# feature's root listing.
+output:
+  svg_dir: 'features/{feature}/wireframes'
+  screenshot_dir: 'features/{feature}/wireframes/screenshots'
+
+# Canvas: 1920x1080 matches the homegrown wireframe convention (see
+# docs/design/wireframes/templates/light-theme.svg). Extension default is
+# already 1920x1080; pinning it here makes the intent explicit.
+canvas:
+  width: 1920
+  height: 1080
