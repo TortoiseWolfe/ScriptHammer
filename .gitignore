@@ -87,9 +87,13 @@ storybook-static/
 # will overwrite these; re-apply the diff from git log afterwards (or better,
 # upstream the change so it becomes the shipped version).
 !.specify/extensions/*/scripts/generate-manifest.py
-# Project-local viewer branding (project_name, repo URL).
+# Project-local viewer customization. viewer-config.json is pure branding;
+# viewer.html carries ScriptHammer-local patches (kind grouping, status
+# detection wired to .issues.md format) that aren't upstream yet. An
+# extension update overwrites both; re-apply patches from git log after.
 !.specify/extensions/*/viewer/
 !.specify/extensions/*/viewer/viewer-config.json
+!.specify/extensions/*/viewer/viewer.html
 # Registered wireframe-extension skills. The payload is installed by
 # `./specify extension add wireframe`, but we track the SKILL.md copies so
 # local ScriptHammer-specific preamble (path conventions) persists across

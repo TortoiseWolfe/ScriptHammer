@@ -43,20 +43,87 @@ def extract_title(svg_path: Path) -> str:
     return title.replace("-", " ").title()
 
 
-def detect_status(svg_path: Path) -> str:
-    """Derive review status from sibling .issues.md file."""
+def detect_status(svg_path: Path, feature_dir: Path | None = None) -> str:
+    """Derive review status from spec.md sign-off + sibling .issues.md file.
+
+    Returns one of:
+      approved     - feature's spec.md ## UI Mockup block lists this SVG
+      needs-regen  - .issues.md has at least one REGENERATE classification
+      needs-patch  - .issues.md has only PATCH-class issues (cosmetic)
+      clean        - .issues.md exists, says zero open issues (validator clean)
+      draft        - never validated/reviewed (no .issues.md, no sign-off)
+    """
+    # 1. Spec sign-off — strongest signal. Searches for `## UI Mockup` block
+    #    in the feature's spec.md and checks whether the SVG basename appears.
+    if feature_dir is not None:
+        spec = feature_dir / "spec.md"
+        if spec.exists():
+            try:
+                spec_content = spec.read_text(errors="ignore")
+                # Capture the ## UI Mockup section up to the next ## heading.
+                mockup_match = re.search(
+                    r'(?ms)^##\s+UI\s+Mockup\s*\n(.*?)(?=^##\s|\Z)',
+                    spec_content,
+                )
+                if mockup_match and svg_path.name in mockup_match.group(1):
+                    return "approved"
+            except Exception:
+                pass
+
+    # 2. Sibling .issues.md — historical review record.
     issues = svg_path.with_suffix(".issues.md")
     if not issues.exists():
         return "draft"
     try:
-        content = issues.read_text()
+        content = issues.read_text(errors="ignore")
     except Exception:
         return "draft"
-    m = re.search(r'^\*\*Status:\*\*\s*(\w+)', content, re.MULTILINE)
-    if not m:
-        return "draft"
-    status = m.group(1).upper()
-    return {"PASS": "approved", "PATCH": "review", "REGENERATE": "review", "REGEN": "review"}.get(status, "draft")
+
+    # Two formats coexist:
+    #
+    # New (extension): single `**Status:** PASS|PATCH|REGENERATE` header line.
+    new_fmt = re.search(r'^\*\*Status:\*\*\s*(\w+)', content, re.MULTILINE)
+    if new_fmt:
+        status = new_fmt.group(1).upper()
+        return {
+            "PASS": "clean",
+            "PATCH": "needs-patch",
+            "REGENERATE": "needs-regen",
+            "REGEN": "needs-regen",
+        }.get(status, "draft")
+
+    # Legacy (homegrown): markdown table with a Classification column whose
+    # values are PATCH / REGENERATE per row. Plus an Open count summary.
+    classifications = re.findall(
+        r'\|\s*(PATCH|REGEN(?:ERATE)?)\s*\|',
+        content,
+    )
+    if classifications:
+        if any("REGEN" in c for c in classifications):
+            return "needs-regen"
+        return "needs-patch"
+
+    # No classification rows. Look for explicit open-count signal.
+    open_match = re.search(r'\|\s*Open\s*\|\s*(\d+)\s*\|', content)
+    if open_match and open_match.group(1) == "0":
+        return "clean"
+
+    # File exists but format unrecognized — treat as draft (not yet reviewed).
+    return "draft"
+
+
+def detect_kind(svg_path: Path) -> str:
+    """Distinguish route-mirroring wireframes from forward-looking ones.
+
+    'as-is'        — filename starts with `as-is-`. Mirrors a shipping route
+                     so a forker can see what they inherited.
+    'aspirational' — every other wireframe. Designs a planned feature.
+
+    Convention defined in `.specify/extensions/wireframe/wireframe-config.yml`.
+    """
+    if svg_path.name.startswith("as-is-"):
+        return "as-is"
+    return "aspirational"
 
 
 def detect_theme(svg_path: Path) -> str:
@@ -133,8 +200,9 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
             feature_entries.append({
                 "path": svg.name,  # Just the basename; viewer joins with feature_id
                 "title": extract_title(svg),
-                "status": detect_status(svg),
+                "status": detect_status(svg, feature_dir),
                 "theme": detect_theme(svg),
+                "kind": detect_kind(svg),
                 "svg_file": svg.name,
             })
         features.append({
@@ -143,6 +211,10 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
             "category": category,
             "source_path": str(rel),  # original path under root (category/feature)
             "wireframes": feature_entries,
+            # Aggregate signals so the viewer can decorate the feature header
+            # without re-walking the wireframe list.
+            "has_as_is": any(w["kind"] == "as-is" for w in feature_entries),
+            "has_aspirational": any(w["kind"] == "aspirational" for w in feature_entries),
         })
 
     # Flat list is what the viewer iterates for nav + prev/next.
@@ -164,6 +236,8 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
             "category": f.get("category", ""),
             "status": wf["status"],
             "theme": wf["theme"],
+            "kind": wf["kind"],
+            "svg_file": wf["svg_file"],
         }
         for f in features
         for wf in f["wireframes"]
