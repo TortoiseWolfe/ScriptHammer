@@ -1,5 +1,35 @@
 # Wireframe Extension Configuration — ScriptHammer
 # Only values that diverge from config-template.yml are set here.
+#
+# ─── ScriptHammer integration pattern (honored by Claude on every generate) ─
+# The homegrown validator at docs/design/wireframes/validate-wireframe.py
+# enforces rules that extension-authored SVGs must also pass. Two apply
+# specifically to chrome (header/footer):
+#
+#   1. Before authoring a feature's first wireframe, copy
+#      docs/design/wireframes/includes/ into
+#      features/<category>/<feature>/wireframes/includes/ so the relative
+#      `<use href="includes/...">` paths resolve.
+#
+#   2. Use the shared chrome via <use href> — do NOT inline header/footer
+#      rects. Canonical references (exact snippets in the reference SVG
+#      docs/design/wireframes/003-user-authentication/01-registration-sign-in.svg):
+#        <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+#        <use href="includes/footer-desktop.svg#site-footer"   x="0" y="640"/>
+#        <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+#        <use href="includes/footer-mobile.svg#mobile-bottom-nav"  x="0" y="664"/>
+#
+#   3. Overlay a single purple <rect> + white <text> on the desktop-header
+#      include to mark the active nav slot for the current page. Slot coords
+#      inside the header (after translate(400, 3)):
+#        Home:     x=0    y=3 w=70 h=44
+#        Features: x=80   y=3 w=90 h=44
+#        Docs:     x=180  y=3 w=70 h=44
+#        Account:  x=260  y=3 w=80 h=44   (add 400 to x for absolute: 660)
+#
+# The reference implementation of all three rules is
+# features/enhancements/018-font-switcher/wireframes/01-font-selection.svg.
+# ────────────────────────────────────────────────────────────────────────────
 
 # Output paths
 # ScriptHammer uses `features/NNN-name/` (not the upstream `specs/` default).

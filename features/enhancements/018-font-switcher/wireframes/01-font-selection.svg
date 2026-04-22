@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">FONT SWITCHER - SELECTION &amp; PREVIEW</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- ============================================================ -->
+  <!-- DESKTOP 1280x720                                              -->
+  <!-- ============================================================ -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Header (shared include, see .specify/extensions/wireframe/wireframe-config.yml) -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Account (this is a Settings page under Account) -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Page heading -->
+    <text x="24" y="100" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Accessibility Settings</text>
+    <text x="24" y="124" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Customize typography to improve your reading experience. Selections persist across sessions.</text>
+
+    <!-- Font family label -->
+    <text x="24" y="164" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Font family</text>
+    <text x="24" y="184" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Applied to all text. Preview each option in its own typeface.</text>
+
+    <!-- Dropdown trigger -->
+    <rect x="24" y="198" width="420" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="40" y="226" font-family="system-ui, sans-serif" font-size="16" font-weight="500" fill="#1f2937">Inter  ·  Default</text>
+    <text x="420" y="226" text-anchor="end" font-family="system-ui, sans-serif" font-size="18" fill="#8b5cf6">v</text>
+
+    <!-- Option panel (open state) -->
+    <rect x="24" y="252" width="560" height="430" rx="8" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+
+    <!-- Group header: STANDARD -->
+    <text x="40" y="278" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">STANDARD</text>
+
+    <!-- Option 1: Inter (selected) -->
+    <rect x="36" y="288" width="536" height="48" rx="4" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="52" y="310" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#1f2937">Inter</text>
+    <text x="52" y="328" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Modern sans-serif — current default</text>
+    <circle cx="550" cy="312" r="10" fill="#8b5cf6"/>
+    <text x="550" y="317" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">OK</text>
+
+    <!-- Option 2: Roboto -->
+    <rect x="36" y="344" width="536" height="48" rx="4" fill="#f5f0e6"/>
+    <text x="52" y="368" font-family="Roboto, system-ui, sans-serif" font-size="16" font-weight="500" fill="#1f2937">Roboto</text>
+    <text x="52" y="386" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Clean geometric sans-serif</text>
+
+    <!-- Option 3: Georgia -->
+    <rect x="36" y="400" width="536" height="48" rx="4" fill="#f5f0e6"/>
+    <text x="52" y="424" font-family="Georgia, serif" font-size="16" font-weight="500" fill="#1f2937">Georgia</text>
+    <text x="52" y="442" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Classic serif — comfortable for long reading</text>
+
+    <!-- Group header: ACCESSIBILITY -->
+    <text x="40" y="474" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">ACCESSIBILITY</text>
+
+    <!-- Option 4: OpenDyslexic -->
+    <rect x="36" y="484" width="536" height="54" rx="4" fill="#f5f0e6"/>
+    <text x="52" y="508" font-family="Comic Sans MS, system-ui, sans-serif" font-size="16" font-weight="500" fill="#1f2937">OpenDyslexic</text>
+    <text x="52" y="528" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Weighted bottoms — easier for dyslexic readers</text>
+    <rect x="452" y="498" width="108" height="24" rx="12" fill="#0891b2"/>
+    <text x="506" y="514" text-anchor="middle" fill="#f5f0e6" font-family="system-ui, sans-serif" font-size="14" font-weight="700">DYSLEXIA</text>
+
+    <!-- Option 5: Atkinson Hyperlegible -->
+    <rect x="36" y="546" width="536" height="54" rx="4" fill="#f5f0e6"/>
+    <text x="52" y="570" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Atkinson Hyperlegible</text>
+    <text x="52" y="590" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Maximum legibility — distinguishable letterforms</text>
+    <rect x="436" y="560" width="124" height="24" rx="12" fill="#0891b2"/>
+    <text x="498" y="576" text-anchor="middle" fill="#f5f0e6" font-family="system-ui, sans-serif" font-size="14" font-weight="700">HIGH-READ</text>
+
+    <!-- Option 6: System UI -->
+    <rect x="36" y="608" width="536" height="48" rx="4" fill="#f5f0e6"/>
+    <text x="52" y="632" font-family="system-ui" font-size="16" font-weight="500" fill="#1f2937">System UI</text>
+    <text x="52" y="650" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Your OS default typeface</text>
+
+    <!-- Reset link -->
+    <text x="40" y="678" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6" text-decoration="underline">Reset to Default (Inter)</text>
+
+    <!-- Live preview panel (right side) -->
+    <rect x="620" y="160" width="636" height="500" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="640" y="188" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">LIVE PREVIEW</text>
+    <text x="640" y="228" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#1f2937">Typography Sample</text>
+    <text x="640" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#374151">The quick brown fox jumps over the lazy dog.</text>
+    <text x="640" y="292" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#1f2937">Heading 2 — section title</text>
+    <text x="640" y="316" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Body paragraph. Changing the font updates every page in place — no reload,</text>
+    <text x="640" y="336" font-family="system-ui, sans-serif" font-size="14" fill="#374151">no layout shift. Your selection is saved to local storage and survives</text>
+    <text x="640" y="356" font-family="system-ui, sans-serif" font-size="14" fill="#374151">browser close, theme switches, and PWA reinstalls.</text>
+
+    <!-- Theme-swatch strip -->
+    <text x="640" y="392" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WORKS WITH ALL 32 THEMES</text>
+    <g transform="translate(640, 404)">
+      <rect x="0"   y="0" width="72" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="36"  y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Light</text>
+      <rect x="80"  y="0" width="72" height="44" rx="4" fill="#1a1a2e"/>
+      <text x="116" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Dark</text>
+      <rect x="160" y="0" width="72" height="44" rx="4" fill="#d4cdb4"/>
+      <text x="196" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Retro</text>
+      <rect x="240" y="0" width="88" height="44" rx="4" fill="#ff7ac6"/>
+      <text x="284" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Valentine</text>
+      <rect x="336" y="0" width="72" height="44" rx="4" fill="#047857"/>
+      <text x="372" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Forest</text>
+      <rect x="416" y="0" width="72" height="44" rx="4" fill="#f3f4f6" stroke="#b8a080"/>
+      <text x="452" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">+27</text>
+    </g>
+
+    <!-- Font loading fallback notice -->
+    <rect x="640" y="466" width="596" height="50" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="656" y="486" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Fallback ready</text>
+    <text x="656" y="506" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Fonts that fail to load fall back to a similar category — you stay unblocked.</text>
+
+    <!-- Persistence notes -->
+    <text x="640" y="542" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PERSISTENCE</text>
+    <text x="640" y="564" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Selection stored in localStorage, applied before first paint on next visit.</text>
+    <text x="640" y="584" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Print stylesheet uses print-friendly fonts regardless of the screen choice.</text>
+
+    <!-- Primary CTA -->
+    <rect x="640" y="604" width="176" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="728" y="632" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Save Preference</text>
+    <rect x="836" y="604" width="192" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="932" y="632" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Preview More Text</text>
+
+    <!-- Footer (shared include) -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <!-- CALLOUTS on desktop -->
+    <g class="callout"><circle cx="304" cy="220" r="14" fill="#dc2626"/><text x="304" y="225" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="582" cy="312" r="14" fill="#dc2626"/><text x="582" y="317" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="578" cy="510" r="14" fill="#dc2626"/><text x="578" y="515" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1240" cy="248" r="14" fill="#dc2626"/><text x="1240" y="253" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+    <g class="callout"><circle cx="1240" cy="430" r="14" fill="#dc2626"/><text x="1240" y="435" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- MOBILE 360x720                                                -->
+  <!-- ============================================================ -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Mobile header (shared include, safe area starts below) -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Sheet title -->
+    <text x="20" y="106" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#1f2937">Choose Font</text>
+    <text x="20" y="126" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Tap an option to apply it everywhere.</text>
+
+    <!-- STANDARD group label -->
+    <text x="20" y="154" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">STANDARD</text>
+
+    <!-- Option row 1 (selected) -->
+    <rect x="16" y="162" width="328" height="46" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="1.5"/>
+    <text x="28" y="190" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#1f2937">Inter  ·  Default</text>
+    <circle cx="322" cy="184" r="8" fill="#8b5cf6"/>
+
+    <!-- Row 2 -->
+    <rect x="16" y="214" width="328" height="46" rx="4" fill="#f5f0e6"/>
+    <text x="28" y="242" font-family="Roboto, system-ui, sans-serif" font-size="15" font-weight="500" fill="#1f2937">Roboto</text>
+
+    <!-- Row 3 -->
+    <rect x="16" y="266" width="328" height="46" rx="4" fill="#f5f0e6"/>
+    <text x="28" y="294" font-family="Georgia, serif" font-size="15" font-weight="500" fill="#1f2937">Georgia</text>
+
+    <!-- ACCESSIBILITY group -->
+    <text x="20" y="332" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">ACCESSIBILITY</text>
+
+    <!-- Row 4 -->
+    <rect x="16" y="340" width="328" height="46" rx="4" fill="#f5f0e6"/>
+    <text x="28" y="368" font-family="Comic Sans MS, system-ui, sans-serif" font-size="15" font-weight="500" fill="#1f2937">OpenDyslexic</text>
+    <rect x="228" y="352" width="104" height="22" rx="11" fill="#0891b2"/>
+    <text x="280" y="368" text-anchor="middle" fill="#f5f0e6" font-family="system-ui, sans-serif" font-size="14" font-weight="700">DYSLEXIA</text>
+
+    <!-- Row 5 -->
+    <rect x="16" y="392" width="328" height="46" rx="4" fill="#f5f0e6"/>
+    <text x="28" y="420" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#1f2937">Atkinson Hyperlegible</text>
+
+    <!-- Row 6 -->
+    <rect x="16" y="444" width="328" height="46" rx="4" fill="#f5f0e6"/>
+    <text x="28" y="472" font-family="system-ui" font-size="15" font-weight="500" fill="#1f2937">System UI</text>
+
+    <!-- Live preview mini-card -->
+    <rect x="16" y="500" width="328" height="80" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="524" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PREVIEW</text>
+    <text x="28" y="548" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#1f2937">The quick brown fox</text>
+    <text x="28" y="568" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Jumps over the lazy dog — 1234567890</text>
+
+    <!-- Primary CTA -->
+    <rect x="16" y="600" width="328" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="628" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Apply</text>
+
+    <!-- Mobile bottom nav (shared include) -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- CALLOUTS on mobile -->
+    <g class="callout"><circle cx="336" cy="184" r="11" fill="#dc2626"/><text x="336" y="189" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="340" cy="362" r="11" fill="#dc2626"/><text x="340" y="367" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="332" cy="536" r="11" fill="#dc2626"/><text x="332" y="541" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <!-- ============================================================ -->
+  <!-- ANNOTATIONS                                                   -->
+  <!-- ============================================================ -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Row 1 -->
+    <!-- ① US-001 Select Font Family -->
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Select Font Family</text>
+      <g transform="translate(200, 4)">
+        <a href="#us-001"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+        <a href="#fr-001"><rect x="62" width="56" height="22" rx="11" fill="#2563eb"/><text x="90" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-001</text></a>
+        <a href="#sc-001"><rect x="124" width="56" height="22" rx="11" fill="#ea580c"/><text x="152" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-001</text></a>
+      </g>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Dropdown lists ≥6 fonts grouped by purpose. Selecting one</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">applies it globally with no page reload.</text>
+    </g>
+
+    <!-- ② US-002 Persistence -->
+    <g transform="translate(470, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Persistence Across Sessions</text>
+      <g transform="translate(290, 4)">
+        <a href="#us-002"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+        <a href="#fr-002"><rect x="62" width="56" height="22" rx="11" fill="#2563eb"/><text x="90" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-002</text></a>
+      </g>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Current selection persists to localStorage and is reapplied</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">before first paint on the next visit.</text>
+    </g>
+
+    <!-- ③ US-003 Accessibility Fonts -->
+    <g transform="translate(920, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Accessibility Font Options</text>
+      <g transform="translate(274, 4)">
+        <a href="#us-003"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+        <a href="#fr-003"><rect x="62" width="56" height="22" rx="11" fill="#2563eb"/><text x="90" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-003</text></a>
+        <a href="#sc-002"><rect x="124" width="56" height="22" rx="11" fill="#ea580c"/><text x="152" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-002</text></a>
+      </g>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Dyslexia-friendly and high-readability options are grouped</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">and labelled with cyan badges.</text>
+    </g>
+
+    <!-- Row 2 -->
+    <!-- ④ US-004 Font Preview -->
+    <g transform="translate(20, 120)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Font Preview</text>
+      <g transform="translate(160, 4)">
+        <a href="#us-004"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+        <a href="#fr-004"><rect x="62" width="56" height="22" rx="11" fill="#2563eb"/><text x="90" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-004</text></a>
+      </g>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Each option renders its name in its own face; right-side</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">panel shows a live sample paragraph before commit.</text>
+    </g>
+
+    <!-- ⑤ US-005 Theme Compatibility -->
+    <g transform="translate(470, 120)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Theme Compatibility</text>
+      <g transform="translate(230, 4)">
+        <a href="#us-005"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-005</text></a>
+        <a href="#fr-005"><rect x="62" width="56" height="22" rx="11" fill="#2563eb"/><text x="90" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-005</text></a>
+        <a href="#sc-003"><rect x="124" width="56" height="22" rx="11" fill="#ea580c"/><text x="152" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-003</text></a>
+      </g>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Chosen font survives all 32 DaisyUI themes; contrast and</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">layout stay stable in every swatch.</text>
+    </g>
+
+    <!-- Edge-case note -->
+    <g transform="translate(920, 120)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">EDGE CASES</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Font fails to load → fallback category (serif/sans/mono) kicks in, user stays unblocked.</text>
+      <text x="0" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Printing → dedicated print stylesheet uses print-friendly face regardless of screen choice.</text>
+      <text x="0" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Limited-font devices → System UI option always present as a guaranteed-available fallback.</text>
+    </g>
+  </g>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">018:01 | Font Switcher | ScriptHammer</text>
+</svg>
