@@ -369,36 +369,38 @@ ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
 
 ---
 
-## Planning Factory (27-Terminal Workflow)
+## Planning Factory (Multi-Terminal Workflow)
 
 This repo also contains the planning factory tooling from the ScriptHammer planning template. The sections below govern the multi-terminal spec-driven workflow.
 
 ### Multi-Terminal Assembly Line
 
-26 Claude Code terminals in a tmux session arranged in assembly line order:
+Claude Code terminals in a tmux session arranged in assembly line order:
 
 ```
 STRATEGY:    CTO → ProductOwner → BusinessAnalyst
 DESIGN:      Architect → UXDesigner → UIDesigner
-WIREFRAMES:  Planner → Generators 1-3 → PreviewHost → WireframeQA → Validator → Inspector
 CODE:        Developer → Toolsmith → Security
 TEST:        TestEngineer → QALead → Auditor
 DOCS:        Author → TechWriter
 RELEASE:     DevOps → DockerCaptain → ReleaseManager → Coordinator
 ```
 
+Wireframe work has been consolidated onto the SpecKit `/speckit.wireframe.*`
+skills — the dedicated 6-role wireframe tmux pipeline was retired and
+absorbed into the Developer / UIDesigner terminals' normal workflow.
+
 See `.claude/roles/` for role-specific context:
 
-| File                    | Roles                                                                   |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `operator.md`           | Operator (runs outside tmux)                                            |
-| `council.md`            | CTO, ProductOwner, Architect, UXDesigner, Toolsmith, Security, DevOps   |
-| `design.md`             | UIDesigner                                                              |
-| `wireframe-pipeline.md` | Planner, Generators 1-3, PreviewHost, WireframeQA, Validator, Inspector |
-| `implementation.md`     | Developer, TestEngineer, QALead, Auditor                                |
-| `support.md`            | Author, TechWriter, BusinessAnalyst, Coordinator                        |
-| `release.md`            | DevOps, DockerCaptain, ReleaseManager                                   |
-| `stw-liaison.md`        | StW-Liaison (client operator for SpokeToWork)                           |
+| File                | Roles                                                                 |
+| ------------------- | --------------------------------------------------------------------- |
+| `operator.md`       | Operator (runs outside tmux)                                          |
+| `council.md`        | CTO, ProductOwner, Architect, UXDesigner, Toolsmith, Security, DevOps |
+| `design.md`         | UIDesigner                                                            |
+| `implementation.md` | Developer, TestEngineer, QALead, Auditor                              |
+| `support.md`        | Author, TechWriter, BusinessAnalyst, Coordinator                      |
+| `release.md`        | DevOps, DockerCaptain, ReleaseManager                                 |
+| `stw-liaison.md`    | StW-Liaison (client operator for SpokeToWork)                         |
 
 ### Terminal Git Rules
 
@@ -409,16 +411,18 @@ When operating as a terminal in the multi-terminal workflow:
 
 ### Feature Specs & Wireframes
 
-- `features/` — 46 feature specifications with `IMPLEMENTATION_ORDER.md` dependency graph
-- `docs/design/wireframes/` — 46 SVG wireframes with interactive HTML viewer
-- `.claude/inventories/` — Codebase inventory snapshots (run `/refresh-inventories` after spec changes)
+- `features/<category>/<NNN-name>/` — feature specifications (spec.md, plan.md, tasks.md, checklist.md) + per-feature `wireframes/` subdir with SVGs and shared chrome
+- `features/IMPLEMENTATION_ORDER.md` — dependency graph + tier ordering
+- `.claude/inventories/` — codebase inventory snapshots (run `/refresh-inventories` after spec changes)
+- `/wireframes` Next.js route iframes the manifest-driven viewer (auto-discovers all SVGs; build-synced by `scripts/sync-wireframes.sh`)
 
 ### SVG Wireframe Rules
 
-- Canvas: `viewBox="0 0 1920 1080"`
-- Desktop: x=40, y=60, 1280x720 | Mobile: x=1360, y=60, 360x720
+- Canvas: `viewBox="0 0 1920 1080" width="1920" height="1080"`
+- Desktop: x=40, y=60, 1280×720 | Mobile: x=1360, y=60, 360×720
 - Panel color: `#e8d4b8` (never white)
 - Touch targets: 44px minimum
+- Machine validation: `.specify/extensions/wireframe/scripts/validate.py`
 
 ### Fork Guide
 

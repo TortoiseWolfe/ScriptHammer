@@ -68,11 +68,11 @@ This file provides guidance for the Author terminal working in the docs folder.
 
 ## Key Files
 
-| File                 | Purpose                       |
-| -------------------- | ----------------------------- |
-| `design/wireframes/` | SVG wireframes and viewer     |
-| `README.md`          | Project overview (root level) |
-| `CHANGELOG.md`       | Version history               |
+| File                          | Purpose                                               |
+| ----------------------------- | ----------------------------------------------------- |
+| `../features/*/*/wireframes/` | SVG wireframes (per-feature; viewer at `/wireframes`) |
+| `README.md`                   | Project overview (root level)                         |
+| `CHANGELOG.md`                | Version history                                       |
 
 ## Skills
 

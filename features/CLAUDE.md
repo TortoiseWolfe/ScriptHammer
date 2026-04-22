@@ -32,61 +32,81 @@ Execute these commands **in order** - do not skip steps:
 
 ```bash
 # Phase 1: Specification
-/speckit.specify        # 1. Generate spec.md from *_feature.md
-/speckit.clarify        # 2. Refine requirements interactively
-/wireframe              # 3. Generate SVG wireframes (1920x1080)
+/speckit.specify                 # 1. Generate spec.md from *_feature.md
+/speckit.clarify                 # 2. Refine requirements interactively
+/speckit.wireframe.prep          # 3. Load spec + validator context
+/speckit.wireframe.generate      # 4. Generate SVG wireframes (1920x1080)
 
 # Phase 2: Wireframe Review (MANDATORY GATE)
-/wireframe-review       # 4. Review SVGs with 🟢/🔴 classification (4 phases + half-view)
-/wireframe              # 5. Smart: patches 🟢, regenerates 🔴, skips ✅
-# REPEAT until all wireframes pass review
+/speckit.wireframe.review        # 5. Classify issues PATCH/REGEN; sign off into spec.md
+/speckit.wireframe.generate      # 6. Regenerate flagged SVGs; re-review
+# REPEAT until all wireframes PASS
 
 # Phase 3: Implementation (BLOCKED until Phase 2 complete)
-/speckit.plan           # 5. Generate plan.md (implementation design)
-/speckit.checklist      # 6. Generate checklist.md (implementation checklist)
-/speckit.tasks          # 7. Generate tasks.md (actionable breakdown)
-/speckit.analyze        # 8. Review cross-artifact consistency
-/speckit.implement      # 9. Execute implementation
+/speckit.plan                    # 7. Generate plan.md
+/speckit.checklist               # 8. Generate checklist.md
+/speckit.tasks                   # 9. Generate tasks.md
+/speckit.analyze                 # 10. Cross-artifact consistency check
+/speckit.implement               # 11. Execute implementation
 ```
 
-**All steps are mandatory.** Phase 3 is BLOCKED until wireframe review is complete for ALL features.
+**All steps are mandatory.** Phase 3 is blocked until wireframes pass review.
+On sign-off, `/speckit.wireframe.review` writes approved wireframe paths
+into `spec.md` under `## UI Mockup` — plan/tasks/implement then load those
+wireframes as spec constraints.
+
+## Wireframe Layout
+
+Wireframes live inside each feature dir alongside spec.md:
+
+```
+features/<category>/<NNN-name>/
+├── spec.md
+├── plan.md
+├── tasks.md
+├── checklist.md
+└── wireframes/
+    ├── 01-<screen-name>.svg           # SVG wireframes (1920×1080)
+    ├── 01-<screen-name>.issues.md     # Review findings (audit trail)
+    ├── 02-<screen-name>.svg
+    └── includes/                       # Shared chrome (header/footer)
+        ├── header-desktop.svg
+        ├── footer-desktop.svg
+        ├── header-mobile.svg
+        └── footer-mobile.svg
+```
+
+The Next.js app's `/wireframes` route auto-discovers every SVG via the
+extension's manifest-driven viewer. Run `pnpm run dev` or `pnpm run build`
+to refresh the viewer's manifest from `scripts/sync-wireframes.sh`.
 
 ## Wireframe Review Process
 
 **Key Insight**: Patching structural issues makes things WORSE. Only patch cosmetic issues.
 
-| Issue Type           | Classification | Action                                 |
-| -------------------- | -------------- | -------------------------------------- |
-| Wrong color value    | 🟢 PATCHABLE   | `/wireframe` patches in place          |
-| Typo in text         | 🟢 PATCHABLE   | `/wireframe` patches in place          |
-| Font size wrong      | 🟢 PATCHABLE   | `/wireframe` patches in place          |
-| Missing CSS class    | 🟢 PATCHABLE   | `/wireframe` patches in place          |
-| Layout problems      | 🔴 REGENERATE  | `/wireframe` regenerates with feedback |
-| Spacing issues       | 🔴 REGENERATE  | `/wireframe` regenerates with feedback |
-| Overlapping elements | 🔴 REGENERATE  | `/wireframe` regenerates with feedback |
-| Positioning errors   | 🔴 REGENERATE  | `/wireframe` regenerates with feedback |
+| Issue Type           | Classification | Action                                             |
+| -------------------- | -------------- | -------------------------------------------------- |
+| Wrong color value    | 🟢 PATCH       | `/speckit.wireframe.generate` patches in place     |
+| Typo in text         | 🟢 PATCH       | `/speckit.wireframe.generate` patches in place     |
+| Font size wrong      | 🟢 PATCH       | `/speckit.wireframe.generate` patches in place     |
+| Badge placement      | 🟢 PATCH       | `/speckit.wireframe.generate` patches in place     |
+| Layout problems      | 🔴 REGENERATE  | `/speckit.wireframe.generate` regenerates full SVG |
+| Spacing issues       | 🔴 REGENERATE  | `/speckit.wireframe.generate` regenerates full SVG |
+| Overlapping elements | 🔴 REGENERATE  | `/speckit.wireframe.generate` regenerates full SVG |
+| Missing sections     | 🔴 REGENERATE  | `/speckit.wireframe.generate` regenerates full SVG |
 
-### Wireframe Review File Structure
+If ANY issue on an SVG classifies as REGEN, regenerate the whole SVG.
+Don't mix-and-match patches with regen findings.
 
-**CRITICAL**: Each SVG gets its own issues file. Review ONLY documents - it does NOT patch.
+### Issue Files
 
-| File Type       | Location                                                | Purpose                                               |
-| --------------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| Per-SVG issues  | `docs/design/wireframes/[feature]/[svg-name].issues.md` | Detailed review findings for ONE SVG                  |
-| Feature summary | `features/[category]/[feature]/WIREFRAME_ISSUES.md`     | Historical context only (do NOT update during review) |
-
-**Workflow**:
-
-1. `/wireframe-review [feature:page]` → Creates `[svg-name].issues.md` in wireframes folder
-2. `/wireframe [feature]` → Reads `.issues.md` files, applies patches or regenerates
-3. Repeat until all issues resolved
-
-**Rules**:
-
-- One issues file per SVG (never combine multiple SVGs into one file)
-- Review documents issues only (never patches the SVG directly)
-- `/wireframe` reads issues files and applies fixes
-- Feature-level `WIREFRAME_ISSUES.md` is historical context, not updated by review
+- `features/<cat>/<NNN-name>/wireframes/<svg-name>.issues.md` — audit trail
+  per SVG. `/speckit.wireframe.review` writes findings here; never delete
+  these files, they're the historical record of what was flagged and when.
+- Machine validation: `.specify/extensions/wireframe/scripts/validate.py`
+  runs 40+ structural + visual + coverage rules. Invoked automatically
+  by `/speckit.wireframe.review`, or manually:
+  `docker compose exec scripthammer python3 .specify/extensions/wireframe/scripts/validate.py --all --summary`
 
 ## Feature File Format (PRP Structure)
 

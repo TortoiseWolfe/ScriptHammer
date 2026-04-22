@@ -43,6 +43,11 @@ INVENTORIES_DIR = PROJECT_ROOT / ".claude" / "inventories"
 SKILLS_DIR = Path.home() / ".claude" / "commands"
 PROJECT_SKILLS_DIR = PROJECT_ROOT / ".claude" / "commands"
 FEATURES_DIR = PROJECT_ROOT / "features"
+# NOTE: wireframes used to live at docs/design/wireframes/<feature>/. After
+# the wireframe-subsystem consolidation they moved to
+# features/<category>/<feature>/wireframes/. The screen-inventory generator
+# below was updated to walk the new tree; WIREFRAMES_DIR is kept as a
+# back-compat probe that returns a non-existent path on current repos.
 WORKFLOWS_DIR = PROJECT_ROOT / ".github" / "workflows"
 WIREFRAMES_DIR = PROJECT_ROOT / "docs" / "design" / "wireframes"
 
@@ -242,27 +247,34 @@ def refresh_security_touchpoints() -> dict:
 
 
 def refresh_screen_inventory() -> dict:
-    """Generate screen-inventory.md from wireframe directories"""
+    """Generate screen-inventory.md from features/<cat>/<feat>/wireframes/*.svg.
+
+    Consolidated post-refactor: every feature's wireframes live co-located
+    with its spec.md rather than under docs/design/wireframes/<NNN>/.
+    """
     features = []
     total_svgs = 0
 
-    if not WIREFRAMES_DIR.exists():
+    if not FEATURES_DIR.exists():
         return {'features': [], 'total_svgs': 0, 'count': 0}
 
-    for feature_dir in sorted(WIREFRAMES_DIR.iterdir()):
-        if not feature_dir.is_dir():
+    # Walk every features/<category>/<NNN-name>/wireframes/ dir.
+    for wf_dir in sorted(FEATURES_DIR.glob("*/*/wireframes")):
+        if not wf_dir.is_dir():
             continue
-        if feature_dir.name.startswith(('.', 'includes', 'templates', 'png', 'node_modules')):
+        svgs = [s for s in sorted(wf_dir.glob("*.svg")) if 'includes' not in s.parts]
+        if not svgs:
             continue
-
-        svgs = list(feature_dir.glob("*.svg"))
-        if svgs:
-            features.append({
-                'feature': feature_dir.name,
-                'svg_count': len(svgs),
-                'svgs': [svg.name for svg in sorted(svgs)]
-            })
-            total_svgs += len(svgs)
+        feature_dir = wf_dir.parent
+        # Label includes category for disambiguation:
+        #   "foundation/003-user-authentication"
+        rel = feature_dir.relative_to(FEATURES_DIR)
+        features.append({
+            'feature': str(rel),
+            'svg_count': len(svgs),
+            'svgs': [svg.name for svg in svgs]
+        })
+        total_svgs += len(svgs)
 
     return {
         'features': features,
@@ -390,7 +402,7 @@ Generated: {timestamp} | Refresh: `/refresh-inventories security`
     elif name == "screen-inventory":
         content = f"""# Screen Inventory
 
-Generated: {timestamp} | Source: `docs/design/wireframes/`
+Generated: {timestamp} | Source: `features/*/*/wireframes/`
 
 ## Wireframes ({data['total_svgs']} SVGs across {data['count']} features)
 
