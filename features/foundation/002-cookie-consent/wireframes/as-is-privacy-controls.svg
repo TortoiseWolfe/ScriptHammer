@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">PRIVACY CONTROLS - /privacy-controls (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <text x="200" y="118" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" fill="#1f2937">Privacy Controls</text>
+    <text x="200" y="154" font-family="system-ui, sans-serif" font-size="16" fill="#4b5563">Manage your privacy settings, export your data, and exercise your GDPR rights from this central control panel.</text>
+
+    <!-- PrivacyControls component: toggle rows + action buttons -->
+    <rect x="200" y="194" width="880" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <text x="220" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CONSENT TOGGLES</text>
+    <!-- Row 1: Analytics -->
+    <rect x="220" y="232" width="840" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="236" y="252" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Analytics</text>
+    <text x="236" y="270" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Anonymous page views for Google Analytics</text>
+    <rect x="1000" y="246" width="44" height="24" rx="12" fill="#22c55e"/>
+    <circle cx="1028" cy="258" r="10" fill="#fff"/>
+    <!-- Row 2: Marketing -->
+    <rect x="220" y="284" width="840" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="236" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Marketing</text>
+    <text x="236" y="322" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Email communication and newsletter preferences</text>
+    <rect x="1000" y="298" width="44" height="24" rx="12" fill="#6b7280"/>
+    <circle cx="1014" cy="310" r="10" fill="#fff"/>
+    <!-- Row 3: Functional -->
+    <rect x="220" y="336" width="840" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="236" y="356" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Functional</text>
+    <text x="236" y="374" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Essential cookies (required — cannot be disabled)</text>
+    <rect x="1000" y="350" width="44" height="24" rx="12" fill="#22c55e" opacity="0.5"/>
+    <circle cx="1028" cy="362" r="10" fill="#fff"/>
+
+    <!-- GDPR action buttons -->
+    <text x="220" y="416" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">GDPR ACTIONS</text>
+    <rect x="220" y="430" width="200" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="320" y="458" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Export My Data</text>
+    <rect x="430" y="430" width="200" height="44" rx="6" fill="#f59e0b"/>
+    <text x="530" y="458" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Request Access</text>
+    <rect x="640" y="430" width="200" height="44" rx="6" fill="#ef4444"/>
+    <text x="740" y="458" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#fff">Delete Account</text>
+
+    <text x="220" y="512" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">STATUS</text>
+    <text x="220" y="534" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Last consent update: 2025-09-15 · Data retention: 24 months · Account created: 2025-02-01</text>
+
+    <!-- Related pages nav -->
+    <rect x="200" y="590" width="160" height="36" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="280" y="612" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Privacy Policy</text>
+    <rect x="370" y="590" width="160" height="36" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="450" y="612" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Cookie Policy</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+    <g class="callout"><circle cx="170" cy="118" r="14" fill="#dc2626"/><text x="170" y="123" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="1070" cy="254" r="14" fill="#dc2626"/><text x="1070" y="259" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="864" cy="450" r="14" fill="#dc2626"/><text x="864" y="455" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="280" cy="580" r="14" fill="#dc2626"/><text x="280" y="585" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="20" y="118" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Privacy Controls</text>
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">GDPR rights center</text>
+
+    <rect x="16" y="160" width="328" height="300" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CONSENT</text>
+
+    <rect x="28" y="196" width="304" height="42" rx="4" fill="#f5f0e6"/>
+    <text x="40" y="216" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Analytics</text>
+    <text x="40" y="232" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">GA anonymous views</text>
+    <rect x="290" y="210" width="32" height="16" rx="8" fill="#22c55e"/>
+
+    <rect x="28" y="244" width="304" height="42" rx="4" fill="#f5f0e6"/>
+    <text x="40" y="264" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Marketing</text>
+    <text x="40" y="280" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Newsletter emails</text>
+    <rect x="290" y="258" width="32" height="16" rx="8" fill="#6b7280"/>
+
+    <rect x="28" y="292" width="304" height="42" rx="4" fill="#f5f0e6"/>
+    <text x="40" y="312" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Functional</text>
+    <text x="40" y="328" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Essential (locked on)</text>
+
+    <rect x="28" y="348" width="304" height="36" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="370" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Export My Data</text>
+    <rect x="28" y="392" width="304" height="36" rx="6" fill="#ef4444"/>
+    <text x="180" y="414" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#fff">Delete Account</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="322" cy="218" r="11" fill="#dc2626"/><text x="322" y="223" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="180" cy="404" r="11" fill="#dc2626"/><text x="180" y="409" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Page intro</text>
+      <a href="#us-001" transform="translate(110, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">h1 + lead paragraph explaining the GDPR</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">central control panel purpose.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Consent toggles</text>
+      <a href="#us-002" transform="translate(160, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Analytics / Marketing / Functional with row-</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">level switches (functional locked-on).</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">GDPR actions</text>
+      <a href="#us-003" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Export / Request Access / Delete. Each calls</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">a Supabase Edge Function with auth.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Related pages nav</text>
+      <a href="#us-004" transform="translate(200, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Outlined buttons to /privacy and /cookies —</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">cross-reference for full legal text.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/privacy-controls/page.tsx — client component renders PrivacyControls organism.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Auth-gated in practice (UX assumes logged-in user); unauth users see empty/error state.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:08 | Privacy Controls (as-is /privacy-controls) | ScriptHammer</text>
+</svg>

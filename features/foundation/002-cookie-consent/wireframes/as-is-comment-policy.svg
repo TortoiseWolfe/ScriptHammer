@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">COMMENT POLICY - /comment-policy (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="480" y="3" width="90" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="525" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+
+    <text x="200" y="118" font-family="system-ui, sans-serif" font-size="32" font-weight="bold" fill="#1f2937">Comment Policy</text>
+    <text x="200" y="154" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Last updated: 2025-01-27</text>
+
+    <!-- 2-column prose layout for the 9 sections -->
+    <g transform="translate(200, 180)">
+      <!-- Col 1 -->
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Welcome to Our Community</text>
+      <text x="0" y="22" font-family="system-ui, sans-serif" font-size="14" fill="#374151">We encourage thoughtful discussion...</text>
+
+      <text x="0" y="56" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">What We Encourage</text>
+      <text x="0" y="78" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Constructive feedback and respectful disagreement</text>
+      <text x="0" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Relevant questions and thoughtful insights</text>
+      <text x="0" y="114" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Sharing helpful resources and experiences</text>
+      <text x="0" y="132" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Supporting other community members</text>
+
+      <text x="0" y="166" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">What's Not Allowed</text>
+      <text x="0" y="188" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Spam</tspan> · promotional content, excessive links</text>
+      <text x="0" y="206" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Hate Speech</tspan> · attacks based on identity</text>
+      <text x="0" y="224" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Harassment</tspan> · threats, doxxing, bullying</text>
+      <text x="0" y="242" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Profanity</tspan> · gratuitous offensive language</text>
+      <text x="0" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Off-Topic</tspan>, <tspan font-weight="700">Misinformation</tspan>, <tspan font-weight="700">Copyright</tspan></text>
+
+      <text x="0" y="294" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Moderation Process</text>
+      <text x="0" y="316" font-family="system-ui, sans-serif" font-size="14" fill="#374151">First-time commenters reviewed; links held for</text>
+      <text x="0" y="334" font-family="system-ui, sans-serif" font-size="14" fill="#374151">review; repeat violations → permanent ban.</text>
+
+      <text x="0" y="368" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">User Accounts (Disqus)</text>
+      <text x="0" y="390" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Comments managed through Disqus. Free</text>
+      <text x="0" y="408" font-family="system-ui, sans-serif" font-size="14" fill="#374151">account + Disqus Terms of Service required.</text>
+    </g>
+
+    <g transform="translate(700, 180)">
+      <text x="0" y="0" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Enforcement</text>
+      <text x="0" y="22" font-family="system-ui, sans-serif" font-size="14" fill="#374151">1. First offense: warning + removal</text>
+      <text x="0" y="40" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2. Second offense: 7-day suspension</text>
+      <text x="0" y="58" font-family="system-ui, sans-serif" font-size="14" fill="#374151">3. Third offense: permanent ban</text>
+      <text x="0" y="76" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Severe violations → immediate permanent ban.</text>
+
+      <text x="0" y="110" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Appeals &amp; Contact</text>
+      <text x="0" y="132" font-family="system-ui, sans-serif" font-size="14" fill="#374151">To appeal: visit the <tspan font-weight="700" fill="#8b5cf6" text-decoration="underline">contact page</tspan> with:</text>
+      <text x="0" y="152" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Your Disqus username</text>
+      <text x="0" y="170" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Post URL where comment was made</text>
+      <text x="0" y="188" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Approximate date and time + reason</text>
+
+      <!-- Quick summary card (prominent box at page bottom) -->
+      <rect x="0" y="210" width="540" height="120" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="20" y="236" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Quick Summary</text>
+      <text x="20" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Be respectful, stay on topic, contribute</text>
+      <text x="20" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#374151">meaningfully. No spam, harassment, or</text>
+      <text x="20" y="296" font-family="system-ui, sans-serif" font-size="14" fill="#374151">offensive content. Violations may result in</text>
+      <text x="20" y="314" font-family="system-ui, sans-serif" font-size="14" fill="#374151">removal or bans.</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+    <g class="callout"><circle cx="170" cy="118" r="14" fill="#dc2626"/><text x="170" y="123" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="170" cy="246" r="14" fill="#dc2626"/><text x="170" y="251" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="170" cy="426" r="14" fill="#dc2626"/><text x="170" y="431" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="950" cy="500" r="14" fill="#dc2626"/><text x="950" y="505" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="20" y="118" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Comment Policy</text>
+    <text x="20" y="142" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Last updated: 2025-01-27</text>
+
+    <text x="20" y="176" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">What We Encourage</text>
+    <text x="20" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Constructive feedback</text>
+    <text x="20" y="218" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Thoughtful insights</text>
+    <text x="20" y="236" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Helpful resources</text>
+
+    <text x="20" y="268" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">What's Not Allowed</text>
+    <text x="20" y="292" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Spam · hate · harassment ·</text>
+    <text x="20" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#374151">profanity · off-topic ·</text>
+    <text x="20" y="328" font-family="system-ui, sans-serif" font-size="14" fill="#374151">misinformation · copyright</text>
+
+    <text x="20" y="362" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Enforcement</text>
+    <text x="20" y="386" font-family="system-ui, sans-serif" font-size="14" fill="#374151">1st warning → 7-day ban</text>
+    <text x="20" y="404" font-family="system-ui, sans-serif" font-size="14" fill="#374151">→ permanent ban.</text>
+
+    <rect x="16" y="430" width="328" height="100" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="452" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Quick Summary</text>
+    <text x="28" y="474" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Be respectful. Stay on</text>
+    <text x="28" y="492" font-family="system-ui, sans-serif" font-size="14" fill="#374151">topic. No spam or</text>
+    <text x="28" y="510" font-family="system-ui, sans-serif" font-size="14" fill="#374151">harassment.</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="340" cy="190" r="11" fill="#dc2626"/><text x="340" y="195" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Page heading</text>
+      <a href="#us-001" transform="translate(150, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">h1 + last-updated date. Server component,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">metadata title set via Next Metadata export.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Encouraged / Not Allowed</text>
+      <a href="#us-002" transform="translate(270, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Two bulleted lists setting community norms</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">(respectful disagreement vs. spam/hate/etc).</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Disqus accounts + enforcement</text>
+      <a href="#us-003" transform="translate(300, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Comments via Disqus. Enforcement ladder:</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">warning → 7-day ban → permanent ban.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">TL;DR callout box</text>
+      <a href="#us-004" transform="translate(230, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Highlighted bg-base-200 box at the bottom</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">with the tl;dr for skimmers.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/comment-policy/page.tsx — 9 prose sections, server component, static export friendly.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Unlike /privacy and /cookies, this page ships its full content today (no TODO gaps).</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:09 | Comment Policy (as-is /comment-policy) | ScriptHammer</text>
+</svg>
