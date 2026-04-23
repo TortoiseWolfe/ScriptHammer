@@ -112,18 +112,14 @@ def detect_status(svg_path: Path, feature_dir: Path | None = None) -> str:
     return "draft"
 
 
-def detect_kind(svg_path: Path) -> str:
-    """Distinguish route-mirroring wireframes from forward-looking ones.
+def detect_shipping(svg_path: Path) -> bool:
+    """True if the wireframe mirrors a shipping route, false if forward-looking.
 
-    'as-is'        — filename starts with `as-is-`. Mirrors a shipping route
-                     so a forker can see what they inherited.
-    'aspirational' — every other wireframe. Designs a planned feature.
-
-    Convention defined in `.specify/extensions/wireframe/wireframe-config.yml`.
+    `as-is-` filename prefix marks a wireframe hand-authored to mirror what
+    currently exists in `src/app/**/page.tsx`. Everything else is planned.
+    One screen, one file, one boolean — no second collection.
     """
-    if svg_path.name.startswith("as-is-"):
-        return "as-is"
-    return "aspirational"
+    return svg_path.name.startswith("as-is-")
 
 
 def detect_theme(svg_path: Path) -> str:
@@ -202,7 +198,7 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
                 "title": extract_title(svg),
                 "status": detect_status(svg, feature_dir),
                 "theme": detect_theme(svg),
-                "kind": detect_kind(svg),
+                "shipping": detect_shipping(svg),
                 "svg_file": svg.name,
             })
         features.append({
@@ -211,10 +207,6 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
             "category": category,
             "source_path": str(rel),  # original path under root (category/feature)
             "wireframes": feature_entries,
-            # Aggregate signals so the viewer can decorate the feature header
-            # without re-walking the wireframe list.
-            "has_as_is": any(w["kind"] == "as-is" for w in feature_entries),
-            "has_aspirational": any(w["kind"] == "aspirational" for w in feature_entries),
         })
 
     # Flat list is what the viewer iterates for nav + prev/next.
@@ -236,7 +228,7 @@ def build_manifest(root: Path, path_prefix: str) -> dict:
             "category": f.get("category", ""),
             "status": wf["status"],
             "theme": wf["theme"],
-            "kind": wf["kind"],
+            "shipping": wf["shipping"],
             "svg_file": wf["svg_file"],
         }
         for f in features

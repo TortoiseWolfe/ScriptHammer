@@ -80,20 +80,18 @@
       border-top: none;
     }
 
-    /* Top-level kind grouping (As-Is vs Aspirational). Sits above the
-       per-feature category headers and wraps a contiguous run of features. */
-    .kind-header {
-      font-size: 13px;
+    /* One flat list — no top-level kind grouping. Each nav link carries its
+       own ✓/○ shipping marker so forkers can read status inline. */
+    .ship-mark {
+      display: inline-block;
+      width: 16px;
       font-weight: 700;
-      color: #f3f4f6;
-      padding: 18px 20px 10px;
-      letter-spacing: 0.5px;
-      background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
-      border-top: 2px solid #8b5cf6;
-      border-bottom: 1px solid #374151;
+      color: #22c55e;  /* ✓ shipping */
+      font-size: 14px;
     }
-    .kind-header:first-child {
-      border-top: none;
+    /* Unshipped entries use ○ with a muted color so the eye slides past them. */
+    .nav-links a .ship-mark:not([title="shipping"]) {
+      color: #6b7280;
     }
 
     .nav-category .category-header {
@@ -934,31 +932,12 @@
         draft: '📝',        // never validated/reviewed
       };
 
-      // Two top-level groups so a forker can answer "what ships today" vs
-      // "what's planned" without reading every feature.
-      const KIND_LABEL = {
-        'as-is': '📍 As-Is — what ships today',
-        aspirational: '📐 Aspirational — what is planned',
-      };
+      // One screen, one file. `shipping: true` marks wireframes that mirror
+      // what's already in src/app/**/page.tsx; everything else is planned.
+      // The per-item ✓/○ marker tells a forker what they inherited vs what
+      // still needs to be built. No separate collections.
 
       const features = manifest.features || [];
-
-      // Partition features by which kinds they contain. A feature can appear
-      // in both groups if it has a mix (rare but supported).
-      const featuresByKind = {
-        'as-is': [],
-        aspirational: [],
-      };
-      features.forEach(feature => {
-        const asIsWfs = feature.wireframes.filter(w => w.kind === 'as-is');
-        const aspirWfs = feature.wireframes.filter(w => w.kind === 'aspirational');
-        if (asIsWfs.length) {
-          featuresByKind['as-is'].push({ ...feature, wireframes: asIsWfs });
-        }
-        if (aspirWfs.length) {
-          featuresByKind.aspirational.push({ ...feature, wireframes: aspirWfs });
-        }
-      });
 
       const renderFeature = (feature, fIdx) => {
         const catDiv = document.createElement('div');
@@ -1003,6 +982,15 @@
           // matches the flat manifest's path shape exactly.
           const svgUrl = `${feature.id}/${wf.svg_file || wf.path}`;
           a.setAttribute('data-svg', svgUrl);
+
+          // Leading ✓/○ is the "does this ship yet" marker. One screen,
+          // one file, one state — no separate collections.
+          const shipMark = document.createElement('span');
+          shipMark.className = 'ship-mark';
+          shipMark.textContent = wf.shipping ? '✓ ' : '○ ';
+          shipMark.title = wf.shipping ? 'shipping' : 'planned';
+          a.appendChild(shipMark);
+
           a.appendChild(document.createTextNode(wf.title + ' '));
 
           const emoji = STATUS_EMOJI[wf.status];
@@ -1028,22 +1016,10 @@
         return catDiv;
       };
 
-      // Emit the two top-level kind groups in priority order: as-is first
-      // (what a forker sees today) then aspirational.
-      ['as-is', 'aspirational'].forEach(kind => {
-        const group = featuresByKind[kind];
-        if (!group.length) return;
-
-        const total = group.reduce((sum, f) => sum + f.wireframes.length, 0);
-
-        const kindHeader = document.createElement('div');
-        kindHeader.className = 'kind-header';
-        kindHeader.textContent = `${KIND_LABEL[kind]} (${total})`;
-        container.appendChild(kindHeader);
-
-        group.forEach((feature, idx) => {
-          container.appendChild(renderFeature(feature, idx));
-        });
+      // One flat list, ordered by the manifest's natural feature order.
+      // Per-wireframe ✓/○ marker tells forkers what ships vs what's planned.
+      features.forEach((feature, idx) => {
+        container.appendChild(renderFeature(feature, idx));
       });
     }
 
