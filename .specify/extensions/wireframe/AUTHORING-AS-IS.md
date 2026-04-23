@@ -67,12 +67,20 @@ Identical to aspirational wireframes:
 ## Annotations
 
 As-is wireframes describe what ships, not a spec. Use the annotation panel
-to call out 4–6 visible elements with:
+to call out **at least 4** visible elements (ANN-002 enforces `>=4` callouts):
 
 - **Title + brief description** — what the element is and does in real app.
-- **No FR/SC/US badge pills** — as-is has no traceable requirements.
-- Optional: clickable fragment links (`<a href="#section">`) if you want to
-  cross-reference other as-is wireframes.
+- **US- badge pill per callout group** — validator (US-001) requires every
+  annotation group to be US-anchored. As-is wireframes don't have a real
+  spec-backed US, so use a synthetic US number matching the route's
+  responsibility (e.g. `US-001` = primary content, `US-002` = interaction,
+  `US-003` = output). Reference: `as-is-accessibility.svg` uses US-001
+  through US-005 for its 5 annotation groups.
+- Optional FR/SC badges for cross-referencing real spec items if the as-is
+  route traces cleanly to aspirational spec requirements.
+- Callout circles appear on the SVG itself (numbered red circles over the
+  page elements), and the corresponding numbered callout group appears in
+  the annotation panel with the US badge + narrative.
 
 ## Validation
 
