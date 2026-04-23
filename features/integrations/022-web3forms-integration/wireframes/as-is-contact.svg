@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">CONTACT PAGE - /contact (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <text x="640" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Get in Touch</text>
+    <text x="640" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Have a question, suggestion, or just want to say hello? We&apos;d love to hear from you!</text>
+
+    <!-- 2-col layout -->
+    <!-- Left col: "Why contact us" + other ways -->
+    <g transform="translate(100, 180)">
+      <text x="0" y="20" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Why Contact Us?</text>
+      <text x="0" y="56" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Report bugs or issues</text>
+      <text x="0" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Request new features</text>
+      <text x="0" y="104" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Get help with implementation</text>
+      <text x="0" y="128" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Share your feedback</text>
+
+      <text x="0" y="176" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#1f2937">Response Time</text>
+      <text x="0" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">We typically respond within 24-48 hours on business days.</text>
+
+      <text x="0" y="244" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#1f2937">Other Ways to Connect</text>
+      <text x="0" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">⎘ GitHub Issues</text>
+      <text x="0" y="300" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">⎘ GitHub Discussions</text>
+    </g>
+
+    <!-- Right col: ContactForm card -->
+    <rect x="660" y="180" width="520" height="400" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="684" y="220" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Send us a message</text>
+
+    <text x="684" y="260" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Name *</text>
+    <rect x="684" y="270" width="464" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <text x="684" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Email *</text>
+    <rect x="684" y="338" width="464" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <text x="684" y="396" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Message *</text>
+    <rect x="684" y="406" width="464" height="100" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <rect x="684" y="524" width="464" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="916" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Send Message</text>
+
+    <text x="640" y="614" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Your privacy is important to us. We&apos;ll never share your information.</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="112" r="14" fill="#dc2626"/><text x="640" y="117" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="66" cy="200" r="14" fill="#dc2626"/><text x="66" y="205" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1178" cy="220" r="14" fill="#dc2626"/><text x="1178" y="225" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1178" cy="546" r="14" fill="#dc2626"/><text x="1178" y="551" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Get in Touch</text>
+    <text x="180" y="152" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">We&apos;d love to hear from you!</text>
+
+    <rect x="16" y="176" width="328" height="460" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="208" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Send us a message</text>
+    <text x="32" y="240" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Name *</text>
+    <rect x="32" y="250" width="296" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="32" y="308" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Email *</text>
+    <rect x="32" y="318" width="296" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="32" y="376" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">Message *</text>
+    <rect x="32" y="386" width="296" height="120" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="32" y="524" width="296" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="180" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Send Message</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="546" r="11" fill="#dc2626"/><text x="180" y="551" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Page header</text>
+      <a href="#us-001" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Centered title + warm subhead. Metadata sets</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OpenGraph tags for share cards.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">"Why contact" list</text>
+      <a href="#us-002" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Reduces friction by stating what kinds of</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">messages are welcome + response SLA.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">ContactForm card</text>
+      <a href="#us-003" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Name/email/message fields, React Hook Form +</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">zod validation. Posts to Web3Forms endpoint.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Submit</text>
+      <a href="#us-004" transform="translate(100, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Disabled until fields valid. Shows inline</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">success/error alert after network round-trip.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/contact/page.tsx — server component, metadata export for SEO.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">ContactForm client component handles submit via NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:30 | Contact Page (as-is /contact) | ScriptHammer</text>
+</svg>

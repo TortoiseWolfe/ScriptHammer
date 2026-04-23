@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">SCHEDULE PAGE - /schedule (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- 3-col grid: left sticky info (1 col), right calendar (2 cols) -->
+    <!-- Left sticky -->
+    <g transform="translate(40, 100)">
+      <text x="0" y="28" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Schedule a Meeting</text>
+      <text x="0" y="56" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Book a time that works for you.</text>
+      <text x="0" y="76" font-family="system-ui, sans-serif" font-size="14" fill="#374151">We&apos;ll send a calendar invitation.</text>
+
+      <text x="0" y="116" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">What to expect:</text>
+      <text x="0" y="138" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• 15-minute quick sync</text>
+      <text x="0" y="158" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Project requirements discussion</text>
+      <text x="0" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Q&amp;A and next steps</text>
+
+      <rect x="0" y="196" width="330" height="120" rx="6" fill="#c7ddf5" stroke="#8b5cf6"/>
+      <text x="16" y="218" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">💡 Prepare for the meeting:</text>
+      <text x="16" y="240" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Include in the notes:</text>
+      <text x="16" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Your GitHub repository link</text>
+      <text x="16" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Brief project description</text>
+      <text x="16" y="296" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Specific questions / challenges</text>
+
+      <text x="0" y="342" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Time zones</text>
+      <text x="0" y="360" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Shown in your local time. Auto-</text>
+      <text x="0" y="378" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">adjusts for DST.</text>
+
+      <text x="0" y="416" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Need to reschedule?</text>
+      <text x="0" y="434" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Use the link in your confirmation.</text>
+    </g>
+
+    <!-- Calendar embed panel -->
+    <rect x="400" y="100" width="840" height="520" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="820" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CALENDLY EMBED (IFRAME)</text>
+
+    <!-- Month header -->
+    <text x="424" y="164" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">April 2026</text>
+    <text x="1216" y="164" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">&lt; previous  next &gt;</text>
+
+    <!-- Day labels -->
+    <text x="448" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Sun</text>
+    <text x="560" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Mon</text>
+    <text x="672" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Tue</text>
+    <text x="784" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Wed</text>
+    <text x="896" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Thu</text>
+    <text x="1008" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Fri</text>
+    <text x="1120" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Sat</text>
+
+    <!-- Calendar grid (4 weeks, 28 cells 92w x 60h) -->
+    <g transform="translate(412, 208)">
+      <!-- Week 1: greyed out prev month days -->
+      <rect x="0" y="0" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="36" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">29</text>
+      <rect x="80" y="0" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="116" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">30</text>
+      <rect x="160" y="0" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="196" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">31</text>
+      <rect x="240" y="0" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="276" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">1</text>
+      <rect x="320" y="0" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="356" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">2</text>
+      <rect x="400" y="0" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="436" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">3</text>
+      <rect x="480" y="0" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="516" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">4</text>
+      <rect x="560" y="0" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="596" y="32" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">5</text>
+
+      <!-- Week 2 -->
+      <rect x="0" y="64" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="36" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">6</text>
+      <rect x="80" y="64" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="116" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">7</text>
+      <rect x="160" y="64" width="72" height="56" rx="4" fill="#8b5cf6"/>
+      <text x="196" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">8</text>
+      <rect x="240" y="64" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="276" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">9</text>
+      <rect x="320" y="64" width="72" height="56" rx="4" fill="#c7ddf5"/>
+      <text x="356" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">10</text>
+      <rect x="400" y="64" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="436" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">11</text>
+      <rect x="480" y="64" width="72" height="56" rx="4" fill="#e8d4b8"/>
+      <text x="516" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#9ca3af">12</text>
+    </g>
+
+    <!-- Time slots below calendar for selected day -->
+    <text x="424" y="388" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">AVAILABLE TIMES — TUE APRIL 8</text>
+    <rect x="424" y="400" width="120" height="36" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="484" y="422" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">9:00 AM</text>
+    <rect x="552" y="400" width="120" height="36" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="612" y="422" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">10:30 AM</text>
+    <rect x="680" y="400" width="120" height="36" rx="4" fill="#8b5cf6"/>
+    <text x="740" y="422" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">1:00 PM</text>
+    <rect x="808" y="400" width="120" height="36" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="868" y="422" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2:15 PM</text>
+
+    <rect x="424" y="448" width="792" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="820" y="476" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Confirm 1:00 PM →</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="230" cy="128" r="14" fill="#dc2626"/><text x="230" y="133" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="360" cy="218" r="14" fill="#dc2626"/><text x="360" y="223" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="630" cy="272" r="14" fill="#dc2626"/><text x="630" y="277" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1236" cy="470" r="14" fill="#dc2626"/><text x="1236" y="475" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="20" y="128" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">Schedule a Meeting</text>
+    <text x="20" y="148" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Book a 15-minute sync.</text>
+
+    <rect x="16" y="168" width="328" height="80" rx="6" fill="#c7ddf5" stroke="#8b5cf6"/>
+    <text x="32" y="190" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">💡 Prepare:</text>
+    <text x="32" y="208" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• GitHub repo link</text>
+    <text x="32" y="226" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Project description</text>
+    <text x="32" y="244" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Questions</text>
+
+    <rect x="16" y="264" width="328" height="360" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="180" y="288" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CALENDAR</text>
+    <text x="180" y="320" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">April 2026</text>
+
+    <g transform="translate(32, 336)">
+      <rect x="0" y="0" width="40" height="36" rx="4" fill="#c7ddf5"/>
+      <text x="20" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">6</text>
+      <rect x="48" y="0" width="40" height="36" rx="4" fill="#c7ddf5"/>
+      <text x="68" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">7</text>
+      <rect x="96" y="0" width="40" height="36" rx="4" fill="#8b5cf6"/>
+      <text x="116" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">8</text>
+      <rect x="144" y="0" width="40" height="36" rx="4" fill="#c7ddf5"/>
+      <text x="164" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">9</text>
+      <rect x="192" y="0" width="40" height="36" rx="4" fill="#c7ddf5"/>
+      <text x="212" y="22" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">10</text>
+    </g>
+
+    <text x="32" y="408" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">TIMES</text>
+    <rect x="32" y="420" width="96" height="36" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="80" y="442" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">9 AM</text>
+    <rect x="136" y="420" width="96" height="36" rx="4" fill="#8b5cf6"/>
+    <text x="184" y="442" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">1 PM</text>
+
+    <rect x="16" y="576" width="328" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="600" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Confirm 1 PM →</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="600" r="11" fill="#dc2626"/><text x="180" y="605" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Sticky info column</text>
+      <a href="#us-001" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">lg:sticky top-8 keeps context visible as calendar</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">scrolls. Includes prep-checklist callout.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Calendar iframe (dynamic)</text>
+      <a href="#us-002" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CalendarEmbed loaded via next/dynamic (ssr:false)</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">so the 3rd-party script doesn&apos;t block FCP.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Day availability grid</text>
+      <a href="#us-003" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Calendly-style month view. Blue cells = has slots,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">tan = unavailable, purple = selected.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Confirm CTA</text>
+      <a href="#us-004" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Opens Calendly booking modal inside iframe.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Event confirmation arrives via email.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/schedule/page.tsx — dynamic import of CalendarEmbed (Calendly inline mode).</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Grid cols 1-3: sidebar; cols 4-12: iframe (min-h-[1200px]). Adjusts for DST automatically.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:31 | Schedule Page (as-is /schedule) | ScriptHammer</text>
+</svg>

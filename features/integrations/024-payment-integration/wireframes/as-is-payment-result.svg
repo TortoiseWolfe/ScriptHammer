@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">PAYMENT RESULT PAGE - /payment-result (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <text x="40" y="108" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Payment Result</text>
+
+    <!-- PaymentStatusDisplay (success state) -->
+    <rect x="40" y="140" width="540" height="360" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="80" cy="180" r="24" fill="#22c55e"/>
+    <text x="80" y="187" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#fff">✓</text>
+    <text x="120" y="175" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">Payment succeeded</text>
+    <text x="120" y="198" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Transaction completed · 2 seconds ago</text>
+
+    <line x1="64" y1="228" x2="556" y2="228" stroke="#b8a080"/>
+
+    <text x="64" y="260" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">AMOUNT</text>
+    <text x="556" y="260" text-anchor="end" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">$20.00 USD</text>
+
+    <text x="64" y="296" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PROVIDER</text>
+    <text x="556" y="296" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Stripe</text>
+
+    <text x="64" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">INTENT ID</text>
+    <text x="556" y="328" text-anchor="end" font-family="monospace" font-size="14" fill="#1f2937">pi_3NzxyAbc1234</text>
+
+    <text x="64" y="360" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CARD</text>
+    <text x="556" y="360" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">VISA •••• 4242</text>
+
+    <text x="64" y="392" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">DESCRIPTION</text>
+    <text x="556" y="392" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Demo Product - $20.00</text>
+
+    <text x="64" y="424" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">RECEIPT</text>
+    <text x="556" y="424" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">Emailed to jonpohlner@gmail.com</text>
+
+    <line x1="64" y1="446" x2="556" y2="446" stroke="#b8a080"/>
+    <text x="64" y="476" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Sent via Supabase realtime · updates automatically</text>
+
+    <!-- Info panel on right -->
+    <rect x="600" y="140" width="620" height="200" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="620" y="170" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT HAPPENS NEXT</text>
+    <text x="620" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Receipt email sent</text>
+    <text x="620" y="224" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Transaction added to your history</text>
+    <text x="620" y="248" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ Webhook validated signature</text>
+    <text x="620" y="272" font-family="system-ui, sans-serif" font-size="14" fill="#374151">✓ RLS policy confirmed ownership</text>
+    <text x="620" y="308" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Reached this page via provider redirect with ?id=…</text>
+
+    <rect x="40" y="520" width="260" height="40" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="170" y="544" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← Back to Payment Demo</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="40" cy="108" r="14" fill="#dc2626"/><text x="40" y="113" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="400" cy="180" r="14" fill="#dc2626"/><text x="400" y="185" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="600" cy="328" r="14" fill="#dc2626"/><text x="600" y="333" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="310" cy="542" r="14" fill="#dc2626"/><text x="310" y="547" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">Payment Result</text>
+
+    <rect x="16" y="160" width="328" height="360" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="48" cy="196" r="18" fill="#22c55e"/>
+    <text x="48" y="202" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#fff">✓</text>
+    <text x="78" y="192" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Succeeded</text>
+    <text x="78" y="208" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">2 sec ago</text>
+
+    <line x1="32" y1="236" x2="328" y2="236" stroke="#b8a080"/>
+    <text x="32" y="264" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">AMOUNT</text>
+    <text x="328" y="264" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">$20.00</text>
+    <text x="32" y="296" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">PROVIDER</text>
+    <text x="328" y="296" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Stripe</text>
+    <text x="32" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">CARD</text>
+    <text x="328" y="328" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">•••• 4242</text>
+    <text x="32" y="360" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">ID</text>
+    <text x="328" y="360" text-anchor="end" font-family="monospace" font-size="14" fill="#1f2937">pi_3Nzxy…</text>
+
+    <line x1="32" y1="388" x2="328" y2="388" stroke="#b8a080"/>
+    <text x="180" y="416" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Receipt emailed</text>
+
+    <rect x="16" y="540" width="328" height="40" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="180" y="564" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← Back to Demo</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="564" r="11" fill="#dc2626"/><text x="180" y="569" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Result heading</text>
+      <a href="#us-001" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Success/fail/pending states branch via</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">discriminated-union state machine.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">PaymentStatusDisplay</text>
+      <a href="#us-002" transform="translate(270, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Amount, provider, card last-4, intent ID, card,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">description, receipt email — reused on demo too.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">"What happens next" panel</text>
+      <a href="#us-003" transform="translate(290, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Reassures the user the backend work is done</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">(webhook, RLS, history).</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Back to demo link</text>
+      <a href="#us-004" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">ghost btn returns to /payment-demo, preserves</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">any query params (for demo re-entry).</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/payment-result/page.tsx — Suspense + useSearchParams for ?id=uuid.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 ResultStates: loading / missing-id / not-configured / not-found / loaded / error — each renders distinct UI.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:33 | Payment Result (as-is /payment-result) | ScriptHammer</text>
+</svg>

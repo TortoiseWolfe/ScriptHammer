@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">ADMIN USERS PAGE - /admin/users (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Admin sub-nav -->
+    <rect x="0" y="60" width="1280" height="44" fill="#dcc8a8"/>
+    <text x="60" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <rect x="116" y="68" width="80" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="156" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Users</text>
+    <text x="252" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Messaging</text>
+    <text x="352" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="416" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Payments</text>
+
+    <text x="40" y="136" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1f2937">User Management</text>
+
+    <!-- Stats row -->
+    <rect x="40" y="160" width="236" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">TOTAL</text>
+    <text x="56" y="212" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">1,248</text>
+    <rect x="286" y="160" width="236" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="302" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">VERIFIED</text>
+    <text x="302" y="212" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">1,104 · 88%</text>
+    <rect x="532" y="160" width="236" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="548" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">ACTIVE 7D</text>
+    <text x="548" y="212" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">428</text>
+    <rect x="778" y="160" width="236" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="794" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">OAUTH</text>
+    <text x="794" y="212" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">562 · 45%</text>
+
+    <!-- Search bar -->
+    <rect x="40" y="244" width="680" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="60" y="268" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">🔍 Search by email, display name, or user ID…</text>
+    <rect x="734" y="244" width="200" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="750" y="268" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Role ▾  Provider ▾</text>
+    <rect x="1050" y="244" width="180" height="40" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="1140" y="268" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">⬇ Export CSV</text>
+
+    <!-- Users table -->
+    <rect x="40" y="304" width="1200" height="312" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <!-- Header row -->
+    <rect x="40" y="304" width="1200" height="36" fill="#c7ddf5"/>
+    <text x="56" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">User</text>
+    <text x="400" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Role</text>
+    <text x="520" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Provider</text>
+    <text x="680" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Verified</text>
+    <text x="820" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Last Active</text>
+    <text x="1024" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Actions</text>
+
+    <!-- Rows -->
+    <line x1="40" y1="340" x2="1240" y2="340" stroke="#b8a080"/>
+    <circle cx="68" cy="360" r="12" fill="#8b5cf6"/>
+    <text x="68" y="366" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">A</text>
+    <text x="92" y="358" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Alice Hartwell</text>
+    <text x="92" y="372" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">alice@example.com</text>
+    <text x="400" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">user</text>
+    <text x="520" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Email</text>
+    <text x="680" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ yes</text>
+    <text x="820" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2m ago</text>
+    <text x="1024" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Edit · ···</text>
+
+    <line x1="40" y1="388" x2="1240" y2="388" stroke="#b8a080"/>
+    <circle cx="68" cy="408" r="12" fill="#f59e0b"/>
+    <text x="68" y="414" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">B</text>
+    <text x="92" y="406" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Ben Li</text>
+    <text x="92" y="420" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">ben@company.co</text>
+    <text x="400" y="414" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626" font-weight="700">admin</text>
+    <text x="520" y="414" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">GitHub</text>
+    <text x="680" y="414" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ yes</text>
+    <text x="820" y="414" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2h ago</text>
+    <text x="1024" y="414" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Edit · ···</text>
+
+    <line x1="40" y1="436" x2="1240" y2="436" stroke="#b8a080"/>
+    <circle cx="68" cy="456" r="12" fill="#22c55e"/>
+    <text x="68" y="462" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">C</text>
+    <text x="92" y="454" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Carla Diaz</text>
+    <text x="92" y="468" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">c.diaz@mail.net</text>
+    <text x="400" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">user</text>
+    <text x="520" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Google</text>
+    <text x="680" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">⏳ pending</text>
+    <text x="820" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">yesterday</text>
+    <text x="1024" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Edit · ···</text>
+
+    <!-- Pagination -->
+    <text x="56" y="604" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Showing 1-50 of 1,248</text>
+    <text x="1100" y="604" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← Prev  1  2  3  … 25  Next →</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="218" cy="88" r="14" fill="#dc2626"/><text x="218" y="93" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="56" cy="212" r="14" fill="#dc2626"/><text x="56" y="217" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="952" cy="264" r="14" fill="#dc2626"/><text x="952" y="269" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1100" cy="414" r="14" fill="#dc2626"/><text x="1100" y="419" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">User Management</text>
+
+    <rect x="0" y="132" width="360" height="40" fill="#dcc8a8"/>
+    <text x="40" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <rect x="104" y="140" width="56" height="24" rx="4" fill="#8b5cf6"/>
+    <text x="132" y="157" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Users</text>
+    <text x="184" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Msg</text>
+    <text x="228" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="280" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Pay</text>
+
+    <rect x="16" y="188" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="32" y="212" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">🔍 Search…</text>
+
+    <!-- User cards -->
+    <rect x="16" y="244" width="328" height="88" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="48" cy="280" r="16" fill="#8b5cf6"/>
+    <text x="48" y="286" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">A</text>
+    <text x="76" y="274" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Alice Hartwell</text>
+    <text x="76" y="290" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">alice@example.com</text>
+    <text x="76" y="312" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">user · Email · ✓ verified</text>
+
+    <rect x="16" y="344" width="328" height="88" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="48" cy="380" r="16" fill="#f59e0b"/>
+    <text x="48" y="386" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">B</text>
+    <text x="76" y="374" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Ben Li</text>
+    <text x="76" y="412" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626" font-weight="700">admin · GitHub</text>
+
+    <rect x="16" y="444" width="328" height="88" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="48" cy="480" r="16" fill="#22c55e"/>
+    <text x="48" y="486" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">C</text>
+    <text x="76" y="474" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Carla Diaz</text>
+    <text x="76" y="512" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">user · Google · ⏳ pending</text>
+
+    <text x="180" y="604" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← Prev  1/25  Next →</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="132" cy="152" r="11" fill="#dc2626"/><text x="132" y="157" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Active tab: Users</text>
+      <a href="#us-001" transform="translate(190, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Shared admin nav from admin layout.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Path segment determines active highlight.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Audience stat cards</text>
+      <a href="#us-002" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">AdminUserService.getStats() → total, verified,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">active-7d, OAuth-signups (with %).</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Search + filters + export</text>
+      <a href="#us-003" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">300ms debounce on search. listUsers()</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">server-side paginated @ 50/page.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Row actions</text>
+      <a href="#us-004" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Edit (role, status) + kebab menu (disable,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">send reset, audit trail). RLS-gated mutations.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/admin/users/page.tsx — AdminUserManagement organism backed by AdminUserService.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Service initialized once per session; refetches on search/page change reuse the same instance.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:35 | Admin Users (as-is /admin/users) | ScriptHammer</text>
+</svg>

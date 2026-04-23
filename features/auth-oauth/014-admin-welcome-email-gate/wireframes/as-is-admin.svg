@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">ADMIN DASHBOARD PAGE - /admin (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Admin sub-nav -->
+    <rect x="0" y="60" width="1280" height="44" fill="#dcc8a8"/>
+    <rect x="20" y="68" width="80" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="60" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Overview</text>
+    <text x="136" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <text x="208" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Messaging</text>
+    <text x="308" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="372" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Payments</text>
+
+    <text x="40" y="136" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Admin Dashboard</text>
+    <text x="40" y="158" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">System overview across all users</text>
+
+    <!-- Date range filter -->
+    <rect x="900" y="128" width="320" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="920" y="152" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2026-03-23 → 2026-04-22</text>
+    <text x="1200" y="152" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">▾</text>
+
+    <!-- Stats grid (4 cards) -->
+    <rect x="40" y="180" width="290" height="112" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="208" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">TOTAL USERS</text>
+    <text x="56" y="252" font-family="system-ui, sans-serif" font-size="34" font-weight="700" fill="#1f2937">1,248</text>
+    <text x="56" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">▲ 12% vs prior 30 days</text>
+
+    <rect x="340" y="180" width="290" height="112" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="356" y="208" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">MESSAGES</text>
+    <text x="356" y="252" font-family="system-ui, sans-serif" font-size="34" font-weight="700" fill="#1f2937">38,421</text>
+    <text x="356" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">▲ 18%</text>
+
+    <rect x="640" y="180" width="290" height="112" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="656" y="208" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PAYMENTS</text>
+    <text x="656" y="252" font-family="system-ui, sans-serif" font-size="34" font-weight="700" fill="#1f2937">$14,280</text>
+    <text x="656" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b">▼ 3%</text>
+
+    <rect x="940" y="180" width="290" height="112" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="956" y="208" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">AUTH EVENTS</text>
+    <text x="956" y="252" font-family="system-ui, sans-serif" font-size="34" font-weight="700" fill="#1f2937">5,892</text>
+    <text x="956" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">▲ 6%</text>
+
+    <!-- Sparkline trends panel -->
+    <rect x="40" y="308" width="1190" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="60" y="336" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">SIGNUPS - LAST 30 DAYS</text>
+
+    <!-- Sparkline -->
+    <polyline points="60,440 90,432 120,420 150,430 180,415 210,408 240,418 270,402 300,410 330,390 360,398 390,380 420,388 450,370 480,362 510,378 540,350 570,358 600,342 630,330 660,348 690,332 720,318 750,325 780,308 810,320 840,298 870,305 900,292 930,280 960,290 990,272 1020,282 1050,264 1080,275 1110,258 1140,268 1170,252 1200,242" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+    <polyline points="60,460 200,456 400,448 600,444 800,438 1000,432 1200,426" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="3 3"/>
+    <text x="1200" y="480" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">— signups · - - verified</text>
+
+    <!-- Latest activity panel -->
+    <rect x="40" y="504" width="1190" height="120" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="60" y="530" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">LATEST ACTIVITY</text>
+    <text x="60" y="554" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">14:22  user@example.com verified email</text>
+    <text x="60" y="574" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">14:18  Payment $20 succeeded (Stripe)</text>
+    <text x="60" y="594" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">14:09  New user signup: c.diaz@…</text>
+    <text x="1210" y="616" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">View audit →</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="118" cy="88" r="14" fill="#dc2626"/><text x="118" y="93" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="1236" cy="146" r="14" fill="#dc2626"/><text x="1236" y="151" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="56" cy="252" r="14" fill="#dc2626"/><text x="56" y="257" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="60" cy="436" r="14" fill="#dc2626"/><text x="60" y="441" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">Admin Dashboard</text>
+
+    <!-- Mobile sub-nav scroll -->
+    <rect x="0" y="132" width="360" height="40" fill="#dcc8a8"/>
+    <rect x="16" y="140" width="72" height="24" rx="4" fill="#8b5cf6"/>
+    <text x="52" y="157" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Overview</text>
+    <text x="104" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <text x="156" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Msg</text>
+    <text x="196" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="244" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Pay</text>
+
+    <!-- Stacked stats -->
+    <rect x="16" y="188" width="328" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="212" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">USERS</text>
+    <text x="32" y="250" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">1,248</text>
+    <text x="328" y="250" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">▲ 12%</text>
+
+    <rect x="16" y="280" width="328" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">MESSAGES</text>
+    <text x="32" y="342" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">38,421</text>
+    <text x="328" y="342" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">▲ 18%</text>
+
+    <rect x="16" y="372" width="328" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="396" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">PAYMENTS</text>
+    <text x="32" y="434" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">$14,280</text>
+
+    <rect x="16" y="464" width="328" height="160" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="488" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">SIGNUPS (30d)</text>
+    <polyline points="32,580 80,572 120,564 160,552 200,536 240,522 280,508 320,492" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="152" r="11" fill="#dc2626"/><text x="180" y="157" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Admin sub-nav</text>
+      <a href="#us-001" transform="translate(160, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 tabs: overview (active), users, messaging,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">audit, payments. Role-gated via admin RLS.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Date range filter</text>
+      <a href="#us-002" transform="translate(190, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">DateRangeFilter molecule; change re-windows</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">sparklines (not *_stats which are all-time).</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">4-stat composite card</text>
+      <a href="#us-003" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Delivered by AdminOverviewService composite RPC</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">— single round-trip instead of 4+4 before.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Sparkline trends</text>
+      <a href="#us-004" transform="translate(180, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">30-day signup / verification series. Dashed</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">line shows verified-only subset.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/admin/page.tsx — uses AdminOverviewService + AdminDashboardOverview organism.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Admin role enforced via RLS + JWT claims; non-admin users redirect to /profile.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:34 | Admin Dashboard (as-is /admin) | ScriptHammer</text>
+</svg>
