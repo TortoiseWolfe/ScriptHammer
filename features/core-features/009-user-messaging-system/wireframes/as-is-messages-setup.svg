@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">MESSAGING SETUP PAGE - /messages/setup (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <text x="640" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Set Up Encrypted Messaging</text>
+
+    <!-- Card (max-w-md = ~448px) -->
+    <rect x="384" y="140" width="512" height="460" rx="12" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Info alert -->
+    <rect x="408" y="160" width="464" height="84" rx="6" fill="#c7ddf5" stroke="#3b82f6"/>
+    <circle cx="432" cy="184" r="12" fill="#3b82f6"/>
+    <text x="432" y="189" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#fff">i</text>
+    <text x="456" y="182" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Save this password!</text>
+    <text x="456" y="204" font-family="system-ui, sans-serif" font-size="14" fill="#374151">This password encrypts your messages.</text>
+    <text x="456" y="222" font-family="system-ui, sans-serif" font-size="14" fill="#374151">You&apos;ll need it when signing in on new devices.</text>
+
+    <!-- Hidden username (shown for password managers) -->
+    <text x="408" y="276" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">ACCOUNT</text>
+    <rect x="408" y="286" width="464" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="424" y="311" font-family="system-ui, sans-serif" font-size="14" fill="#374151">jonpohlner@gmail.com</text>
+
+    <!-- Password -->
+    <text x="408" y="346" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">MESSAGING PASSWORD</text>
+    <text x="872" y="346" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b" font-weight="600">Save this!</text>
+    <rect x="408" y="356" width="464" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="424" y="381" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Create a messaging password</text>
+    <text x="848" y="381" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">👁</text>
+
+    <!-- Confirm -->
+    <text x="408" y="416" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CONFIRM PASSWORD</text>
+    <rect x="408" y="426" width="464" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="424" y="451" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Confirm your password</text>
+
+    <text x="408" y="486" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b" font-style="italic">Your password manager should prompt to save this password</text>
+
+    <!-- Submit -->
+    <rect x="408" y="508" width="464" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="640" y="536" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Set Up Encrypted Messaging</text>
+
+    <text x="640" y="580" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Your messages are end-to-end encrypted.</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="110" r="14" fill="#dc2626"/><text x="640" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="900" cy="202" r="14" fill="#dc2626"/><text x="900" y="207" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="900" cy="376" r="14" fill="#dc2626"/><text x="900" y="381" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="900" cy="530" r="14" fill="#dc2626"/><text x="900" y="535" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Set Up Messaging</text>
+
+    <rect x="16" y="160" width="328" height="68" rx="6" fill="#c7ddf5" stroke="#3b82f6"/>
+    <text x="32" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Save this password!</text>
+    <text x="32" y="204" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Encrypts your messages.</text>
+    <text x="32" y="220" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Needed on new devices.</text>
+
+    <text x="16" y="258" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">ACCOUNT</text>
+    <rect x="16" y="266" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="291" font-family="system-ui, sans-serif" font-size="14" fill="#374151">jonpohlner@gmail.com</text>
+
+    <text x="16" y="328" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">MSG PASSWORD</text>
+    <rect x="16" y="336" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="361" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Create password</text>
+
+    <text x="16" y="398" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CONFIRM</text>
+    <rect x="16" y="406" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="431" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Confirm password</text>
+
+    <rect x="16" y="476" width="328" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="180" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Set Up Messaging</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="500" r="11" fill="#dc2626"/><text x="180" y="505" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Full page (not overlay)</text>
+      <a href="#us-001" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password-manager-friendly full page instead of</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">modal — browsers save credentials natively.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Info alert — "Save this"</text>
+      <a href="#us-002" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Critical warning: forgetting this password</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">means losing access to all messages.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Password fields (with toggle)</text>
+      <a href="#us-003" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">autoComplete="new-password" triggers PM save.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Eye icon toggles visibility. Min 8 chars.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Submit &amp; init keys</text>
+      <a href="#us-004" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Derives key from password, initializes ECDH</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">pair, sends welcome message → redirect.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/messages/setup/page.tsx — keyManagementService.initializeKeys(password).</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OAuth users see "Since you signed in with [provider]…" copy variant (FR from 008).</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:26 | Messaging Setup (as-is /messages/setup) | ScriptHammer</text>
+</svg>
