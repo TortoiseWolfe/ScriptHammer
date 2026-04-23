@@ -94,6 +94,9 @@ storybook-static/
 !.specify/extensions/*/viewer/
 !.specify/extensions/*/viewer/viewer-config.json
 !.specify/extensions/*/viewer/viewer.html
+# Project-local authoring conventions doc (ScriptHammer-specific as-is
+# wireframe rules). Extension-shipped; re-apply on update if wiped.
+!.specify/extensions/*/AUTHORING-AS-IS.md
 # Registered wireframe-extension skills. The payload is installed by
 # `./specify extension add wireframe`, but we track the SKILL.md copies so
 # local ScriptHammer-specific preamble (path conventions) persists across

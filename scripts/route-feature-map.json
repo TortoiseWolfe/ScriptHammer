@@ -1,0 +1,197 @@
+{
+  "schema_version": "1.0",
+  "description": "Authoritative mapping: shipping app routes → owning feature dir. Used by as-is wireframe authoring and drift detection. Routes come from src/app/**/page.tsx; feature paths are features/<category>/<NNN-name>/.",
+  "routes": [
+    {
+      "route": "/",
+      "feature_path": "features/foundation/000-landing-page",
+      "as_is_filename": "as-is-root.svg"
+    },
+    {
+      "route": "/accessibility",
+      "feature_path": "features/foundation/001-wcag-aa-compliance",
+      "as_is_filename": "as-is-accessibility.svg",
+      "status": "done"
+    },
+    {
+      "route": "/themes",
+      "feature_path": "features/foundation/001-wcag-aa-compliance",
+      "as_is_filename": "as-is-themes.svg"
+    },
+    {
+      "route": "/status",
+      "feature_path": "features/foundation/001-wcag-aa-compliance",
+      "as_is_filename": "as-is-status.svg"
+    },
+    {
+      "route": "/wireframes",
+      "feature_path": "features/foundation/001-wcag-aa-compliance",
+      "as_is_filename": "as-is-wireframes.svg"
+    },
+    {
+      "route": "/cookies",
+      "feature_path": "features/foundation/002-cookie-consent",
+      "as_is_filename": "as-is-cookies.svg"
+    },
+    {
+      "route": "/privacy",
+      "feature_path": "features/foundation/002-cookie-consent",
+      "as_is_filename": "as-is-privacy.svg"
+    },
+    {
+      "route": "/privacy-controls",
+      "feature_path": "features/foundation/002-cookie-consent",
+      "as_is_filename": "as-is-privacy-controls.svg"
+    },
+    {
+      "route": "/comment-policy",
+      "feature_path": "features/foundation/002-cookie-consent",
+      "as_is_filename": "as-is-comment-policy.svg"
+    },
+    {
+      "route": "/sign-in",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-sign-in.svg"
+    },
+    {
+      "route": "/sign-up",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-sign-up.svg"
+    },
+    {
+      "route": "/verify-email",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-verify-email.svg"
+    },
+    {
+      "route": "/forgot-password",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-forgot-password.svg"
+    },
+    {
+      "route": "/reset-password",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-reset-password.svg"
+    },
+    {
+      "route": "/auth/callback",
+      "feature_path": "features/foundation/003-user-authentication",
+      "as_is_filename": "as-is-auth-callback.svg"
+    },
+    {
+      "route": "/docs",
+      "feature_path": "features/foundation/006-template-fork-experience",
+      "as_is_filename": "as-is-docs.svg"
+    },
+    {
+      "route": "/game",
+      "feature_path": "features/foundation/000-landing-page",
+      "as_is_filename": "as-is-game.svg"
+    },
+    {
+      "route": "/profile",
+      "feature_path": "features/core-features/008-on-the-account",
+      "as_is_filename": "as-is-profile.svg"
+    },
+    {
+      "route": "/account",
+      "feature_path": "features/core-features/008-on-the-account",
+      "as_is_filename": "as-is-account.svg"
+    },
+    {
+      "route": "/messages",
+      "feature_path": "features/core-features/009-user-messaging-system",
+      "as_is_filename": "as-is-messages.svg"
+    },
+    {
+      "route": "/messages/setup",
+      "feature_path": "features/core-features/009-user-messaging-system",
+      "as_is_filename": "as-is-messages-setup.svg"
+    },
+    {
+      "route": "/conversations",
+      "feature_path": "features/core-features/009-user-messaging-system",
+      "as_is_filename": "as-is-conversations.svg"
+    },
+    {
+      "route": "/blog",
+      "feature_path": "features/core-features/010-unified-blog-content",
+      "as_is_filename": "as-is-blog.svg"
+    },
+    {
+      "route": "/blog/[slug]",
+      "feature_path": "features/core-features/010-unified-blog-content",
+      "as_is_filename": "as-is-blog-slug.svg"
+    },
+    {
+      "route": "/blog/tags",
+      "feature_path": "features/core-features/010-unified-blog-content",
+      "as_is_filename": "as-is-blog-tags.svg"
+    },
+    {
+      "route": "/blog/tags/[tag]",
+      "feature_path": "features/core-features/010-unified-blog-content",
+      "as_is_filename": "as-is-blog-tags-tag.svg"
+    },
+    {
+      "route": "/blog/seo",
+      "feature_path": "features/core-features/010-unified-blog-content",
+      "as_is_filename": "as-is-blog-seo.svg"
+    },
+    {
+      "route": "/messages/new-group",
+      "feature_path": "features/core-features/011-group-chats",
+      "as_is_filename": "as-is-messages-new-group.svg"
+    },
+    {
+      "route": "/admin",
+      "feature_path": "features/auth-oauth/014-admin-welcome-email-gate",
+      "as_is_filename": "as-is-admin.svg"
+    },
+    {
+      "route": "/admin/users",
+      "feature_path": "features/auth-oauth/014-admin-welcome-email-gate",
+      "as_is_filename": "as-is-admin-users.svg"
+    },
+    {
+      "route": "/admin/messaging",
+      "feature_path": "features/auth-oauth/014-admin-welcome-email-gate",
+      "as_is_filename": "as-is-admin-messaging.svg"
+    },
+    {
+      "route": "/admin/audit",
+      "feature_path": "features/auth-oauth/014-admin-welcome-email-gate",
+      "as_is_filename": "as-is-admin-audit.svg"
+    },
+    {
+      "route": "/map",
+      "feature_path": "features/enhancements/021-geolocation-map",
+      "as_is_filename": "as-is-map.svg"
+    },
+    {
+      "route": "/contact",
+      "feature_path": "features/integrations/022-web3forms-integration",
+      "as_is_filename": "as-is-contact.svg"
+    },
+    {
+      "route": "/schedule",
+      "feature_path": "features/integrations/022-web3forms-integration",
+      "as_is_filename": "as-is-schedule.svg"
+    },
+    {
+      "route": "/payment-demo",
+      "feature_path": "features/integrations/024-payment-integration",
+      "as_is_filename": "as-is-payment-demo.svg"
+    },
+    {
+      "route": "/payment-result",
+      "feature_path": "features/integrations/024-payment-integration",
+      "as_is_filename": "as-is-payment-result.svg"
+    },
+    {
+      "route": "/admin/payments",
+      "feature_path": "features/integrations/024-payment-integration",
+      "as_is_filename": "as-is-admin-payments.svg"
+    }
+  ]
+}
