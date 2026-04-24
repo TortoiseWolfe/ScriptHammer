@@ -80,18 +80,158 @@
       border-top: none;
     }
 
-    /* One flat list — no top-level kind grouping. Each nav link carries its
-       own ✓/○ shipping marker so forkers can read status inline. */
-    .ship-mark {
-      display: inline-block;
-      width: 16px;
-      font-weight: 700;
-      color: #22c55e;  /* ✓ shipping */
-      font-size: 14px;
+    /* One checklist — each row carries shipping/planned treatment so the
+       distinction is scannable without reading titles. Shipping rows "pop
+       forward" (full contrast, green accent); planned rows recede (dashed
+       border, faded, italic). */
+
+    /* Filter bar at the top of the sidebar — two toggle pills. */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 12px 8px;
+      background: #0f172a;
+      border-bottom: 1px solid #1f2937;
+      position: sticky;
+      top: 0;
+      z-index: 2;
     }
-    /* Unshipped entries use ○ with a muted color so the eye slides past them. */
-    .nav-links a .ship-mark:not([title="shipping"]) {
+    .filter-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 18px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+      border: 1.5px solid transparent;
+      background: #1f2937;
+      color: #9ca3af;
+    }
+    .filter-pill.ship.active {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+    .filter-pill.plan.active {
+      background: rgba(148, 163, 184, 0.15);
+      border-color: #94a3b8;
+      color: #cbd5e1;
+    }
+    .filter-pill:hover { filter: brightness(1.15); }
+
+    /* Feature headers now carry per-feature count badges and a collapse
+       caret. Collapsed-by-default is the reduced first-glance state. */
+    .feature-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      cursor: pointer;
+      color: #e5e7eb;
+      font-size: 13px;
+      font-weight: 600;
+      border-top: 1px solid #1f2937;
+      user-select: none;
+      transition: background 0.15s;
+    }
+    .feature-header:hover { background: #1f2937; }
+    .feature-header .caret {
+      display: inline-block;
+      width: 12px;
       color: #6b7280;
+      transition: transform 0.15s;
+    }
+    .nav-section:not(.collapsed) .feature-header .caret {
+      transform: rotate(90deg);
+    }
+    .feature-header .feature-label {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .feature-header .count-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+    .feature-header .count-badge.ship {
+      background: rgba(34, 197, 94, 0.15);
+      color: #22c55e;
+    }
+    .feature-header .count-badge.plan {
+      background: rgba(148, 163, 184, 0.15);
+      color: #94a3b8;
+    }
+    .feature-header .count-badge.empty { display: none; }
+
+    /* Row-level shipping/planned treatment — the main "louder signal" change.
+       Shipping: full contrast + green 4px left border + ✓ tag.
+       Planned: faded + dashed 2px left border + italic title + ○ tag. */
+    .nav-section a.nav-row {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px 10px 18px;
+      border-left-width: 4px;
+      border-left-style: solid;
+      border-left-color: transparent;
+    }
+    .nav-section a.nav-row.ship {
+      border-left-color: #22c55e;
+      color: #f3f4f6;
+    }
+    .nav-section a.nav-row.plan {
+      border-left-style: dashed;
+      border-left-width: 2px;
+      padding-left: 20px;
+      border-left-color: #6b7280;
+      color: #9ca3af;
+      font-style: italic;
+      opacity: 0.7;
+    }
+    .nav-section a.nav-row .row-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .nav-section a.nav-row .state-tag {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .nav-section a.nav-row.ship .state-tag {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+    .nav-section a.nav-row.plan .state-tag {
+      background: rgba(107, 114, 128, 0.2);
+      color: #9ca3af;
+      font-style: normal;  /* Keep tag upright even when row title is italic */
+    }
+
+    /* Filter-hidden rows — used when a toggle is off. */
+    .nav-section a.nav-row.filtered-out,
+    .nav-category.all-filtered-out {
+      display: none;
     }
 
     .nav-category .category-header {
@@ -598,6 +738,18 @@
   <nav>
     <h1><a id="project-link-h1" href="#" target="_blank">Project</a></h1>
 
+    <!-- Filter toggles — both active = full list; click to hide a class. -->
+    <div class="filter-bar" id="filter-bar" style="display: none;">
+      <div class="filter-pill ship active" data-filter="ship" title="Toggle shipping wireframes">
+        <span>✓</span><span class="label">Shipping</span>
+        <span class="count" id="filter-ship-count">0</span>
+      </div>
+      <div class="filter-pill plan active" data-filter="plan" title="Toggle planned wireframes">
+        <span>○</span><span class="label">Planned</span>
+        <span class="count" id="filter-plan-count">0</span>
+      </div>
+    </div>
+
     <!-- Nav populated dynamically from specs/*/wireframes/*.svg on load -->
     <div id="nav-sections"></div>
 
@@ -940,9 +1092,14 @@
       const features = manifest.features || [];
 
       const renderFeature = (feature, fIdx) => {
+        const shipCount = feature.wireframes.filter(w => w.shipping).length;
+        const planCount = feature.wireframes.length - shipCount;
+
         const catDiv = document.createElement('div');
         catDiv.className = 'nav-category';
         catDiv.id = `cat-${feature.id}`;
+        catDiv.dataset.shipCount = shipCount;
+        catDiv.dataset.planCount = planCount;
 
         const header = document.createElement('div');
         header.className = 'category-header';
@@ -961,11 +1118,41 @@
         const linksDiv = document.createElement('div');
         linksDiv.className = 'category-links';
 
+        // Collapsed by default — forker sees 25 feature rows, not 61 wireframes.
+        // Expand on click or auto-expand when the active wireframe is inside.
         const section = document.createElement('div');
-        section.className = 'nav-section';
-        const h2 = document.createElement('h2');
-        h2.textContent = feature.label;
-        section.appendChild(h2);
+        section.className = 'nav-section collapsed';
+
+        // Feature header replaces the plain h2 — clickable, shows counts.
+        const fHeader = document.createElement('div');
+        fHeader.className = 'feature-header';
+
+        const caret = document.createElement('span');
+        caret.className = 'caret';
+        caret.textContent = '▸';
+        fHeader.appendChild(caret);
+
+        const fLabel = document.createElement('span');
+        fLabel.className = 'feature-label';
+        fLabel.textContent = feature.label;
+        fHeader.appendChild(fLabel);
+
+        const shipBadge = document.createElement('span');
+        shipBadge.className = 'count-badge ship' + (shipCount ? '' : ' empty');
+        shipBadge.textContent = `✓ ${shipCount}`;
+        shipBadge.title = `${shipCount} shipping wireframe${shipCount === 1 ? '' : 's'}`;
+        fHeader.appendChild(shipBadge);
+
+        const planBadge = document.createElement('span');
+        planBadge.className = 'count-badge plan' + (planCount ? '' : ' empty');
+        planBadge.textContent = `○ ${planCount}`;
+        planBadge.title = `${planCount} planned wireframe${planCount === 1 ? '' : 's'}`;
+        fHeader.appendChild(planBadge);
+
+        fHeader.addEventListener('click', () => {
+          section.classList.toggle('collapsed');
+        });
+        section.appendChild(fHeader);
 
         const navLinks = document.createElement('div');
         navLinks.className = 'nav-links';
@@ -973,25 +1160,17 @@
         feature.wireframes.forEach(wf => {
           const a = document.createElement('a');
           a.href = '#';
+          a.className = 'nav-row ' + (wf.shipping ? 'ship' : 'plan');
+          a.dataset.shipping = wf.shipping ? '1' : '0';
           // CRITICAL: data-svg must match the flat `wireframes[].path` because
           // the click handler does `wireframes.findIndex(w => w.path === path)`.
-          // The per-feature entry's `path` field is just the SVG basename, so
-          // we reconstruct the full relative path here:
-          //   feature_id ('foundation-003-user-authentication')
-          //   + '/' + wf.svg_file ('01-registration-sign-in.svg')
-          // matches the flat manifest's path shape exactly.
           const svgUrl = `${feature.id}/${wf.svg_file || wf.path}`;
           a.setAttribute('data-svg', svgUrl);
 
-          // Leading ✓/○ is the "does this ship yet" marker. One screen,
-          // one file, one state — no separate collections.
-          const shipMark = document.createElement('span');
-          shipMark.className = 'ship-mark';
-          shipMark.textContent = wf.shipping ? '✓ ' : '○ ';
-          shipMark.title = wf.shipping ? 'shipping' : 'planned';
-          a.appendChild(shipMark);
-
-          a.appendChild(document.createTextNode(wf.title + ' '));
+          const title = document.createElement('span');
+          title.className = 'row-title';
+          title.textContent = wf.title;
+          a.appendChild(title);
 
           const emoji = STATUS_EMOJI[wf.status];
           if (emoji) {
@@ -1002,10 +1181,12 @@
             a.appendChild(badge);
           }
 
-          const themeLabel = document.createElement('span');
-          themeLabel.className = 'path';
-          themeLabel.textContent = wf.theme !== 'unknown' ? `${wf.theme} theme` : '';
-          a.appendChild(themeLabel);
+          // State tag at row end — SHIPPING or PLANNED in a pill. Louder
+          // than a single-character prefix, easier to scan.
+          const tag = document.createElement('span');
+          tag.className = 'state-tag';
+          tag.textContent = wf.shipping ? 'SHIPPING' : 'PLANNED';
+          a.appendChild(tag);
 
           navLinks.appendChild(a);
         });
@@ -1017,18 +1198,67 @@
       };
 
       // One flat list, ordered by the manifest's natural feature order.
-      // Per-wireframe ✓/○ marker tells forkers what ships vs what's planned.
       features.forEach((feature, idx) => {
         container.appendChild(renderFeature(feature, idx));
       });
+
+      // Wire up the top filter bar — toggles shipping/planned rows on/off.
+      // The active wireframe's section auto-expands via expandSectionForPath()
+      // in updateView(), so no extra work needed here.
+      initFilterBar(manifest);
     }
 
-    // Boot sequence: load config, then discover wireframes, then attach nav handlers
+    // Filter bar logic: clicking a pill hides that class of rows and updates
+    // count badges / hides fully-empty feature+category containers.
+    function initFilterBar(manifest) {
+      const bar = document.getElementById('filter-bar');
+      if (!bar) return;
+
+      const totalShip = manifest.wireframes.filter(w => w.shipping).length;
+      const totalPlan = manifest.wireframes.length - totalShip;
+      document.getElementById('filter-ship-count').textContent = totalShip;
+      document.getElementById('filter-plan-count').textContent = totalPlan;
+      bar.style.display = totalShip + totalPlan > 0 ? 'flex' : 'none';
+
+      bar.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          pill.classList.toggle('active');
+          applyFilters();
+        });
+      });
+    }
+
+    function applyFilters() {
+      const showShip = document.querySelector('.filter-pill.ship')?.classList.contains('active');
+      const showPlan = document.querySelector('.filter-pill.plan')?.classList.contains('active');
+
+      document.querySelectorAll('.nav-row').forEach(row => {
+        const isShip = row.dataset.shipping === '1';
+        const visible = (isShip && showShip) || (!isShip && showPlan);
+        row.classList.toggle('filtered-out', !visible);
+      });
+
+      // Hide feature+category wrappers when all their rows are filtered out.
+      document.querySelectorAll('.nav-category').forEach(cat => {
+        const ship = parseInt(cat.dataset.shipCount || '0', 10);
+        const plan = parseInt(cat.dataset.planCount || '0', 10);
+        const hasVisible = (showShip && ship > 0) || (showPlan && plan > 0);
+        cat.classList.toggle('all-filtered-out', !hasVisible);
+      });
+    }
+
+
+    // Boot sequence: load config, then discover wireframes, then attach nav handlers.
+    // Initial view prefers (1) URL hash, (2) DEFAULT_BOOKMARK, (3) first wireframe.
     (async () => {
       await loadProjectConfig();
       await discoverWireframes();
       attachNavHandlers();
-      if (wireframes.length > 0) updateView(0);
+      if (wireframes.length > 0) {
+        const hashPath = window.location.hash.replace(/^#/, '');
+        const idx = findIndexByPath(hashPath || DEFAULT_BOOKMARK);
+        updateView(idx);
+      }
     })();
 
     // ========================================
@@ -1174,7 +1404,7 @@
     // Format: "FEATURE/FILE.svg" (e.g., "002-cookie-consent/01-consent-modal.svg")
     // Set to null to start at first wireframe
     // ========================================
-    const DEFAULT_BOOKMARK = "002-cookie-consent/01-consent-modal.svg";
+    const DEFAULT_BOOKMARK = "foundation-000-landing-page/as-is-root.svg";
 
     // Find wireframe index by path
     function findIndexByPath(path) {
@@ -1230,13 +1460,9 @@
         });
       });
 
-      // Click handlers for section headers
-      getNavSections().forEach(section => {
-        const header = section.querySelector('h2');
-        if (header) header.addEventListener('click', () => {
-          section.classList.toggle('collapsed');
-        });
-      });
+      // Feature-section collapse handlers are attached inline in
+      // renderFeature() since the fHeader element is created there and
+      // needs access to the section it toggles. Nothing to do here.
 
       // Nav link clicks
       getNavLinks().forEach(link => {
@@ -1386,7 +1612,7 @@
       nextBtn.disabled = currentIndex === wireframes.length - 1;
 
       // Update active nav link and expand its section
-      navLinks.forEach(link => {
+      getNavLinks().forEach(link => {
         link.classList.toggle('active', link.dataset.svg === wf.path);
       });
       expandSectionForPath(wf.path);
