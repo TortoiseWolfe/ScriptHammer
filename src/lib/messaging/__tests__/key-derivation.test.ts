@@ -221,6 +221,62 @@ describe('KeyDerivationService', () => {
 
       expect(result).toBe(false);
     });
+
+    // The audit (#12) flagged a concern that asymmetric missing-field cases
+    // could silently return false instead of throwing — locking out users
+    // whose stored key shape doesn't match. The implementation does check
+    // x and y on BOTH keys; these cases pin that contract so a future
+    // refactor doesn't drop one side of the symmetry.
+    describe('missing-field symmetry (audit #12)', () => {
+      const valid: JsonWebKey = {
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'AAAA',
+        y: 'BBBB',
+      };
+
+      it('returns false when derived key is missing x', () => {
+        const noX = { kty: 'EC', crv: 'P-256', y: 'BBBB' } as JsonWebKey;
+        expect(service.verifyPublicKey(noX, valid)).toBe(false);
+      });
+
+      it('returns false when derived key is missing y', () => {
+        const noY = { kty: 'EC', crv: 'P-256', x: 'AAAA' } as JsonWebKey;
+        expect(service.verifyPublicKey(noY, valid)).toBe(false);
+      });
+
+      it('returns false when stored key is missing x', () => {
+        const noX = { kty: 'EC', crv: 'P-256', y: 'BBBB' } as JsonWebKey;
+        expect(service.verifyPublicKey(valid, noX)).toBe(false);
+      });
+
+      it('returns false when stored key is missing y', () => {
+        const noY = { kty: 'EC', crv: 'P-256', x: 'AAAA' } as JsonWebKey;
+        expect(service.verifyPublicKey(valid, noY)).toBe(false);
+      });
+
+      it('returns false when both keys are missing y (symmetric incompleteness)', () => {
+        const noY: JsonWebKey = { kty: 'EC', crv: 'P-256', x: 'AAAA' };
+        expect(service.verifyPublicKey(noY, noY)).toBe(false);
+      });
+
+      it('does not throw when fields are undefined rather than missing', () => {
+        const undefX = {
+          kty: 'EC',
+          crv: 'P-256',
+          x: undefined as unknown as string,
+          y: 'BBBB',
+        } as JsonWebKey;
+        expect(() => service.verifyPublicKey(undefX, valid)).not.toThrow();
+        expect(service.verifyPublicKey(undefX, valid)).toBe(false);
+      });
+
+      it('does not throw on completely empty objects', () => {
+        const empty = {} as JsonWebKey;
+        expect(() => service.verifyPublicKey(empty, empty)).not.toThrow();
+        expect(service.verifyPublicKey(empty, empty)).toBe(false);
+      });
+    });
   });
 
   describe('end-to-end key derivation flow', () => {

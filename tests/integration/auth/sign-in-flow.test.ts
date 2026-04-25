@@ -8,7 +8,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '../../helpers/real-supabase';
 import { validateEmail } from '@/lib/auth/email-validator';
-import { RateLimiter } from '@/lib/auth/rate-limiter';
 
 describe('Sign-In Flow Integration', () => {
   let supabase: ReturnType<typeof createClient>;
@@ -108,22 +107,14 @@ describe('Sign-In Flow Integration', () => {
     expect(error?.message).toContain('Invalid');
   });
 
-  it('should enforce rate limiting after multiple failed attempts', async () => {
-    const rateLimiter = new RateLimiter('test-rate-limit', 3, 1); // 3 attempts, 1 minute
-
-    // Step 1: First 3 attempts should be allowed
-    for (let i = 0; i < 3; i++) {
-      expect(rateLimiter.isAllowed()).toBe(true);
-      rateLimiter.recordAttempt();
-    }
-
-    // Step 2: 4th attempt should be blocked
-    expect(rateLimiter.isAllowed()).toBe(false);
-    expect(rateLimiter.getTimeUntilReset()).toBeGreaterThan(0);
-
-    // Clean up
-    rateLimiter.clear();
-  });
+  // Rate limiting is enforced server-side via the Supabase RPCs
+  // `check_rate_limit` and `record_failed_attempt` (see
+  // src/lib/auth/rate-limit-check.ts). The previous test here exercised
+  // a now-deleted client-only `RateLimiter` localStorage class that no
+  // production code ever imported — that test gave a false sense of
+  // security because passing it didn't say anything about real rate
+  // limiting behavior. End-to-end coverage of the server enforcement
+  // lives in tests/contract/ + the auth E2E specs.
 
   it('should update user state after successful sign-in', async () => {
     // Sign out first
