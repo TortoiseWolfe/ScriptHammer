@@ -2,10 +2,34 @@
 
 **Feature Branch**: `038-payment-dashboard`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "Real-time dashboard with payment history, recent transactions, and real-time updates. Provides users with comprehensive visibility into their payment activity and subscription status."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- PaymentHistory + PaymentTrendChart + AdminPaymentPanel components exist
+
+### Gaps
+
+- /payment/dashboard route does not exist
+- Real-time subscription wiring incomplete
+- Live data binding for analytics chart
+
+### Notes
+
+- Tracked by GitHub issue #3 PAYMENT-DASHBOARD.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

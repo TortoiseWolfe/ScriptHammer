@@ -2,10 +2,35 @@
 
 **Feature Branch**: `014-admin-welcome-email-gate`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Backend Only
 **Input**: User description: "Two-part feature for email verification gating and admin user setup for welcome message functionality."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Backend Only
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/app/admin/ exists with sub-routes
+- Email verification logic in auth callback
+
+### Gaps
+
+- Email verification gate UI for messaging access not implemented
+- Resend verification email button missing
+- OAuth user bypass flow not verified
+
+### Notes
+
+- Admin dashboard exists but the 'gate' UX is the missing piece.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

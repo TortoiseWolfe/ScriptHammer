@@ -2,8 +2,32 @@
 
 **Feature Branch**: `019-google-analytics`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Mostly Shipped
 **Input**: User description: "A privacy-conscious Google Analytics 4 (GA4) integration with consent management that tracks user behavior, Web Vitals, and custom events. Only activates after explicit user consent."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/analytics/GoogleAnalytics/ (5-file pattern)
+- Consent-gated via ConsentContext
+
+### Gaps
+
+- .env NEXT_PUBLIC_GA_MEASUREMENT_ID empty (per-fork config)
+- Theme change event tracking incomplete
+
+### Notes
+
+- Awaits per-fork GA4 property setup; ~5 min once ID obtained.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

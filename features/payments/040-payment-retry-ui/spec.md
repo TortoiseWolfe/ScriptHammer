@@ -2,10 +2,34 @@
 
 **Feature Branch**: `040-payment-retry-ui`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Backend Only
 **Input**: User description: "Error display, retry button, and payment method update flow. Provides clear UI for handling failed payments with actionable options to resolve payment issues."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Backend Only
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- payment-service.ts retry logic; webhook handlers
+
+### Gaps
+
+- /payment/result page route missing
+- Offline error banner not implemented
+- Retry surface (UI) missing
+
+### Notes
+
+- Backend ready; user-facing routes + UX missing.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

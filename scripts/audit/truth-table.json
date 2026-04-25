@@ -1,0 +1,971 @@
+{
+  "schema_version": "1.0",
+  "generated": "2026-04-25",
+  "auditor": "Phase 1 Explore agent sweep + verification",
+  "version": "v0.0.1",
+  "stability_baseline": "post-2026-03-04 remake (feat/repo-overhaul-merge)",
+  "real_status_legend": {
+    "Shipped": "Code in src/, tests pass, AC met, no open work",
+    "Mostly Shipped": "Code complete; only config or trivial setup missing",
+    "Partial": "Substantive code exists but specific UI/route/feature missing",
+    "Backend Only": "Lib/services done; UI not built or unverified",
+    "Not Started": "No matching code in src/",
+    "Blocked": "Depends on something not done"
+  },
+  "features": [
+    {
+      "id": "000-brand-identity",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 5,
+      "code_evidence": [
+        "src/components/atomic/AnimatedLogo/",
+        "src/components/atomic/SpinningLogo/"
+      ],
+      "test_evidence": ["AnimatedLogo.test.tsx", "SpinningLogo.test.tsx"],
+      "wireframe_evidence": "1 SVG (animated-logo.svg, shipping=false, needs-regen)",
+      "gaps": [],
+      "notes": "Logo components production-ready; wireframe regen pending."
+    },
+    {
+      "id": "000-landing-page",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 4,
+      "code_evidence": ["src/app/page.tsx", "src/app/game/"],
+      "test_evidence": [
+        "tests/e2e/homepage.spec.ts",
+        "tests/e2e/game-page.spec.ts"
+      ],
+      "wireframe_evidence": "2 SVGs shipping=true",
+      "gaps": [],
+      "notes": "Landing fully functional including interactive game."
+    },
+    {
+      "id": "000-rls-implementation",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 20,
+      "code_evidence": [
+        "supabase/migrations/20251006_complete_monolithic_setup.sql (17 tables, all RLS-enabled)"
+      ],
+      "test_evidence": [
+        "tests/rls/payment-rls.test.ts",
+        "tests/e2e/security/oauth-csrf.spec.ts"
+      ],
+      "wireframe_evidence": "1 design SVG, shipping=false",
+      "gaps": [],
+      "notes": "All core tables RLS-protected; comprehensive policy coverage."
+    },
+    {
+      "id": "001-wcag-aa-compliance",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 36,
+      "code_evidence": [
+        "pa11y + axe-core integration",
+        "*.accessibility.test.tsx files across components"
+      ],
+      "test_evidence": ["tests/a11y/ directory exists"],
+      "wireframe_evidence": "3 SVGs shipping=true",
+      "gaps": [
+        "WCAG AAA scope (specs call for AAA but implementation appears AA)",
+        "4 ContactForm a11y test failures noted in PRP-STATUS",
+        "Real-time dev feedback dashboard incomplete"
+      ],
+      "notes": "Accessibility infrastructure exists; AAA-level coverage incomplete."
+    },
+    {
+      "id": "002-cookie-consent",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 18,
+      "code_evidence": [
+        "src/contexts/ConsentContext.tsx",
+        "src/app/cookies/",
+        "src/app/privacy-controls/"
+      ],
+      "test_evidence": ["E2E tests cover consent flow"],
+      "wireframe_evidence": "4 SVGs shipping=true",
+      "gaps": [],
+      "notes": "PRP-007 marked complete 2025-09-15; full GDPR compliance."
+    },
+    {
+      "id": "003-user-authentication",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 28,
+      "code_evidence": [
+        "src/lib/auth/ (13 files)",
+        "src/components/auth/ (multiple components)",
+        "src/contexts/AuthContext.tsx"
+      ],
+      "test_evidence": [
+        "tests/e2e/auth/",
+        "tests/integration/auth/oauth-flow.test.ts",
+        "tests/e2e/security/oauth-csrf.spec.ts"
+      ],
+      "wireframe_evidence": "6 SVGs shipping=true",
+      "gaps": [],
+      "notes": "Email/password + OAuth (GitHub/Google) fully shipped. ProtectedRoute auth-race regressions tracked separately as stability hotspot.",
+      "stability_hotspot": "ProtectedRoute transient auth-state flips (3 reverts: 6b4c13a, 2c97e67, 259b38d)"
+    },
+    {
+      "id": "004-mobile-first-design",
+      "category": "foundation",
+      "stated_status": "Specified",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 12,
+      "code_evidence": [
+        "src/styles/mobile-first-utilities.css",
+        "Responsive implementation across pages"
+      ],
+      "test_evidence": [
+        "tests/e2e/tests/mobile-footer.spec.ts",
+        "mobile-touch-targets.spec.ts",
+        "mobile-orientation.spec.ts"
+      ],
+      "wireframe_evidence": "2 SVGs shipping=false (needs-regen)",
+      "gaps": [
+        "Wireframes flagged for regeneration",
+        "Performance metrics testing incomplete (US5 P3)"
+      ],
+      "notes": "Responsive code shipped; wireframe regen + perf gaps remain."
+    },
+    {
+      "id": "005-security-hardening",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 44,
+      "code_evidence": [
+        "src/lib/auth/ rate-limiter, oauth-state, retry-utils",
+        "Brute force prevention + CSRF + input validation"
+      ],
+      "test_evidence": ["tests/e2e/security/ comprehensive"],
+      "wireframe_evidence": "3 SVGs shipping=false (needs-regen)",
+      "gaps": [
+        "Session timeout warning UI not visually confirmed shipping",
+        "Pre-commit secret detection (FR-042-FR-047) not fully deployed",
+        "Audit dashboard component incomplete"
+      ],
+      "notes": "Core security shipped; UX enhancements outstanding."
+    },
+    {
+      "id": "006-template-fork-experience",
+      "category": "foundation",
+      "stated_status": "Draft",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 10,
+      "code_evidence": [
+        "scripts/rebrand.sh (615 lines)",
+        "docs/FORKING.md",
+        "Payment missing-config UX banner"
+      ],
+      "test_evidence": ["Tested via fork workflow"],
+      "wireframe_evidence": "2 SVGs (1 shipping=true, 1 needs-regen)",
+      "gaps": [
+        "Supabase missing-config banner not yet applied (planned per PRP-STATUS)"
+      ],
+      "notes": "Rebrand automation complete; first-run UX still has Supabase gap."
+    },
+    {
+      "id": "007-e2e-testing-framework",
+      "category": "core-features",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 7,
+      "code_evidence": [
+        "tests/e2e/ (60+ .spec.ts files)",
+        "Playwright config 24-shard CI matrix"
+      ],
+      "test_evidence": ["CI run 24113858375 (2026-04-08) achieved 24/24 green"],
+      "wireframe_evidence": "2 SVGs shipping=false (architectural)",
+      "gaps": [],
+      "notes": "Cross-browser stable; recurring flake-mitigation revert chain noted as ongoing maintenance.",
+      "stability_hotspot": "9 rounds of flake reduction in 3 months; cross-shard isolation, webkit cache, hydration races"
+    },
+    {
+      "id": "008-on-the-account",
+      "category": "core-features",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "src/components/molecular/AvatarUpload/",
+        "src/components/atomic/AvatarDisplay/"
+      ],
+      "test_evidence": [
+        "AvatarUpload.test.tsx",
+        "AvatarUpload.accessibility.test.tsx",
+        "tests/e2e/avatar/upload.spec.ts"
+      ],
+      "wireframe_evidence": "2 SVGs shipping=true",
+      "gaps": [],
+      "notes": "Avatar upload + crop + persistence + E2E all shipped."
+    },
+    {
+      "id": "009-user-messaging-system",
+      "category": "core-features",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 27,
+      "code_evidence": [
+        "src/lib/messaging/ (~1399 lines)",
+        "src/services/messaging/ (~6562 lines)"
+      ],
+      "test_evidence": [
+        "12 E2E spec files",
+        "Unit tests for connection-service, gdpr-service, offline-queue-service"
+      ],
+      "wireframe_evidence": "3 SVGs shipping=true",
+      "gaps": [],
+      "notes": "E2E-encrypted (JWK + noble-curves); cross-browser validated.",
+      "stability_hotspot": "ConversationView regression chain (revert adae629); GDPR consent firefox regression (revert 3e67772); offline-queue IndexedDB index drift (fix 40f0d0e — verify retained)"
+    },
+    {
+      "id": "010-unified-blog-content",
+      "category": "core-features",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 5,
+      "code_evidence": [
+        "src/lib/blog/ (3 modules, 1413 lines)",
+        "src/app/blog/* routes"
+      ],
+      "test_evidence": [
+        "markdown-processor.test.ts (508 lines)",
+        "seo-analyzer.test.ts (553 lines)",
+        "toc-generator.test.ts (318 lines)"
+      ],
+      "wireframe_evidence": "5 SVGs shipping=true",
+      "gaps": [
+        "Offline editing & sync (US2) not implemented",
+        "Conflict resolution UI (US3) not implemented",
+        "Content migration tooling (US4) not implemented"
+      ],
+      "notes": "Blog routes work; advanced offline/migration features deferred."
+    },
+    {
+      "id": "011-group-chats",
+      "category": "core-features",
+      "stated_status": "Draft",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 17,
+      "code_evidence": [
+        "src/services/messaging/group-key-service.ts (818 lines)",
+        "src/services/messaging/group-service.ts (477 lines)",
+        "CreateGroupModal"
+      ],
+      "test_evidence": ["tests/e2e/messaging/group-chat-multiuser.spec.ts"],
+      "wireframe_evidence": "1 SVG shipping=true (needs-regen)",
+      "gaps": [
+        "8 stub methods in group-service.ts (see 043 — addMembers, getMembers, removeMember, leaveGroup, transferOwnership, upgradeToGroup, renameGroup, deleteGroup)"
+      ],
+      "notes": "Group creation + basic messaging work; member management blocked by 043."
+    },
+    {
+      "id": "012-welcome-message-architecture",
+      "category": "core-features",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 3,
+      "code_evidence": [
+        "src/services/messaging/welcome-service.ts (402 lines)"
+      ],
+      "test_evidence": ["welcome-service.test.ts (458 lines)"],
+      "wireframe_evidence": "1 SVG shipping=false (needs-regen)",
+      "gaps": [
+        "Admin user setup (depends on 014) not audited",
+        "Signup hook integration with 003 not verified"
+      ],
+      "notes": "Service exists; full E2E flow blocked on 014 admin gate."
+    },
+    {
+      "id": "043-group-service",
+      "category": "core-features",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "src/services/messaging/group-service.ts — 8 stub methods at lines 338, 348, 357, 366, 375, 384, 394, 403"
+      ],
+      "test_evidence": ["No dedicated unit tests for stub methods"],
+      "wireframe_evidence": "No wireframes (implementation feature)",
+      "gaps": [
+        "addMembers — stubbed",
+        "getMembers — stubbed",
+        "removeMember — stubbed",
+        "leaveGroup — stubbed",
+        "transferOwnership — stubbed",
+        "upgradeToGroup — stubbed",
+        "renameGroup — stubbed",
+        "deleteGroup — stubbed"
+      ],
+      "notes": "Backing work for 011 group-chats UI. Group creation works; member operations are the gap."
+    },
+    {
+      "id": "013-oauth-messaging-password",
+      "category": "auth-oauth",
+      "stated_status": "Draft",
+      "real_status": "Not Started",
+      "acceptance_count": 3,
+      "code_evidence": ["No OAuth-specific messaging password modal found"],
+      "test_evidence": ["No E2E tests"],
+      "wireframe_evidence": "2 SVGs shipping=false (needs-regen)",
+      "gaps": [
+        "OAuth user detection logic not implemented",
+        "Password setup modal not built",
+        "Unlock mode with OAuth provider identification missing"
+      ],
+      "notes": "Post-launch UX refinement spec; not yet started."
+    },
+    {
+      "id": "014-admin-welcome-email-gate",
+      "category": "auth-oauth",
+      "stated_status": "Draft",
+      "real_status": "Backend Only",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "src/app/admin/ exists with sub-routes",
+        "Email verification logic in auth callback"
+      ],
+      "test_evidence": ["Admin pages have E2E coverage via 046"],
+      "wireframe_evidence": "4 SVGs shipping=true (admin pages as-is)",
+      "gaps": [
+        "Email verification gate UI for messaging access not implemented",
+        "Resend verification email button missing",
+        "OAuth user bypass flow not verified"
+      ],
+      "notes": "Admin dashboard exists but the 'gate' UX is the missing piece."
+    },
+    {
+      "id": "015-oauth-display-name",
+      "category": "auth-oauth",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 3,
+      "code_evidence": [
+        "OAuth callback in src/lib/auth/ likely populates profile"
+      ],
+      "test_evidence": ["No dedicated E2E tests"],
+      "wireframe_evidence": "1 SVG shipping=false (needs-regen)",
+      "gaps": [
+        "OAuth display name extraction not verified in callback",
+        "Fallback cascade (full_name > username > email_prefix > Anonymous) not tested",
+        "Migration for existing OAuth users with empty display_name not implemented"
+      ],
+      "notes": "Callback-time fix; needs implementation + migration."
+    },
+    {
+      "id": "016-messaging-critical-fixes",
+      "category": "auth-oauth",
+      "stated_status": "Draft",
+      "real_status": "Not Started",
+      "acceptance_count": 5,
+      "code_evidence": ["Components exist but spec-listed fixes not applied"],
+      "test_evidence": ["No tests for the 5 fix scenarios"],
+      "wireframe_evidence": "4 SVGs shipping=false (needs-regen)",
+      "gaps": [
+        "Message input visibility fix not applied",
+        "Full-page OAuth setup flow not built (013 has modal; 016 wants page)",
+        "Password manager integration warnings missing",
+        "Decryption failure UI (lock icon + tooltip) missing",
+        "Participant name resolution (Unknown vs display_name vs Deleted User) not fixed"
+      ],
+      "notes": "Spec covers 5 separate UX fixes; none shipped per audit."
+    },
+    {
+      "id": "017-colorblind-mode",
+      "category": "enhancements",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 17,
+      "code_evidence": [
+        "src/components/atomic/ColorblindFilters/",
+        "src/components/molecular/ColorblindToggle/",
+        "Color matrices for 8 types"
+      ],
+      "test_evidence": ["tests/a11y/colorblind-mode.spec.ts"],
+      "wireframe_evidence": "7 SVGs shipping=true",
+      "gaps": [],
+      "notes": "Full coverage of 8 colorblind variants; theme-compatible."
+    },
+    {
+      "id": "018-font-switcher",
+      "category": "enhancements",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 17,
+      "code_evidence": [
+        "src/components/molecular/FontSwitcher/ (5-file pattern)"
+      ],
+      "test_evidence": ["tests/a11y/font-switcher.spec.ts"],
+      "wireframe_evidence": "7 SVGs shipping=true",
+      "gaps": [],
+      "notes": "6 fonts including dyslexia-friendly + high-readability."
+    },
+    {
+      "id": "019-google-analytics",
+      "category": "enhancements",
+      "stated_status": "Draft",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 20,
+      "code_evidence": [
+        "src/lib/analytics/GoogleAnalytics/ (5-file pattern)",
+        "Consent-gated via ConsentContext"
+      ],
+      "test_evidence": [
+        "tests/analytics/ga4-integration.spec.ts (4 live + 8 stubs)"
+      ],
+      "wireframe_evidence": "7 SVGs shipping=true",
+      "gaps": [
+        ".env NEXT_PUBLIC_GA_MEASUREMENT_ID empty (per-fork config)",
+        "Theme change event tracking incomplete"
+      ],
+      "notes": "Awaits per-fork GA4 property setup; ~5 min once ID obtained."
+    },
+    {
+      "id": "020-pwa-background-sync",
+      "category": "enhancements",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 20,
+      "code_evidence": [
+        "src/lib/offline-queue/ (3 files, 450 LOC)",
+        "Service worker registration",
+        "IndexedDB persistence"
+      ],
+      "test_evidence": [
+        "tests/e2e/pwa/background-sync.spec.ts (2 live + 10 stubs)"
+      ],
+      "wireframe_evidence": "Some SVGs in feature dir",
+      "gaps": [
+        "Fallback sync on visibility change for non-BG-Sync browsers (Firefox/Safari) incomplete",
+        "Retry UI feedback incomplete",
+        "Storage limit warnings missing"
+      ],
+      "notes": "Background Sync API works in Chromium; cross-browser fallback gap.",
+      "stability_hotspot": "Offline-queue IndexedDB index drift fixed 2026-04 (40f0d0e); verify retained"
+    },
+    {
+      "id": "021-geolocation-map",
+      "category": "enhancements",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 20,
+      "code_evidence": [
+        "src/app/map/page.tsx",
+        "src/components/map/GeolocationConsent/",
+        "Leaflet integration"
+      ],
+      "test_evidence": ["tests/e2e/map/geolocation.spec.ts (2 live + 8 stubs)"],
+      "wireframe_evidence": "6 SVGs shipping=true",
+      "gaps": [
+        "Keyboard navigation (arrow keys + +/- zoom) incomplete (a11y)",
+        "Accuracy radius display missing",
+        "Pop-up content variability untested"
+      ],
+      "notes": "Base map working; a11y + accuracy gaps."
+    },
+    {
+      "id": "022-web3forms-integration",
+      "category": "integrations",
+      "stated_status": "Draft",
+      "real_status": "Shipped",
+      "acceptance_count": 19,
+      "code_evidence": [
+        "src/lib/forms/useWeb3Forms.ts hook",
+        "src/components/contact/ContactForm/",
+        "Validation + spam detection"
+      ],
+      "test_evidence": ["tests/e2e/forms/form-submission.spec.ts"],
+      "wireframe_evidence": "7 SVGs shipping=true",
+      "gaps": [],
+      "notes": "Includes offline queue integration."
+    },
+    {
+      "id": "023-emailjs-integration",
+      "category": "integrations",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 15,
+      "code_evidence": [
+        "src/lib/email/ dual-provider abstraction",
+        "Failover logic"
+      ],
+      "test_evidence": ["tests/e2e/forms/email-failover.spec.ts (incomplete)"],
+      "wireframe_evidence": "No wireframes (backend feature)",
+      "gaps": [
+        "Provider health dashboard not built (admin-only, optional)",
+        "Rate-limit handling incomplete"
+      ],
+      "notes": "Foundation works transparently to users; admin UI gaps."
+    },
+    {
+      "id": "024-payment-integration",
+      "category": "integrations",
+      "stated_status": "Draft",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 24,
+      "code_evidence": [
+        "src/lib/payments/ (1124 LOC: payment-service, stripe, paypal, offline-queue, metadata-validator, connection-listener)",
+        "Supabase Edge Functions: stripe-webhook, paypal-webhook, send-payment-email (742 LOC Deno)",
+        "5 DB tables + 20+ RLS policies",
+        "PaymentButton, PaymentConsentModal, PaymentStatusDisplay, PaymentHistory, PaymentTrendChart, AdminPaymentPanel components"
+      ],
+      "test_evidence": [
+        "tests/e2e/payment/ (7 spec files: 16 live + 29 stubs)"
+      ],
+      "wireframe_evidence": "8 SVGs shipping=true",
+      "gaps": [
+        ".env empty templates only (no actual API keys)",
+        "29 test stubs require key population to unblock"
+      ],
+      "notes": "All code/components ready; blocked on Stripe + PayPal account creation (~30-60min)."
+    },
+    {
+      "id": "025-blog-social-features",
+      "category": "integrations",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 12,
+      "code_evidence": [
+        "src/components/blog/SocialShareButtons/",
+        "Author bio rendering",
+        "OpenGraph + Twitter card metadata"
+      ],
+      "test_evidence": ["Integration tests passing"],
+      "wireframe_evidence": "No wireframes (metadata-driven)",
+      "gaps": [],
+      "notes": "Platform-agnostic share URLs; WCAG AA compliant."
+    },
+    {
+      "id": "026-unified-messaging-sidebar",
+      "category": "integrations",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 15,
+      "code_evidence": [
+        "src/components/organisms/UnifiedSidebar/",
+        "src/app/messages/page.tsx"
+      ],
+      "test_evidence": ["tests/e2e/messaging/ tab-switching tests"],
+      "wireframe_evidence": "No wireframes (in-app UI)",
+      "gaps": [
+        "Mobile drawer transitions need polish",
+        "Real-time badge count sync has latency"
+      ],
+      "notes": "Desktop stable; mobile experience acceptable but unpolished."
+    },
+    {
+      "id": "027-ux-polish",
+      "category": "polish",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 7,
+      "code_evidence": [
+        "src/components/atomic/MessageBubble/MessageBubble.tsx parseMarkdown()",
+        "src/components/molecular/MessageInput/MessageInput.tsx charCount"
+      ],
+      "test_evidence": ["E2E coverage exists; no formal AC suite"],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "Markdown edge cases (nested, malformed) untested",
+        "NaN fallback for charCount not verified",
+        "No a11y test coverage for markdown rendering"
+      ],
+      "notes": "Implemented piecemeal across two components."
+    },
+    {
+      "id": "028-enhanced-geolocation",
+      "category": "polish",
+      "stated_status": "Specified",
+      "real_status": "Not Started",
+      "acceptance_count": 6,
+      "code_evidence": [
+        "Only consent gate (GeolocationConsent component) exists"
+      ],
+      "test_evidence": ["Consent component tests only"],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "Desktop address search with autocomplete missing",
+        "Mobile GPS with real-time accuracy missing",
+        "Click-to-set map interaction missing",
+        "Accuracy radius visualization missing",
+        "IP fallback with city-level indication missing"
+      ],
+      "notes": "Depends on 021; only consent layer shipped."
+    },
+    {
+      "id": "029-seo-editorial-assistant",
+      "category": "polish",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 5,
+      "code_evidence": [
+        "src/lib/seo/ (4 modules, 2641 lines)",
+        "src/components/molecular/SEOAnalysisPanel/"
+      ],
+      "test_evidence": [
+        "readability.test.ts, keywords.test.ts, content.test.ts"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "src/lib/seo/technical.ts (429 lines) untested",
+        "Export/import ZIP diff preview untested",
+        "Conflict resolution flow untested",
+        "Offline/PWA autosave not implemented"
+      ],
+      "notes": "Editor UI shipped; testing + advanced flows incomplete. Test gap overlaps with 033."
+    },
+    {
+      "id": "030-calendar-integration",
+      "category": "polish",
+      "stated_status": "Specified",
+      "real_status": "Mostly Shipped",
+      "acceptance_count": 5,
+      "code_evidence": [
+        "src/components/atomic/CalendarEmbed/",
+        "src/components/calendar/CalendarConsent.tsx",
+        "src/app/schedule/"
+      ],
+      "test_evidence": ["CalendarEmbed test + accessibility test"],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "Per-fork env vars (NEXT_PUBLIC_CALENDAR_PROVIDER, NEXT_PUBLIC_CALENDAR_URL) not configured",
+        "Theme mapping to 32 DaisyUI themes not implemented (only generic dark/light)",
+        "Dynamic theme updates not implemented"
+      ],
+      "notes": "Consent gating + provider abstraction complete; theme mapping is the main gap."
+    },
+    {
+      "id": "031-standardize-test-users",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 6,
+      "code_evidence": [
+        "scripts/seed-test-users.ts",
+        "tests/e2e/utils/test-user-factory.ts"
+      ],
+      "test_evidence": ["E2E messaging tests use factory; all pass"],
+      "wireframe_evidence": "N/A",
+      "gaps": [],
+      "notes": "All AC verified green in CI."
+    },
+    {
+      "id": "032-signup-e2e-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 4,
+      "code_evidence": ["tests/e2e/signup.spec.ts"],
+      "test_evidence": ["Dedicated Playwright project; all scenarios green"],
+      "wireframe_evidence": "N/A",
+      "gaps": [],
+      "notes": "All flow scenarios + cleanup verified."
+    },
+    {
+      "id": "033-seo-library-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "src/lib/seo/keywords.test.ts (439 lines)",
+        "content.test.ts (345 lines)",
+        "readability.test.ts (329 lines)"
+      ],
+      "test_evidence": ["3 of 4 modules tested"],
+      "wireframe_evidence": "N/A",
+      "gaps": [
+        "src/lib/seo/technical.ts (429 lines) has NO test file",
+        "FR-013 through FR-016 untested (title length, meta length, heading hierarchy, canonical)"
+      ],
+      "notes": "75% coverage achievable; technical.ts is the single gap."
+    },
+    {
+      "id": "034-blog-library-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 3,
+      "code_evidence": [
+        "src/lib/blog/markdown-processor.test.ts (508 lines)",
+        "seo-analyzer.test.ts (553 lines)",
+        "toc-generator.test.ts (318 lines)"
+      ],
+      "test_evidence": ["140 unit tests; commit c9f728d (2026-04-20)"],
+      "wireframe_evidence": "N/A",
+      "gaps": [],
+      "notes": "STATUS WAS STALE — moved from 'Not Started' to 'Shipped' 2026-04-20. PRP-STATUS doc predates this work."
+    },
+    {
+      "id": "035-messaging-service-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "connection-service.test.ts (310 lines)",
+        "gdpr-service.test.ts (542 lines)",
+        "offline-queue-service.test.ts (499 lines)",
+        "welcome-service.test.ts (458 lines)"
+      ],
+      "test_evidence": ["4 of 8 services tested"],
+      "wireframe_evidence": "N/A",
+      "gaps": [
+        "message-service.test.ts missing (1200+ line service)",
+        "key-service.test.ts missing",
+        "group-key-service.test.ts missing",
+        "audit-logger.test.ts missing"
+      ],
+      "notes": "~50% coverage. Critical gap: message-service.ts (largest service) untested."
+    },
+    {
+      "id": "036-auth-component-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Shipped",
+      "acceptance_count": 6,
+      "code_evidence": [
+        "6 auth components with full 5-file pattern + accessibility tests"
+      ],
+      "test_evidence": ["12 test files; zero TODO placeholders"],
+      "wireframe_evidence": "N/A",
+      "gaps": [],
+      "notes": "STATUS WAS STALE — feature complete. SignIn/SignUp/Reset/Forgot/OAuth/ProtectedRoute all have test+a11y coverage."
+    },
+    {
+      "id": "037-game-a11y-tests",
+      "category": "testing",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 7,
+      "code_evidence": [
+        "7 game components with .test.tsx + .accessibility.test.tsx"
+      ],
+      "test_evidence": ["Keyboard nav + ARIA covered; visual a11y partial"],
+      "wireframe_evidence": "N/A",
+      "gaps": [
+        "FR-019 through FR-023 (visual accessibility: contrast ratio, colorblind mode integration, prefers-reduced-motion) likely untested",
+        "Automated contrast checking not found"
+      ],
+      "notes": "~70% shipped. Visual a11y category incomplete."
+    },
+    {
+      "id": "038-payment-dashboard",
+      "category": "payments",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 15,
+      "code_evidence": [
+        "PaymentHistory + PaymentTrendChart + AdminPaymentPanel components exist"
+      ],
+      "test_evidence": [
+        "tests/e2e/payment/06-realtime-dashboard.spec.ts (2 live + 20 stubs)"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "/payment/dashboard route does not exist",
+        "Real-time subscription wiring incomplete",
+        "Live data binding for analytics chart"
+      ],
+      "notes": "Tracked by GitHub issue #3 PAYMENT-DASHBOARD."
+    },
+    {
+      "id": "039-payment-offline-queue",
+      "category": "payments",
+      "stated_status": "Draft",
+      "real_status": "Partial",
+      "acceptance_count": 16,
+      "code_evidence": [
+        "src/lib/offline-queue/ + payment-adapter.ts + connection-listener.ts"
+      ],
+      "test_evidence": [
+        "tests/e2e/payment/05-offline-queue.spec.ts (2 live + 18 stubs)"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "Queue status indicator UI missing",
+        "Sync pill / count badge / retry button missing",
+        "/payment/history route missing"
+      ],
+      "notes": "Tracked by GitHub issue #4 PAYMENT-OFFLINE-UI."
+    },
+    {
+      "id": "040-payment-retry-ui",
+      "category": "payments",
+      "stated_status": "Draft",
+      "real_status": "Backend Only",
+      "acceptance_count": 16,
+      "code_evidence": ["payment-service.ts retry logic; webhook handlers"],
+      "test_evidence": [
+        "tests/e2e/payment/03-failed-payment-retry.spec.ts (2 live + 14 stubs)"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "/payment/result page route missing",
+        "Offline error banner not implemented",
+        "Retry surface (UI) missing"
+      ],
+      "notes": "Backend ready; user-facing routes + UX missing."
+    },
+    {
+      "id": "041-paypal-subscriptions",
+      "category": "payments",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 23,
+      "code_evidence": [
+        "src/lib/payments/paypal.ts",
+        "supabase/functions/paypal-webhook",
+        "subscriptions table"
+      ],
+      "test_evidence": [
+        "tests/e2e/payment/02-paypal-subscription.spec.ts (2 live + 12 stubs)"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "/payment/subscriptions page route missing",
+        "Grace period banner UI missing",
+        "Duplicate subscription prevention incomplete",
+        "4 missing edge functions (cancel, resume, create-stripe, create-paypal)"
+      ],
+      "notes": "Tracked by GitHub issue #5 SUBSCRIPTION-MGMT."
+    },
+    {
+      "id": "042-payment-rls-policies",
+      "category": "payments",
+      "stated_status": "Draft",
+      "real_status": "Backend Only",
+      "acceptance_count": 16,
+      "code_evidence": ["20+ RLS policies in monolithic migration"],
+      "test_evidence": [
+        "tests/e2e/payment/08-security-rls.spec.ts (2 live + 25 stubs)"
+      ],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "RLS policies unverified (25 test stubs await un-skip + run)",
+        "Rate-limit UI missing"
+      ],
+      "notes": "Verification work, not new code. Flip skip flags, run, fix any policy mismatches."
+    },
+    {
+      "id": "044-error-handler-integrations",
+      "category": "code-quality",
+      "stated_status": "Specified",
+      "real_status": "Not Started",
+      "acceptance_count": 4,
+      "code_evidence": [
+        "src/components/ErrorBoundary.tsx (82 lines basic)",
+        "Toast notification system exists"
+      ],
+      "test_evidence": ["No Sentry/LogRocket integration"],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "Sentry/LogRocket integration missing",
+        "PII scrubbing not implemented",
+        "Breadcrumbs not implemented",
+        "Session replay missing entirely",
+        "Consent-gated initialization not wired"
+      ],
+      "notes": "Depends on 019 (consent framework). ~20% shipped (basic boundary only)."
+    },
+    {
+      "id": "045-disqus-theme",
+      "category": "code-quality",
+      "stated_status": "Specified",
+      "real_status": "Partial",
+      "acceptance_count": 5,
+      "code_evidence": [
+        "src/components/molecular/DisqusComments.tsx (228 lines)",
+        "src/utils/theme-utils.ts isDarkTheme()"
+      ],
+      "test_evidence": ["DisqusComments.test.tsx basic consent flow tests"],
+      "wireframe_evidence": "None",
+      "gaps": [
+        "32 DaisyUI theme mapping not implemented (only dark/light binary)",
+        "Dynamic theme updates lack debouncing",
+        "Fallback for unmapped themes minimal",
+        "Contrast ratio verification not tested"
+      ],
+      "notes": "Depends on 019. ~40% shipped."
+    },
+    {
+      "id": "046-admin-dashboard",
+      "category": "admin",
+      "stated_status": "Implemented",
+      "real_status": "Shipped",
+      "acceptance_count": 7,
+      "code_evidence": [
+        "src/app/admin/ (6 sub-routes)",
+        "src/services/admin/ (7 service files, ~2000 LOC)",
+        "4 admin domains"
+      ],
+      "test_evidence": ["tests/e2e/security/ + admin RLS verification"],
+      "wireframe_evidence": "4 SVGs shipping=true",
+      "gaps": [],
+      "notes": "JWT claim-based admin gating; 4 data domains live."
+    }
+  ],
+  "summary": {
+    "total_features": 49,
+    "Shipped": 17,
+    "Mostly_Shipped": 6,
+    "Partial": 19,
+    "Backend_Only": 3,
+    "Not_Started": 4,
+    "Blocked": 0,
+    "stale_status_fields_at_audit_time": 46,
+    "specs_without_spec_md": 3,
+    "note": "Counts derived programmatically from features[].real_status. 3 features lack spec.md (000-brand-identity, 000-landing-page, 046-admin-dashboard) and are tracked via *_feature.md only. 46 specs had stale Status fields at audit time (now corrected via Phase 4 patch)."
+  },
+  "stability_hotspots": [
+    {
+      "area": "ProtectedRoute auth race",
+      "feature": "003-user-authentication",
+      "evidence": "3 reverts: 6b4c13a, 2c97e67, 259b38d",
+      "severity": "high",
+      "open": true
+    },
+    {
+      "area": "ConversationView regression chain",
+      "feature": "009-user-messaging-system",
+      "evidence": "revert adae629 — key guard/poll/merge caused regressions",
+      "severity": "high",
+      "open": true
+    },
+    {
+      "area": "GDPR consent firefox regressions",
+      "feature": "002-cookie-consent / 009 messaging",
+      "evidence": "revert 3e67772 — undo GDPR consent source code changes that regressed firefox 4/6",
+      "severity": "medium",
+      "open": false,
+      "note": "Resolved by revert; verify no new regressions."
+    },
+    {
+      "area": "Offline-queue IndexedDB index drift",
+      "feature": "020-pwa-background-sync / 039-payment-offline-queue",
+      "evidence": "fix 40f0d0e — store synced as 0/1 so IndexedDB index query matches",
+      "severity": "medium",
+      "open": false,
+      "note": "Resolved 2026-04; verify retained."
+    },
+    {
+      "area": "E2E flake mitigation",
+      "feature": "007-e2e-testing-framework",
+      "evidence": "9 rounds in 3 months: cross-shard isolation, webkit cache, hydration races",
+      "severity": "ongoing",
+      "open": true,
+      "note": "Active maintenance, not a single bug."
+    }
+  ]
+}

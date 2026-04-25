@@ -2,8 +2,31 @@
 
 **Feature Branch**: `012-welcome-message-architecture`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "An automated welcome message system that sends new users an encrypted welcome message explaining end-to-end encryption, with idempotency to prevent duplicates and graceful error handling."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/services/messaging/welcome-service.ts (402 lines)
+
+### Gaps
+
+- Admin user setup (depends on 014) not audited
+- Signup hook integration with 003 not verified
+
+### Notes
+
+- Service exists; full E2E flow blocked on 014 admin gate.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Clarifications
 

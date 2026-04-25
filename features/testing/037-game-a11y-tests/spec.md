@@ -2,8 +2,31 @@
 
 **Feature ID**: 037-game-a11y-tests
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- 7 game components with .test.tsx + .accessibility.test.tsx
+
+### Gaps
+
+- FR-019 through FR-023 (visual accessibility: contrast ratio, colorblind mode integration, prefers-reduced-motion) likely untested
+- Automated contrast checking not found
+
+### Notes
+
+- ~70% shipped. Visual a11y category incomplete.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

@@ -2,8 +2,34 @@
 
 **Feature Branch**: `024-payment-integration`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Mostly Shipped
 **Input**: User description: "A payment integration system supporting one-time and recurring payments with multiple providers, secure webhook verification, GDPR-compliant consent flow, and offline-first queuing for resilience."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/payments/ (1124 LOC: payment-service, stripe, paypal, offline-queue, metadata-validator, connection-listener)
+- Supabase Edge Functions: stripe-webhook, paypal-webhook, send-payment-email (742 LOC Deno)
+- 5 DB tables + 20+ RLS policies
+- PaymentButton, PaymentConsentModal, PaymentStatusDisplay, PaymentHistory, PaymentTrendChart, AdminPaymentPanel components
+
+### Gaps
+
+- .env empty templates only (no actual API keys)
+- 29 test stubs require key population to unblock
+
+### Notes
+
+- All code/components ready; blocked on Stripe + PayPal account creation (~30-60min).
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

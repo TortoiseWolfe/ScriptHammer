@@ -2,10 +2,34 @@
 
 **Feature Branch**: `039-payment-offline-queue`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "Queue status indicator, pending payment list, and retry mechanism UI. Enables users to view and manage payments that were initiated while offline and are waiting to be processed when connectivity is restored."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/offline-queue/ + payment-adapter.ts + connection-listener.ts
+
+### Gaps
+
+- Queue status indicator UI missing
+- Sync pill / count badge / retry button missing
+- /payment/history route missing
+
+### Notes
+
+- Tracked by GitHub issue #4 PAYMENT-OFFLINE-UI.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

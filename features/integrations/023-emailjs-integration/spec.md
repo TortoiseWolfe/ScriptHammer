@@ -2,8 +2,32 @@
 
 **Feature Branch**: `023-emailjs-integration`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "A backup email service that provides redundancy for contact form submissions. Implements automatic failover when the primary email provider fails, ensuring zero message loss with seamless provider switching invisible to users."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/email/ dual-provider abstraction
+- Failover logic
+
+### Gaps
+
+- Provider health dashboard not built (admin-only, optional)
+- Rate-limit handling incomplete
+
+### Notes
+
+- Foundation works transparently to users; admin UI gaps.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

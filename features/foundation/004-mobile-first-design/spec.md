@@ -2,8 +2,32 @@
 
 **Feature ID**: 004-mobile-first-design
 **Created**: 2025-12-30
-**Status**: Specified
+**Status**: Mostly Shipped
 **Category**: Foundation
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/styles/mobile-first-utilities.css
+- Responsive implementation across pages
+
+### Gaps
+
+- Wireframes flagged for regeneration
+- Performance metrics testing incomplete (US5 P3)
+
+### Notes
+
+- Responsive code shipped; wireframe regen + perf gaps remain.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

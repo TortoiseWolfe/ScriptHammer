@@ -2,8 +2,33 @@
 
 **Feature ID**: 027-ux-polish
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Polish
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/components/atomic/MessageBubble/MessageBubble.tsx parseMarkdown()
+- src/components/molecular/MessageInput/MessageInput.tsx charCount
+
+### Gaps
+
+- Markdown edge cases (nested, malformed) untested
+- NaN fallback for charCount not verified
+- No a11y test coverage for markdown rendering
+
+### Notes
+
+- Implemented piecemeal across two components.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

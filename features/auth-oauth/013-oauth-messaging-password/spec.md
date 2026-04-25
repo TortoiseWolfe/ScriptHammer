@@ -2,10 +2,34 @@
 
 **Feature Branch**: `013-oauth-messaging-password`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Not Started
 **Input**: User description: "Update the re-authentication modal to detect OAuth users without encryption keys and show a 'Create messaging password' mode with confirm field, instead of a confusing 'Enter password' prompt."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Not Started
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- No OAuth-specific messaging password modal found
+
+### Gaps
+
+- OAuth user detection logic not implemented
+- Password setup modal not built
+- Unlock mode with OAuth provider identification missing
+
+### Notes
+
+- Post-launch UX refinement spec; not yet started.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

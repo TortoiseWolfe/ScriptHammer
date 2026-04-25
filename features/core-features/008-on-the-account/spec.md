@@ -2,8 +2,27 @@
 
 **Feature ID**: 008-on-the-account
 **Created**: 2025-12-30
-**Status**: Specified
+**Status**: Shipped
 **Category**: Core Features
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/components/molecular/AvatarUpload/
+- src/components/atomic/AvatarDisplay/
+
+### Notes
+
+- Avatar upload + crop + persistence + E2E all shipped.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

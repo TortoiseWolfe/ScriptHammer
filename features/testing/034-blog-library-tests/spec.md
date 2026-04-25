@@ -2,8 +2,28 @@
 
 **Feature ID**: 034-blog-library-tests
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Shipped
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/lib/blog/markdown-processor.test.ts (508 lines)
+- seo-analyzer.test.ts (553 lines)
+- toc-generator.test.ts (318 lines)
+
+### Notes
+
+- STATUS WAS STALE — moved from 'Not Started' to 'Shipped' 2026-04-20. PRP-STATUS doc predates this work.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

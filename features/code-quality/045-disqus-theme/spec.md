@@ -2,8 +2,34 @@
 
 **Feature ID**: 045-disqus-theme
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Code Quality
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/components/molecular/DisqusComments.tsx (228 lines)
+- src/utils/theme-utils.ts isDarkTheme()
+
+### Gaps
+
+- 32 DaisyUI theme mapping not implemented (only dark/light binary)
+- Dynamic theme updates lack debouncing
+- Fallback for unmapped themes minimal
+- Contrast ratio verification not tested
+
+### Notes
+
+- Depends on 019. ~40% shipped.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

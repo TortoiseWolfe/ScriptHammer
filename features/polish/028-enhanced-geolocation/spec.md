@@ -2,8 +2,34 @@
 
 **Feature ID**: 028-enhanced-geolocation
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Not Started
 **Category**: Polish
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Not Started
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- Only consent gate (GeolocationConsent component) exists
+
+### Gaps
+
+- Desktop address search with autocomplete missing
+- Mobile GPS with real-time accuracy missing
+- Click-to-set map interaction missing
+- Accuracy radius visualization missing
+- IP fallback with city-level indication missing
+
+### Notes
+
+- Depends on 021; only consent layer shipped.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

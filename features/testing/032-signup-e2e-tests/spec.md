@@ -2,8 +2,26 @@
 
 **Feature ID**: 032-signup-e2e-tests
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Shipped
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- tests/e2e/signup.spec.ts
+
+### Notes
+
+- All flow scenarios + cleanup verified.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

@@ -2,8 +2,28 @@
 
 **Feature Branch**: `022-web3forms-integration`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Shipped
 **Input**: User description: "A contact form integration for user inquiries with validation, spam protection, and offline support. Provides clear feedback on submission status without exposing server-side credentials."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/lib/forms/useWeb3Forms.ts hook
+- src/components/contact/ContactForm/
+- Validation + spam detection
+
+### Notes
+
+- Includes offline queue integration.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

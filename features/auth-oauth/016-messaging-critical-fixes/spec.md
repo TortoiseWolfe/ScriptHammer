@@ -2,10 +2,36 @@
 
 **Feature Branch**: `016-messaging-critical-fixes`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Not Started
 **Input**: User description: "Fix 5 critical messaging UX issues: message input visibility, OAuth password confusion, password manager integration, decryption error messaging, and participant name resolution."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Not Started
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- Components exist but spec-listed fixes not applied
+
+### Gaps
+
+- Message input visibility fix not applied
+- Full-page OAuth setup flow not built (013 has modal; 016 wants page)
+- Password manager integration warnings missing
+- Decryption failure UI (lock icon + tooltip) missing
+- Participant name resolution (Unknown vs display_name vs Deleted User) not fixed
+
+### Notes
+
+- Spec covers 5 separate UX fixes; none shipped per audit.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

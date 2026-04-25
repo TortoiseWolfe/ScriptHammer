@@ -2,8 +2,32 @@
 
 **Feature Branch**: `006-template-fork-experience`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Mostly Shipped
 **Input**: User description: "Improve the forking experience based on real-world feedback from SpokeToWork fork."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- scripts/rebrand.sh (615 lines)
+- docs/FORKING.md
+- Payment missing-config UX banner
+
+### Gaps
+
+- Supabase missing-config banner not yet applied (planned per PRP-STATUS)
+
+### Notes
+
+- Rebrand automation complete; first-run UX still has Supabase gap.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

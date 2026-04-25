@@ -2,8 +2,33 @@
 
 **Feature Branch**: `005-security-hardening`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "Authentication and payment security hardening - data isolation, OAuth protection, brute force prevention, CSRF protection, audit logging, and security UX improvements."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/auth/ rate-limiter, oauth-state, retry-utils
+- Brute force prevention + CSRF + input validation
+
+### Gaps
+
+- Session timeout warning UI not visually confirmed shipping
+- Pre-commit secret detection (FR-042-FR-047) not fully deployed
+- Audit dashboard component incomplete
+
+### Notes
+
+- Core security shipped; UX enhancements outstanding.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

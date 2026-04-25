@@ -2,8 +2,34 @@
 
 **Feature ID**: 029-seo-editorial-assistant
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Polish
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/seo/ (4 modules, 2641 lines)
+- src/components/molecular/SEOAnalysisPanel/
+
+### Gaps
+
+- src/lib/seo/technical.ts (429 lines) untested
+- Export/import ZIP diff preview untested
+- Conflict resolution flow untested
+- Offline/PWA autosave not implemented
+
+### Notes
+
+- Editor UI shipped; testing + advanced flows incomplete. Test gap overlaps with 033.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

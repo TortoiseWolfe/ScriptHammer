@@ -2,8 +2,26 @@
 
 **Feature ID**: 036-auth-component-tests
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Shipped
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- 6 auth components with full 5-file pattern + accessibility tests
+
+### Notes
+
+- STATUS WAS STALE — feature complete. SignIn/SignUp/Reset/Forgot/OAuth/ProtectedRoute all have test+a11y coverage.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

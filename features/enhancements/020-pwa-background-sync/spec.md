@@ -2,8 +2,38 @@
 
 **Feature Branch**: `020-pwa-background-sync`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "PWA background sync capability for offline form submissions. Users can submit forms while offline, with automatic synchronization when connectivity is restored."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/offline-queue/ (3 files, 450 LOC)
+- Service worker registration
+- IndexedDB persistence
+
+### Gaps
+
+- Fallback sync on visibility change for non-BG-Sync browsers (Firefox/Safari) incomplete
+- Retry UI feedback incomplete
+- Storage limit warnings missing
+
+### Stability notes
+
+- Offline-queue IndexedDB index drift fixed 2026-04 (40f0d0e); verify retained
+
+### Notes
+
+- Background Sync API works in Chromium; cross-browser fallback gap.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

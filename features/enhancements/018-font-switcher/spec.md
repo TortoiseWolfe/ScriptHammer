@@ -2,8 +2,26 @@
 
 **Feature Branch**: `018-font-switcher`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Shipped
 **Input**: User description: "A font switching system allowing users to dynamically change typography across the application. Enhances accessibility with options for users with dyslexia or visual preferences."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/components/molecular/FontSwitcher/ (5-file pattern)
+
+### Notes
+
+- 6 fonts including dyslexia-friendly + high-readability.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

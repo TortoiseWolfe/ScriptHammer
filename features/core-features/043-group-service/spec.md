@@ -2,10 +2,39 @@
 
 **Feature Branch**: `043-group-service`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "Complete group chat management functionality including adding/removing members, ownership transfer, renaming, and deletion."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/services/messaging/group-service.ts — 8 stub methods at lines 338, 348, 357, 366, 375, 384, 394, 403
+
+### Gaps
+
+- addMembers — stubbed
+- getMembers — stubbed
+- removeMember — stubbed
+- leaveGroup — stubbed
+- transferOwnership — stubbed
+- upgradeToGroup — stubbed
+- renameGroup — stubbed
+- deleteGroup — stubbed
+
+### Notes
+
+- Backing work for 011 group-chats UI. Group creation works; member operations are the gap.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

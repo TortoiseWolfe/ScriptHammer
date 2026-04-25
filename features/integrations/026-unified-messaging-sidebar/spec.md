@@ -2,10 +2,34 @@
 
 **Feature Branch**: `026-unified-messaging-sidebar`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "A unified messaging sidebar that consolidates chats, connections, and user search into a single tabbed interface. Allows users to message connections directly with a single click, replacing the previous multi-page navigation flow. Includes mobile drawer pattern and real-time badge updates."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/components/organisms/UnifiedSidebar/
+- src/app/messages/page.tsx
+
+### Gaps
+
+- Mobile drawer transitions need polish
+- Real-time badge count sync has latency
+
+### Notes
+
+- Desktop stable; mobile experience acceptable but unpolished.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

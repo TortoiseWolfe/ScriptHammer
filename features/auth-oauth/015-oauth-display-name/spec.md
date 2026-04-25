@@ -2,10 +2,34 @@
 
 **Feature Branch**: `015-oauth-display-name`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Partial
 **Input**: User description: "Fix OAuth UX issues where OAuth users get empty display names - extract from provider metadata on first sign-in and populate avatar."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- OAuth callback in src/lib/auth/ likely populates profile
+
+### Gaps
+
+- OAuth display name extraction not verified in callback
+- Fallback cascade (full_name > username > email_prefix > Anonymous) not tested
+- Migration for existing OAuth users with empty display_name not implemented
+
+### Notes
+
+- Callback-time fix; needs implementation + migration.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

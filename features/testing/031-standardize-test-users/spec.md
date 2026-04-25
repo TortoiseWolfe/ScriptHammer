@@ -2,8 +2,27 @@
 
 **Feature ID**: 031-standardize-test-users
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Shipped
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- scripts/seed-test-users.ts
+- tests/e2e/utils/test-user-factory.ts
+
+### Notes
+
+- All AC verified green in CI.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

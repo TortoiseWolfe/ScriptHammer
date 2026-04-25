@@ -2,8 +2,32 @@
 
 **Feature Branch**: `003-user-authentication`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Shipped
 **Input**: User description: "Complete user authentication and authorization system with email/password, OAuth, session management, and integration with payment features."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/lib/auth/ (13 files)
+- src/components/auth/ (multiple components)
+- src/contexts/AuthContext.tsx
+
+### Stability notes
+
+- ProtectedRoute transient auth-state flips (3 reverts: 6b4c13a, 2c97e67, 259b38d)
+
+### Notes
+
+- Email/password + OAuth (GitHub/Google) fully shipped. ProtectedRoute auth-race regressions tracked separately as stability hotspot.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

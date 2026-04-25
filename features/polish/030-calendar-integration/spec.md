@@ -2,8 +2,34 @@
 
 **Feature ID**: 030-calendar-integration
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Mostly Shipped
 **Category**: Polish
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/components/atomic/CalendarEmbed/
+- src/components/calendar/CalendarConsent.tsx
+- src/app/schedule/
+
+### Gaps
+
+- Per-fork env vars (NEXT_PUBLIC_CALENDAR_PROVIDER, NEXT_PUBLIC_CALENDAR_URL) not configured
+- Theme mapping to 32 DaisyUI themes not implemented (only generic dark/light)
+- Dynamic theme updates not implemented
+
+### Notes
+
+- Consent gating + provider abstraction complete; theme mapping is the main gap.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

@@ -2,8 +2,33 @@
 
 **Feature ID**: 010-unified-blog-content
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Core Features
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/blog/ (3 modules, 1413 lines)
+- src/app/blog/\* routes
+
+### Gaps
+
+- Offline editing & sync (US2) not implemented
+- Conflict resolution UI (US3) not implemented
+- Content migration tooling (US4) not implemented
+
+### Notes
+
+- Blog routes work; advanced offline/migration features deferred.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

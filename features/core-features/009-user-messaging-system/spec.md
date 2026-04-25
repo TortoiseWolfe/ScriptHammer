@@ -2,8 +2,31 @@
 
 **Feature Branch**: `009-user-messaging-system`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Shipped
 **Input**: User description: "A secure messaging system enabling users to connect as friends and exchange end-to-end encrypted messages with real-time delivery, offline queuing, message editing/deletion, and GDPR compliance."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/lib/messaging/ (~1399 lines)
+- src/services/messaging/ (~6562 lines)
+
+### Stability notes
+
+- ConversationView regression chain (revert adae629); GDPR consent firefox regression (revert 3e67772); offline-queue IndexedDB index drift (fix 40f0d0e — verify retained)
+
+### Notes
+
+- E2E-encrypted (JWK + noble-curves); cross-browser validated.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

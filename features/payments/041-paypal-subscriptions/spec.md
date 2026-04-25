@@ -2,8 +2,35 @@
 
 **Feature ID**: 041-paypal-subscriptions
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Payments
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/lib/payments/paypal.ts
+- supabase/functions/paypal-webhook
+- subscriptions table
+
+### Gaps
+
+- /payment/subscriptions page route missing
+- Grace period banner UI missing
+- Duplicate subscription prevention incomplete
+- 4 missing edge functions (cancel, resume, create-stripe, create-paypal)
+
+### Notes
+
+- Tracked by GitHub issue #5 SUBSCRIPTION-MGMT.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

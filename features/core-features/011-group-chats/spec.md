@@ -2,8 +2,32 @@
 
 **Feature Branch**: `011-group-chats`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Mostly Shipped
 **Input**: User description: "A group chat feature enabling users to create and manage multi-member conversations with end-to-end encryption, member management, key rotation for security, and seamless upgrade from 1-to-1 conversations."
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Mostly Shipped
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- src/services/messaging/group-key-service.ts (818 lines)
+- src/services/messaging/group-service.ts (477 lines)
+- CreateGroupModal
+
+### Gaps
+
+- 8 stub methods in group-service.ts (see 043 — addMembers, getMembers, removeMember, leaveGroup, transferOwnership, upgradeToGroup, renameGroup, deleteGroup)
+
+### Notes
+
+- Group creation + basic messaging work; member management blocked by 043.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Clarifications
 

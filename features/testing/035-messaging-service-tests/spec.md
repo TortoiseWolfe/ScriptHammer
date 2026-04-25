@@ -2,8 +2,36 @@
 
 **Feature ID**: 035-messaging-service-tests
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Partial
 **Category**: Testing
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Partial
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- connection-service.test.ts (310 lines)
+- gdpr-service.test.ts (542 lines)
+- offline-queue-service.test.ts (499 lines)
+- welcome-service.test.ts (458 lines)
+
+### Gaps
+
+- message-service.test.ts missing (1200+ line service)
+- key-service.test.ts missing
+- group-key-service.test.ts missing
+- audit-logger.test.ts missing
+
+### Notes
+
+- ~50% coverage. Critical gap: message-service.ts (largest service) untested.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 

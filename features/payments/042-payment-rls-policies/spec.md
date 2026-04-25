@@ -2,10 +2,33 @@
 
 **Feature Branch**: `042-payment-rls-policies`
 **Created**: 2025-12-30
-**Status**: Draft
+**Status**: Backend Only
 **Input**: User description: "Row Level Security policies for payments and subscriptions tables. Ensures users can only access their own payment data and prevents unauthorized access to sensitive financial information."
 
 ---
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Backend Only
+**Tracking**: see gap-audit GitHub issues + STATUS.md
+
+### Shipped
+
+- 20+ RLS policies in monolithic migration
+
+### Gaps
+
+- RLS policies unverified (25 test stubs await un-skip + run)
+- Rate-limit UI missing
+
+### Notes
+
+- Verification work, not new code. Flip skip flags, run, fix any policy mismatches.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## User Scenarios & Testing _(mandatory)_
 

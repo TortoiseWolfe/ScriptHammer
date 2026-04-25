@@ -2,8 +2,28 @@
 
 **Feature ID**: 025-blog-social-features
 **Created**: 2025-12-31
-**Status**: Specified
+**Status**: Shipped
 **Category**: Integrations
+
+<!-- AUDIT-IMPL-STATUS-BEGIN -->
+
+## Implementation Status
+
+**Last audited**: 2026-04-25
+**Real status**: Shipped
+**Tracking**: n/a — shipped
+
+### Shipped
+
+- src/components/blog/SocialShareButtons/
+- Author bio rendering
+- OpenGraph + Twitter card metadata
+
+### Notes
+
+- Platform-agnostic share URLs; WCAG AA compliant.
+
+<!-- AUDIT-IMPL-STATUS-END -->
 
 ## Overview
 
