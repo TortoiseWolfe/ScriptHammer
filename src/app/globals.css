@@ -2,6 +2,7 @@
 @import '../styles/colorblind-patterns.css';
 @import '../styles/prism-vscode-dark.css';
 @import '../styles/mobile-first-utilities.css';
+@import '../styles/reduced-motion.css';
 
 @theme {
   /* Mobile-first breakpoints (PRP-017) */
