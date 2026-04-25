@@ -48,16 +48,27 @@ export class CacheService {
       ...msg,
     }));
 
-    // Remove old cached messages for this conversation
-    await messagingDb.messaging_cached_messages
-      .where('conversation_id')
-      .equals(conversationId)
-      .delete();
+    // Wrap delete + bulkAdd in a single Dexie transaction. Without this, a
+    // tab close (or process kill) between the delete and the bulkAdd left
+    // the cache empty — and since this code runs precisely when the user
+    // is going offline, the next session would open a conversation and see
+    // no history at all.
+    await messagingDb.transaction(
+      'rw',
+      messagingDb.messaging_cached_messages,
+      async () => {
+        await messagingDb.messaging_cached_messages
+          .where('conversation_id')
+          .equals(conversationId)
+          .delete();
 
-    // Add new messages to cache
-    await messagingDb.messaging_cached_messages.bulkAdd(cachedMessages);
+        await messagingDb.messaging_cached_messages.bulkAdd(cachedMessages);
+      }
+    );
 
-    // Cleanup old cache entries (older than 30 days)
+    // Cleanup old cache entries (older than 30 days). Outside the
+    // transaction above so a stale-entry sweep failure can't roll back
+    // the freshly-cached payload.
     await this.clearOldCache();
 
     return cachedMessages.length;

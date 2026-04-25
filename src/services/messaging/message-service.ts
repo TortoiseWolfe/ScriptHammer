@@ -349,14 +349,30 @@ export class MessageService {
 
       // Online - attempt to send to database
       try {
-        // Atomic sequence number assignment with retry on conflict (23505)
-        // AND network failures (TypeError: Failed to fetch). Network retries
-        // use exponential backoff: 1s, 2s, 4s before falling through to the
-        // offline queue.
+        // Atomic sequence number assignment with separate retry budgets:
+        //   - 23505 unique-constraint conflicts: 3 attempts (race with
+        //     another tab inserting at the same sequence_number)
+        //   - Network failures: 3 attempts with exponential backoff
+        //     (1s, 2s, 4s) before falling through to the offline queue
+        //
+        // The two counters used to bleed into each other — a string of
+        // network errors followed by a 23505 would exhaust conflictRetries
+        // and surface "sequence number conflict" when the real cause was
+        // a flaky network. Reset networkAttempt on every non-network
+        // outcome so each new sequence-number attempt gets its own budget.
         let conflictRetries = 3;
         let networkAttempt = 0;
+        const NETWORK_ATTEMPT_LIMIT = 3;
         const networkDelays = [1000, 2000, 4000];
+        const isNetworkErrorMessage = (errMsg: string): boolean =>
+          errMsg.includes('Failed to fetch') ||
+          errMsg.includes('NetworkError') ||
+          errMsg.includes('fetch failed') ||
+          errMsg.includes('Load failed') ||
+          errMsg.includes('cancelled') ||
+          errMsg.includes('aborted');
         let message = null;
+        let lastFailureReason: 'conflict' | 'network' | 'unknown' = 'unknown';
         while (conflictRetries > 0) {
           const { data: lastMessage } = await msgClient
             .from('messages')
@@ -395,9 +411,10 @@ export class MessageService {
           } catch (fetchErr) {
             // Network-level failure (TypeError: Failed to fetch from
             // page.route abort, or actual connectivity issue). Retry with
-            // exponential backoff before giving up.
+            // exponential backoff; this branch never spends conflictRetries.
+            lastFailureReason = 'network';
             networkAttempt++;
-            if (networkAttempt < 3) {
+            if (networkAttempt < NETWORK_ATTEMPT_LIMIT) {
               await new Promise((r) =>
                 setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
               );
@@ -412,8 +429,12 @@ export class MessageService {
             break;
           }
 
-          // If unique constraint violation, retry with fresh sequence number
+          // If unique constraint violation, retry with fresh sequence number.
+          // Reset network budget — a 23505 means we DID reach the server, so
+          // any prior network flakes shouldn't count against us going forward.
           if (insertError.code === '23505') {
+            lastFailureReason = 'conflict';
+            networkAttempt = 0;
             conflictRetries--;
             continue;
           }
@@ -425,16 +446,10 @@ export class MessageService {
           // - Firefox:  "NetworkError when attempting to fetch resource"
           // - WebKit:   "Load failed" or "fetch failed"
           const errMsg = insertError.message || '';
-          if (
-            errMsg.includes('Failed to fetch') ||
-            errMsg.includes('NetworkError') ||
-            errMsg.includes('fetch failed') ||
-            errMsg.includes('Load failed') ||
-            errMsg.includes('cancelled') ||
-            errMsg.includes('aborted')
-          ) {
+          if (isNetworkErrorMessage(errMsg)) {
+            lastFailureReason = 'network';
             networkAttempt++;
-            if (networkAttempt < 3) {
+            if (networkAttempt < NETWORK_ATTEMPT_LIMIT) {
               await new Promise((r) =>
                 setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
               );
@@ -452,8 +467,17 @@ export class MessageService {
         }
 
         if (!message) {
+          // Surface the actual last failure category so debugging doesn't
+          // chase a phantom "sequence number conflict" when the real cause
+          // was network flakes that never decremented conflictRetries.
+          const reasonText =
+            lastFailureReason === 'network'
+              ? 'network failures'
+              : lastFailureReason === 'conflict'
+                ? 'sequence number conflict'
+                : 'unknown error';
           throw new ConnectionError(
-            'Failed to send message after retries: sequence number conflict'
+            'Failed to send message after retries: ' + reasonText
           );
         }
 

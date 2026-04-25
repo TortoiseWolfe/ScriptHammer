@@ -211,12 +211,30 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
           }
         }
 
-        // Update status to processing
+        // Atomically claim the item: only succeeds if status is still
+        // 'pending'. This prevents a second tab (or another sync invocation
+        // racing through navigator.onLine) from also claiming the same
+        // item — `syncInProgress` is per-instance and IndexedDB is shared
+        // across tabs, so without this guard the same payment intent or
+        // message could be submitted twice. Dexie's where().modify()
+        // executes inside an implicit transaction.
+        const claimed = await this.items
+          .where('id')
+          .equals(item.id!)
+          .and((row) => row.status === 'pending')
+          .modify({
+            status: 'processing',
+            lastAttempt: Date.now(),
+          } as any);
 
-        await this.items.update(item.id!, {
-          status: 'processing',
-          lastAttempt: Date.now(),
-        } as any);
+        if (claimed === 0) {
+          // Another tab beat us to it.
+          this.logger.debug('Item already claimed by another tab, skipping', {
+            id: item.id,
+          });
+          skipped++;
+          continue;
+        }
 
         try {
           // Process the item (implemented by subclass)
