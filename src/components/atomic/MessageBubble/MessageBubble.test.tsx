@@ -97,5 +97,91 @@ describe('MessageBubble', () => {
       expect(container.textContent).toContain('Line 1');
       expect(container.textContent).toContain('Line 2');
     });
+
+    /**
+     * Edge cases (#36) — the parseMarkdown regex is intentionally non-nesting
+     * (`[^*]+` between delimiters means inner asterisks aren't allowed). The
+     * tests below pin down that contract so a future refactor doesn't quietly
+     * change behavior. Spec: features/polish/027-ux-polish/spec.md FR-005..012.
+     */
+    it('preserves empty bold delimiters (****) as plain text', () => {
+      const { container } = render(
+        <MessageBubble message={createMessage('text **** end')} />
+      );
+      // No empty <strong> tag should be rendered; **** must round-trip as text.
+      expect(container.querySelector('strong')).toBeNull();
+      expect(container.textContent).toContain('****');
+    });
+
+    it('preserves bare asterisks (** alone) as plain text', () => {
+      const { container } = render(
+        <MessageBubble message={createMessage('start ** end')} />
+      );
+      expect(container.querySelector('strong')).toBeNull();
+      expect(container.textContent).toContain('**');
+    });
+
+    it('preserves backticks-without-content as plain text', () => {
+      const { container } = render(
+        <MessageBubble message={createMessage('text `` end')} />
+      );
+      expect(container.querySelector('code')).toBeNull();
+      expect(container.textContent).toContain('``');
+    });
+
+    it('does not nest **bold *italic***  (regex is intentionally non-nesting)', () => {
+      // The `[^*]+` constraint means inner asterisks break the outer bold
+      // match. The current implementation treats this as plain text — the
+      // test pins that contract so future refactors must opt-in to nesting.
+      const { container } = render(
+        <MessageBubble message={createMessage('**bold *italic***')} />
+      );
+      // We expect *no* nested <strong><em>; the asterisks survive as text.
+      // Either no <strong>/<em> at all, or any nested combo would be a regression.
+      const strong = container.querySelector('strong em');
+      const em = container.querySelector('em strong');
+      expect(strong).toBeNull();
+      expect(em).toBeNull();
+    });
+
+    it('renders multiple bold sections in the same string', () => {
+      render(
+        <MessageBubble
+          message={createMessage('**first** middle **second** end')}
+        />
+      );
+      expect(screen.getByText('first').tagName).toBe('STRONG');
+      expect(screen.getByText('second').tagName).toBe('STRONG');
+    });
+
+    it('renders empty content harmlessly', () => {
+      const { container } = render(
+        <MessageBubble message={createMessage('')} />
+      );
+      // No crash; the bubble exists but content is empty
+      expect(
+        container.querySelector('[data-testid="message-bubble"]')
+      ).not.toBeNull();
+    });
+
+    it('does not render HTML tags in content as real elements (no XSS)', () => {
+      // NFR-006: input must not be parsed as HTML. parseMarkdown's regex only
+      // matches its own delimiters; React's default escaping covers the rest.
+      const { container } = render(
+        <MessageBubble
+          message={createMessage('<script>alert(1)</script> hello')}
+        />
+      );
+      // No real <script> element should land in the DOM.
+      expect(container.querySelector('script')).toBeNull();
+      // The literal text including angle brackets should be present.
+      expect(container.textContent).toContain('<script>alert(1)</script>');
+    });
+
+    it('keeps unclosed *italic preserved verbatim', () => {
+      render(<MessageBubble message={createMessage('start *unclosed end')} />);
+      // The literal asterisk + word is preserved as plain text.
+      expect(screen.getByText(/\*unclosed end/)).toBeInTheDocument();
+    });
   });
 });
