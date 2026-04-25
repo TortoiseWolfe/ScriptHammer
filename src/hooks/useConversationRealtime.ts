@@ -15,7 +15,7 @@
  * - Automatic cleanup on unmount
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createLogger } from '@/lib/logger';
 import { realtimeService } from '@/lib/messaging/realtime';
 import { messageService } from '@/services/messaging/message-service';
@@ -39,7 +39,11 @@ export function useConversationRealtime(
   const [error, setError] = useState<Error | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
-  const supabase = createClient();
+  // Stable Supabase client for the hook's lifetime — calling createClient()
+  // on every render produces a new identity, invalidates dep arrays, and
+  // forces realtime subscription teardown/recreate cycles. Root cause of
+  // the ConversationView regression chain (revert adae629).
+  const supabase = useMemo(() => createClient(), []);
 
   // Use ref to track if component is mounted
   const isMountedRef = useRef(true);

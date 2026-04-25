@@ -6,6 +6,8 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  useMemo,
+  useRef,
 } from 'react';
 import { canUseCookies } from '../utils/consent';
 import { CookieCategory } from '../utils/consent-types';
@@ -135,6 +137,15 @@ export function AccessibilityProvider({
     applySettings(initialSettings);
   }, [applySettings]);
 
+  // Mirror current settings into a ref so the cross-tab storage listener
+  // can read fallback values without depending on `settings` (which would
+  // tear down + re-register the listener on every settings change and
+  // double-apply settings during cross-tab sync).
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
   // Listen for storage events (changes from other tabs/windows)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -145,21 +156,22 @@ export function AccessibilityProvider({
         e.key === 'highContrast' ||
         e.key === 'reduceMotion'
       ) {
+        const current = settingsRef.current;
         const newSettings: AccessibilitySettings = {
           fontSize:
-            (localStorage.getItem('fontSize') as FontSize) || settings.fontSize,
+            (localStorage.getItem('fontSize') as FontSize) || current.fontSize,
           lineHeight:
             (localStorage.getItem('lineHeight') as LineHeight) ||
-            settings.lineHeight,
+            current.lineHeight,
           fontFamily:
             (localStorage.getItem('fontFamily') as FontFamily) ||
-            settings.fontFamily,
+            current.fontFamily,
           highContrast:
             (localStorage.getItem('highContrast') as ContrastMode) ||
-            settings.highContrast,
+            current.highContrast,
           reduceMotion:
             (localStorage.getItem('reduceMotion') as MotionPreference) ||
-            settings.reduceMotion,
+            current.reduceMotion,
         };
         setSettings(newSettings);
         applySettings(newSettings);
@@ -168,36 +180,40 @@ export function AccessibilityProvider({
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [settings, applySettings]);
+  }, [applySettings]);
 
   // Update settings function (respecting consent)
-  const updateSettings = (newSettings: Partial<AccessibilitySettings>) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
-    const storage = canPersist ? localStorage : sessionStorage;
+  const updateSettings = useCallback(
+    (newSettings: Partial<AccessibilitySettings>) => {
+      const updatedSettings = { ...settingsRef.current, ...newSettings };
+      const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
+      const storage = canPersist ? localStorage : sessionStorage;
 
-    // Save to appropriate storage
-    if (newSettings.fontSize) storage.setItem('fontSize', newSettings.fontSize);
-    if (newSettings.lineHeight)
-      storage.setItem('lineHeight', newSettings.lineHeight);
-    if (newSettings.fontFamily)
-      storage.setItem('fontFamily', newSettings.fontFamily);
-    if (newSettings.highContrast)
-      storage.setItem('highContrast', newSettings.highContrast);
-    if (newSettings.reduceMotion)
-      storage.setItem('reduceMotion', newSettings.reduceMotion);
+      // Save to appropriate storage
+      if (newSettings.fontSize)
+        storage.setItem('fontSize', newSettings.fontSize);
+      if (newSettings.lineHeight)
+        storage.setItem('lineHeight', newSettings.lineHeight);
+      if (newSettings.fontFamily)
+        storage.setItem('fontFamily', newSettings.fontFamily);
+      if (newSettings.highContrast)
+        storage.setItem('highContrast', newSettings.highContrast);
+      if (newSettings.reduceMotion)
+        storage.setItem('reduceMotion', newSettings.reduceMotion);
 
-    // Update state and apply
-    setSettings(updatedSettings);
-    applySettings(updatedSettings);
+      // Update state and apply
+      setSettings(updatedSettings);
+      applySettings(updatedSettings);
 
-    // Note: No need to dispatch StorageEvent to self — state is already
-    // updated via setSettings/applySettings above. The storage event listener
-    // handles cross-tab synchronization natively.
-  };
+      // Note: No need to dispatch StorageEvent to self — state is already
+      // updated via setSettings/applySettings above. The storage event listener
+      // handles cross-tab synchronization natively.
+    },
+    [applySettings]
+  );
 
   // Reset settings function
-  const resetSettings = () => {
+  const resetSettings = useCallback(() => {
     // Clear from both storages
     [
       'fontSize',
@@ -212,12 +228,17 @@ export function AccessibilityProvider({
 
     setSettings(defaultSettings);
     applySettings(defaultSettings);
-  };
+  }, [applySettings]);
+
+  // Memoize provider value so consumers don't re-render on every parent
+  // render. ConsentContext does this correctly; copy that pattern here.
+  const value = useMemo<AccessibilityContextType>(
+    () => ({ settings, updateSettings, resetSettings }),
+    [settings, updateSettings, resetSettings]
+  );
 
   return (
-    <AccessibilityContext.Provider
-      value={{ settings, updateSettings, resetSettings }}
-    >
+    <AccessibilityContext.Provider value={value}>
       {children}
     </AccessibilityContext.Provider>
   );

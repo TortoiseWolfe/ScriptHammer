@@ -101,10 +101,18 @@ export default function SignUpForm({
 
       setError(signUpError.message);
     } else {
-      // Log successful sign-up (T034)
-      if (user) {
+      // Log successful sign-up (T034). `user` from useAuth() is still null
+      // immediately after await — read user_id directly from getUser() so
+      // the audit log entry doesn't silently drop on success.
+      const { supabase: supabaseClient } = await import(
+        '@/lib/supabase/client'
+      );
+      const {
+        data: { user: freshUser },
+      } = await supabaseClient.auth.getUser();
+      if (freshUser) {
         await logAuthEvent({
-          user_id: user.id,
+          user_id: freshUser.id,
           event_type: 'sign_up',
           event_data: { email, provider: 'email' },
         });

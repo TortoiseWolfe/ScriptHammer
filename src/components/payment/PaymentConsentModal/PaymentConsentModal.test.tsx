@@ -126,7 +126,13 @@ describe('PaymentConsentModal', () => {
     expect(onConsentDeclined).toHaveBeenCalledTimes(1);
   });
 
-  it('does not render when showModal is false', () => {
+  it('renders the dialog mounted-but-closed when showModal is false', () => {
+    // The component used to return null when showModal=false, but that
+    // unmounted the <dialog> while a cancel-event-listener cleanup still
+    // held a ref to it, leaking event listeners. The dialog now stays
+    // mounted at all times; visibility is driven imperatively via
+    // dialog.showModal()/close() inside an effect. The closed dialog is
+    // not visible to users (no `modal-open` class, dialog.open is false).
     vi.mocked(usePaymentConsent).mockReturnValue({
       showModal: false,
       hasConsent: true,
@@ -138,7 +144,10 @@ describe('PaymentConsentModal', () => {
     });
 
     const { container } = render(<PaymentConsentModal />);
-    expect(container.firstChild).toBeNull();
+    const dialog = container.querySelector('dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog).not.toHaveClass('modal-open');
+    expect(dialog?.open).toBe(false);
   });
 
   it('has proper ARIA labels for accessibility', () => {

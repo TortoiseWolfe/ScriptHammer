@@ -117,10 +117,19 @@ export default function SignInForm({
 
       setError(errorMessage);
     } else {
-      // Log successful sign-in (T033)
-      if (user) {
+      // Log successful sign-in (T033). The `user` from useAuth() is still
+      // null at this point — Supabase's onAuthStateChange hasn't propagated
+      // to AuthContext yet — so read user_id directly from getUser() to
+      // avoid silently dropping the audit log entry on success.
+      const { supabase: supabaseClient } = await import(
+        '@/lib/supabase/client'
+      );
+      const {
+        data: { user: freshUser },
+      } = await supabaseClient.auth.getUser();
+      if (freshUser) {
         await logAuthEvent({
-          user_id: user.id,
+          user_id: freshUser.id,
           event_type: 'sign_in',
           event_data: { email, provider: 'email' },
         });

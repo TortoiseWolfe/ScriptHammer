@@ -335,7 +335,7 @@ export class GroupService {
    * @throws MembershipError if validation fails
    */
   async addMembers(input: AddMembersInput): Promise<AddMembersResult> {
-    throw new Error('Not implemented');
+    throw new MembershipError('addMembers: not implemented');
   }
 
   /**
@@ -345,7 +345,7 @@ export class GroupService {
    * @throws MembershipError if not owner or user not found
    */
   async removeMember(conversationId: string, userId: string): Promise<void> {
-    throw new Error('Not implemented');
+    throw new MembershipError('removeMember: not implemented');
   }
 
   /**
@@ -354,7 +354,7 @@ export class GroupService {
    * @throws MembershipError if owner without transfer
    */
   async leaveGroup(conversationId: string): Promise<void> {
-    throw new Error('Not implemented');
+    throw new MembershipError('leaveGroup: not implemented');
   }
 
   /**
@@ -363,7 +363,7 @@ export class GroupService {
    * @throws MembershipError if not owner or target not member
    */
   async transferOwnership(input: TransferOwnershipInput): Promise<void> {
-    throw new Error('Not implemented');
+    throw new MembershipError('transferOwnership: not implemented');
   }
 
   /**
@@ -372,7 +372,7 @@ export class GroupService {
    * @returns Upgraded group conversation
    */
   async upgradeToGroup(input: UpgradeToGroupInput): Promise<GroupConversation> {
-    throw new Error('Not implemented');
+    throw new GroupError('upgradeToGroup: not implemented');
   }
 
   /**
@@ -381,7 +381,7 @@ export class GroupService {
    * @throws MembershipError if not owner
    */
   async deleteGroup(conversationId: string): Promise<void> {
-    throw new Error('Not implemented');
+    throw new GroupError('deleteGroup: not implemented');
   }
 
   /**
@@ -391,7 +391,7 @@ export class GroupService {
    * @throws MembershipError if not owner
    */
   async renameGroup(conversationId: string, newName: string): Promise<void> {
-    throw new Error('Not implemented');
+    throw new GroupError('renameGroup: not implemented');
   }
 
   /**
@@ -400,7 +400,7 @@ export class GroupService {
    * @returns List of members with profiles
    */
   async getMembers(conversationId: string): Promise<ConversationMember[]> {
-    throw new Error('Not implemented');
+    throw new MembershipError('getMembers: not implemented');
   }
 
   /**

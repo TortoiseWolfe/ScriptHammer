@@ -12,6 +12,7 @@ import React, {
   useState,
   useRef,
   useCallback,
+  useMemo,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, setAllowAuthTokenRemoval } from '@/lib/supabase/client';
@@ -72,20 +73,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showIdleModal, setShowIdleModal] = useState(false);
   const isLocalSignOut = useRef(false);
 
+  // Mirror current `user` into a ref so the idle-timeout callbacks below can
+  // read its latest value without depending on it. Inline arrow callbacks
+  // get fresh closures each render but useIdleTimeout holds the very first
+  // pair in its effect deps — without this ref the callbacks would read the
+  // user value from the render that registered them, meaning a user who
+  // signs in after mount never gets auto-signed-out by the idle timer.
+  const userRef = useRef<User | null>(null);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  // Stable callbacks for useIdleTimeout — without useCallback, every render
+  // would feed new identities into the hook and force its effect to tear
+  // down + re-register all window listeners (mousedown/keydown/touchstart/
+  // scroll), accumulating thousands of duplicates over a 24h session.
+  const handleIdleWarning = useCallback(() => {
+    if (userRef.current) setShowIdleModal(true);
+  }, []);
+
+  // Forward declaration via ref — signOut is defined below but the warning
+  // callback above only fires after first render, by which time signOutRef
+  // has been populated.
+  const signOutRef = useRef<() => Promise<void>>(async () => {});
+  const handleIdleTimeout = useCallback(() => {
+    if (userRef.current) signOutRef.current();
+  }, []);
+
   // Session idle timeout (24 hours = 1440 minutes)
   const { timeRemaining, resetTimer } = useIdleTimeout({
     timeoutMinutes: 1440,
     warningMinutes: 1,
-    onWarning: () => {
-      if (user) {
-        setShowIdleModal(true);
-      }
-    },
-    onTimeout: () => {
-      if (user) {
-        signOut();
-      }
-    },
+    onWarning: handleIdleWarning,
+    onTimeout: handleIdleTimeout,
   });
 
   useEffect(() => {
@@ -192,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -205,9 +225,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       return { error: error as Error };
     }
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -217,7 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       return { error: error as Error };
     }
-  };
+  }, []);
 
   const signOut = useCallback(async () => {
     // Mark as local sign-out to prevent double redirect from onAuthStateChange
@@ -247,13 +267,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = '/';
   }, []);
 
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     const { data } = await supabase.auth.refreshSession();
     setSession(data.session);
     setUser(data.session?.user ?? null);
-  };
+  }, []);
 
-  const retry = async () => {
+  const retry = useCallback(async () => {
     setError(null);
     setRetryCount((prev) => prev + 1);
     setIsLoading(true);
@@ -274,26 +294,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
-  const value: AuthContextType = {
-    user,
-    session,
-    isLoading,
-    isAuthenticated: !!user,
-    error,
-    retryCount,
-    signUp,
-    signIn,
-    signOut,
-    refreshSession,
-    retry,
-    clearError,
-  };
+  // Keep signOutRef in sync so the idle-timeout callback above can call the
+  // current signOut without depending on it (which would invalidate the
+  // useIdleTimeout effect on every render).
+  useEffect(() => {
+    signOutRef.current = signOut;
+  }, [signOut]);
+
+  // Memoize the context value so consumers don't re-render on every
+  // AuthProvider render. Without this, retryCount/error/isLoading changes
+  // cascade re-renders to every subtree (ConversationView, payment, etc.).
+  // ConsentContext does this correctly; copy that pattern here.
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      session,
+      isLoading,
+      isAuthenticated: !!user,
+      error,
+      retryCount,
+      signUp,
+      signIn,
+      signOut,
+      refreshSession,
+      retry,
+      clearError,
+    }),
+    [
+      user,
+      session,
+      isLoading,
+      error,
+      retryCount,
+      signUp,
+      signIn,
+      signOut,
+      refreshSession,
+      retry,
+      clearError,
+    ]
+  );
 
   const handleContinueSession = () => {
     setShowIdleModal(false);

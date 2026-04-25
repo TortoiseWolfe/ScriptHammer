@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj, Decorator } from '@storybook/nextjs-vite';
 import React from 'react';
 import SignUpForm from './SignUpForm';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-const withAuthProvider = (Story: any) => (
+const withAuthProvider: Decorator = (Story) => (
   <AuthProvider>
     <Story />
   </AuthProvider>

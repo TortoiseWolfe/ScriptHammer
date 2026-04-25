@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import type { Meta, StoryObj, Decorator } from '@storybook/nextjs-vite';
 import React from 'react';
 import ProtectedRoute from './ProtectedRoute';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-const withAuthProvider = (Story: any) => (
+const withAuthProvider: Decorator = (Story) => (
   <AuthProvider>
     <Story />
   </AuthProvider>

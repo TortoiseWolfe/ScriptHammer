@@ -17,7 +17,7 @@
  * @returns { isTyping, setTyping } - Other user's typing status and function to set own status
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { realtimeService } from '@/lib/messaging/realtime';
 import { createClient } from '@/lib/supabase/client';
 import type { UseTypingIndicatorReturn } from '@/types/messaging';
@@ -28,7 +28,8 @@ export function useTypingIndicator(
   const [isTyping, setIsTyping] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const supabase = createClient();
+  // Stable client for the hook's lifetime — see useConversationRealtime
+  const supabase = useMemo(() => createClient(), []);
 
   /**
    * Get current user ID

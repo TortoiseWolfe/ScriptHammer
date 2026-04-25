@@ -49,8 +49,10 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
 
     if (showModal && !dialog.open) {
       dialog.showModal();
-      // Focus accept button when modal opens
-      acceptButtonRef.current?.focus();
+      // Defer focus to next frame — Firefox doesn't guarantee dialog is in
+      // the accessibility tree until after the paint following showModal().
+      // Calling focus() synchronously silently no-ops in FF (revert 3e67772).
+      requestAnimationFrame(() => acceptButtonRef.current?.focus());
     } else if (!showModal && dialog.open) {
       dialog.close();
     }
@@ -83,12 +85,14 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
     }
   };
 
-  if (!showModal) return null;
-
+  // Keep the <dialog> mounted at all times — visibility is driven by the
+  // imperative showModal()/close() in the effect above. Returning null here
+  // would unmount the element while the cancel-listener cleanup still holds
+  // a ref to it, leaking event listeners on remount.
   return (
     <dialog
       ref={dialogRef}
-      className="modal modal-open"
+      className={showModal ? 'modal modal-open' : 'modal'}
       aria-labelledby="consent-modal-title"
       aria-describedby="consent-modal-description"
     >
