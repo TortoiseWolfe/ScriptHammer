@@ -1,10 +1,28 @@
+/**
+ * /api/blog/tags — STATIC EXPORT COMPATIBLE
+ *
+ * This is the only file under src/app/api/. CLAUDE.md notes that the
+ * project deploys via static export to GitHub Pages and that dynamic
+ * server route handlers won't run in production. This route handles
+ * that constraint by setting `dynamic = 'error'`, which forces Next.js
+ * to fully resolve the response at build time — the output is emitted
+ * as a static JSON file that GitHub Pages can serve directly.
+ *
+ * If you add a new src/app/api/ route, ensure it follows the same
+ * pattern OR migrate it to a Supabase Edge Function. Webhook handlers
+ * (Stripe, PayPal) intentionally live under supabase/functions/, not
+ * here, because they need a real server runtime.
+ */
+
 import { NextResponse } from 'next/server';
 import blogData from '@/lib/blog/blog-data.json';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('app:route:blog-tags');
 
-// Required for static export - use error mode for static generation
+// Required for static export — `error` forces fully-resolvable build-time
+// output. Removing this turns the route into a server-only handler that
+// GitHub Pages can't run, producing silent 404s in production.
 export const dynamic = 'error';
 export const revalidate = 86400; // Revalidate once per day
 
