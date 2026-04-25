@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@/lib/supabase/client';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
 import { offlineQueueService } from './offline-queue-service';
@@ -38,6 +39,35 @@ import {
 } from '@/types/messaging';
 
 const logger = createLogger('messaging:messages');
+
+/**
+ * Get the authenticated user's session, retrying briefly so a transient
+ * token-refresh window (where Supabase momentarily exposes session=null)
+ * doesn't surface as an auth failure. Replaces a 6-line block that was
+ * copy-pasted 8 times across this file — keeping the loop in one place
+ * also means a fix to the retry strategy lands everywhere at once.
+ *
+ * @throws AuthenticationError with the supplied operation string in the
+ * message if the retry budget is exhausted with no session.
+ */
+async function getSessionWithRetry(
+  supabase: SupabaseClient,
+  operation: string
+): Promise<Session> {
+  let session: Session | null = null;
+  let authError: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const result = await supabase.auth.getSession();
+    session = result.data?.session ?? null;
+    authError = result.error;
+    if (session?.user) break;
+    if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+  }
+  if (authError || !session?.user) {
+    throw new AuthenticationError(`You must be signed in to ${operation}`);
+  }
+  return session;
+}
 
 // Cache conversation participant data so sendMessage works offline after
 // the first successful fetch. Keyed by conversation_id.
@@ -151,9 +181,9 @@ export class MessageService {
       console.log(`[sendMessage] getSession attempt ${attempt + 1}/3:`, {
         hasSession: !!session,
         hasUser: !!session?.user,
+        hasToken: !!session?.access_token,
         error: authError?.message || null,
         expiresAt: session?.expires_at,
-        tokenPrefix: session?.access_token?.slice(0, 20),
       });
       if (session?.user) break;
       if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
@@ -527,24 +557,9 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError('You must be signed in to view messages');
-    }
+    // Get authenticated user (retries through token refresh)
+    const session = await getSessionWithRetry(supabase, 'view messages');
+    const user = session.user;
 
     try {
       // Variables to hold messages across different code paths
@@ -879,25 +894,11 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError(
-        'You must be signed in to mark messages as read'
-      );
-    }
+    const session = await getSessionWithRetry(
+      supabase,
+      'mark messages as read'
+    );
+    const user = session.user;
 
     if (messageIds.length === 0) {
       return;
@@ -946,25 +947,11 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError(
-        'You must be signed in to mark messages as delivered'
-      );
-    }
+    const session = await getSessionWithRetry(
+      supabase,
+      'mark messages as delivered'
+    );
+    const user = session.user;
 
     if (messageIds.length === 0) {
       return;
@@ -1036,24 +1023,8 @@ export class MessageService {
       );
     }
 
-    // Get authenticated user
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError('You must be signed in to edit messages');
-    }
+    const session = await getSessionWithRetry(supabase, 'edit messages');
+    const user = session.user;
 
     try {
       // Get the message to edit
@@ -1225,24 +1196,8 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError('You must be signed in to delete messages');
-    }
+    const session = await getSessionWithRetry(supabase, 'delete messages');
+    const user = session.user;
 
     try {
       // Get the message to delete
@@ -1320,26 +1275,11 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError(
-        'You must be signed in to archive conversations'
-      );
-    }
+    const session = await getSessionWithRetry(
+      supabase,
+      'archive conversations'
+    );
+    const user = session.user;
 
     try {
       // Get conversation to determine which participant the user is
@@ -1421,26 +1361,11 @@ export class MessageService {
     const supabase = createClient();
     const msgClient = createMessagingClient(supabase);
 
-    // Get authenticated user
-    // Retry getSession up to 3 times with 500ms delays.
-    // Supabase token refresh briefly sets session=null — retrying
-    // allows the refresh to complete before giving up.
-    let session = null;
-    let authError = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await supabase.auth.getSession();
-      session = result.data?.session;
-      authError = result.error;
-      if (session?.user) break;
-      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
-    }
-    const user = session?.user;
-
-    if (authError || !user) {
-      throw new AuthenticationError(
-        'You must be signed in to unarchive conversations'
-      );
-    }
+    const session = await getSessionWithRetry(
+      supabase,
+      'unarchive conversations'
+    );
+    const user = session.user;
 
     try {
       // Get conversation to determine which participant the user is

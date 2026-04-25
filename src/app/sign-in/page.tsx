@@ -20,6 +20,11 @@ function isSafeRedirectUrl(url: string): boolean {
 export default function SignInPage() {
   const router = useRouter();
   const [returnUrl, setReturnUrl] = useState('/profile');
+  // Block onSuccess navigation until the returnUrl effect has run. On a
+  // fast network or already-authenticated user, sign-in can resolve before
+  // the URL-parsing effect finishes, sending the user to the default
+  // /profile instead of the intended /messages?conversation=xyz.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     // Read query params client-side for static export compatibility
@@ -28,6 +33,7 @@ export default function SignInPage() {
     if (url && isSafeRedirectUrl(decodeURIComponent(url))) {
       setReturnUrl(url);
     }
+    setMounted(true);
   }, []);
 
   return (
@@ -36,9 +42,10 @@ export default function SignInPage() {
         <h1 className="mb-6 text-center text-3xl font-bold sm:mb-8">Sign In</h1>
 
         <SignInForm
-          onSuccess={() =>
-            router.push(decodeURIComponent(returnUrl))
-          }
+          onSuccess={() => {
+            if (!mounted) return;
+            router.push(decodeURIComponent(returnUrl));
+          }}
         />
 
         <p className="mt-4 text-center text-sm">

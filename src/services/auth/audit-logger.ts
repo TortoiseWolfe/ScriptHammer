@@ -166,13 +166,35 @@ export class AuditLogger {
   }
 
   /**
+   * Defensive filter — strip any field whose name suggests a credential or
+   * secret before persisting event_data. The type Record<string, any> alone
+   * doesn't prevent a caller passing { password } by accident, which would
+   * land a plaintext credential in auth_audit_logs.
+   */
+  private stripCredentials(
+    data: Record<string, unknown> | undefined
+  ): Record<string, unknown> | undefined {
+    if (!data) return data;
+    const stripped: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(data)) {
+      if (/password|token|secret|key|credential/i.test(k)) continue;
+      stripped[k] = v;
+    }
+    return stripped;
+  }
+
+  /**
    * Internal log method
    */
   private async log(entry: AuditLogEntry): Promise<void> {
     try {
+      const safeEntry: AuditLogEntry = {
+        ...entry,
+        event_data: this.stripCredentials(entry.event_data),
+      };
       const { error } = await this.supabase
         .from('auth_audit_logs')
-        .insert(entry);
+        .insert(safeEntry);
 
       if (error) {
         logger.error('Audit log failed', { error: error.message });

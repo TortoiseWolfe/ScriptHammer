@@ -215,7 +215,21 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // Load queue on mount and set up polling. Every poll tick also attempts
   // a sync as a safety net for any missed event trigger above.
   useEffect(() => {
-    loadQueue();
+    // On mount, read the queue length directly from the service (not from
+    // React state, which is 0 until loadQueue's setState commits) so we
+    // only kick off a sync if there's actually work to do. A previous
+    // attempt used a separate "sync on mount" effect that read queueCount
+    // from closure, but that closure was always 0 at mount time and the
+    // intended sync silently never fired.
+    void (async () => {
+      await loadQueue();
+      try {
+        const queued = await offlineQueueService.getQueue();
+        if (queued.length > 0) void syncQueue();
+      } catch {
+        // loadQueue already logged any error; nothing more to do.
+      }
+    })();
 
     const interval = setInterval(() => {
       loadQueue();
@@ -224,14 +238,6 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
     return () => clearInterval(interval);
   }, [loadQueue, syncQueue]);
-
-  // Trigger sync on mount if online and queue has items
-  useEffect(() => {
-    if (isOnline && queueCount > 0 && !isSyncing) {
-      syncQueue();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount - intentionally omitting deps
 
   return {
     queue,

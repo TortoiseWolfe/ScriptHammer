@@ -78,6 +78,17 @@ export function useReadReceipts({
     }, 500); // 500ms debounce
   }, [markMessagesAsRead]);
 
+  // Mirror current messages into a ref so handleIntersection can read the
+  // latest array without depending on it. Without this, every new incoming
+  // message gave handleIntersection a fresh identity → the observer effect
+  // re-ran → observer.disconnect() → new observer → re-observe-all on every
+  // new message in an active conversation, producing spurious mark-as-read
+  // calls for every visible message.
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   /**
    * Handle message entering viewport
    */
@@ -89,7 +100,7 @@ export function useReadReceipts({
         if (entry.isIntersecting) {
           const messageId = entry.target.getAttribute('data-message-id');
           if (messageId) {
-            const message = messages.find((m) => m.id === messageId);
+            const message = messagesRef.current.find((m) => m.id === messageId);
 
             // Only mark unread, non-deleted messages from other users.
             // A [Message deleted] placeholder scrolling into view isn't a
@@ -107,7 +118,7 @@ export function useReadReceipts({
         }
       });
     },
-    [messages, userId, isVisible, scheduleReadUpdate]
+    [userId, isVisible, scheduleReadUpdate]
   );
 
   /**
@@ -149,7 +160,12 @@ export function useReadReceipts({
         timeoutRef.current = null;
       }
     };
-  }, [messages, isVisible, handleIntersection, markMessagesAsRead]);
+    // Re-run on messages.length so new [data-message-id] elements get
+    // observed when they mount. We intentionally use .length instead of
+    // the full `messages` array so unrelated updates (read_at flag flips,
+    // edit_history, etc.) don't tear down + rebuild the observer.
+    // handleIntersection itself is stable now (reads `messages` via ref).
+  }, [messages.length, isVisible, handleIntersection, markMessagesAsRead]);
 
   /**
    * Handle window visibility changes

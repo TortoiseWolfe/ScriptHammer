@@ -180,13 +180,14 @@ export default function MessageThread({
         lastMessageRef.current !== null &&
         shouldAutoScroll.current
       ) {
-        scrollToBottom(true);
+        // Read scrollToBottom from the ref so we always invoke the latest
+        // version (which may have switched between virtual + non-virtual
+        // paths since this effect first mounted).
+        scrollToBottomRef.current(true);
       }
 
       lastMessageRef.current = latestMessageId;
     }
-    // scrollToBottom is stable (useCallback with stable deps), safe to omit
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   // Check if user has scrolled away from bottom
@@ -232,6 +233,16 @@ export default function MessageThread({
     [useVirtualScrolling, virtualizer, messages.length]
   );
 
+  // Mirror current scrollToBottom into a ref so the auto-scroll effect can
+  // call it without depending on it. Without this, crossing the virtual-
+  // scrolling threshold (>100 messages) gives scrollToBottom a fresh
+  // identity, but the auto-scroll effect held the pre-virtual closure —
+  // so new messages stopped auto-scrolling after the threshold.
+  const scrollToBottomRef = useRef(scrollToBottom);
+  useEffect(() => {
+    scrollToBottomRef.current = scrollToBottom;
+  }, [scrollToBottom]);
+
   // Get virtual items for rendering
   const virtualItems = useVirtualScrolling
     ? virtualizer.getVirtualItems()
@@ -242,7 +253,11 @@ export default function MessageThread({
   const renderPendingBubbles = useMemo(
     () =>
       pendingMessages.map((pm) => (
-        <QueuedMessageBubble key={pm.id} message={pm} onRetry={onRetryPending} />
+        <QueuedMessageBubble
+          key={pm.id}
+          message={pm}
+          onRetry={onRetryPending}
+        />
       )),
     [pendingMessages, onRetryPending]
   );
