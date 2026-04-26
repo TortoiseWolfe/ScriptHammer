@@ -35,8 +35,10 @@ export class MessagingDatabase extends Dexie {
     });
 
     // v2: messaging_private_keys.privateKey changed from JsonWebKey to a
-    // non-extractable CryptoKey. Wipe legacy JWK rows on upgrade — users
-    // re-derive on next signin. See plan: continue-the-scripthammer-lucky-hamster.md
+    // non-extractable CryptoKey. Drop only legacy JWK rows — leave any
+    // CryptoKey rows (already-migrated, or test fixtures seeded into IDB)
+    // untouched. A JWK row is a plain object with `kty`; a CryptoKey row
+    // has the CryptoKey prototype.
     this.version(2)
       .stores({
         messaging_queued_messages:
@@ -46,7 +48,18 @@ export class MessagingDatabase extends Dexie {
         messaging_sync_metadata: 'key, updated_at',
       })
       .upgrade(async (tx) => {
-        await tx.table('messaging_private_keys').clear();
+        const table = tx.table<{ userId: string; privateKey: unknown }>(
+          'messaging_private_keys'
+        );
+        const rows = await table.toArray();
+        for (const row of rows) {
+          const isCryptoKey =
+            typeof CryptoKey !== 'undefined' &&
+            row.privateKey instanceof CryptoKey;
+          if (!isCryptoKey) {
+            await table.delete(row.userId);
+          }
+        }
       });
   }
 }
