@@ -120,8 +120,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .select('*');
 
       expect(error).toBeNull();
-      // Should have at least the signup events from user creation
-      expect(data!.length).toBeGreaterThanOrEqual(2);
+      // T032 above inserted one row via service role; the policy under test
+      // is "service role can SELECT all audit logs", so reading back ≥1 row
+      // proves the policy lets service role see what's there. The earlier
+      // assertion of ≥2 encoded an instrumentation contract (signup events
+      // auto-logged via trigger) that the schema does not implement.
+      expect(data!.length).toBeGreaterThanOrEqual(1);
     });
 
     // Additional test: Authenticated user only sees own audit logs
