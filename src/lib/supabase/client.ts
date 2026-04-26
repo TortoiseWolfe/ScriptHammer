@@ -150,31 +150,34 @@ export function createClient(): SupabaseClient<Database> {
       auth: {
         // Use implicit flow for static sites (no server-side code exchange)
         flowType: 'implicit',
-        // In E2E tests, use a storage adapter that prevents auth token
-        // removal. Even with autoRefreshToken disabled, Supabase may clear
-        // the session on 406/403 errors from the free tier. The adapter
-        // no-ops removeItem for auth-token keys, keeping the valid access
-        // token in localStorage so the session can recover on page reload.
+        // Custom storage adapter that prevents auth-token removal except
+        // during an explicit sign-out (toggled via setAllowAuthTokenRemoval).
+        // Supabase auth-js clears the session on transient 406/403 errors
+        // from Realtime / RLS — without this guard, that transient error
+        // wipes the auth-token, fires SIGNED_OUT, and forces the user back
+        // to /sign-in even though the access_token was still valid. With
+        // the guard, the token persists across the spurious event; the
+        // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
+        // This applies in production AND E2E — the test path now exercises
+        // exactly the same auth flow real users see.
         storage:
           typeof window !== 'undefined'
-            ? window.localStorage?.getItem('playwright_e2e')
-              ? {
-                  getItem: (key: string) => window.localStorage.getItem(key),
-                  setItem: (key: string, value: string) =>
-                    window.localStorage.setItem(key, value),
-                  removeItem: (key: string) => {
-                    if (key.includes('auth-token') && !_allowAuthTokenRemoval)
-                      return;
-                    window.localStorage.removeItem(key);
-                  },
-                }
-              : window.localStorage
+            ? {
+                getItem: (key: string) => window.localStorage.getItem(key),
+                setItem: (key: string, value: string) =>
+                  window.localStorage.setItem(key, value),
+                removeItem: (key: string) => {
+                  if (key.includes('auth-token') && !_allowAuthTokenRemoval)
+                    return;
+                  window.localStorage.removeItem(key);
+                },
+              }
             : undefined,
         // Disable auto-refresh in E2E tests. The access token is valid for
         // 1 hour — plenty for a ~30-minute test run. Auto-refresh causes
         // single-use refresh tokens to be consumed by one test context,
         // leaving subsequent contexts with an invalid session (SIGNED_OUT
-        // fires → localStorage cleared → all messaging tests fail).
+        // fires → all messaging tests fail).
         autoRefreshToken:
           typeof window === 'undefined' ||
           !window.localStorage?.getItem('playwright_e2e'),

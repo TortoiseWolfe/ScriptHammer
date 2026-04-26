@@ -24,6 +24,48 @@ import IdleTimeoutModal from '@/components/molecular/IdleTimeoutModal';
 const logger = createLogger('contexts:auth');
 
 /**
+ * Check whether a Supabase auth-token in localStorage is still valid
+ * (parseable JSON with a non-expired access_token).
+ *
+ * Used to distinguish a SPURIOUS SIGNED_OUT (Supabase fired the event due
+ * to a transient 401/406 from Realtime / RLS, but the auth-token is still
+ * good — recovery happens on the next TOKEN_REFRESHED) from a REAL
+ * sign-out (cross-tab signout cleared the token, or refresh-token was
+ * revoked, or expires_at has passed).
+ *
+ * Returns false on: missing token, JSON parse error, missing expires_at,
+ * or expires_at <= now (with a small grace window).
+ *
+ * Safe to call from event handlers — synchronous, no I/O beyond reading
+ * localStorage.
+ */
+function isAuthTokenValidInLocalStorage(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!key) return false;
+    const raw = localStorage.getItem(key);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as {
+      access_token?: string;
+      expires_at?: number;
+    };
+    if (!parsed?.access_token || typeof parsed.expires_at !== 'number') {
+      return false;
+    }
+    // expires_at is a UNIX timestamp in seconds; allow 60-second grace
+    // so we don't treat a token within its last minute as "still valid"
+    // (the next API call would 401 anyway).
+    const nowSec = Math.floor(Date.now() / 1000);
+    return parsed.expires_at > nowSec + 60;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Auth error types for user feedback
  */
 export interface AuthError {
@@ -158,59 +200,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // FR-009: Cross-tab sign-out detection (and E2E spurious-SIGNED_OUT
-      // suppression). Supabase fires SIGNED_OUT on transient 401/406 errors
-      // from Realtime / RLS, even when the user is still authenticated and
-      // the auth-token in localStorage is still valid. In production we
-      // redirect to '/'; in E2E we MUST keep the existing user state intact
-      // so subsequent tests aren't punished by a transient hiccup. The
-      // custom storage adapter (lib/supabase/client.ts) already prevents
-      // localStorage removal of the auth-token in E2E, so the session is
-      // recoverable — but if we run setUser(null) here, every consumer
-      // (useConversationList, EncryptionKeyGate, navbar) sees user=null
-      // until React rerenders from a later TOKEN_REFRESHED / SIGNED_IN.
-      const isE2ETest =
-        typeof localStorage !== 'undefined' &&
-        localStorage.getItem('playwright_e2e') === 'true';
-      const isSpuriousE2ESignOut =
-        _event === 'SIGNED_OUT' && !isLocalSignOut.current && isE2ETest;
-
-      if (isSpuriousE2ESignOut) {
-        // Skip the state update entirely. Keep user/session/isLoading as-is.
-        logger.info('Spurious SIGNED_OUT suppressed in E2E mode');
-        return;
+      // Spurious SIGNED_OUT detection. Supabase fires SIGNED_OUT on
+      // transient 401/406 errors from Realtime / RLS, even when the user
+      // is still authenticated and the auth-token in localStorage is
+      // still valid. The next TOKEN_REFRESHED / SIGNED_IN event recovers
+      // automatically. If we ran setUser(null) on the spurious event,
+      // every consumer (useConversationList, EncryptionKeyGate, navbar)
+      // would see user=null and flicker — same UX wart in production
+      // and in E2E. So we distinguish: real signout vs transient hiccup.
+      //
+      // Heuristic: SIGNED_OUT fired without isLocalSignOut.current AND
+      // the auth-token JSON in localStorage still parses to a non-expired
+      // access_token → it's spurious; ignore. Otherwise it's real
+      // (cross-tab signout, refresh-token revoked, token expired) →
+      // proceed with state clearing.
+      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
+        const tokenStillValid = isAuthTokenValidInLocalStorage();
+        if (tokenStillValid) {
+          logger.info(
+            'Spurious SIGNED_OUT suppressed (auth-token still valid in localStorage)'
+          );
+          return;
+        }
       }
 
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
 
-      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current && !isE2ETest) {
-        // Sign-out detected from another tab - redirect to home
+      // FR-009: real cross-tab sign-out — redirect to home.
+      // Reaching this branch means: SIGNED_OUT fired AND it's not a local
+      // sign-out AND the auth-token is gone/expired (we cleared it in
+      // another tab, or the refresh token was revoked server-side).
+      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
         logger.info('Cross-tab sign-out detected, redirecting to home');
         window.location.href = '/';
         return;
       }
 
-      // Reset local sign-out flag after handling and clear encryption keys.
-      // The isSpuriousE2ESignOut early-return above already filtered out
-      // transient/non-local SIGNED_OUT events in E2E. Reaching here means
-      // either a real local sign-out OR a non-E2E SIGNED_OUT.
+      // Local sign-out path — clear encryption keys.
       if (_event === 'SIGNED_OUT') {
-        // In E2E mode, only clear keys on intentional sign-out.
-        // Spurious SIGNED_OUT from 406/403 errors must NOT clear keys —
-        // resetEncryptionKeys handles key resets via page.reload() instead.
-        const shouldClearKeys = isLocalSignOut.current || !isE2ETest;
         isLocalSignOut.current = false;
-        if (shouldClearKeys) {
-          try {
-            const { keyManagementService } = await import(
-              '@/services/messaging/key-service'
-            );
-            keyManagementService.clearKeys();
-          } catch (error) {
-            logger.error('Failed to clear encryption keys', { error });
-          }
+        try {
+          const { keyManagementService } = await import(
+            '@/services/messaging/key-service'
+          );
+          keyManagementService.clearKeys();
+        } catch (error) {
+          logger.error('Failed to clear encryption keys', { error });
         }
       }
 
