@@ -626,16 +626,11 @@ export async function handleReAuthModal(
   // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
   // Handle both: wait for the gate to finish checking, then react.
 
-  // Capture browser console for CI debugging (EncryptionKeyGate logs hasKeys result
-  // + [AUTH-DIAG] auth-state instrumentation gated on playwright_e2e flag)
+  // Capture browser console for CI debugging (EncryptionKeyGate logs hasKeys result)
   const consoleHandler = (msg: import('@playwright/test').ConsoleMessage) => {
     const text = msg.text();
-    if (
-      text.includes('EncryptionKeyGate') ||
-      text.includes('hasKeys') ||
-      text.includes('[AUTH-DIAG]')
-    ) {
-      console.log(`[browser:${msg.type()}] ${text}`);
+    if (text.includes('EncryptionKeyGate') || text.includes('hasKeys')) {
+      console.log(`[browser] ${text}`);
     }
   };
   page.on('console', consoleHandler);

@@ -297,31 +297,10 @@ export class KeyManagementService {
    *          (caller should fall back to ReAuthModal in that case)
    */
   async restoreKeysFromCache(currentUserId?: string): Promise<boolean> {
-    const isE2E =
-      typeof localStorage !== 'undefined' &&
-      localStorage.getItem('playwright_e2e') === 'true';
-    if (isE2E) {
-      console.warn(
-        '[AUTH-DIAG] restoreKeysFromCache entry',
-        JSON.stringify({
-          userId: currentUserId?.slice(0, 8),
-          hasInMemory: !!this.derivedKeys,
-        })
-      );
-    }
     if (this.derivedKeys) return true;
     if (!currentUserId) return false;
 
     const stored = await encryptionService.getPrivateKey(currentUserId);
-    if (isE2E) {
-      console.warn(
-        '[AUTH-DIAG] restoreKeysFromCache after-getPrivateKey',
-        JSON.stringify({
-          userId: currentUserId.slice(0, 8),
-          hasStored: !!stored,
-        })
-      );
-    }
     if (!stored) return false;
 
     // We have the private CryptoKey but need the public half + salt to fully
@@ -336,20 +315,6 @@ export class KeyManagementService {
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
-
-    if (isE2E) {
-      console.warn(
-        '[AUTH-DIAG] restoreKeysFromCache supabase-result',
-        JSON.stringify({
-          userId: currentUserId.slice(0, 8),
-          errCode: error?.code,
-          errMsg: error?.message?.slice(0, 200),
-          hasData: !!data,
-          hasSalt: !!data?.encryption_salt,
-          hasPubKey: !!data?.public_key,
-        })
-      );
-    }
 
     if (error || !data?.encryption_salt || !data.public_key) {
       logger.warn(
@@ -388,17 +353,6 @@ export class KeyManagementService {
    * user re-deriving from password.
    */
   clearKeys(): void {
-    if (
-      typeof localStorage !== 'undefined' &&
-      localStorage.getItem('playwright_e2e') === 'true'
-    ) {
-      const stack =
-        new Error().stack?.split('\n').slice(1, 6).join(' | ') ?? 'no-stack';
-      console.warn(
-        '[AUTH-DIAG] clearKeys called',
-        JSON.stringify({ stack: stack.slice(0, 500) })
-      );
-    }
     this.derivedKeys = null;
     // Fire-and-forget — caller doesn't need to await IDB clear.
     void db.messaging_private_keys.clear().catch((err) => {
