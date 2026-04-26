@@ -64,7 +64,16 @@ export default function EncryptionKeyGate({
       return;
     }
 
+    const isE2E =
+      typeof localStorage !== 'undefined' &&
+      localStorage.getItem('playwright_e2e') === 'true';
     const checkKeys = async () => {
+      if (isE2E) {
+        console.warn(
+          '[AUTH-DIAG] EKG checkKeys entry',
+          JSON.stringify({ userId: user?.id?.slice(0, 8), authLoading })
+        );
+      }
       // Pass user.id directly — avoids getSession()/getUser() race condition.
       // The auth context already confirmed the user exists (isLoading=false,
       // user≠null), so we can skip the auth check inside hasKeys().
@@ -73,6 +82,15 @@ export default function EncryptionKeyGate({
         hasStoredKeys = await keyManagementService.hasKeysForUser(user!.id);
       } catch (err) {
         console.error('[EncryptionKeyGate] hasKeysForUser() threw:', err);
+      }
+      if (isE2E) {
+        console.warn(
+          '[AUTH-DIAG] EKG hasKeysForUser',
+          JSON.stringify({
+            hasStoredKeys,
+            userId: user!.id.slice(0, 8),
+          })
+        );
       }
 
       if (!hasStoredKeys) {
@@ -86,9 +104,23 @@ export default function EncryptionKeyGate({
       // Try restoring from localStorage first (covers page reload / storageState).
       // Pass user.id to only restore keys belonging to THIS user — prevents
       // User B from accidentally restoring User A's cached keys.
-      await keyManagementService.restoreKeysFromCache(user!.id);
+      const restored = await keyManagementService.restoreKeysFromCache(
+        user!.id
+      );
       const keys = keyManagementService.getCurrentKeys();
+      if (isE2E) {
+        console.warn(
+          '[AUTH-DIAG] EKG restoreKeysFromCache',
+          JSON.stringify({
+            result: restored,
+            hasCurrentKeys: keys !== null,
+          })
+        );
+      }
       if (!keys) {
+        if (isE2E) {
+          console.warn('[AUTH-DIAG] EKG needsReAuth=true triggered');
+        }
         setNeedsReAuth(true);
       }
       setCheckingKeys(false);

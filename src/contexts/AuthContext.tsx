@@ -109,10 +109,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    // Diagnostic helper — gated on E2E flag, no-op in production.
+    const e2eDiag = (msg: string, data: Record<string, unknown> = {}) => {
+      if (
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem('playwright_e2e') === 'true'
+      ) {
+        try {
+          console.warn(`[AUTH-DIAG] ${msg}`, JSON.stringify(data));
+        } catch {
+          /* JSON.stringify can fail on circular refs; ignore */
+        }
+      }
+    };
+
     // Fallback timeout - prevent infinite loading (FR-001)
     // Must be longer than retry delays (1s + 2s + 4s = 7s) to allow retries to complete
     const loadingTimeout = setTimeout(() => {
       logger.warn('Auth loading timeout - setting error state');
+      e2eDiag('loading-timeout-fired', { hadUser: !!userRef.current });
       setError({
         code: 'TIMEOUT',
         message: AUTH_ERROR_MESSAGES.TIMEOUT,
@@ -136,12 +151,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           [1000, 2000, 4000] // exponential backoff delays
         );
         clearTimeout(loadingTimeout);
+        e2eDiag('getSession-resolved', {
+          hasSession: !!session,
+          userId: session?.user?.id?.slice(0, 8),
+        });
         setSession(session);
         setUser(session?.user ?? null);
         setError(null);
         setIsLoading(false);
       } catch (err) {
         clearTimeout(loadingTimeout);
+        e2eDiag('getSession-failed', {
+          errMsg: String(err).slice(0, 200),
+        });
         logger.error('Failed to get session after retries', { error: err });
         setError({
           code: 'AUTH_FAILED',
@@ -158,6 +180,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      e2eDiag('onAuthStateChange', {
+        event: _event,
+        hasSession: !!session,
+        userId: session?.user?.id?.slice(0, 8),
+      });
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
@@ -189,6 +216,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Spurious SIGNED_OUT from 406/403 errors must NOT clear keys —
         // resetEncryptionKeys handles key resets via page.reload() instead.
         const shouldClearKeys = isLocalSignOut.current || !isE2ETest;
+        e2eDiag('SIGNED_OUT-clearKeys-decision', {
+          isLocalSignOut: isLocalSignOut.current,
+          isE2ETest,
+          shouldClearKeys,
+        });
         isLocalSignOut.current = false;
         if (shouldClearKeys) {
           try {
