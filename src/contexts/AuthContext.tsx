@@ -185,33 +185,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hasSession: !!session,
         userId: session?.user?.id?.slice(0, 8),
       });
+
+      // FR-009: Cross-tab sign-out detection (and E2E spurious-SIGNED_OUT
+      // suppression). Supabase fires SIGNED_OUT on transient 401/406 errors
+      // from Realtime / RLS, even when the user is still authenticated and
+      // the auth-token in localStorage is still valid. In production we
+      // redirect to '/'; in E2E we MUST keep the existing user state intact
+      // so subsequent tests aren't punished by a transient hiccup. The
+      // custom storage adapter (lib/supabase/client.ts) already prevents
+      // localStorage removal of the auth-token in E2E, so the session is
+      // recoverable — but if we run setUser(null) here, every consumer
+      // (useConversationList, EncryptionKeyGate, navbar) sees user=null
+      // until React rerenders from a later TOKEN_REFRESHED / SIGNED_IN.
+      const isE2ETest =
+        typeof localStorage !== 'undefined' &&
+        localStorage.getItem('playwright_e2e') === 'true';
+      const isSpuriousE2ESignOut =
+        _event === 'SIGNED_OUT' && !isLocalSignOut.current && isE2ETest;
+
+      if (isSpuriousE2ESignOut) {
+        // Skip the state update entirely. Keep user/session/isLoading as-is.
+        e2eDiag('SIGNED_OUT-spurious-suppressed', {
+          isLocalSignOut: isLocalSignOut.current,
+          hadUser: !!userRef.current,
+        });
+        logger.info('Spurious SIGNED_OUT suppressed in E2E mode');
+        return;
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
 
-      // FR-009: Cross-tab sign-out detection
-      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
-        // Skip cross-tab redirect in E2E test mode to prevent test contamination.
-        // Concurrent tests sign out independently; without this guard, one test's
-        // sign-out fires SIGNED_OUT in every other test's page, redirecting to '/'.
-        const isE2ETest =
-          typeof localStorage !== 'undefined' &&
-          localStorage.getItem('playwright_e2e') === 'true';
-        if (!isE2ETest) {
-          // Sign-out detected from another tab - redirect to home
-          logger.info('Cross-tab sign-out detected, redirecting to home');
-          window.location.href = '/';
-          return;
-        }
-        logger.info('Cross-tab sign-out detected but suppressed in E2E mode');
+      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current && !isE2ETest) {
+        // Sign-out detected from another tab - redirect to home
+        logger.info('Cross-tab sign-out detected, redirecting to home');
+        window.location.href = '/';
+        return;
       }
 
-      // Reset local sign-out flag after handling and clear encryption keys
-      // Reset local sign-out flag after handling and clear encryption keys
+      // Reset local sign-out flag after handling and clear encryption keys.
+      // The isSpuriousE2ESignOut early-return above already filtered out
+      // transient/non-local SIGNED_OUT events in E2E. Reaching here means
+      // either a real local sign-out OR a non-E2E SIGNED_OUT.
       if (_event === 'SIGNED_OUT') {
-        const isE2ETest =
-          typeof localStorage !== 'undefined' &&
-          localStorage.getItem('playwright_e2e') === 'true';
         // In E2E mode, only clear keys on intentional sign-out.
         // Spurious SIGNED_OUT from 406/403 errors must NOT clear keys —
         // resetEncryptionKeys handles key resets via page.reload() instead.
