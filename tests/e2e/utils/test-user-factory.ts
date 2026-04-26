@@ -512,24 +512,56 @@ export async function handleReAuthModal(
   const testPassword =
     password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
-  // Check if the CURRENT user's keys are cached. The key format is
-  // sh_keys_{userId} — we need to verify the cached key belongs to the
-  // authenticated user, not a different user from storageState.
-  // Extract the Supabase user ID from the session to check.
-  const currentUserKeyExists = await page.evaluate(() => {
-    // Find the Supabase session to get the current user ID
+  // Check if the CURRENT user's private key is in IndexedDB. After the
+  // batch 7c migration, keys live in MessagingDB.messaging_private_keys
+  // as non-extractable CryptoKey objects (no longer in localStorage).
+  // We still derive userId from the Supabase auth-token in localStorage.
+  const currentUserKeyExists = await page.evaluate(async () => {
     const sessionKey = Object.keys(localStorage).find(
       (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
     );
     if (!sessionKey) return false;
+    let userId: string | undefined;
     try {
       const session = JSON.parse(localStorage.getItem(sessionKey) || '{}');
-      const userId = session?.user?.id;
-      if (!userId) return false;
-      return localStorage.getItem(`sh_keys_${userId}`) !== null;
+      userId = session?.user?.id;
     } catch {
       return false;
     }
+    if (!userId) return false;
+
+    // Query IndexedDB for the user's private key.
+    return new Promise<boolean>((resolve) => {
+      try {
+        const open = indexedDB.open('MessagingDB');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('messaging_private_keys')) {
+            db.close();
+            resolve(false);
+            return;
+          }
+          const tx = db.transaction('messaging_private_keys', 'readonly');
+          const req = tx.objectStore('messaging_private_keys').get(userId!);
+          req.onsuccess = () => {
+            db.close();
+            resolve(req.result != null);
+          };
+          req.onerror = () => {
+            db.close();
+            resolve(false);
+          };
+        };
+        open.onerror = () => resolve(false);
+        // If MessagingDB doesn't exist yet, onupgradeneeded fires — bail.
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve(false);
+        };
+      } catch {
+        resolve(false);
+      }
+    });
   });
   if (currentUserKeyExists) {
     // Keys are in localStorage, but verify the auth session is actually valid.
@@ -1167,8 +1199,9 @@ export async function gotoWithRetry(
  * This helper:
  * 1. Deletes ALL encryption keys for the user via admin API
  * 2. Re-creates exactly ONE key via ensureEncryptionKeys
- * 3. Clears sh_keys_* from the page's localStorage so EncryptionKeyGate
- *    shows the ReAuthModal and deriveKeys() runs with the correct salt
+ * 3. Clears the user's private key from IndexedDB (post-batch-7c migration)
+ *    so EncryptionKeyGate shows the ReAuthModal and deriveKeys() runs with
+ *    the correct salt
  */
 export async function resetEncryptionKeys(
   page: Page,
@@ -1202,19 +1235,43 @@ export async function resetEncryptionKeys(
     }
   }
 
-  // Clear stale cached keys from localStorage AND force a page reload
+  // Clear stale cached keys from IndexedDB AND force a page reload
   // to destroy in-memory key state. Without the reload, the E2E
   // SIGNED_OUT suppression keeps wrong-salt keys in memory — the
   // EncryptionKeyGate sees them and skips the ReAuthModal, leaving the
   // user with keys that don't match the DB public key.
-  await page.evaluate(() => {
-    Object.keys(localStorage)
-      .filter((k) => k.startsWith('sh_keys_'))
-      .forEach((k) => localStorage.removeItem(k));
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      try {
+        const open = indexedDB.open('MessagingDB');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('messaging_private_keys')) {
+            db.close();
+            resolve();
+            return;
+          }
+          const tx = db.transaction('messaging_private_keys', 'readwrite');
+          tx.objectStore('messaging_private_keys').clear();
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve();
+          };
+        };
+        open.onerror = () => resolve();
+        open.onupgradeneeded = () => resolve(); // DB doesn't exist; nothing to clear
+      } catch {
+        resolve();
+      }
+    });
   });
   // Reload destroys the keyManagementService singleton + all in-memory
-  // caches. On fresh load, restoreKeysFromCache finds no sh_keys_* →
-  // EncryptionKeyGate shows ReAuthModal → correct salt from DB.
+  // caches. On fresh load, restoreKeysFromCache finds nothing in IndexedDB
+  // → EncryptionKeyGate shows ReAuthModal → correct salt from DB.
   await page.reload({ waitUntil: 'domcontentloaded' });
   console.log(`[resetEncryptionKeys] Reset keys for ${email}`);
 }

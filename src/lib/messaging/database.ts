@@ -33,6 +33,21 @@ export class MessagingDatabase extends Dexie {
       messaging_private_keys: 'userId',
       messaging_sync_metadata: 'key, updated_at',
     });
+
+    // v2: messaging_private_keys.privateKey changed from JsonWebKey to a
+    // non-extractable CryptoKey. Wipe legacy JWK rows on upgrade — users
+    // re-derive on next signin. See plan: continue-the-scripthammer-lucky-hamster.md
+    this.version(2)
+      .stores({
+        messaging_queued_messages:
+          'id, conversation_id, status, synced, created_at, sender_id',
+        messaging_cached_messages: 'id, conversation_id, created_at, sender_id',
+        messaging_private_keys: 'userId',
+        messaging_sync_metadata: 'key, updated_at',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('messaging_private_keys').clear();
+      });
   }
 }
 

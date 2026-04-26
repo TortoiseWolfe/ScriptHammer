@@ -47,6 +47,11 @@ next-env.d.ts
 test-results/
 playwright-report/
 tests/e2e/fixtures/storage-state-auth.json
+tests/e2e/fixtures/storage-state-auth-b.json
+# Encryption-key fixtures derived from test users' passwords (post-batch-7c).
+# Re-imported as non-extractable CryptoKey via the seed-keys fixture.
+tests/e2e/fixtures/test-keys.json
+tests/e2e/fixtures/test-keys-b.json
 
 # pnpm
 .pnpm-store/

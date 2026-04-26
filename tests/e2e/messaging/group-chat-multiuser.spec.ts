@@ -8,7 +8,7 @@
  * - Connections between users must be established (run scripts/seed-connections.ts first)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/seed-keys';
 import {
   dismissCookieBanner,
   handleReAuthModal,

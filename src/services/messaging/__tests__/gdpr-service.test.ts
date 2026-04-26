@@ -155,16 +155,12 @@ describe('GDPRService', () => {
         };
       });
 
-      // Mock encryption service
+      // Mock encryption service. getPrivateKey now returns a CryptoKey
+      // (non-extractable) — for unit test purposes a stub object is fine
+      // since downstream calls into encryptionService are also mocked.
       vi.mocked(
         encryptionService.encryptionService.getPrivateKey
-      ).mockResolvedValue({
-        kty: 'EC',
-        crv: 'P-256',
-        x: 'test-x',
-        y: 'test-y',
-        d: 'test-d',
-      });
+      ).mockResolvedValue({} as CryptoKey);
 
       vi.mocked(
         keyManagementService.keyManagementService.getUserPublicKey
@@ -343,16 +339,11 @@ describe('GDPRService', () => {
         };
       });
 
-      // Mock encryption service to throw error
+      // Mock encryption service to throw error.
+      // getPrivateKey returns a CryptoKey-typed stub.
       vi.mocked(
         encryptionService.encryptionService.getPrivateKey
-      ).mockResolvedValue({
-        kty: 'EC',
-        crv: 'P-256',
-        x: 'test-x',
-        y: 'test-y',
-        d: 'test-d',
-      });
+      ).mockResolvedValue({} as CryptoKey);
 
       vi.mocked(
         keyManagementService.keyManagementService.getUserPublicKey

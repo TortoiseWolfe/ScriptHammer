@@ -8,7 +8,8 @@
  * - Edit/delete disabled after 15 minutes
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '../fixtures/seed-keys';
+import type { Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,

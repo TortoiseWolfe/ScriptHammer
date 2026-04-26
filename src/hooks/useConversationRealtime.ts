@@ -84,17 +84,9 @@ export function useConversationRealtime(
             ? conversation.participant_2_id
             : conversation.participant_1_id;
 
-        // Get private key
-        const privateKeyJwk = await encryptionService.getPrivateKey(user.id);
-        if (!privateKeyJwk) return null;
-
-        const privateKey = await crypto.subtle.importKey(
-          'jwk',
-          privateKeyJwk,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          ['deriveBits', 'deriveKey']
-        );
+        // Get private key (non-extractable CryptoKey, no JWK import needed)
+        const privateKey = await encryptionService.getPrivateKey(user.id);
+        if (!privateKey) return null;
 
         // Get other participant's public key
         const otherPublicKey =

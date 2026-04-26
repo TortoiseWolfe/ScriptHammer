@@ -4,8 +4,11 @@
  *
  * Manages user encryption key lifecycle:
  * - Password-derived keys (Argon2id + ECDH P-256)
- * - Keys held in memory only (no IndexedDB storage)
- * - Key derivation on login, clear on logout
+ * - In-memory keys (extractable) for the active session
+ * - Persisted private key (non-extractable CryptoKey) in IndexedDB so that
+ *   page reloads + offline use don't require re-derivation; XSS reading
+ *   the row gets a handle but cannot exportKey() the raw material
+ * - Key derivation on login, clear on logout (memory + IndexedDB)
  * - Migration support for legacy random keys
  *
  * Flow:
@@ -20,6 +23,7 @@ import {
   type UserEncryptionKeyRow,
 } from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
+import { db } from '@/lib/messaging/database';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 import { createLogger } from '@/lib/logger';
 import type { DerivedKeyPair } from '@/types/messaging';
@@ -33,10 +37,23 @@ import {
 
 const logger = createLogger('messaging:keys');
 
-/** localStorage key for caching derived keys across page loads.
- * Enables Playwright storageState to capture keys, eliminating the need
- * for ReAuthModal + Argon2id on every test navigation. Cleared on logout. */
-const KEY_CACHE_PREFIX = 'sh_keys_';
+/**
+ * Re-import an extractable ECDH CryptoKey as a non-extractable copy suitable
+ * for IndexedDB storage. XSS reading the row gets a handle but cannot export
+ * raw key material.
+ */
+async function asNonExtractablePrivate(
+  extractable: CryptoKey
+): Promise<CryptoKey> {
+  const jwk = await crypto.subtle.exportKey('jwk', extractable);
+  return crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+}
 
 export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
@@ -49,75 +66,6 @@ export class KeyManagementService {
   /** Key derivation service (Argon2id) */
   private keyDerivationService = new KeyDerivationService();
 
-  /** Cache derived keys to localStorage for session persistence.
-   * CryptoKey objects can't be serialized — export to JWK first. */
-  private async cacheKeys(userId: string, keys: DerivedKeyPair): Promise<void> {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      const privateJwk = await crypto.subtle.exportKey('jwk', keys.privateKey);
-      const publicJwk = await crypto.subtle.exportKey('jwk', keys.publicKey);
-      localStorage.setItem(
-        `${KEY_CACHE_PREFIX}${userId}`,
-        JSON.stringify({
-          privateKeyJwk: privateJwk,
-          publicKeyJwk: publicJwk,
-          publicKeyJwkOriginal: keys.publicKeyJwk,
-          salt: keys.salt,
-        })
-      );
-    } catch {
-      // localStorage full or crypto export failed — keys still work from memory
-    }
-  }
-
-  /** Restore cached keys from localStorage. Returns null if not cached.
-   * Re-imports JWK back to CryptoKey objects. */
-  private async restoreCachedKeys(
-    userId: string
-  ): Promise<DerivedKeyPair | null> {
-    if (typeof localStorage === 'undefined') return null;
-    try {
-      const cached = localStorage.getItem(`${KEY_CACHE_PREFIX}${userId}`);
-      if (!cached) return null;
-      const data = JSON.parse(cached);
-      const privateKey = await crypto.subtle.importKey(
-        'jwk',
-        data.privateKeyJwk,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,
-        ['deriveBits', 'deriveKey']
-      );
-      const publicKey = await crypto.subtle.importKey(
-        'jwk',
-        data.publicKeyJwk,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        true,
-        []
-      );
-      return {
-        privateKey,
-        publicKey,
-        publicKeyJwk: data.publicKeyJwkOriginal || data.publicKeyJwk,
-        salt: data.salt,
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  /** Clear cached keys for a user from localStorage. */
-  private clearCachedKeys(userId?: string): void {
-    if (typeof localStorage === 'undefined') return;
-    if (userId) {
-      localStorage.removeItem(`${KEY_CACHE_PREFIX}${userId}`);
-    } else {
-      // Clear all cached keys
-      Object.keys(localStorage)
-        .filter((k) => k.startsWith(KEY_CACHE_PREFIX))
-        .forEach((k) => localStorage.removeItem(k));
-    }
-  }
-
   /**
    * Initialize encryption keys for NEW user (first login after registration)
    * Task: T007 (Feature 032)
@@ -126,7 +74,7 @@ export class KeyManagementService {
    * 1. Generate random salt
    * 2. Derive ECDH P-256 key pair from password + salt
    * 3. Store salt and public key in Supabase
-   * 4. Hold keys in memory (never persisted to IndexedDB)
+   * 4. Hold keys in memory; persist non-extractable private key in IndexedDB
    *
    * @param password - User's plaintext password
    * @returns Promise<DerivedKeyPair> - Derived key pair
@@ -182,19 +130,17 @@ export class KeyManagementService {
         );
       }
 
-      // Step 4: Store in memory + localStorage cache
+      // Step 4: Store keypair in memory + IndexedDB.
+      // The IndexedDB copy is a NON-EXTRACTABLE re-import — XSS reading the
+      // row cannot exportKey() the raw material. The in-memory copy stays
+      // extractable so the public half can still be exported on demand
+      // (e.g. for verification fingerprints).
       this.derivedKeys = keyPair;
-      await this.cacheKeys(user.id, keyPair);
-
-      // Step 5: Populate IndexedDB — sendMessage() reads private key from
-      // IndexedDB via encryptionService.getPrivateKey(), not from memory.
-      // Without this, the first message after key init fails silently.
       try {
-        const privateJwk = await crypto.subtle.exportKey(
-          'jwk',
+        const nonExtractablePrivate = await asNonExtractablePrivate(
           keyPair.privateKey
         );
-        await encryptionService.storePrivateKey(user.id, privateJwk);
+        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
       } catch (err) {
         logger.warn('Could not populate IndexedDB after initializeKeys()', {
           error: err,
@@ -226,7 +172,7 @@ export class KeyManagementService {
    * 1. Fetch salt from Supabase
    * 2. Derive key pair from password + salt
    * 3. Verify derived public key matches stored public key
-   * 4. Hold keys in memory
+   * 4. Hold keys in memory; persist non-extractable private key in IndexedDB
    *
    * @param password - User's plaintext password
    * @returns Promise<DerivedKeyPair> - Derived key pair
@@ -304,19 +250,13 @@ export class KeyManagementService {
         throw new KeyMismatchError();
       }
 
-      // Step 4: Store in memory + localStorage cache
+      // Step 4: Store keypair in memory + IndexedDB (non-extractable copy).
       this.derivedKeys = keyPair;
-      await this.cacheKeys(user.id, keyPair);
-
-      // Step 5: Populate IndexedDB — sendMessage() reads private key from
-      // IndexedDB via encryptionService.getPrivateKey(), not from memory.
-      // Without this, the first message after ReAuth fails silently.
       try {
-        const privateJwk = await crypto.subtle.exportKey(
-          'jwk',
+        const nonExtractablePrivate = await asNonExtractablePrivate(
           keyPair.privateKey
         );
-        await encryptionService.storePrivateKey(user.id, privateJwk);
+        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
       } catch (err) {
         logger.warn('Could not populate IndexedDB after deriveKeys()', {
           error: err,
@@ -348,69 +288,80 @@ export class KeyManagementService {
   }
 
   /**
-   * Try to restore keys from localStorage cache (async — needs crypto import).
-   * Call this on app startup before checking getCurrentKeys().
-   * @returns true if keys were restored from cache
+   * Restore the user's encryption key from IndexedDB into in-memory state.
+   * Replaces the prior localStorage cache: IndexedDB now holds a
+   * non-extractable CryptoKey for the private half, plus we re-fetch the
+   * public key + salt from Supabase to rebuild the full DerivedKeyPair.
+   *
+   * @returns true if keys were restored, false if no IndexedDB key exists
+   *          (caller should fall back to ReAuthModal in that case)
    */
   async restoreKeysFromCache(currentUserId?: string): Promise<boolean> {
     if (this.derivedKeys) return true;
-    if (typeof localStorage === 'undefined') return false;
+    if (!currentUserId) return false;
 
-    const keys = Object.keys(localStorage);
-    for (const key of keys) {
-      if (key.startsWith(KEY_CACHE_PREFIX)) {
-        const userId = key.slice(KEY_CACHE_PREFIX.length);
-        // Only restore keys belonging to the current user. Without this
-        // guard, User B's context can restore User A's cached keys (from
-        // storageState), producing wrong ECDH shared secrets and causing
-        // all decryption to fail ("Encrypted with previous keys").
-        if (currentUserId && userId !== currentUserId) continue;
-        const cached = await this.restoreCachedKeys(userId);
-        if (cached) {
-          this.derivedKeys = cached;
-          const cachedFingerprint =
-            cached.publicKeyJwk?.x?.slice(0, 8) ?? 'null';
-          console.log(
-            `[restoreKeysFromCache] userId=${userId.slice(0, 8)} pubKey=${cachedFingerprint} source=localStorage`
-          );
+    const stored = await encryptionService.getPrivateKey(currentUserId);
+    if (!stored) return false;
 
-          // Also populate IndexedDB — encryptionService.getPrivateKey()
-          // reads from there, not from keyManagementService memory.
-          // Without this, sendMessage() can't encrypt because IndexedDB
-          // is empty in new browser contexts loaded from storageState.
-          try {
-            const { encryptionService } = await import(
-              '@/lib/messaging/encryption'
-            );
-            const privateJwk = await crypto.subtle.exportKey(
-              'jwk',
-              cached.privateKey
-            );
-            await encryptionService.storePrivateKey(userId, privateJwk);
-            logger.info('Restored keys from localStorage cache + IndexedDB', {
-              userId,
-            });
-          } catch (err) {
-            logger.warn('Could not populate IndexedDB from cache', {
-              error: err,
-            });
-          }
+    // We have the private CryptoKey but need the public half + salt to fully
+    // populate DerivedKeyPair. Both live on user_encryption_keys in Supabase.
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
+    const { data, error } = await msgClient
+      .from('user_encryption_keys')
+      .select('encryption_salt, public_key')
+      .eq('user_id', currentUserId)
+      .eq('revoked', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-          return true;
-        }
-      }
+    if (error || !data?.encryption_salt || !data.public_key) {
+      logger.warn(
+        'restoreKeysFromCache: have private key in IndexedDB but no public key/salt in Supabase',
+        { userId: currentUserId, errorCode: error?.code }
+      );
+      return false;
     }
-    return false;
+
+    const publicKeyJwk = data.public_key as unknown as JsonWebKey;
+    const publicKey = await crypto.subtle.importKey(
+      'jwk',
+      publicKeyJwk,
+      { name: 'ECDH', namedCurve: 'P-256' },
+      true,
+      []
+    );
+
+    this.derivedKeys = {
+      privateKey: stored,
+      publicKey,
+      publicKeyJwk,
+      salt: data.encryption_salt,
+    };
+    const fingerprint = publicKeyJwk?.x?.slice(0, 8) ?? 'null';
+    console.log(
+      `[restoreKeysFromCache] userId=${currentUserId.slice(0, 8)} pubKey=${fingerprint} source=IndexedDB`
+    );
+    logger.info('Restored keys from IndexedDB', { userId: currentUserId });
+    return true;
   }
 
   /**
-   * Clear keys from memory and localStorage (call on logout)
+   * Clear keys from memory and IndexedDB (call on logout). Also wipes the
+   * persisted private key so the device can no longer decrypt without the
+   * user re-deriving from password.
    */
   clearKeys(): void {
     this.derivedKeys = null;
-    this.clearCachedKeys();
+    // Fire-and-forget — caller doesn't need to await IDB clear.
+    void db.messaging_private_keys.clear().catch((err) => {
+      logger.warn('Failed to clear messaging_private_keys on logout', {
+        error: err,
+      });
+    });
     this.publicKeyCache.clear();
-    logger.debug('Keys cleared from memory and localStorage');
+    logger.debug('Keys cleared from memory and IndexedDB');
   }
 
   /**
@@ -699,9 +650,18 @@ export class KeyManagementService {
         );
       }
 
-      // Update in-memory keys + localStorage cache
+      // Update in-memory keys + IndexedDB (non-extractable copy).
       this.derivedKeys = keyPair;
-      await this.cacheKeys(user.id, keyPair);
+      try {
+        const nonExtractablePrivate = await asNonExtractablePrivate(
+          keyPair.privateKey
+        );
+        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
+      } catch (err) {
+        logger.warn('Could not populate IndexedDB after rotateKeys()', {
+          error: err,
+        });
+      }
 
       logger.info('Keys rotated for user', { userId: user.id });
       return true;

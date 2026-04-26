@@ -6,7 +6,8 @@
  * Tests data export and account deletion flows
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '../fixtures/seed-keys';
+import type { Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**

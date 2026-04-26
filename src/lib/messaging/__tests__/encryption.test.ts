@@ -13,6 +13,20 @@ import { EncryptionService } from '../encryption';
 import { db } from '../database';
 import { CRYPTO_PARAMS } from '@/types/messaging';
 
+/**
+ * Helper: import a JWK as a non-extractable CryptoKey for storePrivateKey.
+ * The service refuses to store extractable keys.
+ */
+async function jwkToNonExtractable(jwk: JsonWebKey): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'jwk',
+    jwk,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+}
+
 describe('EncryptionService', () => {
   let service: EncryptionService;
 
@@ -87,17 +101,19 @@ describe('EncryptionService', () => {
   });
 
   describe('storePrivateKey', () => {
-    it('should store private key in IndexedDB', async () => {
+    it('should store private key in IndexedDB as non-extractable CryptoKey', async () => {
       const keyPair = await service.generateKeyPair();
       const userId = 'user-123';
       const jwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+      const cryptoKey = await jwkToNonExtractable(jwk);
 
-      await service.storePrivateKey(userId, jwk);
+      await service.storePrivateKey(userId, cryptoKey);
 
       const stored = await db.messaging_private_keys.get(userId);
       expect(stored).toBeDefined();
       expect(stored?.userId).toBe(userId);
-      expect(stored?.privateKey).toEqual(jwk);
+      expect(stored?.privateKey).toBeInstanceOf(CryptoKey);
+      expect(stored?.privateKey.extractable).toBe(false);
       expect(stored?.created_at).toBeDefined();
     });
 
@@ -105,20 +121,60 @@ describe('EncryptionService', () => {
       const userId = 'user-123';
       const keyPair1 = await service.generateKeyPair();
       const jwk1 = await crypto.subtle.exportKey('jwk', keyPair1.privateKey);
-      await service.storePrivateKey(userId, jwk1);
+      await service.storePrivateKey(userId, await jwkToNonExtractable(jwk1));
 
       const keyPair2 = await service.generateKeyPair();
       const jwk2 = await crypto.subtle.exportKey('jwk', keyPair2.privateKey);
-      await service.storePrivateKey(userId, jwk2);
+      await service.storePrivateKey(userId, await jwkToNonExtractable(jwk2));
 
+      // After overwrite, the stored key must derive the SAME shared secret as
+      // keyPair2 (and a different one than keyPair1) — proving the second
+      // store replaced the first. Direct reference equality (`toBe`) doesn't
+      // work because Dexie deserializes a fresh CryptoKey instance on read.
+      // Shared secrets are non-extractable, so prove equivalence via
+      // encrypt-with-A → decrypt-with-B round-trip.
       const stored = await db.messaging_private_keys.get(userId);
-      expect(stored?.privateKey).toEqual(jwk2);
-      expect(stored?.privateKey).not.toEqual(jwk1);
+      const peer = await service.generateKeyPair();
+      const fromStored = await service.deriveSharedSecret(
+        stored!.privateKey,
+        peer.publicKey
+      );
+      const fromKeyPair2 = await service.deriveSharedSecret(
+        keyPair2.privateKey,
+        peer.publicKey
+      );
+      const fromKeyPair1 = await service.deriveSharedSecret(
+        keyPair1.privateKey,
+        peer.publicKey
+      );
+
+      // Stored matches keyPair2: encrypt with one, decrypt with the other.
+      const ct = await service.encryptMessage('overwrite-check', fromKeyPair2);
+      const decrypted = await service.decryptMessage(
+        ct.ciphertext,
+        ct.iv,
+        fromStored
+      );
+      expect(decrypted).toBe('overwrite-check');
+
+      // Stored does NOT match keyPair1.
+      await expect(
+        service.decryptMessage(ct.ciphertext, ct.iv, fromKeyPair1)
+      ).rejects.toThrow();
+    });
+
+    it('should reject extractable keys', async () => {
+      const keyPair = await service.generateKeyPair();
+      // generateKeyPair() returns extractable=true; this should be refused.
+      await expect(
+        service.storePrivateKey('user-123', keyPair.privateKey)
+      ).rejects.toThrow(/extractable/);
     });
 
     it('should throw error if IndexedDB is unavailable', async () => {
       const keyPair = await service.generateKeyPair();
       const jwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
+      const cryptoKey = await jwkToNonExtractable(jwk);
 
       // Mock IndexedDB failure
       const originalPut = db.messaging_private_keys.put;
@@ -126,23 +182,32 @@ describe('EncryptionService', () => {
         new Error('IndexedDB unavailable')
       );
 
-      await expect(service.storePrivateKey('user-123', jwk)).rejects.toThrow();
+      await expect(
+        service.storePrivateKey('user-123', cryptoKey)
+      ).rejects.toThrow();
 
       db.messaging_private_keys.put = originalPut;
     });
   });
 
   describe('getPrivateKey', () => {
-    it('should retrieve stored private key', async () => {
+    it('should retrieve stored private key as a CryptoKey', async () => {
       const keyPair = await service.generateKeyPair();
       const userId = 'user-123';
       const jwk = await crypto.subtle.exportKey('jwk', keyPair.privateKey);
-      await service.storePrivateKey(userId, jwk);
+      const stored = await jwkToNonExtractable(jwk);
+      await service.storePrivateKey(userId, stored);
 
       const retrieved = await service.getPrivateKey(userId);
 
-      expect(retrieved).toBeDefined();
-      expect(retrieved).toEqual(jwk);
+      expect(retrieved).toBeInstanceOf(CryptoKey);
+      expect(retrieved?.extractable).toBe(false);
+      expect(retrieved?.type).toBe('private');
+      expect(retrieved?.algorithm.name).toBe('ECDH');
+      // Non-extractable: exporting must reject.
+      await expect(
+        crypto.subtle.exportKey('jwk', retrieved as CryptoKey)
+      ).rejects.toThrow();
     });
 
     it('should return null if key does not exist', async () => {
@@ -421,7 +486,7 @@ describe('EncryptionService', () => {
       const aliceKeyPair = await service.generateKeyPair();
       const bobKeyPair = await service.generateKeyPair();
 
-      // Export and store their private keys
+      // Export and re-import their private keys as non-extractable for storage
       const alicePrivateJwk = await crypto.subtle.exportKey(
         'jwk',
         aliceKeyPair.privateKey
@@ -430,8 +495,14 @@ describe('EncryptionService', () => {
         'jwk',
         bobKeyPair.privateKey
       );
-      await service.storePrivateKey('alice', alicePrivateJwk);
-      await service.storePrivateKey('bob', bobPrivateJwk);
+      await service.storePrivateKey(
+        'alice',
+        await jwkToNonExtractable(alicePrivateJwk)
+      );
+      await service.storePrivateKey(
+        'bob',
+        await jwkToNonExtractable(bobPrivateJwk)
+      );
 
       // Alice derives shared secret with Bob's public key
       const aliceSharedSecret = await service.deriveSharedSecret(

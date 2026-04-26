@@ -70,21 +70,22 @@ export class EncryptionService {
   }
 
   /**
-   * Store private key in IndexedDB (client-side only, never sent to server)
-   * Task: T048
+   * Store private key in IndexedDB as a non-extractable CryptoKey.
+   * IndexedDB stores CryptoKey natively via structured clone — XSS reading
+   * the row gets a usable handle but cannot exportKey() the raw material.
    *
-   * @param userId - User ID to associate with this key
-   * @param privateKeyJwk - Private key in JWK format
-   * @throws EncryptionError if storage fails
+   * @throws EncryptionError if the key is extractable or storage fails
    */
-  async storePrivateKey(
-    userId: string,
-    privateKeyJwk: JsonWebKey
-  ): Promise<void> {
+  async storePrivateKey(userId: string, privateKey: CryptoKey): Promise<void> {
+    if (privateKey.extractable) {
+      throw new EncryptionError(
+        'Refusing to store extractable private key — caller must import with extractable=false'
+      );
+    }
     try {
       await db.messaging_private_keys.put({
         userId,
-        privateKey: privateKeyJwk,
+        privateKey,
         created_at: Date.now(),
       });
     } catch (error) {
@@ -93,14 +94,10 @@ export class EncryptionService {
   }
 
   /**
-   * Retrieve private key from IndexedDB
-   * Task: T049
-   *
-   * @param userId - User ID to retrieve key for
-   * @returns Promise<JsonWebKey | null> - Private key or null if not found
-   * @throws EncryptionError if retrieval fails
+   * Retrieve private key from IndexedDB as a CryptoKey.
+   * @returns the stored non-extractable CryptoKey, or null if absent
    */
-  async getPrivateKey(userId: string): Promise<JsonWebKey | null> {
+  async getPrivateKey(userId: string): Promise<CryptoKey | null> {
     try {
       const record = await db.messaging_private_keys.get(userId);
       return record?.privateKey ?? null;

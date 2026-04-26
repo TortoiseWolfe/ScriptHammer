@@ -134,7 +134,7 @@ export type CachedMessage = Message;
 
 export interface PrivateKey {
   userId: string;
-  privateKey: JsonWebKey;
+  privateKey: CryptoKey;
   created_at: number;
 }
 

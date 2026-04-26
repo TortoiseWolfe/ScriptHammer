@@ -12,6 +12,7 @@
  */
 
 import { test as setup, expect } from '@playwright/test';
+import * as fs from 'node:fs/promises';
 import {
   dismissCookieBanner,
   performSignIn,
@@ -23,6 +24,13 @@ import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
 const AUTH_FILE_B = 'tests/e2e/fixtures/storage-state-auth-b.json';
+// Post-batch-7c: encryption keys live in IndexedDB as non-extractable
+// CryptoKey objects, which Playwright's storageState({indexedDB}) cannot
+// serialize. We persist the derived JWK + salt to a separate fixture file
+// instead; the messaging-test fixture reads it and re-imports as
+// non-extractable CryptoKey via addInitScript on every page load.
+const KEYS_FILE = 'tests/e2e/fixtures/test-keys.json';
+const KEYS_FILE_B = 'tests/e2e/fixtures/test-keys-b.json';
 
 // Allow extra time for static page hydration + encryption setup
 setup.setTimeout(180000);
@@ -148,9 +156,11 @@ setup('authenticate shared test user', async ({ page, browser }) => {
     console.log('⏭ Skipping key creation (auth-setup job did it)');
   }
 
-  // Step 2: Inject the primary user's derived keys into localStorage
-  // so storageState captures them. Tests that load this state will have
-  // sh_keys_{userId} → restoreKeysFromCache() → memory + IndexedDB.
+  // Step 2: Derive the primary user's keys, then persist (userId, JWK, salt)
+  // to a JSON fixture on disk. Messaging specs use the seedKeys fixture to
+  // re-import this JWK as a non-extractable CryptoKey into IndexedDB on every
+  // page load (via addInitScript). storageState would serialize the CryptoKey
+  // as an empty object, so we route around it.
   const primaryUser = await getUserByEmail(email);
   if (primaryUser) {
     const admin = getAdminClient();
@@ -167,8 +177,6 @@ setup('authenticate shared test user', async ({ page, browser }) => {
 
       if (keyRow?.encryption_salt) {
         const kds = new KeyDerivationService();
-        // encryption_salt is stored as base64 string in DB, but
-        // deriveKeyPair expects Uint8Array. Decode it.
         const saltBytes = Uint8Array.from(atob(keyRow.encryption_salt), (c) =>
           c.charCodeAt(0)
         );
@@ -176,7 +184,6 @@ setup('authenticate shared test user', async ({ page, browser }) => {
           password,
           salt: saltBytes,
         });
-        // Export to JWK for localStorage cache format
         const privateJwk = await crypto.subtle.exportKey(
           'jwk',
           keyPair.privateKey
@@ -185,19 +192,19 @@ setup('authenticate shared test user', async ({ page, browser }) => {
           'jwk',
           keyPair.publicKey
         );
-        const cacheValue = JSON.stringify({
-          privateKeyJwk: privateJwk,
-          publicKeyJwk: publicJwk,
-          publicKeyJwkOriginal: keyPair.publicKeyJwk,
-          salt: keyPair.salt,
-        });
-        // Inject into browser localStorage via page.evaluate
-        await page.evaluate(
-          ({ key, value }) => localStorage.setItem(key, value),
-          { key: `sh_keys_${primaryUser.id}`, value: cacheValue }
+        await fs.writeFile(
+          KEYS_FILE,
+          JSON.stringify({
+            userId: primaryUser.id,
+            privateKeyJwk: privateJwk,
+            publicKeyJwk: publicJwk,
+            publicKeyJwkOriginal: keyPair.publicKeyJwk,
+            salt: keyPair.salt,
+          }),
+          'utf-8'
         );
         console.log(
-          `✓ Injected sh_keys_${primaryUser.id.slice(0, 8)} into localStorage`
+          `✓ Wrote primary user keys to ${KEYS_FILE} (userId=${primaryUser.id.slice(0, 8)})`
         );
       }
     }
@@ -220,8 +227,9 @@ setup('authenticate shared test user', async ({ page, browser }) => {
   await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
 
   // Save authenticated browser state (localStorage + cookies).
-  // Now includes sh_keys_{userId} and playwright_e2e flag so tests can
-  // restore keys from cache without needing ReAuthModal or Argon2id.
+  // Encryption keys are NOT in storageState (post-batch-7c, they're
+  // CryptoKey objects in IndexedDB which Playwright cannot serialize).
+  // Messaging specs hydrate IndexedDB via the seedKeys fixture instead.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 
@@ -294,8 +302,8 @@ setup('authenticate shared test user', async ({ page, browser }) => {
 
         await expect(pageB).not.toHaveURL(/\/sign-in/);
 
-        // Inject User B's derived key cache into localStorage so
-        // storageState captures it (mirrors the primary block above).
+        // Persist User B's derived keys to KEYS_FILE_B for the seedKeys
+        // fixture to consume. Mirrors the primary block above.
         const userB = await getUserByEmail(userBEmail);
         if (userB && adminClient) {
           const { data: keyRowB } = await adminClient
@@ -325,18 +333,19 @@ setup('authenticate shared test user', async ({ page, browser }) => {
               'jwk',
               keyPair.publicKey
             );
-            const cacheValue = JSON.stringify({
-              privateKeyJwk: privateJwk,
-              publicKeyJwk: publicJwk,
-              publicKeyJwkOriginal: keyPair.publicKeyJwk,
-              salt: keyPair.salt,
-            });
-            await pageB.evaluate(
-              ({ key, value }) => localStorage.setItem(key, value),
-              { key: `sh_keys_${userB.id}`, value: cacheValue }
+            await fs.writeFile(
+              KEYS_FILE_B,
+              JSON.stringify({
+                userId: userB.id,
+                privateKeyJwk: privateJwk,
+                publicKeyJwk: publicJwk,
+                publicKeyJwkOriginal: keyPair.publicKeyJwk,
+                salt: keyPair.salt,
+              }),
+              'utf-8'
             );
             console.log(
-              `✓ Injected sh_keys_${userB.id.slice(0, 8)} into User B localStorage`
+              `✓ Wrote User B keys to ${KEYS_FILE_B} (userId=${userB.id.slice(0, 8)})`
             );
           }
         }

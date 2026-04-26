@@ -236,12 +236,14 @@ export class GDPRService {
           );
         }
 
-        // Get encryption keys for decryption
-        const privateKeyJwk = await encryptionService.getPrivateKey(user.id);
+        // Get encryption keys for decryption.
+        // getPrivateKey() returns a non-extractable CryptoKey directly;
+        // no JWK import step needed.
+        const privateKey = await encryptionService.getPrivateKey(user.id);
         const otherPublicKey =
           await keyManagementService.getUserPublicKey(otherParticipantId);
 
-        if (!privateKeyJwk || !otherPublicKey) {
+        if (!privateKey || !otherPublicKey) {
           // Cannot decrypt messages without keys - skip this conversation
           exportConversations.push({
             conversation_id: conv.id,
@@ -259,15 +261,7 @@ export class GDPRService {
           continue;
         }
 
-        // Import keys for decryption
-        const privateKey = await crypto.subtle.importKey(
-          'jwk',
-          privateKeyJwk,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          ['deriveBits', 'deriveKey']
-        );
-
+        // Public key is still stored as JWK in Supabase — import it.
         const otherPublicKeyCrypto = await crypto.subtle.importKey(
           'jwk',
           otherPublicKey,

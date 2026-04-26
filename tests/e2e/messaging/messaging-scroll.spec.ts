@@ -1,4 +1,5 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '../fixtures/seed-keys';
+import type { Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
