@@ -1,9 +1,10 @@
 # ScriptHammer Status
 
-**Snapshot**: 2026-04-25 · **Version**: v0.0.1 · **Stability**: Beta — post-remake stabilization in progress
+**Snapshot**: 2026-04-26 · **Version**: v0.0.1 · **Stability**: Beta — post-remake stabilization in progress
 
 This is the single screen-scan view of "what's planned, what's shipped, what's broken."
 For the deeper per-feature audit see [`docs/prp-docs/PRP-STATUS.md`](docs/prp-docs/PRP-STATUS.md).
+For the cross-issue work-order see [`docs/STABILITY-TRACKING.md`](docs/STABILITY-TRACKING.md).
 Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/truth-table.json).
 
 ---
@@ -70,7 +71,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 - [~] **039 Payment Offline Queue** — logic built; status indicator UI + `/payment/history` missing (#4)
 - [!] **040 Payment Retry UI** — retry logic in service; `/payment/result` page + retry surface missing
 - [~] **041 PayPal Subscriptions** — backend ready; `/payment/subscriptions` page + grace-period banner + duplicate prevention + 4 edge functions missing (#5)
-- [!] **042 Payment RLS Policies** — 20+ policies written; **25 E2E test stubs awaiting un-skip + verify**
+- [x] **042 Payment RLS Policies** — 20+ policies verified by `pnpm test:rls` (55/55 across 5 files, both local + cloud) — #44 closed 2026-04-26
 
 ## Tier 6 — Polish (4 features)
 
@@ -100,10 +101,10 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 | Status                      | Count  | Features                                                                                                                               |
 | --------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Shipped `[x]`               | 17     | 000-brand, 000-landing, 000-rls, 002, 003, 007, 008, 009, 017, 018, 022, 025, 031, 032, 034, 036, 046                                  |
+| Shipped `[x]`               | 18     | 000-brand, 000-landing, 000-rls, 002, 003, 007, 008, 009, 017, 018, 022, 025, 031, 032, 034, 036, 042, 046                             |
 | Mostly Shipped (config gap) | 6      | 004, 006, 011, 019, 024, 030                                                                                                           |
 | Partial `[~]`               | 19     | Most active backlog lives here (010, 012, 015, 020, 021, 023, 026, 027, 029, 033, 035, 037, 038, 039, 041, 043, 045, plus 001 and 005) |
-| Backend Only `[!]`          | 3      | 014, 040, 042                                                                                                                          |
+| Backend Only `[!]`          | 2      | 014, 040                                                                                                                               |
 | Not Started `[ ]`           | 4      | 013, 016, 028, 044                                                                                                                     |
 | **Total**                   | **49** | (3 features — 000-brand, 000-landing, 046-admin — lack `spec.md` and are tracked via `*_feature.md` only)                              |
 
@@ -117,27 +118,27 @@ If we want a stable v0.1.0, three families of work close it:
 
 The `feat/repo-overhaul-merge` of 2026-03-04 introduced patterns that have caused **18+ reverts in 3 months** and a 5x increase in fix-rate. The same shapes repeat in code that wasn't reverted yet:
 
-| Hotspot                           | Status                                                                                            | Evidence                                                                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| **ProtectedRoute auth race**      | Open                                                                                              | 3 reverts: 6b4c13a, 2c97e67, 259b38d. **Now duplicated in `src/app/admin/layout.tsx`** (regression re-introduced).                |
-| **ConversationView regression**   | Open                                                                                              | revert adae629. Root cause: `createClient()` at hook top level in `useConversationRealtime.ts:42` and `useTypingIndicator.ts:31`. |
-| **GDPR consent Firefox**          | Resolved by revert; same shape in `PaymentConsentModal.tsx:46-57` (focus-after-showModal timing). |
-| **Offline-queue IndexedDB drift** | Resolved (40f0d0e) but `base-queue.ts:216-242` lacks transactions; cross-tab sync still racey.    |
-| **E2E flake mitigation**          | Ongoing                                                                                           | 9 rounds. Cause: stale closures, unstable hook refs, hydration timing.                                                            |
+| Hotspot                           | Status   | Evidence                                                                                                                                                                                                                                        |
+| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ProtectedRoute auth race**      | Open     | 3 reverts: 6b4c13a, 2c97e67, 259b38d. Now mitigated in `src/app/admin/layout.tsx` via a `cancelled` flag, but stale-closure on `user` inside the async still latent. Tracked in [#51](https://github.com/TortoiseWolfe/ScriptHammer/issues/51). |
+| **ConversationView regression**   | Resolved | `createClient()` calls in `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32` are now wrapped in `useMemo(() => createClient(), [])`. Comment in code names the prior revert (adae629).                                              |
+| **GDPR consent Firefox**          | Resolved | `PaymentConsentModal.tsx:46-59` defers `acceptButtonRef.focus()` via `requestAnimationFrame()` after `dialog.showModal()`. Comment names the prior revert (3e67772).                                                                            |
+| **Offline-queue IndexedDB drift** | Open     | `base-queue.ts:214-247` does atomic claim via Dexie's implicit tx, but `processItem()` + completion update span tabs without a single transaction. Tracked in [#52](https://github.com/TortoiseWolfe/ScriptHammer/issues/52).                   |
+| **E2E flake mitigation**          | Ongoing  | 9 rounds. Cause: stale closures, unstable hook refs, hydration timing.                                                                                                                                                                          |
 
 The full code-review findings (35 high-confidence items) live in [`scripts/audit/code-review-findings.json`](scripts/audit/code-review-findings.json). The pattern is consistent: stale closures after async auth, unstabilized context providers, hooks creating new Supabase clients every render.
 
 ### B. Payment activation — small effort, big unlock
 
-024/038/039/040/041/042 are ~75% built. To take them green:
+024/038/039/040/041 are ~75% built. 042 RLS shipped (#44). To take the rest green:
 
 1. Create Stripe sandbox + PayPal developer accounts (~30-60 min external setup)
 2. Populate 6 keys in `.env` + Supabase Vault
 3. Wire 4 missing routes (`/payment/dashboard`, `/payment/subscriptions`, `/payment/history`, `/payment/result`)
 4. Build offline-queue UI affordances (status indicator, sync pill, retry button)
-5. Un-skip 25 RLS test stubs and verify policies enforce what they claim
+5. As each route lands, remove the corresponding skips from `tests/e2e/payment/` per [#53](https://github.com/TortoiseWolfe/ScriptHammer/issues/53)
 
-GitHub issues #3, #4, #5 already track the bigger pieces.
+GitHub issues #3, #4, #5, #43 track the route work; #53 is the test-skip index.
 
 ### C. Test coverage — known gaps
 
