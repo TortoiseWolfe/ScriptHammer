@@ -12,7 +12,6 @@
  */
 
 import { test as setup, expect } from '@playwright/test';
-import * as fs from 'node:fs/promises';
 import {
   dismissCookieBanner,
   performSignIn,
@@ -20,17 +19,9 @@ import {
   getUserByEmail,
   getAdminClient,
 } from './utils/test-user-factory';
-import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
 const AUTH_FILE_B = 'tests/e2e/fixtures/storage-state-auth-b.json';
-// Post-batch-7c: encryption keys live in IndexedDB as non-extractable
-// CryptoKey objects, which Playwright's storageState({indexedDB}) cannot
-// serialize. We persist the derived JWK + salt to a separate fixture file
-// instead; the messaging-test fixture reads it and re-imports as
-// non-extractable CryptoKey via addInitScript on every page load.
-const KEYS_FILE = 'tests/e2e/fixtures/test-keys.json';
-const KEYS_FILE_B = 'tests/e2e/fixtures/test-keys-b.json';
 
 // Allow extra time for static page hydration + encryption setup
 setup.setTimeout(180000);
@@ -156,60 +147,6 @@ setup('authenticate shared test user', async ({ page, browser }) => {
     console.log('⏭ Skipping key creation (auth-setup job did it)');
   }
 
-  // Step 2: Derive the primary user's keys, then persist (userId, JWK, salt)
-  // to a JSON fixture on disk. Messaging specs use the seedKeys fixture to
-  // re-import this JWK as a non-extractable CryptoKey into IndexedDB on every
-  // page load (via addInitScript). storageState would serialize the CryptoKey
-  // as an empty object, so we route around it.
-  const primaryUser = await getUserByEmail(email);
-  if (primaryUser) {
-    const admin = getAdminClient();
-    if (admin) {
-      // Read the salt from the DB (ensureEncryptionKeys just created it)
-      const { data: keyRow } = await admin
-        .from('user_encryption_keys')
-        .select('encryption_salt')
-        .eq('user_id', primaryUser.id)
-        .eq('revoked', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (keyRow?.encryption_salt) {
-        const kds = new KeyDerivationService();
-        const saltBytes = Uint8Array.from(atob(keyRow.encryption_salt), (c) =>
-          c.charCodeAt(0)
-        );
-        const keyPair = await kds.deriveKeyPair({
-          password,
-          salt: saltBytes,
-        });
-        const privateJwk = await crypto.subtle.exportKey(
-          'jwk',
-          keyPair.privateKey
-        );
-        const publicJwk = await crypto.subtle.exportKey(
-          'jwk',
-          keyPair.publicKey
-        );
-        await fs.writeFile(
-          KEYS_FILE,
-          JSON.stringify({
-            userId: primaryUser.id,
-            privateKeyJwk: privateJwk,
-            publicKeyJwk: publicJwk,
-            publicKeyJwkOriginal: keyPair.publicKeyJwk,
-            salt: keyPair.salt,
-          }),
-          'utf-8'
-        );
-        console.log(
-          `✓ Wrote primary user keys to ${KEYS_FILE} (userId=${primaryUser.id.slice(0, 8)})`
-        );
-      }
-    }
-  }
-
   // Log localStorage keys before saving (diagnostic: are auth tokens present?)
   const lsKeys = await page.evaluate(() => Object.keys(localStorage));
   console.log('localStorage keys before storageState save:', lsKeys);
@@ -227,9 +164,10 @@ setup('authenticate shared test user', async ({ page, browser }) => {
   await page.evaluate(() => localStorage.setItem('playwright_e2e', 'true'));
 
   // Save authenticated browser state (localStorage + cookies).
-  // Encryption keys are NOT in storageState (post-batch-7c, they're
-  // CryptoKey objects in IndexedDB which Playwright cannot serialize).
-  // Messaging specs hydrate IndexedDB via the seedKeys fixture instead.
+  // Encryption keys live in IndexedDB as non-extractable CryptoKeys post-7c
+  // and are NOT in storageState (Playwright cannot serialize CryptoKey).
+  // Each messaging spec triggers ReAuthModal on first navigation, which
+  // derives the keys from password via Argon2id (~2-3s) and persists them.
   await page.context().storageState({ path: AUTH_FILE });
   console.log(`✓ Auth state saved to ${AUTH_FILE}`);
 
@@ -301,54 +239,6 @@ setup('authenticate shared test user', async ({ page, browser }) => {
         }
 
         await expect(pageB).not.toHaveURL(/\/sign-in/);
-
-        // Persist User B's derived keys to KEYS_FILE_B for the seedKeys
-        // fixture to consume. Mirrors the primary block above.
-        const userB = await getUserByEmail(userBEmail);
-        if (userB && adminClient) {
-          const { data: keyRowB } = await adminClient
-            .from('user_encryption_keys')
-            .select('encryption_salt')
-            .eq('user_id', userB.id)
-            .eq('revoked', false)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single();
-
-          if (keyRowB?.encryption_salt) {
-            const kds = new KeyDerivationService();
-            const saltBytes = Uint8Array.from(
-              atob(keyRowB.encryption_salt),
-              (c) => c.charCodeAt(0)
-            );
-            const keyPair = await kds.deriveKeyPair({
-              password: userBPassword,
-              salt: saltBytes,
-            });
-            const privateJwk = await crypto.subtle.exportKey(
-              'jwk',
-              keyPair.privateKey
-            );
-            const publicJwk = await crypto.subtle.exportKey(
-              'jwk',
-              keyPair.publicKey
-            );
-            await fs.writeFile(
-              KEYS_FILE_B,
-              JSON.stringify({
-                userId: userB.id,
-                privateKeyJwk: privateJwk,
-                publicKeyJwk: publicJwk,
-                publicKeyJwkOriginal: keyPair.publicKeyJwk,
-                salt: keyPair.salt,
-              }),
-              'utf-8'
-            );
-            console.log(
-              `✓ Wrote User B keys to ${KEYS_FILE_B} (userId=${userB.id.slice(0, 8)})`
-            );
-          }
-        }
 
         // Set E2E flag for cross-tab sign-out suppression, matching primary.
         await pageB.evaluate(() =>

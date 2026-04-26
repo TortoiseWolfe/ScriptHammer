@@ -15,7 +15,7 @@
  *     sh-b-scripthammer-1 npx playwright test tests/e2e/messaging/message-delete-placeholder.spec.ts --project=chromium
  */
 
-import { test, expect } from '../fixtures/seed-keys';
+import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import * as http from 'http';
 import {

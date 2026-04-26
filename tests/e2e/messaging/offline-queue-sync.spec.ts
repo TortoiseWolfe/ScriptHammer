@@ -17,7 +17,7 @@
  *     scripthammer-scripthammer-1 npx playwright test tests/e2e/messaging/offline-queue-sync.spec.ts --project=chromium
  */
 
-import { test, expect } from '../fixtures/seed-keys';
+import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import * as http from 'http';
 import {

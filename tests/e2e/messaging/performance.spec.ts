@@ -9,7 +9,7 @@
  * - Jump to bottom button functionality
  */
 
-import { test, expect } from '../fixtures/seed-keys';
+import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,

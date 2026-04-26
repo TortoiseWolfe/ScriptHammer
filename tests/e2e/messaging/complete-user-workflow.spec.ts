@@ -3,7 +3,7 @@
  * Feature: 024-add-third-test
  */
 
-import { test, expect } from '../fixtures/seed-keys';
+import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
   handleReAuthModal,

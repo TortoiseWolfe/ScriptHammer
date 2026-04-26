@@ -6,8 +6,7 @@
  * Verifies <500ms delivery guarantee and proper typing indicator behavior.
  */
 
-import { test, expect } from '../fixtures/seed-keys';
-import type { Page, BrowserContext } from '@playwright/test';
+import { test, expect, Page, BrowserContext } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
@@ -291,9 +290,9 @@ test.describe('Real-time Message Delivery (T098)', () => {
     page1 = await context1.newPage();
     page2 = await context2.newPage();
 
-    // Navigate both pages to /messages and handle ReAuthModal (keys come
-    // from the seedKeys fixture writing to IndexedDB; modal only appears
-    // if the Supabase session refreshed in a way that requires re-auth).
+    // Navigate both pages to /messages and handle ReAuthModal. Keys are
+    // derived from password via Argon2id on first navigation and persisted
+    // to IndexedDB as non-extractable CryptoKeys.
     await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page1);
     await handleReAuthModal(page1, TEST_USER_1.password);
