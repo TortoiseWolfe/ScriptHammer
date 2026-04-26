@@ -1,7 +1,8 @@
 # ScriptHammer Feature Implementation Order
 
 **Generated**: 2025-12-30
-**Total Features**: 46
+**Last Updated**: 2026-04-26
+**Total Features**: 47
 **All Issues Fixed**: 23/23 (P0, P1, P2, P3 resolved in feature files)
 
 ---
@@ -99,6 +100,7 @@ PWA and accessibility enhancements.
 | 33    | **021** | Geolocation Map      | -          |
 | 34    | **028** | Enhanced Geolocation | 021        |
 | 35    | **030** | Calendar Integration | 003        |
+| 36    | **047** | Three.js Game        | 001, 006   |
 
 ### Tier 7: Polish
 
@@ -106,8 +108,8 @@ UX refinements (can be done any time after Tier 1).
 
 | Order | Feature | Name           | Depends On |
 | ----- | ------- | -------------- | ---------- |
-| 36    | **027** | UX Polish      | 002        |
-| 37    | **008** | On The Account | 003        |
+| 37    | **027** | UX Polish      | 002        |
+| 38    | **008** | On The Account | 003        |
 
 ### Tier 8: Testing
 
@@ -115,13 +117,13 @@ Implement AFTER the features they test.
 
 | Order | Feature | Name                    | Tests For |
 | ----- | ------- | ----------------------- | --------- |
-| 38    | **031** | Standardize Test Users  | 007       |
-| 39    | **032** | Signup E2E Tests        | 003, 007  |
-| 40    | **033** | SEO Library Tests       | 010, 029  |
-| 41    | **034** | Blog Library Tests      | 010       |
-| 42    | **035** | Messaging Service Tests | 009, 011  |
-| 43    | **036** | Auth Component Tests    | 003, 005  |
-| 44    | **037** | Game A11y Tests         | 001       |
+| 39    | **031** | Standardize Test Users  | 007       |
+| 40    | **032** | Signup E2E Tests        | 003, 007  |
+| 41    | **033** | SEO Library Tests       | 010, 029  |
+| 42    | **034** | Blog Library Tests      | 010       |
+| 43    | **035** | Messaging Service Tests | 009, 011  |
+| 44    | **036** | Auth Component Tests    | 003, 005  |
+| 45    | **037** | Game A11y Tests         | 001       |
 
 ### Tier 9: Third-Party Integrations
 
@@ -129,8 +131,8 @@ Must come AFTER 019 (consent framework).
 
 | Order | Feature | Name                       | Requires |
 | ----- | ------- | -------------------------- | -------- |
-| 45    | **044** | Error Handler Integrations | 019      |
-| 46    | **045** | Disqus Theme               | 019      |
+| 46    | **044** | Error Handler Integrations | 019      |
+| 47    | **045** | Disqus Theme               | 019      |
 
 ---
 
@@ -163,16 +165,16 @@ Must come AFTER 019 (consent framework).
 
 For parallel sprint implementation:
 
-| Wave       | Features                          | Focus Area              |
-| ---------- | --------------------------------- | ----------------------- |
-| **Wave 1** | 000, 003, 007, 006, 002, 001      | Foundation              |
-| **Wave 2** | 005, 019, 020                     | Security & Consent      |
-| **Wave 3** | 009, 011, 012, 016, 013, 014, 015 | Messaging               |
-| **Wave 4** | 024, 042, 038, 039, 040, 041, 046 | Payments & Admin        |
-| **Wave 5** | 010, 025, 029, 017, 018, 022, 023 | Content & A11y          |
-| **Wave 6** | 021, 028, 026, 027, 030, 008, 043 | Enhancements & Polish   |
-| **Wave 7** | 031, 032, 033, 034, 035, 036, 037 | Testing                 |
-| **Wave 8** | 044, 045                          | Third-Party Integration |
+| Wave       | Features                               | Focus Area              |
+| ---------- | -------------------------------------- | ----------------------- |
+| **Wave 1** | 000, 003, 007, 006, 002, 001           | Foundation              |
+| **Wave 2** | 005, 019, 020                          | Security & Consent      |
+| **Wave 3** | 009, 011, 012, 016, 013, 014, 015      | Messaging               |
+| **Wave 4** | 024, 042, 038, 039, 040, 041, 046      | Payments & Admin        |
+| **Wave 5** | 010, 025, 029, 017, 018, 022, 023      | Content & A11y          |
+| **Wave 6** | 021, 028, 026, 027, 030, 008, 043, 047 | Enhancements & Polish   |
+| **Wave 7** | 031, 032, 033, 034, 035, 036, 037      | Testing                 |
+| **Wave 8** | 044, 045                               | Third-Party Integration |
 
 ---
 
