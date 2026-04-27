@@ -174,7 +174,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
     // Prevent concurrent sync
     if (this.syncInProgress) {
       this.logger.debug('Sync already in progress, skipping');
-      return { success: 0, failed: 0, skipped: 0 };
+      return { success: 0, failed: 0, skipped: 0, conflicted: 0 };
     }
 
     this.syncInProgress = true;
@@ -183,7 +183,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
       const pending = await this.getPending();
 
       if (pending.length === 0) {
-        return { success: 0, failed: 0, skipped: 0 };
+        return { success: 0, failed: 0, skipped: 0, conflicted: 0 };
       }
 
       this.logger.info('Starting sync', { itemCount: pending.length });
@@ -275,7 +275,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
       }
 
       this.logger.info('Sync complete', { success, failed, skipped });
-      return { success, failed, skipped };
+      return { success, failed, skipped, conflicted: 0 };
     } finally {
       this.syncInProgress = false;
     }

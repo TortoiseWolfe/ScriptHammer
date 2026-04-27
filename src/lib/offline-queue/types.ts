@@ -44,6 +44,13 @@ export interface QueueConfig {
   initialDelayMs: number;
   /** Backoff multiplier (e.g., 2 for doubling) */
   backoffMultiplier: number;
+  /**
+   * Watchdog: reclaim items stuck in `processing` longer than this (ms).
+   * Defends against tab crashes between claim and completion. Default 60_000.
+   * The processItem implementation must be idempotent for safe reclaim — see
+   * payment-adapter's idempotency_key path for the pattern.
+   */
+  processingTimeoutMs: number;
 }
 
 /**
@@ -53,19 +60,29 @@ export const DEFAULT_QUEUE_CONFIG: Omit<QueueConfig, 'dbName' | 'tableName'> = {
   maxRetries: 5,
   initialDelayMs: 1000,
   backoffMultiplier: 2,
+  processingTimeoutMs: 60_000,
 };
 
 /**
  * Result of queue sync operation
  */
 export interface SyncResult {
-  /** Number of items successfully processed */
+  /** Number of items successfully processed (fresh work) */
   success: number;
   /** Number of items that failed */
   failed: number;
   /** Number of items skipped (e.g., still in backoff) */
   skipped: number;
+  /** Number of items completed via dedupe (server already had this work) */
+  conflicted: number;
 }
+
+/**
+ * Optional return value from processItem. Subclasses that don't need to
+ * distinguish fresh-success from dedupe can keep returning void; void is
+ * treated as `{ status: 'completed' }`.
+ */
+export type ProcessItemResult = { status: 'completed' | 'conflicted' };
 
 /**
  * Form queue item (for form submissions)
