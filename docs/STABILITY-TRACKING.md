@@ -1,6 +1,10 @@
 # Stability Tracking — post-#44 work order
 
-**Updated**: 2026-04-26 · **Audit baseline**: 2026-04-25 (see [STATUS.md](../STATUS.md))
+**Updated**: 2026-04-27 · **Audit baseline**: 2026-04-25 (see [STATUS.md](../STATUS.md))
+
+**Family A status**: both items shipped (PR #56, PR #59). Family A is empty for now.
+**Family D status**: D1 shipped (PR #60). D2 (#49 audit instrumentation) is the only D item remaining.
+**Next-session entry point**: Family B1 (#43, `/payment/result` page) — see `docs/SESSION-HANDOFF-2026-04-27.md`.
 
 This document is the cross-issue work-order. STATUS.md describes _what_ the gaps are; this describes _which order_ to close them in and _why_. New issues land here first, then graduate into PRs.
 
