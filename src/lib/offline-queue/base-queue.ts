@@ -180,6 +180,28 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
     this.syncInProgress = true;
 
     try {
+      // Watchdog: reclaim items stuck in `processing` past the timeout.
+      // Defends against tab crashes between the claim and the completion
+      // update. The reclaim is itself an atomic Dexie modify, so racing
+      // tabs converge. processItem must be idempotent for safe reclaim —
+      // see payment-adapter's idempotency_key path for the pattern.
+      const reclaimNow = Date.now();
+      const reclaimedCount = await this.items
+        .where('status')
+        .equals('processing')
+        .and(
+          (row) =>
+            !!row.lastAttempt &&
+            reclaimNow - row.lastAttempt > this.config.processingTimeoutMs
+        )
+        .modify({ status: 'pending' as QueueStatus });
+      if (reclaimedCount > 0) {
+        this.logger.warn('Reclaimed stuck processing items', {
+          count: reclaimedCount,
+          processingTimeoutMs: this.config.processingTimeoutMs,
+        });
+      }
+
       const pending = await this.getPending();
 
       if (pending.length === 0) {
