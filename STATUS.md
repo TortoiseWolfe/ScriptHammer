@@ -1,6 +1,6 @@
 # ScriptHammer Status
 
-**Snapshot**: 2026-04-26 · **Version**: v0.0.1 · **Stability**: Beta — post-remake stabilization in progress
+**Snapshot**: 2026-04-27 · **Version**: v0.0.1 · **Stability**: Beta — Family A stability batch landed; Family B (payment routes) is the next-leverage front
 
 This is the single screen-scan view of "what's planned, what's shipped, what's broken."
 For the deeper per-feature audit see [`docs/prp-docs/PRP-STATUS.md`](docs/prp-docs/PRP-STATUS.md).
@@ -118,13 +118,13 @@ If we want a stable v0.1.0, three families of work close it:
 
 The `feat/repo-overhaul-merge` of 2026-03-04 introduced patterns that have caused **18+ reverts in 3 months** and a 5x increase in fix-rate. The same shapes repeat in code that wasn't reverted yet:
 
-| Hotspot                           | Status   | Evidence                                                                                                                                                                                                                                        |
-| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ProtectedRoute auth race**      | Open     | 3 reverts: 6b4c13a, 2c97e67, 259b38d. Now mitigated in `src/app/admin/layout.tsx` via a `cancelled` flag, but stale-closure on `user` inside the async still latent. Tracked in [#51](https://github.com/TortoiseWolfe/ScriptHammer/issues/51). |
-| **ConversationView regression**   | Resolved | `createClient()` calls in `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32` are now wrapped in `useMemo(() => createClient(), [])`. Comment in code names the prior revert (adae629).                                              |
-| **GDPR consent Firefox**          | Resolved | `PaymentConsentModal.tsx:46-59` defers `acceptButtonRef.focus()` via `requestAnimationFrame()` after `dialog.showModal()`. Comment names the prior revert (3e67772).                                                                            |
-| **Offline-queue IndexedDB drift** | Open     | `base-queue.ts:214-247` does atomic claim via Dexie's implicit tx, but `processItem()` + completion update span tabs without a single transaction. Tracked in [#52](https://github.com/TortoiseWolfe/ScriptHammer/issues/52).                   |
-| **E2E flake mitigation**          | Ongoing  | 9 rounds. Cause: stale closures, unstable hook refs, hydration timing.                                                                                                                                                                          |
+| Hotspot                           | Status   | Evidence                                                                                                                                                                                                                                                                                   |
+| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **ProtectedRoute auth race**      | Resolved | 3 prior reverts: 6b4c13a, 2c97e67, 259b38d. AdminGate now extracted to its own file with a 10-test regression suite pinning the `wasAdmin` debounce, the `cancelled` flag, and dep-array integrity. Closed by [#51](https://github.com/TortoiseWolfe/ScriptHammer/issues/51) (PR #56).     |
+| **ConversationView regression**   | Resolved | `createClient()` calls in `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32` are now wrapped in `useMemo(() => createClient(), [])`. Comment in code names the prior revert (adae629).                                                                                         |
+| **GDPR consent Firefox**          | Resolved | `PaymentConsentModal.tsx:46-59` defers `acceptButtonRef.focus()` via `requestAnimationFrame()` after `dialog.showModal()`. Comment names the prior revert (3e67772).                                                                                                                       |
+| **Offline-queue IndexedDB drift** | Resolved | Watchdog reclaim (60s default) + `payment_intents.idempotency_key` partial unique index + upsert-with-ignoreDuplicates. At-least-once delivery + idempotent receiver = exactly-once observable outcome. Closed by [#52](https://github.com/TortoiseWolfe/ScriptHammer/issues/52) (PR #59). |
+| **E2E flake mitigation**          | Ongoing  | 9 rounds. Cause: stale closures, unstable hook refs, hydration timing.                                                                                                                                                                                                                     |
 
 The full code-review findings (35 high-confidence items) live in [`scripts/audit/code-review-findings.json`](scripts/audit/code-review-findings.json). The pattern is consistent: stale closures after async auth, unstabilized context providers, hooks creating new Supabase clients every render.
 
