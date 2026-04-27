@@ -11,7 +11,11 @@
  */
 
 import { BaseOfflineQueue } from './base-queue';
-import { PaymentQueueItem, DEFAULT_QUEUE_CONFIG } from './types';
+import {
+  PaymentQueueItem,
+  ProcessItemResult,
+  DEFAULT_QUEUE_CONFIG,
+} from './types';
 import { supabase } from '@/lib/supabase/client';
 import type { Json } from '@/lib/supabase/types';
 
@@ -91,16 +95,23 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
   }
 
   /**
-   * Process a single payment queue item
+   * Process a single payment queue item.
+   *
+   * Returns ProcessItemResult for payment_intent so the base queue can
+   * distinguish a fresh INSERT from a server-side dedupe (the work was
+   * already done by a prior attempt). subscription_update returns void —
+   * UPDATE is implicitly idempotent by primary key, no dedupe distinction
+   * needed there.
    */
-  protected async processItem(item: PaymentQueueItem): Promise<void> {
+  protected async processItem(
+    item: PaymentQueueItem
+  ): Promise<ProcessItemResult | void> {
     switch (item.type) {
       case 'payment_intent':
-        await this.executePaymentIntent(item.data, item.userId);
-        break;
+        return await this.executePaymentIntent(item.data, item.userId);
       case 'subscription_update':
         await this.executeSubscriptionUpdate(item.data);
-        break;
+        return;
       default:
         throw new Error(`Unknown payment operation type: ${item.type}`);
     }
@@ -112,11 +123,17 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
    * Prefers the userId captured at queue time (REQ-SEC-001 — the user
    * was authenticated when they made the payment). Falls back to
    * auth.getUser() if no userId was stored, matching fork behaviour.
+   *
+   * Uses upsert with ignoreDuplicates so the server-side INSERT is
+   * idempotent across retries: a queued item whose prior attempt
+   * already wrote the row produces a zero-row response, which we
+   * surface as `{ status: 'conflicted' }` so the queue marks the row
+   * completed without double-charging. See #52.
    */
   private async executePaymentIntent(
     data: Record<string, unknown>,
     storedUserId?: string
-  ): Promise<void> {
+  ): Promise<ProcessItemResult> {
     let userId = storedUserId;
 
     if (!userId) {
@@ -131,24 +148,51 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
       userId = user.id;
     }
 
-    const { error } = await supabase
+    // Idempotency key: prefer the one queued at intake. If absent (older
+    // queue rows from before this column shipped), generate a fresh one
+    // and warn — that retry chain will dedupe with itself but not with
+    // any prior attempt that lacked a key.
+    let idempotencyKey = data.idempotency_key as string | undefined;
+    if (!idempotencyKey) {
+      idempotencyKey = crypto.randomUUID();
+      this.logger.warn(
+        'Queued payment_intent missing idempotency_key — generating one. ' +
+          'Retries of this row will dedupe; prior attempts without a key will not.',
+        { generatedKey: idempotencyKey }
+      );
+    }
+
+    const { data: inserted, error } = await supabase
       .from('payment_intents')
-      .insert({
-        amount: data.amount as number,
-        currency: data.currency as string,
-        type: data.type as string,
-        interval: (data.interval as string) || null,
-        customer_email: data.customer_email as string,
-        description: (data.description as string) || null,
-        metadata: (data.metadata || {}) as Json,
-        template_user_id: userId,
-      })
-      .select()
-      .single();
+      .upsert(
+        {
+          amount: data.amount as number,
+          currency: data.currency as string,
+          type: data.type as string,
+          interval: (data.interval as string) || null,
+          customer_email: data.customer_email as string,
+          description: (data.description as string) || null,
+          metadata: (data.metadata || {}) as Json,
+          template_user_id: userId,
+          idempotency_key: idempotencyKey,
+        },
+        { onConflict: 'idempotency_key', ignoreDuplicates: true }
+      )
+      .select('id')
+      .maybeSingle();
 
     if (error) {
       throw new Error(`Failed to create payment intent: ${error.message}`);
     }
+
+    if (!inserted) {
+      // ON CONFLICT DO NOTHING fired — a prior attempt already created
+      // this row server-side. Mark the queue row completed via the
+      // dedupe path; the user is not double-charged.
+      return { status: 'conflicted' };
+    }
+
+    return { status: 'completed' };
   }
 
   /**
