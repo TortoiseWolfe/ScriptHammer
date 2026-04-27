@@ -16,10 +16,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const SCRIPTHAMMER_TEST_DOMAIN = '@scripthammer.test';
 
 export interface CleanupSummary {
+  /** Auth users hard-deleted via auth.admin.deleteUser. */
   usersRemoved: number;
-  intentsRemoved: number;
-  subscriptionsRemoved: number;
-  profilesRemoved: number;
+  /**
+   * Per-table errors logged (non-fatal; cleanup continues).
+   * Operators reading the summary use this to gauge whether the cleanup
+   * fully completed or punted on some FKs.
+   */
+  errorsLogged: number;
 }
 
 type Logger = {
@@ -38,9 +42,7 @@ export async function cleanupStaleScripthammerUsers(
 ): Promise<CleanupSummary> {
   const summary: CleanupSummary = {
     usersRemoved: 0,
-    intentsRemoved: 0,
-    subscriptionsRemoved: 0,
-    profilesRemoved: 0,
+    errorsLogged: 0,
   };
 
   // 1. List all auth users; filter to the scripthammer.test domain.
@@ -73,8 +75,7 @@ export async function cleanupStaleScripthammerUsers(
         userId,
         error: intentsResult.error.message,
       });
-    } else {
-      summary.intentsRemoved++;
+      summary.errorsLogged++;
     }
 
     // subscriptions (leaf w.r.t. auth.users)
@@ -87,8 +88,7 @@ export async function cleanupStaleScripthammerUsers(
         userId,
         error: subsResult.error.message,
       });
-    } else {
-      summary.subscriptionsRemoved++;
+      summary.errorsLogged++;
     }
 
     // user_profiles (1:1 with auth.users; FK is profiles.id → auth.users.id)
@@ -101,12 +101,14 @@ export async function cleanupStaleScripthammerUsers(
         userId,
         error: profileResult.error.message,
       });
-    } else {
-      summary.profilesRemoved++;
+      summary.errorsLogged++;
     }
 
     // Hard-delete the auth user. shouldSoftDelete=false releases email
-    // uniqueness immediately so createTestUser doesn't trip on it.
+    // uniqueness immediately so createTestUser doesn't trip on it. This
+    // is the only DELETE whose success we can count meaningfully —
+    // PostgREST DELETEs above succeed regardless of whether any rows
+    // matched, so they only contribute to errorsLogged on failure.
     const { error: authError } = await client.auth.admin.deleteUser(
       userId,
       false
@@ -116,6 +118,7 @@ export async function cleanupStaleScripthammerUsers(
         userId,
         error: authError.message,
       });
+      summary.errorsLogged++;
     } else {
       summary.usersRemoved++;
     }

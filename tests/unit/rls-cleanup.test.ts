@@ -81,9 +81,7 @@ describe('cleanupStaleScripthammerUsers (#50)', () => {
     ]);
 
     expect(summary.usersRemoved).toBe(2);
-    expect(summary.intentsRemoved).toBe(2);
-    expect(summary.subscriptionsRemoved).toBe(2);
-    expect(summary.profilesRemoved).toBe(2);
+    expect(summary.errorsLogged).toBe(0);
   });
 
   it('ignores users whose email does not match @scripthammer.test', async () => {
@@ -120,11 +118,10 @@ describe('cleanupStaleScripthammerUsers (#50)', () => {
       'user_profiles',
     ]);
     expect(deleteUserCalls).toEqual(['user-x']);
-    // Summary records the partial cleanup: intents NOT counted, others are.
-    expect(summary.intentsRemoved).toBe(0);
-    expect(summary.subscriptionsRemoved).toBe(1);
-    expect(summary.profilesRemoved).toBe(1);
+    // Summary records partial cleanup: 1 user successfully removed, 1
+    // error logged (the payment_intents failure).
     expect(summary.usersRemoved).toBe(1);
+    expect(summary.errorsLogged).toBe(1);
   });
 
   it('is a no-op when no @scripthammer.test users exist', async () => {
@@ -138,9 +135,7 @@ describe('cleanupStaleScripthammerUsers (#50)', () => {
     expect(deleteUserCalls).toHaveLength(0);
     expect(summary).toEqual({
       usersRemoved: 0,
-      intentsRemoved: 0,
-      subscriptionsRemoved: 0,
-      profilesRemoved: 0,
+      errorsLogged: 0,
     });
   });
 });

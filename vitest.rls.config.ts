@@ -17,6 +17,10 @@ export default defineConfig({
     globals: true,
     testTimeout: 30000,
     hookTimeout: 30000,
+    // Scrub stale *@scripthammer.test users + orphan FK rows before any
+    // test file collects. Defends against killed prior runs leaving
+    // payment_intents that block createTestUser's deleteUser. (#50)
+    globalSetup: ['./tests/rls/__setup__/cleanup-stale.ts'],
     // Sequential execution: test files share test users on the same
     // Supabase instance, so parallel runs cause create/delete races.
     fileParallelism: false,

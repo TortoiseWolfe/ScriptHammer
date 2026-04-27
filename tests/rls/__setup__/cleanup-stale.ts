@@ -36,14 +36,9 @@ export async function setup() {
 
   const summary = await cleanupStaleScripthammerUsers(client, consoleLogger);
 
-  if (
-    summary.usersRemoved > 0 ||
-    summary.intentsRemoved > 0 ||
-    summary.subscriptionsRemoved > 0 ||
-    summary.profilesRemoved > 0
-  ) {
+  if (summary.usersRemoved > 0 || summary.errorsLogged > 0) {
     console.log(
-      `[rls cleanup-stale] removed ${summary.usersRemoved} user(s), ${summary.intentsRemoved} intent(s), ${summary.subscriptionsRemoved} subscription(s), ${summary.profilesRemoved} profile(s)`
+      `[rls cleanup-stale] removed ${summary.usersRemoved} user(s); ${summary.errorsLogged} error(s) logged`
     );
   }
 }
