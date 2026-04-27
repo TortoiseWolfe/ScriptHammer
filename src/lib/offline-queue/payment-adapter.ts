@@ -48,6 +48,13 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
 
   /**
    * Queue a payment intent creation
+   *
+   * If `data.idempotency_key` is not supplied, a fresh UUID is generated
+   * here at queue-time. The same key is reused across every retry of this
+   * row, which combined with the partial unique index on
+   * payment_intents.idempotency_key turns the server-side INSERT into an
+   * idempotent ON CONFLICT DO NOTHING — a retry whose prior attempt
+   * already succeeded becomes a no-op rather than a duplicate charge (#52).
    */
   async queuePaymentIntent(
     data: {
@@ -58,12 +65,14 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
       customer_email: string;
       description?: string;
       metadata?: Record<string, unknown>;
+      idempotency_key?: string;
     },
     userId?: string
   ): Promise<PaymentQueueItem> {
+    const idempotency_key = data.idempotency_key ?? crypto.randomUUID();
     return await this.queue({
       type: 'payment_intent',
-      data,
+      data: { ...data, idempotency_key },
       userId,
     } as Omit<PaymentQueueItem, 'id' | 'status' | 'retries' | 'createdAt'>);
   }
