@@ -73,7 +73,16 @@ End-to-end pass criteria:
 
 1. `pnpm vitest run tests/unit/rls-cleanup.test.ts` — 4/4 green.
 2. `pnpm test:rls` against cloud — still 55/55 (no behavior regression on a clean cloud state).
-3. Manual stress test: insert an orphan `payment_intents` referencing `test-user-a@scripthammer.test` via SQL, run `pnpm test:rls`. The globalSetup logs `Cleanup-stale: removed 1 user, 1 intent`, the suite passes. (Manual because it requires deliberate state perturbation; not worth automating.)
+3. Manual stress test: insert an orphan `payment_intents` referencing `test-user-a@scripthammer.test` via SQL, run `pnpm test:rls`. The globalSetup logs `[rls cleanup-stale] removed 1 user(s); 0 error(s) logged`, the suite passes. (Manual because it requires deliberate state perturbation; not worth automating.)
+
+### Note on summary count semantics
+
+The `CleanupSummary` shape settled on during implementation differs from an earlier draft of this spec. PostgREST DELETE returns success regardless of whether any rows actually matched, so per-table "removed" counts (`intentsRemoved`, `subscriptionsRemoved`, etc.) would have been misleading — the operator would see "1 intent removed" for a stale user that had no intents. Replaced with two honest fields:
+
+- `usersRemoved`: count from `auth.admin.deleteUser` successes (the one DELETE whose success/failure carries real signal — the user either existed or didn't)
+- `errorsLogged`: count of per-table errors logged (non-fatal; cleanup continues)
+
+The unit tests assert against this shape.
 
 ## Critical files
 
