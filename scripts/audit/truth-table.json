@@ -804,19 +804,27 @@
       "id": "040-payment-retry-ui",
       "category": "payments",
       "stated_status": "Draft",
-      "real_status": "Backend Only",
+      "real_status": "Partial",
       "acceptance_count": 16,
-      "code_evidence": ["payment-service.ts retry logic; webhook handlers"],
+      "code_evidence": [
+        "payment-service.ts retry logic; webhook handlers",
+        "src/app/payment-result/page.tsx (commit ffb33a1, 2026-04-16) — 6-state page",
+        "src/components/payment/PaymentStatusDisplay — retry button + real-time updates"
+      ],
       "test_evidence": [
-        "tests/e2e/payment/03-failed-payment-retry.spec.ts (2 live + 14 stubs)"
+        "tests/e2e/payment/03-failed-payment-retry.spec.ts (4 live + 12 stubs)"
       ],
       "wireframe_evidence": "None",
       "gaps": [
-        "/payment/result page route missing",
+        "Retry button regenerates idempotency_key instead of reusing the queued one (loses dedupe with offline-queue replay)",
+        "No retry attempt counter or cooling period (FR-008/009/010)",
+        "No error categorization — current UI only shows status === 'failed' with no reason context (FR-002)",
         "Offline error banner not implemented",
-        "Retry surface (UI) missing"
+        "No audit log on retry attempts (NFR-007)",
+        "User Story 3 (Update Payment Method, FR-011-FR-015) entirely unbuilt",
+        "User Story 4 (Guided Recovery Wizard, FR-016-FR-019) entirely unbuilt"
       ],
-      "notes": "Backend ready; user-facing routes + UX missing."
+      "notes": "Route shipped 2026-04-16 (`/payment-result`, kebab-case matching `/payment-demo`). The 2026-04-25 audit incorrectly flagged the route as missing because it cross-referenced spec text rather than the filesystem. Real B1 work is the retry-UX gaps listed above."
     },
     {
       "id": "041-paypal-subscriptions",

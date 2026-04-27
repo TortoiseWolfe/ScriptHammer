@@ -69,7 +69,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 - [~] **038 Payment Dashboard** — components built; `/payment/dashboard` route missing (#3)
 - [~] **039 Payment Offline Queue** — logic built; status indicator UI + `/payment/history` missing (#4)
-- [!] **040 Payment Retry UI** — retry logic in service; `/payment/result` page + retry surface missing
+- [~] **040 Payment Retry UI** — `/payment-result` route shipped (commit `ffb33a1`, 2026-04-16) — 6-state page + retry button. Real gaps (#43): retry doesn't reuse queued `idempotency_key`, no attempt counter / cooling period (FR-008-010), no error categorization (FR-002), no offline error banner, no audit log on retry, P1 stories 3+4 (update-method, recovery wizard) unbuilt
 - [~] **041 PayPal Subscriptions** — backend ready; `/payment/subscriptions` page + grace-period banner + duplicate prevention + 4 edge functions missing (#5)
 - [x] **042 Payment RLS Policies** — 20+ policies verified by `pnpm test:rls` (55/55 across 5 files, both local + cloud) — #44 closed 2026-04-26
 
@@ -134,7 +134,7 @@ The full code-review findings (35 high-confidence items) live in [`scripts/audit
 
 1. Create Stripe sandbox + PayPal developer accounts (~30-60 min external setup)
 2. Populate 6 keys in `.env` + Supabase Vault
-3. Wire 4 missing routes (`/payment/dashboard`, `/payment/subscriptions`, `/payment/history`, `/payment/result`)
+3. Wire 3 missing routes (`/payment-dashboard`, `/payment-subscriptions`, `/payment-history`); `/payment-result` already shipped — see 040 entry for its remaining UX gaps
 4. Build offline-queue UI affordances (status indicator, sync pill, retry button)
 5. As each route lands, remove the corresponding skips from `tests/e2e/payment/` per [#53](https://github.com/TortoiseWolfe/ScriptHammer/issues/53)
 
