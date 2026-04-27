@@ -24,6 +24,7 @@ const TEST_DB_NAME = `TestQueue_${process.pid}`;
 class TestQueue extends BaseOfflineQueue<TestQueueItem> {
   public processedItems: TestQueueItem[] = [];
   public shouldFail = false;
+  public shouldReturnConflict = false;
   public failCount = 0;
 
   constructor() {
@@ -34,12 +35,16 @@ class TestQueue extends BaseOfflineQueue<TestQueueItem> {
     });
   }
 
-  protected async processItem(item: TestQueueItem): Promise<void> {
+  protected async processItem(item: TestQueueItem) {
     if (this.shouldFail) {
       this.failCount++;
       throw new Error('Test failure');
     }
     this.processedItems.push(item);
+    if (this.shouldReturnConflict) {
+      return { status: 'conflicted' as const };
+    }
+    return;
   }
 
   // Expose protected method for testing
@@ -272,6 +277,93 @@ describe('BaseOfflineQueue', () => {
       const updated = await queue.get(item.id!);
       expect(updated?.status).toBe('pending');
       expect(updated?.retries).toBe(0);
+    });
+  });
+
+  describe('watchdog reclaim', () => {
+    it('reclaims items stuck in processing past processingTimeoutMs', async () => {
+      // Queue an item, then manually move it to `processing` with a stale
+      // lastAttempt — simulating a prior tab that crashed mid-processing.
+      const queued = await queue.queue({ data: 'recover-me' } as Omit<
+        TestQueueItem,
+        'id' | 'status' | 'retries' | 'createdAt'
+      >);
+      const longAgo = Date.now() - 70_000; // 70s > default 60s timeout
+      await (
+        queue as unknown as {
+          items: {
+            update: (
+              id: number,
+              changes: Record<string, unknown>
+            ) => Promise<unknown>;
+          };
+        }
+      ).items.update(queued.id!, {
+        status: 'processing',
+        lastAttempt: longAgo,
+      });
+
+      // Sync should reclaim the row (status: pending) and then process it.
+      const result = await queue.sync();
+
+      expect(result.success).toBe(1);
+      expect(queue.processedItems).toHaveLength(1);
+      expect(queue.processedItems[0].data).toBe('recover-me');
+
+      const final = await queue.get(queued.id!);
+      expect(final?.status).toBe('completed');
+    });
+
+    it('leaves fresh processing items alone (within processingTimeoutMs)', async () => {
+      const queued = await queue.queue({ data: 'leave-me-alone' } as Omit<
+        TestQueueItem,
+        'id' | 'status' | 'retries' | 'createdAt'
+      >);
+      const recent = Date.now() - 30_000; // 30s < default 60s timeout
+      await (
+        queue as unknown as {
+          items: {
+            update: (
+              id: number,
+              changes: Record<string, unknown>
+            ) => Promise<unknown>;
+          };
+        }
+      ).items.update(queued.id!, {
+        status: 'processing',
+        lastAttempt: recent,
+      });
+
+      const result = await queue.sync();
+
+      // Item was NOT reclaimed — it stayed in `processing` and never
+      // entered the per-item loop, so processedItems is empty and the
+      // sync result reports nothing for this item.
+      expect(queue.processedItems).toHaveLength(0);
+      expect(result.success).toBe(0);
+
+      const final = await queue.get(queued.id!);
+      expect(final?.status).toBe('processing');
+    });
+  });
+
+  describe('conflict accounting', () => {
+    it('counts conflicted as completed but in the conflicted bucket', async () => {
+      queue.shouldReturnConflict = true;
+      await queue.queue({ data: 'dedupe-me' } as Omit<
+        TestQueueItem,
+        'id' | 'status' | 'retries' | 'createdAt'
+      >);
+
+      const result = await queue.sync();
+
+      expect(result.success).toBe(0);
+      expect(result.conflicted).toBe(1);
+      expect(result.failed).toBe(0);
+
+      // The queue row is still marked completed (the item is done).
+      const all = await queue.getQueue();
+      expect(all[0].status).toBe('completed');
     });
   });
 

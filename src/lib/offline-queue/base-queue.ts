@@ -13,6 +13,7 @@
 import Dexie, { Table } from 'dexie';
 import {
   BaseQueueItem,
+  ProcessItemResult,
   QueueConfig,
   QueueStatus,
   SyncResult,
@@ -174,16 +175,38 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
     // Prevent concurrent sync
     if (this.syncInProgress) {
       this.logger.debug('Sync already in progress, skipping');
-      return { success: 0, failed: 0, skipped: 0 };
+      return { success: 0, failed: 0, skipped: 0, conflicted: 0 };
     }
 
     this.syncInProgress = true;
 
     try {
+      // Watchdog: reclaim items stuck in `processing` past the timeout.
+      // Defends against tab crashes between the claim and the completion
+      // update. The reclaim is itself an atomic Dexie modify, so racing
+      // tabs converge. processItem must be idempotent for safe reclaim —
+      // see payment-adapter's idempotency_key path for the pattern.
+      const reclaimNow = Date.now();
+      const reclaimedCount = await this.items
+        .where('status')
+        .equals('processing')
+        .and(
+          (row) =>
+            !!row.lastAttempt &&
+            reclaimNow - row.lastAttempt > this.config.processingTimeoutMs
+        )
+        .modify({ status: 'pending' } as any);
+      if (reclaimedCount > 0) {
+        this.logger.warn('Reclaimed stuck processing items', {
+          count: reclaimedCount,
+          processingTimeoutMs: this.config.processingTimeoutMs,
+        });
+      }
+
       const pending = await this.getPending();
 
       if (pending.length === 0) {
-        return { success: 0, failed: 0, skipped: 0 };
+        return { success: 0, failed: 0, skipped: 0, conflicted: 0 };
       }
 
       this.logger.info('Starting sync', { itemCount: pending.length });
@@ -191,6 +214,7 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
       let success = 0;
       let failed = 0;
       let skipped = 0;
+      let conflicted = 0;
 
       for (const item of pending) {
         // Check if max retries exceeded
@@ -237,17 +261,26 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
         }
 
         try {
-          // Process the item (implemented by subclass)
-          await this.processItem(item);
-
-          // Mark as completed
+          // Process the item (implemented by subclass). The subclass may
+          // return `{ status: 'conflicted' }` when it detected a server-
+          // side dedupe (its work was already done by a prior attempt).
+          // void return is treated as completed for backwards compatibility.
+          const processResult = await this.processItem(item);
 
           await this.items.update(item.id!, {
             status: 'completed',
           } as any);
 
-          success++;
-          this.logger.debug('Item processed successfully', { id: item.id });
+          if (processResult?.status === 'conflicted') {
+            conflicted++;
+            this.logger.info(
+              'Item completed via dedupe (server already had this work)',
+              { id: item.id }
+            );
+          } else {
+            success++;
+            this.logger.debug('Item processed successfully', { id: item.id });
+          }
         } catch (error) {
           // Record failed attempt
           const errorMessage =
@@ -274,8 +307,13 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
         }
       }
 
-      this.logger.info('Sync complete', { success, failed, skipped });
-      return { success, failed, skipped };
+      this.logger.info('Sync complete', {
+        success,
+        failed,
+        skipped,
+        conflicted,
+      });
+      return { success, failed, skipped, conflicted };
     } finally {
       this.syncInProgress = false;
     }
@@ -340,11 +378,15 @@ export abstract class BaseOfflineQueue<T extends BaseQueueItem> extends Dexie {
   }
 
   /**
-   * Process a single queue item
-   * Must be implemented by subclasses with domain-specific logic
+   * Process a single queue item.
+   * Must be implemented by subclasses with domain-specific logic.
+   *
+   * Subclasses may return `{ status: 'conflicted' }` to signal the work
+   * was already completed by a prior attempt (server-side dedupe). void
+   * return is treated as `{ status: 'completed' }`.
    *
    * @param item - Item to process
    * @throws Error if processing fails (will trigger retry)
    */
-  protected abstract processItem(item: T): Promise<void>;
+  protected abstract processItem(item: T): Promise<ProcessItemResult | void>;
 }
