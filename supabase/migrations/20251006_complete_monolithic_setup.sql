@@ -51,6 +51,17 @@ CREATE INDEX IF NOT EXISTS idx_payment_intents_created_at ON payment_intents(cre
 CREATE INDEX IF NOT EXISTS idx_payment_intents_user_id ON payment_intents(template_user_id);
 CREATE INDEX IF NOT EXISTS idx_payment_intents_expires_at ON payment_intents(expires_at);
 
+-- Idempotency key for offline-queue retries (#52). Partial unique index:
+-- only enforced when set, so direct-server INSERTs (admin tooling, edge
+-- functions) without a key remain valid. Only client-queued INSERTs
+-- participate in dedupe.
+ALTER TABLE payment_intents
+  ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_intents_idempotency_key
+  ON payment_intents(idempotency_key)
+  WHERE idempotency_key IS NOT NULL;
+
 COMMENT ON TABLE payment_intents IS 'Customer payment intentions before provider redirect (24hr expiry)';
 
 -- Payment results
