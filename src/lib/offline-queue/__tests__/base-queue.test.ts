@@ -24,6 +24,7 @@ const TEST_DB_NAME = `TestQueue_${process.pid}`;
 class TestQueue extends BaseOfflineQueue<TestQueueItem> {
   public processedItems: TestQueueItem[] = [];
   public shouldFail = false;
+  public shouldReturnConflict = false;
   public failCount = 0;
 
   constructor() {
@@ -34,12 +35,16 @@ class TestQueue extends BaseOfflineQueue<TestQueueItem> {
     });
   }
 
-  protected async processItem(item: TestQueueItem): Promise<void> {
+  protected async processItem(item: TestQueueItem) {
     if (this.shouldFail) {
       this.failCount++;
       throw new Error('Test failure');
     }
     this.processedItems.push(item);
+    if (this.shouldReturnConflict) {
+      return { status: 'conflicted' as const };
+    }
+    return;
   }
 
   // Expose protected method for testing
@@ -339,6 +344,26 @@ describe('BaseOfflineQueue', () => {
 
       const final = await queue.get(queued.id!);
       expect(final?.status).toBe('processing');
+    });
+  });
+
+  describe('conflict accounting', () => {
+    it('counts conflicted as completed but in the conflicted bucket', async () => {
+      queue.shouldReturnConflict = true;
+      await queue.queue({ data: 'dedupe-me' } as Omit<
+        TestQueueItem,
+        'id' | 'status' | 'retries' | 'createdAt'
+      >);
+
+      const result = await queue.sync();
+
+      expect(result.success).toBe(0);
+      expect(result.conflicted).toBe(1);
+      expect(result.failed).toBe(0);
+
+      // The queue row is still marked completed (the item is done).
+      const all = await queue.getQueue();
+      expect(all[0].status).toBe('completed');
     });
   });
 
