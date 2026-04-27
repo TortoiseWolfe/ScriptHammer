@@ -2,7 +2,7 @@
 
 **Feature Branch**: `040-payment-retry-ui`
 **Created**: 2025-12-30
-**Status**: Backend Only
+**Status**: Partial (route shipped, UX gaps remain)
 **Input**: User description: "Error display, retry button, and payment method update flow. Provides clear UI for handling failed payments with actionable options to resolve payment issues."
 
 ---
@@ -11,23 +11,29 @@
 
 ## Implementation Status
 
-**Last audited**: 2026-04-25
-**Real status**: Backend Only
+**Last audited**: 2026-04-27
+**Real status**: Partial (route shipped, UX gaps remain)
 **Tracking**: see gap-audit GitHub issues + STATUS.md
 
 ### Shipped
 
-- payment-service.ts retry logic; webhook handlers
+- `payment-service.ts` retry logic (`retryFailedPayment`); Stripe + PayPal webhook handlers
+- `/payment-result?id=<intent-uuid>` route (commit `ffb33a1`, 2026-04-16) — 6-state page (loading, missing-id, not-configured, loaded, not-found, error), `<ProtectedRoute>` gated, `<Suspense>`-wrapped
+- `<PaymentStatusDisplay>` with status badge, details panel, real-time updates via `usePaymentRealtime`, retry button for `status === 'failed'`
 
 ### Gaps
 
-- /payment/result page route missing
-- Offline error banner not implemented
-- Retry surface (UI) missing
+- Retry button regenerates `idempotency_key` instead of reusing the queued one (loses dedupe with offline-queue replay)
+- No retry attempt counter / cooling period enforcement (FR-008, FR-009, FR-010)
+- No error categorization — current UI only shows `status === 'failed'` with no reason context (FR-002 lists 8 error types, none mapped)
+- No offline error banner
+- No audit log on retry attempts (NFR-007)
+- User Story 3 (Update Payment Method, FR-011-FR-015) — entirely unbuilt
+- User Story 4 (Guided Recovery Wizard, FR-016-FR-019) — entirely unbuilt
 
 ### Notes
 
-- Backend ready; user-facing routes + UX missing.
+- Route name is `/payment-result` (kebab-case top-level, matches `/payment-demo` and 8 other flat routes); spec previously said `/payment/result` but the route was renamed at implementation time and the doc lagged. Future sibling routes (`/payment-dashboard`, `/payment-history`, `/payment-subscriptions`) are expected to follow the same convention unless a shared `/payment/` shell is justified.
 
 <!-- AUDIT-IMPL-STATUS-END -->
 

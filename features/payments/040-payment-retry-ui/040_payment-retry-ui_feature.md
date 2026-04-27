@@ -3,7 +3,7 @@
 **Feature ID**: 040
 **Category**: payments
 **Source**: ScriptHammer README (SPEC-056)
-**Status**: Backend Ready, Routes + UX Missing (2026-04-08). Built: `payment-service.ts` handles retry logic, `PaymentStatusDisplay` component exists. Missing: `/payment/result` page (for post-redirect result handling), offline error display surface (no "payment failed, retry when online" banner component), subscription-management retry surface (shared with 041). 14 E2E stubs in `tests/e2e/payment/03-failed-payment-retry.spec.ts` define the failure-recovery UX. Depends on 024 API keys.
+**Status**: Partial — Route shipped, UX gaps remain (2026-04-27). Built: `payment-service.ts` retry logic, `<PaymentStatusDisplay>` component, `/payment-result` route (commit `ffb33a1`, 2026-04-16) — 6-state page with retry button. Missing: idempotency-key reuse on retry, retry attempt counter + cooling period (FR-008-010), error-type categorization (FR-002), offline error banner, audit log on retry (NFR-007), update-payment-method flow (User Story 3), guided recovery wizard (User Story 4). Several E2E stubs in `tests/e2e/payment/03-failed-payment-retry.spec.ts` are still skipped pending Stripe API keys; some have been replaced with real assertions for the missing-session and malformed-ID empty states. Depends on 024 API keys.
 
 ## Description
 
