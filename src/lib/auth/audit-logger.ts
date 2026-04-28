@@ -18,7 +18,8 @@ export type AuditEventType =
   | 'password_reset_request'
   | 'email_verification'
   | 'oauth_link'
-  | 'oauth_unlink';
+  | 'oauth_unlink'
+  | 'payment_retry';
 
 export interface AuditLogEntry {
   user_id?: string;

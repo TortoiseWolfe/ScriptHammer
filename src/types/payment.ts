@@ -38,6 +38,9 @@ export interface PaymentIntent {
   customer_email: string;
   description: string | null;
   metadata: Record<string, unknown> | null;
+  idempotency_key: string | null;
+  retry_count: number;
+  parent_intent_id: string | null;
   created_at: string; // ISO 8601 timestamp
   expires_at: string; // ISO 8601 timestamp
 }

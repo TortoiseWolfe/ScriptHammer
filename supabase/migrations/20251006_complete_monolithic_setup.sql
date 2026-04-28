@@ -62,6 +62,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_intents_idempotency_key
   ON payment_intents(idempotency_key)
   WHERE idempotency_key IS NOT NULL;
 
+-- Retry tracking (#43, B1). Each retry creates a new INSERT-only row that
+-- references its parent and bumps retry_count. The "Payment intents are
+-- immutable" UPDATE policy below ensures retry_count only ever moves
+-- forward (set on INSERT, never UPDATEd).
+ALTER TABLE payment_intents
+  ADD COLUMN IF NOT EXISTS retry_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE payment_intents
+  ADD COLUMN IF NOT EXISTS parent_intent_id UUID REFERENCES payment_intents(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_payment_intents_parent
+  ON payment_intents(parent_intent_id)
+  WHERE parent_intent_id IS NOT NULL;
+
 COMMENT ON TABLE payment_intents IS 'Customer payment intentions before provider redirect (24hr expiry)';
 
 -- Payment results
@@ -201,7 +214,8 @@ CREATE TABLE IF NOT EXISTS auth_audit_logs (
     'email_verification', 'email_verification_sent', 'email_verification_complete',
     'token_refresh',
     'account_delete',
-    'oauth_link', 'oauth_unlink'
+    'oauth_link', 'oauth_unlink',
+    'payment_retry'
   )),
   event_data JSONB,
   ip_address INET,
@@ -218,6 +232,23 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
 
 COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events (90-day retention)';
+
+-- Idempotent extension of auth_audit_logs.event_type CHECK to include
+-- 'payment_retry' (#43, B1). The CREATE TABLE above picks up the new
+-- value on a fresh DB; this DROP + ADD applies it to existing DBs.
+ALTER TABLE auth_audit_logs DROP CONSTRAINT IF EXISTS auth_audit_logs_event_type_check;
+ALTER TABLE auth_audit_logs ADD CONSTRAINT auth_audit_logs_event_type_check
+  CHECK (event_type IN (
+    'sign_up',
+    'sign_in', 'sign_in_success', 'sign_in_failed',
+    'sign_out',
+    'password_change', 'password_reset_request', 'password_reset_complete',
+    'email_verification', 'email_verification_sent', 'email_verification_complete',
+    'token_refresh',
+    'account_delete',
+    'oauth_link', 'oauth_unlink',
+    'payment_retry'
+  ));
 
 -- ============================================================================
 -- PART 3: SECURITY TABLES (Feature 017)
