@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/PaymentStatusDisplay';
+import { OfflineRetryBanner } from '@/components/payment/OfflineRetryBanner';
 import { featureFlags } from '@/config/payment';
 import { getPaymentStatus } from '@/lib/payments/payment-service';
 
@@ -210,6 +211,7 @@ function PaymentResultContent() {
     return (
       <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
         <div className="flex flex-col items-center gap-6 text-center">
+          <OfflineRetryBanner className="max-w-lg" />
           <div role="status" className="alert alert-info max-w-lg">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -246,6 +248,7 @@ function PaymentResultContent() {
       </div>
 
       <div className="max-w-lg">
+        <OfflineRetryBanner className="mb-4" />
         <PaymentStatusDisplay
           paymentResultId={state.resultId}
           showDetails

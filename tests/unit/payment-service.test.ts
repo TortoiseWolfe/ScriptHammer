@@ -170,6 +170,9 @@ describe('Payment Service', () => {
         customer_email: 'test@example.com',
         description: null,
         metadata: null,
+        idempotency_key: null,
+        retry_count: 0,
+        parent_intent_id: null,
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
       };
@@ -188,6 +191,9 @@ describe('Payment Service', () => {
         customer_email: 'test@example.com',
         description: null,
         metadata: null,
+        idempotency_key: null,
+        retry_count: 0,
+        parent_intent_id: null,
         created_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
         expires_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
       };

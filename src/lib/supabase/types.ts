@@ -48,8 +48,11 @@ export type Database = {
           description: string | null;
           expires_at: string;
           id: string;
+          idempotency_key: string | null;
           interval: string | null;
           metadata: Json | null;
+          parent_intent_id: string | null;
+          retry_count: number;
           template_user_id: string;
           type: string;
         };
@@ -61,8 +64,11 @@ export type Database = {
           description?: string | null;
           expires_at?: string;
           id?: string;
+          idempotency_key?: string | null;
           interval?: string | null;
           metadata?: Json | null;
+          parent_intent_id?: string | null;
+          retry_count?: number;
           template_user_id: string;
           type: string;
         };
@@ -74,12 +80,23 @@ export type Database = {
           description?: string | null;
           expires_at?: string;
           id?: string;
+          idempotency_key?: string | null;
           interval?: string | null;
           metadata?: Json | null;
+          parent_intent_id?: string | null;
+          retry_count?: number;
           template_user_id?: string;
           type?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'payment_intents_parent_intent_id_fkey';
+            columns: ['parent_intent_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_intents';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       payment_provider_config: {
         Row: {
