@@ -118,6 +118,13 @@ export async function createPaymentIntent(
     interval?: PaymentInterval;
     description?: string;
     metadata?: Record<string, unknown>;
+    /**
+     * Link to the original payment intent when this intent is created as
+     * part of a recovery flow (provider switch after a decline). Preserves
+     * the audit chain across providers without changing the offline-queue
+     * path. Optional; omitted for normal first-attempt payments.
+     */
+    parent_intent_id?: string;
   }
 ): Promise<PaymentIntent> {
   // Require authentication (REQ-SEC-001)
@@ -179,6 +186,9 @@ export async function createPaymentIntent(
         description: intentData.description || null,
         metadata: (intentData.metadata || {}) as Json,
         template_user_id: userId, // REQ-SEC-001: Use authenticated user ID
+        ...(options?.parent_intent_id && {
+          parent_intent_id: options.parent_intent_id,
+        }),
       })
       .select()
       .single();
@@ -418,6 +428,63 @@ export async function getPaymentIntent(
 
   if (error) throw error;
   return data as PaymentIntent | null;
+}
+
+/**
+ * Recovery-flow accessor: returns the fields needed to seed a new
+ * `<PaymentButton>` from a previously-failed parent intent. Throws if
+ * the parent is missing, has reached the retry cap, or has expired —
+ * mirroring `retryFailedPayment`'s server-side guards so the recovery
+ * panel can fail fast before it mounts.
+ *
+ * RLS still enforces ownership; this is a UX-shaped wrapper, not a
+ * security boundary.
+ */
+export interface ParentIntentForRetry {
+  amount: number;
+  currency: Currency;
+  type: PaymentType;
+  interval: PaymentInterval | null;
+  customer_email: string;
+  description: string | null;
+  retry_count: number;
+}
+
+export async function getParentIntentForRetry(
+  intentId: string
+): Promise<ParentIntentForRetry> {
+  await getAuthenticatedUserId();
+
+  const { data: parent, error } = await supabase
+    .from('payment_intents')
+    .select(
+      'amount, currency, type, interval, customer_email, description, retry_count, expires_at'
+    )
+    .eq('id', intentId)
+    .single();
+
+  if (error) throw error;
+  if (!parent) {
+    throw new Error('Cannot recover — original payment intent not found.');
+  }
+
+  if (parent.retry_count >= RETRY_LIMIT) {
+    throw new PaymentRetryLimitError(parent.retry_count, RETRY_LIMIT);
+  }
+
+  if (new Date(parent.expires_at).getTime() < Date.now()) {
+    throw new PaymentRetryExpiredError();
+  }
+
+  return {
+    amount: parent.amount,
+    currency: parent.currency as Currency,
+    type: parent.type as PaymentType,
+    interval: parent.interval as PaymentInterval | null,
+    customer_email: parent.customer_email,
+    description: parent.description,
+    retry_count: parent.retry_count,
+  };
 }
 
 /**

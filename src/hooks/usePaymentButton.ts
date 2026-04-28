@@ -20,6 +20,13 @@ export interface UsePaymentButtonOptions {
   customerEmail: string;
   description?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Link to a previous failed intent when this payment is part of a
+   * recovery flow (provider switch). Plumbed through to
+   * `createPaymentIntent` so the audit chain via `parent_intent_id` is
+   * preserved across providers.
+   */
+  parentIntentId?: string;
   onSuccess?: (paymentIntentId: string) => void;
   onError?: (error: Error) => void;
 }
@@ -123,6 +130,7 @@ export function usePaymentButton(
         {
           description: options.description,
           metadata: options.metadata,
+          parent_intent_id: options.parentIntentId,
         }
       );
 

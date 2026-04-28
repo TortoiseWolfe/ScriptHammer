@@ -13,8 +13,16 @@
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import { createLogger } from '@/lib/logger';
 import type { PaymentErrorCategory } from './error-categorization';
+import type { PaymentProvider } from '@/types/payment';
 
 const logger = createLogger('lib:payments:audit');
+
+/**
+ * How the retry attempt was initiated.
+ * - `same_provider` — the user clicked the retry button (same provider, same key)
+ * - `switch_provider` — the user picked a different provider in SwitchProviderPanel
+ */
+export type RetryRecoveryMethod = 'same_provider' | 'switch_provider';
 
 export interface PaymentRetryAuditParams {
   userId: string;
@@ -25,6 +33,10 @@ export interface PaymentRetryAuditParams {
   /** true when the upsert hit ON CONFLICT (server-side dedupe) */
   deduped: boolean;
   errorCategory?: PaymentErrorCategory;
+  /** How the retry was initiated. Defaults to 'same_provider'. */
+  recoveryMethod?: RetryRecoveryMethod;
+  /** Provider the user picked when recoveryMethod === 'switch_provider'. */
+  selectedProvider?: PaymentProvider;
 }
 
 /**
@@ -48,8 +60,12 @@ export async function logPaymentRetryEvent(
         new_intent_id: params.newIntentId,
         retry_count: params.retryCount,
         deduped: params.deduped,
+        recovery_method: params.recoveryMethod ?? 'same_provider',
         ...(params.errorCategory !== undefined && {
           error_category: params.errorCategory,
+        }),
+        ...(params.selectedProvider !== undefined && {
+          selected_provider: params.selectedProvider,
         }),
       },
       // A deduped retry is not a "new" success — flag it so analytics can

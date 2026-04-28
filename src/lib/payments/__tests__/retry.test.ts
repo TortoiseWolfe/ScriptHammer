@@ -228,3 +228,59 @@ describe('retryFailedPayment — audit log (NFR-007)', () => {
     expect(event.retryCount).toBe(2);
   });
 });
+
+describe('getParentIntentForRetry — recovery-flow accessor', () => {
+  it('returns fields needed to seed PaymentButton from a recoverable parent', async () => {
+    const { getParentIntentForRetry } = await import('../payment-service');
+    parentIntent = makeParent({
+      amount: 4200,
+      currency: 'eur',
+      type: 'recurring',
+      interval: 'month',
+      customer_email: 'eu@example.com',
+      description: 'Premium plan',
+      retry_count: 1,
+    });
+    const result = await getParentIntentForRetry('parent-1');
+    expect(result).toEqual({
+      amount: 4200,
+      currency: 'eur',
+      type: 'recurring',
+      interval: 'month',
+      customer_email: 'eu@example.com',
+      description: 'Premium plan',
+      retry_count: 1,
+    });
+  });
+
+  it('throws PaymentRetryLimitError when parent is at the cap', async () => {
+    const { getParentIntentForRetry } = await import('../payment-service');
+    parentIntent = makeParent({ retry_count: RETRY_LIMIT });
+    await expect(getParentIntentForRetry('parent-1')).rejects.toBeInstanceOf(
+      PaymentRetryLimitError
+    );
+  });
+
+  it('throws PaymentRetryExpiredError when parent has lapsed', async () => {
+    const { getParentIntentForRetry, PaymentRetryExpiredError } = await import(
+      '../payment-service'
+    );
+    parentIntent = makeParent({
+      expires_at: new Date(Date.now() - 1000).toISOString(),
+    });
+    await expect(getParentIntentForRetry('parent-1')).rejects.toBeInstanceOf(
+      PaymentRetryExpiredError
+    );
+  });
+
+  it('does not throw on cooling — recovery panel shouldnt be blocked by client-side cooling', async () => {
+    // The cooling guard belongs to the same-provider retry path; switching
+    // providers does not reuse the parent's idempotency_key, so cooling
+    // does not protect against anything here.
+    const { getParentIntentForRetry } = await import('../payment-service');
+    parentIntent = makeParent({
+      created_at: new Date(Date.now() - 1000).toISOString(),
+    });
+    await expect(getParentIntentForRetry('parent-1')).resolves.toBeDefined();
+  });
+});
