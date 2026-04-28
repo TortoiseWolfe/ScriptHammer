@@ -37,6 +37,25 @@ vi.mock('@/hooks/usePaymentRealtime', () => ({
 vi.mock('@/lib/payments/payment-service', () => ({
   formatPaymentAmount: vi.fn(() => '$20.00'),
   retryFailedPayment: vi.fn(() => Promise.resolve({ id: 'new-intent-123' })),
+  RETRY_LIMIT: 3,
+  COOLING_PERIOD_MS: 30_000,
+  PaymentRetryLimitError: class extends Error {},
+  PaymentRetryCoolingError: class extends Error {
+    waitMs = 0;
+  },
+  PaymentRetryExpiredError: class extends Error {},
+}));
+
+// Mock retry-status hook so accessibility scenarios stay deterministic.
+vi.mock('@/hooks/usePaymentRetryStatus', () => ({
+  usePaymentRetryStatus: vi.fn(() => ({
+    loading: false,
+    retryCount: 0,
+    maxRetries: 3,
+    canRetry: true,
+    disabledReason: null,
+    coolingMsRemaining: 0,
+  })),
 }));
 
 describe('PaymentStatusDisplay Accessibility', () => {

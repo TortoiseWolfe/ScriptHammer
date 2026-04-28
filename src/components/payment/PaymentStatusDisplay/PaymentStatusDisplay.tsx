@@ -7,10 +7,15 @@
 
 import React from 'react';
 import { usePaymentRealtime } from '@/hooks/usePaymentRealtime';
+import { usePaymentRetryStatus } from '@/hooks/usePaymentRetryStatus';
 import {
   retryFailedPayment,
   formatPaymentAmount,
+  PaymentRetryLimitError,
+  PaymentRetryCoolingError,
+  PaymentRetryExpiredError,
 } from '@/lib/payments/payment-service';
+import { categorizePaymentError } from '@/lib/payments/error-categorization';
 import type { Currency } from '@/types/payment';
 
 export interface PaymentStatusDisplayProps {
@@ -45,11 +50,16 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
   className = '',
 }) => {
   const { paymentResult, loading, error } = usePaymentRealtime(paymentResultId);
+  const retryStatus = usePaymentRetryStatus(paymentResult?.intent_id ?? null);
   const [isRetrying, setIsRetrying] = React.useState(false);
+  // Surfaces user-facing errors thrown by retryFailedPayment (limit, cooling,
+  // expired). Cleared on the next click attempt.
+  const [retryError, setRetryError] = React.useState<string | null>(null);
 
   const handleRetry = async () => {
     if (!paymentResult?.intent_id) return;
 
+    setRetryError(null);
     setIsRetrying(true);
 
     try {
@@ -59,10 +69,20 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
         onRetrySuccess(newIntent.id);
       }
     } catch (err) {
-      const errorObj = err instanceof Error ? err : new Error('Retry failed');
-
-      if (onRetryError) {
-        onRetryError(errorObj);
+      // Map known retry-flow errors to actionable user messages. Anything
+      // else falls back to the existing onRetryError callback so callers
+      // can surface their own toast/alert.
+      if (
+        err instanceof PaymentRetryLimitError ||
+        err instanceof PaymentRetryCoolingError ||
+        err instanceof PaymentRetryExpiredError
+      ) {
+        setRetryError(err.message);
+      } else {
+        const errorObj = err instanceof Error ? err : new Error('Retry failed');
+        if (onRetryError) {
+          onRetryError(errorObj);
+        }
       }
     } finally {
       setIsRetrying(false);
@@ -300,44 +320,120 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
           </div>
         )}
 
-        {/* Retry Button for Failed Payments */}
-        {paymentResult.status === 'failed' && (
-          <div className="card-actions mt-4 justify-end">
-            <button
-              type="button"
-              className="btn btn-primary min-h-11"
-              onClick={handleRetry}
-              disabled={isRetrying}
-              aria-label="Retry failed payment"
-            >
-              {isRetrying ? (
-                <>
-                  <span className="loading loading-spinner"></span>
-                  Retrying...
-                </>
-              ) : (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
+        {/* Failed state — categorized error + retry surface */}
+        {paymentResult.status === 'failed' &&
+          (() => {
+            const categorized = categorizePaymentError(
+              paymentResult.error_code,
+              paymentResult.error_message
+            );
+            const coolingSeconds = Math.ceil(
+              retryStatus.coolingMsRemaining / 1000
+            );
+
+            return (
+              <>
+                {/* FR-001 + FR-003: user-facing message + resolution hint */}
+                <div
+                  className="alert alert-warning mt-4"
+                  role="alert"
+                  aria-live="polite"
+                >
+                  <div className="flex flex-col gap-1">
+                    <p className="font-semibold">{categorized.userMessage}</p>
+                    <p className="text-sm">{categorized.resolutionHint}</p>
+                    {paymentResult.transaction_id && (
+                      <p className="text-xs opacity-70">
+                        Reference:{' '}
+                        <code className="bg-base-200 rounded px-1">
+                          {paymentResult.transaction_id}
+                        </code>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Retry-flow error from a click that hit limit/cooling/expired */}
+                {retryError && (
+                  <div
+                    className="alert alert-error mt-4"
+                    role="alert"
+                    aria-live="assertive"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Retry Payment
-                </>
-              )}
-            </button>
-          </div>
-        )}
+                    {retryError}
+                  </div>
+                )}
+
+                {/* FR-006: only show retry for recoverable categories.
+                    Non-recoverable failures route to support contact (FR-019 lite). */}
+                {categorized.recoverable ? (
+                  <div className="card-actions mt-4 items-center justify-between">
+                    {/* FR-008: attempt counter */}
+                    <p
+                      className="text-sm opacity-70"
+                      aria-label={`Attempt ${retryStatus.retryCount + 1} of ${retryStatus.maxRetries}`}
+                    >
+                      Attempt {retryStatus.retryCount + 1} of{' '}
+                      {retryStatus.maxRetries}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-primary min-h-11"
+                      onClick={handleRetry}
+                      disabled={isRetrying || !retryStatus.canRetry}
+                      aria-label={
+                        retryStatus.disabledReason === 'cooling'
+                          ? `Retry available in ${coolingSeconds} seconds`
+                          : retryStatus.disabledReason === 'limit'
+                            ? 'Retry limit reached'
+                            : retryStatus.disabledReason === 'expired'
+                              ? 'Payment session expired'
+                              : 'Retry failed payment'
+                      }
+                    >
+                      {isRetrying ? (
+                        <>
+                          <span className="loading loading-spinner"></span>
+                          Retrying...
+                        </>
+                      ) : retryStatus.disabledReason === 'cooling' ? (
+                        <>Try again in {coolingSeconds}s</>
+                      ) : (
+                        <>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          Retry Payment
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="card-actions mt-4 justify-end">
+                    <a
+                      href="/contact"
+                      className="btn btn-outline min-h-11"
+                      aria-label="Contact support about this payment"
+                    >
+                      Contact Support
+                    </a>
+                  </div>
+                )}
+              </>
+            );
+          })()}
       </div>
     </div>
   );

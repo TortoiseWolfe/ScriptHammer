@@ -73,12 +73,29 @@ test.describe('Failed Payment Retry Logic', () => {
     ).toBeVisible();
   });
 
-  test.skip('should display error message for network failure', async ({
+  test('should display offline error banner when offline', async ({
     page,
     context,
   }) => {
-    // Skip: Offline error display not yet implemented
-    test.skip(true, 'Offline error handling not yet implemented');
+    // Force offline before navigating so the banner picks it up on mount.
+    await context.setOffline(true);
+    try {
+      await page.goto(
+        '/payment-result?id=00000000-0000-0000-0000-000000000000'
+      );
+      await dismissCookieBanner(page);
+
+      // Banner has role="status" and the offline copy is the same one
+      // exercised by the unit test.
+      await expect(page.getByText(/you.?re offline/i)).toBeVisible({
+        timeout: 10_000,
+      });
+      await expect(
+        page.getByText(/we.?ll process your payment/i)
+      ).toBeVisible();
+    } finally {
+      await context.setOffline(false);
+    }
   });
 
   test.skip('should handle subscription payment retry with exponential backoff', async ({

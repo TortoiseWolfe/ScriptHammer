@@ -14,6 +14,17 @@ const mockRetryFailedPayment = vi.fn();
 
 vi.mock('@/hooks/usePaymentRealtime');
 
+vi.mock('@/hooks/usePaymentRetryStatus', () => ({
+  usePaymentRetryStatus: vi.fn(() => ({
+    loading: false,
+    retryCount: 0,
+    maxRetries: 3,
+    canRetry: true,
+    disabledReason: null,
+    coolingMsRemaining: 0,
+  })),
+}));
+
 vi.mock('@/lib/payments/payment-service', () => ({
   retryFailedPayment: (...args: unknown[]) => mockRetryFailedPayment(...args),
   formatPaymentAmount: vi.fn((amount: number, currency: string) => {
@@ -25,6 +36,29 @@ vi.mock('@/lib/payments/payment-service', () => ({
     };
     return `${symbols[currency] || '$'}${formatted}`;
   }),
+  // The hook reads these constants at module load. Keep in sync with
+  // src/lib/payments/payment-service.ts.
+  RETRY_LIMIT: 3,
+  COOLING_PERIOD_MS: 30_000,
+  PaymentRetryLimitError: class PaymentRetryLimitError extends Error {
+    constructor() {
+      super('Limit reached');
+      this.name = 'PaymentRetryLimitError';
+    }
+  },
+  PaymentRetryCoolingError: class PaymentRetryCoolingError extends Error {
+    waitMs = 0;
+    constructor() {
+      super('Cooling');
+      this.name = 'PaymentRetryCoolingError';
+    }
+  },
+  PaymentRetryExpiredError: class PaymentRetryExpiredError extends Error {
+    constructor() {
+      super('Expired');
+      this.name = 'PaymentRetryExpiredError';
+    }
+  },
 }));
 
 const createMockResult = (status: PaymentResult['status']): PaymentResult => ({
@@ -290,5 +324,101 @@ describe('PaymentStatusDisplay', () => {
     expect(
       screen.queryByRole('button', { name: /retry/i })
     ).not.toBeInTheDocument();
+  });
+
+  describe('B1 — categorized error UI (#43)', () => {
+    it('renders the categorized userMessage instead of raw provider text (NFR-001)', () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      failed.error_message = 'PG ERROR 23505 some/internal/path';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(screen.getByText(/your card was declined/i)).toBeInTheDocument();
+      expect(screen.queryByText(/PG ERROR 23505/)).not.toBeInTheDocument();
+    });
+
+    it('shows transaction reference for support inquiries (FR-004)', () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      failed.transaction_id = 'pi_abc_xyz_42';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      // Reference shows in both the details panel and the new error block;
+      // any rendering of it satisfies FR-004.
+      expect(screen.getAllByText(/pi_abc_xyz_42/).length).toBeGreaterThan(0);
+    });
+
+    it('hides retry and shows support link for non-recoverable errors (FR-019 lite)', () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'expired_card'; // not recoverable
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(
+        screen.queryByRole('button', { name: /retry/i })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: /contact support/i })
+      ).toBeInTheDocument();
+    });
+
+    it('renders the attempt counter "Attempt N of M" (FR-008)', async () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 1,
+        maxRetries: 3,
+        canRetry: true,
+        disabledReason: null,
+        coolingMsRemaining: 0,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(screen.getByText(/Attempt 2 of 3/)).toBeInTheDocument();
+    });
+
+    it('disables button + shows countdown while cooling (FR-010)', async () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 0,
+        maxRetries: 3,
+        canRetry: false,
+        disabledReason: 'cooling',
+        coolingMsRemaining: 23_400,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      const btn = screen.getByRole('button', { name: /retry available in/i });
+      expect(btn).toBeDisabled();
+      expect(btn).toHaveTextContent(/Try again in 24s/);
+    });
   });
 });
