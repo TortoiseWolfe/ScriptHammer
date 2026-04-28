@@ -73,14 +73,18 @@ test.describe('Failed Payment Retry Logic', () => {
     ).toBeVisible();
   });
 
-  test('should display offline error banner when offline', async ({
-    page,
-    context,
-  }) => {
+  test('should display offline error banner when offline', async ({ page }) => {
     // Navigate ONLINE first — the static-export build can't be loaded
     // without network in CI (no SW cache warmed for this URL). After the
-    // page is up, flip offline; useOfflineStatus listens for the browser
-    // 'offline' event and the banner re-renders.
+    // page is up, synthesize the 'offline' browser event; useOfflineStatus
+    // listens for it and the banner re-renders.
+    //
+    // Why dispatch instead of context.setOffline(true)? Playwright's
+    // setOffline blocks request traffic but does NOT fire the 'offline'
+    // event in Firefox/WebKit (Chromium does). Real browsers DO fire it
+    // on real network drops — which is exactly what the hook listens for —
+    // so synthesizing the event here mimics production behavior and works
+    // cross-browser.
     await page.goto('/payment-result?id=00000000-0000-0000-0000-000000000000');
     await dismissCookieBanner(page);
     await waitForAuthenticatedState(page);
@@ -94,11 +98,19 @@ test.describe('Failed Payment Retry Logic', () => {
       .first()
       .waitFor({ state: 'visible', timeout: 15_000 });
 
-    await context.setOffline(true);
+    // Override navigator.onLine + dispatch the offline event. The hook
+    // reads navigator.onLine on its update path, so both must flip.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'onLine', {
+        configurable: true,
+        get: () => false,
+      });
+      window.dispatchEvent(new Event('offline'));
+    });
+
     try {
       // Banner has role="status" and the offline copy is the same one
-      // exercised by the unit test. Polls because useOfflineStatus + the
-      // banner's poll interval need a moment to converge after the flip.
+      // exercised by the unit test.
       await expect(page.getByText(/you.?re offline/i)).toBeVisible({
         timeout: 15_000,
       });
@@ -106,7 +118,14 @@ test.describe('Failed Payment Retry Logic', () => {
         page.getByText(/we.?ll process your payment/i)
       ).toBeVisible();
     } finally {
-      await context.setOffline(false);
+      // Restore so subsequent tests don't see a stuck offline state.
+      await page.evaluate(() => {
+        Object.defineProperty(navigator, 'onLine', {
+          configurable: true,
+          get: () => true,
+        });
+        window.dispatchEvent(new Event('online'));
+      });
     }
   });
 
