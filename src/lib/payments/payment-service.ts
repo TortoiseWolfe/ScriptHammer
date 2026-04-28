@@ -17,6 +17,66 @@ import type {
 } from '@/types/payment';
 import { validatePaymentAmount, validateCurrency } from '@/config/payment';
 import { validateAndSanitizeMetadata } from './metadata-validator';
+import { logPaymentRetryEvent } from './audit';
+
+/**
+ * Maximum retry attempts per payment chain (FR-009).
+ * The CHECK is on the *parent's* `retry_count` — when retry_count of the
+ * intent the user is retrying reaches this value, no further retry is
+ * allowed. The first retry produces a child with retry_count=1; the second,
+ * 2; the third, 3. The fourth click trips the cap.
+ */
+export const RETRY_LIMIT = 3;
+
+/**
+ * Cooling period between retries (FR-010). Measured from the parent
+ * intent's `created_at`. Picked to be long enough to prevent trivial
+ * mistype-and-spam loops, short enough not to feel punitive.
+ */
+export const COOLING_PERIOD_MS = 30_000;
+
+/**
+ * Thrown by `retryFailedPayment` when the parent intent has already been
+ * retried `RETRY_LIMIT` times. UI should hide the retry button and surface
+ * the support contact path.
+ */
+export class PaymentRetryLimitError extends Error {
+  readonly attempts: number;
+  readonly limit: number;
+  constructor(attempts: number, limit: number) {
+    super(`This payment has reached the maximum of ${limit} retry attempts.`);
+    this.name = 'PaymentRetryLimitError';
+    this.attempts = attempts;
+    this.limit = limit;
+  }
+}
+
+/**
+ * Thrown by `retryFailedPayment` when the parent intent was created less
+ * than `COOLING_PERIOD_MS` ago. Carries the remaining wait so the UI can
+ * render a countdown (FR-010).
+ */
+export class PaymentRetryCoolingError extends Error {
+  readonly waitMs: number;
+  constructor(waitMs: number) {
+    super(`Please wait ${Math.ceil(waitMs / 1000)}s before retrying.`);
+    this.name = 'PaymentRetryCoolingError';
+    this.waitMs = waitMs;
+  }
+}
+
+/**
+ * Thrown by `retryFailedPayment` when the parent intent has passed its
+ * 24-hour expiry. The provider's session is gone; a same-key retry would
+ * succeed at the DB but fail at the provider redirect. Better to refuse
+ * here with a clear message than to surface a confusing failure later.
+ */
+export class PaymentRetryExpiredError extends Error {
+  constructor() {
+    super('This payment session has expired. Please start a new payment.');
+    this.name = 'PaymentRetryExpiredError';
+  }
+}
 
 /**
  * Get authenticated user ID
@@ -231,38 +291,112 @@ export async function getPaymentHistory(
 }
 
 /**
- * Retry a failed payment
- * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
+ * Retry a failed payment (#43, B1).
+ *
+ * Creates a new INSERT-only payment_intent row that:
+ *   - reuses the parent's `idempotency_key` so the partial unique index
+ *     turns a server-side race (double-click, two tabs) into a no-op
+ *     instead of a duplicate charge — same pattern as the offline-queue
+ *     adapter (`src/lib/offline-queue/payment-adapter.ts:165-195`)
+ *   - links to the parent via `parent_intent_id`
+ *   - bumps `retry_count` so the cap (FR-009) is enforced on the next click
+ *
+ * Refuses to proceed when:
+ *   - parent.retry_count >= RETRY_LIMIT (FR-009) → PaymentRetryLimitError
+ *   - parent created within COOLING_PERIOD_MS (FR-010) → PaymentRetryCoolingError
+ *   - parent has passed its 24h expiry → PaymentRetryExpiredError
+ *
+ * Audit-logs every attempt to `auth_audit_logs` as `payment_retry` (NFR-007).
+ *
+ * REQ-SEC-001: requires authentication; RLS's "Users can create own payment
+ * intents" policy ensures `template_user_id = auth.uid()`. The "Payment
+ * intents are immutable" UPDATE policy means we never mutate the parent —
+ * `retry_count` is only ever set on the new (child) row at INSERT time.
  */
 export async function retryFailedPayment(
   intentId: string
 ): Promise<PaymentIntent> {
-  // Require authentication (REQ-SEC-001)
-  await getAuthenticatedUserId();
+  const userId = await getAuthenticatedUserId();
 
-  // Get original intent (RLS ensures user owns it)
-  const { data: originalIntent, error: fetchError } = await supabase
+  const { data: parent, error: fetchError } = await supabase
     .from('payment_intents')
     .select('*')
     .eq('id', intentId)
     .single();
 
   if (fetchError) throw fetchError;
+  if (!parent) {
+    throw new Error('Cannot retry — original payment intent not found.');
+  }
 
-  // Create new intent with same data
-  // createPaymentIntent will use the authenticated user's ID
-  return await createPaymentIntent(
-    originalIntent.amount,
-    originalIntent.currency as Currency,
-    originalIntent.type as PaymentType,
-    originalIntent.customer_email,
-    {
-      interval: originalIntent.interval as PaymentInterval | undefined,
-      description: originalIntent.description || undefined,
-      metadata:
-        (originalIntent.metadata as Record<string, unknown>) || undefined,
-    }
-  );
+  // FR-009: cap retry attempts on this chain.
+  if (parent.retry_count >= RETRY_LIMIT) {
+    throw new PaymentRetryLimitError(parent.retry_count, RETRY_LIMIT);
+  }
+
+  // Expiry guard: a same-key retry against a stale provider session is
+  // worse UX than refusing here.
+  const now = Date.now();
+  if (new Date(parent.expires_at).getTime() < now) {
+    throw new PaymentRetryExpiredError();
+  }
+
+  // FR-010: cooling period since the parent was created.
+  const elapsedMs = now - new Date(parent.created_at).getTime();
+  if (elapsedMs < COOLING_PERIOD_MS) {
+    throw new PaymentRetryCoolingError(COOLING_PERIOD_MS - elapsedMs);
+  }
+
+  // Reuse parent's idempotency_key if present; if absent (legacy intents
+  // pre-PR #59), generate a fresh one so this retry chain still dedupes
+  // with itself. Same fallback pattern as payment-adapter.ts:155-163.
+  const idempotencyKey = parent.idempotency_key ?? crypto.randomUUID();
+  const newRetryCount = parent.retry_count + 1;
+
+  // Upsert with ignoreDuplicates: a doubled click on the retry button (same
+  // idempotency_key reaching the server twice) returns a null row from the
+  // ON CONFLICT path instead of a 23505. We surface that as "the retry is
+  // a no-op, the original is still authoritative" by returning the parent.
+  const { data: child, error: insertError } = await supabase
+    .from('payment_intents')
+    .upsert(
+      {
+        amount: parent.amount,
+        currency: parent.currency,
+        type: parent.type,
+        interval: parent.interval,
+        customer_email: parent.customer_email,
+        description: parent.description,
+        metadata: parent.metadata,
+        template_user_id: userId, // RLS WITH CHECK enforces this anyway
+        idempotency_key: idempotencyKey,
+        parent_intent_id: parent.id,
+        retry_count: newRetryCount,
+      },
+      { onConflict: 'idempotency_key', ignoreDuplicates: true }
+    )
+    .select()
+    .maybeSingle();
+
+  if (insertError) throw insertError;
+
+  const deduped = !child;
+
+  // NFR-007: audit. Non-throwing — never break the user flow over an
+  // audit-log write failure.
+  await logPaymentRetryEvent({
+    userId,
+    originalIntentId: parent.id,
+    newIntentId: deduped ? null : (child as PaymentIntent).id,
+    retryCount: newRetryCount,
+    deduped,
+  });
+
+  // ON CONFLICT fired — the prior attempt's row is the truth.
+  if (deduped) {
+    return parent as PaymentIntent;
+  }
+  return child as PaymentIntent;
 }
 
 /**
