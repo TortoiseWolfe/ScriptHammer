@@ -16,6 +16,7 @@ import {
   PaymentRetryExpiredError,
 } from '@/lib/payments/payment-service';
 import { categorizePaymentError } from '@/lib/payments/error-categorization';
+import { SwitchProviderPanel } from '@/components/payment/SwitchProviderPanel';
 import type { Currency } from '@/types/payment';
 
 export interface PaymentStatusDisplayProps {
@@ -55,6 +56,9 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
   // Surfaces user-facing errors thrown by retryFailedPayment (limit, cooling,
   // expired). Cleared on the next click attempt.
   const [retryError, setRetryError] = React.useState<string | null>(null);
+  // US3: SwitchProviderPanel toggle. Closed by default; opened when the user
+  // clicks "Use a different payment method".
+  const [showSwitchPanel, setShowSwitchPanel] = React.useState(false);
 
   const handleRetry = async () => {
     if (!paymentResult?.intent_id) return;
@@ -364,62 +368,121 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                   </div>
                 )}
 
-                {/* FR-006: only show retry for recoverable categories.
-                    Non-recoverable failures route to support contact (FR-019 lite). */}
+                {/* FR-006: only show retry + switch for recoverable categories.
+                    Non-recoverable failures route to support contact (FR-019 lite).
+                    US4 progressive disclosure: at retry_count >= 2, the recovery
+                    list is expanded by default; otherwise collapsed. */}
                 {categorized.recoverable ? (
-                  <div className="card-actions mt-4 items-center justify-between">
-                    {/* FR-008: attempt counter */}
-                    <p
-                      className="text-sm opacity-70"
-                      aria-label={`Attempt ${retryStatus.retryCount + 1} of ${retryStatus.maxRetries}`}
-                    >
-                      Attempt {retryStatus.retryCount + 1} of{' '}
-                      {retryStatus.maxRetries}
-                    </p>
-                    <button
-                      type="button"
-                      className="btn btn-primary min-h-11"
-                      onClick={handleRetry}
-                      disabled={isRetrying || !retryStatus.canRetry}
-                      aria-label={
-                        retryStatus.disabledReason === 'cooling'
-                          ? `Retry available in ${coolingSeconds} seconds`
-                          : retryStatus.disabledReason === 'limit'
-                            ? 'Retry limit reached'
-                            : retryStatus.disabledReason === 'expired'
-                              ? 'Payment session expired'
-                              : 'Retry failed payment'
-                      }
-                    >
-                      {isRetrying ? (
-                        <>
-                          <span className="loading loading-spinner"></span>
-                          Retrying...
-                        </>
-                      ) : retryStatus.disabledReason === 'cooling' ? (
-                        <>Try again in {coolingSeconds}s</>
-                      ) : (
-                        <>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
+                  <>
+                    <div className="card-actions mt-4 flex-wrap items-center justify-between gap-2">
+                      {/* FR-008: attempt counter */}
+                      <p
+                        className="text-sm opacity-70"
+                        aria-label={`Attempt ${retryStatus.retryCount + 1} of ${retryStatus.maxRetries}`}
+                      >
+                        Attempt {retryStatus.retryCount + 1} of{' '}
+                        {retryStatus.maxRetries}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="btn btn-primary min-h-11"
+                          onClick={handleRetry}
+                          disabled={isRetrying || !retryStatus.canRetry}
+                          aria-label={
+                            retryStatus.disabledReason === 'cooling'
+                              ? `Retry available in ${coolingSeconds} seconds`
+                              : retryStatus.disabledReason === 'limit'
+                                ? 'Retry limit reached'
+                                : retryStatus.disabledReason === 'expired'
+                                  ? 'Payment session expired'
+                                  : 'Retry failed payment'
+                          }
+                        >
+                          {isRetrying ? (
+                            <>
+                              <span className="loading loading-spinner"></span>
+                              Retrying...
+                            </>
+                          ) : retryStatus.disabledReason === 'cooling' ? (
+                            <>Try again in {coolingSeconds}s</>
+                          ) : (
+                            <>Retry Payment</>
+                          )}
+                        </button>
+                        {/* US3 (FR-018): always-visible switch-provider option for
+                            recoverable failures. The button itself is small; the panel
+                            mounts inline below when toggled. */}
+                        <button
+                          type="button"
+                          className="btn btn-outline min-h-11"
+                          onClick={() => setShowSwitchPanel((s) => !s)}
+                          aria-expanded={showSwitchPanel}
+                          aria-controls="switch-provider-panel"
+                        >
+                          {showSwitchPanel
+                            ? 'Cancel'
+                            : 'Use a different payment method'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* US3: SwitchProviderPanel — inline expand below the action row */}
+                    {showSwitchPanel && paymentResult.intent_id && (
+                      <div id="switch-provider-panel" className="mt-4">
+                        <SwitchProviderPanel
+                          parentIntentId={paymentResult.intent_id}
+                          onSwitchSuccess={(newIntentId) => {
+                            window.location.href = `/payment-result?id=${newIntentId}`;
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {/* US4 (FR-016/017/019): progressive recovery disclosure.
+                        - retry_count 0: nothing extra
+                        - retry_count 1: collapsed <details> hint
+                        - retry_count >= 2: expanded by default, retry de-emphasized
+                          when at the cap */}
+                    {retryStatus.retryCount >= 1 && (
+                      <details
+                        className="mt-4"
+                        open={retryStatus.retryCount >= 2}
+                      >
+                        <summary className="cursor-pointer text-sm font-semibold">
+                          Need more help?
+                        </summary>
+                        <ol className="mt-2 list-decimal space-y-1 pl-6 text-sm">
+                          <li
+                            className={
+                              retryStatus.disabledReason === 'limit'
+                                ? 'line-through opacity-50'
+                                : ''
+                            }
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                            />
-                          </svg>
-                          Retry Payment
-                        </>
-                      )}
-                    </button>
-                  </div>
+                            Try again — payment failures are sometimes
+                            temporary.
+                          </li>
+                          <li>
+                            Use a different payment method (Stripe, PayPal, Cash
+                            App, or Chime).
+                          </li>
+                          <li
+                            className={
+                              retryStatus.disabledReason === 'limit'
+                                ? 'font-semibold'
+                                : ''
+                            }
+                          >
+                            <a href="/contact" className="link">
+                              Contact support
+                            </a>{' '}
+                            with the transaction reference above.
+                          </li>
+                        </ol>
+                      </details>
+                    )}
+                  </>
                 ) : (
                   <div className="card-actions mt-4 justify-end">
                     <a
