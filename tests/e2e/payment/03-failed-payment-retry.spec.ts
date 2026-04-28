@@ -77,18 +77,30 @@ test.describe('Failed Payment Retry Logic', () => {
     page,
     context,
   }) => {
-    // Force offline before navigating so the banner picks it up on mount.
+    // Navigate ONLINE first — the static-export build can't be loaded
+    // without network in CI (no SW cache warmed for this URL). After the
+    // page is up, flip offline; useOfflineStatus listens for the browser
+    // 'offline' event and the banner re-renders.
+    await page.goto('/payment-result?id=00000000-0000-0000-0000-000000000000');
+    await dismissCookieBanner(page);
+    await waitForAuthenticatedState(page);
+
+    // Wait for the loaded/not-found render to settle so the banner is in
+    // the DOM tree (it mounts inside the loaded + not-found branches).
+    await page
+      .getByText(
+        /no payment session found|payment is still processing|payment result/i
+      )
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 });
+
     await context.setOffline(true);
     try {
-      await page.goto(
-        '/payment-result?id=00000000-0000-0000-0000-000000000000'
-      );
-      await dismissCookieBanner(page);
-
       // Banner has role="status" and the offline copy is the same one
-      // exercised by the unit test.
+      // exercised by the unit test. Polls because useOfflineStatus + the
+      // banner's poll interval need a moment to converge after the flip.
       await expect(page.getByText(/you.?re offline/i)).toBeVisible({
-        timeout: 10_000,
+        timeout: 15_000,
       });
       await expect(
         page.getByText(/we.?ll process your payment/i)
