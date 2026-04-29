@@ -122,6 +122,171 @@ describe('RealtimeService', () => {
 
       expect(mockChannel.unsubscribe).toHaveBeenCalled();
     });
+
+    describe('handshake catch-up SELECT (#57)', () => {
+      // Simulates Supabase's subscribe(callback) by capturing the status
+      // callback and letting the test fire 'SUBSCRIBED' manually so we can
+      // assert on what runs after the ack.
+      function captureSubscribeCallback() {
+        let captured: ((status: string) => Promise<void> | void) | null = null;
+        mockChannel.subscribe.mockImplementation(
+          (cb: (status: string) => Promise<void> | void) => {
+            captured = cb;
+            return mockChannel;
+          }
+        );
+        return () => captured!;
+      }
+
+      function mockMessagesSelect(rows: Message[], error: Error | null = null) {
+        const order = vi.fn(() => Promise.resolve({ data: rows, error }));
+        const gte = vi.fn(() => ({ order }));
+        const eq = vi.fn(() => ({ gte }));
+        const select = vi.fn(() => ({ eq }));
+        // Override the .from() mock for this test only. Cast to `any` to
+        // bypass the original no-arg signature on mockSupabase.from — the
+        // catch-up call passes 'messages' and we need to branch on it.
+        (mockSupabase as { from: unknown }).from = vi.fn((table: string) => {
+          if (table === 'messages') {
+            return { select } as never;
+          }
+          // Fall back to the default upsert/delete shape for typing_indicators etc.
+          return {
+            upsert: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+            delete: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                eq: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+              })),
+            })),
+          } as never;
+        });
+        return { select, eq, gte, order };
+      }
+
+      it('runs catch-up SELECT after first SUBSCRIBED and passes results to onSubscribed', async () => {
+        const onSubscribed = vi.fn();
+        const callback = vi.fn();
+        const getSubscribeCb = captureSubscribeCallback();
+
+        const retroactive: Message[] = [
+          {
+            id: 'missed-1',
+            conversation_id: conversationId,
+            sender_id: 'user-1',
+            encrypted_content: 'enc',
+            initialization_vector: 'iv',
+            sequence_number: 1,
+            deleted: false,
+            edited: false,
+            edited_at: null,
+            delivered_at: new Date().toISOString(),
+            read_at: null,
+            created_at: new Date().toISOString(),
+            key_version: 1,
+            is_system_message: false,
+            system_message_type: null,
+          },
+        ];
+        const { select, eq, gte } = mockMessagesSelect(retroactive);
+
+        service.subscribeToMessages(
+          conversationId,
+          callback,
+          undefined,
+          onSubscribed
+        );
+
+        // Fire the subscribed callback as Supabase would once the channel acks.
+        await getSubscribeCb()('SUBSCRIBED');
+
+        expect(select).toHaveBeenCalledWith('*');
+        expect(eq).toHaveBeenCalledWith('conversation_id', conversationId);
+        // gte called with `created_at` and an ISO timestamp
+        expect(gte).toHaveBeenCalledWith('created_at', expect.any(String));
+        expect(onSubscribed).toHaveBeenCalledWith(retroactive);
+      });
+
+      it('does not re-run catch-up on reconnect (only first SUBSCRIBED)', async () => {
+        const onSubscribed = vi.fn();
+        const onReconnect = vi.fn();
+        const callback = vi.fn();
+        const getSubscribeCb = captureSubscribeCallback();
+
+        const { select } = mockMessagesSelect([]);
+
+        service.subscribeToMessages(
+          conversationId,
+          callback,
+          onReconnect,
+          onSubscribed
+        );
+
+        // First SUBSCRIBED — catch-up runs
+        await getSubscribeCb()('SUBSCRIBED');
+        // Second SUBSCRIBED — reconnect path, NOT catch-up
+        await getSubscribeCb()('SUBSCRIBED');
+
+        // Catch-up SELECT only ran once
+        expect(select).toHaveBeenCalledTimes(1);
+        // onSubscribed only fired once; onReconnect fired the second time
+        expect(onSubscribed).toHaveBeenCalledTimes(1);
+        expect(onReconnect).toHaveBeenCalledTimes(1);
+      });
+
+      it('passes empty array to onSubscribed when catch-up errors (best-effort)', async () => {
+        const onSubscribed = vi.fn();
+        const callback = vi.fn();
+        const getSubscribeCb = captureSubscribeCallback();
+
+        mockMessagesSelect([], new Error('select failed'));
+
+        service.subscribeToMessages(
+          conversationId,
+          callback,
+          undefined,
+          onSubscribed
+        );
+
+        await getSubscribeCb()('SUBSCRIBED');
+
+        // onSubscribed still fires; with empty array on error so consumer can
+        // proceed (signal subscription readiness, mark E2E flag, etc.).
+        expect(onSubscribed).toHaveBeenCalledWith([]);
+      });
+
+      it('passes empty array when no messages match the catch-up window', async () => {
+        const onSubscribed = vi.fn();
+        const callback = vi.fn();
+        const getSubscribeCb = captureSubscribeCallback();
+
+        mockMessagesSelect([]);
+
+        service.subscribeToMessages(
+          conversationId,
+          callback,
+          undefined,
+          onSubscribed
+        );
+
+        await getSubscribeCb()('SUBSCRIBED');
+
+        expect(onSubscribed).toHaveBeenCalledWith([]);
+      });
+
+      it('does not call onSubscribed when not provided (back-compat)', async () => {
+        const callback = vi.fn();
+        const getSubscribeCb = captureSubscribeCallback();
+
+        const { select } = mockMessagesSelect([]);
+
+        // No onSubscribed callback — catch-up SELECT skipped (saves a query)
+        service.subscribeToMessages(conversationId, callback);
+
+        await getSubscribeCb()('SUBSCRIBED');
+
+        expect(select).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('subscribeToMessageUpdates', () => {

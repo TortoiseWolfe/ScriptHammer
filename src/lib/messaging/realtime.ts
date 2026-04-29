@@ -33,18 +33,36 @@ export class RealtimeService {
    * Listens for INSERT events on the messages table filtered by conversation_id.
    * Delivers new messages to the callback within <500ms (Supabase Realtime guarantee).
    *
+   * Handshake catch-up (#57): Supabase's `.subscribe()` callback fires with
+   * status='SUBSCRIBED' only after the server acks the channel. Between
+   * channel creation and ack there's a ~50-200ms window during which a
+   * postgres INSERT event can broadcast and be silently dropped — page2's
+   * handler isn't registered yet. To plug that gap we run a catch-up SELECT
+   * once the subscription is confirmed: any messages with
+   * `created_at >= channelCreatedAt` that the realtime stream might have
+   * missed are surfaced through `onSubscribed(retroactive)`. The caller is
+   * responsible for de-duplicating against any messages already loaded via
+   * the initial fetch (merge by id).
+   *
    * @param conversation_id - Conversation UUID to subscribe to
    * @param callback - Function called when new message arrives
+   * @param onReconnect - Optional callback when channel reconnects after disconnect
+   * @param onSubscribed - Optional callback fired once when the initial subscription
+   *   acks. Receives retroactive messages found by the catch-up SELECT.
    * @returns Unsubscribe function to clean up subscription
    */
   subscribeToMessages(
     conversation_id: string,
     callback: (message: Message) => void,
     onReconnect?: () => void,
-    onSubscribed?: () => void
+    onSubscribed?: (retroactive: Message[]) => void
   ): () => void {
     const supabase = createClient();
     const channelName = `messages:${conversation_id}`;
+    // ISO timestamp captured BEFORE channel creation. Any message INSERT'd
+    // at or after this moment is a candidate for catch-up — it could have
+    // broadcast during the subscribe handshake.
+    const channelCreatedAt = new Date().toISOString();
 
     // Remove existing channel if present
     if (this.channels.has(channelName)) {
@@ -69,18 +87,56 @@ export class RealtimeService {
           callback(payload.new as Message);
         }
       )
-      .subscribe((status) => {
+      .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           if (wasSubscribed && onReconnect) {
             logger.debug('Channel reconnected, triggering catch-up', {
               conversation_id,
             });
             onReconnect();
+            wasSubscribed = true;
+            return;
           }
-          if (!wasSubscribed && onSubscribed) {
-            onSubscribed();
+
+          if (!wasSubscribed) {
+            wasSubscribed = true;
+
+            if (onSubscribed) {
+              // Catch-up SELECT: pull any messages INSERT'd between
+              // channelCreatedAt and now that the realtime handshake might
+              // have raced. The caller (useConversationRealtime) merges
+              // these by id, so duplicates from the initial loadMessages()
+              // or from realtime events that DID arrive are harmless.
+              try {
+                const { data: missed, error } = await supabase
+                  .from('messages')
+                  .select('*')
+                  .eq('conversation_id', conversation_id)
+                  .gte('created_at', channelCreatedAt)
+                  .order('created_at', { ascending: true });
+
+                if (error) {
+                  logger.warn('Catch-up SELECT failed; skipping', {
+                    conversation_id,
+                    error: error.message,
+                  });
+                  onSubscribed([]);
+                  return;
+                }
+
+                onSubscribed((missed ?? []) as Message[]);
+              } catch (err) {
+                // Catch-up is best-effort. The polling fallback in
+                // useConversationRealtime will still fire if the message
+                // truly never arrives.
+                logger.warn('Catch-up SELECT threw; skipping', {
+                  conversation_id,
+                  err,
+                });
+                onSubscribed([]);
+              }
+            }
           }
-          wasSubscribed = true;
         }
       });
 

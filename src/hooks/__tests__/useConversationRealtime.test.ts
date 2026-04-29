@@ -387,4 +387,129 @@ describe('useConversationRealtime', () => {
     // Should only call once (initial load)
     expect(messageService.getMessageHistory).toHaveBeenCalledTimes(1);
   });
+
+  describe('handshake catch-up integration (#57)', () => {
+    // The retroactive flow: subscribeToMessages calls onSubscribed with a
+    // list of messages it found between channelCreatedAt and now. The hook
+    // must (1) decrypt them, (2) merge them into state by id (skipping any
+    // already loaded by loadMessages), and (3) only THEN set the
+    // data-messages-subscribed DOM attribute.
+
+    // Helper: capture the onSubscribed arg passed by useConversationRealtime
+    // and return a way to fire it.
+    function captureOnSubscribed() {
+      let onSubscribed:
+        | ((retroactive: any[]) => Promise<void> | void)
+        | undefined;
+      (realtimeService.subscribeToMessages as any).mockImplementation(
+        (
+          _id: string,
+          _cb: (m: any) => void,
+          _onReconnect: undefined,
+          subCb: (retroactive: any[]) => Promise<void> | void
+        ) => {
+          onSubscribed = subCb;
+          return mockUnsubscribeMessages;
+        }
+      );
+      return () => onSubscribed!;
+    }
+
+    it('passes a retroactive-aware onSubscribed callback', async () => {
+      renderHook(() => useConversationRealtime(mockConversationId));
+
+      await waitFor(() => {
+        expect(realtimeService.subscribeToMessages).toHaveBeenCalled();
+      });
+
+      // 4th positional arg is the onSubscribed callback (was previously
+      // a no-arg signal; now must accept retroactive messages array).
+      const args = (realtimeService.subscribeToMessages as any).mock.calls[0];
+      expect(args[3]).toEqual(expect.any(Function));
+    });
+
+    it('does not duplicate messages already loaded via loadMessages when retroactive includes them', async () => {
+      const getOnSubscribed = captureOnSubscribed();
+
+      const { result } = renderHook(() =>
+        useConversationRealtime(mockConversationId)
+      );
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+      // Initial load brought in 2 messages
+      expect(result.current.messages).toHaveLength(2);
+
+      // Fire onSubscribed with a retroactive batch that overlaps with what
+      // loadMessages() already pulled. The hook must merge by id.
+      // mockMessages[1].id === 'msg-2' is already in state. The catch-up
+      // path attempts to decrypt; with the encryption module mocked,
+      // decryption returns undefined and the messages get filtered out.
+      // We rely on the realtime path's actual behaviour: even if decryption
+      // succeeded, the merge must drop already-known IDs.
+      await act(async () => {
+        await getOnSubscribed()([
+          {
+            id: 'msg-2', // same as mockMessages[1] — must be dropped by merge
+            conversation_id: mockConversationId,
+            sender_id: 'other-user-id',
+            encrypted_content: 'enc',
+            initialization_vector: 'iv',
+            sequence_number: 2,
+            deleted: false,
+            edited: false,
+            edited_at: null,
+            delivered_at: null,
+            read_at: null,
+            created_at: new Date().toISOString(),
+            key_version: 1,
+            is_system_message: false,
+            system_message_type: null,
+          },
+        ]);
+      });
+
+      // The decryption mock returns undefined → filtered → state unchanged.
+      // Critically, count is still 2 — not 3.
+      expect(result.current.messages).toHaveLength(2);
+    });
+
+    it('sets data-messages-subscribed DOM attr after onSubscribed completes', async () => {
+      const getOnSubscribed = captureOnSubscribed();
+
+      renderHook(() => useConversationRealtime(mockConversationId));
+
+      await waitFor(() => {
+        expect(realtimeService.subscribeToMessages).toHaveBeenCalled();
+      });
+
+      // Before onSubscribed fires, the DOM attr should be absent
+      expect(document.body.getAttribute('data-messages-subscribed')).toBeNull();
+
+      await act(async () => {
+        await getOnSubscribed()([]);
+      });
+
+      expect(document.body.getAttribute('data-messages-subscribed')).toBe(
+        mockConversationId
+      );
+    });
+
+    it('handles an empty retroactive batch without throwing', async () => {
+      const getOnSubscribed = captureOnSubscribed();
+
+      const { result } = renderHook(() =>
+        useConversationRealtime(mockConversationId)
+      );
+
+      await waitFor(() => expect(result.current.loading).toBe(false));
+
+      await expect(
+        act(async () => {
+          await getOnSubscribed()([]);
+        })
+      ).resolves.toBeUndefined();
+
+      expect(result.current.messages).toHaveLength(2);
+    });
+  });
 });

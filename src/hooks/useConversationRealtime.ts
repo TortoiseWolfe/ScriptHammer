@@ -276,12 +276,40 @@ export function useConversationRealtime(
         lastRealtimeEventRef.current = Date.now();
         const decrypted = await decryptSingleMessage(message);
         if (decrypted && isMountedRef.current) {
-          setMessages((prev) => [...prev, decrypted]);
+          // Merge by id — the catch-up SELECT may have already injected
+          // this message during the subscribe handshake.
+          setMessages((prev) =>
+            prev.some((m) => m.id === decrypted.id)
+              ? prev
+              : [...prev, decrypted]
+          );
         }
       },
       undefined, // onReconnect
-      () => {
-        // Signal message subscription readiness via DOM attribute (used by E2E tests)
+      async (retroactive) => {
+        // Catch-up: any messages INSERT'd during the subscribe handshake
+        // window the realtime stream may have missed (#57). Decrypt and
+        // merge by id with whatever loadMessages() has already pulled in.
+        if (retroactive.length > 0) {
+          lastRealtimeEventRef.current = Date.now();
+          const decrypted = await Promise.all(
+            retroactive.map(decryptSingleMessage)
+          );
+          const fresh = decrypted.filter(
+            (msg): msg is NonNullable<typeof msg> => msg !== null
+          );
+          if (fresh.length > 0 && isMountedRef.current) {
+            setMessages((prev) => {
+              const existingIds = new Set(prev.map((m) => m.id));
+              const additions = fresh.filter((m) => !existingIds.has(m.id));
+              return additions.length > 0 ? [...prev, ...additions] : prev;
+            });
+          }
+        }
+
+        // Signal message subscription readiness via DOM attribute (used by E2E tests).
+        // Set AFTER the catch-up has been processed so tests waiting on this
+        // signal know the catch-up SELECT has completed.
         if (typeof document !== 'undefined' && conversationId) {
           document.body.setAttribute(
             'data-messages-subscribed',
