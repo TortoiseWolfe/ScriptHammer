@@ -116,6 +116,61 @@ const cleanupConnections = async (): Promise<void> => {
   }
 };
 
+/**
+ * Restore A↔B to an accepted-connection state. Used by both `afterEach`
+ * and `afterAll` so every test in this file leaves the table in the
+ * shape downstream messaging specs expect — no matter how the test
+ * itself ended (passed, failed mid-flight, threw in setup, etc.).
+ *
+ * The original `afterAll` used a brittle INSERT-or-UPDATE pattern with a
+ * `maybeSingle()` check between them. When the test failed mid-flight at
+ * the connections-tab waitFor (the cascade root cause we're fixing in
+ * #57's sibling issue), this hook ran but downstream tests still hit
+ * stale storage-state fixtures. Making the restore atomic + per-test
+ * means the table is healthy after EVERY test, not just at end-of-file.
+ *
+ * Idempotent across all starting states:
+ *   - 0 rows → INSERT a fresh accepted connection
+ *   - 1 row in any status → DELETE it, INSERT accepted (fewer queries
+ *     than UPDATE if status changed across multiple statuses)
+ *   - >1 rows (race or stale state) → DELETE all, INSERT one accepted
+ */
+const restoreAcceptedConnection = async (): Promise<void> => {
+  const client = getAdminClient();
+  if (!client) return;
+
+  const { data: users } = await client.auth.admin.listUsers();
+  const userAId = users?.users?.find((u) => u.email === USER_A.email)?.id;
+  const userBId = users?.users?.find((u) => u.email === USER_B.email)?.id;
+  if (!userAId || !userBId) return;
+
+  // Single deletion + INSERT is more idempotent than INSERT-or-UPDATE: it
+  // recovers from the >1-row case the original code couldn't see (the
+  // maybeSingle() returns null, so the INSERT path runs and then the unique
+  // constraint trips). Worst case a row gets deleted and re-INSERT'd; best
+  // case the table is already healthy and we re-INSERT into empty space.
+  try {
+    await client
+      .from('user_connections')
+      .delete()
+      .or(
+        `and(requester_id.eq.${userAId},addressee_id.eq.${userBId}),and(requester_id.eq.${userBId},addressee_id.eq.${userAId})`
+      );
+    await client.from('user_connections').insert({
+      requester_id: userAId,
+      addressee_id: userBId,
+      status: 'accepted',
+    });
+  } catch (err) {
+    // The cleanup is best-effort. If it fails, log but don't throw —
+    // throwing inside afterEach would mask the real test failure.
+    console.warn(
+      'restoreAcceptedConnection: cleanup failed (best-effort):',
+      err instanceof Error ? err.message : err
+    );
+  }
+};
+
 test.describe('Friend Request Flow', () => {
   // Run tests serially to avoid parallel interference
   test.describe.configure({ mode: 'serial' });
@@ -130,42 +185,22 @@ test.describe('Friend Request Flow', () => {
     await cleanupConnections();
   });
 
-  // Re-create the accepted connection after tests complete so other test
-  // files in the same shard that depend on the connection aren't affected.
+  // Per-test restore: run the same idempotent restore after EVERY test
+  // (passed, failed, errored mid-flight, etc.) so downstream messaging
+  // specs in the same shard always inherit a known-good A↔B accepted
+  // connection. This is the load-bearing fix for the cascade pattern
+  // documented in #57's sibling issue: previously, when this file's first
+  // test failed mid-flight at the connections-tab waitFor, the
+  // user_connections table was left in a state that broke 30+ downstream
+  // tests via stale storage-state + missing connection.
+  test.afterEach(async () => {
+    await restoreAcceptedConnection();
+  });
+
+  // Defense-in-depth: also run at the end of the describe block in case
+  // a beforeAll-stage failure prevented afterEach from ever running.
   test.afterAll(async () => {
-    const client = getAdminClient();
-    if (!client) return;
-
-    const { data: users } = await client.auth.admin.listUsers();
-    const userAId = users?.users?.find((u) => u.email === USER_A.email)?.id;
-    const userBId = users?.users?.find((u) => u.email === USER_B.email)?.id;
-
-    if (userAId && userBId) {
-      // Check if connection was re-created by the test
-      const { data: existing } = await client
-        .from('user_connections')
-        .select('id, status')
-        .or(
-          `and(requester_id.eq.${userAId},addressee_id.eq.${userBId}),and(requester_id.eq.${userBId},addressee_id.eq.${userAId})`
-        )
-        .maybeSingle();
-
-      if (!existing) {
-        // Test didn't complete — re-create the connection
-        await client.from('user_connections').insert({
-          requester_id: userAId,
-          addressee_id: userBId,
-          status: 'accepted',
-        });
-        console.log('afterAll: Re-created accepted connection for other tests');
-      } else if (existing.status !== 'accepted') {
-        await client
-          .from('user_connections')
-          .update({ status: 'accepted' })
-          .eq('id', existing.id);
-        console.log('afterAll: Updated connection to accepted for other tests');
-      }
-    }
+    await restoreAcceptedConnection();
   });
 
   test.beforeEach(async ({}, testInfo) => {
