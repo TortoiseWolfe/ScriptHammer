@@ -173,14 +173,20 @@ export function createClient(): SupabaseClient<Database> {
                 },
               }
             : undefined,
-        // Disable auto-refresh in E2E tests. The access token is valid for
-        // 1 hour — plenty for a ~30-minute test run. Auto-refresh causes
-        // single-use refresh tokens to be consumed by one test context,
-        // leaving subsequent contexts with an invalid session (SIGNED_OUT
-        // fires → all messaging tests fail).
-        autoRefreshToken:
-          typeof window === 'undefined' ||
-          !window.localStorage?.getItem('playwright_e2e'),
+        // Auto-refresh must stay on so Supabase Realtime can authenticate
+        // its WebSocket connection — Realtime fetches the JWT from the
+        // in-memory session, and without auto-refresh the session's access
+        // token never gets refreshed via the Realtime auth handshake. The
+        // channel never reaches 'SUBSCRIBED' and every messaging E2E test
+        // falls back to the slow reload-retry path.
+        //
+        // Prior commits (d353494, 4b645aa, 18b6bf8) disabled this in E2E to
+        // prevent parallel test contexts from consuming each other's
+        // single-use refresh tokens, but commit 62f8a40 introduced the
+        // storage adapter (above) that prevents auth-token wipes — which
+        // solves the SIGNED_OUT cascade that was the original concern. The
+        // boolean gate is no longer needed.
+        autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
       },
