@@ -90,4 +90,62 @@ describe('ConversationView', () => {
       );
     });
   });
+
+  it('polls getMessageHistory on a 10s interval (#57 cross-window delivery)', async () => {
+    vi.useFakeTimers();
+    try {
+      const { messageService } = await import(
+        '@/services/messaging/message-service'
+      );
+      vi.mocked(messageService.getMessageHistory).mockClear();
+
+      render(<ConversationView conversationId="conv-poll" />);
+
+      // Initial mount fires one fetch. Drain microtasks so the
+      // loadConversationInfo().then(loadMessages()) chain resolves.
+      await vi.waitFor(() => {
+        expect(messageService.getMessageHistory).toHaveBeenCalledTimes(1);
+      });
+
+      // Advance 10s — polling tick fires → second fetch.
+      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.waitFor(() => {
+        expect(messageService.getMessageHistory).toHaveBeenCalledTimes(2);
+      });
+
+      // Another 10s → third fetch.
+      await vi.advanceTimersByTimeAsync(10_000);
+      await vi.waitFor(() => {
+        expect(messageService.getMessageHistory).toHaveBeenCalledTimes(3);
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('skips polling when document is hidden', async () => {
+    vi.useFakeTimers();
+    const hiddenSpy = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+    try {
+      const { messageService } = await import(
+        '@/services/messaging/message-service'
+      );
+      vi.mocked(messageService.getMessageHistory).mockClear();
+
+      render(<ConversationView conversationId="conv-hidden" />);
+
+      // Initial mount fetch always runs (document.hidden gate is on the
+      // poll, not the initial load).
+      await vi.waitFor(() => {
+        expect(messageService.getMessageHistory).toHaveBeenCalledTimes(1);
+      });
+
+      // Tick past several poll intervals — none should fetch because hidden.
+      await vi.advanceTimersByTimeAsync(30_000);
+      expect(messageService.getMessageHistory).toHaveBeenCalledTimes(1);
+    } finally {
+      hiddenSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
 });
