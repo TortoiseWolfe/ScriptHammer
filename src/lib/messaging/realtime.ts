@@ -73,9 +73,14 @@ export class RealtimeService {
     let wasSubscribed = false;
 
     // DIAGNOSTIC (#57): log channel creation + every status from subscribe()
-    // until we know why E2E messaging shards never see SUBSCRIBED. Remove
-    // once the root cause is identified and a fix is verified.
-    logger.warn('[#57 DIAG] Creating realtime channel', {
+    // until we know why E2E messaging shards never see SUBSCRIBED. Uses
+    // console.warn directly (NOT createLogger) so it bypasses the WARN-level
+    // filter that the logger applies in production builds. CI runs against
+    // the static-export production build; logger.warn calls are silently
+    // dropped at LogLevel.ERROR. console.warn is unconditional, and the
+    // canary test forwards it to test stdout via page.on('console',...).
+    // Remove once the root cause is identified and a fix is verified.
+    console.warn('[#57 DIAG] Creating realtime channel', {
       conversation_id,
       channelName,
       channelCreatedAt,
@@ -97,11 +102,12 @@ export class RealtimeService {
         }
       )
       .subscribe(async (status, err) => {
-        // DIAGNOSTIC (#57): log every status, not just SUBSCRIBED. Supabase
-        // can also fire CHANNEL_ERROR, TIMED_OUT, CLOSED — the existing code
-        // silently dropped those so we had no visibility into why E2E
-        // shards never see SUBSCRIBED.
-        logger.warn('[#57 DIAG] subscribe status', {
+        // DIAGNOSTIC (#57): log every status via console.warn (production
+        // build drops logger.warn at LogLevel.ERROR). Supabase can fire
+        // 'SUBSCRIBED', 'CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED' — the
+        // existing code silently dropped non-SUBSCRIBED so we had no
+        // visibility into why E2E shards never reach SUBSCRIBED.
+        console.warn('[#57 DIAG] subscribe status', {
           conversation_id,
           channelName,
           status,

@@ -153,6 +153,27 @@ test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
     });
     page1 = await context1.newPage();
     page2 = await context2.newPage();
+
+    // DIAGNOSTIC (#57): forward browser console messages tagged with
+    // '#57 DIAG' to test stdout so they appear in CI logs. The diagnostic
+    // logger.warn calls in src/lib/messaging/realtime.ts write to the
+    // browser's console; Playwright doesn't forward those by default.
+    const forwardDiag =
+      (label: string) => (msg: import('@playwright/test').ConsoleMessage) => {
+        const text = msg.text();
+        if (text.includes('#57 DIAG')) {
+          console.log(`[${label} console] ${text}`);
+        }
+      };
+    page1.on('console', forwardDiag('page1'));
+    page2.on('console', forwardDiag('page2'));
+    // Also surface page errors that might explain why subscribe() never acks
+    page1.on('pageerror', (err) =>
+      console.log(`[page1 pageerror] ${err.message}`)
+    );
+    page2.on('pageerror', (err) =>
+      console.log(`[page2 pageerror] ${err.message}`)
+    );
   });
 
   test.afterEach(async () => {
