@@ -46,9 +46,24 @@ export default function PWAInstall() {
 
         navigator.serviceWorker.register(swUrl).then(
           (registration) => {
+            // Defensive: register() is spec'd to resolve with a
+            // ServiceWorkerRegistration, but in some hosting setups
+            // (wrong MIME type, partial response, certain CSP rules) the
+            // promise resolves with `undefined` instead of rejecting. The
+            // optional-chained logger fields above always survived; the
+            // unchecked `registration.update()` calls below were exploding
+            // on every page load and surfacing as a pageerror noise. See
+            // the diagnostic round on PR #65 for the full trace.
+            if (!registration) {
+              logger.warn(
+                'Service Worker register() resolved with undefined — likely sw.js MIME or CSP issue'
+              );
+              return;
+            }
+
             logger.info('Service Worker registered', {
-              scope: registration?.scope,
-              state: registration?.active?.state || 'installing',
+              scope: registration.scope,
+              state: registration.active?.state || 'installing',
             });
 
             // Force update check
