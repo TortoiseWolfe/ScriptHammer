@@ -72,6 +72,15 @@ export class RealtimeService {
 
     let wasSubscribed = false;
 
+    // DIAGNOSTIC (#57): log channel creation + every status from subscribe()
+    // until we know why E2E messaging shards never see SUBSCRIBED. Remove
+    // once the root cause is identified and a fix is verified.
+    logger.warn('[#57 DIAG] Creating realtime channel', {
+      conversation_id,
+      channelName,
+      channelCreatedAt,
+    });
+
     // Create new channel
     const channel = supabase
       .channel(channelName)
@@ -87,7 +96,19 @@ export class RealtimeService {
           callback(payload.new as Message);
         }
       )
-      .subscribe(async (status) => {
+      .subscribe(async (status, err) => {
+        // DIAGNOSTIC (#57): log every status, not just SUBSCRIBED. Supabase
+        // can also fire CHANNEL_ERROR, TIMED_OUT, CLOSED — the existing code
+        // silently dropped those so we had no visibility into why E2E
+        // shards never see SUBSCRIBED.
+        logger.warn('[#57 DIAG] subscribe status', {
+          conversation_id,
+          channelName,
+          status,
+          errMessage: err instanceof Error ? err.message : err,
+          msSinceCreate: Date.now() - new Date(channelCreatedAt).getTime(),
+        });
+
         if (status === 'SUBSCRIBED') {
           if (wasSubscribed && onReconnect) {
             logger.debug('Channel reconnected, triggering catch-up', {
