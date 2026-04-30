@@ -167,12 +167,19 @@ test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
       };
     page1.on('console', forwardDiag('page1'));
     page2.on('console', forwardDiag('page2'));
-    // Also surface page errors that might explain why subscribe() never acks
+    // Also surface page errors that might explain why subscribe() never acks.
+    // Include err.stack so we get the source-mapped frame that's calling
+    // `.update()` on undefined — the message alone says what's broken but
+    // not where. Stack is the actionable signal for the next CI round.
     page1.on('pageerror', (err) =>
-      console.log(`[page1 pageerror] ${err.message}`)
+      console.log(
+        `[page1 pageerror] ${err.message}\n${err.stack ?? '(no stack)'}`
+      )
     );
     page2.on('pageerror', (err) =>
-      console.log(`[page2 pageerror] ${err.message}`)
+      console.log(
+        `[page2 pageerror] ${err.message}\n${err.stack ?? '(no stack)'}`
+      )
     );
   });
 
