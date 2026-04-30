@@ -219,6 +219,22 @@ export default function ConversationView({
     loadConversationInfo().then(() => loadMessages());
   }, [conversationId, loadConversationInfo, loadMessages]);
 
+  // ── Polling fallback for cross-window message delivery (#57) ───────
+  // Static-export / GitHub Pages can't run a realtime server, so the app
+  // doesn't subscribe to Supabase Realtime broadcasts. Without polling,
+  // page2 never sees messages page1 sends until the user navigates away
+  // and back. This poll re-fetches every 10s while the tab is visible —
+  // cheap, predictable, and bounds the cross-window delivery latency.
+  // Skipped when document.hidden so a backgrounded tab doesn't churn.
+  useEffect(() => {
+    const POLL_INTERVAL_MS = 10_000;
+    const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      void loadMessages();
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [conversationId, loadMessages]);
+
   // ── Handlers ───────────────────────────────────────────────────────
   const handleSendMessage = async (content: string) => {
     try {

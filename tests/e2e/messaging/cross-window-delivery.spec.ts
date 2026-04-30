@@ -1,26 +1,33 @@
 /**
- * E2E Regression Test for Realtime Subscription Handshake Race (#57)
+ * E2E Regression Test for Cross-Window Message Delivery (#57)
  *
- * Catches the bug fixed by the catch-up SELECT path in realtime.ts:
- *   - page2 mounts and creates its messages channel (channelCreatedAt)
- *   - page1 sends a message; the postgres INSERT broadcasts ~5ms later
- *   - page2's `.subscribe()` ack hasn't fired yet (~50-200ms)
- *   - the broadcast arrives before page2's INSERT handler is registered
- *   - the message is silently dropped from realtime
+ * History: this issue was originally framed as "Supabase Realtime handshake
+ * race — page2's subscribe ack arrives after page1's INSERT broadcast, the
+ * event is dropped." That framing was wrong. Investigation on PR #65 showed
+ * the production app does NOT subscribe to Supabase Realtime at all —
+ * `useConversationRealtime` and `realtimeService.subscribeToMessages` were
+ * vestigial dead code that nothing rendered. The "9 rounds of mitigation"
+ * mentioned in past handoff docs were progressive reverts of realtime usage
+ * in favor of polling.
  *
- * Pre-fix, page2 would only discover the message via the slow polling
- * fallback (10s tick) or by reload-retry (60s × 5 attempts). Test budget
- * easily exhausted.
+ * The actual mechanism: ConversationView (`src/components/organisms/...`)
+ * fetches via messageService.getMessageHistory() on mount, and a 10s polling
+ * effect re-fetches while the tab is visible. Cross-window delivery latency
+ * is bounded by the poll interval, not by realtime broadcast speed.
  *
- * Post-fix, the catch-up SELECT runs once `subscribe()` acks and pulls in
- * any messages with `created_at >= channelCreatedAt`. The merge-by-id
- * logic in useConversationRealtime injects them into state. Net: even if
- * the realtime broadcast races the handshake, the message arrives within
- * a single SELECT round-trip (~100ms typical).
+ * What this test exercises:
+ *   1. page1 sends a message via the UI
+ *   2. page2 (already mounted on the same conversation) waits passively
+ *   3. The polling effect on page2 re-fetches messages within 10s and the
+ *      new message renders
  *
- * The test is intentionally aggressive: it sends DURING the handshake
- * window by skipping the existing `data-messages-subscribed` wait that
- * other specs use. If this test ever fails, the catch-up path regressed.
+ * Failure modes this test catches:
+ *   - Polling effect removed or broken (page2 stays stale forever)
+ *   - getMessageHistory regression (auth/RLS/decryption broken)
+ *   - ConversationView doesn't re-render when messages array changes
+ *
+ * Test budget: 30s. Polling fires every 10s; a single send-to-render cycle
+ * needs at most one poll plus tail latency on Supabase free tier.
  */
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
@@ -129,7 +136,7 @@ test.beforeAll(async () => {
   await cleanupOldMessages(TEST_USER_1.email, TEST_USER_2.email);
 });
 
-test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
+test.describe('Cross-Window Message Delivery (#57 regression)', () => {
   let context1: BrowserContext;
   let context2: BrowserContext;
   let page1: Page;
@@ -153,34 +160,6 @@ test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
     });
     page1 = await context1.newPage();
     page2 = await context2.newPage();
-
-    // DIAGNOSTIC (#57): forward browser console messages tagged with
-    // '#57 DIAG' to test stdout so they appear in CI logs. The diagnostic
-    // logger.warn calls in src/lib/messaging/realtime.ts write to the
-    // browser's console; Playwright doesn't forward those by default.
-    const forwardDiag =
-      (label: string) => (msg: import('@playwright/test').ConsoleMessage) => {
-        const text = msg.text();
-        if (text.includes('#57 DIAG')) {
-          console.log(`[${label} console] ${text}`);
-        }
-      };
-    page1.on('console', forwardDiag('page1'));
-    page2.on('console', forwardDiag('page2'));
-    // Also surface page errors that might explain why subscribe() never acks.
-    // Include err.stack so we get the source-mapped frame that's calling
-    // `.update()` on undefined — the message alone says what's broken but
-    // not where. Stack is the actionable signal for the next CI round.
-    page1.on('pageerror', (err) =>
-      console.log(
-        `[page1 pageerror] ${err.message}\n${err.stack ?? '(no stack)'}`
-      )
-    );
-    page2.on('pageerror', (err) =>
-      console.log(
-        `[page2 pageerror] ${err.message}\n${err.stack ?? '(no stack)'}`
-      )
-    );
   });
 
   test.afterEach(async () => {
@@ -188,9 +167,9 @@ test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
     await context2.close();
   });
 
-  test('page2 receives a message sent during the subscribe handshake (catch-up SELECT)', async () => {
-    // page1: full setup with subscription wait — we want page1's send to
-    // succeed deterministically. The race is on the RECEIVER side.
+  test('page2 receives a message page1 sends, via the polling effect', async () => {
+    // page1: navigate, dismiss consent, complete reauth, wait for the
+    // message-thread DOM to mount.
     await page1.goto(`/messages?conversation=${testConversationId}`, {
       waitUntil: 'domcontentloaded',
     });
@@ -200,48 +179,34 @@ test.describe('Realtime Subscription Handshake Race (#57 regression)', () => {
       state: 'visible',
       timeout: 60_000,
     });
-    await page1
-      .waitForSelector('body[data-messages-subscribed]', { timeout: 30_000 })
-      .catch(() => {
-        // Best-effort; if signal never fires, fall through.
-      });
 
-    // page2: navigate but DO NOT wait for data-messages-subscribed. This
-    // is the whole point of the test — fire the send during the handshake
-    // window where the realtime broadcast can race the subscribe ack.
+    // page2: same setup. ConversationView's mount effect calls loadMessages()
+    // and starts the 10s polling interval that drives this test.
     await page2.goto(`/messages?conversation=${testConversationId}`, {
       waitUntil: 'domcontentloaded',
     });
     await dismissCookieBanner(page2);
     await handleReAuthModal(page2, TEST_USER_2.password);
-    // Wait only for the message thread DOM to mount — the subscription
-    // handshake is still in flight at this point (or already raced).
     await page2.waitForSelector('[data-testid="message-thread"]', {
       state: 'visible',
       timeout: 60_000,
     });
 
-    // Now send. With the catch-up SELECT in place, even if the realtime
-    // broadcast on page2 races the subscribe ack and is dropped, the
-    // catch-up will pull in the message when ack fires (within ~200ms).
-    const testMessage = `Handshake race test ${Date.now()}`;
+    // page1 sends. The new row is INSERTed; page2's polling effect will
+    // re-fetch on its next tick (≤10s) and the message will render.
+    const testMessage = `Cross-window delivery test ${Date.now()}`;
     await fillMessageInput(page1, testMessage);
     await page1.getByRole('button', { name: /send/i }).click();
 
-    // Assert the message arrives on page2 within a short budget. This is
-    // the regression assertion: pre-fix, this would routinely time out
-    // until the slow polling fallback (10s) or reload-retry (60s × 5)
-    // kicked in. Post-fix, it arrives within one round-trip after the
-    // subscribe ack.
-    //
-    // Budget rationale: 30s gives the catch-up SELECT room under CI tail
-    // latency on Supabase free tier. If this fails, the catch-up SELECT
-    // is broken or didn't deliver — the regression we're guarding.
+    // Assert the message arrives on page2 within 30s. Polling tick is 10s;
+    // the budget covers one missed tick + tail latency on Supabase free tier
+    // under shard load. If this fails, polling is broken or getMessageHistory
+    // regressed.
     await expect(page2.getByText(testMessage)).toBeVisible({
       timeout: 30_000,
     });
 
-    // Sanity: also visible to the sender.
+    // Sanity: also visible to the sender (optimistic UI).
     await expect(page1.getByText(testMessage)).toBeVisible();
   });
 });
