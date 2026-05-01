@@ -52,10 +52,15 @@ test.beforeAll(async ({ browser }) => {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
+    // Wait for the conversation list to mount + render. The 8s prior
+    // timeout was tuned for local dev; CI's slower hydration cycle needs
+    // closer to 20s for first-paint of the conversation list to land.
+    // Issue #66 diagnostic confirmed conversations exist in DB and render
+    // correctly — only the visibility window was too tight.
     setupSucceeded = await page
       .getByRole('button', { name: /Conversation with/ })
       .first()
-      .isVisible({ timeout: 8000 })
+      .isVisible({ timeout: 20000 })
       .catch(() => false);
   } finally {
     await context.close();
