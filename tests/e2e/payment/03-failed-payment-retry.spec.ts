@@ -136,6 +136,35 @@ test.describe('Failed Payment Retry Logic', () => {
     test.skip(true, 'Subscription management page not yet implemented');
   });
 
+  test.skip('should mount SwitchProviderPanel when "Use a different payment method" is clicked', async ({
+    page,
+  }) => {
+    // Skip: requires a real failed payment_results row with status='failed'
+    // to render the failed-state block, which can only be produced by an
+    // actual Stripe Checkout decline. Same gate as the other Stripe-Checkout
+    // skips in this file. The component path is exercised by:
+    //   src/components/payment/PaymentStatusDisplay/PaymentStatusDisplay.test.tsx
+    //     "clicking the switch button toggles the SwitchProviderPanel"
+    //   src/components/payment/SwitchProviderPanel/SwitchProviderPanel.test.tsx
+    //     "renders PaymentButton pre-filled from the parent intent"
+    test.skip(
+      true,
+      'Stripe API keys not configured - skipping Checkout-driven failure flow'
+    );
+  });
+
+  test.skip('should expand recovery list at retry_count >= 2', async ({
+    page,
+  }) => {
+    // Skip: same gate as above. The escalation logic is exercised by:
+    //   src/components/payment/PaymentStatusDisplay/PaymentStatusDisplay.test.tsx
+    //     "renders expanded recovery list at retry_count=2 (FR-016/017)"
+    test.skip(
+      true,
+      'Stripe API keys not configured - skipping Checkout-driven failure flow'
+    );
+  });
+
   test('should render payment result page with malformed ID', async ({
     page,
   }) => {

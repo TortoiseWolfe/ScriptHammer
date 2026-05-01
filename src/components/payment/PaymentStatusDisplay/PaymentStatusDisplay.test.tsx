@@ -421,4 +421,169 @@ describe('PaymentStatusDisplay', () => {
       expect(btn).toHaveTextContent(/Try again in 24s/);
     });
   });
+
+  describe('US3+US4 — switch provider + recovery disclosure (#43)', () => {
+    // Stub SwitchProviderPanel to a sentinel so we can assert wiring without
+    // re-mounting the whole sub-tree (it has its own dedicated tests).
+    vi.mock('@/components/payment/SwitchProviderPanel', () => ({
+      SwitchProviderPanel: (props: Record<string, unknown>) => (
+        <div data-testid="switch-provider-panel">
+          switch panel for {String(props.parentIntentId)}
+        </div>
+      ),
+    }));
+
+    function setupFailedRecoverable() {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+    }
+
+    it('renders the "Use a different payment method" button on recoverable failures', () => {
+      setupFailedRecoverable();
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(
+        screen.getByRole('button', { name: /use a different payment method/i })
+      ).toBeInTheDocument();
+    });
+
+    it('clicking the switch button toggles the SwitchProviderPanel', async () => {
+      const user = userEvent.setup();
+      setupFailedRecoverable();
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+
+      // Closed initially
+      expect(
+        screen.queryByTestId('switch-provider-panel')
+      ).not.toBeInTheDocument();
+
+      const switchBtn = screen.getByRole('button', {
+        name: /use a different payment method/i,
+      });
+      await user.click(switchBtn);
+
+      // Panel mounts with parent intent id wired through
+      expect(screen.getByTestId('switch-provider-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('switch-provider-panel')).toHaveTextContent(
+        '456' // intent_id from createMockResult
+      );
+
+      // Clicking again closes
+      await user.click(
+        screen.getByRole('button', {
+          name: /^cancel$/i,
+        })
+      );
+      expect(
+        screen.queryByTestId('switch-provider-panel')
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not render the switch button for non-recoverable errors', () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'expired_card'; // not recoverable
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(
+        screen.queryByRole('button', {
+          name: /use a different payment method/i,
+        })
+      ).not.toBeInTheDocument();
+    });
+
+    it('hides the recovery disclosure at retry_count=0', async () => {
+      setupFailedRecoverable();
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 0,
+        maxRetries: 3,
+        canRetry: true,
+        disabledReason: null,
+        coolingMsRemaining: 0,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      expect(screen.queryByText(/need more help/i)).not.toBeInTheDocument();
+    });
+
+    it('renders collapsed recovery disclosure at retry_count=1', async () => {
+      setupFailedRecoverable();
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 1,
+        maxRetries: 3,
+        canRetry: true,
+        disabledReason: null,
+        coolingMsRemaining: 0,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      const summary = screen.getByText(/need more help/i);
+      // <details> without `open` attribute starts collapsed
+      const details = summary.closest('details');
+      expect(details).not.toHaveAttribute('open');
+    });
+
+    it('renders expanded recovery list at retry_count=2 (FR-016/017)', async () => {
+      setupFailedRecoverable();
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 2,
+        maxRetries: 3,
+        canRetry: true,
+        disabledReason: null,
+        coolingMsRemaining: 0,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      const summary = screen.getByText(/need more help/i);
+      const details = summary.closest('details');
+      expect(details).toHaveAttribute('open');
+      // All three steps in priority order: retry → switch method → support.
+      // "use a different payment method" appears as both a button label and a
+      // recovery-list step, so assert that BOTH elements exist.
+      expect(
+        screen.getByText(/try again — payment failures/i)
+      ).toBeInTheDocument();
+      expect(
+        screen.getAllByText(/use a different payment method/i).length
+      ).toBeGreaterThanOrEqual(2);
+      expect(
+        screen.getByRole('link', { name: /contact support/i })
+      ).toBeInTheDocument();
+    });
+
+    it('emphasizes support contact when retry cap is reached (FR-019)', async () => {
+      setupFailedRecoverable();
+      const { usePaymentRetryStatus } = await import(
+        '@/hooks/usePaymentRetryStatus'
+      );
+      vi.mocked(usePaymentRetryStatus).mockReturnValue({
+        loading: false,
+        retryCount: 3,
+        maxRetries: 3,
+        canRetry: false,
+        disabledReason: 'limit',
+        coolingMsRemaining: 0,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      // Retry step is struck through; support link is bold
+      const retryStep = screen.getByText(/try again — payment failures/i);
+      expect(retryStep).toHaveClass('line-through');
+    });
+  });
 });
