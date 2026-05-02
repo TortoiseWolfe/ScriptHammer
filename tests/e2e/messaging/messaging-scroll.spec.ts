@@ -52,10 +52,17 @@ test.beforeAll(async ({ browser }) => {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
+    // Wait for the conversation list to mount + render. Use waitFor
+    // (auto-retries) instead of isVisible (single shot, returns false
+    // immediately if not yet in DOM). Issue #66 diagnostic confirmed
+    // conversations exist in DB and render correctly — the original
+    // isVisible({ timeout: 8000 }) was returning false in ~50ms because
+    // the element wasn't attached yet at the moment of the call.
     setupSucceeded = await page
       .getByRole('button', { name: /Conversation with/ })
       .first()
-      .isVisible({ timeout: 8000 })
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
       .catch(() => false);
   } finally {
     await context.close();
