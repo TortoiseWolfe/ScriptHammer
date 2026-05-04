@@ -116,21 +116,16 @@ export class KeyDerivationService {
       // Step 2: Reduce seed to valid P-256 scalar
       const privateKeyScalar = reduceScalar(seed);
 
-      // Step 3: Import as ECDH private key
-      const privateKey = await this.importPrivateKey(privateKeyScalar);
+      // Step 3: Import as non-extractable ECDH private key. importPrivateKey
+      // also returns the public-only JWK (computed from the same private
+      // scalar via noble-curves), so we do NOT need to exportKey() the
+      // private key — that would require importing extractable, which
+      // would let XSS exfiltrate raw key material.
+      const { privateKey, publicKeyJwk } =
+        await this.importPrivateKey(privateKeyScalar);
 
-      // Step 4: Export and reimport to get public key
-      const privateKeyJwk = await crypto.subtle.exportKey('jwk', privateKey);
-
-      // Create public-only JWK (remove d parameter)
-      const publicKeyJwk: JsonWebKey = {
-        kty: privateKeyJwk.kty,
-        crv: privateKeyJwk.crv,
-        x: privateKeyJwk.x,
-        y: privateKeyJwk.y,
-      };
-
-      // Import public key
+      // Step 4: Import the public-only JWK as a separate CryptoKey
+      // (extractable=true is fine here; public keys aren't sensitive).
       const publicKey = await crypto.subtle.importKey(
         'jwk',
         publicKeyJwk,
@@ -220,13 +215,18 @@ export class KeyDerivationService {
   }
 
   /**
-   * Import raw private key bytes as CryptoKey
-   * Uses JWK format for better browser compatibility
+   * Import raw private key bytes as CryptoKey + computed public-key JWK.
+   * Uses JWK format for better browser compatibility.
+   *
+   * Returns the public-only JWK (x, y, no d) alongside the imported private
+   * CryptoKey so the caller doesn't need to round-trip the private key
+   * through exportKey() — that would require importing it as extractable
+   * (which defeats the XSS-resistance guarantee on the in-memory copy).
    * @private
    */
   private async importPrivateKey(
     privateKeyBytes: Uint8Array
-  ): Promise<CryptoKey> {
+  ): Promise<{ privateKey: CryptoKey; publicKeyJwk: JsonWebKey }> {
     try {
       // Always use the JWK path with noble-curves to compute the public key.
       // The PKCS#8 path used to be the primary, but Firefox/WebKit reject the
@@ -257,17 +257,33 @@ export class KeyDerivationService {
         y,
       };
 
-      // Import the JWK as a CryptoKey (works in all browsers)
-      return await crypto.subtle.importKey(
+      // Import the JWK as a NON-EXTRACTABLE CryptoKey.
+      // The in-memory private key only ever needs deriveKey/deriveBits for
+      // ECDH; we never need exportKey() on it. Importing non-extractable
+      // closes the XSS exfiltration path: a script with a handle to
+      // keyManagementService.derivedKeys.privateKey can still USE the key
+      // for ECDH from the same origin, but cannot extract raw key material
+      // for offline decryption of stolen ciphertext.
+      const privateKey = await crypto.subtle.importKey(
         'jwk',
         jwk,
         {
           name: CRYPTO_PARAMS.ALGORITHM,
           namedCurve: CRYPTO_PARAMS.CURVE,
         },
-        true,
+        false,
         ['deriveKey', 'deriveBits']
       );
+
+      // Public-only JWK (no `d`) for the caller to attach to keyPair.publicKeyJwk.
+      const publicKeyJwk: JsonWebKey = {
+        kty: 'EC',
+        crv: CRYPTO_PARAMS.CURVE,
+        x,
+        y,
+      };
+
+      return { privateKey, publicKeyJwk };
     } catch (error) {
       if (error instanceof KeyDerivationError) {
         throw error;

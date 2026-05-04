@@ -294,7 +294,7 @@ export async function getPaymentHistory(
     status: item.status as PaymentActivity['status'],
     charged_amount: item.charged_amount ?? 0,
     charged_currency: item.charged_currency as Currency,
-    customer_email: (item.intent as any).customer_email,
+    customer_email: (item.intent as { customer_email: string }).customer_email,
     webhook_verified: item.webhook_verified,
     created_at: item.created_at,
   }));

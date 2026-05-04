@@ -26,10 +26,18 @@ const logger = createLogger('messaging:encryption');
 
 export class EncryptionService {
   /**
-   * Generate an ECDH P-256 key pair for asymmetric encryption
-   * Task: T046
+   * Generate an ECDH P-256 key pair for asymmetric encryption.
    *
-   * @returns Promise<KeyPair> - Public and private CryptoKey objects
+   * @deprecated Production messaging derives keys via `KeyDerivationService`
+   * (Argon2id from password). This method exists ONLY for unit-test fixtures
+   * that need a quick extractable keypair to round-trip JWK and assert
+   * non-extractable storage behavior. Do NOT call from production code:
+   * the returned private key is extractable, so XSS reading a reference to
+   * it can call exportKey('jwk', ...) and exfiltrate raw key material. If
+   * you need a key pair in production, use KeyDerivationService.deriveKeyPair
+   * which returns a non-extractable private key.
+   *
+   * @returns Promise<KeyPair> - Public and private CryptoKey objects (extractable)
    * @throws EncryptionError if Web Crypto API is unavailable
    */
   async generateKeyPair(): Promise<KeyPair> {
@@ -43,7 +51,7 @@ export class EncryptionService {
           name: CRYPTO_PARAMS.ALGORITHM,
           namedCurve: CRYPTO_PARAMS.CURVE,
         },
-        true, // extractable
+        true, // extractable — see @deprecated note above
         ['deriveBits', 'deriveKey']
       );
 

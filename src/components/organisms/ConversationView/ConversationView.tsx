@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ChatWindow from '@/components/organisms/ChatWindow';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import {
@@ -54,6 +54,12 @@ export default function ConversationView({
   const [sending, setSending] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [cursor, setCursor] = useState<number | null>(null);
+  // Mirror cursor into a ref so loadMessages can read the latest value
+  // without depending on `cursor` (which would trigger a reload on every
+  // cursor change). loadMore=true paths must read cursorRef.current to
+  // avoid the stale-closure bug where pagination always re-fetched from
+  // the start because the useCallback closure captured cursor=null.
+  const cursorRef = useRef<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [participantName, setParticipantName] = useState('Unknown User');
 
@@ -137,7 +143,7 @@ export default function ConversationView({
 
         const result = await messageService.getMessageHistory(
           conversationId,
-          loadMore ? cursor : null,
+          loadMore ? cursorRef.current : null,
           50
         );
 
@@ -187,6 +193,7 @@ export default function ConversationView({
 
         setHasMore(result.has_more);
         setCursor(result.cursor);
+        cursorRef.current = result.cursor;
       } catch (err: unknown) {
         setError(
           err instanceof Error ? err.message : 'Failed to load messages'
@@ -195,10 +202,10 @@ export default function ConversationView({
         setLoading(false);
       }
     },
-    // cursor is read fresh via closure for the loadMore=true path but we
-    // deliberately don't depend on it — a cursor change alone shouldn't
-    // trigger a reload, only a conversationId change should.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // cursor is read via cursorRef.current — depending on the cursor state
+    // would trigger a reload on every page-load (cursor changes after each
+    // call), so we use a ref to read the latest value without invalidating
+    // the callback identity.
     [conversationId]
   );
 
@@ -248,16 +255,14 @@ export default function ConversationView({
 
       if (result.queued) {
         // Offline OR send-failed-and-queued. Show the optimistic bubble.
-        console.log(
-          '[ConversationView] message queued (offline/retry):',
-          result.message.id
-        );
+        logger.debug('message queued (offline/retry)', {
+          id: result.message.id,
+        });
         addPending(result.message.id, content);
       } else {
-        console.log(
-          '[ConversationView] message sent, appending optimistic:',
-          result.message.id
-        );
+        logger.debug('message sent, appending optimistic', {
+          id: result.message.id,
+        });
         // Optimistically append the sent message so it appears immediately.
         // Supabase free tier can have read-after-write latency — an immediate
         // loadMessages() query may return stale results (empty if first message).
@@ -285,7 +290,7 @@ export default function ConversationView({
         err instanceof Error
           ? err.message
           : 'Failed to send message. Please try again.';
-      console.error('[ConversationView] sendMessage failed:', msg, err);
+      logger.error('sendMessage failed', { message: msg, error: err });
       setError(msg);
     } finally {
       setSending(false);
