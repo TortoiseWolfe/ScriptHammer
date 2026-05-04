@@ -106,13 +106,19 @@ describe('KeyDerivationService', () => {
       expect(keyPair.publicKeyJwk.y).toBeDefined();
     });
 
-    it('should produce extractable private key for operations', async () => {
+    it('should produce non-extractable private key for XSS resistance', async () => {
       const password = 'TestPassword123!';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });
 
-      expect(keyPair.privateKey.extractable).toBe(true);
+      // Batch 8 security contract: KeyDerivationService.importPrivateKey
+      // imports the in-memory ECDH private key with extractable=false so a
+      // script holding a reference to derivedKeys.privateKey cannot
+      // exfiltrate raw key material via exportKey('jwk', ...). Operations
+      // (deriveKey/deriveBits for ECDH) still work because they don't
+      // require extractability.
+      expect(keyPair.privateKey.extractable).toBe(false);
     });
 
     it('should return base64-encoded salt in result', async () => {

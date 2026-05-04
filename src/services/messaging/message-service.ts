@@ -178,7 +178,8 @@ export class MessageService {
       const result = await supabase.auth.getSession();
       session = result.data?.session;
       authError = result.error;
-      console.log(`[sendMessage] getSession attempt ${attempt + 1}/3:`, {
+      logger.debug('sendMessage getSession attempt', {
+        attempt: attempt + 1,
         hasSession: !!session,
         hasUser: !!session?.user,
         hasToken: !!session?.access_token,
@@ -191,15 +192,15 @@ export class MessageService {
     const user = session?.user;
 
     if (authError || !user) {
-      // Log localStorage keys for debugging
+      // Surface localStorage auth-key state at debug level for diagnostics
+      // when the retry budget is exhausted. Never includes token values.
       if (typeof window !== 'undefined') {
         const authKeys = Object.keys(localStorage).filter(
           (k) => k.includes('auth') || k.includes('sb-')
         );
-        console.error(
-          '[sendMessage] AUTH FAILED. localStorage auth keys:',
-          authKeys
-        );
+        logger.error('sendMessage AUTH FAILED', {
+          localStorageAuthKeys: authKeys,
+        });
       }
       throw new AuthenticationError('You must be signed in to send messages');
     }
@@ -300,9 +301,11 @@ export class MessageService {
         sharedSecretCache.set(recipientId, sharedSecret);
       }
 
-      console.log(
-        `[sendMessage] sharedSecret source=${sharedSecretSource} recipientId=${recipientId.slice(0, 8)} online=${navigator.onLine}`
-      );
+      logger.debug('sendMessage sharedSecret', {
+        source: sharedSecretSource,
+        recipientIdPrefix: recipientId.slice(0, 8),
+        online: navigator.onLine,
+      });
 
       // Encrypt message content
       const encrypted = await encryptionService.encryptMessage(
@@ -768,30 +771,46 @@ export class MessageService {
         };
       }
 
-      logger.debug('Importing other user public key via crypto.subtle');
-      const otherPublicKeyCrypto = await crypto.subtle.importKey(
-        'jwk',
-        otherPublicKey,
-        {
-          name: 'ECDH',
-          namedCurve: 'P-256',
-        },
-        false,
-        []
-      );
-      logger.debug('Other user public key imported successfully');
+      // Reuse the module-level sharedSecretCache so a polling loop or a
+      // refresh of the same conversation doesn't re-run ECDH derivation
+      // every call. ECDH is computationally cheap individually but compounds
+      // at ~6/min under polling. Invalidate the cache when the sender's
+      // private key identity changes (e.g. after key rotation / re-derive).
+      if (cachedSenderPrivateKey !== currentKeys.privateKey) {
+        sharedSecretCache.clear();
+        cachedSenderPrivateKey = currentKeys.privateKey;
+      }
+      let sharedSecret = sharedSecretCache.get(otherParticipantId) ?? null;
+      if (!sharedSecret) {
+        logger.debug('Importing other user public key via crypto.subtle');
+        const otherPublicKeyCrypto = await crypto.subtle.importKey(
+          'jwk',
+          otherPublicKey,
+          {
+            name: 'ECDH',
+            namedCurve: 'P-256',
+          },
+          false,
+          []
+        );
+        logger.debug('Other user public key imported successfully');
 
-      // Derive shared secret using our derived private key
-      const sharedSecret = await encryptionService.deriveSharedSecret(
-        currentKeys.privateKey,
-        otherPublicKeyCrypto
-      );
+        // Derive shared secret using our derived private key
+        sharedSecret = await encryptionService.deriveSharedSecret(
+          currentKeys.privateKey,
+          otherPublicKeyCrypto
+        );
+        sharedSecretCache.set(otherParticipantId, sharedSecret);
+      }
 
-      // Log key fingerprints for E2E debugging (x-coordinate of ECDH public keys)
+      // Log key fingerprints for E2E diagnostics (debug-suppressed in prod)
       const otherKeyFingerprint = otherPublicKey?.x?.slice(0, 8) ?? 'null';
-      console.log(
-        `[getMessageHistory] decrypt: myId=${user.id.slice(0, 8)} otherId=${otherParticipantId.slice(0, 8)} otherPubKey=${otherKeyFingerprint} msgCount=${messagesToDecrypt.length}`
-      );
+      logger.debug('getMessageHistory decrypt', {
+        myIdPrefix: user.id.slice(0, 8),
+        otherIdPrefix: otherParticipantId.slice(0, 8),
+        otherPubKey: otherKeyFingerprint,
+        msgCount: messagesToDecrypt.length,
+      });
 
       // Decrypt all messages
       logger.debug('Decrypting messages', {
@@ -829,11 +848,10 @@ export class MessageService {
                 'Unknown',
             };
           } catch (decryptError) {
-            // Log the decryption failure with details (but not sensitive data)
+            // Log the decryption failure with details (but not sensitive data).
+            // Single logger.error call below is sufficient — the previous
+            // duplicate console.error was redundant noise in production.
             const err = decryptError as Error;
-            console.error(
-              `[getMessageHistory] DECRYPTION FAILED: msgId=${msg.id.slice(0, 8)} sender=${msg.sender_id.slice(0, 8)} error=${err.message}`
-            );
             logger.error('Decryption FAILED for message', {
               messageId: msg.id,
               errorName: String(err.name || 'unknown'),

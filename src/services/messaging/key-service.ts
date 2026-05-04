@@ -37,23 +37,12 @@ import {
 
 const logger = createLogger('messaging:keys');
 
-/**
- * Re-import an extractable ECDH CryptoKey as a non-extractable copy suitable
- * for IndexedDB storage. XSS reading the row gets a handle but cannot export
- * raw key material.
- */
-async function asNonExtractablePrivate(
-  extractable: CryptoKey
-): Promise<CryptoKey> {
-  const jwk = await crypto.subtle.exportKey('jwk', extractable);
-  return crypto.subtle.importKey(
-    'jwk',
-    jwk,
-    { name: 'ECDH', namedCurve: 'P-256' },
-    false,
-    ['deriveBits', 'deriveKey']
-  );
-}
+// Note: previously this module had an asNonExtractablePrivate() helper that
+// re-imported the in-memory private CryptoKey as non-extractable before
+// writing it to IndexedDB. That step was a workaround — KeyDerivationService
+// now imports the in-memory private key as non-extractable from the start
+// (see src/lib/messaging/key-derivation.ts importPrivateKey). The keyPair
+// object can be passed directly to encryptionService.storePrivateKey().
 
 export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
@@ -131,16 +120,16 @@ export class KeyManagementService {
       }
 
       // Step 4: Store keypair in memory + IndexedDB.
-      // The IndexedDB copy is a NON-EXTRACTABLE re-import — XSS reading the
-      // row cannot exportKey() the raw material. The in-memory copy stays
-      // extractable so the public half can still be exported on demand
-      // (e.g. for verification fingerprints).
+      // The private key is non-extractable both in memory (per
+      // KeyDerivationService.importPrivateKey) and in IndexedDB. The public
+      // CryptoKey is extractable but that's fine — public keys aren't
+      // sensitive, and verifyPublicKey works on the JWK form
+      // (keyPair.publicKeyJwk) without needing exportKey on the CryptoKey.
       this.derivedKeys = keyPair;
       try {
-        const nonExtractablePrivate = await asNonExtractablePrivate(
-          keyPair.privateKey
-        );
-        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
+        // keyPair.privateKey is already non-extractable (see
+        // KeyDerivationService.importPrivateKey).
+        await encryptionService.storePrivateKey(user.id, keyPair.privateKey);
       } catch (err) {
         logger.warn('Could not populate IndexedDB after initializeKeys()', {
           error: err,
@@ -237,9 +226,14 @@ export class KeyManagementService {
       const storedKey = data.public_key as unknown as JsonWebKey;
       const derivedFingerprint = keyPair.publicKeyJwk?.x?.slice(0, 8) ?? 'null';
       const storedFingerprint = storedKey?.x?.slice(0, 8) ?? 'null';
-      console.log(
-        `[deriveKeys] userId=${user.id.slice(0, 8)} derived=${derivedFingerprint} stored=${storedFingerprint} match=${derivedFingerprint === storedFingerprint}`
-      );
+      // logger.debug is suppressed in production; safe for diagnostic output
+      // that includes user-id prefixes + public-key fingerprints.
+      logger.debug('deriveKeys fingerprint compare', {
+        userIdPrefix: user.id.slice(0, 8),
+        derived: derivedFingerprint,
+        stored: storedFingerprint,
+        match: derivedFingerprint === storedFingerprint,
+      });
 
       const isMatch = this.keyDerivationService.verifyPublicKey(
         keyPair.publicKeyJwk,
@@ -253,10 +247,9 @@ export class KeyManagementService {
       // Step 4: Store keypair in memory + IndexedDB (non-extractable copy).
       this.derivedKeys = keyPair;
       try {
-        const nonExtractablePrivate = await asNonExtractablePrivate(
-          keyPair.privateKey
-        );
-        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
+        // keyPair.privateKey is already non-extractable (see
+        // KeyDerivationService.importPrivateKey).
+        await encryptionService.storePrivateKey(user.id, keyPair.privateKey);
       } catch (err) {
         logger.warn('Could not populate IndexedDB after deriveKeys()', {
           error: err,
@@ -340,9 +333,11 @@ export class KeyManagementService {
       salt: data.encryption_salt,
     };
     const fingerprint = publicKeyJwk?.x?.slice(0, 8) ?? 'null';
-    console.log(
-      `[restoreKeysFromCache] userId=${currentUserId.slice(0, 8)} pubKey=${fingerprint} source=IndexedDB`
-    );
+    logger.debug('restoreKeysFromCache', {
+      userIdPrefix: currentUserId.slice(0, 8),
+      pubKey: fingerprint,
+      source: 'IndexedDB',
+    });
     logger.info('Restored keys from IndexedDB', { userId: currentUserId });
     return true;
   }
@@ -492,9 +487,6 @@ export class KeyManagementService {
         authError: authError?.message,
         hasUser: !!user,
       });
-      console.warn(
-        `[hasKeys] auth failed: error=${authError?.message || 'none'}, user=${!!user}`
-      );
       return false;
     }
 
@@ -522,9 +514,6 @@ export class KeyManagementService {
         hasData: data !== null,
         errorCode: error?.code,
       });
-      console.warn(
-        `[hasKeys] query: userId=${user.id.slice(0, 8)}, hasData=${data !== null}, err=${error?.code || 'none'}`
-      );
       return data !== null;
     } catch (error) {
       if (error instanceof ConnectionError) {
@@ -653,10 +642,9 @@ export class KeyManagementService {
       // Update in-memory keys + IndexedDB (non-extractable copy).
       this.derivedKeys = keyPair;
       try {
-        const nonExtractablePrivate = await asNonExtractablePrivate(
-          keyPair.privateKey
-        );
-        await encryptionService.storePrivateKey(user.id, nonExtractablePrivate);
+        // keyPair.privateKey is already non-extractable (see
+        // KeyDerivationService.importPrivateKey).
+        await encryptionService.storePrivateKey(user.id, keyPair.privateKey);
       } catch (err) {
         logger.warn('Could not populate IndexedDB after rotateKeys()', {
           error: err,
@@ -746,9 +734,10 @@ export class KeyManagementService {
       const cached = this.publicKeyCache.get(userId);
       if (cached) {
         const fingerprint = cached?.x?.slice(0, 8) ?? 'null';
-        console.log(
-          `[getUserPublicKey] userId=${userId.slice(0, 8)} key=${fingerprint} source=offline-cache`
-        );
+        logger.debug('getUserPublicKey from offline cache', {
+          userIdPrefix: userId.slice(0, 8),
+          key: fingerprint,
+        });
         return cached;
       }
     }
@@ -780,15 +769,18 @@ export class KeyManagementService {
       }
 
       const publicKey = (data?.public_key as unknown as JsonWebKey) ?? null;
-      // Log key fingerprint for E2E debugging (x-coordinate of ECDH public key)
+      // Log key fingerprint at debug level for E2E diagnostics; suppressed
+      // in production builds.
       const fingerprint = publicKey?.x?.slice(0, 8) ?? 'null';
       const source =
         typeof navigator !== 'undefined' && !navigator.onLine
           ? 'offline-cache'
           : 'db-fresh';
-      console.log(
-        `[getUserPublicKey] userId=${userId.slice(0, 8)} key=${fingerprint} source=${source}`
-      );
+      logger.debug('getUserPublicKey result', {
+        userIdPrefix: userId.slice(0, 8),
+        key: fingerprint,
+        source,
+      });
       if (publicKey) {
         this.publicKeyCache.set(userId, publicKey);
       }
