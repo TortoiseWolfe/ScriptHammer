@@ -63,6 +63,7 @@ public/manifest.json
 
 # Claude Code local settings (user-specific permissions)
 .claude/settings.local.json
+.claude/scheduled_tasks.lock
 
 # Local Specify development tools (keep outputs, ignore scripts/templates)
 .specify/scripts/
