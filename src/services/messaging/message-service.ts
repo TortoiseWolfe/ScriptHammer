@@ -771,37 +771,32 @@ export class MessageService {
         };
       }
 
-      // Reuse the module-level sharedSecretCache so a polling loop or a
-      // refresh of the same conversation doesn't re-run ECDH derivation
-      // every call. ECDH is computationally cheap individually but compounds
-      // at ~6/min under polling. Invalidate the cache when the sender's
-      // private key identity changes (e.g. after key rotation / re-derive).
-      if (cachedSenderPrivateKey !== currentKeys.privateKey) {
-        sharedSecretCache.clear();
-        cachedSenderPrivateKey = currentKeys.privateKey;
-      }
-      let sharedSecret = sharedSecretCache.get(otherParticipantId) ?? null;
-      if (!sharedSecret) {
-        logger.debug('Importing other user public key via crypto.subtle');
-        const otherPublicKeyCrypto = await crypto.subtle.importKey(
-          'jwk',
-          otherPublicKey,
-          {
-            name: 'ECDH',
-            namedCurve: 'P-256',
-          },
-          false,
-          []
-        );
-        logger.debug('Other user public key imported successfully');
+      // Derive a fresh shared secret per call. An earlier batch reused the
+      // module-level sharedSecretCache here (matching sendMessage's pattern)
+      // but it caused a real Firefox/WebKit messaging E2E regression — the
+      // cached CryptoKey reference behaves differently across reload + tab
+      // contexts on those browsers, and polling could see stale or mismatched
+      // shared secrets. Reverted in hotfix until a browser-safe instance-aware
+      // cache key is designed. Fresh derivation is ~6 ECDH derivations/min
+      // under polling — measurable but not user-perceivable.
+      logger.debug('Importing other user public key via crypto.subtle');
+      const otherPublicKeyCrypto = await crypto.subtle.importKey(
+        'jwk',
+        otherPublicKey,
+        {
+          name: 'ECDH',
+          namedCurve: 'P-256',
+        },
+        false,
+        []
+      );
+      logger.debug('Other user public key imported successfully');
 
-        // Derive shared secret using our derived private key
-        sharedSecret = await encryptionService.deriveSharedSecret(
-          currentKeys.privateKey,
-          otherPublicKeyCrypto
-        );
-        sharedSecretCache.set(otherParticipantId, sharedSecret);
-      }
+      // Derive shared secret using our derived private key
+      const sharedSecret = await encryptionService.deriveSharedSecret(
+        currentKeys.privateKey,
+        otherPublicKeyCrypto
+      );
 
       // Log key fingerprints for E2E diagnostics (debug-suppressed in prod)
       const otherKeyFingerprint = otherPublicKey?.x?.slice(0, 8) ?? 'null';
