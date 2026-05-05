@@ -61,8 +61,19 @@ describe('SetupBanner', () => {
       const link = screen.getByText('View setup guide');
       expect(link).toHaveAttribute(
         'href',
-        'https://github.com/TortoiseWolfe/ScriptHammer#supabase-setup'
+        'https://github.com/TortoiseWolfe/ScriptHammer/blob/main/docs/FORKING.md#supabase-setup'
       );
+    });
+
+    it('should name both required env vars in default message', () => {
+      // Fork users seeing the banner need to know exactly which two
+      // NEXT_PUBLIC_* vars to populate. Pin both names so a future copy
+      // refactor doesn't drop one.
+      render(<SetupBanner show={true} />);
+      expect(screen.getByText(/NEXT_PUBLIC_SUPABASE_URL/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/NEXT_PUBLIC_SUPABASE_ANON_KEY/)
+      ).toBeInTheDocument();
     });
 
     it('should render setup guide link with custom URL', () => {
