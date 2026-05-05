@@ -96,6 +96,17 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 COPY --from=deps /app/node_modules ./node_modules
 RUN npx playwright install chromium firefox webkit
 
+# Pre-create directories that mount as named volumes so they inherit
+# node:node ownership rather than Docker's default root:root. Without
+# this, `docker volume rm scripthammer_node_modules && docker compose up`
+# (or any fresh-clone first start) leaves the mountpoint root-owned,
+# causing EACCES when pnpm runs as node and tries to recreate .bin.
+# Mirrors the ce0e64d fix that originally landed for .next.
+# See: docs/interoffice/audits/2026-05-02-supabase-banner-audit.md (#69)
+RUN chown -R node:node /app/node_modules \
+    && mkdir -p /app/.next \
+    && chown -R node:node /app/.next
+
 # Entrypoint needs root for chmod, copy before USER switch
 COPY docker/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
