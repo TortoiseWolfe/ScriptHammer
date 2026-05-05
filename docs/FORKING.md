@@ -158,6 +158,8 @@ The deployment automatically detects your repository name and sets the correct b
 
 ## Supabase Setup
 
+While Supabase env vars are unset, you'll see a yellow "Setup required" banner on every page of the running app. This is intentional — it disappears automatically once `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are populated. The banner is also dismissible via the × button if you want to focus on non-Supabase features first.
+
 ### 1. Create Supabase Project
 
 1. Go to [supabase.com](https://supabase.com) and create a new project
