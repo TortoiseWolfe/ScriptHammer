@@ -8,8 +8,18 @@ import { createClient } from '@/lib/supabase/client';
 import { createLogger } from '@/lib/logger';
 
 /**
- * Extract display name from OAuth user metadata using fallback cascade
- * Priority: full_name > name > email prefix > "Anonymous User"
+ * Extract display name from OAuth user metadata using fallback cascade.
+ * Priority: full_name > name > user_name > preferred_username > email prefix > "Anonymous User"
+ *
+ * Provider-specific notes:
+ * - Google sets `full_name` and `name`
+ * - GitHub sets `name` (the user's display name) and `user_name` (the GitHub
+ *   handle). The handle is preferred over email prefix because users with
+ *   no display name set on GitHub still have a meaningful identifier.
+ * - Other providers may use `preferred_username` (OIDC standard claim).
+ *
+ * Trims whitespace at each tier so a metadata field of "   " falls through
+ * to the next tier instead of producing a whitespace-only display name.
  *
  * @param user - Supabase User object
  * @returns Display name string, never null
@@ -17,12 +27,19 @@ import { createLogger } from '@/lib/logger';
 export function extractOAuthDisplayName(user: User | null): string {
   if (!user) return 'Anonymous User';
 
-  // Fallback cascade per FR-005
-  const fullName = user.user_metadata?.full_name;
-  if (fullName) return fullName;
-
-  const name = user.user_metadata?.name;
-  if (name) return name;
+  const meta = user.user_metadata ?? {};
+  const tiers = [
+    meta.full_name,
+    meta.name,
+    meta.user_name,
+    meta.preferred_username,
+  ];
+  for (const tier of tiers) {
+    if (typeof tier === 'string') {
+      const trimmed = tier.trim();
+      if (trimmed.length > 0) return trimmed;
+    }
+  }
 
   // Email prefix fallback
   const email = user.email;

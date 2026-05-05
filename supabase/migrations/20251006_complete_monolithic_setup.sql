@@ -2290,16 +2290,36 @@ END
 $seed_admin_profile$;
 
 -- ============================================================================
--- Feature 004: Populate OAuth user profiles (one-time migration)
--- Only updates NULL display_name for OAuth users
--- Idempotent: Safe to run multiple times (FR-006)
+-- Feature 004 / Issue #29: Populate OAuth user profiles (one-time backfill)
+-- Only updates NULL display_name for OAuth users.
+-- Idempotent: Safe to run multiple times (FR-006).
+--
+-- Cascade mirrors src/lib/auth/oauth-utils.ts extractOAuthDisplayName():
+--   full_name > name > user_name > preferred_username > email prefix > 'Anonymous User'
+--
+-- Provider notes:
+--   - Google sets full_name AND name
+--   - GitHub sets name (display name) AND user_name (the @handle) — without
+--     user_name in the cascade, GitHub users with no GitHub display name
+--     would fall through to email prefix even though the @handle is a
+--     better identifier
+--   - Other OIDC providers may set preferred_username
+--
+-- Note on runtime behavior: create_user_profile() (the on_auth_user_created
+-- trigger) does NOT set display_name — it inserts only (id, created_at,
+-- updated_at). So at signup display_name is NULL, and the runtime
+-- populateOAuthProfile() in src/lib/auth/oauth-utils.ts is the sole
+-- authoritative populator going forward. This UPDATE handles only the
+-- one-time bootstrap for users who existed before that runtime path landed.
 -- ============================================================================
 UPDATE public.user_profiles p
 SET
   display_name = COALESCE(
-    u.raw_user_meta_data->>'full_name',
-    u.raw_user_meta_data->>'name',
-    split_part(u.email, '@', 1),
+    NULLIF(TRIM(u.raw_user_meta_data->>'full_name'), ''),
+    NULLIF(TRIM(u.raw_user_meta_data->>'name'), ''),
+    NULLIF(TRIM(u.raw_user_meta_data->>'user_name'), ''),
+    NULLIF(TRIM(u.raw_user_meta_data->>'preferred_username'), ''),
+    NULLIF(split_part(u.email, '@', 1), ''),
     'Anonymous User'
   ),
   avatar_url = COALESCE(p.avatar_url, u.raw_user_meta_data->>'avatar_url')

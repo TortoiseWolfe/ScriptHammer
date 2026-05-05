@@ -105,6 +105,113 @@ describe('extractOAuthDisplayName', () => {
     });
     expect(extractOAuthDisplayName(user)).toBe('José García 🚀');
   });
+
+  // Issue #29: GitHub puts the user's @handle in user_name, not name. Without
+  // this tier in the cascade, GitHub users with no display name set would
+  // fall through to email prefix even though the @handle is a meaningful
+  // identifier provided by the OAuth flow.
+  describe('issue #29 — extended cascade for GitHub / OIDC providers', () => {
+    it('returns user_name when full_name and name are absent (GitHub @handle)', () => {
+      const user = createMockUser({
+        user_metadata: { user_name: 'octocat' },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('octocat');
+    });
+
+    it('prefers name over user_name (GitHub user with display name set)', () => {
+      const user = createMockUser({
+        user_metadata: { name: 'The Octocat', user_name: 'octocat' },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('The Octocat');
+    });
+
+    it('returns preferred_username when nothing higher is set (OIDC)', () => {
+      const user = createMockUser({
+        user_metadata: { preferred_username: 'jsmith' },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('jsmith');
+    });
+
+    it('prefers user_name over preferred_username when both present', () => {
+      const user = createMockUser({
+        user_metadata: {
+          user_name: 'octocat',
+          preferred_username: 'fallback',
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('octocat');
+    });
+
+    it('skips whitespace-only metadata fields and falls through', () => {
+      const user = createMockUser({
+        email: 'jsmith@example.com',
+        user_metadata: {
+          full_name: '   ',
+          name: '',
+          user_name: '   ',
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('jsmith');
+    });
+
+    it('trims surrounding whitespace from a populated tier', () => {
+      const user = createMockUser({
+        user_metadata: { full_name: '  Jon Pohlner  ' },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('Jon Pohlner');
+    });
+
+    // Realistic Google fixture: full_name + name + avatar_url, no user_name
+    it('handles Google OAuth metadata shape', () => {
+      const user = createMockUser({
+        email: 'jpohlner@gmail.com',
+        user_metadata: {
+          full_name: 'Jon Pohlner',
+          name: 'Jon Pohlner',
+          avatar_url: 'https://lh3.googleusercontent.com/a/abc',
+          email_verified: true,
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('Jon Pohlner');
+    });
+
+    // Realistic GitHub fixture: name set to display name, user_name to handle
+    it('handles GitHub OAuth metadata shape with display name', () => {
+      const user = createMockUser({
+        email: 'octocat@users.noreply.github.com',
+        user_metadata: {
+          name: 'The Octocat',
+          user_name: 'octocat',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231',
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('The Octocat');
+    });
+
+    // Realistic GitHub fixture: handle only (user has no display name set on GitHub)
+    it('handles GitHub OAuth metadata shape with handle only', () => {
+      const user = createMockUser({
+        email: 'octocat@users.noreply.github.com',
+        user_metadata: {
+          user_name: 'octocat',
+          avatar_url: 'https://avatars.githubusercontent.com/u/583231',
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('octocat');
+    });
+
+    it('ignores non-string metadata values without throwing', () => {
+      const user = createMockUser({
+        email: 'jsmith@example.com',
+        user_metadata: {
+          full_name: 42 as unknown as string,
+          name: null as unknown as string,
+          user_name: undefined as unknown as string,
+        },
+      });
+      expect(extractOAuthDisplayName(user)).toBe('jsmith');
+    });
+  });
 });
 
 describe('extractOAuthAvatarUrl', () => {
