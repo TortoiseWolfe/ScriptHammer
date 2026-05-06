@@ -65,9 +65,13 @@ public/manifest.json
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 
-# Local Specify development tools (keep outputs, ignore scripts/templates)
-.specify/scripts/
-.specify/templates/
+# SpecKit harness scripts and templates ship with the repo so every contributor
+# gets working /speckit.* commands without per-machine setup. The scripts under
+# .specify/scripts/bash/ are vendored from upstream github/spec-kit with two
+# ScriptHammer-specific adaptations:
+#   - common.sh recurses through features/<category>/<NNN-name>/ instead of flat specs/
+#   - create-new-feature.sh lands new dirs under features/_uncategorized/
+# See .specify/scripts/bash/config.sh for the configurable bits.
 plan
 tasks
 storybook-static/
