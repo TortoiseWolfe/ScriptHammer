@@ -1,6 +1,6 @@
 # ScriptHammer Status
 
-**Snapshot**: 2026-04-27 · **Version**: v0.0.1 · **Stability**: Beta — Family A stability batch landed; Family B (payment routes) is the next-leverage front
+**Snapshot**: 2026-05-06 · **Version**: v0.0.1 · **Stability**: Beta — Phase 0 (template hygiene) closed; GrimGlow ThreeJS fork (Phase 0.5) green-lit; Family B (payment routes) is the next-leverage front
 
 This is the single screen-scan view of "what's planned, what's shipped, what's broken."
 For the deeper per-feature audit see [`docs/prp-docs/PRP-STATUS.md`](docs/prp-docs/PRP-STATUS.md).
@@ -24,12 +24,12 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 - [x] **000 Brand Identity** — AnimatedLogo + SpinningLogo shipped
 - [x] **000 Landing Page** — `/` route + interactive game shipped
 - [x] **000 RLS Implementation** — 17 tables RLS-protected in monolithic migration
-- [~] **001 WCAG AA Compliance** — pa11y/axe wired; AAA scope gap, 4 ContactForm a11y failures
+- [x] **001 WCAG AAA Compliance** — pa11y/axe wired at AAA standard; ContactForm a11y green; live overlay deferred to #80 (#21 closed PR #81)
 - [x] **002 Cookie Consent** — full GDPR compliance (PRP-007 complete)
 - [x] **003 User Authentication** — email/password + OAuth GitHub/Google. **Stability hotspot: ProtectedRoute auth race (3 reverts)**
-- [~] **004 Mobile-First Design** — responsive code shipped; wireframes need regen, perf tests incomplete
+- [x] **004 Mobile-First Design** — Web Vitals (LCP/INP/CLS) instrumented through GoogleAnalytics; wireframes re-validated against v5.4 (#22 closed PR #78)
 - [~] **005 Security Hardening** — core shipped (rate-limit, CSRF, validation); session-timeout UI + audit dashboard incomplete
-- [~] **006 Template Fork Experience** — `scripts/rebrand.sh` + docs/FORKING.md shipped; Supabase missing-config banner pending
+- [x] **006 Template Fork Experience** — `scripts/rebrand.sh` + FORKING.md + Supabase missing-config SetupBanner (env-vars named, FORKING.md anchor) (#24 closed PR #77; #69 Docker volume permissions closed PR #70)
 
 ## Tier 2 — Core Features + Auth-OAuth (11 features)
 
@@ -42,7 +42,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 - [~] **043 Group Service** — backing for 011; addMembers, getMembers, removeMember, leaveGroup, transferOwnership, upgradeToGroup, renameGroup, deleteGroup all stubbed
 - [ ] **013 OAuth Messaging Password** — not started
 - [!] **014 Admin Welcome Email Gate** — admin pages exist; gate UI for messaging access missing
-- [~] **015 OAuth Display Name** — callback population not verified; fallback cascade untested; existing-user migration missing
+- [x] **015 OAuth Display Name** — full cascade (full_name > name > user_name > preferred_username > email_prefix); GitHub/Google fixtures tested; SQL bootstrap mirrors JS cascade (#29 closed PR #75)
 - [ ] **016 Messaging Critical Fixes** — 5 separate UX fixes, none shipped
 
 ## Tier 3 — Enhancements (5 features)
@@ -99,14 +99,14 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 ## Summary by Status
 
-| Status                      | Count  | Features                                                                                                                               |
-| --------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Shipped `[x]`               | 18     | 000-brand, 000-landing, 000-rls, 002, 003, 007, 008, 009, 017, 018, 022, 025, 031, 032, 034, 036, 042, 046                             |
-| Mostly Shipped (config gap) | 6      | 004, 006, 011, 019, 024, 030                                                                                                           |
-| Partial `[~]`               | 19     | Most active backlog lives here (010, 012, 015, 020, 021, 023, 026, 027, 029, 033, 035, 037, 038, 039, 041, 043, 045, plus 001 and 005) |
-| Backend Only `[!]`          | 2      | 014, 040                                                                                                                               |
-| Not Started `[ ]`           | 4      | 013, 016, 028, 044                                                                                                                     |
-| **Total**                   | **49** | (3 features — 000-brand, 000-landing, 046-admin — lack `spec.md` and are tracked via `*_feature.md` only)                              |
+| Status                      | Count  | Features                                                                                                                       |
+| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Shipped `[x]`               | 22     | 000-brand, 000-landing, 000-rls, 001, 002, 003, 004, 006, 007, 008, 009, 015, 017, 018, 022, 025, 031, 032, 034, 036, 042, 046 |
+| Mostly Shipped (config gap) | 4      | 011, 019, 024-payment, 030                                                                                                     |
+| Partial `[~]`               | 15     | 010, 012, 020, 021, 023, 026, 027, 029, 033, 035, 037, 038, 039, 041, 043, 045, plus 005                                       |
+| Backend Only `[!]`          | 2      | 014, 040                                                                                                                       |
+| Not Started `[ ]`           | 4      | 013, 016, 028, 044                                                                                                             |
+| **Total**                   | **49** | (3 features — 000-brand, 000-landing, 046-admin — lack `spec.md` and are tracked via `*_feature.md` only)                      |
 
 ---
 
