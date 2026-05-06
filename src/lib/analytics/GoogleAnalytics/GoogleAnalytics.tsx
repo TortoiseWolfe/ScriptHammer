@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { useConsent } from '@/contexts/ConsentContext';
@@ -10,6 +10,7 @@ import {
   updateGAConsent,
   trackPageView,
 } from '@/utils/analytics';
+import { initWebVitals } from '@/utils/performance';
 
 /**
  * GoogleAnalytics component
@@ -21,6 +22,14 @@ import {
 export default function GoogleAnalytics() {
   const { consent } = useConsent();
   const pathname = usePathname();
+  // initWebVitals subscribes PerformanceObserver listeners that don't
+  // unsubscribe on consent flip — guard against double-subscribe so a
+  // user who toggles consent off-then-on doesn't end up reporting each
+  // metric twice. The web-vitals dispatch is consent-gated downstream
+  // (sendToAnalytics → isAnalyticsEnabled), so leaving the subscription
+  // in place across a flip-off is safe; only the consent-on transition
+  // ever needs to call initWebVitals.
+  const webVitalsInitializedRef = useRef(false);
 
   // Initialize GA and update consent when consent changes
   useEffect(() => {
@@ -29,6 +38,15 @@ export default function GoogleAnalytics() {
     if (consent.analytics) {
       initializeGA();
       updateGAConsent(true);
+      // Subscribe to LCP/FCP/CLS/TTFB/INP exactly once per page load.
+      // initWebVitals is idempotent at the function level only via this
+      // ref guard — the underlying web-vitals callbacks unsubscribe
+      // themselves on first report (LCP, FCP) or on visibilitychange
+      // (CLS, INP), so a single subscribe is sufficient.
+      if (!webVitalsInitializedRef.current) {
+        initWebVitals();
+        webVitalsInitializedRef.current = true;
+      }
     } else {
       updateGAConsent(false);
     }

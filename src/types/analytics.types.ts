@@ -53,7 +53,7 @@ export interface AnalyticsEvent {
  * Web Vital metric event
  */
 export interface WebVitalEvent extends AnalyticsEvent {
-  metric_name: 'FCP' | 'LCP' | 'CLS' | 'FID' | 'TTFB' | 'INP';
+  metric_name: 'FCP' | 'LCP' | 'CLS' | 'TTFB' | 'INP';
   metric_value: number;
   metric_rating: 'good' | 'needs-improvement' | 'poor';
   metric_delta?: number;

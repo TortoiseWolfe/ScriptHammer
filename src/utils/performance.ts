@@ -1,4 +1,12 @@
-import { onCLS, onFCP, onLCP, onTTFB, onINP, Metric } from 'web-vitals';
+import {
+  onCLS,
+  onFCP,
+  onLCP,
+  onTTFB,
+  onINP,
+  sendToAnalytics,
+  type Metric,
+} from './web-vitals';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('utils:performance');
@@ -12,45 +20,33 @@ export interface PerformanceMetrics {
   timestamp: number;
 }
 
-const metricsStorage: PerformanceMetrics = {
-  timestamp: Date.now(),
-};
+/**
+ * Persist a metric to localStorage so the /status diagnostic page can
+ * read historical values across reloads. Wraps the analytics dispatch
+ * (which is consent-gated and dynamic-imported) so the localStorage
+ * write happens regardless of analytics consent — local diagnostics
+ * shouldn't be coupled to GA opt-in.
+ */
+function recordMetric(metric: Metric): void {
+  // Forward to analytics (consent-gated inside sendToAnalytics).
+  sendToAnalytics(metric);
 
-function sendToAnalytics(metric: Metric) {
-  // In production, you might send this to an analytics service
-  if (process.env.NODE_ENV === 'production') {
-    // Example: send to Google Analytics
-    if (typeof window !== 'undefined' && 'gtag' in window) {
-      const gtag = (window as unknown as Record<string, unknown>).gtag as (
-        ...args: unknown[]
-      ) => void;
-      gtag('event', metric.name, {
-        value: Math.round(
-          metric.name === 'CLS' ? metric.value * 1000 : metric.value
-        ),
-        event_category: 'Web Vitals',
-        event_label: metric.id,
-        non_interaction: true,
-      });
+  // Always persist locally for the status dashboard.
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('webVitals');
+      const existing = stored ? JSON.parse(stored) : {};
+      existing[metric.name] = {
+        value: metric.value,
+        timestamp: Date.now(),
+        rating: metric.rating,
+      };
+      localStorage.setItem('webVitals', JSON.stringify(existing));
+    } catch (e) {
+      logger.debug('webVitals localStorage persist failed', { error: e });
     }
   }
 
-  // Store in memory for dashboard display
-  metricsStorage[metric.name as keyof PerformanceMetrics] = metric.value;
-
-  // Also store in localStorage for persistence
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('webVitals');
-    const existing = stored ? JSON.parse(stored) : {};
-    existing[metric.name] = {
-      value: metric.value,
-      timestamp: Date.now(),
-      rating: metric.rating,
-    };
-    localStorage.setItem('webVitals', JSON.stringify(existing));
-  }
-
-  // Log in development
   if (process.env.NODE_ENV === 'development') {
     logger.debug('Web Vitals metric', {
       name: metric.name,
@@ -60,17 +56,23 @@ function sendToAnalytics(metric: Metric) {
   }
 }
 
-export function initWebVitals() {
+/**
+ * Subscribe to Core Web Vitals and dispatch each report to analytics +
+ * localStorage. Idempotent — calling twice double-subscribes, so callers
+ * (notably src/lib/analytics/GoogleAnalytics) must guard against
+ * re-running on consent toggles.
+ */
+export function initWebVitals(): void {
   if (typeof window === 'undefined') return;
 
   // Core Web Vitals
-  onCLS(sendToAnalytics);
-  onFCP(sendToAnalytics);
-  onLCP(sendToAnalytics);
+  onCLS(recordMetric);
+  onFCP(recordMetric);
+  onLCP(recordMetric);
 
   // Additional metrics
-  onTTFB(sendToAnalytics);
-  onINP(sendToAnalytics);
+  onTTFB(recordMetric);
+  onINP(recordMetric);
 }
 
 export function getStoredMetrics(): PerformanceMetrics | null {
