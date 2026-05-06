@@ -174,7 +174,11 @@ export default function Home() {
                 href={STORYBOOK_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="link link-hover text-base-content/70 hover:text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
+                // Solid text-base-content for AAA contrast (7:1) on
+                // scripthammer-light's #ebe5dd panel. /70 was 4.98:1 — fine
+                // for AA but failed AAA per #21. The muted-secondary feel
+                // is preserved via text-sm + the smaller font, not opacity.
+                className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
               >
                 or explore the component catalogue in Storybook
                 <span aria-hidden="true">→</span>
