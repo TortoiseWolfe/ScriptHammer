@@ -9,24 +9,35 @@
 
 ## Implementation Status
 
-**Last audited**: 2026-04-25
-**Real status**: Partial
-**Tracking**: see gap-audit GitHub issues + STATUS.md
+**Last audited**: 2026-05-06 (#21 Phase 0 closure)
+**Real status**: Mostly shipped (AAA contrast bumped; live overlay deferred)
+**Tracking**: #21 closing PR + #80 (live overlay follow-up)
 
 ### Shipped
 
 - pa11y + axe-core integration
 - \*.accessibility.test.tsx files across components
+- ContactForm a11y suite green (3255+/3255+ pass)
+- **AAA contrast scope** — `config/pa11yci.json` standard is `WCAG2AAA`;
+  `tests/e2e/color-contrast.spec.ts` uses the `color-contrast-enhanced`
+  axe rule (7:1 normal text / 4.5:1 large text)
+- Contrast gate split: pa11y covers non-contrast AAA criteria
+  (focus visibility, link purpose, etc.); E2E spec covers contrast
+  (because pa11y treats axe `incomplete` as failure, which produces
+  14–61 false positives per page on DaisyUI `.btn` gradients)
 
-### Gaps
+### Deferred
 
-- WCAG AAA scope (specs call for AAA but implementation appears AA)
-- 4 ContactForm a11y test failures noted in PRP-STATUS
-- Real-time dev feedback dashboard incomplete
+- Live a11y overlay (dev-time floating panel): tracked in #80,
+  deferred to v0.1.0+ per the original next-session primer
 
 ### Notes
 
-- Accessibility infrastructure exists; AAA-level coverage incomplete.
+- Spec was originally written at AAA scope; the code had drifted to AA.
+  #21 aligned the code to the spec rather than the inverse — the
+  template ships at the level the spec promises. Per memory rule
+  "always prefer cleaner long-term solutions over quick short-term
+  hacks," amending the spec down to AA was rejected.
 
 <!-- AUDIT-IMPL-STATUS-END -->
 
