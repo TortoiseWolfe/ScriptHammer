@@ -6,11 +6,17 @@ import { dirname } from 'node:path';
 // produces 14–61 false positives per page on DaisyUI — .btn gradients
 // prevent axe from resolving a flat background color, so every button
 // lands in the needs-review bucket. That's why config/pa11yci.json keeps
-// color-contrast in its ignore list.
+// color-contrast (and color-contrast-enhanced) in its ignore list.
 //
-// This spec is the real contrast gate. It runs the same rule against the
-// same pages but asserts only on `violations` — cases where axe measured
-// the ratio and confirmed it's under the WCAG AA threshold.
+// This spec is the real contrast gate. It runs the AAA enhanced-contrast
+// rule (7:1 normal text / 4.5:1 large text) against the same pages but
+// asserts only on `violations` — cases where axe measured the ratio and
+// confirmed it's under the WCAG AAA threshold.
+//
+// Bumped from `color-contrast` (AA, 4.5:1 / 3:1) to `color-contrast-enhanced`
+// (AAA, 7:1 / 4.5:1) per #21 Phase 0 closure. The features/foundation/
+// 001-wcag-aa-compliance/spec.md was originally written for AAA; the code
+// had drifted to AA. Aligning code to the spec rather than the inverse.
 
 // axe-core is a transitive dep under pnpm's strict node_modules; resolve it
 // through jest-axe (direct dep) so the path survives lockfile bumps.
@@ -54,7 +60,7 @@ const THEMES = ['scripthammer-light', 'scripthammer-dark'] as const;
 // Mirrors config/pa11yci.json's urls[].
 const PAGES = ['/', '/themes/', '/accessibility/', '/status/'] as const;
 
-test.describe('WCAG AA color-contrast (violations only)', () => {
+test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
   // Match pa11yci.json viewport.
   test.use({ viewport: { width: 1280, height: 1024 } });
 
@@ -76,7 +82,7 @@ test.describe('WCAG AA color-contrast (violations only)', () => {
         const results = await page.evaluate<AxeResults>(() =>
           // @ts-expect-error — axe is injected as a global by the line above
           axe.run(document, {
-            runOnly: { type: 'rule', values: ['color-contrast'] },
+            runOnly: { type: 'rule', values: ['color-contrast-enhanced'] },
             resultTypes: ['violations', 'incomplete'],
           })
         );
@@ -106,7 +112,7 @@ test.describe('WCAG AA color-contrast (violations only)', () => {
 
         expect(
           details,
-          `color-contrast violations on ${path} [${theme}] ` +
+          `color-contrast-enhanced (AAA) violations on ${path} [${theme}] ` +
             `(${incompleteCount} incomplete/needs-review — expected, not a failure):\n` +
             JSON.stringify(details, null, 2)
         ).toHaveLength(0);
