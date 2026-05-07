@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { ReAuthModal } from '@/components/auth/ReAuthModal';
 import { keyManagementService } from '@/services/messaging/key-service';
 import { useAuth } from '@/contexts/AuthContext';
+import { isOAuthUser } from '@/lib/auth/oauth-utils';
 
 export interface EncryptionKeyGateProps {
   /** Child content — rendered once keys are confirmed in memory */
@@ -76,8 +77,22 @@ export default function EncryptionKeyGate({
       }
 
       if (!hasStoredKeys) {
-        // No keys at all — first-run setup. Full page redirect (not modal)
-        // so the browser's password manager sees a real form.
+        // No keys at all — first-run setup.
+        //
+        // OAuth users (Google/GitHub) get the in-modal setup flow per
+        // Feature 013 (FR-021). The /messages/setup page is preserved as
+        // a deep-link fallback (FR-022) but is no longer the primary path
+        // from /messages.
+        //
+        // Email users still get the full-page redirect because their auth
+        // password and messaging password are typically the same — the
+        // browser's password manager benefits from a real <form> context
+        // to offer auto-fill.
+        if (isOAuthUser(user)) {
+          setNeedsReAuth(true);
+          setCheckingKeys(false);
+          return;
+        }
         router.push('/messages/setup');
         return;
       }

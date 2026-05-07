@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOAuthUser, getOAuthProvider } from '@/lib/auth/oauth-utils';
+import { sendWelcomeMessageOnSetup } from '@/lib/messaging/welcome/send-welcome-message';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:auth:ReAuthModal');
@@ -18,19 +19,21 @@ export interface ReAuthModalProps {
   className?: string;
 }
 
+type ReAuthMode = 'unlock' | 'setup';
+
 /**
- * ReAuthModal component
- * Prompts user to re-enter password to unlock encryption keys
- * Used ONLY when session is restored but keys are not in memory (unlock mode)
+ * ReAuthModal — re-enter / create the messaging password.
  *
- * For OAuth users (Google, GitHub): Prompts to enter their messaging password
- * For email users: Prompts for their account password
+ * Two modes, decided at open time by inspecting `hasKeysForUser(user.id)`:
+ *   - unlock: existing keys in DB but not in IndexedDB → derive from password
+ *     (fires `keyManagementService.deriveKeys`)
+ *   - setup:  OAuth user with no keys yet → create a messaging password
+ *     (fires `keyManagementService.initializeKeys` + welcome-message dispatch)
  *
- * IMPORTANT: This modal is for UNLOCK mode only. Users without keys should be
- * redirected to /messages/setup for full-page setup (better password manager support).
- *
- * Feature: 032-fix-e2e-encryption, 006-feature-006-critical
- * Task: T017, T018, T019
+ * Setup mode is reachable only when EncryptionKeyGate flags an OAuth user
+ * with no keys (Feature 013). Email users with no keys still get the
+ * full-page redirect to /messages/setup, which itself remains as a deep-
+ * link fallback (FR-022).
  *
  * @category molecular
  */
@@ -42,10 +45,12 @@ export function ReAuthModal({
 }: ReAuthModalProps) {
   const { user } = useAuth();
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [checkingKeys, setCheckingKeys] = useState(true);
+  const [mode, setMode] = useState<ReAuthMode>('unlock');
 
   const modalRef = useRef<HTMLDivElement>(null);
   const passwordInputRef = useRef<HTMLInputElement>(null);
@@ -54,25 +59,38 @@ export function ReAuthModal({
   const oauthUser = isOAuthUser(user);
   const providerName = getOAuthProvider(user);
 
-  // EncryptionKeyGate already verified keys exist via hasKeysForUser()
-  // before showing this modal. No need to re-check — the old hasKeys()
-  // call here caused a redirect loop because getSession() raced with
-  // Supabase client initialization on static exports.
+  // Resolve mode when the modal opens. EncryptionKeyGate already verified
+  // *something* about keys before mounting us; we re-check here so the
+  // modal owns its own mode decision (testable in isolation, no implicit
+  // contract with the caller).
   useEffect(() => {
-    if (isOpen) {
-      const checkKeys = async () => {
-        setCheckingKeys(true);
-        try {
-          // Keys confirmed by EncryptionKeyGate — just mark as ready
-        } catch (err) {
-          logger.error('Error in ReAuthModal setup', { error: err });
-        } finally {
-          setCheckingKeys(false);
+    if (!isOpen) return;
+    let cancelled = false;
+    const resolveMode = async () => {
+      setCheckingKeys(true);
+      try {
+        if (!user?.id || !oauthUser) {
+          // Email user OR no user yet — keep default unlock mode.
+          if (!cancelled) setMode('unlock');
+          return;
         }
-      };
-      checkKeys();
-    }
-  }, [isOpen]);
+        const { keyManagementService } = await import(
+          '@/services/messaging/key-service'
+        );
+        const hasKeys = await keyManagementService.hasKeys();
+        if (!cancelled) setMode(hasKeys ? 'unlock' : 'setup');
+      } catch (err) {
+        logger.error('Error resolving ReAuthModal mode', { error: err });
+        if (!cancelled) setMode('unlock');
+      } finally {
+        if (!cancelled) setCheckingKeys(false);
+      }
+    };
+    resolveMode();
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, user?.id, oauthUser]);
 
   // Try to auto-fill from password manager using Credential Management API
   useEffect(() => {
@@ -132,6 +150,20 @@ export function ReAuthModal({
         return;
       }
 
+      // Setup mode: enforce password-confirm match (FR-006) before any
+      // key-service call. We do this client-side because the password is
+      // never persisted (FR-018) — the server has nothing to compare against.
+      if (mode === 'setup') {
+        if (password.length < 8) {
+          setError('Password must be at least 8 characters');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Passwords do not match');
+          return;
+        }
+      }
+
       setLoading(true);
 
       try {
@@ -139,34 +171,51 @@ export function ReAuthModal({
           '@/services/messaging/key-service'
         );
 
-        // This modal is unlock-only - derive keys from password
-        // Check if user needs migration first
-        const needsMigration = await keyManagementService.needsMigration();
-
-        if (needsMigration) {
-          // Legacy user - can't derive keys without migration
-          setError(
-            'Your account needs to be updated. Please sign out and sign back in.'
-          );
-          setLoading(false);
-          return;
+        if (mode === 'setup') {
+          // OAuth user creating a messaging password for the first time.
+          // initializeKeys generates a fresh salt, derives the keypair,
+          // uploads salt + public key to Supabase, stores the
+          // non-extractable private key in IndexedDB.
+          const keyPair = await keyManagementService.initializeKeys(password);
+          // Mark the toast reminder for /messages to pick up (parity with
+          // the full-page setup flow).
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('messaging_setup_complete', 'true');
+          }
+          // Fire-and-forget greeting message dispatch.
+          sendWelcomeMessageOnSetup(user, keyPair, logger);
+        } else {
+          // Unlock mode: derive keys from password. Check migration first
+          // (legacy random-key users can't derive without a fresh login).
+          const needsMigration = await keyManagementService.needsMigration();
+          if (needsMigration) {
+            setError(
+              'Your account needs to be updated. Please sign out and sign back in.'
+            );
+            setLoading(false);
+            return;
+          }
+          await keyManagementService.deriveKeys(password);
         }
-
-        // Derive keys from password
-        await keyManagementService.deriveKeys(password);
 
         // Success - clear form and notify parent
         setPassword('');
+        setConfirmPassword('');
         setError(null);
         onSuccess();
       } catch (err) {
         const errorMessage =
-          err instanceof Error ? err.message : 'Failed to unlock encryption';
+          err instanceof Error
+            ? err.message
+            : mode === 'setup'
+              ? 'Failed to create messaging password'
+              : 'Failed to unlock encryption';
 
-        // Check for key mismatch (wrong password)
+        // Check for key mismatch (wrong password) — only meaningful in unlock mode
         if (
-          errorMessage.includes('mismatch') ||
-          errorMessage.includes('Incorrect')
+          mode === 'unlock' &&
+          (errorMessage.includes('mismatch') ||
+            errorMessage.includes('Incorrect'))
         ) {
           setError('Incorrect password. Please try again.');
         } else {
@@ -176,7 +225,7 @@ export function ReAuthModal({
         setLoading(false);
       }
     },
-    [password, onSuccess]
+    [password, confirmPassword, mode, user, onSuccess]
   );
 
   if (!isOpen) {
@@ -200,7 +249,11 @@ export function ReAuthModal({
       >
         {/* Header */}
         <div className="border-base-300 flex items-center justify-between border-b p-6">
-          <h2 className="text-xl font-bold">Enter Your Messaging Password</h2>
+          <h2 className="text-xl font-bold">
+            {mode === 'setup'
+              ? 'Create a Messaging Password'
+              : 'Enter Your Messaging Password'}
+          </h2>
           {onClose && (
             <button
               onClick={onClose}
@@ -233,11 +286,30 @@ export function ReAuthModal({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6">
+            {/* Provider badge — surfaces the OAuth provider so users
+                immediately understand "this is the messaging password,
+                not the Google/GitHub login". Wireframes 01 + 02 (Feature 013). */}
+            {oauthUser && providerName && (
+              <p
+                className="text-base-content/85 mb-2 text-sm"
+                data-testid="oauth-provider-badge"
+              >
+                Signed in via {providerName}
+              </p>
+            )}
+
             <p id="reauth-description" className="text-base-content/80 mb-4">
-              {oauthUser ? (
+              {mode === 'setup' ? (
                 <>
-                  Please enter your messaging password to unlock your encrypted
-                  messages.
+                  Since you signed in with {providerName || 'OAuth'}, you need a
+                  separate messaging password to encrypt your messages. Save it
+                  — losing it means losing access to old encrypted messages.
+                </>
+              ) : oauthUser ? (
+                <>
+                  Enter your messaging password to unlock your encrypted
+                  messages. This is separate from your {providerName || 'OAuth'}{' '}
+                  login.
                 </>
               ) : (
                 <>
@@ -275,7 +347,9 @@ export function ReAuthModal({
             <div className="form-control">
               <label className="label" htmlFor="reauth-password">
                 <span className="label-text">
-                  {oauthUser ? 'Messaging Password' : 'Password'}
+                  {mode === 'setup' || oauthUser
+                    ? 'Messaging Password'
+                    : 'Password'}
                 </span>
               </label>
               <div className="relative">
@@ -287,9 +361,16 @@ export function ReAuthModal({
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input input-bordered min-h-11 w-full pr-12"
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
+                  placeholder={
+                    mode === 'setup'
+                      ? 'Create a messaging password'
+                      : 'Enter your password'
+                  }
+                  autoComplete={
+                    mode === 'setup' ? 'new-password' : 'current-password'
+                  }
                   disabled={loading}
+                  minLength={mode === 'setup' ? 8 : undefined}
                 />
                 <button
                   type="button"
@@ -338,8 +419,29 @@ export function ReAuthModal({
               </div>
             </div>
 
-            {/* Note: Setup mode uses /messages/setup page for better password manager support */}
-            {/* This modal is unlock-only, so no confirm password field needed */}
+            {/* Setup mode: confirm-password field. The page at /messages/setup
+                is preserved as a deep-link fallback (FR-022); this in-modal
+                setup is the primary path for OAuth users from /messages
+                (FR-021, Feature 013). */}
+            {mode === 'setup' && (
+              <div className="form-control mt-4">
+                <label className="label" htmlFor="reauth-confirm-password">
+                  <span className="label-text">Confirm Password</span>
+                </label>
+                <input
+                  id="reauth-confirm-password"
+                  name="confirm-password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="input input-bordered min-h-11 w-full"
+                  placeholder="Confirm your password"
+                  autoComplete="new-password"
+                  disabled={loading}
+                  minLength={8}
+                />
+              </div>
+            )}
 
             {error && (
               <div
@@ -369,6 +471,8 @@ export function ReAuthModal({
               >
                 {loading ? (
                   <span className="loading loading-spinner loading-md"></span>
+                ) : mode === 'setup' ? (
+                  'Create Messaging Password'
                 ) : (
                   'Unlock Messages'
                 )}

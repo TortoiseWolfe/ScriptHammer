@@ -694,9 +694,183 @@ describe('ReAuthModal', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/enter your messaging password/)
+          screen.getByText(/enter your messaging password/i)
         ).toBeInTheDocument();
       });
+    });
+  });
+
+  // Feature 013 — modal setup mode. The modal grows a setup mode for OAuth
+  // users without keys; these tests pin the new behavior. EncryptionKeyGate
+  // (separate file) is the trigger; here we simulate it by mocking
+  // hasKeysForUser → false alongside isOAuthUser → true.
+  describe('OAuth user without keys (setup mode)', () => {
+    beforeEach(async () => {
+      const { isOAuthUser, getOAuthProvider } = await import(
+        '@/lib/auth/oauth-utils'
+      );
+      vi.mocked(isOAuthUser).mockReturnValue(true);
+      vi.mocked(getOAuthProvider).mockReturnValue('Google');
+
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.hasKeys).mockResolvedValue(false);
+    });
+
+    it('should render setup-mode title for OAuth user without keys', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('heading', { name: /create a messaging password/i })
+        ).toBeInTheDocument();
+      });
+    });
+
+    it('should render confirm-password field in setup mode', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/confirm.*password/i)).toBeInTheDocument();
+      });
+    });
+
+    it('should call initializeKeys (not deriveKeys) on submit in setup mode', async () => {
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.initializeKeys).mockResolvedValue({
+        privateKey: {} as CryptoKey,
+        publicKey: {} as CryptoKey,
+        publicKeyJwk: {},
+        salt: 'salt',
+      });
+
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/confirm.*password/i)).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByLabelText(/^messaging password$/i);
+      const confirmInput = screen.getByLabelText(/confirm.*password/i);
+      await userEvent.type(passwordInput, 'NewPassword123!');
+      await userEvent.type(confirmInput, 'NewPassword123!');
+
+      const submit = screen.getByRole('button', {
+        name: /create messaging password/i,
+      });
+      await userEvent.click(submit);
+
+      await waitFor(() => {
+        expect(keyManagementService.initializeKeys).toHaveBeenCalledWith(
+          'NewPassword123!'
+        );
+        expect(keyManagementService.deriveKeys).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should show validation error and block submit when passwords do not match', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText(/confirm.*password/i)).toBeInTheDocument();
+      });
+
+      const passwordInput = screen.getByLabelText(/^messaging password$/i);
+      const confirmInput = screen.getByLabelText(/confirm.*password/i);
+      await userEvent.type(passwordInput, 'NewPassword123!');
+      await userEvent.type(confirmInput, 'DifferentPw99!');
+
+      const submit = screen.getByRole('button', {
+        name: /create messaging password/i,
+      });
+      await userEvent.click(submit);
+
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      expect(keyManagementService.initializeKeys).not.toHaveBeenCalled();
+      expect(screen.getByRole('alert')).toHaveTextContent(/do not match/i);
+    });
+
+    it('should render provider badge with the OAuth provider name', async () => {
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        // Wireframe 01 calls for a "via Google" / "via GitHub" badge
+        expect(screen.getByText(/via google/i)).toBeInTheDocument();
+      });
+    });
+  });
+
+  // Feature 013 — provider badge regression: not shown to email users.
+  describe('Email user — no provider badge (FR-014)', () => {
+    beforeEach(async () => {
+      // Reset OAuth mocks because earlier describe blocks set them to true.
+      // vi.clearAllMocks() in the outer beforeEach only resets call history,
+      // not implementations.
+      const { isOAuthUser, getOAuthProvider } = await import(
+        '@/lib/auth/oauth-utils'
+      );
+      vi.mocked(isOAuthUser).mockReturnValue(false);
+      vi.mocked(getOAuthProvider).mockReturnValue(null);
+
+      const { keyManagementService } = await import(
+        '@/services/messaging/key-service'
+      );
+      vi.mocked(keyManagementService.hasKeys).mockResolvedValue(true);
+    });
+
+    it('should NOT render provider badge for email users', async () => {
+      // Default mocks: email user, hasKeys=true → unlock mode
+      render(
+        <ReAuthModal
+          isOpen={true}
+          onSuccess={mockOnSuccess}
+          onClose={mockOnClose}
+        />
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('Enter Your Messaging Password')
+        ).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/via google/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/via github/i)).not.toBeInTheDocument();
     });
   });
 });

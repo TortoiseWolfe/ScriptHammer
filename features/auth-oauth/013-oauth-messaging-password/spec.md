@@ -11,25 +11,38 @@
 
 ## Implementation Status
 
-**Last audited**: 2026-04-25
-**Real status**: Not Started
+**Last audited**: 2026-05-06
+**Real status**: Partially Shipped
 **Tracking**: see gap-audit GitHub issues + STATUS.md
 
 ### Shipped
 
-- No OAuth-specific messaging password modal found
+- OAuth detection: `isOAuthUser(user)` + `getOAuthProvider(user)` in `src/lib/auth/oauth-utils.ts` (lines 71, 93)
+- Setup path (full-page): `/messages/setup` already shows password+confirm with OAuth-aware copy and Credential Management API integration
+- Unlock path (modal): `ReAuthModal` already detects OAuth, shows "Messaging Password" label, OAuth-specific description text
+- Email/password user flow unchanged (US-3 already satisfied)
 
 ### Gaps
 
-- OAuth user detection logic not implemented
-- Password setup modal not built
-- Unlock mode with OAuth provider identification missing
+- Modal-based setup mode (US-1 acceptance scenario 1): today key-less OAuth users are *redirected* to the full page; the modal does not yet render setup mode
+- Provider-identifying badge in unlock modal (US-2 FR-012): provider name surfaces in description copy but no visual badge
+- Per-spec "separate from your Google/GitHub login" subtext on unlock modal needs polish
 
 ### Notes
 
-- Post-launch UX refinement spec; not yet started.
+- Two-surface decision (2026-05-06): modal setup mode AND `/messages/setup` page both kept; modal is primary entry from `/messages`, page remains as deep-link fallback for password-manager flows.
 
 <!-- AUDIT-IMPL-STATUS-END -->
+
+## Clarifications
+
+### Session 2026-05-06
+
+- Q: When the modal is mounted on `/messages` for an OAuth user with no encryption keys, what triggers setup mode? → A: `isOAuthUser(user) && !keyManagementService.hasKeysForUser(user.id)` — same condition that today triggers the redirect, evaluated inside the modal opener instead of in `EncryptionKeyGate`.
+- Q: Where is the messaging password persisted? → A: Nowhere. Runtime-only. Used to derive ECDH keys via Argon2id; only the salt + public key live in `user_encryption_keys` (Supabase). The non-extractable derived `CryptoKey` lives in IndexedDB via `messaging_private_keys`.
+- Q: What happens if an OAuth user forgets their messaging password? → A: No recovery — old encrypted messages become permanently unreadable. Same trade-off as email-signup users forgetting their auth password. Out of scope for this feature; explicit warning copy in setup mode.
+- Q: How is the OAuth provider surfaced in the modal? → A: Visible provider badge ("via Google" / "via GitHub" text token, conditional on `isOAuthUser(user)`) plus the existing description copy. Reuse `getOAuthProvider(user)` return value for the badge text.
+- Q: Should `/messages/setup` redirect remain after the modal supports setup mode? → A: Yes. The page remains reachable via deep links (e.g., saved password-manager entries). The redirect from `/messages` to `/messages/setup` for OAuth users is removed; the modal handles setup inline.
 
 ## User Scenarios & Testing _(mandatory)_
 
@@ -130,6 +143,17 @@ As a user who signed up with email and password, my existing password entry expe
 - **FR-016**: Error messages MUST be announced to assistive technologies
 - **FR-017**: Focus MUST be properly managed when mode changes
 
+**Storage & Recovery (per 2026-05-06 clarifications)**
+
+- **FR-018**: System MUST NOT persist the messaging password in localStorage, sessionStorage, cookies, IndexedDB, or any other client-side store. The password is consumed at submit time to derive keys, then discarded.
+- **FR-019**: System MUST NOT provide a messaging-password recovery or reset flow. Setup mode MUST display a warning that lost messaging password = unrecoverable encrypted-message history.
+- **FR-020**: System MUST display a visual provider badge ("via Google" / "via GitHub" text token) in both setup and unlock modes when `isOAuthUser(user)` is true. Badge text MUST come from `getOAuthProvider(user)`.
+
+**Modal vs. Setup Page (per 2026-05-06 clarifications)**
+
+- **FR-021**: When an OAuth user lands on `/messages` and lacks encryption keys, the modal MUST open in setup mode inline. The system MUST NOT redirect to `/messages/setup` from this entry point.
+- **FR-022**: The `/messages/setup` page MUST remain reachable as a fallback (deep links, password-manager flows). It MUST continue to redirect to `/messages` when called by users who already have keys.
+
 ### Key Entities
 
 - **User Authentication Method**: Whether user signed in via OAuth (Google/GitHub) or email/password
@@ -153,11 +177,26 @@ As a user who signed up with email and password, my existing password entry expe
 
 ---
 
+## UI Mockup _(mandatory per Constitution v1.0.2 Principle III)_
+
+**Wireframe gate:** PASSED 2026-05-06 (validator v5.4, 0 errors on both SVGs).
+
+| # | Wireframe | Mode | Status |
+| - | --------- | ---- | ------ |
+| 01 | [01-oauth-password-setup.svg](wireframes/01-oauth-password-setup.svg) | Setup (new OAuth user) | PASS |
+| 02 | [02-oauth-password-unlock.svg](wireframes/02-oauth-password-unlock.svg) | Unlock (returning OAuth user) | PASS |
+
+Audit trail: [01 issues](wireframes/01-oauth-password-setup.issues.md) · [02 issues](wireframes/02-oauth-password-unlock.issues.md).
+
+Wireframes constrain plan/tasks/implement steps that follow.
+
+---
+
 ## Constraints _(optional)_
 
-- This feature handles modal-based setup only; full-page setup flow is handled by Feature 016
-- Password manager integration improvements are deferred to Feature 016
-- No password recovery mechanism (encrypted messages are unrecoverable without password)
+- This feature handles modal-based setup AND keeps `/messages/setup` as a deep-link fallback path. Both flows derive keys via `keyManagementService.initializeKeys(password)`.
+- Password manager integration improvements (auto-fill heuristics) are deferred to Feature 016.
+- No password recovery mechanism (encrypted messages are unrecoverable without password).
 
 ---
 

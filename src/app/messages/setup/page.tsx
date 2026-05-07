@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOAuthUser, getOAuthProvider } from '@/lib/auth/oauth-utils';
+import { sendWelcomeMessageOnSetup } from '@/lib/messaging/welcome/send-welcome-message';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('app:messages:setup');
@@ -129,24 +130,7 @@ export default function MessagingSetupPage() {
           }
         }
 
-        // Send welcome message
-        if (user?.id && keyPair.privateKey && keyPair.publicKeyJwk) {
-          import('@/services/messaging/welcome-service')
-            .then(({ welcomeService }) => {
-              welcomeService
-                .sendWelcomeMessage(
-                  user.id,
-                  keyPair.privateKey,
-                  keyPair.publicKeyJwk
-                )
-                .catch((err: Error) => {
-                  logger.error('Welcome message failed', { error: err });
-                });
-            })
-            .catch((err: Error) => {
-              logger.error('Failed to load welcome service', { error: err });
-            });
-        }
+        sendWelcomeMessageOnSetup(user, keyPair, logger);
 
         // Success - show toast reminder and redirect to messages
         logger.info('Encryption setup complete, redirecting to messages');

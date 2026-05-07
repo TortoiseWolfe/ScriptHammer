@@ -12,12 +12,18 @@ const meta: Meta<typeof ReAuthModal> = {
     layout: 'fullscreen',
     docs: {
       description: {
-        component:
-          'Modal for re-authenticating user to unlock encryption keys after session restore.',
+        component: `Modal for re-authenticating the user to unlock (or, for OAuth users, **create**) the messaging password used to derive E2E encryption keys.
+
+**Two modes**, decided automatically at open time by inspecting whether the current user has encryption keys in Supabase:
+
+- **Unlock mode** — keys exist; user enters the messaging password to derive the in-memory CryptoKey. Default for both email and OAuth users with prior keys.
+- **Setup mode** — OAuth user has no keys yet (Feature 013, FR-021). Shows password + confirm fields, an OAuth provider badge ("Signed in via Google" / "Signed in via GitHub"), and a "save this password — losing it means losing access to old encrypted messages" warning.
+
+Email users with no keys are **redirected** to \`/messages/setup\` (full-page form) rather than seeing setup mode in this modal — the browser's password manager benefits from a real \`<form>\` context. The page route is preserved as a deep-link fallback for OAuth users too (FR-022).`,
       },
       story: {
         inline: false,
-        height: '500px',
+        height: '600px',
       },
     },
   },
