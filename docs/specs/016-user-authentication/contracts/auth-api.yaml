@@ -5,7 +5,7 @@ info:
   description: API contracts for authentication endpoints (Supabase Auth)
 
 servers:
-  - url: https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1
+  - url: https://<YOUR-PROJECT-REF>.supabase.co/auth/v1
     description: Supabase Auth Server
 
 paths:
