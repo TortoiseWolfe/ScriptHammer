@@ -5,7 +5,7 @@ info:
   description: API contracts for user profile management
 
 servers:
-  - url: https://vswxgxbjodpgwfgsjrhq.supabase.co/rest/v1
+  - url: https://<YOUR-PROJECT-REF>.supabase.co/rest/v1
     description: Supabase REST API
 
 paths:

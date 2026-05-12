@@ -55,7 +55,7 @@ This guide walks you through setting up the complete payment integration system 
 **Get the Project ID:**
 
 7. In the left Settings sidebar, click **General**
-8. Copy **Project ID** (alphanumeric code like `vswxgxbjodpgwfgsjrhq`)
+8. Copy **Project ID** (alphanumeric code like `abcdefghijklmnopqrst`)
 
 **Database Password:**
 

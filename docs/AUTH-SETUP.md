@@ -4,7 +4,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 ## Prerequisites
 
-- Supabase project created: `vswxgxbjodpgwfgsjrhq`
+- Supabase project created — substitute its ref for `<YOUR-PROJECT-REF>` in the URLs below
 - Environment variables configured in `.env.local`
 
 ## Part 1: Database Setup
@@ -13,7 +13,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Supabase SQL Editor
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/sql
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/sql
 
 **Step 2:** Drop all existing tables (clean slate)
 
@@ -33,7 +33,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 4:** Verify tables were created
 
-- Navigate to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/editor
+- Navigate to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/editor
 - You should see these tables:
   - `payment_intents` ← Payment system
   - `payment_results` ← Payment system
@@ -51,7 +51,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Auth Providers
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/providers
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/providers
 
 **Step 2:** Find "Email" in the provider list
 
@@ -76,7 +76,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Email Templates
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/templates
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/templates
 
 **Step 2:** Customize templates
 
@@ -104,7 +104,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 | **Application name**           | `ScriptHammer` (or your preferred name)                      |
 | **Homepage URL**               | `http://localhost:3000` (development) or your production URL |
 | **Application description**    | (Optional) "Next.js template with authentication"            |
-| **Authorization callback URL** | `https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1/callback`  |
+| **Authorization callback URL** | `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`    |
 
 **Step 3:** Register application
 
@@ -121,7 +121,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Auth Providers
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/providers
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/providers
 
 **Step 2:** Find and enable GitHub
 
@@ -141,7 +141,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 **Step 5:** Verify callback URL matches
 
 - Ensure the callback URL in Supabase matches what you entered in GitHub:
-  - `https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1/callback`
+  - `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 
 ## Part 4: Enable Google OAuth (Optional)
 
@@ -173,7 +173,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 - **Application type:** Web application
 - **Name:** ScriptHammer
 - **Authorized redirect URIs:** Click **"+ ADD URI"**
-  - Add: `https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1/callback`
+  - Add: `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 - Click **"CREATE"**
 
 **Step 5:** Copy credentials
@@ -185,7 +185,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Auth Providers
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/providers
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/providers
 
 **Step 2:** Find and enable Google
 
@@ -208,7 +208,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Auth settings
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/url-configuration
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/url-configuration
 
 **Step 2:** Set Site URL
 
@@ -225,7 +225,7 @@ Complete guide for configuring Supabase authentication with email/password and O
 
 **Step 1:** Navigate to Auth settings
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/settings/auth
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/auth
 
 **Step 2:** Configure security settings
 
@@ -269,7 +269,7 @@ docker compose exec scripthammer pnpm run dev
 
 **Step 5:** Verify user was created
 
-- Navigate to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/users
+- Navigate to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/users
 - You should see `test@example.com` in the user list
 
 ### 6.2 Test OAuth Sign-In (GitHub/Google)
@@ -294,7 +294,7 @@ docker compose exec scripthammer pnpm run dev
 
 **Step 5:** Check Supabase users
 
-- Navigate to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/users
+- Navigate to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/users
 - You should see your GitHub/Google account in the user list
 
 ## Part 7: Environment Variables
@@ -305,17 +305,17 @@ Create or update `.env.local` in project root:
 
 ```bash
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://vswxgxbjodpgwfgsjrhq.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://<YOUR-PROJECT-REF>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
-# Get anon key from: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/settings/api
+# Get anon key from: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/api
 ```
 
 ### 7.2 Get Supabase API Keys
 
 **Step 1:** Navigate to API settings
 
-- **URL:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/settings/api
+- **URL:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/api
 
 **Step 2:** Copy API keys
 
@@ -336,7 +336,7 @@ docker compose exec scripthammer pnpm run dev
 
 **Solution:** Email/GitHub/Google provider not enabled in Supabase
 
-- Go to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/providers
+- Go to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/providers
 - Enable the provider you're trying to use
 - Click **"Save"**
 
@@ -344,7 +344,7 @@ docker compose exec scripthammer pnpm run dev
 
 **Solution:** Redirect URL not whitelisted
 
-- Go to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/url-configuration
+- Go to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/url-configuration
 - Add your URL to **"Redirect URLs"**
 - Format: `http://localhost:3000/**` (note the `/**` wildcard)
 
@@ -354,7 +354,7 @@ docker compose exec scripthammer pnpm run dev
 
 - Check email inbox for verification link
 - Or disable email confirmation temporarily:
-  - Go to: https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/settings/auth
+  - Go to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/auth
   - Toggle **"Enable email confirmations"** to OFF (not recommended for production)
 
 ### Issue: GitHub OAuth callback error
@@ -362,7 +362,7 @@ docker compose exec scripthammer pnpm run dev
 **Solution:** Callback URL mismatch
 
 - Verify GitHub OAuth app callback URL matches:
-  - `https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1/callback`
+  - `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 - Check both GitHub app settings and Supabase provider settings
 
 ### Issue: Google OAuth "redirect_uri_mismatch"
@@ -372,18 +372,18 @@ docker compose exec scripthammer pnpm run dev
 - Go to: https://console.cloud.google.com/apis/credentials
 - Edit your OAuth 2.0 Client ID
 - Add authorized redirect URI:
-  - `https://vswxgxbjodpgwfgsjrhq.supabase.co/auth/v1/callback`
+  - `https://<YOUR-PROJECT-REF>.supabase.co/auth/v1/callback`
 
 ## Reference Links
 
 ### Supabase Dashboard
 
-- **Project Home:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq
-- **SQL Editor:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/sql
-- **Auth Providers:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/providers
-- **Auth Users:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/users
-- **API Settings:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/settings/api
-- **URL Configuration:** https://supabase.com/dashboard/project/vswxgxbjodpgwfgsjrhq/auth/url-configuration
+- **Project Home:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>
+- **SQL Editor:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/sql
+- **Auth Providers:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/providers
+- **Auth Users:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/users
+- **API Settings:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/api
+- **URL Configuration:** https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/url-configuration
 
 ### OAuth Provider Setup
 
