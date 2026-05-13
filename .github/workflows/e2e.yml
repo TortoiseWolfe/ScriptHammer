@@ -10,8 +10,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: e2e-${{ github.ref }}
-  cancel-in-progress: true
+  # Repo-wide mutex: every E2E run shares one Supabase project, and concurrent
+  # runs race each other's beforeAll cleanupOldMessages hooks (run 25769955636
+  # on 2026-05-13 was cancelled at 60 min after PR #88's run, started 3 min
+  # later, wiped its data). Serialize across all refs; do not cancel a running
+  # job to make room for a queued one.
+  group: e2e-supabase-${{ github.repository }}
+  cancel-in-progress: false
 
 env:
   NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
