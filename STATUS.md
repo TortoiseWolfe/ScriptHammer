@@ -33,7 +33,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 ## Tier 2 — Core Features + Auth-OAuth (11 features)
 
-- [x] **007 E2E Testing Framework** — 60+ specs, 24-shard CI, cross-browser. **Stability hotspot: 9 rounds of flake mitigation**
+- [x] **007 E2E Testing Framework** — 60+ specs, 24-shard CI, cross-browser. **Stability hotspot resolved 2026-05-13**: 10 rounds of flake mitigation closed via concurrency mutex (#89) + WebKit scroll-event dispatch
 - [x] **008 On The Account (Avatar)** — upload + crop + persistence + E2E
 - [x] **009 User Messaging System** — E2E-encrypted, 12 spec files. **Stability hotspot: ConversationView regression**
 - [~] **010 Unified Blog Content** — 3 modules + routes shipped; offline editing/sync/migration not implemented
