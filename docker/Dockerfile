@@ -1,10 +1,13 @@
 # Development Dockerfile for ScriptHammer
 FROM node:22-slim AS base
 
-# Install pnpm and configure store
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and configure store.
+# Version is pinned via package.json's "packageManager" field (single source of
+# truth); corepack honors it automatically. Using pnpm@latest here caused
+# 2026-05-12 build break when pnpm 11.1.1 shipped a stricter PNPM_HOME/PATH check.
+RUN corepack enable && corepack prepare pnpm@10.16.1 --activate
 ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+ENV PATH="$PNPM_HOME:$PNPM_HOME/bin:$PATH"
 RUN pnpm config set store-dir /pnpm/store --global
 
 # Install dependencies only when needed
