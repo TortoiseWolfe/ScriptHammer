@@ -2,6 +2,8 @@
 
 Complete guide for configuring Supabase authentication with email/password and OAuth providers.
 
+> **Forking ScriptHammer for the first time?** Start at [`docs/FORK-CHECKLIST.md`](FORK-CHECKLIST.md) — it's the master walkthrough covering every external service this template integrates with (auth, payments, email, analytics). This document is the deep-dive for the auth portion.
+
 ## Prerequisites
 
 - Supabase project created — substitute its ref for `<YOUR-PROJECT-REF>` in the URLs below
@@ -296,6 +298,54 @@ docker compose exec scripthammer pnpm run dev
 
 - Navigate to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/users
 - You should see your GitHub/Google account in the user list
+
+## Verification via Management API
+
+The fastest way to confirm OAuth is actually wired up correctly — without trial-and-error in the dashboard — is to query the Supabase Management API directly. This is the exact check that would have caught [issue #85](https://github.com/TortoiseWolfe/ScriptHammer/issues/85): OAuth Client IDs left as the literal strings `placeholder_google_client_id` / `placeholder_github_client_id` for weeks, surfacing only as `Error 401: invalid_client` when a user clicked "Continue with Google."
+
+**Prerequisites:**
+
+- `SUPABASE_ACCESS_TOKEN` in your `.env` — generate at [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)
+- `jq` installed (already in the Docker container; on host: `apt install jq` / `brew install jq`)
+
+**Run the check:**
+
+```bash
+curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+  "https://api.supabase.com/v1/projects/<YOUR-PROJECT-REF>/config/auth" \
+  | jq '{
+      google_enabled: .external_google_enabled,
+      google_client_id: .external_google_client_id,
+      github_enabled: .external_github_enabled,
+      github_client_id: .external_github_client_id,
+      site_url,
+      uri_allow_list
+    }'
+```
+
+**Expected output (correctly configured):**
+
+```json
+{
+  "google_enabled": true,
+  "google_client_id": "123456789012-abc.apps.googleusercontent.com",
+  "github_enabled": true,
+  "github_client_id": "Iv1.0123456789abcdef",
+  "site_url": "https://yourdomain.com",
+  "uri_allow_list": "https://yourdomain.com/auth/callback"
+}
+```
+
+**Red flags:**
+
+- `google_client_id` is the literal string `placeholder_google_client_id` — Google OAuth is misconfigured. Re-do [Part 4](#part-4-enable-google-oauth-optional).
+- `github_client_id` is the literal string `placeholder_github_client_id` — GitHub OAuth is misconfigured. Re-do [Part 3](#part-3-enable-github-oauth-optional).
+- `google_client_id` does NOT end in `.apps.googleusercontent.com` — not a real Google OAuth client ID.
+- `github_client_id` is not 20-character hex (or `Iv1.` prefix for GitHub Apps) — not a real GitHub OAuth client ID.
+- `site_url` is `http://localhost:3000` but you've deployed to production — update via [auth URL configuration](https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/url-configuration).
+- `uri_allow_list` is empty but you've deployed to production — must include your production callback URL.
+
+This one-line check is fast enough to run as part of every deploy verification.
 
 ## Part 7: Environment Variables
 

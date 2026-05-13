@@ -32,6 +32,8 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 
 ## 🚀 Quick Start
 
+> 💡 **New to ScriptHammer?** Start at [`docs/FORK-CHECKLIST.md`](./docs/FORK-CHECKLIST.md) for the complete service-setup matrix — which env vars to set, which services are required vs. optional, where to sign up for each, and the suggested setup order. The Quick Start below is just the bare minimum to boot the dev server.
+
 ### Prerequisites
 
 - Docker and Docker Compose installed
@@ -102,6 +104,25 @@ Once configured, `/payment-demo` should work end-to-end against sandbox APIs. Th
 **Full deployment guide**: [docs/PAYMENT-DEPLOYMENT.md](./docs/PAYMENT-DEPLOYMENT.md) covers the complete 256-line walkthrough including Supabase project setup, database migrations, Edge Function deployment, webhook event subscriptions, and production cutover.
 
 **Current payment implementation status**: [docs/prp-docs/PRP-STATUS.md#v040--payments-active-tracking](./docs/prp-docs/PRP-STATUS.md) — shows which features are built, which need routes, and which need UI work.
+
+## 🔐 Authentication Setup
+
+ScriptHammer ships with full email/password + OAuth (GitHub, Google) authentication via Supabase. Out of the box, the app won't authenticate users until you create a Supabase project and configure your auth providers.
+
+**For a brand-new forker**: start at [`docs/FORK-CHECKLIST.md`](./docs/FORK-CHECKLIST.md) — it's the master walkthrough covering every service this template integrates with.
+
+**For auth specifically**:
+
+1. **Create a Supabase project** at [supabase.com/dashboard](https://supabase.com/dashboard) (free tier is fine)
+2. **Run database migrations** — see [`docs/AUTH-SETUP.md` Part 1](./docs/AUTH-SETUP.md#part-1-database-setup)
+3. **Configure auth providers** (pick what you need):
+   - [Email/password](./docs/AUTH-SETUP.md#part-2-enable-emailpassword-authentication) — required for the messaging features
+   - [GitHub OAuth](./docs/AUTH-SETUP.md#part-3-enable-github-oauth-optional) — create a [GitHub OAuth App](https://github.com/settings/developers)
+   - [Google OAuth](./docs/AUTH-SETUP.md#part-4-enable-google-oauth-optional) — create a [Google Cloud OAuth client](https://console.cloud.google.com/apis/credentials)
+4. **Add Supabase keys to `.env`** — `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from [your project's API settings](https://supabase.com/dashboard)
+5. **Verify** — run the [Management API check](./docs/AUTH-SETUP.md#verification-via-management-api) to confirm your OAuth client IDs are real values, not placeholders. (Issue #85 was caused by placeholder strings sitting in this field for weeks before anyone noticed.)
+
+The full step-by-step is in [`docs/AUTH-SETUP.md`](./docs/AUTH-SETUP.md) (Parts 1-7, ~380 lines).
 
 ## 🔐 GitHub Actions Secrets
 
