@@ -232,9 +232,14 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
     );
     const initialInputBox = await messageInput.boundingBox();
 
-    // Scroll up in the message thread
+    // Scroll up in the message thread.
+    // WebKit does not always fire the scroll event for programmatic scrollTop
+    // assignments. Dispatch it explicitly so React listeners (e.g.,
+    // MessageThread's handleScroll at MessageThread.tsx:194) run reliably
+    // across browsers.
     await messageThread.evaluate((el) => {
       el.scrollTop = 0;
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
     // Wait for scroll to complete
@@ -274,6 +279,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     // Scroll up more than 500px to trigger button
     await messageThread.evaluate((el) => {
       el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 600);
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
     await waitForUIStability(page);
@@ -320,6 +326,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     // Scroll up to trigger button
     await messageThread.evaluate((el) => {
       el.scrollTop = 0;
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
     await waitForUIStability(page);

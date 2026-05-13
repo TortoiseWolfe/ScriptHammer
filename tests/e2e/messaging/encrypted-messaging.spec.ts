@@ -663,6 +663,7 @@ test.describe('Encrypted Messaging Flow', () => {
       .first()
       .evaluate((el) => {
         el.scrollTop = 0;
+        el.dispatchEvent(new Event('scroll', { bubbles: true }));
       });
 
     // Look for "Load More" button
