@@ -12,7 +12,7 @@
    cp .env.example .env
 
    # Add Supabase credentials
-   NEXT_PUBLIC_SUPABASE_URL=https://vswxgxbjodpgwfgsjrhq.supabase.co
+   NEXT_PUBLIC_SUPABASE_URL=https://<YOUR-PROJECT-REF>.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
    ```
 
