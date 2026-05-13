@@ -1,6 +1,6 @@
 # ScriptHammer Status
 
-**Snapshot**: 2026-05-06 · **Version**: v0.0.1 · **Stability**: Beta — Phase 0 (template hygiene) closed; GrimGlow ThreeJS fork (Phase 0.5) green-lit; Family B (payment routes) is the next-leverage front
+**Snapshot**: 2026-05-13 · **Version**: v0.0.1 · **Stability**: Beta — Phase 0 (template hygiene) closed; E2E flake round 10 closed via concurrency mutex (#89); GrimGlow ThreeJS fork (Phase 0.5) green-lit; Family B (payment routes) is the next-leverage front
 
 This is the single screen-scan view of "what's planned, what's shipped, what's broken."
 For the deeper per-feature audit see [`docs/prp-docs/PRP-STATUS.md`](docs/prp-docs/PRP-STATUS.md).
@@ -33,7 +33,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 ## Tier 2 — Core Features + Auth-OAuth (11 features)
 
-- [x] **007 E2E Testing Framework** — 60+ specs, 24-shard CI, cross-browser. **Stability hotspot: 9 rounds of flake mitigation**
+- [x] **007 E2E Testing Framework** — 60+ specs, 24-shard CI, cross-browser. **Stability hotspot resolved 2026-05-13**: 10 rounds of flake mitigation closed via concurrency mutex (#89) + WebKit scroll-event dispatch
 - [x] **008 On The Account (Avatar)** — upload + crop + persistence + E2E
 - [x] **009 User Messaging System** — E2E-encrypted, 12 spec files. **Stability hotspot: ConversationView regression**
 - [~] **010 Unified Blog Content** — 3 modules + routes shipped; offline editing/sync/migration not implemented
@@ -49,7 +49,7 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 - [x] **017 Colorblind Mode** — 8 colorblind variants, theme-compatible
 - [x] **018 Font Switcher** — 6 fonts incl. dyslexia-friendly + high-readability
-- [~] **019 Google Analytics** — code shipped; awaits per-fork `NEXT_PUBLIC_GA_MEASUREMENT_ID`
+- [x] **019 Google Analytics** — code shipped; per-fork `NEXT_PUBLIC_GA_MEASUREMENT_ID` is fork-config not code work (#31 closed 2026-05-13)
 - [~] **020 PWA Background Sync** — Chromium works; Firefox/Safari fallback incomplete; storage-limit warnings missing
 - [~] **021 Geolocation Map** — base map + permissions work; keyboard nav + accuracy radius missing
 
@@ -99,14 +99,14 @@ Raw machine-readable data: [`scripts/audit/truth-table.json`](scripts/audit/trut
 
 ## Summary by Status
 
-| Status                      | Count  | Features                                                                                                                       |
-| --------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Shipped `[x]`               | 22     | 000-brand, 000-landing, 000-rls, 001, 002, 003, 004, 006, 007, 008, 009, 015, 017, 018, 022, 025, 031, 032, 034, 036, 042, 046 |
-| Mostly Shipped (config gap) | 4      | 011, 019, 024-payment, 030                                                                                                     |
-| Partial `[~]`               | 15     | 010, 012, 020, 021, 023, 026, 027, 029, 033, 035, 037, 038, 039, 041, 043, 045, plus 005                                       |
-| Backend Only `[!]`          | 2      | 014, 040                                                                                                                       |
-| Not Started `[ ]`           | 4      | 013, 016, 028, 044                                                                                                             |
-| **Total**                   | **49** | (3 features — 000-brand, 000-landing, 046-admin — lack `spec.md` and are tracked via `*_feature.md` only)                      |
+| Status                      | Count  | Features                                                                                                                                |
+| --------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Shipped `[x]`               | 23     | 000-brand, 000-landing, 000-rls, 001, 002, 003, 004, 006, 007, 008, 009, 015, 017, 018, **019**, 022, 025, 031, 032, 034, 036, 042, 046 |
+| Mostly Shipped (config gap) | 3      | 011, 024-payment, 030                                                                                                                   |
+| Partial `[~]`               | 15     | 010, 012, 020, 021, 023, 026, 027, 029, 033, 035, 037, 038, 039, 041, 043, 045, plus 005                                                |
+| Backend Only `[!]`          | 2      | 014, 040                                                                                                                                |
+| Not Started `[ ]`           | 4      | 013, 016, 028, 044                                                                                                                      |
+| **Total**                   | **49** | (3 features — 000-brand, 000-landing, 046-admin — lack `spec.md` and are tracked via `*_feature.md` only)                               |
 
 ---
 
@@ -118,13 +118,13 @@ If we want a stable v0.1.0, three families of work close it:
 
 The `feat/repo-overhaul-merge` of 2026-03-04 introduced patterns that have caused **18+ reverts in 3 months** and a 5x increase in fix-rate. The same shapes repeat in code that wasn't reverted yet:
 
-| Hotspot                           | Status   | Evidence                                                                                                                                                                                                                                                                                   |
-| --------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **ProtectedRoute auth race**      | Resolved | 3 prior reverts: 6b4c13a, 2c97e67, 259b38d. AdminGate now extracted to its own file with a 10-test regression suite pinning the `wasAdmin` debounce, the `cancelled` flag, and dep-array integrity. Closed by [#51](https://github.com/TortoiseWolfe/ScriptHammer/issues/51) (PR #56).     |
-| **ConversationView regression**   | Resolved | `createClient()` calls in `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32` are now wrapped in `useMemo(() => createClient(), [])`. Comment in code names the prior revert (adae629).                                                                                         |
-| **GDPR consent Firefox**          | Resolved | `PaymentConsentModal.tsx:46-59` defers `acceptButtonRef.focus()` via `requestAnimationFrame()` after `dialog.showModal()`. Comment names the prior revert (3e67772).                                                                                                                       |
-| **Offline-queue IndexedDB drift** | Resolved | Watchdog reclaim (60s default) + `payment_intents.idempotency_key` partial unique index + upsert-with-ignoreDuplicates. At-least-once delivery + idempotent receiver = exactly-once observable outcome. Closed by [#52](https://github.com/TortoiseWolfe/ScriptHammer/issues/52) (PR #59). |
-| **E2E flake mitigation**          | Ongoing  | 9 rounds. Cause: stale closures, unstable hook refs, hydration timing.                                                                                                                                                                                                                     |
+| Hotspot                           | Status   | Evidence                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ProtectedRoute auth race**      | Resolved | 3 prior reverts: 6b4c13a, 2c97e67, 259b38d. AdminGate now extracted to its own file with a 10-test regression suite pinning the `wasAdmin` debounce, the `cancelled` flag, and dep-array integrity. Closed by [#51](https://github.com/TortoiseWolfe/ScriptHammer/issues/51) (PR #56).                                                                                                                                                                                                                     |
+| **ConversationView regression**   | Resolved | `createClient()` calls in `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32` are now wrapped in `useMemo(() => createClient(), [])`. Comment in code names the prior revert (adae629).                                                                                                                                                                                                                                                                                                         |
+| **GDPR consent Firefox**          | Resolved | `PaymentConsentModal.tsx:46-59` defers `acceptButtonRef.focus()` via `requestAnimationFrame()` after `dialog.showModal()`. Comment names the prior revert (3e67772).                                                                                                                                                                                                                                                                                                                                       |
+| **Offline-queue IndexedDB drift** | Resolved | Watchdog reclaim (60s default) + `payment_intents.idempotency_key` partial unique index + upsert-with-ignoreDuplicates. At-least-once delivery + idempotent receiver = exactly-once observable outcome. Closed by [#52](https://github.com/TortoiseWolfe/ScriptHammer/issues/52) (PR #59).                                                                                                                                                                                                                 |
+| **E2E flake mitigation**          | Resolved | 10 rounds. Rounds 1-9 attacked symptoms (stale closures, unstable hook refs, hydration timing, retry budgets, stagger delays, Supabase priming). Round 10 (#89, commit 996211e) found the underlying cause: two concurrent E2E CI runs racing against one Supabase project — fixed via repo-wide `concurrency:` mutex in `.github/workflows/e2e.yml` plus an explicit `dispatchEvent('scroll')` after each programmatic `el.scrollTop = N` to work around WebKit's quirk of not auto-firing scroll events. |
 
 The full code-review findings (35 high-confidence items) live in [`scripts/audit/code-review-findings.json`](scripts/audit/code-review-findings.json). The pattern is consistent: stale closures after async auth, unstabilized context providers, hooks creating new Supabase clients every render.
 
