@@ -1,15 +1,35 @@
 # PRP Implementation Status Dashboard
 
-**Last Updated**: 2026-04-25 (full 47-feature audit)
-**Previous Update**: 2026-04-08 (15 features covered)
+**Last Updated**: 2026-05-14 (v0.4.x stabilization milestones)
+**Previous Update**: 2026-04-25 (full 47-feature audit)
 **Total PRPs**: 16 (legacy) + 49 (SpecKit features — 000-brand-identity and 000-landing-page split out from 000-rls)
-**Completed**: 15 legacy PRPs (v0.3.0) + 17 SpecKit features Shipped + 6 Mostly Shipped
+**Completed**: 15 legacy PRPs (v0.3.0) + 18 SpecKit features Shipped + 5 Mostly Shipped (019 GA moved Shipped → 23 total)
 **In Progress (Partial)**: 19 features (most of payments tier, blog/sidebar polish, OAuth UX fixes)
 **Not Started**: 4 features (013, 016, 028, 044)
 **Backend Only**: 3 features (014, 040, 042)
-**Current Phase**: v0.4.0 stabilization — see "Stability hotspots" section + [STATUS.md](../../STATUS.md) for one-screen view
+**Current Phase**: v0.4.x stabilization — **E2E flake mitigation closed at round 10 on 2026-05-13** (concurrency mutex + WebKit scroll-event fix). See [STATUS.md](../../STATUS.md) for one-screen view.
 
-> **Important note**: The previous (2026-04-08) audit covered 15 of 47 features. This update is the first full sweep. Two features moved from "Not Started"/"Specified" to "Shipped" between audits: **034 Blog Library Tests** (commit c9f728d, 2026-04-20) and **036 Auth Component Tests**. Don't trust spec.md `**Status:**` fields anywhere — they were uniformly stale and have been refreshed in the Phase 4 spec-update batch.
+> **Important note**: The 2026-04-25 audit was the first full sweep across all 47 features. Don't trust spec.md `**Status:**` fields anywhere — they were uniformly stale and have been refreshed in the Phase 4 spec-update batch. This 2026-05-14 refresh updates the dashboard header + hotspots table for the round-10 E2E closure and #31 GA4 closure; the per-feature audit data below remains the canonical detail.
+
+---
+
+## v0.4.x updates since 2026-04-25 audit
+
+Six PRs landed 2026-05-12 to 2026-05-14 closing the round-10 E2E flake pattern and improving fork-onboarding:
+
+- **#86** `fix(docker): pin pnpm version` — Dockerfile pulled `pnpm@latest` which broke 2026-05-12 when pnpm 11.1.1 shipped a stricter PNPM_HOME/PATH check. Pinned to `pnpm@10.16.1` matching `package.json` packageManager field.
+- **#88** `docs(auth): #85 replace stale Supabase project ref with placeholder` — 32 stale `vswxgxbjodpgwfgsjrhq` refs across 5 docs files swept to `<YOUR-PROJECT-REF>` placeholders.
+- **#89** `fix(ci): serialize E2E runs via repo-wide concurrency mutex` — **closes 9 rounds of "ongoing" E2E flake mitigation**. Root cause was two concurrent CI runs racing against the same Supabase project (each run's `cleanupOldMessages` `beforeAll` hooks wiped data the other run was polling for). Fix: `.github/workflows/e2e.yml` `concurrency` group `e2e-supabase-${{ github.repository }}` with `cancel-in-progress: false`. Bundled WebKit scroll-event fix (4 `el.scrollTop = N` sites in `tests/e2e/messaging/` now also dispatch `Event('scroll', {bubbles:true})` since WebKit doesn't auto-fire it for programmatic scrollTop assignments).
+- **#90** `docs(status): #31 close + round 10 E2E flake mitigation resolution` — STATUS.md refreshed with the round-10 closure framing.
+- **#91** `docs(fork): add service-config checklist + auth verification section` — new `docs/FORK-CHECKLIST.md` (master walkthrough), AUTH-SETUP.md gains a Management API verification section that catches `placeholder_*` OAuth Client IDs in one line, README gains an Authentication Setup section.
+- **#92** `chore: gitignore .screenshots/ + capture round 10 lessons in CLAUDE.md` — CLAUDE.md now has a "CI & E2E Stability" section codifying the concurrency rule, no-hook-bypass, the WebKit scroll quirk, branch hygiene, and CI API vs UI gotchas.
+
+Issues closed:
+
+- **#31** [Gap-Audit] 019 Google Analytics — closed 2026-05-13, code was already shipped (per-fork GA4 property config is per-fork work not code work).
+- **#85** OAuth providers misconfigured — auto-closed 2026-05-13 when PR #88 merged. **Note**: the in-repo doc cleanup landed but the actual Supabase dashboard repair (placeholder Client ID → real OAuth client IDs) is still outstanding. See the issue closure comment for the recovery breadcrumbs.
+
+Repo hygiene: `delete_branch_on_merge=true` set, 15 stale remote branches pruned 2026-05-12.
 
 ---
 
@@ -77,6 +97,8 @@ Top-level summary: [`STATUS.md`](../../STATUS.md)
 ### Stability hotspots (post-2026-03-04 remake)
 
 The `feat/repo-overhaul-merge` (commit 2259a86, "cherry-pick of eval models A+B") on 2026-03-04 introduced patterns that have caused 18+ reverts and a ~5x increase in fix-rate. The same patterns repeat across code that hasn't been reverted yet. See [`scripts/audit/code-review-findings.json`](../../scripts/audit/code-review-findings.json) for the full 35 high-confidence findings.
+
+> **Update 2026-05-13**: The "E2E flake mitigation" hotspot (rounds 1-9 in STATUS.md) is **resolved at round 10** via the concurrency mutex in PR #89. Rounds 1-9 attacked symptoms (stale closures, retry budgets, stagger delays, Supabase priming); round 10 found the underlying cause (concurrent CI runs racing each other's `cleanupOldMessages` hooks against one shared Supabase project) and fixed it structurally. The other 9 hotspots in the table below remain open. See [STATUS.md hotspot table](../../STATUS.md#a-stability--fix-the-post-remake-regression-patterns-highest-leverage) for the consolidated view.
 
 | Hotspot                                      | Files affected                                                                       | Severity | Status                                                        |
 | -------------------------------------------- | ------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------- |
