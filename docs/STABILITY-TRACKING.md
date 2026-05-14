@@ -1,10 +1,10 @@
 # Stability Tracking — post-#44 work order
 
-**Updated**: 2026-04-27 · **Audit baseline**: 2026-04-25 (see [STATUS.md](../STATUS.md))
+**Updated**: 2026-05-14 · **Audit baseline**: 2026-04-25 (see [STATUS.md](../STATUS.md))
 
-**Family A status**: both items shipped (PR #56, PR #59). Family A is empty for now.
+**Family A status**: both items shipped (PR #56, PR #59). **E2E flake mitigation (round 10) also closed on 2026-05-13** via PR #89 (concurrency mutex + WebKit scroll-event fix). Family A is empty.
 **Family D status**: D1 shipped (PR #60). D2 (#49 audit instrumentation) is the only D item remaining.
-**Next-session entry point**: Family B1 (#43, `/payment-result` retry-UX gaps — page itself shipped 2026-04-16) — see `docs/SESSION-HANDOFF-2026-04-27.md`.
+**Next-session entry point**: Family B1 (#43, `/payment-result` retry-UX gaps — page itself shipped 2026-04-16) — see `docs/SESSION-HANDOFF-2026-04-27.md` and the more recent session deliverables in [PRP-STATUS.md "v0.4.x updates" section](prp-docs/PRP-STATUS.md#v04x-updates-since-2026-04-25-audit).
 
 This document is the cross-issue work-order. STATUS.md describes _what_ the gaps are; this describes _which order_ to close them in and _why_. New issues land here first, then graduate into PRs.
 
@@ -40,6 +40,7 @@ The `feat/repo-overhaul-merge` of 2026-03-04 introduced patterns that have cause
 
 - ConversationView regression — `useMemo(() => createClient(), [])` is in place at `useConversationRealtime.ts:46` and `useTypingIndicator.ts:32`, with comments naming the prior revert (adae629).
 - GDPR Firefox focus timing — `requestAnimationFrame()` deferral is in place at `PaymentConsentModal.tsx:46-59`, with comment naming the prior revert (3e67772).
+- **E2E flake mitigation (rounds 1-10)** — Round 10 (PR #89, commit 996211e, 2026-05-13) found the underlying cause: two concurrent CI runs racing each other's `cleanupOldMessages` `beforeAll` hooks against one shared Supabase project. Rounds 1-9 had attacked symptoms (retry budgets, stagger delays, Supabase priming, hydration timing). Fix: repo-wide `concurrency:` mutex in `.github/workflows/e2e.yml` (`group: e2e-supabase-${{ github.repository }}`, `cancel-in-progress: false`). Bundled fix: explicit `dispatchEvent('scroll')` after 4 `el.scrollTop = N` assignments in `tests/e2e/messaging/` (WebKit doesn't auto-fire scroll events for programmatic scrollTop). Verified by PRs #90, #91, #92, #93 all running clean through the mutex queue.
 
 **Why A1 before A2:** A1 is auth — every user touches it. A2 is the offline queue, which only wedges when the user is actually offline mid-action. Auth correctness rarely; queue correctness sometimes.
 
@@ -90,10 +91,7 @@ Defensive only. Each item maps to a STATUS.md "Tier 7" feature.
 
 ## Active branches
 
-| Branch                    | Purpose                                                 | Status                         |
-| ------------------------- | ------------------------------------------------------- | ------------------------------ |
-| `044/payment-rls-verify`  | #44 — RLS test suite verification (55/55 local + cloud) | Pushed; awaiting merge to main |
-| `chore/post-044-tracking` | This document + STATUS.md updates                       | In progress                    |
+_None as of 2026-05-14._ All branches from the 2026-05-12 through 2026-05-14 session merged cleanly with `delete_branch_on_merge=true` (PRs #86, #88, #89, #90, #91, #92, #93). Prior `044/payment-rls-verify` and `chore/post-044-tracking` both long since merged.
 
 ---
 
