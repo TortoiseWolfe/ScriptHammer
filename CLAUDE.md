@@ -359,11 +359,57 @@ ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
 - Suggest running SQL snippets piecemeal
 - Use Supabase CLI migrations
 
+## CI & E2E Stability (Round 10 Lessons, 2026-05-13)
+
+The E2E suite ran against a single shared Supabase project for months and accumulated **9 rounds of "flake mitigation"** that all attacked symptoms. Round 10 (PR #89, commit `996211e`) finally identified the underlying root cause and fixed it structurally. These rules exist so future contributors don't re-derive the same painful path.
+
+### NEVER merge a PR while another PR's CI is running against the same backend
+
+**Why**: this is what caused issue #85 to compound. Two concurrent E2E runs against the same Supabase project race each other's `cleanupOldMessages` `beforeAll` hooks across 11+ messaging specs. Each run wipes data the other run is polling for. One run hits the 60-min GitHub Actions job cap and gets cancelled.
+
+**Now protected by**: `.github/workflows/e2e.yml` has a repo-wide `concurrency:` mutex (`group: e2e-supabase-${{ github.repository }}`, `cancel-in-progress: false`). Concurrent E2E runs queue; they never race. But the rule still applies to other shared backends in the future.
+
+**Verification it's active**: trigger two pushes within 1 minute; the second workflow shows "Queued, waiting for another workflow run" in the Actions UI.
+
+### NEVER bypass commit hooks (no `--no-verify`)
+
+**Why**: husky + lint-staged + gitleaks all run pre-commit and catch real bugs. Yesterday's session almost shipped secrets in a doc PR; gitleaks caught it. The user explicitly forbids `--no-verify` unless they ask for it.
+
+**If a hook fails**: investigate. Hook output names the file + line. Fix the underlying issue, re-stage, commit. Never `git commit --no-verify` as an escape hatch.
+
+### Programmatic `el.scrollTop = N` does NOT fire scroll events reliably in WebKit
+
+**Why this matters**: Chromium and Firefox auto-fire the `scroll` event when JavaScript assigns to `scrollTop`. WebKit (Playwright's Linux build) does not always do this. Yesterday's `messaging-scroll.spec.ts:261` test ("T007-T008: Jump button appears when scrolled") failed all 3 retries on webkit-msg because the React `handleScroll` listener at `src/components/molecular/MessageThread/MessageThread.tsx:194` never ran.
+
+**The fix pattern** (now applied at 4 sites in `tests/e2e/messaging/`):
+
+```typescript
+await el.evaluate((el) => {
+  el.scrollTop = N;
+  el.dispatchEvent(new Event('scroll', { bubbles: true })); // <-- explicit dispatch for WebKit
+});
+```
+
+Apply this any time test code sets `scrollTop` and expects a scroll-event-driven UI side effect.
+
+### Branch hygiene — NON-NEGOTIABLE
+
+- **`delete_branch_on_merge=true`** is set on the repo. Every merged PR auto-deletes its head branch. Don't undo this.
+- **After merging**, always `git fetch --prune origin` to drop the dead remote-tracking ref locally.
+- **Never leave unmerged branches or open PRs sitting around** between work items. Merge or close one before starting the next.
+- **Avoid stacked PRs** unless dependency is unavoidable. When a parent PR merges with `delete_branch_on_merge=true`, GitHub auto-closes any child PR using that parent as its base (known footgun — happened to PR #87 yesterday). Re-target the child to `main` and reopen.
+
+### CI logs API ≠ UI
+
+- **Authoritative state**: `gh run view <id> --json status,conclusion,jobs` or REST API
+- **UI is misleading**: the workflow-run-list page shows the workflow's _overall_ status with the most-recent activity timestamp. That timestamp is when the _last queued sub-job started_, not when the run as a whole started. Reading "In progress 10:35 PM" as "nothing started yet" is wrong but easy to do.
+- **For per-job status**: click into the run itself (job-graph view) or use the API. Don't trust the list page.
+
 ## Important Notes
 
 - Never create components manually - use the generator
 - All PRs must pass component structure validation
-- E2E tests are local-only, not in CI pipeline
+- **E2E tests DO run in CI** (chromium + firefox + webkit across 28 shards) — was previously local-only but is now part of the GitHub Actions pipeline; see "CI & E2E Stability" above
 - Docker-first development is mandatory
 - Use `min-h-11 min-w-11` for 44px touch targets (mobile-first)
 
