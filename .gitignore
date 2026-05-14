@@ -118,6 +118,7 @@ docs/visual-testing/
 
 # Test screenshots
 screenshots/
+.screenshots/
 mobile-check.png
 
 # Runtime test fixtures — created by node:test beforeEach, deleted by afterEach.
