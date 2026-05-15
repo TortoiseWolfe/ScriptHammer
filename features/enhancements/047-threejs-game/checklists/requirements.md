@@ -35,4 +35,5 @@
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.
 - All items pass on first iteration; no rework required.
 - `/speckit.clarify` completed 2026-05-15 — 4 questions resolved (v1 scene content, fallback UX, camera control bounds, analytics scope). All 11 taxonomy categories now Clear. Spec amended with FR-008 (fallback panel), NFR-006 (observability scope), expanded FR-005 (camera constraints + auto-orbit), and SC-009/SC-010 (fallback + auto-orbit success criteria).
-- Spec is ready for the v1.0.2 wireframe gate: wireframes MUST be authored and reviewed via `/speckit.wireframe.*` skills before `/speckit.plan`.
+- Wireframe gate per Constitution v1.0.2 Principle III completed 2026-05-15. Two wireframes generated and approved: `01-game-3d-main.svg` and `02-game-3d-fallback.svg`. Both PASS the v5.0 validator (zero errors). Twelve patch-classified issues resolved across the two SVGs (signature alignment, callout positioning to avoid button overlap, callout count parity with annotation groups, US-badge minimum, XML hygiene). Audit trails preserved at `wireframes/01-game-3d-main.issues.md` and `wireframes/02-game-3d-fallback.issues.md`. Spec.md `## UI Mockup` block records the sign-off.
+- `/speckit.plan` is unblocked.

@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Centered title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">3D GAME (THREE.JS SCENE) - /game/3d (FALLBACK)</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP 1280x720 -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Page heading + breadcrumb -->
+    <text x="32" y="92" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">3D Game (Three.js)</text>
+    <text x="32" y="116" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563"><tspan fill="#8b5cf6" text-decoration="underline">/game</tspan> / 3d</text>
+
+    <!-- Fallback panel (centered, replaces the canvas region) -->
+    <rect x="240" y="148" width="800" height="436" rx="12" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Themed silhouette: hammer + anvil (CSS/SVG only, no canvas) -->
+    <g transform="translate(640, 280)">
+      <!-- Anvil silhouette -->
+      <polygon points="-110,40 110,40 100,60 -100,60" fill="#475569" opacity="0.85"/>
+      <rect x="-72" y="60" width="144" height="18" fill="#374151" opacity="0.85"/>
+      <polygon points="-72,78 72,78 56,94 -56,94" fill="#475569" opacity="0.85"/>
+      <!-- Hammer silhouette, tilted -->
+      <g transform="rotate(-22)">
+        <rect x="-70" y="-22" width="140" height="40" rx="5" fill="#8b5cf6" opacity="0.85"/>
+        <rect x="-86" y="-18" width="16" height="32" rx="3" fill="#475569" opacity="0.85"/>
+        <rect x="70" y="-18" width="16" height="32" rx="3" fill="#475569" opacity="0.85"/>
+        <rect x="-10" y="18" width="20" height="100" rx="5" fill="#475569" opacity="0.85"/>
+      </g>
+    </g>
+
+    <!-- Diagonal "stripe" pattern over silhouette to hint at "unavailable" -->
+    <g opacity="0.18">
+      <line x1="260" y1="160" x2="1020" y2="572" stroke="#374151" stroke-width="3"/>
+    </g>
+
+    <!-- Headline -->
+    <text x="640" y="426" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#1f2937">3D Content Unavailable</text>
+
+    <!-- Body -->
+    <text x="640" y="456" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">3D content requires WebGL. Your browser does not support it,</text>
+    <text x="640" y="474" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">or the graphics context was lost.</text>
+
+    <!-- Retry button (44x44 minimum, primary purple) -->
+    <a href="#retry">
+      <rect x="540" y="502" width="200" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="640" y="530" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#f5f0e6">Retry</text>
+    </a>
+
+    <!-- Secondary note (WCAG / a11y) -->
+    <text x="640" y="566" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">No auto-retry — user-initiated only · 3D content excluded from Pa11y scans</text>
+
+    <!-- Status bar -->
+    <rect x="32" y="600" width="1216" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="48" y="625" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">WebGL: <tspan font-weight="600" fill="#dc2626">unavailable</tspan> · webglcontextlost: <tspan font-weight="600">handled</tspan> · keyboard: <tspan font-weight="600">Retry focusable</tspan></text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <!-- Callouts (positioned to NOT overlap interactive elements) -->
+    <g class="callout"><circle cx="640" cy="180" r="14" fill="#dc2626"/><text x="640" y="185" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="770" cy="524" r="14" fill="#dc2626"/><text x="770" y="529" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1180" cy="568" r="14" fill="#dc2626"/><text x="1180" y="573" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="220" cy="416" r="14" fill="#dc2626"/><text x="220" y="421" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+    <g class="callout"><circle cx="1060" cy="416" r="14" fill="#dc2626"/><text x="1060" y="421" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+    <g class="callout"><circle cx="270" cy="280" r="14" fill="#dc2626"/><text x="270" y="285" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">6</text></g>
+  </g>
+
+  <!-- MOBILE 360x720 -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Page heading -->
+    <text x="180" y="118" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">3D Game</text>
+
+    <!-- Fallback panel (stacked on mobile) -->
+    <rect x="16" y="138" width="328" height="440" rx="8" fill="#dcc8a8" stroke="#b8a080" stroke-width="1.5"/>
+
+    <!-- Silhouette (smaller scale) -->
+    <g transform="translate(180, 244)">
+      <polygon points="-58,20 58,20 52,32 -52,32" fill="#475569" opacity="0.85"/>
+      <rect x="-38" y="32" width="76" height="10" fill="#374151" opacity="0.85"/>
+      <polygon points="-38,42 38,42 28,52 -28,52" fill="#475569" opacity="0.85"/>
+      <g transform="rotate(-22)">
+        <rect x="-36" y="-12" width="72" height="22" rx="3" fill="#8b5cf6" opacity="0.85"/>
+        <rect x="-44" y="-10" width="8" height="18" rx="2" fill="#475569" opacity="0.85"/>
+        <rect x="36" y="-10" width="8" height="18" rx="2" fill="#475569" opacity="0.85"/>
+        <rect x="-6" y="10" width="12" height="56" rx="3" fill="#475569" opacity="0.85"/>
+      </g>
+    </g>
+
+    <!-- Headline -->
+    <text x="180" y="366" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">3D Content</text>
+    <text x="180" y="388" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Unavailable</text>
+
+    <!-- Body -->
+    <text x="180" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WebGL is required. Your browser</text>
+    <text x="180" y="436" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">does not support it, or the</text>
+    <text x="180" y="454" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">graphics context was lost.</text>
+
+    <!-- Retry button (44x44) -->
+    <a href="#retry">
+      <rect x="80" y="484" width="200" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="180" y="512" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#f5f0e6">Retry</text>
+    </a>
+
+    <!-- Note -->
+    <text x="180" y="548" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">User-initiated retry only.</text>
+    <text x="180" y="566" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">No auto-retry on context loss.</text>
+
+    <!-- Status -->
+    <text x="180" y="610" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">WebGL: <tspan font-weight="600" fill="#dc2626">unavailable</tspan></text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Mobile callouts (positioned to NOT overlap the Retry button) -->
+    <g class="callout"><circle cx="180" cy="160" r="11" fill="#dc2626"/><text x="180" y="165" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="304" cy="506" r="11" fill="#dc2626"/><text x="304" y="511" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1 - Themed silhouette fallback panel -->
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Themed silhouette fallback panel</text>
+      <a href="#fr-008" transform="translate(330, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-008</text></a>
+      <a href="#sc-009" transform="translate(392, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-009</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CSS/SVG hammer + anvil silhouette using</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">DaisyUI color tokens. No canvas, no WebGL.</text>
+    </g>
+
+    <!-- Group 2 - Retry button (no auto-retry) -->
+    <g transform="translate(520, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Retry button - user-initiated only</text>
+      <a href="#fr-008" transform="translate(310, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-008</text></a>
+      <a href="#sc-009" transform="translate(372, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-009</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">44×44 button, keyboard-focusable. Triggers</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">canvas re-mount. No silent auto-retry.</text>
+    </g>
+
+    <!-- Group 3 - Pa11y exclusion -->
+    <g transform="translate(1020, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Pa11y exclusion (manual a11y review)</text>
+      <a href="#us-004" transform="translate(320, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <a href="#sc-006" transform="translate(382, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-006</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">/game/3d excluded from Pa11y (canvas not</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">auditable). Fallback panel is auditable.</text>
+    </g>
+
+    <!-- Group 4 - State legend (anchored to US-001 - degraded path of visit) -->
+    <g transform="translate(20, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">When the fallback renders</text>
+      <a href="#us-001" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Triggers: (a) WebGL not available at mount,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">(b) `webglcontextlost` event fires at runtime.</text>
+    </g>
+
+    <!-- Group 5 - A11y of the fallback itself (anchored to US-004 - Pa11y baseline) -->
+    <g transform="translate(520, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Fallback is Pa11y-auditable</text>
+      <a href="#us-004" transform="translate(264, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Headings, body copy, Retry button: all</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">standard DOM. Pa11y exclusion scopes to canvas.</text>
+    </g>
+
+    <!-- Group 6 - Visual cue (diagonal stripe) (anchored to US-002 - theme consistency) -->
+    <g transform="translate(1020, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">6</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Silhouette uses opacity to read as "off"</text>
+      <a href="#us-002" transform="translate(330, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">85% opacity + thin diagonal line cue convey</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">"3D unavailable" without alarming red iconography.</text>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">047:02 | Three.js Game - Fallback | ScriptHammer</text>
+</svg>

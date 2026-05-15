@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+    <radialGradient id="sceneSky" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#f5f0e6"/>
+      <stop offset="100%" stop-color="#dcc8a8"/>
+    </radialGradient>
+    <radialGradient id="sceneSkyMobile" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#f5f0e6"/>
+      <stop offset="100%" stop-color="#dcc8a8"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Centered title -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">3D GAME (THREE.JS SCENE) - /game/3d</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP 1280x720 -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Page heading + breadcrumb -->
+    <text x="32" y="92" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">3D Game (Three.js)</text>
+    <text x="32" y="116" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563"><tspan fill="#8b5cf6" text-decoration="underline">/game</tspan> / 3d</text>
+
+    <!-- Canvas region (the WebGL surface) -->
+    <rect x="32" y="136" width="1216" height="448" rx="8" fill="url(#sceneSky)" stroke="#b8a080"/>
+
+    <!-- ScriptHammer-themed procedural sculpt: anvil + hammer + DaisyUI accent orbs -->
+    <!-- Ground plane shadow disc -->
+    <ellipse cx="640" cy="500" rx="280" ry="32" fill="#b8a080" opacity="0.5"/>
+
+    <!-- Anvil (procedural primitives suggestion: trapezoid + cuboid base) -->
+    <polygon points="490,440 790,440 770,470 510,470" fill="#475569" stroke="#374151" stroke-width="2"/>
+    <rect x="540" y="470" width="200" height="22" fill="#374151" stroke="#1f2937" stroke-width="2"/>
+    <polygon points="540,492 740,492 700,512 580,512" fill="#475569" stroke="#374151" stroke-width="2"/>
+
+    <!-- Hammer head, tilted -->
+    <g transform="translate(640, 380) rotate(-22)">
+      <rect x="-90" y="-26" width="180" height="52" rx="6" fill="#8b5cf6" stroke="#475569" stroke-width="2"/>
+      <rect x="-110" y="-22" width="20" height="44" rx="4" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
+      <rect x="90" y="-22" width="20" height="44" rx="4" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
+      <!-- Hammer handle -->
+      <rect x="-14" y="26" width="28" height="140" rx="6" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
+    </g>
+
+    <!-- DaisyUI-themed accent orbs (3, around the base) -->
+    <circle cx="370" cy="488" r="22" fill="#8b5cf6" stroke="#475569" stroke-width="2"/>
+    <circle cx="910" cy="488" r="22" fill="#ea580c" stroke="#475569" stroke-width="2"/>
+    <circle cx="640" cy="544" r="22" fill="#22c55e" stroke="#475569" stroke-width="2"/>
+
+    <!-- Auto-orbit dashed motion hint (curved arc, suggests rotation around scene) -->
+    <ellipse cx="640" cy="500" rx="320" ry="44" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6 6" opacity="0.7"/>
+
+    <!-- HUD overlay: orbit hint -->
+    <rect x="32" y="544" width="376" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="48" y="565" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Drag to orbit · Scroll to zoom</text>
+
+    <!-- Auto-orbit chip -->
+    <rect x="1056" y="544" width="192" height="32" rx="16" fill="#22c55e"/>
+    <circle cx="1074" cy="560" r="6" fill="#f5f0e6"/>
+    <text x="1090" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#f5f0e6">Auto-orbit on</text>
+
+    <!-- Status bar below canvas -->
+    <rect x="32" y="600" width="1216" height="40" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="48" y="625" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Theme: <tspan font-weight="600">winter</tspan> · DPR: <tspan font-weight="600">2.0</tspan> · prefers-reduced-motion: <tspan font-weight="600">no-preference</tspan></text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <!-- Callouts -->
+    <g class="callout"><circle cx="640" cy="360" r="14" fill="#dc2626"/><text x="640" y="365" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="370" cy="450" r="14" fill="#dc2626"/><text x="370" y="455" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1152" cy="560" r="14" fill="#dc2626"/><text x="1152" y="565" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="780" cy="490" r="14" fill="#dc2626"/><text x="780" y="495" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <!-- MOBILE 360x720 -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Page heading -->
+    <text x="180" y="118" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">3D Game</text>
+
+    <!-- Mobile canvas region -->
+    <rect x="16" y="138" width="328" height="320" rx="8" fill="url(#sceneSkyMobile)" stroke="#b8a080"/>
+
+    <!-- Sculpt at mobile scale -->
+    <ellipse cx="180" cy="368" rx="120" ry="14" fill="#b8a080" opacity="0.5"/>
+    <polygon points="118,326 242,326 232,342 128,342" fill="#475569" stroke="#374151" stroke-width="1.5"/>
+    <rect x="138" y="342" width="84" height="12" fill="#374151" stroke="#1f2937" stroke-width="1.5"/>
+    <polygon points="138,354 222,354 208,366 152,366" fill="#475569" stroke="#374151" stroke-width="1.5"/>
+    <g transform="translate(180, 296) rotate(-22)">
+      <rect x="-38" y="-12" width="76" height="22" rx="3" fill="#8b5cf6" stroke="#475569" stroke-width="1.5"/>
+      <rect x="-46" y="-10" width="8" height="18" rx="2" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
+      <rect x="38" y="-10" width="8" height="18" rx="2" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
+      <rect x="-6" y="10" width="12" height="60" rx="3" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
+    </g>
+    <circle cx="56" cy="362" r="10" fill="#8b5cf6" stroke="#475569" stroke-width="1.5"/>
+    <circle cx="304" cy="362" r="10" fill="#ea580c" stroke="#475569" stroke-width="1.5"/>
+    <circle cx="180" cy="392" r="10" fill="#22c55e" stroke="#475569" stroke-width="1.5"/>
+    <ellipse cx="180" cy="368" rx="140" ry="22" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+
+    <!-- Touch hint chip (44px tall) -->
+    <rect x="16" y="476" width="328" height="44" rx="22" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="503" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Pinch to zoom · Drag to orbit</text>
+
+    <!-- Auto-orbit chip mobile -->
+    <rect x="16" y="532" width="328" height="44" rx="22" fill="#22c55e"/>
+    <circle cx="40" cy="554" r="6" fill="#f5f0e6"/>
+    <text x="180" y="559" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#f5f0e6">Auto-orbit on (resumes after 3s idle)</text>
+
+    <!-- Status row -->
+    <text x="180" y="608" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">DPR capped [1,2] · WebGL OK</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Mobile callouts -->
+    <g class="callout"><circle cx="180" cy="296" r="11" fill="#dc2626"/><text x="180" y="301" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="180" cy="498" r="11" fill="#dc2626"/><text x="180" y="503" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1 - Canvas mount + orbit controls -->
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Canvas mount + orbit controls</text>
+      <a href="#us-001" transform="translate(310, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#fr-005" transform="translate(372, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-005</text></a>
+      <a href="#sc-001" transform="translate(434, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Dynamic-import-no-SSR. drei OrbitControls;</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">polar angle &amp; zoom bounded; 360° yaw.</text>
+    </g>
+
+    <!-- Group 2 - Theme-aware materials -->
+    <g transform="translate(520, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Theme-aware materials</text>
+      <a href="#us-002" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <a href="#fr-002" transform="translate(322, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-002</text></a>
+      <a href="#fr-003" transform="translate(384, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-003</text></a>
+      <a href="#sc-002" transform="translate(446, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Reads DaisyUI CSS custom props (--p, --s,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">--b1); MutationObserver on data-theme.</text>
+    </g>
+
+    <!-- Group 3 - Auto-orbit + reduced motion -->
+    <g transform="translate(1020, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Auto-orbit + reduced motion</text>
+      <a href="#us-003" transform="translate(290, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <a href="#fr-004" transform="translate(352, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-004</text></a>
+      <a href="#sc-010" transform="translate(414, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-010</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Auto-orbit suspends on input, resumes after</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">3s idle. Disabled under reduce-motion.</text>
+    </g>
+
+    <!-- Group 4 - Procedural sculpt (no .glb) -->
+    <g transform="translate(20, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Procedural sculpt only (no .glb)</text>
+      <a href="#us-001" transform="translate(310, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#fr-007" transform="translate(372, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-007</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">v1 = hammer + anvil + DaisyUI accent orbs.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Boxes, cylinders, tori only. No asset import.</text>
+    </g>
+
+    <!-- Group 5 - Mobile touch + DPR cap -->
+    <g transform="translate(520, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Mobile touch + DPR cap</text>
+      <a href="#us-005" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-005</text></a>
+      <a href="#fr-005" transform="translate(322, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-005</text></a>
+      <a href="#nfr-004" transform="translate(384, 5)"><rect width="64" height="22" rx="11" fill="#2563eb"/><text x="32" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">NFR-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Touch-drag orbits via drei. DPR capped</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">[1, 2] to bound GPU on high-DPR devices.</text>
+    </g>
+
+    <!-- Status legend -->
+    <g transform="translate(1020, 116)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Status bar legend</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Theme, DPR, and reduced-motion preference</text>
+      <text x="0" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">surface in the canvas footer for debugging.</text>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">047:01 | Three.js Game - Main | ScriptHammer</text>
+</svg>
