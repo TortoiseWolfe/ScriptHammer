@@ -7,6 +7,17 @@
 
 ---
 
+## Clarifications
+
+### Session 2026-05-15
+
+- Q: What is the canonical v1 scene content? → A: ScriptHammer-themed sculpt: stylized procedural hammer + anvil + DaisyUI-themed accents (procedural only — no .glb imports).
+- Q: WebGL-unavailable / GPU-context-lost fallback UX? → A: Static themed illustration (CSS/SVG hammer+anvil silhouette) + explanatory message + retry button. No auto-retry on context loss; user clicks retry explicitly.
+- Q: How constrained should camera orbit be? → A: Constrained polar angle (no flipping under ground plane), 360° yaw, bounded zoom (min/max distance), AND auto-orbit when idle (suspends on user input, resumes after 3s of inactivity). Auto-orbit MUST disable when `prefers-reduced-motion: reduce` is set (already covered by FR-004).
+- Q: Should /game/3d emit custom analytics events? → A: Page view only (rely on GA4's default page view). No custom scene-loaded or scene-interaction events for v1. Defer richer measurement to a follow-up feature if/when needed.
+
+---
+
 <!-- AUDIT-IMPL-STATUS-BEGIN -->
 
 ## Implementation Status
@@ -46,7 +57,7 @@ A user navigates to `/game/3d` and sees an interactive Three.js scene render aft
 **Acceptance Scenarios**:
 
 1. **Given** a user navigates to `/game/3d`, **When** the page hydrates, **Then** a loading spinner displays until the canvas mounts
-2. **Given** the canvas has mounted, **When** the scene initializes, **Then** a `<canvas>` element renders 3D content (procedural geometry only for v1 — no `.glb`/`.gltf` imports)
+2. **Given** the canvas has mounted, **When** the scene initializes, **Then** a `<canvas>` element renders the v1 scene content (stylized procedural hammer + anvil + DaisyUI-themed accents — no `.glb`/`.gltf` imports)
 3. **Given** the scene is rendering, **When** the user drags or scrolls, **Then** the camera responds via orbit controls
 4. **Given** a fresh visit, **When** the production static export is served, **Then** the page works end-to-end with no server runtime (no `/api/` routes)
 
@@ -78,7 +89,7 @@ Users who have set `prefers-reduced-motion: reduce` at the OS level see a static
 
 **Acceptance Scenarios**:
 
-1. **Given** OS-level `prefers-reduced-motion` is `reduce`, **When** the scene loads, **Then** auto-rotation, idle animations, and transitions are disabled
+1. **Given** OS-level `prefers-reduced-motion` is `reduce`, **When** the scene loads, **Then** auto-orbit (FR-005), idle animations, and any autonomous transitions are disabled
 2. **Given** reduced motion is enforced, **When** the user manually orbits the camera, **Then** user-initiated motion still works (the preference scopes to autonomous animation, not user input)
 3. **Given** the user toggles their OS preference at runtime, **When** the scene reads the media query, **Then** the animation state updates accordingly without requiring a page reload (precedent: commit `acb1920` — `feat(a11y): batch 6 — respect prefers-reduced-motion in game animations`)
 
@@ -118,8 +129,8 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 
 ### Edge Cases
 
-- **WebGL unavailable**: What happens when the browser does not support WebGL (very old browsers, restricted enterprise environments)? Scene MUST display a graceful fallback message that explains the requirement, rather than rendering a blank canvas or throwing.
-- **GPU context loss**: What happens when the browser releases the WebGL context (memory pressure, tab backgrounded for too long)? Scene MUST handle the `webglcontextlost` event and either recover or display the same fallback as above.
+- **WebGL unavailable**: When the browser does not support WebGL (very old browsers, restricted enterprise environments), the canvas MUST be replaced by a fallback panel containing: a static themed illustration (CSS/SVG hammer + anvil silhouette using DaisyUI tokens for color), an explanatory message naming WebGL as the requirement, and a "Retry" button that re-attempts canvas mount. No auto-retry — user-initiated only.
+- **GPU context loss**: When the browser releases the WebGL context (memory pressure, tab backgrounded for too long), the scene MUST handle the `webglcontextlost` event by swapping to the same fallback panel described above. The "Retry" button re-creates the canvas and re-mounts the scene. No silent auto-retry.
 - **Reduced motion toggled at runtime**: When the user changes the `prefers-reduced-motion` OS preference while `/game/3d` is open, the scene MUST reflect the new state without requiring a page reload.
 - **Theme switched during animation**: When the user changes themes mid-animation, material color updates MUST NOT interrupt user-initiated camera motion or cause a visible jump.
 - **Pa11y exclusion regression**: If a future PR accidentally removes the exclusion in `config/pa11yci.json`, CI MUST fail loudly so the regression is caught before merge — not silently re-introduce the canvas-isn't-auditable error.
@@ -133,10 +144,15 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 - **FR-001**: System MUST serve the route `/game/3d` rendering a `<canvas>` element after a dynamic client-only import (no SSR for the canvas surface).
 - **FR-002**: Scene MUST reflect the current DaisyUI theme on initial render by reading CSS custom properties (`--p`, `--s`, `--b1`, etc.) from `:root`.
 - **FR-003**: Scene MUST re-extract DaisyUI colors and update materials/lights when the `data-theme` attribute on `<html>` changes (via `MutationObserver`, following the `useMapTheme` precedent).
-- **FR-004**: Scene MUST disable auto-rotation and idle animations when `prefers-reduced-motion: reduce` is set; user-initiated camera motion remains enabled.
-- **FR-005**: Camera orbit controls MUST work via mouse, trackpad, and touch input (covered natively by drei's `OrbitControls`).
+- **FR-004**: Scene MUST disable all autonomous animations (auto-orbit, idle bobbing, ambient rotation of accent objects, etc.) when `prefers-reduced-motion: reduce` is set; user-initiated camera motion remains enabled.
+- **FR-005**: Camera orbit controls MUST work via mouse, trackpad, and touch input (covered natively by drei's `OrbitControls`), with the following constraints:
+  - **Polar angle constrained** so the user cannot flip under the ground plane (approximately `Math.PI / 2` upper bound on `maxPolarAngle`).
+  - **Full 360° yaw** (azimuth unconstrained).
+  - **Bounded zoom** — explicit `minDistance` and `maxDistance` set on `OrbitControls` so the user cannot zoom into the geometry or zoom out into empty space.
+  - **Auto-orbit when idle** — the camera slowly rotates around the scene by default. User input (drag/scroll/touch) suspends auto-orbit immediately; auto-orbit resumes after 3 seconds of no input. Auto-orbit MUST be disabled when `prefers-reduced-motion: reduce` is set (per FR-004).
 - **FR-006**: Route MUST be reachable via standard navigation (no auth required, no special headers, no payment gating).
-- **FR-007**: Scene MUST use procedural geometry only for v1 — no `.glb`/`.gltf`/`.hdr` model or texture imports. Future asset-pipeline work is explicitly out of scope.
+- **FR-007**: Scene MUST use procedural geometry only for v1 — no `.glb`/`.gltf`/`.hdr` model or texture imports. The v1 scene content is a ScriptHammer-themed sculpt: a stylized procedural hammer and anvil with DaisyUI-themed accent objects (lights, ground plane, ambient decoration) — all built from primitive Three.js geometries (`BoxGeometry`, `CylinderGeometry`, `TorusGeometry`, etc.). Future asset-pipeline work is explicitly out of scope.
+- **FR-008**: When WebGL is unavailable OR the `webglcontextlost` event fires, the route MUST display a fallback panel containing (a) a static themed illustration (CSS/SVG hammer + anvil silhouette using DaisyUI color tokens), (b) an explanatory message naming WebGL as the requirement, and (c) a user-actionable "Retry" button that re-attempts canvas mount. No silent auto-retry.
 
 ### Non-Functional Requirements
 
@@ -145,10 +161,11 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 - **NFR-003**: Static export (`next build` → `out/`) MUST succeed without runtime errors and MUST produce `out/game/3d/index.html`.
 - **NFR-004**: Device pixel ratio MUST be capped (e.g., `[1, 2]`) to bound GPU cost on high-DPR mobile devices.
 - **NFR-005**: `<Canvas>` MUST NOT be server-rendered (R3F is client-only). Achieved via `dynamic(() => import(...), { ssr: false })`.
+- **NFR-006**: Observability scope is limited to GA4's default page view for `/game/3d`. No custom scene-loaded, scene-interaction, or theme-switched-in-scene events are emitted for v1. Privacy-friendly default per Constitution Principle VI; richer telemetry is deferred to a follow-up if engagement measurement becomes necessary.
 
 ### Key Entities
 
-- **Scene**: The top-level R3F `<Canvas>` wrapper. Owns theme-aware color extraction, camera, lights, and the procedural geometry hierarchy. Re-renders on theme change.
+- **Scene**: The top-level R3F `<Canvas>` wrapper. Owns theme-aware color extraction, camera, lights, and the procedural geometry hierarchy. Contains the v1 ScriptHammer-themed sculpt (hammer + anvil + DaisyUI-themed accents). Re-renders on theme change.
 - **Theme Tokens**: The DaisyUI CSS custom properties (`--p`, `--s`, `--b1`, etc.) read from `document.documentElement` at runtime. Converted to Three.js-compatible color values for materials and lights.
 - **Reduced-Motion Preference**: The OS-level `prefers-reduced-motion` media query result, watched via `matchMedia`'s `change` event for runtime toggling.
 
@@ -164,6 +181,8 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 - **SC-006**: Pa11y CI completes successfully — `/game/3d` is skipped via the documented exclusion AND `/game` retains its prior coverage (no regression on feature `037-game-a11y-tests`).
 - **SC-007**: Homepage and other-route bundle sizes are unchanged before vs. after this feature lands (Three.js bundle is route-split to `/game/3d` only).
 - **SC-008**: Component structure validation (`pnpm run validate:structure`) passes for all new components under `src/components/game/`.
+- **SC-009**: When WebGL is disabled in the browser (e.g., via Chrome flag `--disable-webgl`), the route renders the fallback panel (themed silhouette + message + retry button) within 2 seconds and the "Retry" button is keyboard-accessible.
+- **SC-010**: With `prefers-reduced-motion: reduce` OFF, auto-orbit is observable within 3 seconds of idle and suspends within one frame of user input.
 
 ## Assumptions
 
@@ -184,6 +203,7 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 - Payments, NFTs, or any Web3 integration.
 - Promoting the 3D scene to the homepage hero or root route (separate IA decision).
 - Replacing or moving the existing dice game at `/game`.
+- Custom GA4 events beyond default page view (no scene-loaded, scene-interaction, or theme-switched-in-scene events for v1).
 
 ## Dependencies
 
