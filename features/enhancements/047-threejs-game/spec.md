@@ -16,6 +16,15 @@
 - Q: How constrained should camera orbit be? → A: Constrained polar angle (no flipping under ground plane), 360° yaw, bounded zoom (min/max distance), AND auto-orbit when idle (suspends on user input, resumes after 3s of inactivity). Auto-orbit MUST disable when `prefers-reduced-motion: reduce` is set (already covered by FR-004).
 - Q: Should /game/3d emit custom analytics events? → A: Page view only (rely on GA4's default page view). No custom scene-loaded or scene-interaction events for v1. Defer richer measurement to a follow-up feature if/when needed.
 
+## UI Mockup
+
+Approved wireframes (signed off 2026-05-15 by `/speckit.wireframe.review` after validator PASS):
+
+- [`wireframes/01-game-3d-main.svg`](wireframes/01-game-3d-main.svg) — desktop + mobile of `/game/3d` with canvas mounted. Anchors US-001, US-002, US-003, US-005, FR-002, FR-003, FR-004, FR-005, FR-007, NFR-004, SC-001, SC-002, SC-010.
+- [`wireframes/02-game-3d-fallback.svg`](wireframes/02-game-3d-fallback.svg) — desktop + mobile of `/game/3d` fallback panel (WebGL unavailable OR `webglcontextlost` event fired). Anchors US-001, US-002, US-004, FR-008, SC-006, SC-009.
+
+Wireframe gate per Constitution v1.0.2 Principle III is now PASSED. `/speckit.plan` is unblocked.
+
 ---
 
 <!-- AUDIT-IMPL-STATUS-BEGIN -->
