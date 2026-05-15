@@ -34,4 +34,5 @@
 
 - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`.
 - All items pass on first iteration; no rework required.
-- Spec is ready for `/speckit.clarify` (next phase). After clarification, the v1.0.2 wireframe gate applies: wireframes MUST be authored and reviewed before `/speckit.plan`.
+- `/speckit.clarify` completed 2026-05-15 — 4 questions resolved (v1 scene content, fallback UX, camera control bounds, analytics scope). All 11 taxonomy categories now Clear. Spec amended with FR-008 (fallback panel), NFR-006 (observability scope), expanded FR-005 (camera constraints + auto-orbit), and SC-009/SC-010 (fallback + auto-orbit success criteria).
+- Spec is ready for the v1.0.2 wireframe gate: wireframes MUST be authored and reviewed via `/speckit.wireframe.*` skills before `/speckit.plan`.
