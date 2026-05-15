@@ -1,136 +1,148 @@
 <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- Wood grain pattern definition -->
+  <!--
+    Compositor's / printer's mallet, used in conjunction with a planer block
+    to tap movable type level on the imposing stone (or to wedge quoins).
+
+    Anatomy (per Sketches & Treatise references):
+      - Head: almost-square block (NOT a coopered cylinder, no iron bands).
+        ~5 in breadth at top, ~4 in breadth at bottom, ~3 in thick.
+      - Handle: beech or ash, ~1 in diameter, 7-8 in long.
+      - Attachment: beveled wedge through a beveled hole in the head.
+
+    Single-object portrait at 42 deg tilt to match the prior asset's pose.
+    400x400 viewBox preserved so existing consumers don't need updates.
+  -->
+
   <defs>
-    <!-- Oak wood grain pattern -->
-    <pattern id="oakGrain" x="0" y="0" width="100" height="200" patternUnits="userSpaceOnUse">
-      <rect width="100" height="200" fill="#8B6F47"/>
-      <path d="M0,10 Q25,8 50,10 T100,10" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,25 Q30,23 60,25 T100,25" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,40 Q35,38 70,40 T100,40" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,55 Q20,53 40,55 T100,55" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,70 Q25,68 50,70 T100,70" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,85 Q30,83 60,85 T100,85" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,100 Q35,98 70,100 T100,100" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,115 Q20,113 40,115 T100,115" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,130 Q25,128 50,130 T100,130" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,145 Q30,143 60,145 T100,145" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,160 Q35,158 70,160 T100,160" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,175 Q20,173 40,175 T100,175" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
-      <path d="M0,190 Q25,188 50,190 T100,190" stroke="#6B5637" stroke-width="0.5" fill="none" opacity="0.4"/>
+    <!-- Beech head: warm honey end-grain pattern (visible on top face).
+         End-grain rings are concentric, irregular, lighter overall than side grain. -->
+    <pattern id="beechEndGrain" x="0" y="0" width="180" height="120" patternUnits="userSpaceOnUse">
+      <rect width="180" height="120" fill="#C9A876"/>
+      <ellipse cx="90" cy="60" rx="78" ry="44" fill="none" stroke="#A88660" stroke-width="0.5" opacity="0.35"/>
+      <ellipse cx="90" cy="60" rx="62" ry="34" fill="none" stroke="#9A7950" stroke-width="0.5" opacity="0.4"/>
+      <ellipse cx="90" cy="60" rx="46" ry="24" fill="none" stroke="#8B6E48" stroke-width="0.5" opacity="0.4"/>
+      <ellipse cx="90" cy="60" rx="28" ry="14" fill="none" stroke="#7A5F40" stroke-width="0.5" opacity="0.35"/>
+      <ellipse cx="90" cy="60" rx="12" ry="6" fill="none" stroke="#6A5236" stroke-width="0.4" opacity="0.3"/>
     </pattern>
 
-    <!-- Darker oak for shading -->
-    <pattern id="oakGrainDark" x="0" y="0" width="100" height="200" patternUnits="userSpaceOnUse">
-      <rect width="100" height="200" fill="#6B5637"/>
-      <path d="M0,10 Q25,8 50,10 T100,10" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,30 Q30,28 60,30 T100,30" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,50 Q35,48 70,50 T100,50" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,70 Q20,68 40,70 T100,70" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,90 Q25,88 50,90 T100,90" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,110 Q30,108 60,110 T100,110" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,130 Q35,128 70,130 T100,130" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,150 Q20,148 40,150 T100,150" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,170 Q25,168 50,170 T100,170" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
-      <path d="M0,190 Q30,188 60,190 T100,190" stroke="#4B3627" stroke-width="0.5" fill="none" opacity="0.5"/>
+    <!-- Beech side grain: vertical streaks (visible on the front face). -->
+    <pattern id="beechSideGrain" x="0" y="0" width="60" height="120" patternUnits="userSpaceOnUse">
+      <rect width="60" height="120" fill="#C9A876"/>
+      <path d="M5,0 Q3,40 5,80 T5,120" stroke="#A88660" stroke-width="0.4" fill="none" opacity="0.45"/>
+      <path d="M14,0 Q16,30 14,70 T14,120" stroke="#9A7950" stroke-width="0.4" fill="none" opacity="0.4"/>
+      <path d="M24,0 Q22,50 24,100 T24,120" stroke="#A88660" stroke-width="0.4" fill="none" opacity="0.45"/>
+      <path d="M34,0 Q36,40 34,80 T34,120" stroke="#8B6E48" stroke-width="0.4" fill="none" opacity="0.4"/>
+      <path d="M44,0 Q42,30 44,70 T44,120" stroke="#9A7950" stroke-width="0.4" fill="none" opacity="0.4"/>
+      <path d="M54,0 Q56,50 54,100 T54,120" stroke="#A88660" stroke-width="0.4" fill="none" opacity="0.45"/>
     </pattern>
 
-    <!-- Iron band pattern -->
-    <linearGradient id="ironGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5A5A5A;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#7A7A7A;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4A4A4A;stop-opacity:1" />
-    </linearGradient>
+    <!-- Right-side face: same beech but darker (in shadow). -->
+    <pattern id="beechSideShadow" x="0" y="0" width="60" height="120" patternUnits="userSpaceOnUse">
+      <rect width="60" height="120" fill="#9A7950"/>
+      <path d="M8,0 Q6,40 8,80 T8,120" stroke="#7A5F40" stroke-width="0.4" fill="none" opacity="0.5"/>
+      <path d="M22,0 Q24,30 22,70 T22,120" stroke="#6A5236" stroke-width="0.4" fill="none" opacity="0.5"/>
+      <path d="M38,0 Q36,50 38,100 T38,120" stroke="#7A5F40" stroke-width="0.4" fill="none" opacity="0.5"/>
+      <path d="M52,0 Q54,40 52,80 T52,120" stroke="#6A5236" stroke-width="0.4" fill="none" opacity="0.5"/>
+    </pattern>
 
-    <!-- Linseed oil sheen -->
-    <linearGradient id="oilSheen" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.1" />
-      <stop offset="50%" style="stop-color:#FFFFFF;stop-opacity:0.05" />
-      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    <!-- Specular highlight gradient for the top face -->
+    <radialGradient id="topFaceHighlight" cx="35%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Specular highlight for the front face -->
+    <linearGradient id="frontFaceHighlight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.25"/>
+      <stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
   </defs>
 
-  <!-- Entire mallet angled to the right -->
+  <!-- Ground shadow (drawn first, un-rotated, so the mallet sits on top). -->
+  <ellipse cx="200" cy="358" rx="110" ry="14" fill="#000000" opacity="0.16"/>
+  <ellipse cx="200" cy="358" rx="72" ry="9" fill="#000000" opacity="0.10"/>
+
+  <!-- Entire mallet at 42 deg to match previous asset's pose. -->
   <g transform="rotate(42, 200, 200)">
 
-    <!-- Mallet Head (cylindrical) -->
     <g id="malletHead">
-      <!-- Top face of cylinder -->
-      <ellipse cx="200" cy="80" rx="70" ry="20" fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
 
-      <!-- Main cylindrical body -->
-      <rect x="130" y="80" width="140" height="85" fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
+      <!-- TOP FACE — beech end-grain, parallelogram in perspective. -->
+      <polygon points="138,72 256,72 266,100 128,100"
+               fill="url(#beechEndGrain)" stroke="#5B4530" stroke-width="1.2"/>
+      <polygon points="138,72 256,72 266,100 128,100"
+               fill="url(#topFaceHighlight)"/>
 
-      <!-- Bottom face of cylinder (visible edge) -->
-      <ellipse cx="200" cy="165" rx="70" ry="20" fill="url(#oakGrainDark)" stroke="#5B4637" stroke-width="1.5"/>
+      <!-- FRONT FACE — main slab, beech side grain, slight bottom taper. -->
+      <polygon points="128,100 266,100 256,168 138,168"
+               fill="url(#beechSideGrain)" stroke="#5B4530" stroke-width="1.4"/>
+      <polygon points="128,100 266,100 256,168 138,168"
+               fill="url(#frontFaceHighlight)"/>
 
-      <!-- Iron reinforcement bands -->
-      <rect x="125" y="90" width="150" height="8" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="0.5"/>
-      <rect x="125" y="147" width="150" height="8" fill="url(#ironGradient)" stroke="#3A3A3A" stroke-width="0.5"/>
+      <!-- RIGHT-SIDE FACE — foreshortened, in shadow. -->
+      <polygon points="266,100 286,80 276,148 256,168"
+               fill="url(#beechSideShadow)" stroke="#5B4530" stroke-width="1.2"/>
 
-      <!-- Hammer marks and wear on striking surfaces -->
-      <ellipse cx="180" cy="120" rx="8" ry="3" fill="#6B5637" opacity="0.3"/>
-      <ellipse cx="210" cy="110" rx="6" ry="2" fill="#6B5637" opacity="0.3"/>
-      <ellipse cx="195" cy="135" rx="7" ry="3" fill="#6B5637" opacity="0.3"/>
-      <ellipse cx="220" cy="125" rx="5" ry="2" fill="#6B5637" opacity="0.3"/>
+      <!-- Wear band along the bottom-front edge (where mallet strikes the planer). -->
+      <path d="M138,164 Q197,166 256,164" stroke="#5A4530" stroke-width="2.5" fill="none" opacity="0.45"/>
+      <path d="M140,168 Q197,166 254,168" stroke="#3A2A18" stroke-width="0.8" fill="none" opacity="0.5"/>
 
-      <!-- Wood grain details on head -->
-      <path d="M140,100 Q200,98 260,100" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
-      <path d="M135,120 Q200,118 265,120" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
-      <path d="M140,140 Q200,138 260,140" stroke="#6B5637" stroke-width="0.3" fill="none" opacity="0.5"/>
+      <!-- Chipped bottom corners (small notches from repeated strikes) -->
+      <path d="M138,165 L141,168 L138,168 Z" fill="#3A2A18" opacity="0.55"/>
+      <path d="M256,165 L253,168 L256,168 Z" fill="#3A2A18" opacity="0.55"/>
+
+      <!-- Surface wear dents on the front face -->
+      <ellipse cx="165" cy="125" rx="3" ry="1.2" fill="#5A4530" opacity="0.3"/>
+      <ellipse cx="195" cy="140" rx="2" ry="0.8" fill="#5A4530" opacity="0.25"/>
+      <ellipse cx="225" cy="118" rx="2.5" ry="1" fill="#5A4530" opacity="0.28"/>
+      <ellipse cx="238" cy="148" rx="2" ry="0.8" fill="#5A4530" opacity="0.25"/>
+
+      <!-- Small knot on the front face (off-center) -->
+      <ellipse cx="178" cy="132" rx="4" ry="3" fill="#5A4530" opacity="0.45"/>
+      <ellipse cx="178" cy="132" rx="2.2" ry="1.7" fill="#3A2A18" opacity="0.55"/>
+      <ellipse cx="178" cy="132" rx="0.9" ry="0.7" fill="#2A1A0A" opacity="0.7"/>
+
+      <!-- Square locking wedge driven through the head from above
+           (visible on the TOP face, locks the handle in place). -->
+      <polygon points="193,82 207,82 209,98 191,98"
+               fill="#D8C49A" stroke="#5B4530" stroke-width="0.9"/>
+      <line x1="195" y1="84" x2="205" y2="84" stroke="#F0DDB8" stroke-width="0.6" opacity="0.7"/>
     </g>
 
-    <!-- Handle (shorter, 6 inches) -->
     <g id="handle">
-      <!-- Mortise joint area where handle meets head -->
-      <rect x="190" y="165" width="20" height="25" fill="url(#oakGrainDark)" stroke="#5B4637" stroke-width="1"/>
+      <!-- Handle main shaft — thin, slightly fatter at the grip (palm swell).
+           Top (joins head): width 12u   Bottom (grip): width 20u.
+           Per source: 1in diameter, 7-8in long. -->
+      <path d="M194,168 L206,168 L210,308 L190,308 Z"
+            fill="#D4B585" stroke="#7A5F40" stroke-width="1"/>
 
-      <!-- Main handle shaft with taper -->
-      <path d="M192,190 L191,340 L209,340 L208,190 Z"
-            fill="url(#oakGrain)" stroke="#5B4637" stroke-width="1.5"/>
+      <!-- Right-edge shading (round-shaft cue) -->
+      <path d="M203,170 L206,168 L210,308 L208,308 Z"
+            fill="#8B6F47" opacity="0.55"/>
+      <!-- Left-edge highlight -->
+      <path d="M196,168 L194,168 L190,308 L192,308 Z"
+            fill="#E8D2A0" opacity="0.45"/>
+      <!-- Center specular highlight stripe -->
+      <path d="M198,172 L201,172 L201,300 L198,300 Z"
+            fill="#F0DDB8" opacity="0.32"/>
 
-      <!-- Handle taper detail (wider at top, narrower at bottom) -->
-      <path d="M192,190 Q190,265 188,340 L191,340 Z"
-            fill="url(#oakGrainDark)" opacity="0.5"/>
-      <path d="M208,190 Q210,265 212,340 L209,340 Z"
-            fill="url(#oakGrainDark)" opacity="0.5"/>
+      <!-- Bottom end-cap (rounded ellipse hint of depth) -->
+      <ellipse cx="200" cy="308" rx="10" ry="2.5" fill="#7A5F40"/>
+      <ellipse cx="200" cy="306" rx="9" ry="2" fill="#9A7950"/>
 
-      <!-- Grip area with wear patina -->
-      <ellipse cx="200" cy="290" rx="7" ry="18" fill="#6B5637" opacity="0.2"/>
+      <!-- Grain lines on handle -->
+      <line x1="196" y1="175" x2="194" y2="305" stroke="#8B6F47" stroke-width="0.3" opacity="0.4"/>
+      <line x1="200" y1="172" x2="200" y2="306" stroke="#7A5F40" stroke-width="0.3" opacity="0.4"/>
+      <line x1="204" y1="175" x2="206" y2="305" stroke="#8B6F47" stroke-width="0.3" opacity="0.4"/>
 
-      <!-- Wood grain lines on handle -->
-      <line x1="194" y1="195" x2="193" y2="335" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
-      <line x1="197" y1="192" x2="196" y2="338" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
-      <line x1="200" y1="190" x2="200" y2="340" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
-      <line x1="203" y1="192" x2="204" y2="338" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
-      <line x1="206" y1="195" x2="207" y2="335" stroke="#6B5637" stroke-width="0.3" opacity="0.4"/>
+      <!-- Grip darkening from hand oils (where compositor's palm rests) -->
+      <ellipse cx="200" cy="265" rx="9" ry="20" fill="#5A4530" opacity="0.18"/>
 
-      <!-- Wooden wedge in mortise joint -->
-      <path d="M195,170 L198,185 L202,185 L205,170 Z"
-            fill="#9B8667" stroke="#5B4637" stroke-width="0.5"/>
-    </g>
-
-    <!-- Surface details and aging -->
-    <g id="aging" opacity="0.3">
-      <!-- Scratches and dings on head -->
-      <line x1="150" y1="95" x2="165" y2="98" stroke="#4B3627" stroke-width="0.5"/>
-      <line x1="240" y1="130" x2="252" y2="128" stroke="#4B3627" stroke-width="0.5"/>
-      <line x1="160" y1="145" x2="175" y2="143" stroke="#4B3627" stroke-width="0.5"/>
-
-      <!-- Scratches on handle -->
-      <line x1="195" y1="230" x2="198" y2="260" stroke="#4B3627" stroke-width="0.5"/>
-      <line x1="202" y1="280" x2="204" y2="310" stroke="#4B3627" stroke-width="0.5"/>
-
-      <!-- Age spots -->
-      <circle cx="170" cy="140" r="2" fill="#5B4637" opacity="0.4"/>
-      <circle cx="230" cy="105" r="1.5" fill="#5B4637" opacity="0.4"/>
-      <circle cx="196" cy="250" r="1" fill="#5B4637" opacity="0.4"/>
-      <circle cx="203" cy="300" r="1.2" fill="#5B4637" opacity="0.4"/>
-    </g>
-
-    <!-- Linseed oil sheen overlay -->
-    <g id="sheen" opacity="0.15">
-      <rect x="130" y="80" width="140" height="85" fill="url(#oilSheen)"/>
-      <path d="M192,190 L191,340 L209,340 L208,190 Z" fill="url(#oilSheen)"/>
+      <!-- Light scratches along the handle -->
+      <line x1="199" y1="210" x2="201" y2="240" stroke="#5A4530" stroke-width="0.4" opacity="0.35"/>
+      <line x1="203" y1="270" x2="204" y2="290" stroke="#5A4530" stroke-width="0.4" opacity="0.3"/>
     </g>
 
   </g>
