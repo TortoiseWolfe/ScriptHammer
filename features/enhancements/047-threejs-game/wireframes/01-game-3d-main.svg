@@ -13,16 +13,115 @@
       <stop offset="0%" stop-color="#f5f0e6"/>
       <stop offset="100%" stop-color="#dcc8a8"/>
     </radialGradient>
+
   </defs>
 
+  <!-- Background + title come EARLY in the file so the validator's 2000-char
+       G-024/SECTION-001 scan window catches them. Brand asset symbols (large)
+       come right after the section labels. -->
   <rect width="1920" height="1080" fill="url(#bg)"/>
-
-  <!-- Centered title -->
   <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">3D GAME (THREE.JS SCENE) - /game/3d</text>
-
-  <!-- Section labels -->
   <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
   <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <defs>
+    <!-- Brand symbol: cog ring (geometry copied verbatim from public/scripthammer-logo.svg,
+         lines 109-248. Solid silver fill #c0c0c0 substitutes the metallic gradients
+         which aren't perceptible at wireframe scale). 400x400 viewBox. -->
+    <symbol id="brand-cog" viewBox="0 0 400 400">
+      <g transform="translate(200, 200)">
+        <g fill="#c0c0c0" stroke="#888888" stroke-width="0.5">
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(0)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(18)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(36)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(54)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(72)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(90)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(108)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(126)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(144)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(162)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(180)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(198)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(216)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(234)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(252)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(270)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(288)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(306)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(324)"/>
+          <path d="M -10,-179 L -15,-195 L 15,-195 L 10,-179 Z" transform="rotate(342)"/>
+        </g>
+        <circle cx="0" cy="0" r="183" fill="none" stroke="#888888" stroke-width="1" opacity="0.7"/>
+        <circle cx="0" cy="0" r="175" fill="none" stroke="#b0b0b0" stroke-width="10"/>
+        <circle cx="0" cy="0" r="165" fill="none" stroke="#888888" stroke-width="2" opacity="0.8"/>
+        <circle cx="0" cy="0" r="162" fill="none" stroke="#c0c0c0" stroke-width="0.5" opacity="0.6"/>
+      </g>
+      <!-- Rivets at every 18 degrees around the rim (between gear teeth). -->
+      <g transform="translate(200, 200)" fill="#888888">
+        <g transform="rotate(9)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(27)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(45)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(63)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(81)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(99)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(117)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(135)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(153)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(171)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(189)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(207)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(225)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(243)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(261)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(279)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(297)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(315)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(333)"><circle cx="0" cy="-171" r="2.5"/></g>
+        <g transform="rotate(351)"><circle cx="0" cy="-171" r="2.5"/></g>
+      </g>
+    </symbol>
+
+    <!-- Brand symbol: golden code-tag brackets (geometry copied verbatim from
+         public/script-tags.svg). 400x400 viewBox. -->
+    <symbol id="brand-script-tags" viewBox="0 0 400 400">
+      <g transform="translate(200, 200)">
+        <!-- Left bracket -->
+        <g transform="translate(-75, 0)">
+          <path d="M 45 -120 L -45 0 L 45 120" stroke="#8B4513" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" transform="translate(3, 3)"/>
+          <path d="M 45 -120 L -45 0 L 45 120" stroke="#CD853F" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M 45 -120 L -45 0 L 45 120" stroke="#FFD700" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+          <path d="M 42 -115 L -40 0 L 42 115" stroke="#FFDF00" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </g>
+        <!-- Right bracket -->
+        <g transform="translate(75, 0)">
+          <path d="M -45 -120 L 45 0 L -45 120" stroke="#8B4513" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" transform="translate(3, 3)"/>
+          <path d="M -45 -120 L 45 0 L -45 120" stroke="#CD853F" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M -45 -120 L 45 0 L -45 120" stroke="#FFD700" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+          <path d="M -42 -115 L 40 0 L -42 115" stroke="#FFDF00" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </g>
+      </g>
+    </symbol>
+
+    <!-- Brand symbol: printing-mallet (geometry copied verbatim from
+         public/printing-mallet.svg — the v3 redraw from PR #96 with the
+         compositor's-mallet anatomy). 400x400 viewBox with the 42-degree
+         tilt already baked in. -->
+    <symbol id="brand-printing-mallet" viewBox="0 0 400 400">
+      <ellipse cx="200" cy="358" rx="105" ry="14" fill="#000000" opacity="0.15"/>
+      <ellipse cx="200" cy="358" rx="70" ry="9" fill="#000000" opacity="0.12"/>
+      <g transform="rotate(42, 200, 200)">
+        <polygon points="138,72 256,72 266,100 128,100" fill="#C9A876" stroke="#5B4530" stroke-width="1.2"/>
+        <polygon points="128,100 266,100 256,168 138,168" fill="#A88660" stroke="#5B4530" stroke-width="1.4"/>
+        <polygon points="266,100 286,80 276,148 256,168" fill="#7A5F40" stroke="#5B4530" stroke-width="1.2"/>
+        <polygon points="193,82 207,82 209,98 191,98" fill="#D8C49A" stroke="#5B4530" stroke-width="0.9"/>
+        <path d="M194,168 L206,168 L210,308 L190,308 Z" fill="#D4B585" stroke="#7A5F40" stroke-width="1"/>
+        <path d="M203,170 L206,168 L210,308 L208,308 Z" fill="#8B6F47" opacity="0.55"/>
+        <path d="M196,168 L194,168 L190,308 L192,308 Z" fill="#E8D2A0" opacity="0.45"/>
+        <ellipse cx="200" cy="308" rx="10" ry="2.5" fill="#7A5F40"/>
+      </g>
+    </symbol>
+  </defs>
 
   <!-- DESKTOP 1280x720 -->
   <g id="desktop" transform="translate(40, 60)">
@@ -36,28 +135,29 @@
     <!-- Canvas region (the WebGL surface) -->
     <rect x="32" y="136" width="1216" height="448" rx="8" fill="url(#sceneSky)" stroke="#b8a080"/>
 
-    <!-- ScriptHammer-themed procedural sculpt: anvil + hammer + DaisyUI accent orbs -->
+    <!-- ScriptHammer v1 brand-composition sculpt.
+         Uses three <symbol> definitions in <defs> with geometry copied verbatim
+         from the canonical brand SVGs (public/*.svg). The <use> placements below
+         match the exact layering rules from LayeredScriptHammerLogo.tsx:
+           Layer 1 (BACK):  printing-mallet at top:58% left:42%, size 65% of cog
+           Layer 2 (MIDDLE): cog ring at 100%, centered
+           Layer 3 (FRONT):  script-tags brackets at 68%, centered
+
+         Cog reference: 300x300 centered at (640, 360) → corner (490, 210). -->
+
     <!-- Ground plane shadow disc -->
     <ellipse cx="640" cy="500" rx="280" ry="32" fill="#b8a080" opacity="0.5"/>
 
-    <!-- Anvil (procedural primitives suggestion: trapezoid + cuboid base) -->
-    <polygon points="490,440 790,440 770,470 510,470" fill="#475569" stroke="#374151" stroke-width="2"/>
-    <rect x="540" y="470" width="200" height="22" fill="#374151" stroke="#1f2937" stroke-width="2"/>
-    <polygon points="540,492 740,492 700,512 580,512" fill="#475569" stroke="#374151" stroke-width="2"/>
+    <!-- Layer 1 (BACK): printing-mallet (65% of cog = 195x195,
+         offset top:58% left:42% from cog center → corner (518, 286)). -->
+    <use href="#brand-printing-mallet" x="518" y="286" width="195" height="195"/>
 
-    <!-- Hammer head, tilted -->
-    <g transform="translate(640, 380) rotate(-22)">
-      <rect x="-90" y="-26" width="180" height="52" rx="6" fill="#8b5cf6" stroke="#475569" stroke-width="2"/>
-      <rect x="-110" y="-22" width="20" height="44" rx="4" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
-      <rect x="90" y="-22" width="20" height="44" rx="4" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
-      <!-- Hammer handle -->
-      <rect x="-14" y="26" width="28" height="140" rx="6" fill="#dcc8a8" stroke="#475569" stroke-width="2"/>
-    </g>
+    <!-- Layer 2 (MIDDLE): silver cog ring (100%, centered at 640,360). -->
+    <use href="#brand-cog" x="490" y="210" width="300" height="300"/>
 
-    <!-- DaisyUI-themed accent orbs (3, around the base) -->
-    <circle cx="370" cy="488" r="22" fill="#8b5cf6" stroke="#475569" stroke-width="2"/>
-    <circle cx="910" cy="488" r="22" fill="#ea580c" stroke="#475569" stroke-width="2"/>
-    <circle cx="640" cy="544" r="22" fill="#22c55e" stroke="#475569" stroke-width="2"/>
+    <!-- Layer 3 (FRONT): script-tag brackets (68% of cog = 204x204, centered). -->
+    <use href="#brand-script-tags" x="538" y="258" width="204" height="204"/>
+
 
     <!-- Auto-orbit dashed motion hint (curved arc, suggests rotation around scene) -->
     <ellipse cx="640" cy="500" rx="320" ry="44" fill="none" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="6 6" opacity="0.7"/>
@@ -79,9 +179,9 @@
 
     <!-- Callouts -->
     <g class="callout"><circle cx="640" cy="360" r="14" fill="#dc2626"/><text x="640" y="365" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
-    <g class="callout"><circle cx="370" cy="450" r="14" fill="#dc2626"/><text x="370" y="455" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="500" cy="200" r="14" fill="#dc2626"/><text x="500" y="205" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
     <g class="callout"><circle cx="1152" cy="560" r="14" fill="#dc2626"/><text x="1152" y="565" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
-    <g class="callout"><circle cx="780" cy="490" r="14" fill="#dc2626"/><text x="780" y="495" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+    <g class="callout"><circle cx="640" cy="270" r="14" fill="#dc2626"/><text x="640" y="275" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
   </g>
 
   <!-- MOBILE 360x720 -->
@@ -95,21 +195,24 @@
     <!-- Mobile canvas region -->
     <rect x="16" y="138" width="328" height="320" rx="8" fill="url(#sceneSkyMobile)" stroke="#b8a080"/>
 
-    <!-- Sculpt at mobile scale -->
-    <ellipse cx="180" cy="368" rx="120" ry="14" fill="#b8a080" opacity="0.5"/>
-    <polygon points="118,326 242,326 232,342 128,342" fill="#475569" stroke="#374151" stroke-width="1.5"/>
-    <rect x="138" y="342" width="84" height="12" fill="#374151" stroke="#1f2937" stroke-width="1.5"/>
-    <polygon points="138,354 222,354 208,366 152,366" fill="#475569" stroke="#374151" stroke-width="1.5"/>
-    <g transform="translate(180, 296) rotate(-22)">
-      <rect x="-38" y="-12" width="76" height="22" rx="3" fill="#8b5cf6" stroke="#475569" stroke-width="1.5"/>
-      <rect x="-46" y="-10" width="8" height="18" rx="2" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
-      <rect x="38" y="-10" width="8" height="18" rx="2" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
-      <rect x="-6" y="10" width="12" height="60" rx="3" fill="#dcc8a8" stroke="#475569" stroke-width="1.5"/>
-    </g>
-    <circle cx="56" cy="362" r="10" fill="#8b5cf6" stroke="#475569" stroke-width="1.5"/>
-    <circle cx="304" cy="362" r="10" fill="#ea580c" stroke="#475569" stroke-width="1.5"/>
-    <circle cx="180" cy="392" r="10" fill="#22c55e" stroke="#475569" stroke-width="1.5"/>
-    <ellipse cx="180" cy="368" rx="140" ry="22" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+    <!-- Mobile sculpt: same three brand SVG symbols at smaller scale.
+         Cog reference: 140x140 centered at (160, 300) → corner (90, 230). -->
+
+    <!-- Ground shadow -->
+    <ellipse cx="160" cy="408" rx="80" ry="8" fill="#b8a080" opacity="0.5"/>
+
+    <!-- Mobile Layer 1 (BACK): printing-mallet (65% = 91, offset to corner (104, 244)). -->
+    <use href="#brand-printing-mallet" x="104" y="244" width="91" height="91"/>
+
+    <!-- Mobile Layer 2 (MIDDLE): silver cog ring (140x140, centered at 160,300). -->
+    <use href="#brand-cog" x="90" y="230" width="140" height="140"/>
+
+    <!-- Mobile Layer 3 (FRONT): script-tag brackets (95x95, centered). -->
+    <use href="#brand-script-tags" x="112" y="252" width="95" height="95"/>
+
+
+    <!-- Auto-orbit motion arc -->
+    <ellipse cx="160" cy="300" rx="120" ry="20" fill="none" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
 
     <!-- Touch hint chip (44px tall) -->
     <rect x="16" y="476" width="328" height="44" rx="22" fill="#f5f0e6" stroke="#b8a080"/>
@@ -126,8 +229,8 @@
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
 
     <!-- Mobile callouts -->
-    <g class="callout"><circle cx="180" cy="296" r="11" fill="#dc2626"/><text x="180" y="301" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
-    <g class="callout"><circle cx="180" cy="498" r="11" fill="#dc2626"/><text x="180" y="503" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+    <g class="callout"><circle cx="160" cy="300" r="11" fill="#dc2626"/><text x="160" y="305" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="160" cy="240" r="11" fill="#dc2626"/><text x="160" y="245" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
   </g>
 
   <!-- ANNOTATION PANEL -->

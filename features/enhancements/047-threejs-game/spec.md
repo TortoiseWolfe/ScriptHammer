@@ -11,8 +11,14 @@
 
 ### Session 2026-05-15
 
-- Q: What is the canonical v1 scene content? → A: ScriptHammer-themed sculpt: stylized procedural hammer + anvil + DaisyUI-themed accents (procedural only — no .glb imports).
-- Q: WebGL-unavailable / GPU-context-lost fallback UX? → A: Static themed illustration (CSS/SVG hammer+anvil silhouette) + explanatory message + retry button. No auto-retry on context loss; user clicks retry explicitly.
+- Q: What is the canonical v1 scene content? → A: A 3D composition of the **three canonical ScriptHammer brand assets**, all mirrored from their SVG sources:
+  1. **Spinning silver cog ring** (procedural ring + 20 trapezoidal gear teeth + rivets, mirroring `public/scripthammer-logo.svg`) — the steampunk-machinery motif. Rotates slowly per the auto-orbit behavior.
+  2. **Glowing golden code brackets `< >`** (procedural extruded paths in a brass/bronze gradient, mirroring `public/script-tags.svg`) — the "Script" half of ScriptHammer. Centered, slight emissive glow.
+  3. **Printing-mallet** (procedural primitives mirroring `public/printing-mallet.svg` — squat boxy beech head + thin handle + visible wedge) — the "Hammer" half. Rests near the brackets.
+
+  DaisyUI theme tokens drive: cog rim color, bracket emissive glow color, mallet base material color, scene background. Procedural geometry only (no `.glb`/`.gltf` imports). _Revised 2026-05-15: dropped earlier "hammer + anvil + accent orbs" framing — anvils are blacksmith tools, not Gutenberg-press tools, and the orbs were filler. The three actual brand SVGs replace them._
+
+- Q: WebGL-unavailable / GPU-context-lost fallback UX? → A: Static themed illustration (CSS/SVG composition of the three brand assets — cog ring + brackets + printing-mallet, all from their canonical `public/*.svg` sources, recolored via DaisyUI tokens) + explanatory message + retry button. No auto-retry on context loss; user clicks retry explicitly.
 - Q: How constrained should camera orbit be? → A: Constrained polar angle (no flipping under ground plane), 360° yaw, bounded zoom (min/max distance), AND auto-orbit when idle (suspends on user input, resumes after 3s of inactivity). Auto-orbit MUST disable when `prefers-reduced-motion: reduce` is set (already covered by FR-004).
 - Q: Should /game/3d emit custom analytics events? → A: Page view only (rely on GA4's default page view). No custom scene-loaded or scene-interaction events for v1. Defer richer measurement to a follow-up feature if/when needed.
 
@@ -66,7 +72,7 @@ A user navigates to `/game/3d` and sees an interactive Three.js scene render aft
 **Acceptance Scenarios**:
 
 1. **Given** a user navigates to `/game/3d`, **When** the page hydrates, **Then** a loading spinner displays until the canvas mounts
-2. **Given** the canvas has mounted, **When** the scene initializes, **Then** a `<canvas>` element renders the v1 scene content (stylized procedural hammer + anvil + DaisyUI-themed accents — no `.glb`/`.gltf` imports)
+2. **Given** the canvas has mounted, **When** the scene initializes, **Then** a `<canvas>` element renders the v1 scene content (procedural composition of the three brand assets — silver cog ring mirroring `public/scripthammer-logo.svg`, golden `< >` brackets mirroring `public/script-tags.svg`, printing-mallet mirroring `public/printing-mallet.svg` — no `.glb`/`.gltf` imports)
 3. **Given** the scene is rendering, **When** the user drags or scrolls, **Then** the camera responds via orbit controls
 4. **Given** a fresh visit, **When** the production static export is served, **Then** the page works end-to-end with no server runtime (no `/api/` routes)
 
@@ -138,7 +144,7 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 
 ### Edge Cases
 
-- **WebGL unavailable**: When the browser does not support WebGL (very old browsers, restricted enterprise environments), the canvas MUST be replaced by a fallback panel containing: a static themed illustration (CSS/SVG hammer + anvil silhouette using DaisyUI tokens for color), an explanatory message naming WebGL as the requirement, and a "Retry" button that re-attempts canvas mount. No auto-retry — user-initiated only.
+- **WebGL unavailable**: When the browser does not support WebGL (very old browsers, restricted enterprise environments), the canvas MUST be replaced by a fallback panel containing: a static themed illustration (CSS/SVG composition of the three brand assets — cog ring + `< >` brackets + printing-mallet — recolored via DaisyUI tokens), an explanatory message naming WebGL as the requirement, and a "Retry" button that re-attempts canvas mount. No auto-retry — user-initiated only.
 - **GPU context loss**: When the browser releases the WebGL context (memory pressure, tab backgrounded for too long), the scene MUST handle the `webglcontextlost` event by swapping to the same fallback panel described above. The "Retry" button re-creates the canvas and re-mounts the scene. No silent auto-retry.
 - **Reduced motion toggled at runtime**: When the user changes the `prefers-reduced-motion` OS preference while `/game/3d` is open, the scene MUST reflect the new state without requiring a page reload.
 - **Theme switched during animation**: When the user changes themes mid-animation, material color updates MUST NOT interrupt user-initiated camera motion or cause a visible jump.
@@ -160,8 +166,14 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
   - **Bounded zoom** — explicit `minDistance` and `maxDistance` set on `OrbitControls` so the user cannot zoom into the geometry or zoom out into empty space.
   - **Auto-orbit when idle** — the camera slowly rotates around the scene by default. User input (drag/scroll/touch) suspends auto-orbit immediately; auto-orbit resumes after 3 seconds of no input. Auto-orbit MUST be disabled when `prefers-reduced-motion: reduce` is set (per FR-004).
 - **FR-006**: Route MUST be reachable via standard navigation (no auth required, no special headers, no payment gating).
-- **FR-007**: Scene MUST use procedural geometry only for v1 — no `.glb`/`.gltf`/`.hdr` model or texture imports. The v1 scene content is a ScriptHammer-themed sculpt: a stylized procedural hammer and anvil with DaisyUI-themed accent objects (lights, ground plane, ambient decoration) — all built from primitive Three.js geometries (`BoxGeometry`, `CylinderGeometry`, `TorusGeometry`, etc.). Future asset-pipeline work is explicitly out of scope.
-- **FR-008**: When WebGL is unavailable OR the `webglcontextlost` event fires, the route MUST display a fallback panel containing (a) a static themed illustration (CSS/SVG hammer + anvil silhouette using DaisyUI color tokens), (b) an explanatory message naming WebGL as the requirement, and (c) a user-actionable "Retry" button that re-attempts canvas mount. No silent auto-retry.
+- **FR-007**: Scene MUST use procedural geometry only for v1 — no `.glb`/`.gltf`/`.hdr` model or texture imports. The v1 scene content is a 3D composition of the three canonical ScriptHammer brand assets, each mirrored as procedural geometry from its SVG source:
+  - **Silver cog ring** with 20 trapezoidal gear teeth and rivets (mirror of `public/scripthammer-logo.svg`); rotates slowly per the auto-orbit behavior.
+  - **Golden `< >` code brackets** rendered as extruded bracket paths with a brass/bronze gradient material (mirror of `public/script-tags.svg`); slight emissive glow.
+  - **Printing-mallet** (squat boxy beech head, thin handle, locking wedge) procedurally constructed from primitives (mirror of `public/printing-mallet.svg`).
+
+  All geometry built from primitive Three.js shapes (`BoxGeometry`, `CylinderGeometry`, `TorusGeometry`, `RingGeometry`, `ExtrudeGeometry`, etc.). Future asset-pipeline work for loading the SVGs directly is explicitly out of scope.
+
+- **FR-008**: When WebGL is unavailable OR the `webglcontextlost` event fires, the route MUST display a fallback panel containing (a) a static themed illustration (CSS/SVG composition of the three brand assets — cog ring, `< >` brackets, printing-mallet — referencing or recreating their canonical `public/*.svg` sources, recolored via DaisyUI color tokens), (b) an explanatory message naming WebGL as the requirement, and (c) a user-actionable "Retry" button that re-attempts canvas mount. No silent auto-retry.
 
 ### Non-Functional Requirements
 
@@ -174,7 +186,7 @@ The 3D scene resizes responsively, supports touch input for camera orbiting, and
 
 ### Key Entities
 
-- **Scene**: The top-level R3F `<Canvas>` wrapper. Owns theme-aware color extraction, camera, lights, and the procedural geometry hierarchy. Contains the v1 ScriptHammer-themed sculpt (hammer + anvil + DaisyUI-themed accents). Re-renders on theme change.
+- **Scene**: The top-level R3F `<Canvas>` wrapper. Owns theme-aware color extraction, camera, lights, and the procedural geometry hierarchy. Contains the v1 brand composition: silver cog ring (mirroring `public/scripthammer-logo.svg`) + golden `< >` brackets (mirroring `public/script-tags.svg`) + printing-mallet (mirroring `public/printing-mallet.svg`). Re-renders on theme change.
 - **Theme Tokens**: The DaisyUI CSS custom properties (`--p`, `--s`, `--b1`, etc.) read from `document.documentElement` at runtime. Converted to Three.js-compatible color values for materials and lights.
 - **Reduced-Motion Preference**: The OS-level `prefers-reduced-motion` media query result, watched via `matchMedia`'s `change` event for runtime toggling.
 
