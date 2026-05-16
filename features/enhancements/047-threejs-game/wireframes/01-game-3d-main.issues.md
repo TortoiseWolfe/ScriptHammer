@@ -2,34 +2,45 @@
 
 **Feature:** 047-threejs-game
 **SVG:** 01-game-3d-main.svg
-**Last Review:** 2026-05-15
+**Last Review:** 2026-05-16 (post-regen)
 **Validator:** v5.0
 
 ---
 
 ## Summary
 
-| Status   | Count |
-| -------- | ----- |
-| Open     | 0     |
-| Resolved | 3     |
+| Status   | Count                          |
+| -------- | ------------------------------ |
+| Open     | 0                              |
+| Resolved | All initial + regen iterations |
 
 ---
 
-## Resolved Issues (2026-05-15 Review)
+## Regeneration history
 
-### Signature
+### 2026-05-16 — Brand-asset symbol-based regeneration
 
-| ID   | Issue                                                                                                                    | Code          | Classification | Resolution                                                                               |
-| ---- | ------------------------------------------------------------------------------------------------------------------------ | ------------- | -------------- | ---------------------------------------------------------------------------------------- |
-| X-01 | Signature must be left-aligned at x=40, got x=960                                                                        | SIGNATURE-003 | PATCH          | Moved signature `<text>` from `x="960" text-anchor="middle"` to `x="40"` (left-aligned). |
-| X-02 | Signature must NOT use `text-anchor="middle"` — use left-alignment at x=40                                               | SIGNATURE-003 | PATCH          | Removed `text-anchor="middle"` from signature.                                           |
-| X-03 | Signature format wrong: `'047:01 \| Three.js Game - Main \| SpecKit'` — must be `NNN:NN \| Feature Name \| ScriptHammer` | SIGNATURE-004 | PATCH          | Renamed trailing token `SpecKit` → `ScriptHammer` per project signature convention.      |
+The hand-drawn "hammer + anvil + DaisyUI accent orbs" composition was replaced with the three canonical ScriptHammer brand SVGs inlined as `<symbol>` definitions in the SVG's `<defs>`, then referenced via `<use href="#brand-..."` at the correct layered positions.
+
+Composition follows the canonical layering rules from `src/components/atomic/SpinningLogo/LayeredScriptHammerLogo.tsx`:
+
+| Layer      | Asset                                                           | Position                               | Size relative to cog |
+| ---------- | --------------------------------------------------------------- | -------------------------------------- | -------------------- |
+| 1 (BACK)   | `#brand-printing-mallet` (mirrors `public/printing-mallet.svg`) | top: 58%, left: 42% (offset down-left) | 65%                  |
+| 2 (MIDDLE) | `#brand-cog` (mirrors `public/scripthammer-logo.svg`)           | centered                               | 100%                 |
+| 3 (FRONT)  | `#brand-script-tags` (mirrors `public/script-tags.svg`)         | centered                               | 68%                  |
+
+Geometry data copied verbatim from the canonical brand SVGs. Solid silver fill (`#c0c0c0`) substitutes the source's metallic gradients (which aren't perceptible at wireframe scale and would have caused id-collision overhead).
+
+**File structure note**: the wireframe uses two `<defs>` blocks. The first holds the small gradient defs. The background `<rect>` + centered title `<text>` + section labels then follow, ensuring those structural elements land within the validator's 2000-char G-024/SECTION-001 scan window. A second `<defs>` block holds the large brand symbol defs.
+
+### 2026-05-15 — Initial review (pre-regen)
+
+3 patch-classified issues resolved on the original hammer+anvil composition (signature alignment x3). All passed v5.0 validator before regeneration.
 
 ---
 
 ## Notes
 
-- All issues classified as PATCH per `features/CLAUDE.md` decision table (cosmetic/positional, not layout/spacing).
-- Validator re-run after patches: **PASS** (zero errors).
-- Auto-generated initially by validator v5.0; manually annotated with resolutions by `/speckit.wireframe.review` (2026-05-15).
+- Validator status: PASS (0 errors) at every recorded final review.
+- Callout positions: callout 1 at the center of the brackets, callout 2 at the cog rim top, callout 3 at the auto-orbit chip, callout 4 over the mallet head.
