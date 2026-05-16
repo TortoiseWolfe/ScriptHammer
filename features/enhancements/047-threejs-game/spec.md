@@ -13,7 +13,7 @@
 
 - Q: What is the canonical v1 scene content? → A: A 3D composition of the **three canonical ScriptHammer brand assets**, all mirrored from their SVG sources:
   1. **Spinning silver cog ring** (procedural ring + 20 trapezoidal gear teeth + rivets, mirroring `public/scripthammer-logo.svg`) — the steampunk-machinery motif. Rotates slowly per the auto-orbit behavior.
-  2. **Glowing golden code brackets `< >`** (procedural extruded paths in a brass/bronze gradient, mirroring `public/script-tags.svg`) — the "Script" half of ScriptHammer. Centered, slight emissive glow.
+  2. **Glowing golden code brackets `< >`** (procedural extruded paths in a brass/bronze metallic material — note Three.js renders the metal highlight via `metalness` + lighting, not a stroke gradient as the source SVG uses; the visual is equivalent at scene scale — mirroring `public/script-tags.svg`) — the "Script" half of ScriptHammer. Centered, slight emissive glow.
   3. **Printing-mallet** (procedural primitives mirroring `public/printing-mallet.svg` — squat boxy beech head + thin handle + visible wedge) — the "Hammer" half. Rests near the brackets.
 
   DaisyUI theme tokens drive: cog rim color, bracket emissive glow color, mallet base material color, scene background. Procedural geometry only (no `.glb`/`.gltf` imports). _Revised 2026-05-15: dropped earlier "hammer + anvil + accent orbs" framing — anvils are blacksmith tools, not Gutenberg-press tools, and the orbs were filler. The three actual brand SVGs replace them._
