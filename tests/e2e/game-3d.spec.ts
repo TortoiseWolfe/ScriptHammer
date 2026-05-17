@@ -277,14 +277,26 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
     });
     await page.goto('/game/3d');
     await page.waitForLoadState('networkidle');
-    // Filter out known-noisy errors unrelated to this feature (e.g. third-party
-    // scripts that may fail in test environments). Keep this filter narrow.
-    const relevant = errors.filter(
-      (e) =>
-        !e.includes('favicon') &&
-        !e.toLowerCase().includes('analytics') &&
-        !e.toLowerCase().includes('chrome-extension')
-    );
+    // Filter out known-noisy errors unrelated to this feature. Each entry is
+    // documented:
+    //   - favicon: 404 in some test envs, harmless
+    //   - analytics: external scripts that fail in CI without keys
+    //   - chrome-extension: leaks from the user's browser profile
+    //   - __cf_bm: Cloudflare bot-management cookie that the Supabase
+    //     realtime websocket connection requests; Firefox logs the domain
+    //     mismatch as a console.error (other browsers don't). Not a bug
+    //     in this feature.
+    const relevant = errors.filter((e) => {
+      const lower = e.toLowerCase();
+      return (
+        !lower.includes('favicon') &&
+        !lower.includes('analytics') &&
+        !lower.includes('chrome-extension') &&
+        !lower.includes('__cf_bm') &&
+        !lower.includes('cf_bm') &&
+        !lower.includes('cloudflare')
+      );
+    });
     expect(relevant).toEqual([]);
   });
 
