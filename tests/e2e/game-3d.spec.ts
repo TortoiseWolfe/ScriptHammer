@@ -15,6 +15,67 @@
 
 import { test, expect } from '@playwright/test';
 
+test.describe('/game/3d — US-5: Mobile-Responsive Canvas', () => {
+  test('canvas fills available width on mobile viewport without horizontal overflow', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto('/game/3d');
+    await expect(page.locator('canvas')).toBeVisible({ timeout: 5000 });
+
+    // Page should not have a horizontal scrollbar at this width.
+    const overflow = await page.evaluate(() => {
+      return document.documentElement.scrollWidth > window.innerWidth;
+    });
+    expect(overflow).toBe(false);
+
+    // Canvas width must fit within the viewport minus the page's container padding.
+    const canvasWidth = await page
+      .locator('canvas')
+      .evaluate((el) => (el as HTMLCanvasElement).clientWidth);
+    // Container has px-4 (16px each side) + max-w-7xl. On a 375px viewport
+    // there's no max-w constraint that bites; expect ≤ 375 - 32 (padding).
+    expect(canvasWidth).toBeLessThanOrEqual(343);
+    expect(canvasWidth).toBeGreaterThan(0);
+  });
+});
+
+test.describe('/game/3d — US-3: Respect Reduced Motion', () => {
+  test('auto-orbit is disabled when prefers-reduced-motion: reduce', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/game/3d');
+    await expect(page.locator('canvas')).toBeVisible({ timeout: 5000 });
+
+    // Scene wrapper exposes a `data-autorotate-active` debug attribute
+    // (dev-mode only). With reduced motion, it should report "false" once
+    // mounted.
+    await page.waitForTimeout(200);
+    const autorotate = await page
+      .locator('[data-autorotate-active]')
+      .first()
+      .getAttribute('data-autorotate-active');
+    expect(autorotate).toBe('false');
+  });
+
+  test('auto-orbit is active when reduced-motion is not set', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/game/3d');
+    await expect(page.locator('canvas')).toBeVisible({ timeout: 5000 });
+
+    // Wait past the initial 3-second idle window to let auto-orbit settle.
+    await page.waitForTimeout(200);
+    const autorotate = await page
+      .locator('[data-autorotate-active]')
+      .first()
+      .getAttribute('data-autorotate-active');
+    expect(autorotate).toBe('true');
+  });
+});
+
 test.describe('/game/3d — US-2: Theme-Aware 3D Scene', () => {
   test('switching data-theme on <html> updates the scene mesh color', async ({
     page,

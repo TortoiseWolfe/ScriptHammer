@@ -6,30 +6,27 @@ import { OrbitControls } from '@react-three/drei';
 export interface ControlsProps {
   /** Override the auto-orbit speed (radians per frame). Default 0.5. */
   autoRotateSpeed?: number;
-  /** Disable auto-rotate explicitly (overrides defaults). */
-  disableAutoRotate?: boolean;
+  /** Whether auto-rotate is active. Owner (Scene) computes this from
+   *  useReducedMotion + idle-resume state and passes it down. */
+  autoRotate?: boolean;
 }
 
 /**
  * Controls component
  *
- * Feature 047 — Three.js Game (T013)
+ * Feature 047 — Three.js Game (T013 → T023)
  *
- * Wraps drei's `<OrbitControls>` with the camera constraints from spec FR-005:
- * - Damping enabled (smooth deceleration)
- * - Polar angle bounded to prevent flipping under the ground plane
- * - 360° yaw (azimuth unconstrained)
- * - Bounded zoom (min/max distance)
- *
- * Auto-orbit gating on `prefers-reduced-motion` and the 3-second idle-resume
- * window land in Phase 5 (T023) — for now this component only enables
- * auto-rotate when explicitly opted in.
+ * Wraps drei's `<OrbitControls>` with the camera constraints from spec
+ * FR-005. Auto-orbit + reduced-motion gating + idle-resume logic lives in
+ * the parent Scene (which owns the user-input listeners and the paused
+ * state); Controls receives the resolved `autoRotate` boolean as a prop
+ * and renders it.
  *
  * @category game
  */
 export default function Controls({
   autoRotateSpeed = 0.5,
-  disableAutoRotate = false,
+  autoRotate = true,
 }: ControlsProps = {}) {
   return (
     <OrbitControls
@@ -40,7 +37,7 @@ export default function Controls({
       minDistance={2}
       maxDistance={10}
       maxPolarAngle={Math.PI / 2}
-      autoRotate={!disableAutoRotate}
+      autoRotate={autoRotate}
       autoRotateSpeed={autoRotateSpeed}
     />
   );
