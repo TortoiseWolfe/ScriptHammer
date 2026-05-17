@@ -53,6 +53,18 @@ describe('Scene', () => {
   });
 });
 
+describe('Scene — US-3: Respect Reduced Motion', () => {
+  // Note: useReducedMotion is NOT mocked here — the hook reads window.matchMedia
+  // which jsdom defaults to `matches: false`. The default behavior is therefore
+  // "auto-orbit active".
+  it('exposes data-autorotate-active="true" by default in jsdom (no reduce preference set)', () => {
+    const { container } = render(<Scene />);
+    const wrapper = container.querySelector('[data-autorotate-active]');
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper?.getAttribute('data-autorotate-active')).toBe('true');
+  });
+});
+
 describe('Scene — US-2: Theme-Aware 3D Scene', () => {
   it('exposes the current mesh color via data-mesh-color attribute (dev-mode debug for E2E)', () => {
     const { container } = render(<Scene />);

@@ -5,7 +5,9 @@ import React from 'react';
 // Controls is meant to be rendered INSIDE a R3F Canvas. We can't render it
 // standalone in jsdom (it has zero DOM output of its own — drei's
 // OrbitControls reads/writes the Three.js camera directly). Tests here verify
-// the component is importable and exports the expected default + named types.
+// the component is importable, passes the camera constraints through, and
+// honors the `autoRotate` prop (which Scene computes from useReducedMotion +
+// idle-resume state).
 
 vi.mock('@react-three/drei', () => ({
   OrbitControls: (props: Record<string, unknown>) => (
@@ -31,7 +33,7 @@ describe('Controls', () => {
     expect(props.maxPolarAngle).toBeCloseTo(Math.PI / 2, 4);
   });
 
-  it('enables auto-rotate by default', () => {
+  it('enables auto-rotate by default (autoRotate prop defaults to true)', () => {
     const { getByTestId } = render(<Controls />);
     const props = JSON.parse(
       getByTestId('orbit-controls').getAttribute('data-props') ?? '{}'
@@ -39,11 +41,19 @@ describe('Controls', () => {
     expect(props.autoRotate).toBe(true);
   });
 
-  it('disables auto-rotate when disableAutoRotate prop is true', () => {
-    const { getByTestId } = render(<Controls disableAutoRotate />);
+  it('disables auto-rotate when autoRotate prop is false', () => {
+    const { getByTestId } = render(<Controls autoRotate={false} />);
     const props = JSON.parse(
       getByTestId('orbit-controls').getAttribute('data-props') ?? '{}'
     );
     expect(props.autoRotate).toBe(false);
+  });
+
+  it('honors a custom autoRotateSpeed', () => {
+    const { getByTestId } = render(<Controls autoRotateSpeed={1.5} />);
+    const props = JSON.parse(
+      getByTestId('orbit-controls').getAttribute('data-props') ?? '{}'
+    );
+    expect(props.autoRotateSpeed).toBe(1.5);
   });
 });
