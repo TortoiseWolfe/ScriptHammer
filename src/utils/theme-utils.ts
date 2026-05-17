@@ -86,18 +86,34 @@ function linearSrgbToSrgb(c: number): number {
 }
 
 /**
- * Convert a DaisyUI OKLCH triplet (as stored in CSS custom properties — e.g.
- * `--p: 0.7 0.15 250`) to a Three.js Color.
+ * Convert a DaisyUI OKLCH value (as stored in CSS custom properties) to a
+ * Three.js Color. Accepts both formats DaisyUI has used:
  *
- * @param oklch  String containing space-separated L C H values (no `oklch()` wrapper).
- *               Example: "0.7 0.15 250" or with optional leading/trailing whitespace.
+ * - DaisyUI 4 (deprecated): bare triplet `"0.7 0.15 250"` — no wrapper, no `%`
+ * - DaisyUI 5 (current):    `"oklch(58% .233 277.117)"` — function wrapper, `%` on L
+ *
+ * @param oklch  CSS custom property value. Whitespace tolerated. Optional
+ *               `oklch()` wrapper. `L` may carry a trailing `%`; in that case
+ *               it's interpreted as 0-100 and converted to 0-1.
  * @returns      THREE.Color in sRGB, or null if the string is malformed.
  */
 function parseOklchTriplet(oklch: string): ThreeColor | null {
-  const parts = oklch.trim().split(/\s+/);
+  // Strip `oklch(` prefix + `)` suffix if present.
+  let stripped = oklch.trim();
+  const wrapMatch = stripped.match(/^oklch\(([^)]+)\)$/i);
+  if (wrapMatch) stripped = wrapMatch[1];
+
+  const parts = stripped.trim().split(/[\s,]+/);
   if (parts.length < 3) return null;
 
-  const L = parseFloat(parts[0]);
+  // DaisyUI 5 stores L as a percentage with `%`. Treat `45%` as 0.45.
+  const lRaw = parts[0];
+  let L: number;
+  if (lRaw.endsWith('%')) {
+    L = parseFloat(lRaw.slice(0, -1)) / 100;
+  } else {
+    L = parseFloat(lRaw);
+  }
   const C = parseFloat(parts[1]);
   const H = parseFloat(parts[2]);
 
@@ -113,6 +129,29 @@ function parseOklchTriplet(oklch: string): ThreeColor | null {
 
   return new ThreeColor(r, g, b);
 }
+
+/**
+ * Map a short DaisyUI token name (legacy `p`, `s`, `a`, `b1`) to the DaisyUI 5
+ * CSS custom property name (`--color-primary`, etc.).
+ */
+const SHORT_TOKEN_TO_DAISYUI5: Record<string, string> = {
+  p: 'color-primary',
+  s: 'color-secondary',
+  a: 'color-accent',
+  n: 'color-neutral',
+  b1: 'color-base-100',
+  b2: 'color-base-200',
+  b3: 'color-base-300',
+  bc: 'color-base-content',
+  pc: 'color-primary-content',
+  sc: 'color-secondary-content',
+  ac: 'color-accent-content',
+  nc: 'color-neutral-content',
+  in: 'color-info',
+  su: 'color-success',
+  wa: 'color-warning',
+  er: 'color-error',
+};
 
 /**
  * Read a DaisyUI theme token from `:root` (`document.documentElement`) and
@@ -138,12 +177,22 @@ export function getDaisyUIColorAsThree(token: string): ThreeColor {
 
   if (typeof document === 'undefined') return fallback;
 
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(`--${token}`)
-    .trim();
+  const root = getComputedStyle(document.documentElement);
 
-  if (!value) return fallback;
+  // DaisyUI 5 uses verbose `--color-primary` etc. Map a short token (`p`) to
+  // its DaisyUI 5 name first; fall back to reading the literal `--<token>`
+  // for DaisyUI 4-style themes and for tests that set bare custom properties.
+  const tryNames = [
+    SHORT_TOKEN_TO_DAISYUI5[token],
+    token, // already long-form ("color-primary"), or DaisyUI 4 short name
+  ].filter((n): n is string => typeof n === 'string' && n.length > 0);
 
-  const parsed = parseOklchTriplet(value);
-  return parsed ?? fallback;
+  for (const name of tryNames) {
+    const value = root.getPropertyValue(`--${name}`).trim();
+    if (!value) continue;
+    const parsed = parseOklchTriplet(value);
+    if (parsed) return parsed;
+  }
+
+  return fallback;
 }

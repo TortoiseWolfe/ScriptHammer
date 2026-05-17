@@ -68,7 +68,7 @@ describe('getDaisyUIColorAsThree', () => {
     expect(color.getHexString()).toBe('808080');
   });
 
-  it('handles raw OKLCH triplets in CSS custom property format (DaisyUI 4+ stores them as "L C H" without the function wrapper)', () => {
+  it('handles raw OKLCH triplets in CSS custom property format (legacy DaisyUI 4 stored them as "L C H" without the function wrapper)', () => {
     document.documentElement.style.setProperty('--s', '0.6 0.1 180');
     const color = getDaisyUIColorAsThree('s');
     expect(color).toBeInstanceOf(ThreeColor);
@@ -80,6 +80,45 @@ describe('getDaisyUIColorAsThree', () => {
     const color = getDaisyUIColorAsThree('a');
     expect(color).toBeInstanceOf(ThreeColor);
     expect(color.getHexString()).not.toBe('ffffff');
+  });
+
+  it('parses DaisyUI 5 format: oklch() wrapper + percent-suffixed L', () => {
+    // DaisyUI 5 writes `--color-primary: oklch(58% .233 277.117)` — wrapped
+    // function call, L is a percentage (0-100), C and H are decimal.
+    document.documentElement.style.setProperty(
+      '--color-primary',
+      'oklch(58% .233 277.117)'
+    );
+    const color = getDaisyUIColorAsThree('p');
+    expect(color).toBeInstanceOf(ThreeColor);
+    expect(color.getHexString()).not.toBe('808080');
+    expect(color.getHexString()).not.toBe('ffffff');
+  });
+
+  it('maps the short DaisyUI 4 token `p` to the DaisyUI 5 name `--color-primary`', () => {
+    document.documentElement.style.setProperty(
+      '--color-primary',
+      'oklch(45% .24 277.023)'
+    );
+    const color = getDaisyUIColorAsThree('p');
+    expect(color).toBeInstanceOf(ThreeColor);
+    expect(color.getHexString()).not.toBe('808080');
+  });
+
+  it('different OKLCH inputs produce different hex outputs (sanity check that the parser is not constant)', () => {
+    document.documentElement.style.setProperty(
+      '--color-primary',
+      'oklch(45% .24 277)'
+    );
+    const a = getDaisyUIColorAsThree('p').getHexString();
+    document.documentElement.style.setProperty(
+      '--color-primary',
+      'oklch(90% .05 30)'
+    );
+    const b = getDaisyUIColorAsThree('p').getHexString();
+    expect(a).not.toBe(b);
+    expect(a).not.toBe('808080');
+    expect(b).not.toBe('808080');
   });
 });
 
