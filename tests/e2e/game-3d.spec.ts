@@ -146,29 +146,40 @@ test.describe('/game/3d — US-2: Theme-Aware 3D Scene', () => {
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
 
-    // The Scene component sets a `data-mesh-color` debug attribute (dev mode)
-    // on its wrapper element. Capture the value before + after the theme switch.
+    // The Scene component sets a `data-mesh-color` debug attribute on its
+    // wrapper element. Capture the value before + after the theme switch.
     const initial = await page
       .locator('[data-mesh-color]')
       .first()
       .getAttribute('data-mesh-color');
+    expect(initial).not.toBeNull();
 
-    // Force-switch the theme via DOM attribute (decouples this test from the
-    // ThemeSwitcher UI). The Scene's MutationObserver should react.
+    // Force-switch the theme via DOM attribute. We use `cupcake` (a very
+    // light pastel theme) because the page's default theme is
+    // `scripthammer-dark` and the two have wildly different OKLCH primary
+    // tokens — guaranteeing a visible delta. (Earlier the test used `dark`,
+    // which happens to share an OKLCH primary with `scripthammer-dark` in
+    // some configurations; this caused intermittent E2E failures across
+    // all 3 browsers.)
     await page.evaluate(() => {
-      document.documentElement.setAttribute('data-theme', 'dark');
+      document.documentElement.setAttribute('data-theme', 'cupcake');
     });
 
-    // Re-read the debug attribute. It should have changed within one frame.
-    await page.waitForTimeout(100);
-    const after = await page
-      .locator('[data-mesh-color]')
-      .first()
-      .getAttribute('data-mesh-color');
-
-    expect(initial).not.toBeNull();
-    expect(after).not.toBeNull();
-    expect(after).not.toBe(initial);
+    // Poll for the data-mesh-color attribute to change. The Scene's
+    // MutationObserver fires synchronously on the next microtask, but React
+    // batched state updates + the Three.js scene re-render can take a few
+    // frames to settle on a slow CI runner. expect.poll is more reliable
+    // than a fixed waitForTimeout.
+    await expect
+      .poll(
+        async () =>
+          page
+            .locator('[data-mesh-color]')
+            .first()
+            .getAttribute('data-mesh-color'),
+        { timeout: 5000, intervals: [100, 200, 500] }
+      )
+      .not.toBe(initial);
   });
 });
 
