@@ -15,6 +15,40 @@
 
 import { test, expect } from '@playwright/test';
 
+test.describe('/game/3d — US-2: Theme-Aware 3D Scene', () => {
+  test('switching data-theme on <html> updates the scene mesh color', async ({
+    page,
+  }) => {
+    await page.goto('/game/3d');
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: 5000 });
+
+    // The Scene component sets a `data-mesh-color` debug attribute (dev mode)
+    // on its wrapper element. Capture the value before + after the theme switch.
+    const initial = await page
+      .locator('[data-mesh-color]')
+      .first()
+      .getAttribute('data-mesh-color');
+
+    // Force-switch the theme via DOM attribute (decouples this test from the
+    // ThemeSwitcher UI). The Scene's MutationObserver should react.
+    await page.evaluate(() => {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
+
+    // Re-read the debug attribute. It should have changed within one frame.
+    await page.waitForTimeout(100);
+    const after = await page
+      .locator('[data-mesh-color]')
+      .first()
+      .getAttribute('data-mesh-color');
+
+    expect(initial).not.toBeNull();
+    expect(after).not.toBeNull();
+    expect(after).not.toBe(initial);
+  });
+});
+
 test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
   test('navigating to /game/3d mounts a <canvas> element', async ({ page }) => {
     await page.goto('/game/3d');

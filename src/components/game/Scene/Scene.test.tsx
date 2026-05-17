@@ -52,3 +52,43 @@ describe('Scene', () => {
     expect(props.dpr).toEqual([1, 2]);
   });
 });
+
+describe('Scene — US-2: Theme-Aware 3D Scene', () => {
+  it('exposes the current mesh color via data-mesh-color attribute (dev-mode debug for E2E)', () => {
+    const { container } = render(<Scene />);
+    const wrapper = container.querySelector('[data-mesh-color]');
+    expect(wrapper).toBeInTheDocument();
+    expect(wrapper?.getAttribute('data-mesh-color')).toBeTruthy();
+  });
+
+  it('updates data-mesh-color when data-theme changes on documentElement', async () => {
+    const { container, rerender } = render(<Scene />);
+    const before = container
+      .querySelector('[data-mesh-color]')
+      ?.getAttribute('data-mesh-color');
+
+    // Simulate a theme switch
+    await new Promise<void>((resolve) => {
+      // Set --p to a different OKLCH triplet so the helper picks up a new color
+      document.documentElement.style.setProperty('--p', '0.2 0.1 30');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      // Allow the MutationObserver microtask to flush
+      setTimeout(resolve, 0);
+    });
+
+    rerender(<Scene />);
+    const after = container
+      .querySelector('[data-mesh-color]')
+      ?.getAttribute('data-mesh-color');
+
+    expect(before).toBeTruthy();
+    expect(after).toBeTruthy();
+    // Different OKLCH triplets must produce a different hex (proves
+    // re-extraction happened, not just a no-op pass-through).
+    expect(after).not.toBe(before);
+
+    // Cleanup
+    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.style.removeProperty('--p');
+  });
+});
