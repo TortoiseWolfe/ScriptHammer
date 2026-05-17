@@ -55,11 +55,13 @@ Six technical decisions resolved with rationale + alternatives. No `NEEDS CLARIF
 
 ## Decision 3: DaisyUI OKLCH → Three.js Color conversion
 
-**Decision**: Read DaisyUI tokens from CSS custom properties on `:root` (e.g., `getComputedStyle(document.documentElement).getPropertyValue('--p')` → the OKLCH triplet), wrap them in `oklch(L C H)` syntax, and pass to `new THREE.Color(...)`. Three.js as of r160+ parses CSS color strings including `oklch()` via its internal color parser. The conversion lives in a new helper `getDaisyUIColorAsThree(token: string): THREE.Color` in `src/utils/theme-utils.ts`.
+**Decision** (REVISED 2026-05-16 during T005 implementation): Read DaisyUI tokens from CSS custom properties on `:root` (e.g., `getComputedStyle(document.documentElement).getPropertyValue('--p')` → the OKLCH triplet `"L C H"`), then convert OKLCH → OKLab → linear sRGB → sRGB **inline via small conversion math** (~50 LOC), and construct `new THREE.Color(r, g, b)`. The conversion lives in a new helper `getDaisyUIColorAsThree(token: string): THREE.Color` in `src/utils/theme-utils.ts`. Helper returns middle gray (`#808080`) on malformed/unset input — never throws.
+
+**Why this differs from the original plan**: The original plan assumed Three.js's `THREE.Color` constructor would parse `oklch(...)` CSS color strings via its internal color parser. **It does not** — verified empirically on r184 (the actually-installed version): `new ThreeColor().setStyle('oklch(0.7 0.15 250)')` falls through silently and returns white. Three.js's color parser supports `rgb()`, `hsl()`, and hex notation but not the modern `oklch()`/`lab()`/`color()` syntaxes. Inline math is the portable fix.
 
 **Rationale**:
 
-- **OKLCH-aware Three.js is the cleanest path**. Three.js's `THREE.Color` constructor handles modern CSS color strings via the same engine browsers use; the only thing we need to do is rebuild the `oklch(...)` syntax around the raw triplet DaisyUI stores.
+- **Inline math is jsdom-safe**. Real browsers can resolve OKLCH via `getComputedStyle` on a probe DOM node, but jsdom doesn't, so unit tests need a path that works without a real CSS engine. Inline math works everywhere.
 - **Reusing `src/utils/theme-utils.ts`** keeps theme-aware-component code consolidated. The existing `useMapTheme` hook in that file uses `getComputedStyle` + `MutationObserver` for Leaflet map theming — we extend the same pattern for Three.js without copying boilerplate.
 - **`MutationObserver` on `<html data-theme>` is the canonical reactivity surface** (precedent: useMapTheme). The Scene component subscribes once at mount and re-extracts colors when `data-theme` changes.
 
