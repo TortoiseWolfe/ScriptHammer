@@ -28,4 +28,23 @@ describe('FallbackPanel Accessibility', () => {
     expect(retry.className).toContain('min-h-11');
     expect(retry.className).toContain('min-w-44');
   });
+
+  it('panel uses role="alert" so screen readers announce the unavailability', () => {
+    render(<FallbackPanel />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('headline has a proper heading level (h2) so it appears in document outline', () => {
+    render(<FallbackPanel />);
+    const heading = screen.getByRole('heading', {
+      name: /3d content unavailable/i,
+    });
+    expect(heading.tagName).toBe('H2');
+  });
+
+  it('themed silhouette is aria-hidden (decorative)', () => {
+    const { container } = render(<FallbackPanel />);
+    const svg = container.querySelector('svg[data-testid="brand-silhouette"]');
+    expect(svg?.getAttribute('aria-hidden')).toBe('true');
+  });
 });

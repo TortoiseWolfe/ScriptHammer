@@ -15,6 +15,68 @@
 
 import { test, expect } from '@playwright/test';
 
+test.describe('/game/3d — FR-008: WebGL Fallback', () => {
+  test('renders FallbackPanel when WebGL is unavailable (probe returns null)', async ({
+    page,
+  }) => {
+    // Force the WebGL probe to fail by stubbing HTMLCanvasElement.getContext
+    // BEFORE the page mounts. The Scene's mount-time probe will see null and
+    // render FallbackPanel instead of Canvas. We blanket-return null for
+    // every context request; the page doesn't need 2d context for the
+    // FallbackPanel path (it's pure DOM).
+    await page.addInitScript(() => {
+      const proto = HTMLCanvasElement.prototype as unknown as {
+        getContext: (type: string) => unknown;
+      };
+      proto.getContext = function () {
+        return null;
+      };
+    });
+
+    await page.goto('/game/3d');
+
+    // FallbackPanel renders role="alert" with "3D Content Unavailable".
+    await expect(
+      page.getByRole('heading', { name: /3d content unavailable/i })
+    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-webgl-ok="false"]')).toBeVisible();
+
+    // Retry button is in tab order + has accessible name.
+    const retry = page.getByRole('button', {
+      name: /retry rendering 3d scene/i,
+    });
+    await expect(retry).toBeVisible();
+    await retry.focus();
+    await expect(retry).toBeFocused();
+  });
+
+  test('clicking Retry re-runs the WebGL probe (stays in fallback if still unavailable)', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const proto = HTMLCanvasElement.prototype as unknown as {
+        getContext: (type: string) => unknown;
+      };
+      proto.getContext = function (this: HTMLCanvasElement, type: string) {
+        if (type === 'webgl' || type === 'experimental-webgl') return null;
+        return null;
+      };
+    });
+
+    await page.goto('/game/3d');
+    const retry = page.getByRole('button', {
+      name: /retry rendering 3d scene/i,
+    });
+    await expect(retry).toBeVisible({ timeout: 5000 });
+
+    await retry.click();
+
+    // Probe still returns null → fallback stays.
+    await expect(retry).toBeVisible();
+    await expect(page.locator('[data-webgl-ok="false"]')).toBeVisible();
+  });
+});
+
 test.describe('/game/3d — US-5: Mobile-Responsive Canvas', () => {
   test('canvas fills available width on mobile viewport without horizontal overflow', async ({
     page,
