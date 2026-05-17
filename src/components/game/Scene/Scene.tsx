@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Color as ThreeColor } from 'three';
 import Controls from '@/components/game/Controls';
+import FallbackPanel from '@/components/game/FallbackPanel';
 import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -34,9 +35,26 @@ function readThemeTokens(): ThemeTokens {
 }
 
 /**
+ * Probe WebGL availability synchronously. Returns true if WebGL 1.0 is
+ * supported, false otherwise. Cheap (~1ms) — see research.md Decision 2.
+ */
+function isWebGLAvailable(): boolean {
+  if (typeof document === 'undefined') return false;
+  try {
+    const probe = document.createElement('canvas');
+    const ctx =
+      probe.getContext('webgl') ||
+      probe.getContext('experimental-webgl' as 'webgl');
+    return !!ctx;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Scene component
  *
- * Feature 047 — Three.js Game (T012 → T018+T019 → T023+T024)
+ * Feature 047 — Three.js Game (T012 → T018 → T023 → T036)
  *
  * Root R3F `<Canvas>` for the /game/3d route.
  *
@@ -46,10 +64,10 @@ function readThemeTokens(): ThemeTokens {
  *   `<html data-theme>` (FR-002, FR-003, US-2)
  * - Auto-orbit gated on `prefers-reduced-motion` + 3-second idle-resume
  *   after user input (FR-004, FR-005, US-3)
- *
- * The v1 placeholder geometry is a cube in the primary theme color. The
- * brand-asset sculpt (cog ring + golden brackets + printing-mallet) lands
- * in Phase 9 (T039+). The WebGL fallback path (FR-008) lands at T036.
+ * - WebGL fallback: at mount, probe WebGL availability; if unavailable,
+ *   render `<FallbackPanel>` instead of `<Canvas>`. After mount, listen
+ *   for `webglcontextlost` and swap to the fallback if the context dies
+ *   (FR-008). No silent auto-retry — user clicks Retry.
  *
  * @category game
  */
@@ -65,7 +83,17 @@ export default function Scene({
   const [pausedFromInput, setPausedFromInput] = useState(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Theme reactivity: re-extract DaisyUI tokens on data-theme change.
+  // WebGL availability + context-lost tracking. `webglOk` flips false when:
+  //   - the initial probe says WebGL isn't available, OR
+  //   - the canvas fires `webglcontextlost` at runtime.
+  // The Retry button resets it to the initial-probe value.
+  const [webglOk, setWebglOk] = useState<boolean>(() => isWebGLAvailable());
+
+  const handleRetry = useCallback(() => {
+    setWebglOk(isWebGLAvailable());
+  }, []);
+
+  // Theme reactivity.
   useEffect(() => {
     if (typeof document === 'undefined') return;
     setThemeTokens(readThemeTokens());
@@ -79,13 +107,10 @@ export default function Scene({
     return () => observer.disconnect();
   }, []);
 
-  // User-input detection: pause auto-orbit on input, resume after idle window.
-  // Listen on the document so any pointer/wheel/touch event over the canvas
-  // (or anywhere else, since the canvas captures most pointer events) counts
-  // as user input.
+  // User-input detection for auto-orbit pause/resume.
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    if (reducedMotion) return; // no auto-orbit to pause when reduced-motion is on
+    if (reducedMotion) return;
 
     function onUserInput() {
       setPausedFromInput(true);
@@ -109,16 +134,50 @@ export default function Scene({
   const autoRotateActive = !reducedMotion && !pausedFromInput;
   const primaryHex = `#${themeTokens.primary.getHexString()}`;
 
+  // Bind webglcontextlost listener to the canvas as soon as R3F creates it.
+  const onCanvasCreated = useCallback(
+    (state: { gl: { domElement: HTMLCanvasElement } }) => {
+      const domEl = state.gl.domElement;
+      const handler = (event: Event) => {
+        // preventDefault allows the browser to restore the context later;
+        // we don't auto-restore (per FR-008 — no silent auto-retry), but
+        // we want the option preserved if the user clicks Retry.
+        event.preventDefault();
+        setWebglOk(false);
+      };
+      domEl.addEventListener('webglcontextlost', handler, false);
+      // R3F doesn't expose an "onDestroyed" hook, but this listener will
+      // be torn down when the canvas element is unmounted.
+    },
+    []
+  );
+
+  // If WebGL isn't available at mount, render the fallback directly.
+  if (!webglOk) {
+    return (
+      <div
+        className={`aspect-video w-full max-w-full${className ? ` ${className}` : ''}`}
+        data-mesh-color={primaryHex}
+        data-autorotate-active="false"
+        data-webgl-ok="false"
+      >
+        <FallbackPanel onRetry={handleRetry} />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`aspect-video w-full max-w-full${className ? ` ${className}` : ''}`}
       data-mesh-color={primaryHex}
       data-autorotate-active={autoRotateActive ? 'true' : 'false'}
+      data-webgl-ok="true"
     >
       <Canvas
         dpr={[1, 2]}
         camera={{ position: [0, 1.5, 4], fov: 50 }}
         gl={{ preserveDrawingBuffer: false }}
+        onCreated={onCanvasCreated}
         aria-label="3D scene preview"
       >
         <color attach="background" args={[themeTokens.base]} />

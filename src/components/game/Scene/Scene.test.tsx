@@ -53,6 +53,42 @@ describe('Scene', () => {
   });
 });
 
+describe('Scene — FR-008: WebGL Fallback', () => {
+  it('renders FallbackPanel instead of Canvas when WebGL is unavailable', () => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    // Force the WebGL probe to return null.
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => null
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
+    const { container, queryByTestId, getByRole } = render(<Scene />);
+    expect(queryByTestId('canvas-mock')).not.toBeInTheDocument();
+    expect(getByRole('alert')).toBeInTheDocument();
+    expect(
+      container.querySelector('[data-webgl-ok="false"]')
+    ).toBeInTheDocument();
+
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+  });
+
+  it('renders Canvas when WebGL is available', () => {
+    // jsdom's default canvas.getContext returns null for "webgl" but our
+    // probe still treats that as "no WebGL." Force a non-null return.
+    const originalGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = vi.fn(
+      () => ({}) as unknown as RenderingContext
+    ) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
+    const { container, getByTestId } = render(<Scene />);
+    expect(getByTestId('canvas-mock')).toBeInTheDocument();
+    expect(
+      container.querySelector('[data-webgl-ok="true"]')
+    ).toBeInTheDocument();
+
+    HTMLCanvasElement.prototype.getContext = originalGetContext;
+  });
+});
+
 describe('Scene — US-3: Respect Reduced Motion', () => {
   // Note: useReducedMotion is NOT mocked here — the hook reads window.matchMedia
   // which jsdom defaults to `matches: false`. The default behavior is therefore
