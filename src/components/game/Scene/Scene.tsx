@@ -5,6 +5,9 @@ import { Canvas } from '@react-three/fiber';
 import { Color as ThreeColor } from 'three';
 import Controls from '@/components/game/Controls';
 import FallbackPanel from '@/components/game/FallbackPanel';
+import CogRing from '@/components/game/CogRing';
+import ScriptTags from '@/components/game/ScriptTags';
+import PrintingMallet from '@/components/game/PrintingMallet';
 import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -175,7 +178,7 @@ export default function Scene({
     >
       <Canvas
         dpr={[1, 2]}
-        camera={{ position: [0, 1.5, 4], fov: 50 }}
+        camera={{ position: [0, 0, 5], fov: 50 }}
         gl={{ preserveDrawingBuffer: false }}
         onCreated={onCanvasCreated}
         aria-label="3D scene preview"
@@ -183,10 +186,20 @@ export default function Scene({
         <color attach="background" args={[themeTokens.base]} />
         <ambientLight intensity={0.4} />
         <directionalLight position={[5, 8, 5]} intensity={1.5} />
-        <mesh>
-          <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color={themeTokens.primary} />
-        </mesh>
+
+        {/* Brand-asset sculpt — composition mirrors src/components/atomic/
+            SpinningLogo/LayeredScriptHammerLogo.tsx (mallet BACK, cog MIDDLE,
+            brackets FRONT). FR-007. */}
+        <group position={[-0.3, -0.2, -0.4]}>
+          <PrintingMallet />
+        </group>
+        <group position={[0, 0, 0]}>
+          <CogRing color={themeTokens.primary} />
+        </group>
+        <group position={[0, 0, 0.4]}>
+          <ScriptTags color={themeTokens.accent} />
+        </group>
+
         <Controls autoRotate={autoRotateActive} />
       </Canvas>
     </div>
