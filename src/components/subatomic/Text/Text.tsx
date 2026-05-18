@@ -53,10 +53,16 @@ export const Text: React.FC<TextProps> = ({
   className = '',
   as,
 }) => {
-  const Component = as || variantElements[variant] || 'p';
+  const Component = (as ||
+    variantElements[variant] ||
+    'p') as React.ElementType;
   const combinedClassName = `${variantStyles[variant]} ${className}`.trim();
 
-  return <Component className={combinedClassName}>{children}</Component>;
+  return React.createElement(
+    Component,
+    { className: combinedClassName },
+    children
+  );
 };
 
 export default Text;

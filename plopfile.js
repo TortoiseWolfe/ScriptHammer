@@ -15,6 +15,7 @@ const CATEGORY_TITLE_MAP = {
   payment: 'Features/Payment',
   privacy: 'Features/Privacy',
   forms: 'Features/Forms',
+  game: 'Features/Game',
 };
 
 module.exports = function (plop) {
@@ -49,6 +50,7 @@ module.exports = function (plop) {
           { name: 'Payment (payment features)', value: 'payment' },
           { name: 'Privacy (privacy features)', value: 'privacy' },
           { name: 'Forms (form features)', value: 'forms' },
+          { name: 'Game (3D / WebGL features)', value: 'game' },
         ],
         default: 'atomic',
       },
