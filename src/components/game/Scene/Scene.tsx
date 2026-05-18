@@ -137,6 +137,15 @@ export default function Scene({
   const autoRotateActive = !reducedMotion && !pausedFromInput;
   const primaryHex = `#${themeTokens.primary.getHexString()}`;
 
+  // Camera-position debug attribute, written by Controls.onCameraChange.
+  // Used by E2E tests to verify SC-004 multi-modality input changes the
+  // camera (mouse-drag, wheel-zoom, touch-gestures should each produce a
+  // distinct value sequence).
+  const [cameraKey, setCameraKey] = useState<string>('0.000,0.000,5.000');
+  const handleCameraChange = useCallback((k: string) => {
+    setCameraKey(k);
+  }, []);
+
   // Bind webglcontextlost listener to the canvas as soon as R3F creates it.
   const onCanvasCreated = useCallback(
     (state: { gl: { domElement: HTMLCanvasElement } }) => {
@@ -175,6 +184,7 @@ export default function Scene({
       data-mesh-color={primaryHex}
       data-autorotate-active={autoRotateActive ? 'true' : 'false'}
       data-webgl-ok="true"
+      data-camera-position={cameraKey}
     >
       <Canvas
         dpr={[1, 2]}
@@ -200,7 +210,10 @@ export default function Scene({
           <ScriptTags color={themeTokens.accent} />
         </group>
 
-        <Controls autoRotate={autoRotateActive} />
+        <Controls
+          autoRotate={autoRotateActive}
+          onCameraChange={handleCameraChange}
+        />
       </Canvas>
     </div>
   );

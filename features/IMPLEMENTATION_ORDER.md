@@ -92,15 +92,15 @@ Blog features in dependency order.
 
 PWA and accessibility enhancements.
 
-| Order | Feature | Name                 | Depends On |
-| ----- | ------- | -------------------- | ---------- |
-| 30    | **017** | Colorblind Mode      | 001        |
-| 31    | **018** | Font Switcher        | 001        |
-| 32    | **020** | PWA Background Sync  | -          |
-| 33    | **021** | Geolocation Map      | -          |
-| 34    | **028** | Enhanced Geolocation | 021        |
-| 35    | **030** | Calendar Integration | 003        |
-| 36    | **047** | Three.js Game        | 001, 006   |
+| Order | Feature    | Name                               | Depends On |
+| ----- | ---------- | ---------------------------------- | ---------- |
+| 30    | **017**    | Colorblind Mode                    | 001        |
+| 31    | **018**    | Font Switcher                      | 001        |
+| 32    | **020**    | PWA Background Sync                | -          |
+| 33    | **021**    | Geolocation Map                    | -          |
+| 34    | **028**    | Enhanced Geolocation               | 021        |
+| 35    | **030**    | Calendar Integration               | 003        |
+| 36    | **047** ✅ | Three.js Game (`/game/3d`, PR #95) | 001, 006   |
 
 ### Tier 7: Polish
 

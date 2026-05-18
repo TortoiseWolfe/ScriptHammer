@@ -15,6 +15,18 @@ vi.mock('@react-three/drei', () => ({
   ),
 }));
 
+// Controls calls useThree() (added in T049c to expose camera position for E2E
+// multi-modality testing). useThree throws outside a <Canvas> context, so we
+// mock it to return a stub camera. Position is fixed; we only care about
+// constraint-passing in these unit tests, not on actual motion.
+vi.mock('@react-three/fiber', () => ({
+  useThree: (
+    selector: (state: {
+      camera: { position: { x: number; y: number; z: number } };
+    }) => unknown
+  ) => selector({ camera: { position: { x: 0, y: 0, z: 5 } } }),
+}));
+
 import Controls from './Controls';
 
 describe('Controls', () => {

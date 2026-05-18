@@ -1,0 +1,58 @@
+├ ○ /_not-found                                      121 B         640 kB
+├ ○ /accessibility                                 4.58 kB         644 kB
+├ ○ /account                                       8.24 kB         648 kB
+├ ○ /admin                                         4.25 kB         644 kB
+├ ○ /admin/audit                                   3.26 kB         643 kB
+├ ○ /admin/messaging                               3.98 kB         643 kB
+├ ○ /admin/payments                                3.42 kB         643 kB
+├ ○ /admin/users                                   2.56 kB         642 kB
+├ ○ /api/blog/tags                                   121 B         640 kB          1d      1y
+├ ○ /auth/callback                                 2.02 kB         641 kB
+├ ○ /blog                                            121 B         640 kB
+├ ● /blog/[slug]                                   10.9 kB         650 kB
+├   ├ /blog/message-encryption-security-explained
+├   ├ /blog/offline-payment-system-stripe-paypal
+├   ├ /blog/authentication-supabase-oauth
+├   └ [+4 more paths]
+├ ○ /blog/seo                                        162 B         640 kB
+├ ○ /blog/tags                                       165 B         640 kB
+├ ● /blog/tags/[tag]                                 120 B         640 kB
+├   ├ /blog/tags/security
+├   ├ /blog/tags/encryption
+├   ├ /blog/tags/privacy
+├   └ [+30 more paths]
+├ ○ /comment-policy                                  121 B         640 kB
+├ ○ /contact                                          6 kB         645 kB
+├ ○ /conversations                                   121 B         640 kB
+├ ○ /cookies                                         469 B         640 kB
+├ ○ /docs                                            121 B         640 kB
+├ ○ /forgot-password                               1.07 kB         641 kB
+├ ○ /game                                             1 kB         640 kB
+├ ○ /game/3d                                         744 B         640 kB
+├ ○ /map                                           3.79 kB         643 kB
+├ ○ /messages                                      23.9 kB         663 kB
+├ ○ /messages/new-group                            6.94 kB         646 kB
+├ ○ /messages/setup                                2.29 kB         642 kB
+├ ○ /payment-demo                                  4.43 kB         644 kB
+├ ○ /payment-result                                2.67 kB         642 kB
+├ ○ /privacy                                         452 B         640 kB
+├ ○ /privacy-controls                              3.33 kB         643 kB
+├ ○ /profile                                         632 B         640 kB
+├ ○ /reset-password                                  948 B         640 kB
+├ ○ /schedule                                      1.48 kB         641 kB
+├ ○ /sign-in                                       2.31 kB         642 kB
+├ ○ /sign-up                                       2.57 kB         642 kB
+├ ○ /status                                        3.18 kB         643 kB
+├ ○ /themes                                        2.06 kB         642 kB
+├ ○ /verify-email                                    176 B         640 kB
+└ ○ /wireframes                                      573 B         640 kB
++ First Load JS shared by all                       644 kB
+---
+Generated: 2026-05-18T02:36:06Z
+Commit: 8c872f01f0b39976e9c3e99ff8aa04734c0999ba
+
+NFR-001 verification: /game/3d First Load JS = 640 kB
+Same baseline as /blog (640 kB), /themes (642 kB), /map (643 kB).
+Per-route weight (744 B) is the page entry only; Three.js (~600 kB
+R3F + drei + three) loads dynamically only on visit to /game/3d.
+Route-split working correctly per research.md Decision 5.
