@@ -9,6 +9,14 @@ vi.mock('@react-three/drei', () => ({
   OrbitControls: () => null,
 }));
 
+vi.mock('@react-three/fiber', () => ({
+  useThree: (
+    selector: (state: {
+      camera: { position: { x: number; y: number; z: number } };
+    }) => unknown
+  ) => selector({ camera: { position: { x: 0, y: 0, z: 5 } } }),
+}));
+
 import Controls from './Controls';
 
 describe('Controls Accessibility', () => {

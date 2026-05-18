@@ -1,7 +1,7 @@
 # PRP Implementation Status Dashboard
 
-**Last Updated**: 2026-05-14 (v0.4.x stabilization milestones)
-**Previous Update**: 2026-04-25 (full 47-feature audit)
+**Last Updated**: 2026-05-17 (Phase 0.5 / #48 Three.js Game shipped — PR #95 047)
+**Previous Update**: 2026-05-14 (v0.4.x stabilization milestones)
 **Total PRPs**: 16 (legacy) + 49 (SpecKit features — 000-brand-identity and 000-landing-page split out from 000-rls)
 **Completed**: 15 legacy PRPs (v0.3.0) + 18 SpecKit features Shipped + 5 Mostly Shipped (019 GA moved Shipped → 23 total)
 **In Progress (Partial)**: 19 features (most of payments tier, blog/sidebar polish, OAuth UX fixes)

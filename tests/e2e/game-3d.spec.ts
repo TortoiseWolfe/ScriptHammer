@@ -337,3 +337,139 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
     await expect(canvas).toBeVisible();
   });
 });
+
+test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
+  // Verifies that each supported input modality changes the camera position
+  // (read from `data-camera-position` on the Scene wrapper). Runs against
+  // chromium + firefox + webkit per the matrix in .github/workflows/e2e.yml.
+  //
+  // Skips when WebGL is unavailable because OrbitControls + camera state
+  // are R3F-internal — there's no canvas in the fallback path.
+  test('mouse drag changes camera position', async ({ page }) => {
+    await page.goto('/game/3d');
+    await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
+      timeout: 5000,
+    });
+    const webglOk = await page
+      .locator('[data-webgl-ok]')
+      .first()
+      .getAttribute('data-webgl-ok');
+    test.skip(
+      webglOk !== 'true',
+      'SC-004 multi-modality requires a working canvas; FR-008 fallback active'
+    );
+
+    const canvas = page.locator('canvas');
+    await expect(canvas).toBeVisible();
+    const wrapper = page.locator('[data-camera-position]').first();
+
+    const initial = await wrapper.getAttribute('data-camera-position');
+    expect(initial).not.toBeNull();
+
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas bounding box unavailable');
+
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, {
+      steps: 10,
+    });
+    await page.mouse.up();
+
+    await expect
+      .poll(async () => wrapper.getAttribute('data-camera-position'), {
+        timeout: 3000,
+        intervals: [100, 200, 500],
+      })
+      .not.toBe(initial);
+  });
+
+  test('mouse wheel zoom changes camera position', async ({ page }) => {
+    await page.goto('/game/3d');
+    await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
+      timeout: 5000,
+    });
+    const webglOk = await page
+      .locator('[data-webgl-ok]')
+      .first()
+      .getAttribute('data-webgl-ok');
+    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+
+    const canvas = page.locator('canvas');
+    const wrapper = page.locator('[data-camera-position]').first();
+
+    const initial = await wrapper.getAttribute('data-camera-position');
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas bounding box unavailable');
+
+    // Move into canvas, then scroll down (zoom in).
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 200);
+
+    await expect
+      .poll(async () => wrapper.getAttribute('data-camera-position'), {
+        timeout: 3000,
+        intervals: [100, 200, 500],
+      })
+      .not.toBe(initial);
+  });
+
+  test('touch drag changes camera position', async ({ page, browserName }) => {
+    // Playwright's touch emulation requires a touch-enabled context.
+    // We dispatch a touchstart/touchmove/touchend sequence directly because
+    // the default page context isn't touch-enabled in the test matrix.
+    test.skip(
+      browserName === 'firefox',
+      'Firefox does not synthesize touch events from page.dispatchEvent reliably; mobile is covered by the dedicated mobile viewport test (US-5).'
+    );
+
+    await page.goto('/game/3d');
+    await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
+      timeout: 5000,
+    });
+    const webglOk = await page
+      .locator('[data-webgl-ok]')
+      .first()
+      .getAttribute('data-webgl-ok');
+    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+
+    const canvas = page.locator('canvas');
+    const wrapper = page.locator('[data-camera-position]').first();
+    const initial = await wrapper.getAttribute('data-camera-position');
+
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas bounding box unavailable');
+
+    // Use Playwright's dispatchEvent path to simulate a one-finger drag.
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await canvas.dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      clientX: cx,
+      clientY: cy,
+      pointerId: 1,
+      isPrimary: true,
+    });
+    await canvas.dispatchEvent('pointermove', {
+      pointerType: 'touch',
+      clientX: cx + 100,
+      clientY: cy,
+      pointerId: 1,
+      isPrimary: true,
+    });
+    await canvas.dispatchEvent('pointerup', {
+      pointerType: 'touch',
+      clientX: cx + 100,
+      clientY: cy,
+      pointerId: 1,
+      isPrimary: true,
+    });
+
+    await expect
+      .poll(async () => wrapper.getAttribute('data-camera-position'), {
+        timeout: 3000,
+        intervals: [100, 200, 500],
+      })
+      .not.toBe(initial);
+  });
+});
