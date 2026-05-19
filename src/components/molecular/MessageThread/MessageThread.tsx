@@ -211,6 +211,20 @@ export default function MessageThread({
     }
   }, [hasMore, loading, onLoadMore]);
 
+  // Bind handleScroll as a native DOM event listener instead of via React's
+  // `onScroll` JSX prop. Reason: React's synthetic onScroll does not reliably
+  // fire on WebKit when test code dispatches a programmatic
+  // `dispatchEvent(new Event('scroll', { bubbles: true }))` after assigning
+  // `scrollTop`. Native `addEventListener('scroll', ...)` does fire
+  // deterministically across chromium, firefox, and webkit. See the round-10
+  // E2E flake mitigation in CLAUDE.md "CI & E2E Stability" section.
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent) return;
+    parent.addEventListener('scroll', handleScroll, { passive: true });
+    return () => parent.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
   // Scroll to bottom with smooth animation
   const scrollToBottom = useCallback(
     (smooth = false) => {
@@ -350,7 +364,6 @@ export default function MessageThread({
       <div className={`relative h-full${className ? ` ${className}` : ''}`}>
         <div
           ref={parentRef}
-          onScroll={handleScroll}
           className="absolute inset-0 overflow-y-auto"
           data-testid="message-thread"
           style={{ overscrollBehavior: 'contain' }}
