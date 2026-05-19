@@ -777,19 +777,66 @@ export async function handleReAuthModal(
     return false;
   }
 
-  // Fill password and submit
-  const passwordInput = modal.locator('input[type="password"]').first();
-  await passwordInput.fill(testPassword);
+  // Fill password and submit. Allow up to 3 attempts to handle the
+  // documented WebKit-on-Linux flake: Argon2id key derivation is slow
+  // enough on webkit-msg that the ReAuthModal can briefly transition to
+  // `hidden` (Playwright's `waitFor({state:'hidden'})` resolves) and then
+  // re-appear when the underlying unlock actually fails or retries.
+  // We treat "hidden then back" as a transient failure and re-submit the
+  // password. This caught a deterministic 3/3-retry failure mode in
+  // 26105491210 webkit-msg 1/1 (PR #95 rebased run, 2026-05-19) where the
+  // failure-time screenshot showed the modal still visible despite the
+  // helper having "succeeded".
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const passwordInput = modal.locator('input[type="password"]').first();
+    await passwordInput.fill(testPassword);
 
-  const submitBtn = modal.locator('button[type="submit"]').first();
-  await submitBtn.click();
+    const submitBtn = modal.locator('button[type="submit"]').first();
+    await submitBtn.click();
 
-  // Wait for modal to close. Argon2id key derivation is CPU-intensive
-  // and under 24-shard CI load with WebCrypto thread contention can take
-  // 60+ seconds. Generous timeout prevents flaky failures.
-  await modal.waitFor({ state: 'hidden', timeout: 90000 });
-  console.log(`[handleReAuthModal] ✓ Modal closed. URL: ${page.url()}`);
-  return true;
+    // Wait for modal to close. Argon2id key derivation is CPU-intensive
+    // and under 24-shard CI load with WebCrypto thread contention can take
+    // 60+ seconds. Generous timeout prevents flaky failures.
+    try {
+      await modal.waitFor({ state: 'hidden', timeout: 90000 });
+    } catch {
+      console.log(
+        `[handleReAuthModal] ✗ Modal never hidden on attempt ${attempt}/${MAX_ATTEMPTS}.`
+      );
+      if (attempt === MAX_ATTEMPTS) return false;
+      continue;
+    }
+
+    // Verify the hidden state is SUSTAINED — poll for an extra 2 seconds
+    // to confirm the modal doesn't pop back. Under WebKit + slow Argon2id
+    // we sometimes see a brief hide transition before the dialog re-opens
+    // because the actual unlock failed.
+    const sustainedHidden = await modal
+      .waitFor({ state: 'hidden', timeout: 2000 })
+      .then(async () => {
+        // Sleep + recheck. If still hidden, we're good.
+        await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+        return (await modal.count()) === 0 || !(await modal.isVisible());
+      })
+      .catch(() => false);
+
+    if (sustainedHidden) {
+      console.log(
+        `[handleReAuthModal] ✓ Modal closed (attempt ${attempt}/${MAX_ATTEMPTS}). URL: ${page.url()}`
+      );
+      return true;
+    }
+
+    console.log(
+      `[handleReAuthModal] ⚠ Modal re-appeared after attempt ${attempt}/${MAX_ATTEMPTS}; retrying...`
+    );
+  }
+
+  console.log(
+    `[handleReAuthModal] ✗ Modal persisted after ${MAX_ATTEMPTS} unlock attempts. URL: ${page.url()}`
+  );
+  return false;
 }
 
 /**
