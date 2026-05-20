@@ -296,6 +296,20 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     }));
 
     if (scrollInfo.distanceFromBottom > 500) {
+      // Wait for the parent wrapper's `data-show-scroll-button` attribute
+      // to flip to "true" before asserting button visibility. The attribute
+      // is written by MessageThread.tsx synchronously when `setShowScroll
+      // Button(true)` commits — bypassing the React-state-flush vs
+      // WebKit-event-loop race that rounds 10-13 chased through other
+      // surfaces. See round 14 for the structural fix.
+      const wrapper = page.locator('[data-show-scroll-button]').first();
+      await expect
+        .poll(
+          async () => await wrapper.getAttribute('data-show-scroll-button'),
+          { timeout: 5000, intervals: [50, 100, 200, 500] }
+        )
+        .toBe('true');
+
       await expect(jumpButton).toBeVisible();
 
       // Verify button doesn't overlap message input
