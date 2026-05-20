@@ -361,7 +361,10 @@ export default function MessageThread({
 
   return (
     <ProfilerWrapper id="MessageThread" onRender={onRenderCallback}>
-      <div className={`relative h-full${className ? ` ${className}` : ''}`}>
+      <div
+        className={`relative h-full${className ? ` ${className}` : ''}`}
+        data-show-scroll-button={showScrollButton ? 'true' : 'false'}
+      >
         <div
           ref={parentRef}
           className="absolute inset-0 overflow-y-auto"
