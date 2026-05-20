@@ -1,6 +1,6 @@
 # ScriptHammer Status
 
-**Snapshot**: 2026-05-13 · **Version**: v0.0.1 · **Stability**: Beta — Phase 0 (template hygiene) closed; E2E flake round 10 closed via concurrency mutex (#89); GrimGlow ThreeJS fork (Phase 0.5) green-lit; Family B (payment routes) is the next-leverage front
+**Snapshot**: 2026-05-17 · **Version**: v0.0.1 · **Stability**: Beta — Phase 0 (template hygiene) closed; E2E flake round 10 closed via concurrency mutex (#89); **Phase 0.5 (#48 Three.js Game) shipping in PR #95** (feature 047 at `/game/3d` — full SpecKit cascade complete, 21/21 E2E shards green); Family B (payment routes) is the next-leverage front
 
 This is the single screen-scan view of "what's planned, what's shipped, what's broken."
 For the deeper per-feature audit see [`docs/prp-docs/PRP-STATUS.md`](docs/prp-docs/PRP-STATUS.md).
