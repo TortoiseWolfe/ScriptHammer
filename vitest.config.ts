@@ -20,6 +20,7 @@ export default defineConfig({
       'scripts/**/*.test.js', // Exclude Node.js test runner tests
       'scripts/__tests__/**', // Exclude all script tests
       'tests/e2e/**', // Exclude Playwright E2E tests
+      'supabase/functions/**', // Deno Edge Function tests — run via `deno test`, not Vitest
       '**/.component-backup-*/**', // Exclude backup directories
       // Exclude intentional TDD placeholder tests (not yet implemented)
       'tests/contract/email-notifications.test.ts', // 17 TDD failures

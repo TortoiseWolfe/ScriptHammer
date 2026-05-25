@@ -5,8 +5,26 @@
 
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { stripeConfig } from '@/config/payment';
+import { supabase } from '@/lib/supabase/client';
 
 let stripePromise: Promise<Stripe | null> | null = null;
+
+/**
+ * Get the current Supabase session's access token so we can attach
+ * Authorization: Bearer <jwt> to Edge Function calls. The outbound
+ * payment functions (create-stripe-checkout, verify-stripe-session,
+ * create-stripe-subscription) all do server-side ownership checks
+ * against payment_intents.template_user_id — the JWT is how they
+ * identify the caller.
+ */
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) {
+    throw new Error('No active session — sign in required for payments');
+  }
+  return { Authorization: `Bearer ${token}` };
+}
 
 /**
  * Get Stripe instance (lazy loaded)
@@ -52,6 +70,7 @@ export async function createCheckoutSession(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({ payment_intent_id: paymentIntentId }),
     }
@@ -94,6 +113,7 @@ export async function handleStripeRedirect(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(await getAuthHeader()),
         },
         body: JSON.stringify({ session_id: sessionId }),
       }
@@ -137,6 +157,7 @@ export async function createSubscriptionCheckout(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({
         price_id: priceId,
