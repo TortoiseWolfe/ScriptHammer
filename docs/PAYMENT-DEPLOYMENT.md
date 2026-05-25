@@ -4,17 +4,17 @@ This guide helps template forkers deploy the payment integration system to their
 
 ## Status of the integration
 
-| Component                                                                                 | Status                                                                                                                                    |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Database schema (`payment_intents`, `payment_results`, `subscriptions`, `webhook_events`) | ✅ shipped in the monolithic migration                                                                                                    |
-| RLS policies (20+ across the 4 tables)                                                    | ✅ verified by `pnpm test:rls`                                                                                                            |
-| Service layer (`src/lib/payments/payment-service.ts`)                                     | ✅ shipped                                                                                                                                |
-| Components (`PaymentButton`, `PaymentStatusDisplay`, `SubscriptionManager`, etc.)         | ✅ shipped (full 5-file pattern)                                                                                                          |
-| `/payment-demo` and `/payment-result` routes                                              | ✅ shipped                                                                                                                                |
-| **Outbound Edge Functions** (browser → provider checkout creation)                        | ⏳ **Partially shipped** — Phase 0a (Stripe one-off) ✅; rest tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100) |
-| **Inbound Edge Functions** (provider webhooks → DB)                                       | ✅ shipped (`stripe-webhook`, `paypal-webhook`, `send-payment-email`)                                                                     |
+| Component                                                                                 | Status                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database schema (`payment_intents`, `payment_results`, `subscriptions`, `webhook_events`) | ✅ shipped in the monolithic migration                                                                                                                                        |
+| RLS policies (20+ across the 4 tables)                                                    | ✅ verified by `pnpm test:rls`                                                                                                                                                |
+| Service layer (`src/lib/payments/payment-service.ts`)                                     | ✅ shipped                                                                                                                                                                    |
+| Components (`PaymentButton`, `PaymentStatusDisplay`, `SubscriptionManager`, etc.)         | ✅ shipped (full 5-file pattern)                                                                                                                                              |
+| `/payment-demo` and `/payment-result` routes                                              | ✅ shipped                                                                                                                                                                    |
+| **Outbound Edge Functions** (browser → provider checkout creation)                        | ⏳ **Partially shipped** — Phase 0a (Stripe one-off) ✅ + Phase 0b (Stripe subscription) ✅; rest tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100) |
+| **Inbound Edge Functions** (provider webhooks → DB)                                       | ✅ shipped (`stripe-webhook`, `paypal-webhook`, `send-payment-email`)                                                                                                         |
 
-**Operator note:** Phase 0a (Stripe one-off) ships in [PR #99 + #d0ba029] — clicking "Pay" on `/payment-demo` with the **Stripe tab** works once sandbox keys are configured. The **PayPal tab** and the subscription paths still fail with 404 until the remaining phases ship (tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100), sub-issues [#102](https://github.com/TortoiseWolfe/ScriptHammer/issues/102)–[#106](https://github.com/TortoiseWolfe/ScriptHammer/issues/106)). Setting API keys alone is no longer enough on its own for everything — Phase 0a is the minimum for Stripe one-off payments.
+**Operator note:** Phases 0a + 0b ship **all Stripe paths** (one-off + subscription). Clicking "Pay" on `/payment-demo` with the **Stripe tab** works once sandbox keys are configured. The **PayPal tab** and subscription **cancel/resume** still fail with 404 until the remaining phases ship (tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100), sub-issues [#103](https://github.com/TortoiseWolfe/ScriptHammer/issues/103)–[#106](https://github.com/TortoiseWolfe/ScriptHammer/issues/106)).
 
 ## Prerequisites
 
@@ -124,19 +124,17 @@ Each command prints the deployed URL (form: `https://<project-ref>.supabase.co/f
 
 ### 4.2 Outbound checkout creators
 
-Phase 0a ✅ shipped (Stripe one-off):
+Phase 0a + 0b ✅ shipped (Stripe one-off + subscription):
 
 ```bash
 supabase functions deploy create-stripe-checkout
 supabase functions deploy verify-stripe-session
+supabase functions deploy create-stripe-subscription
 ```
 
 Remaining (tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100)):
 
 ```bash
-# Phase 0b (#102) — Stripe subscription
-supabase functions deploy create-stripe-subscription
-
 # Phase 0c (#103) — PayPal one-off
 supabase functions deploy create-paypal-order
 supabase functions deploy capture-paypal-order
@@ -148,6 +146,8 @@ supabase functions deploy create-paypal-subscription
 supabase functions deploy cancel-subscription
 supabase functions deploy resume-subscription
 ```
+
+**Subscription operator note:** Phase 0b assumes you've created a recurring `Price` object in the Stripe dashboard ahead of time. The `price_id` (e.g. `price_1AbCdEf...`) gets passed to `create-stripe-subscription` by the browser. The `subscriptions` table row is **inserted by the existing `stripe-webhook` handler** when `customer.subscription.created` fires — not by `create-stripe-subscription` itself. The two are paired: the subscription session sets `subscription_data.metadata.template_user_id` so the webhook can satisfy the table's NOT NULL constraint. Re-deploy `stripe-webhook` after Phase 0b lands (the handler logic was updated in the same PR).
 
 Until all 8 ship, browser code that calls a non-shipped function will fail at the fetch step with a 404. **Phase 0a alone unlocks the one-off Stripe checkout flow** — `/payment-demo` Stripe tab works end-to-end once sandbox keys are configured.
 

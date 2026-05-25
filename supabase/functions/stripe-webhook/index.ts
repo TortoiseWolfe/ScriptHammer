@@ -295,10 +295,30 @@ async function handleSubscriptionEvent(
 ) {
   const subscription = event.data.object as Stripe.Subscription;
 
+  // template_user_id and customer_email come from the metadata that
+  // create-stripe-subscription sets via subscription_data.metadata when
+  // creating the Checkout Session. Without these the NOT NULL
+  // constraints on subscriptions.template_user_id / customer_email fail.
+  // (Phase 0b — issue #102 — paired this webhook fix with the new
+  // create-stripe-subscription function.)
+  const templateUserId = subscription.metadata?.template_user_id;
+  const customerEmail = subscription.metadata?.customer_email;
+
+  if (!templateUserId) {
+    console.error(
+      `customer.subscription event missing template_user_id metadata; ` +
+        `subscription_id=${subscription.id}. Ensure the Checkout Session was ` +
+        `created via create-stripe-subscription which sets ` +
+        `subscription_data.metadata.template_user_id.`
+    );
+    return { handled: false };
+  }
+
   const subscriptionData = {
     provider: 'stripe',
     provider_subscription_id: subscription.id,
-    customer_email: subscription.metadata?.customer_email || '',
+    template_user_id: templateUserId,
+    customer_email: customerEmail || '',
     plan_amount: subscription.items.data[0]?.price.unit_amount || 0,
     plan_interval:
       subscription.items.data[0]?.price.recurring?.interval || 'month',
