@@ -14,7 +14,11 @@ If you've never touched the repo before, start at the top and work down. Each st
 
 ScriptHammer ships with 200+ files that reference its own name, theme, and Docker service. The included `scripts/rebrand.sh` rewrites them all for you.
 
-- **Run**: `./scripts/rebrand.sh` (interactive — you'll be asked for your project name)
+- **Run**: `./scripts/rebrand.sh <YourProjectName> <YourGitHubUser> "<one-line description>" --preserve-ssh --keep-cname`
+  - Example: `./scripts/rebrand.sh MyCoolApp myuser "My awesome app" --preserve-ssh --keep-cname`
+  - `--preserve-ssh` keeps your `git@github.com:…` remote in SSH format (skip if you cloned via HTTPS).
+  - `--keep-cname` skips overwriting `public/CNAME` (skip if you actually own the corresponding `.com`).
+  - Run `./scripts/rebrand.sh --help` for the full flag list.
 - **Full guide**: [`docs/FORKING.md` — Quick Start](FORKING.md#quick-start-5-minutes)
 - **Why it matters**: skipping this leaves your fork branded as "ScriptHammer" everywhere.
 
