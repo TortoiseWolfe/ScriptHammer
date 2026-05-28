@@ -704,91 +704,94 @@ export function useAuth() {
 }
 ```
 
-### Middleware for Protected Routes
+### Client-Side Route Protection with `<ProtectedRoute>`
 
-Next.js middleware runs before page rendering, making it perfect for authentication checks:
+> 📝 **Note (updated):** an earlier version of this post documented Next.js middleware (`src/middleware.ts`) for route protection. That pattern conflicts with `output: 'export'` (the static-export config ScriptHammer uses to deploy to GitHub Pages) — Next.js logs a `Middleware cannot be used with "output: export"` warning, and the middleware silently doesn't run in production. The implementation moved to a client-side guard component; the rewrite below reflects what actually ships on scripthammer.com.
 
-```typescript
-// src/middleware.ts
-import { type NextRequest } from 'next/server';
-import { updateSession } from '@/lib/supabase/middleware';
+For static-site deployments, route protection happens in a **client component** that wraps the page content and checks the auth context. The protected page imports the guard and renders its content inside:
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
-}
+```tsx
+// src/app/profile/page.tsx
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import UserProfileCard from '@/components/auth/UserProfileCard';
 
-export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
-};
-```
-
-The `updateSession` helper handles session validation and route protection:
-
-```typescript
-// src/lib/supabase/middleware.ts
-import { createServerClient } from '@supabase/ssr';
-import { type NextRequest, NextResponse } from 'next/server';
-
-export async function updateSession(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            request.cookies.set(name, value);
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
+export default function ProfilePage() {
+  return (
+    <ProtectedRoute>
+      <UserProfileCard />
+    </ProtectedRoute>
   );
-
-  // Get user session (refreshes expired tokens automatically)
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Redirect authenticated users away from auth pages
-  if (
-    user &&
-    (request.nextUrl.pathname === '/sign-in' ||
-      request.nextUrl.pathname === '/sign-up')
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/profile';
-    return NextResponse.redirect(url);
-  }
-
-  // Redirect unauthenticated users from protected routes
-  const protectedRoutes = ['/profile', '/account', '/payment-demo'];
-  if (
-    !user &&
-    protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
-  ) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/sign-in';
-    url.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(url);
-  }
-
-  return supabaseResponse;
 }
 ```
 
-This middleware pattern ensures:
+The guard reads the `useAuth()` hook and either renders the children, shows a "please sign in" card, or redirects to the sign-in page with a `returnUrl`:
 
-- Unauthenticated users can't access `/profile`, `/account`, or `/payment-demo`
-- Authenticated users don't see sign-in/sign-up pages (redirected to `/profile`)
-- Session tokens are automatically refreshed before expiration
+```tsx
+// src/components/auth/ProtectedRoute/ProtectedRoute.tsx
+'use client';
+
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+
+export default function ProtectedRoute({
+  children,
+  redirectTo = '/sign-in',
+}: {
+  children: React.ReactNode;
+  redirectTo?: string;
+}) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname() || '/';
+  const wasAuthenticated = useRef(false);
+
+  // Remember if this mount was ever authenticated, so a transient
+  // token-refresh flip doesn't redirect the user mid-interaction.
+  useEffect(() => {
+    if (isAuthenticated) wasAuthenticated.current = true;
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isLoading || isAuthenticated) return;
+    if (wasAuthenticated.current) return; // ignore transient flips
+
+    const returnUrl = encodeURIComponent(pathname);
+    const timer = setTimeout(() => {
+      router.push(`${redirectTo}?returnUrl=${returnUrl}`);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, isLoading, router, redirectTo, pathname]);
+
+  if (isLoading) {
+    return <span className="loading loading-spinner loading-lg" />;
+  }
+
+  if (!isAuthenticated && !wasAuthenticated.current) {
+    return (
+      <div className="card bg-base-100 max-w-md shadow-xl">
+        <h2>Authentication Required</h2>
+        <Link href={`${redirectTo}?returnUrl=${encodeURIComponent(pathname)}`}>
+          Sign In
+        </Link>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+```
+
+This pattern handles three things the server middleware was responsible for:
+
+- **Unauthenticated visitors** to `/profile`, `/account`, `/payment-demo` see a "Sign In" prompt instead of the page content, and get redirected to `/sign-in?returnUrl=…`.
+- **Token refreshes** that briefly flip `isAuthenticated` to false (a real Supabase behavior) are debounced by 500 ms and tracked via a `wasAuthenticated` ref, so the user isn't yanked away mid-interaction.
+- **Authenticated users browsing to `/sign-in`** are redirected away via `AuthContext.signOut()`'s `window.location.href = '/'` pattern combined with the sign-in page's own auth-aware effect.
+
+**Trade-off versus middleware:** because the check happens in the browser, the protected page's HTML and bundled JS are still served — a determined user could read them in DevTools. The actual data (which is what matters) is protected at the database level by [Row-Level Security policies](#part-4-row-level-security-rls-policies). The guard is a UX layer; **RLS is the security layer**. Defense in depth.
+
+If you're deploying to a Node host (Vercel, your own server) where middleware does run, the original middleware pattern is a perfectly good fit — just remove `output: 'export'` from `next.config.ts` and add the middleware file back. The choice is "where does the auth check run, browser or server?" rather than "which one is correct?"
 
 ## 🧪 Part 6: Testing Authentication
 
