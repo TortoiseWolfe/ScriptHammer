@@ -162,6 +162,13 @@ count_references() {
 }
 
 # Detect previous rebrand
+#
+# A fresh ScriptHammer clone contains hundreds of "ScriptHammer" references
+# across .ts/.tsx/.md/.yml files. A successfully-rebranded fork contains 0–4
+# (only the Footer attribution + this script's own constants — and even those
+# can be stripped with --preserve-attribution=false). The threshold below
+# uses < 5 as the "already rebranded" signal — well under any plausible
+# fresh-clone count, well above any plausible post-rebrand residual.
 detect_previous_rebrand() {
     local ref_count
     ref_count=$(count_references)
