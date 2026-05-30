@@ -2,11 +2,23 @@ import { test, expect, Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  seedScrollFixture,
+  deleteScrollFixture,
+  type ScrollFixture,
 } from '../utils/test-user-factory';
 
 // Test user credentials
 const TEST_USER_PASSWORD =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
+
+// Issue #109: T007-T008 needs a thread tall enough to scroll, but the shared
+// messaging conversation is deliberately kept SHORT by other specs'
+// cleanupOldMessages() calls. So this spec builds its OWN isolated, static
+// fixture — a throwaway user + private conversation with PRIMARY + a fixed 30
+// messages — that no cleanup ever touches. See seedScrollFixture().
+const SCROLL_FIXTURE_MESSAGE_COUNT = 30;
+let scrollFixture: ScrollFixture | null = null;
 
 /**
  * Wait for UI to stabilize after navigation or interaction
@@ -43,6 +55,15 @@ async function waitForUIStability(page: Page) {
 let setupSucceeded = false;
 
 test.beforeAll(async ({ browser }) => {
+  // Build the isolated, static scroll fixture (issue #109). No-ops gracefully
+  // if credentials/admin client are unavailable, preserving the skip path.
+  if (PRIMARY_EMAIL) {
+    scrollFixture = await seedScrollFixture(
+      PRIMARY_EMAIL,
+      SCROLL_FIXTURE_MESSAGE_COUNT
+    );
+  }
+
   const context = await browser.newContext({
     storageState: './tests/e2e/fixtures/storage-state-auth.json',
   });
@@ -67,6 +88,11 @@ test.beforeAll(async ({ browser }) => {
   } finally {
     await context.close();
   }
+});
+
+test.afterAll(async () => {
+  // Tear down the fixture user — cascades its conversation + messages away.
+  await deleteScrollFixture(scrollFixture);
 });
 
 // Test configuration for viewports
@@ -266,15 +292,27 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test('T007-T008: Jump button appears when scrolled and does not overlap input', async ({
     page,
   }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    // Requires the isolated, tall scroll fixture (issue #109). Skip with a
+    // CLEAR, logged reason if it couldn't be built (e.g. admin client / creds
+    // unavailable) — never a silent pass that hides zero coverage.
+    test.skip(
+      !scrollFixture,
+      'Scroll fixture unavailable (no admin client / credentials) — cannot build a scrollable thread'
+    );
+    const conversationId = scrollFixture!.conversationId;
+
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('about:blank').catch(() => {});
-    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    // Open the fixture conversation DIRECTLY by id — deterministic, not
+    // dependent on conversation-list sort order.
+    await page.goto(`/messages?conversation=${conversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
     await handleReAuthModal(page, TEST_USER_PASSWORD);
 
-    await clickFirstConversation(page);
-
     const messageThread = page.locator('[data-testid="message-thread"]');
+    await expect(messageThread).toBeVisible({ timeout: 30000 });
+    await waitForUIStability(page);
 
     // Scroll up more than 500px to trigger button
     await messageThread.evaluate((el) => {
@@ -284,10 +322,8 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     await waitForUIStability(page);
 
-    // Check if jump button appears
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
-    // Button should appear when scrolled 500px+ from bottom
     const scrollInfo = await messageThread.evaluate((el) => ({
       scrollTop: el.scrollTop,
       scrollHeight: el.scrollHeight,
@@ -295,34 +331,43 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       distanceFromBottom: el.scrollHeight - (el.scrollTop + el.clientHeight),
     }));
 
-    if (scrollInfo.distanceFromBottom > 500) {
-      // Wait for the parent wrapper's `data-show-scroll-button` attribute
-      // to flip to "true" before asserting button visibility. The attribute
-      // is written by MessageThread.tsx synchronously when `setShowScroll
-      // Button(true)` commits — bypassing the React-state-flush vs
-      // WebKit-event-loop race that rounds 10-13 chased through other
-      // surfaces. See round 14 for the structural fix.
-      const wrapper = page.locator('[data-show-scroll-button]').first();
-      await expect
-        .poll(
-          async () => await wrapper.getAttribute('data-show-scroll-button'),
-          { timeout: 5000, intervals: [50, 100, 200, 500] }
-        )
-        .toBe('true');
+    // The fixture seeds a fixed 30 messages, so the thread MUST be scrollable
+    // past the 500px threshold. Assert it (rather than silently skipping the
+    // button checks) — a short thread here is a real regression or a fixture
+    // failure, not a no-op.
+    expect(
+      scrollInfo.distanceFromBottom,
+      'fixture thread should be tall enough to scroll 500px+ from bottom'
+    ).toBeGreaterThan(500);
 
-      await expect(jumpButton).toBeVisible();
+    // Wait for the parent wrapper's `data-show-scroll-button` attribute
+    // to flip to "true" before asserting button visibility. The attribute
+    // is written by MessageThread.tsx synchronously when `setShowScroll
+    // Button(true)` commits — bypassing the React-state-flush vs
+    // WebKit-event-loop race that rounds 10-13 chased through other
+    // surfaces. See round 14 for the structural fix.
+    const wrapper = page.locator('[data-show-scroll-button]').first();
+    await expect
+      .poll(async () => await wrapper.getAttribute('data-show-scroll-button'), {
+        timeout: 5000,
+        intervals: [50, 100, 200, 500],
+      })
+      .toBe('true');
 
-      // Verify button doesn't overlap message input
-      const buttonBox = await jumpButton.boundingBox();
-      const messageInput = page.locator(
-        'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
-      );
-      const inputBox = await messageInput.boundingBox();
+    await expect(jumpButton).toBeVisible();
 
-      if (buttonBox && inputBox) {
-        // Button bottom should be above input top
-        expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(inputBox.y);
-      }
+    // Verify button doesn't overlap message input
+    const buttonBox = await jumpButton.boundingBox();
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    const inputBox = await messageInput.boundingBox();
+
+    expect(buttonBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    if (buttonBox && inputBox) {
+      // Button bottom should be above input top
+      expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(inputBox.y);
     }
   });
 
