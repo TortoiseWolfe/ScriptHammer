@@ -1190,6 +1190,142 @@ export async function cleanupOldMessages(
 }
 
 /**
+ * A self-contained, static message-thread fixture for the messaging-scroll
+ * test (issue #109).
+ *
+ * WHY this exists / why it doesn't just reuse the shared users:
+ * Every messaging spec calls cleanupOldMessages() in beforeAll, which does
+ * `DELETE FROM messages WHERE sender_id IN (PRIMARY, TERTIARY)`. That cleanup
+ * is deliberate — it keeps the shared conversation under 100 messages so the
+ * MessageThread virtualizer doesn't hide other specs' newly-sent messages.
+ * But messaging-scroll needs the OPPOSITE: a thread tall enough to scroll. Any
+ * messages it seeds into the shared conversation get wiped by those cleanups.
+ *
+ * The fix is an isolated fixture: a throwaway user whose `sender_id` is NEVER
+ * named in any cleanupOldMessages call, in its own private conversation with
+ * PRIMARY, with a FIXED count of messages. Nothing else can see or delete it;
+ * the count never drifts across CI runs. Tear it down in afterAll via
+ * deleteScrollFixture() (cascades messages + conversation).
+ *
+ * The fixture user is given a public key so getMessageHistory doesn't hit its
+ * "other user has no public key → return []" path. Messages use placeholder
+ * encrypted_content (the viewer can't decrypt them, so each renders as an
+ * "Encrypted with previous keys" bubble) — which is still a real, visible,
+ * height-producing bubble. A scroll test only needs height, not readable text.
+ *
+ * @returns the throwaway user id and conversation id, or null on failure.
+ */
+export interface ScrollFixture {
+  fixtureUserId: string;
+  conversationId: string;
+}
+
+const SCROLL_FIXTURE_MARKER = '-scroll-fixture';
+
+export async function seedScrollFixture(
+  viewerEmail: string,
+  messageCount = 30
+): Promise<ScrollFixture | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const viewer = await getUserByEmail(viewerEmail);
+  if (!viewer) {
+    console.warn('seedScrollFixture: viewer not found:', viewerEmail);
+    return null;
+  }
+
+  // 1. Create the throwaway partner (unique email → no collision, no other
+  //    spec references it, so no cleanupOldMessages ever deletes its messages).
+  //    The username MUST satisfy user_profiles' CHECK (length 3..30) — the
+  //    default email-prefix username overflows for long plus-aliased emails,
+  //    so pass a short explicit one.
+  const fixtureEmail = generateTestEmail('scroll-fixture');
+  const fixturePassword = 'ScrollFixturePass123!';
+  const fixtureUsername = `scrollfix${Date.now().toString().slice(-8)}`;
+  const fixtureUser = await createTestUser(fixtureEmail, fixturePassword, {
+    username: fixtureUsername,
+  });
+  if (!fixtureUser) {
+    console.warn('seedScrollFixture: failed to create fixture user');
+    return null;
+  }
+
+  // 2. Give the fixture user a public key so the viewer's getMessageHistory
+  //    can derive a shared secret instead of returning an empty thread.
+  const keysOk = await ensureEncryptionKeys(fixtureEmail, fixturePassword);
+  if (!keysOk) {
+    console.warn('seedScrollFixture: failed to create fixture keys');
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+
+  // 3. Create the private conversation (canonical sorted participant order).
+  const [p1, p2] =
+    viewer.id < fixtureUser.id
+      ? [viewer.id, fixtureUser.id]
+      : [fixtureUser.id, viewer.id];
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({ participant_1_id: p1, participant_2_id: p2 })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedScrollFixture: failed to create conversation:',
+      convError?.message
+    );
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // 4. Insert a FIXED number of messages, alternating sender, timestamps
+  //    spread backwards so it reads like a real history.
+  const senders = [viewer.id, fixtureUser.id];
+  const now = Date.now();
+  const rows = Array.from({ length: messageCount }, (_, i) => ({
+    conversation_id: conversationId,
+    sender_id: senders[i % 2],
+    encrypted_content: `msg-${i + 1}${SCROLL_FIXTURE_MARKER}`,
+    initialization_vector: `iv-${i + 1}`,
+    sequence_number: i + 1,
+    created_at: new Date(
+      now - (messageCount - 1 - i) * 5 * 60 * 1000
+    ).toISOString(),
+  }));
+  const { error: insertError } = await admin.from('messages').insert(rows);
+  if (insertError) {
+    console.warn('seedScrollFixture: insert failed:', insertError.message);
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+
+  await admin
+    .from('conversations')
+    .update({ last_message_at: new Date(now).toISOString() })
+    .eq('id', conversationId);
+
+  console.log(
+    `✓ Scroll fixture: ${messageCount} messages in conversation ${conversationId} (fixture user ${fixtureUser.id})`
+  );
+  return { fixtureUserId: fixtureUser.id, conversationId };
+}
+
+/**
+ * Tear down the scroll fixture created by seedScrollFixture(). Deleting the
+ * throwaway user cascade-deletes its conversation and messages (FK ON DELETE
+ * CASCADE), so nothing is left behind. Safe to call with null.
+ */
+export async function deleteScrollFixture(
+  fixture: ScrollFixture | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.fixtureUserId);
+  console.log('✓ Scroll fixture torn down');
+}
+
+/**
  * Scroll a message thread to the bottom so virtual-scrolled messages
  * at the end of the list are rendered in the DOM.
  */
