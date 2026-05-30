@@ -1190,6 +1190,104 @@ export async function cleanupOldMessages(
 }
 
 /**
+ * Seed a deterministic batch of messages into the conversation between two
+ * users, so scroll-dependent tests always have enough thread height to
+ * exercise the jump-to-bottom behavior (messaging-scroll T007-T008).
+ *
+ * Why this exists (issue #109, round 14b follow-up to PR #108): the
+ * messaging-scroll spec opens whichever conversation exists for the test
+ * user and only asserts the jump-button behavior when it can scroll 500px+
+ * from the bottom (`distanceFromBottom > 500`). On a thin conversation that
+ * branch is silently skipped — the test passes without verifying anything.
+ * Seeding a known number of messages removes that non-determinism.
+ *
+ * Notes:
+ * - Uses the admin (service-role) client to bypass RLS, like the other
+ *   seeding helpers here.
+ * - `encrypted_content` / `initialization_vector` hold placeholder strings:
+ *   the scroll test never decrypts, it only needs rendered DOM height. This
+ *   matches the existing admin insert precedent in
+ *   tests/integration/messaging/database-setup.test.ts.
+ * - `sequence_number` must be unique per conversation (DB constraint
+ *   `unique_sequence`), so we start above the current max.
+ * - Timestamps are spread backwards over several hours so the thread reads
+ *   like a real conversation history.
+ *
+ * Returns the conversation id that was seeded, or null if it could not
+ * resolve the admin client / users / conversation.
+ */
+export async function seedConversationMessages(
+  userAEmail: string,
+  userBEmail: string,
+  count = 30
+): Promise<string | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+  const userA = await getUserByEmail(userAEmail);
+  const userB = await getUserByEmail(userBEmail);
+  if (!userA || !userB) return null;
+
+  // Conversations store participants in a canonical (sorted) order.
+  const [p1, p2] =
+    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .select('id')
+    .eq('participant_1_id', p1)
+    .eq('participant_2_id', p2)
+    .maybeSingle();
+  if (convError || !conversation) {
+    console.warn(
+      'seedConversationMessages: no conversation found:',
+      convError?.message
+    );
+    return null;
+  }
+
+  const conversationId = conversation.id as string;
+
+  // Start sequence numbers above the current max to respect the
+  // (conversation_id, sequence_number) unique constraint even if some
+  // messages already exist.
+  const { data: lastMessage } = await admin
+    .from('messages')
+    .select('sequence_number')
+    .eq('conversation_id', conversationId)
+    .order('sequence_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const startSequence = ((lastMessage?.sequence_number as number) ?? 0) + 1;
+
+  // Spread timestamps backwards over ~count*5 minutes so the most recent
+  // seeded message is "now" and the oldest is a few hours ago.
+  const now = Date.now();
+  const rows = Array.from({ length: count }, (_, i) => {
+    const sender = i % 2 === 0 ? userA.id : userB.id;
+    const minutesAgo = (count - 1 - i) * 5;
+    return {
+      conversation_id: conversationId,
+      sender_id: sender,
+      encrypted_content: `seed-msg-${i + 1}-for-scroll-test`,
+      initialization_vector: `seed-iv-${i + 1}`,
+      sequence_number: startSequence + i,
+      created_at: new Date(now - minutesAgo * 60 * 1000).toISOString(),
+    };
+  });
+
+  const { error: insertError } = await admin.from('messages').insert(rows);
+  if (insertError) {
+    console.warn(
+      'seedConversationMessages: insert failed:',
+      insertError.message
+    );
+    return null;
+  }
+  console.log(`✓ Seeded ${count} messages into conversation ${conversationId}`);
+  return conversationId;
+}
+
+/**
  * Scroll a message thread to the bottom so virtual-scrolled messages
  * at the end of the list are rendered in the DOM.
  */

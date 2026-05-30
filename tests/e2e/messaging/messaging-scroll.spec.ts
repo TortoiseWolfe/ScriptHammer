@@ -2,11 +2,20 @@ import { test, expect, Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   handleReAuthModal,
+  seedConversationMessages,
+  cleanupOldMessages,
 } from '../utils/test-user-factory';
 
 // Test user credentials
 const TEST_USER_PASSWORD =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+
+// The authenticated user (storageState) is PRIMARY; it has a conversation
+// with SECONDARY. Seed that conversation so scroll-dependent assertions
+// (T007-T008) always have enough thread height to run. See issue #109.
+const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
+const SECONDARY_EMAIL = process.env.TEST_USER_SECONDARY_EMAIL;
+const SEEDED_MESSAGE_COUNT = 30;
 
 /**
  * Wait for UI to stabilize after navigation or interaction
@@ -43,6 +52,21 @@ async function waitForUIStability(page: Page) {
 let setupSucceeded = false;
 
 test.beforeAll(async ({ browser }) => {
+  // Seed deterministic message history so the conversation the test opens
+  // always has enough scroll height for the jump-to-bottom assertions
+  // (T007-T008). Without this, a thin conversation silently skips those
+  // assertions (distanceFromBottom > 500 is false). See issue #109.
+  // No-ops gracefully if the admin client / users / conversation are
+  // unavailable (e.g. credentials not configured), preserving the existing
+  // setupSucceeded skip path below.
+  if (PRIMARY_EMAIL && SECONDARY_EMAIL) {
+    await seedConversationMessages(
+      PRIMARY_EMAIL,
+      SECONDARY_EMAIL,
+      SEEDED_MESSAGE_COUNT
+    );
+  }
+
   const context = await browser.newContext({
     storageState: './tests/e2e/fixtures/storage-state-auth.json',
   });
@@ -66,6 +90,14 @@ test.beforeAll(async ({ browser }) => {
       .catch(() => false);
   } finally {
     await context.close();
+  }
+});
+
+test.afterAll(async () => {
+  // Remove the messages we seeded so conversations don't accumulate across
+  // CI runs (mirrors the cleanup discipline of the other messaging specs).
+  if (PRIMARY_EMAIL && SECONDARY_EMAIL) {
+    await cleanupOldMessages(PRIMARY_EMAIL, SECONDARY_EMAIL);
   }
 });
 
@@ -295,34 +327,43 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       distanceFromBottom: el.scrollHeight - (el.scrollTop + el.clientHeight),
     }));
 
-    if (scrollInfo.distanceFromBottom > 500) {
-      // Wait for the parent wrapper's `data-show-scroll-button` attribute
-      // to flip to "true" before asserting button visibility. The attribute
-      // is written by MessageThread.tsx synchronously when `setShowScroll
-      // Button(true)` commits — bypassing the React-state-flush vs
-      // WebKit-event-loop race that rounds 10-13 chased through other
-      // surfaces. See round 14 for the structural fix.
-      const wrapper = page.locator('[data-show-scroll-button]').first();
-      await expect
-        .poll(
-          async () => await wrapper.getAttribute('data-show-scroll-button'),
-          { timeout: 5000, intervals: [50, 100, 200, 500] }
-        )
-        .toBe('true');
+    // The conversation is seeded with 30 messages (issue #109), so the
+    // thread MUST be scrollable past the 500px threshold. Assert that
+    // precondition rather than silently skipping the button checks — a thin
+    // thread here is a real regression (or a seeding failure), not a no-op.
+    expect(
+      scrollInfo.distanceFromBottom,
+      'seeded conversation should be tall enough to scroll 500px+ from bottom'
+    ).toBeGreaterThan(500);
 
-      await expect(jumpButton).toBeVisible();
+    // Wait for the parent wrapper's `data-show-scroll-button` attribute
+    // to flip to "true" before asserting button visibility. The attribute
+    // is written by MessageThread.tsx synchronously when `setShowScroll
+    // Button(true)` commits — bypassing the React-state-flush vs
+    // WebKit-event-loop race that rounds 10-13 chased through other
+    // surfaces. See round 14 for the structural fix.
+    const wrapper = page.locator('[data-show-scroll-button]').first();
+    await expect
+      .poll(async () => await wrapper.getAttribute('data-show-scroll-button'), {
+        timeout: 5000,
+        intervals: [50, 100, 200, 500],
+      })
+      .toBe('true');
 
-      // Verify button doesn't overlap message input
-      const buttonBox = await jumpButton.boundingBox();
-      const messageInput = page.locator(
-        'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
-      );
-      const inputBox = await messageInput.boundingBox();
+    await expect(jumpButton).toBeVisible();
 
-      if (buttonBox && inputBox) {
-        // Button bottom should be above input top
-        expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(inputBox.y);
-      }
+    // Verify button doesn't overlap message input
+    const buttonBox = await jumpButton.boundingBox();
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    const inputBox = await messageInput.boundingBox();
+
+    expect(buttonBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    if (buttonBox && inputBox) {
+      // Button bottom should be above input top
+      expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(inputBox.y);
     }
   });
 
