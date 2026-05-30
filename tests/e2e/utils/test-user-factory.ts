@@ -1190,6 +1190,13 @@ export async function cleanupOldMessages(
 }
 
 /**
+ * Content marker stamped into every message inserted by
+ * seedConversationMessages, so cleanupSeededMessages can target exactly those
+ * rows without touching real test messages.
+ */
+const SEED_CONTENT_MARKER = '-for-scroll-test';
+
+/**
  * Seed a deterministic batch of messages into the conversation between two
  * users, so scroll-dependent tests always have enough thread height to
  * exercise the jump-to-bottom behavior (messaging-scroll T007-T008).
@@ -1224,28 +1231,67 @@ export async function seedConversationMessages(
   const admin = getAdminClient();
   if (!admin) return null;
   const userA = await getUserByEmail(userAEmail);
+  if (!userA) {
+    console.warn('seedConversationMessages: userA not found:', userAEmail);
+    return null;
+  }
   const userB = await getUserByEmail(userBEmail);
-  if (!userA || !userB) return null;
 
-  // Conversations store participants in a canonical (sorted) order.
-  const [p1, p2] =
-    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+  // Prefer the exact userA↔userB conversation. If userB is unknown or that
+  // pair has no conversation (e.g. CI's auth.setup only creates the
+  // PRIMARY↔TERTIARY conversation, not PRIMARY↔SECONDARY), fall back to ANY
+  // conversation that includes userA. The scroll test opens userA's *first*
+  // conversation, so seeding any of userA's conversations gives it height.
+  let conversationId: string | null = null;
 
-  const { data: conversation, error: convError } = await admin
+  if (userB) {
+    const [p1, p2] =
+      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
+    const { data: exact } = await admin
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', p1)
+      .eq('participant_2_id', p2)
+      .maybeSingle();
+    if (exact) conversationId = exact.id as string;
+  }
+
+  if (!conversationId) {
+    const { data: anyConv, error: anyErr } = await admin
+      .from('conversations')
+      .select('id')
+      .or(`participant_1_id.eq.${userA.id},participant_2_id.eq.${userA.id}`)
+      .order('last_message_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (anyErr || !anyConv) {
+      console.warn(
+        'seedConversationMessages: no conversation found for',
+        userAEmail,
+        anyErr?.message ?? ''
+      );
+      return null;
+    }
+    conversationId = anyConv.id as string;
+  }
+
+  // Resolve the conversation's actual participants — in the fallback path the
+  // other participant may not be userB (and userB may be null), and sender_id
+  // has an FK to user_profiles + is validated against conversation membership.
+  const { data: convRow, error: convRowErr } = await admin
     .from('conversations')
-    .select('id')
-    .eq('participant_1_id', p1)
-    .eq('participant_2_id', p2)
-    .maybeSingle();
-  if (convError || !conversation) {
+    .select('participant_1_id, participant_2_id')
+    .eq('id', conversationId)
+    .single();
+  if (convRowErr || !convRow) {
     console.warn(
-      'seedConversationMessages: no conversation found:',
-      convError?.message
+      'seedConversationMessages: could not load conversation participants:',
+      convRowErr?.message
     );
     return null;
   }
-
-  const conversationId = conversation.id as string;
+  const senders = [convRow.participant_1_id, convRow.participant_2_id];
 
   // Start sequence numbers above the current max to respect the
   // (conversation_id, sequence_number) unique constraint even if some
@@ -1260,15 +1306,15 @@ export async function seedConversationMessages(
   const startSequence = ((lastMessage?.sequence_number as number) ?? 0) + 1;
 
   // Spread timestamps backwards over ~count*5 minutes so the most recent
-  // seeded message is "now" and the oldest is a few hours ago.
+  // seeded message is "now" and the oldest is a few hours ago. Alternate the
+  // sender between the two real conversation participants.
   const now = Date.now();
   const rows = Array.from({ length: count }, (_, i) => {
-    const sender = i % 2 === 0 ? userA.id : userB.id;
     const minutesAgo = (count - 1 - i) * 5;
     return {
       conversation_id: conversationId,
-      sender_id: sender,
-      encrypted_content: `seed-msg-${i + 1}-for-scroll-test`,
+      sender_id: senders[i % 2],
+      encrypted_content: `seed-msg-${i + 1}${SEED_CONTENT_MARKER}`,
       initialization_vector: `seed-iv-${i + 1}`,
       sequence_number: startSequence + i,
       created_at: new Date(now - minutesAgo * 60 * 1000).toISOString(),
@@ -1283,8 +1329,35 @@ export async function seedConversationMessages(
     );
     return null;
   }
+
+  // Bump last_message_at so this conversation sorts to the top of the list.
+  // The scroll test opens the FIRST conversation, so the seeded one must be
+  // first for its messages (and thus its scroll height) to be the ones tested.
+  await admin
+    .from('conversations')
+    .update({ last_message_at: new Date(now).toISOString() })
+    .eq('id', conversationId);
+
   console.log(`✓ Seeded ${count} messages into conversation ${conversationId}`);
   return conversationId;
+}
+
+/**
+ * Delete only the messages inserted by seedConversationMessages (matched by
+ * their content marker). Safe to call even if nothing was seeded.
+ */
+export async function cleanupSeededMessages(): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+  const { error } = await admin
+    .from('messages')
+    .delete()
+    .like('encrypted_content', `%${SEED_CONTENT_MARKER}`);
+  if (error) {
+    console.warn('cleanupSeededMessages: failed:', error.message);
+  } else {
+    console.log('✓ Seeded scroll-test messages cleaned up');
+  }
 }
 
 /**

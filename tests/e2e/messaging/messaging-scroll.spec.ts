@@ -3,18 +3,21 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   seedConversationMessages,
-  cleanupOldMessages,
+  cleanupSeededMessages,
 } from '../utils/test-user-factory';
 
 // Test user credentials
 const TEST_USER_PASSWORD =
   process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
 
-// The authenticated user (storageState) is PRIMARY; it has a conversation
-// with SECONDARY. Seed that conversation so scroll-dependent assertions
-// (T007-T008) always have enough thread height to run. See issue #109.
+// The authenticated user (storageState) is PRIMARY. In CI, auth.setup.ts
+// creates the PRIMARY↔TERTIARY conversation (not PRIMARY↔SECONDARY), so seed
+// against TERTIARY. seedConversationMessages also falls back to any of
+// PRIMARY's conversations and bumps last_message_at so the seeded one sorts
+// first — which is the conversation the scroll test opens. This gives
+// T007-T008 enough thread height to run rather than silently skip. See #109.
 const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
-const SECONDARY_EMAIL = process.env.TEST_USER_SECONDARY_EMAIL;
+const TERTIARY_EMAIL = process.env.TEST_USER_TERTIARY_EMAIL;
 const SEEDED_MESSAGE_COUNT = 30;
 
 /**
@@ -59,10 +62,12 @@ test.beforeAll(async ({ browser }) => {
   // No-ops gracefully if the admin client / users / conversation are
   // unavailable (e.g. credentials not configured), preserving the existing
   // setupSucceeded skip path below.
-  if (PRIMARY_EMAIL && SECONDARY_EMAIL) {
+  if (PRIMARY_EMAIL) {
     await seedConversationMessages(
       PRIMARY_EMAIL,
-      SECONDARY_EMAIL,
+      // CI's auth.setup creates PRIMARY↔TERTIARY; if TERTIARY is unset the
+      // helper falls back to any of PRIMARY's conversations.
+      TERTIARY_EMAIL ?? '',
       SEEDED_MESSAGE_COUNT
     );
   }
@@ -94,11 +99,10 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.afterAll(async () => {
-  // Remove the messages we seeded so conversations don't accumulate across
-  // CI runs (mirrors the cleanup discipline of the other messaging specs).
-  if (PRIMARY_EMAIL && SECONDARY_EMAIL) {
-    await cleanupOldMessages(PRIMARY_EMAIL, SECONDARY_EMAIL);
-  }
+  // Remove ONLY the messages we seeded (matched by their content marker), so
+  // we don't accumulate across CI runs and don't disturb other specs' real
+  // messages in the same conversation. See issue #109.
+  await cleanupSeededMessages();
 });
 
 // Test configuration for viewports
