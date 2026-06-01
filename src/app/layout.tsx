@@ -21,6 +21,7 @@ import {
 import PWAInstall from '@/components/PWAInstall';
 import { CountdownBanner } from '@/components/atomic/CountdownBanner';
 import { SetupBanner } from '@/components/SetupBanner';
+import A11yDevOverlay from '@/components/organisms/A11yDevOverlay';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -135,6 +136,7 @@ export default function RootLayout({
               <CookieConsent />
               <ConsentModal />
               <PWAInstall />
+              {process.env.NODE_ENV === 'development' && <A11yDevOverlay />}
             </AccessibilityProvider>
           </AuthProvider>
         </ConsentProvider>
