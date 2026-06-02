@@ -469,13 +469,45 @@ export const CRYPTO_PARAMS = {
 } as const;
 
 /**
+ * Production Argon2 time cost (OWASP-recommended, per FR-001).
+ *
+ * The E2E suite may override this DOWNWARD via `NEXT_PUBLIC_E2E_ARGON2_TIME_COST`
+ * to cut per-test key-derivation time — Argon2id runs in the browser (hash-wasm),
+ * so the cost is paid on every login/re-auth in the messaging E2E specs (~10s/test).
+ * The override:
+ *  - is read ONLY here, defaults to 3, and is clamped to [1, 3] so it can never be
+ *    raised or set to a nonsense value;
+ *  - is gated on `NEXT_PUBLIC_E2E_ARGON2_TIME_COST` being explicitly set — the
+ *    production deploy (`deploy.yml`) never sets it, so prod always derives at 3.
+ * The derived keys are cryptographically valid at any iteration count; lowering
+ * iterations only reduces brute-force hardness, which is irrelevant for throwaway
+ * CI test users. NEVER set this variable in a real deployment.
+ */
+export const PROD_ARGON2_TIME_COST = 3;
+
+/**
+ * Resolves the Argon2 time cost from an optional E2E override string.
+ * Exported (pure) for unit testing the security contract: the override may only
+ * LOWER cost to [1, PROD], and any absent/invalid value falls back to PROD.
+ */
+export function resolveArgon2TimeCost(
+  raw: string | undefined = process.env.NEXT_PUBLIC_E2E_ARGON2_TIME_COST
+): number {
+  if (!raw) return PROD_ARGON2_TIME_COST;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed)) return PROD_ARGON2_TIME_COST;
+  // Clamp to [1, prod]: the override may only LOWER cost, never raise it.
+  return Math.min(Math.max(parsed, 1), PROD_ARGON2_TIME_COST);
+}
+
+/**
  * Argon2 configuration (OWASP recommended for password hashing)
  * Per FR-001: Argon2id with memory=65536 (64MB), timeCost=3, parallelism=4, hashLength=32
  */
 export const ARGON2_CONFIG = {
   TYPE: 'argon2id', // Hybrid of argon2i and argon2d (best for passwords)
   MEMORY_COST: 65536, // 64 MB
-  TIME_COST: 3, // 3 iterations
+  TIME_COST: resolveArgon2TimeCost(), // 3 in prod; E2E may lower via env (see above)
   PARALLELISM: 4, // 4 parallel lanes
   HASH_LENGTH: 32, // 256 bits for P-256 seed
   SALT_LENGTH: 16, // 16 bytes

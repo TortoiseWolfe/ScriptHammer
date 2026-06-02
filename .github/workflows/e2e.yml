@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'  # Monday 6 AM UTC — full 3-browser run
+    - cron: '0 6 * * 1' # Monday 6 AM UTC — full 3-browser run
   workflow_dispatch:
 
 concurrency:
@@ -65,6 +65,13 @@ jobs:
           # test.skip'd; the rest only assert UI render + consent flow.
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
           NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+          # E2E-ONLY: lower Argon2id key-derivation cost from 3 → 1 iteration.
+          # Argon2 runs in-browser (hash-wasm) on every login/re-auth, so the
+          # messaging specs pay ~10s/test for it. Derived keys stay valid; only
+          # brute-force hardness drops, which is irrelevant for throwaway CI
+          # users. Read+clamped in src/types/messaging.ts (ARGON2_CONFIG).
+          # NEVER set this in deploy.yml — the production build derives at 3.
+          NEXT_PUBLIC_E2E_ARGON2_TIME_COST: 1
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

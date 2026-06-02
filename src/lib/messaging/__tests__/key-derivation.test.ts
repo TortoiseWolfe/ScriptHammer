@@ -10,7 +10,12 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { KeyDerivationService } from '../key-derivation';
-import { ARGON2_CONFIG, CRYPTO_PARAMS } from '@/types/messaging';
+import {
+  ARGON2_CONFIG,
+  CRYPTO_PARAMS,
+  PROD_ARGON2_TIME_COST,
+  resolveArgon2TimeCost,
+} from '@/types/messaging';
 
 describe('KeyDerivationService', () => {
   let service: KeyDerivationService;
@@ -374,5 +379,37 @@ describe('KeyDerivationService', () => {
 
       expect(decrypted).toBe(plaintext);
     });
+  });
+});
+
+describe('resolveArgon2TimeCost (E2E override security contract)', () => {
+  it('defaults to the production cost when no override is set', () => {
+    expect(resolveArgon2TimeCost(undefined)).toBe(PROD_ARGON2_TIME_COST);
+    expect(resolveArgon2TimeCost('')).toBe(PROD_ARGON2_TIME_COST);
+    expect(PROD_ARGON2_TIME_COST).toBe(3);
+  });
+
+  it('falls back to the production cost for non-numeric input', () => {
+    expect(resolveArgon2TimeCost('abc')).toBe(PROD_ARGON2_TIME_COST);
+    expect(resolveArgon2TimeCost('NaN')).toBe(PROD_ARGON2_TIME_COST);
+  });
+
+  it('allows lowering the cost to a valid E2E value', () => {
+    expect(resolveArgon2TimeCost('1')).toBe(1);
+    expect(resolveArgon2TimeCost('2')).toBe(2);
+  });
+
+  it('NEVER lets the override raise the cost above production', () => {
+    expect(resolveArgon2TimeCost('4')).toBe(PROD_ARGON2_TIME_COST);
+    expect(resolveArgon2TimeCost('99')).toBe(PROD_ARGON2_TIME_COST);
+  });
+
+  it('clamps zero / negative input up to the minimum of 1', () => {
+    expect(resolveArgon2TimeCost('0')).toBe(1);
+    expect(resolveArgon2TimeCost('-5')).toBe(1);
+  });
+
+  it('the live ARGON2_CONFIG.TIME_COST matches the resolver', () => {
+    expect(ARGON2_CONFIG.TIME_COST).toBe(resolveArgon2TimeCost());
   });
 });
