@@ -455,8 +455,10 @@ test.describe('GDPR Account Deletion', () => {
       // Should show loading state
       await expect(page.getByText('Deleting...')).toBeVisible();
 
-      // Should redirect to sign-in
-      await page.waitForURL(/\/sign-in(\?|$)/, { timeout: 30000 });
+      // Should redirect to sign-in. The static export uses trailing slashes,
+      // so the real URL is `/sign-in/?message=account_deleted` — allow the
+      // optional slash before the query string.
+      await page.waitForURL(/\/sign-in\/?(\?|$)/, { timeout: 30000 });
     } finally {
       await account.close();
     }

@@ -582,6 +582,13 @@ jobs:
         include:
           # msg runs as a single shard (see chromium matrix note above).
           - { project: firefox-msg, browser: firefox, shard: 1/1 }
+          # #116 Phase 2 — per-test fixture-isolation slice at workers>1.
+          - {
+              project: firefox-msg-iso,
+              browser: firefox,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: firefox-gen, browser: firefox, shard: 1/6 }
           - { project: firefox-gen, browser: firefox, shard: 2/6 }
           - { project: firefox-gen, browser: firefox, shard: 3/6 }
@@ -725,6 +732,13 @@ jobs:
         include:
           # msg runs as a single shard (see chromium matrix note above).
           - { project: webkit-msg, browser: webkit, shard: 1/1 }
+          # #116 Phase 2 — per-test fixture-isolation slice at workers>1.
+          - {
+              project: webkit-msg-iso,
+              browser: webkit,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: webkit-gen, browser: webkit, shard: 1/6 }
           - { project: webkit-gen, browser: webkit, shard: 2/6 }
           - { project: webkit-gen, browser: webkit, shard: 3/6 }

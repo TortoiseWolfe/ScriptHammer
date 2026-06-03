@@ -48,9 +48,6 @@ const MSG_ISO_GLOBS = [
   '**/messaging/gdpr-compliance.spec.ts',
   '**/messaging/friend-requests.spec.ts',
   '**/messaging/group-chat-multiuser.spec.ts',
-  // The local-only spike still lives in the iso project so it stays parallel;
-  // it self-skips in CI. Removed once it's deleted at the end of Phase 2.
-  '**/messaging/fixture-isolation.spike.spec.ts',
 ];
 
 /* Parallelism for the iso projects is driven by Playwright's `--workers` CLI
@@ -83,11 +80,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* 1 worker on CI: with 6 shards × 3 browsers = 18 parallel jobs,
-   * intra-shard parallelism causes cross-file interference (e.g.
-   * friend-requests deletes connections while encrypted-messaging
-   * verifies they exist). Sequential execution within each shard
-   * is fast enough since load is spread across 18 jobs. */
+  /* Default to 1 worker on CI. The *-gen and serial *-msg projects share
+   * fixed test users, so intra-shard parallelism would cause cross-file
+   * interference. The per-test-isolated *-msg-iso projects override this to
+   * workers>1 via the CI job's --workers flag (#116 Phase 2) — each of their
+   * tests owns its own throwaway users, so there is no shared state to race. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
