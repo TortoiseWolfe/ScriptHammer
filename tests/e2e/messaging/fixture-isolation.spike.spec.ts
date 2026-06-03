@@ -102,6 +102,11 @@ async function openAsViewer(
 }
 
 test.describe('Fixture-isolation spike (workers>1)', () => {
+  // Local-only: needs a local Docker Supabase (pnpm run dev:local). The
+  // throwaway @example.com users are accepted by local GoTrue but rejected by
+  // cloud, so skip in CI. This is a spike artifact, not a CI gate.
+  test.skip(!!process.env.CI, 'Spike — requires local Docker Supabase');
+
   let fixture: IsolatedConversation | null = null;
 
   test.afterEach(async () => {
