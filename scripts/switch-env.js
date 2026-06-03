@@ -44,16 +44,6 @@ function readLines(file) {
   return fs.readFileSync(file, 'utf8').split('\n');
 }
 
-/** Extract the set of KEY names assigned in a dotenv file. */
-function keysOf(lines) {
-  const keys = new Set();
-  for (const line of lines) {
-    const m = /^([A-Za-z_][A-Za-z0-9_]*)=/.exec(line);
-    if (m) keys.add(m[1]);
-  }
-  return keys;
-}
-
 /**
  * Overlay `fragment` lines onto `base` lines: for every KEY assigned in the
  * fragment, replace the base's assignment in place (or append if absent).

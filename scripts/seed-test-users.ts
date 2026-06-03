@@ -23,7 +23,10 @@
 import { createClient } from '@supabase/supabase-js';
 import * as crypto from 'crypto';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// In-container admin client: prefer SUPABASE_ADMIN_URL (compose-internal Kong)
+// for the local sandbox; falls back to the public URL for cloud/CI (#121).
+const supabaseUrl =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 // Get passwords from env vars - REQUIRED, no fallbacks

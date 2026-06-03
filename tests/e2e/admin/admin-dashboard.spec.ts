@@ -25,31 +25,23 @@ const ADMIN_PASSWORD = 'TestPassword123!';
 // Next.js basePath — all routes must be prefixed
 const BP = '/ScriptHammer';
 
-// Inside the Docker container, the browser can't reach localhost:54321 (Supabase).
-// We proxy all browser requests to localhost:54321 → the Docker-network hostname.
-const SUPABASE_DOCKER_URL = 'http://sh-feat-supabase-kong-1:8000';
-const SUPABASE_BROWSER_URL = 'http://localhost:54321';
+// Local-only spec (skipped in CI). The Node test process reaches local Kong via
+// SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
+// it via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). The old
+// page.route interception that rewrote localhost:54321 → a hardcoded container
+// name is gone — see #121.
+const SUPABASE_ADMIN_URL =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 test.describe('Admin Dashboard E2E', () => {
-  // Requires local Docker Supabase (sh-feat-supabase-kong-1) — not available in CI
   test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
   test.beforeEach(async ({ page }) => {
-    // Intercept all browser requests to localhost:54321 and rewrite them
-    // to the Docker-network hostname so Supabase calls work in the container.
-    await page.route('**/localhost:54321/**', async (route) => {
-      const url = route
-        .request()
-        .url()
-        .replace(SUPABASE_BROWSER_URL, SUPABASE_DOCKER_URL);
-      const response = await route.fetch({ url });
-      await route.fulfill({ response });
-    });
-
-    // Sign in via Supabase API (from the test process, which CAN reach Docker hostnames)
-    const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+    // Sign in via the Supabase API from the Node test process (reaches Kong via
+    // the compose-internal admin URL locally; public URL on cloud/CI).
+    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data, error } = await supabase.auth.signInWithPassword({
