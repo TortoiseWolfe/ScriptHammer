@@ -1572,6 +1572,38 @@ export async function openConversationAs(
   conversationId: string
 ): Promise<OpenedParticipant> {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const { page, context, close } = await openAuthedPage(browser, session);
+
+  // Navigate to the isolated conversation and unlock encryption keys. The
+  // ReAuthModal appears because IndexedDB has no cached CryptoKey for this fresh
+  // throwaway user; handleReAuthModal re-derives them (Argon2id, TIME_COST=3).
+  await page.goto(`${basePath}/messages?conversation=${conversationId}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(page);
+  await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
+  await page.waitForSelector('[data-testid="message-thread"]', {
+    state: 'visible',
+    timeout: 60000,
+  });
+
+  return { page, context, close };
+}
+
+/**
+ * Open a fresh browser context authenticated as the given throwaway `session`,
+ * landing on `/` with the session injected — but WITHOUT navigating to a
+ * conversation or unlocking encryption keys. For specs that drive non-thread
+ * UI (e.g. the connections tab in friend-requests). The caller navigates and
+ * calls `handleReAuthModal` itself if/when it reaches a thread.
+ *
+ * See {@link openConversationAs} for the session-injection rationale.
+ */
+export async function openAuthedPage(
+  browser: Browser,
+  session: InjectableSession
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const context = await browser.newContext({
     storageState: { cookies: [], origins: [] },
   });
@@ -1608,19 +1640,6 @@ export async function openConversationAs(
   // Reload so Supabase picks up the injected session on init.
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
-
-  // Navigate to the isolated conversation and unlock encryption keys. The
-  // ReAuthModal appears because IndexedDB has no cached CryptoKey for this fresh
-  // throwaway user; handleReAuthModal re-derives them (Argon2id, TIME_COST=3).
-  await page.goto(`${basePath}/messages?conversation=${conversationId}`, {
-    waitUntil: 'domcontentloaded',
-  });
-  await dismissCookieBanner(page);
-  await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
-  await page.waitForSelector('[data-testid="message-thread"]', {
-    state: 'visible',
-    timeout: 60000,
-  });
 
   return { page, context, close: () => context.close() };
 }
@@ -1664,14 +1683,31 @@ async function createKeyedUserWithSession(
   prefix: string,
   userTag: string,
   stamp: string
-): Promise<{ user: TestUser; session: InjectableSession } | null> {
+): Promise<{
+  user: TestUser;
+  session: InjectableSession;
+  displayName: string;
+} | null> {
   const email = generateTestEmail(prefix);
+  const displayName = `${userTag}${stamp}`;
   const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
-    username: `${userTag}${stamp}`,
+    username: displayName,
   });
   if (!user) {
     console.warn(`createKeyedUserWithSession: failed to create ${userTag}`);
     return null;
+  }
+  // A DB trigger auto-creates the user_profiles row on signup, so
+  // createTestUser's createUserProfile() early-returns ("already exists") and
+  // never sets display_name — leaving it null and the user UNsearchable
+  // (UserSearch matches display_name). Set it explicitly here so isolated
+  // users are findable (required by friend-requests / group-chat).
+  const admin = getAdminClient();
+  if (admin) {
+    await admin
+      .from('user_profiles')
+      .update({ username: displayName, display_name: displayName })
+      .eq('id', user.id);
   }
   const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
   if (!keysOk) {
@@ -1705,6 +1741,7 @@ async function createKeyedUserWithSession(
   }
   return {
     user,
+    displayName,
     session: {
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
@@ -1718,6 +1755,9 @@ async function createKeyedUserWithSession(
  * A fully isolated pair of throwaway users plus a {@link user_connections} row
  * at a chosen status — for friend-request specs that mutate connection state.
  * Both users are keyed at TIME_COST=3 and have sessions for browser injection.
+ *
+ * `requesterDisplayName` / `addresseeDisplayName` are the users' searchable
+ * display names (UserSearch searches by display_name, not email).
  */
 export interface IsolatedConnection {
   requester: TestUser;
@@ -1725,17 +1765,23 @@ export interface IsolatedConnection {
   connectionId: string;
   requesterSession: InjectableSession;
   addresseeSession: InjectableSession;
+  requesterDisplayName: string;
+  addresseeDisplayName: string;
 }
 
 /**
- * Create a fully isolated requester + addressee + connection for one test.
+ * Create a fully isolated requester + addressee for one test, optionally with a
+ * connection row.
  *
- * @param status  'pending' (default) so the test can accept/decline it, or
- *                'accepted'/'blocked'/'declined' to start in that state.
+ * @param status  'pending' (default) so the test can accept/decline it,
+ *                'accepted'/'blocked'/'declined' to start in that state, or
+ *                'none' to create the two users WITHOUT a connection row (for
+ *                tests that send the request via the UI). When 'none',
+ *                `connectionId` is the empty string.
  * Returns null if the admin client / anon key is unavailable.
  */
 export async function seedIsolatedConnection(
-  status: 'pending' | 'accepted' | 'blocked' | 'declined' = 'pending',
+  status: 'pending' | 'accepted' | 'blocked' | 'declined' | 'none' = 'pending',
   opts?: { requesterPrefix?: string; addresseePrefix?: string }
 ): Promise<IsolatedConnection | null> {
   const admin = getAdminClient();
@@ -1761,34 +1807,40 @@ export async function seedIsolatedConnection(
     return null;
   }
 
-  const { data: connection, error: connError } = await admin
-    .from('user_connections')
-    .insert({
-      requester_id: requester.user.id,
-      addressee_id: addressee.user.id,
-      status,
-    })
-    .select('id')
-    .single();
-  if (connError || !connection) {
-    console.warn(
-      'seedIsolatedConnection: connection insert failed:',
-      connError?.message
-    );
-    await deleteTestUser(requester.user.id);
-    await deleteTestUser(addressee.user.id);
-    return null;
+  let connectionId = '';
+  if (status !== 'none') {
+    const { data: connection, error: connError } = await admin
+      .from('user_connections')
+      .insert({
+        requester_id: requester.user.id,
+        addressee_id: addressee.user.id,
+        status,
+      })
+      .select('id')
+      .single();
+    if (connError || !connection) {
+      console.warn(
+        'seedIsolatedConnection: connection insert failed:',
+        connError?.message
+      );
+      await deleteTestUser(requester.user.id);
+      await deleteTestUser(addressee.user.id);
+      return null;
+    }
+    connectionId = connection.id as string;
   }
 
   console.log(
-    `✓ Isolated connection ${connection.id} (${status}; requester ${requester.user.id}, addressee ${addressee.user.id})`
+    `✓ Isolated connection (${status}; requester ${requester.user.id}, addressee ${addressee.user.id})`
   );
   return {
     requester: requester.user,
     addressee: addressee.user,
-    connectionId: connection.id as string,
+    connectionId,
     requesterSession: requester.session,
     addresseeSession: addressee.session,
+    requesterDisplayName: requester.displayName,
+    addresseeDisplayName: addressee.displayName,
   };
 }
 

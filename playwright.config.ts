@@ -36,6 +36,18 @@ function createDeviceConfig(viewport: TestViewport) {
  */
 const MSG_ISO_GLOBS = [
   '**/messaging/encrypted-messaging.spec.ts',
+  '**/messaging/real-time-delivery.spec.ts',
+  '**/messaging/offline-queue.spec.ts',
+  '**/messaging/offline-queue-sync.spec.ts',
+  '**/messaging/cross-window-delivery.spec.ts',
+  '**/messaging/complete-user-workflow.spec.ts',
+  '**/messaging/message-delete-placeholder.spec.ts',
+  '**/messaging/message-editing.spec.ts',
+  '**/messaging/performance.spec.ts',
+  '**/messaging/oauth-setup-modal.spec.ts',
+  '**/messaging/gdpr-compliance.spec.ts',
+  '**/messaging/friend-requests.spec.ts',
+  '**/messaging/group-chat-multiuser.spec.ts',
   // The local-only spike still lives in the iso project so it stays parallel;
   // it self-skips in CI. Removed once it's deleted at the end of Phase 2.
   '**/messaging/fixture-isolation.spike.spec.ts',

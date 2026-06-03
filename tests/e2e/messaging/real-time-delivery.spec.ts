@@ -1,513 +1,310 @@
 /**
  * E2E Tests for Real-time Message Delivery
- * Tasks: T098, T099
+ * Tasks: T098, T099 — #116 Phase 2: per-test fixture isolation (workers>1).
  *
- * Tests real-time message delivery between two browser windows and typing indicators.
- * Verifies <500ms delivery guarantee and proper typing indicator behavior.
+ * Tests real-time message delivery between two browser windows and typing
+ * indicators. Each test seeds its OWN throwaway viewer + partner + conversation
+ * via seedIsolatedConversation(), so nothing is shared between tests: no serial
+ * mode, no cleanupOldMessages, no self-heal-connection beforeAll, no shared
+ * PRIMARY/TERTIARY storage-state contention. See
+ * tests/e2e/utils/test-user-factory.ts and the #116 roadmap for the rationale.
  */
 
-import { test, expect, Page, BrowserContext } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import {
-  dismissCookieBanner,
-  handleReAuthModal,
+  seedIsolatedConversation,
+  deleteIsolatedConversation,
+  openAsViewer,
+  openAsPartner,
   fillMessageInput,
-  cleanupOldMessages,
   scrollThreadToBottom,
-  getAdminClient,
-  getUserByEmail,
+  type IsolatedConversation,
 } from '../utils/test-user-factory';
 
-// Track setup status
-let setupSucceeded = false;
-let setupError = '';
-let testConversationId = '';
-
-// Test user credentials (from .env or defaults)
-const TEST_USER_1 = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
-
-const TEST_USER_2 = {
-  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
-  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
-};
+// Per-test isolation removes the shared-user data race that forced serial mode.
+test.describe.configure({ mode: 'parallel' });
 
 /**
- * Sign in helper — performs full sign-in for fresh contexts (empty storageState),
- * then navigates to /messages with encryption key handling.
+ * Wait for `text` to render on the partner page. The conversation is fresh and
+ * tiny, so polling converges fast; reload between attempts to survive Supabase
+ * Cloud read-after-write tail latency when realtime doesn't carry the message.
  */
-// Note: `signIn(page, ...)` helper removed. Both test users are now loaded
-// from pre-authenticated storage states (storage-state-auth.json for User A,
-// storage-state-auth-b.json for User B) seeded by auth.setup.ts.
-
-/**
- * Helper to wait for message on page2, with fallback to reload if real-time doesn't work.
- * First waits for the Realtime subscription to be ready (data-messages-subscribed attribute),
- * then waits for the message to appear via Realtime, with reload fallback.
- */
-async function waitForMessageOnPage2(
-  page2: Page,
-  testMessage: string,
-  password: string
+async function waitForMessageOnPartner(
+  page: Page,
+  text: string,
+  attempts = 5
 ): Promise<void> {
-  // Wait for Realtime subscription to be ready before checking for message
-  try {
-    await page2.waitForSelector('body[data-messages-subscribed]', {
+  const locator = page.getByText(text);
+  for (let i = 0; i < attempts; i++) {
+    await scrollThreadToBottom(page);
+    if (await locator.isVisible({ timeout: 12000 }).catch(() => false)) return;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('[data-testid="message-thread"]', {
+      state: 'visible',
       timeout: 30000,
     });
-  } catch {
-    // Subscription readiness signal not available — proceed with best effort
   }
-
-  try {
-    await page2
-      .getByText(testMessage)
-      .waitFor({ state: 'visible', timeout: 30000 });
-    return;
-  } catch {
-    // Fall through to reload-retry path below
-  }
-
-  // Real-time subscription may have dropped the message, or Supabase Cloud
-  // replication is lagging. Navigate+reload up to 5 times, waiting 15s
-  // between attempts. Total budget: ~60s (goto+reload) × 5 attempts × 15s =
-  // ~6 minutes worst case — 3 attempts × 60s (~3 min) had flaked under
-  // 24-shard Supabase free-tier tail latency; 5 is the headroom.
-  let lastErr: unknown;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    try {
-      await page2.goto(`/messages?conversation=${testConversationId}`, {
-        waitUntil: 'domcontentloaded',
-      });
-      await dismissCookieBanner(page2);
-      await handleReAuthModal(page2, password);
-      await expect(page2.getByText(testMessage)).toBeVisible({
-        timeout: 60000,
-      });
-      return;
-    } catch (e) {
-      lastErr = e;
-      console.log(
-        `[waitForMessageOnPage2] reload-retry ${attempt + 1}/5 failed; waiting 15s`
-      );
-      await page2.waitForTimeout(15000);
-    }
-  }
-  throw lastErr;
+  // Final assertion — surfaces a real failure if it never arrived.
+  await scrollThreadToBottom(page);
+  await expect(locator).toBeVisible({ timeout: 15000 });
 }
-
-/**
- * Create or find existing conversation between two users
- * Returns true if setup succeeded
- */
-async function setupConversation(page1: Page, page2: Page): Promise<boolean> {
-  if (!testConversationId) return false;
-
-  // Navigate both users directly to conversation via URL
-  try {
-    await page1.goto(`/messages?conversation=${testConversationId}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await dismissCookieBanner(page1);
-    await handleReAuthModal(page1, TEST_USER_1.password);
-    await page1.waitForSelector('[data-testid="message-thread"]', {
-      state: 'visible',
-      timeout: 60000,
-    });
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await expect(messageInput1).toBeVisible({ timeout: 45000 });
-  } catch {
-    return false;
-  }
-
-  try {
-    await page2.goto(`/messages?conversation=${testConversationId}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await dismissCookieBanner(page2);
-    await handleReAuthModal(page2, TEST_USER_2.password);
-    await page2.waitForSelector('[data-testid="message-thread"]', {
-      state: 'visible',
-      timeout: 60000,
-    });
-    const messageInput2 = page2.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await expect(messageInput2).toBeVisible({ timeout: 45000 });
-  } catch {
-    return false;
-  }
-
-  // Both pages are in the conversation; wait for each page's Realtime
-  // subscription to actually be listening before the test body sends a
-  // message. Without this, a send that fires between mount and SUBSCRIBE
-  // publishes to nobody — the receiver then has to discover it via the
-  // slower reload-fallback path, eating into the flake budget.
-  await Promise.all([
-    page1
-      .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
-      .catch(() => {}),
-    page2
-      .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
-      .catch(() => {}),
-  ]);
-
-  return true;
-}
-
-// Verify test data created by auth.setup.ts exists
-test.beforeAll(async () => {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-    console.error(`❌ ${setupError}`);
-    return;
-  }
-
-  if (
-    TEST_USER_1.email === 'test@example.com' ||
-    TEST_USER_2.email === 'test-user-b@example.com'
-  ) {
-    setupError = 'Test user emails not configured';
-    console.error(`❌ ${setupError}`);
-    return;
-  }
-
-  const adminClient = getAdminClient();
-  if (!adminClient) {
-    setupError = 'Admin client unavailable';
-    console.error(`❌ ${setupError}`);
-    return;
-  }
-
-  const userA = await getUserByEmail(TEST_USER_1.email);
-  const userB = await getUserByEmail(TEST_USER_2.email);
-
-  if (!userA || !userB) {
-    setupError = 'Test users not found';
-    console.error(`❌ ${setupError}`);
-    return;
-  }
-
-  // Ensure connection exists (self-heal if missing)
-  const { data: existing } = await adminClient
-    .from('user_connections')
-    .select('id, status')
-    .or(
-      `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
-    )
-    .maybeSingle();
-
-  if (!existing) {
-    const { error } = await adminClient.from('user_connections').insert({
-      requester_id: userA.id,
-      addressee_id: userB.id,
-      status: 'accepted',
-    });
-    if (error) {
-      setupError = `Failed to create connection: ${error.message}`;
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-    console.log('✓ Connection created (self-heal)');
-  } else if (existing.status !== 'accepted') {
-    await adminClient
-      .from('user_connections')
-      .update({ status: 'accepted' })
-      .eq('id', existing.id);
-    console.log('✓ Connection updated to accepted');
-  } else {
-    console.log('✓ Connection already exists');
-  }
-
-  const [p1, p2] =
-    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-  const { data: existingConv } = await adminClient
-    .from('conversations')
-    .select('id')
-    .eq('participant_1_id', p1)
-    .eq('participant_2_id', p2)
-    .maybeSingle();
-  if (!existingConv) {
-    const { data: newConv, error: convError } = await adminClient
-      .from('conversations')
-      .insert({ participant_1_id: p1, participant_2_id: p2 })
-      .select('id')
-      .single();
-    if (convError || !newConv) {
-      setupError = `Failed to create conversation: ${convError?.message}`;
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-    testConversationId = newConv.id;
-    console.log('✓ Conversation created (self-heal)');
-  } else {
-    testConversationId = existingConv.id;
-    console.log('✓ Conversation already exists');
-  }
-
-  setupSucceeded = true;
-});
-
-test.beforeAll(async () => {
-  if (!setupSucceeded) return;
-  await cleanupOldMessages(TEST_USER_1.email, TEST_USER_2.email);
-});
 
 test.describe('Real-time Message Delivery (T098)', () => {
-  // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
-  // Running in parallel doubles peak connection load → subscription timeouts on CI.
-  // Timeout 600000ms: waitForMessageOnPage2 fallback does up to 5 reload-retry
-  // cycles (~75s each on Supabase free-tier tail latency). 450s was just
-  // barely enough before the 3→5 retry bump; 600s covers the new budget.
-  test.describe.configure({ mode: 'serial', timeout: 600000 });
+  let fixture: IsolatedConversation | null = null;
 
-  let context1: BrowserContext;
-  let context2: BrowserContext;
-  let page1: Page;
-  let page2: Page;
-
-  // Skip all tests if setup failed
-  test.beforeEach(async ({ browser }, testInfo) => {
-    if (!setupSucceeded) {
-      testInfo.skip(true, `Test setup failed: ${setupError}`);
-      return;
-    }
-    // Both users come from pre-authenticated storage states seeded by
-    // auth.setup.ts (primary = storage-state-auth.json; User B =
-    // storage-state-auth-b.json). Prior approach of signing in two fresh
-    // contexts per test cumulatively exceeded Supabase's 5-attempt
-    // brute-force lockout across concurrent CI shards.
-    context1 = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    context2 = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
-    });
-
-    page1 = await context1.newPage();
-    page2 = await context2.newPage();
-
-    // Navigate both pages to /messages and handle ReAuthModal. Keys are
-    // derived from password via Argon2id on first navigation and persisted
-    // to IndexedDB as non-extractable CryptoKeys.
-    await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page1);
-    await handleReAuthModal(page1, TEST_USER_1.password);
-
-    await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page2);
-    await handleReAuthModal(page2, TEST_USER_2.password);
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
-    await context1.close();
-    await context2.close();
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
-  test('should deliver message in <500ms between two windows', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should deliver message in <500ms between two windows', async ({
+    browser,
+  }) => {
+    // Open both contexts concurrently — each pays a gate-load + Argon2id unlock,
+    // and serializing them nearly exhausts the per-test budget before the send.
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // User 1: Send a message
-    const testMessage = `Real-time test message ${Date.now()}`;
-    const startTime = Date.now();
+    try {
+      // Viewer: Send a message
+      const testMessage = `Real-time test message ${Date.now()}`;
+      const startTime = Date.now();
 
-    await fillMessageInput(page1, testMessage);
-    await page1.getByRole('button', { name: /send/i }).click();
+      await fillMessageInput(viewer.page, testMessage);
+      await viewer.page.getByRole('button', { name: /send/i }).click();
 
-    // User 2: Wait for message to appear (with fallback to reload if real-time not active)
-    await waitForMessageOnPage2(page2, testMessage, TEST_USER_2.password);
-    const endTime = Date.now();
+      // Partner: Wait for message to appear (realtime, with reload fallback).
+      await waitForMessageOnPartner(partner.page, testMessage);
+      const endTime = Date.now();
 
-    // Verify delivery time. Without a realtime subscription (reverted —
-    // it tripled 406 errors), delivery relies on the reload fallback path:
-    // page reload + handleReAuthModal + loadMessages + decryption.
-    // On Supabase free tier under 24-shard load, observed tail latency
-    // has reached ~142s (up from the earlier 90s comment). The test is
-    // not meaningfully asserting sub-500ms realtime — it asserts the
-    // message eventually arrives — so use a budget that matches the
-    // waitForMessageOnPage2 helper's 3×~75s retry window.
-    const deliveryTime = endTime - startTime;
-    expect(deliveryTime).toBeLessThan(240000);
+      // The test is not meaningfully asserting sub-500ms realtime — it asserts
+      // the message eventually arrives — so use a budget that matches the
+      // reload-retry window. With an isolated, tiny conversation this converges
+      // far faster than the old shared-backend tail latency, but keep headroom.
+      const deliveryTime = endTime - startTime;
+      expect(deliveryTime).toBeLessThan(240000);
 
-    // Verify message still visible on User 2's window (already checked by helper)
-    // And verify it also appears in User 1's window (sender)
-    await expect(page1.getByText(testMessage)).toBeVisible();
-  });
-
-  test('should show delivery status (sent → delivered → read)', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
-
-    // User 1: Send a message
-    const testMessage = `Delivery status test ${Date.now()}`;
-    await fillMessageInput(page1, testMessage);
-    await page1.getByRole('button', { name: /send/i }).click();
-
-    // User 2: Message appears (with fallback to reload if real-time not active)
-    await waitForMessageOnPage2(page2, testMessage, TEST_USER_2.password);
-
-    // Verify message is visible in both windows
-    await expect(page1.getByText(testMessage)).toBeVisible();
-    await expect(page2.getByText(testMessage)).toBeVisible();
-  });
-
-  test('should handle rapid message exchanges', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
-
-    // User 1: Send 3 messages rapidly
-    const messages = [
-      `Rapid 1 ${Date.now()}`,
-      `Rapid 2 ${Date.now()}`,
-      `Rapid 3 ${Date.now()}`,
-    ];
-
-    const sendButton1 = page1.getByRole('button', { name: /send/i });
-
-    for (const msg of messages) {
-      await fillMessageInput(page1, msg);
-      await sendButton1.click();
-      // 50ms breathing room between sends: webkit's Realtime WebSocket drops
-      // messages that arrive while the previous send's optimistic render is
-      // still flushing. Prevents a real race, not a flakiness band-aid.
-      await page1.waitForTimeout(50);
+      // Verify it also appears in the viewer's (sender's) window.
+      await scrollThreadToBottom(viewer.page);
+      await expect(viewer.page.getByText(testMessage)).toBeVisible({
+        timeout: 30000,
+      });
+    } finally {
+      await viewer.close();
+      await partner.close();
     }
+  });
 
-    // User 2: Verify all messages appear (with fallback to reload)
-    // Check last message first - if it appears after reload, all should be there
-    await waitForMessageOnPage2(page2, messages[2], TEST_USER_2.password);
-    // Now verify all messages are visible
-    for (const msg of messages) {
-      await expect(page2.getByText(msg)).toBeVisible();
+  test('should show delivery status (sent → delivered → read)', async ({
+    browser,
+  }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
+
+    try {
+      // Viewer: Send a message
+      const testMessage = `Delivery status test ${Date.now()}`;
+      await fillMessageInput(viewer.page, testMessage);
+      await viewer.page.getByRole('button', { name: /send/i }).click();
+
+      // Partner: Message appears (realtime, with reload fallback).
+      await waitForMessageOnPartner(partner.page, testMessage);
+
+      // Verify message is visible in both windows.
+      await scrollThreadToBottom(viewer.page);
+      await expect(viewer.page.getByText(testMessage)).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(partner.page.getByText(testMessage)).toBeVisible();
+    } finally {
+      await viewer.close();
+      await partner.close();
+    }
+  });
+
+  test('should handle rapid message exchanges', async ({ browser }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
+
+    try {
+      // Viewer: Send 3 messages rapidly
+      const messages = [
+        `Rapid 1 ${Date.now()}`,
+        `Rapid 2 ${Date.now()}`,
+        `Rapid 3 ${Date.now()}`,
+      ];
+
+      const sendButton = viewer.page.getByRole('button', { name: /send/i });
+
+      for (const msg of messages) {
+        await fillMessageInput(viewer.page, msg);
+        await sendButton.click();
+        // 50ms breathing room between sends: webkit's Realtime WebSocket drops
+        // messages that arrive while the previous send's optimistic render is
+        // still flushing. Prevents a real race, not a flakiness band-aid.
+        await viewer.page.waitForTimeout(50);
+      }
+
+      // Partner: Verify all messages appear (with reload fallback).
+      // Check the last message first — if it appears, the rest should be there.
+      await waitForMessageOnPartner(partner.page, messages[2]);
+      for (const msg of messages) {
+        await expect(partner.page.getByText(msg)).toBeVisible();
+      }
+    } finally {
+      await viewer.close();
+      await partner.close();
     }
   });
 });
 
 test.describe('Typing Indicators (T099)', () => {
-  // Serial: each test creates 2 browser contexts with Realtime WebSocket connections.
-  // 600000ms: matches Real-time Message Delivery describe — waitForMessageOnPage2
-  // used by 'should remove typing indicator when message is sent' can take up to
-  // 5 × ~75s reload-retries under Supabase Cloud tail latency.
-  test.describe.configure({ mode: 'serial', timeout: 600000 });
+  let fixture: IsolatedConversation | null = null;
 
-  let context1: BrowserContext;
-  let context2: BrowserContext;
-  let page1: Page;
-  let page2: Page;
-
-  test.beforeEach(async ({ browser }) => {
-    // Both users come from pre-authenticated storage states seeded by
-    // auth.setup.ts; see the matching beforeEach above for rationale.
-    context1 = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    context2 = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
-    });
-
-    page1 = await context1.newPage();
-    page2 = await context2.newPage();
-
-    await page1.goto('/messages', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page1);
-    await handleReAuthModal(page1, TEST_USER_1.password);
-
-    await page2.goto('/messages', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page2);
-    await handleReAuthModal(page2, TEST_USER_2.password);
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
-    await context1.close();
-    await context2.close();
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
-  test('should show typing indicator when user types', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should show typing indicator when user types', async ({ browser }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // User 1: Start typing
-    await fillMessageInput(page1, 'Hello');
-
-    // User 2: Typing indicator may appear (depends on feature implementation)
-    // This test verifies the feature works if implemented
-    const typingIndicator = page2.getByText(/is typing/i);
     try {
-      await expect(typingIndicator).toBeVisible({ timeout: 2000 });
-    } catch {
-      // Typing indicator feature may not be implemented yet - test passes
+      // Viewer: Start typing
+      await fillMessageInput(viewer.page, 'Hello');
+
+      // Partner: Typing indicator may appear (depends on feature implementation).
+      // This test verifies the feature works if implemented.
+      const typingIndicator = partner.page.getByText(/is typing/i);
+      try {
+        await expect(typingIndicator).toBeVisible({ timeout: 2000 });
+      } catch {
+        // Typing indicator feature may not be implemented yet - test passes
+      }
+    } finally {
+      await viewer.close();
+      await partner.close();
     }
   });
 
-  test('should hide typing indicator when user stops typing', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should hide typing indicator when user stops typing', async ({
+    browser,
+  }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // User 1: Start typing
-    await fillMessageInput(page1, 'Hello');
+    try {
+      // Viewer: Start typing
+      await fillMessageInput(viewer.page, 'Hello');
 
-    // Wait a moment then clear
-    await page1.waitForTimeout(1000);
-    const messageInput1 = page1.getByRole('textbox', {
-      name: /Message input/i,
-    });
-    await messageInput1.clear();
+      // Wait a moment then clear
+      await viewer.page.waitForTimeout(1000);
+      const messageInput = viewer.page.getByRole('textbox', {
+        name: /Message input/i,
+      });
+      await messageInput.clear();
 
-    // Test passes - typing indicator hiding is verified by feature working
+      // Test passes - typing indicator hiding is verified by feature working
+    } finally {
+      await viewer.close();
+      await partner.close();
+    }
   });
 
-  test('should remove typing indicator when message is sent', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should remove typing indicator when message is sent', async ({
+    browser,
+  }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // User 1: Type and send message
-    const testMessage = `Typing test ${Date.now()}`;
-    await fillMessageInput(page1, testMessage);
-    await page1.getByRole('button', { name: /send/i }).click();
+    try {
+      // Viewer: Type and send message
+      const testMessage = `Typing test ${Date.now()}`;
+      await fillMessageInput(viewer.page, testMessage);
+      await viewer.page.getByRole('button', { name: /send/i }).click();
 
-    // User 2: Message should appear (with fallback to reload)
-    await waitForMessageOnPage2(page2, testMessage, TEST_USER_2.password);
+      // Partner: Message should appear (with reload fallback).
+      await waitForMessageOnPartner(partner.page, testMessage);
+    } finally {
+      await viewer.close();
+      await partner.close();
+    }
   });
 
-  test('should show multiple typing indicators correctly', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should show multiple typing indicators correctly', async ({
+    browser,
+  }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // Both users type
-    await fillMessageInput(page1, 'User 1 typing');
-    await fillMessageInput(page2, 'User 2 typing');
+    try {
+      // Both users type
+      await fillMessageInput(viewer.page, 'User 1 typing');
+      await fillMessageInput(partner.page, 'User 2 typing');
 
-    // Both message inputs should be visible with content
-    const input1 = page1.getByRole('textbox', { name: /Message input/i });
-    const input2 = page2.getByRole('textbox', { name: /Message input/i });
-    await expect(input1).toHaveValue('User 1 typing');
-    await expect(input2).toHaveValue('User 2 typing');
+      // Both message inputs should be visible with content.
+      const input1 = viewer.page.getByRole('textbox', {
+        name: /Message input/i,
+      });
+      const input2 = partner.page.getByRole('textbox', {
+        name: /Message input/i,
+      });
+      await expect(input1).toHaveValue('User 1 typing');
+      await expect(input2).toHaveValue('User 2 typing');
+    } finally {
+      await viewer.close();
+      await partner.close();
+    }
   });
 
-  test('should auto-expire typing indicator after 5 seconds', async () => {
-    // Setup: Establish connection and navigate to conversation
-    const setupOk = await setupConversation(page1, page2);
-    if (!setupOk) return; // Skip if no conversation available
+  test('should auto-expire typing indicator after 5 seconds', async ({
+    browser,
+  }) => {
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
-    // User 1: Start typing
-    await fillMessageInput(page1, 'Auto-expire test');
+    try {
+      // Viewer: Start typing
+      await fillMessageInput(viewer.page, 'Auto-expire test');
 
-    // Wait for potential auto-expire
-    await page2.waitForTimeout(6000);
+      // Wait for potential auto-expire
+      await partner.page.waitForTimeout(6000);
 
-    // Verify page is still functional after waiting
-    const input1 = page1.getByRole('textbox', { name: /Message input/i });
-    await expect(input1).toBeVisible();
+      // Verify page is still functional after waiting.
+      const input1 = viewer.page.getByRole('textbox', {
+        name: /Message input/i,
+      });
+      await expect(input1).toBeVisible();
+    } finally {
+      await viewer.close();
+      await partner.close();
+    }
   });
 });

@@ -1,151 +1,56 @@
 /**
  * E2E Tests for Message Editing and Deletion
- * Tasks: T115-T117
+ * Tasks: T115-T117 — #116 Phase 2: per-test fixture isolation (workers>1).
+ *
+ * Every test seeds its OWN throwaway viewer + partner + conversation via
+ * seedIsolatedConversation(), so nothing is shared between tests and the spec
+ * runs fully parallel (no serial mode, no cleanupOldMessages, no shared
+ * PRIMARY/TERTIARY contention). Each test opens the conversation AS the viewer
+ * (a fresh browser context with the throwaway session injected), sends its own
+ * message via the real encrypted UI path, and exercises the edit/delete flow.
+ * See tests/e2e/utils/test-user-factory.ts and the #116 roadmap for rationale.
  *
  * Tests:
- * - Edit message within 15-minute window
- * - Delete message within 15-minute window
- * - Edit/delete disabled after 15 minutes
+ * - Edit message within 15-minute window (+ cancel / disabled-Save variants)
+ * - Delete message within 15-minute window (+ cancel / deleted-message variant)
+ * - Edit/delete disabled after 15 minutes; hidden on received messages
+ * - Accessibility of edit mode + delete confirmation modal
  */
 
 import { test, expect, type Page } from '@playwright/test';
 import {
-  dismissCookieBanner,
-  handleReAuthModal,
-  performSignIn,
-  cleanupOldMessages,
+  fillMessageInput,
   scrollThreadToBottom,
   getAdminClient,
-  getUserByEmail,
+  seedIsolatedConversation,
+  deleteIsolatedConversation,
+  openAsViewer,
+  openAsPartner,
+  type IsolatedConversation,
 } from '../utils/test-user-factory';
-import { createLogger } from '../../../src/lib/logger';
 
-const logger = createLogger('e2e-messaging-editing');
-
-// Test user credentials (from .env or defaults)
-const TEST_USER_1 = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
-
-const TEST_USER_2 = {
-  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
-  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
-};
-
-// Track setup status
-let setupSucceeded = false;
-let setupError = '';
-let conversationId = '';
-
-// Verify test data created by auth.setup.ts exists
-test.beforeAll(async () => {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-    logger.error(setupError);
-    return;
-  }
-
-  if (
-    TEST_USER_1.email === 'test@example.com' ||
-    TEST_USER_2.email === 'test-user-b@example.com'
-  ) {
-    setupError =
-      'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured';
-    logger.error(setupError);
-    return;
-  }
-
-  const adminClient = getAdminClient();
-  if (!adminClient) {
-    setupError = 'Admin client unavailable';
-    logger.error(setupError);
-    return;
-  }
-
-  const userA = await getUserByEmail(TEST_USER_1.email);
-  const userB = await getUserByEmail(TEST_USER_2.email);
-
-  if (!userA || !userB) {
-    setupError = `Test users not found: ${!userA ? TEST_USER_1.email : ''} ${!userB ? TEST_USER_2.email : ''}`;
-    logger.error(setupError);
-    return;
-  }
-
-  // Ensure connection exists (self-heal if missing)
-  const { data: existing } = await adminClient
-    .from('user_connections')
-    .select('id, status')
-    .or(
-      `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
-    )
-    .maybeSingle();
-
-  if (!existing) {
-    const { error } = await adminClient.from('user_connections').insert({
-      requester_id: userA.id,
-      addressee_id: userB.id,
-      status: 'accepted',
-    });
-    if (error) {
-      setupError = `Failed to create connection: ${error.message}`;
-      logger.error(setupError);
-      return;
-    }
-    logger.info('Connection created (self-heal)');
-  } else if (existing.status !== 'accepted') {
-    await adminClient
-      .from('user_connections')
-      .update({ status: 'accepted' })
-      .eq('id', existing.id);
-    logger.info('Connection updated to accepted');
-  }
-
-  const [p1, p2] =
-    userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-  const { data: existingConv } = await adminClient
-    .from('conversations')
-    .select('id')
-    .eq('participant_1_id', p1)
-    .eq('participant_2_id', p2)
-    .maybeSingle();
-  if (!existingConv) {
-    const { data: newConv, error: convError } = await adminClient
-      .from('conversations')
-      .insert({ participant_1_id: p1, participant_2_id: p2 })
-      .select('id')
-      .single();
-    if (convError || !newConv) {
-      setupError = `Failed to create conversation: ${convError?.message}`;
-      logger.error(setupError);
-      return;
-    }
-    conversationId = newConv.id;
-    logger.info('Conversation created (self-heal)');
-  } else {
-    conversationId = existingConv.id;
-  }
-
-  setupSucceeded = true;
-});
-
-// Clean up old messages from previous CI runs (virtual scrolling threshold fix)
-test.beforeAll(async () => {
-  if (!setupSucceeded) return;
-  await cleanupOldMessages(TEST_USER_1.email, TEST_USER_2.email);
-});
+// Per-test isolation removes the shared-user data race that forced serial mode.
+test.describe.configure({ mode: 'parallel' });
 
 /**
- * Sign in helper — uses storageState from project config; just navigates to messages
+ * Forward browser console from a page for CI diagnostics.
  */
-async function signIn(page: Page, _email: string, password: string) {
-  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
-  await dismissCookieBanner(page);
-  await handleReAuthModal(page, password);
+function forwardConsole(page: Page, label = 'browser') {
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (
+      text.includes('ConversationView') ||
+      text.includes('sendMessage') ||
+      text.includes('EncryptionKeyGate') ||
+      msg.type() === 'error'
+    ) {
+      console.log(`[${label} console.${msg.type()}] ${text}`);
+    }
+  });
 }
 
 /**
- * Wait for UI to stabilize after navigation or interaction
+ * Wait for the UI to stabilize after navigation or interaction (3 stable frames).
  */
 async function waitForUIStability(page: Page) {
   await page.waitForLoadState('domcontentloaded');
@@ -166,94 +71,16 @@ async function waitForUIStability(page: Page) {
 }
 
 /**
- * Navigate to conversation helper — uses direct URL to bypass slow sidebar query
- */
-async function navigateToConversation(page: Page) {
-  // Two-step auth hydration: navigate to /messages first so AuthContext
-  // hydrates from storageState, THEN navigate to the specific conversation.
-  // Direct navigation to ?conversation=X causes the webkit/firefox auth race
-  // where ProtectedRoute fires before the Supabase client initializes the
-  // session from localStorage (same pattern as offline-queue tests).
-  await page.goto('/messages', { waitUntil: 'domcontentloaded' });
-  await dismissCookieBanner(page);
-  await handleReAuthModal(page, TEST_USER_1.password);
-
-  await page.goto(`/messages?conversation=${conversationId}`, {
-    waitUntil: 'domcontentloaded',
-  });
-  await handleReAuthModal(page, TEST_USER_1.password);
-
-  // Wait for conversation view to mount
-  await page.waitForSelector('[data-testid="message-thread"]', {
-    state: 'visible',
-    timeout: 90000,
-  });
-
-  // Wait for message input to be visible (indicates conversation is loaded)
-  const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeVisible({ timeout: 45000 });
-  await waitForUIStability(page);
-
-  // Post-navigation auth check: the Supabase client may have wiped the
-  // session during conversation loading (403/406 → token refresh → consumed
-  // refresh token → SIGNED_OUT → localStorage cleared). Detect this and
-  // re-sign-in if needed.
-  const authLost = await page
-    .locator('text=/You must be (logged in|signed in)|Sign in required/i')
-    .isVisible({ timeout: 2000 })
-    .catch(() => false);
-  if (authLost) {
-    console.log(
-      '[navigateToConversation] Auth lost after page load — re-signing in'
-    );
-    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-    const result = await performSignIn(
-      page,
-      TEST_USER_1.email,
-      TEST_USER_1.password
-    );
-    if (!result.success) {
-      throw new Error(`Re-sign-in failed: ${result.error}`);
-    }
-    // Navigate back to conversation
-    await page.goto(`/messages?conversation=${conversationId}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await dismissCookieBanner(page);
-    await handleReAuthModal(page, TEST_USER_1.password);
-    await page.waitForSelector('[data-testid="message-thread"]', {
-      state: 'visible',
-      timeout: 60000,
-    });
-    await expect(messageInput).toBeVisible({ timeout: 45000 });
-    await waitForUIStability(page);
-  }
-}
-
-/**
- * Send a message in the current conversation
+ * Send a message in the current conversation via the real encrypted UI path.
+ *
+ * Uses fillMessageInput (which waits for React to reflect the value in
+ * #char-count, defeating the stale-state "Message cannot be empty" race) and
+ * the "Send message" button. Then waits for the bubble to render — failing
+ * fast on an error banner — and gives React a beat to attach the Edit/Delete
+ * buttons (which depend on isOwn + timestamp checks).
  */
 async function sendMessage(page: Page, message: string) {
-  // Standard Playwright fill+click. The idle timeout fix (no more 60
-  // re-renders/minute) and auth gate fixes should prevent element
-  // detachment that previously required workarounds.
-  const messageInput = page.getByRole('textbox', { name: /Message input/i });
-  await expect(messageInput).toBeEnabled({ timeout: 45000 });
-  await messageInput.fill(message);
-
-  // Wait for React to process the fill — the char count updates when
-  // React's state reflects the new value. Without this, handleSend()
-  // reads stale state (empty string) and rejects with "Message cannot
-  // be empty" instead of actually sending.
-  await page.waitForFunction(
-    (expectedLen) => {
-      const counter = document.getElementById('char-count');
-      if (!counter) return false;
-      return counter.textContent?.includes(String(expectedLen));
-    },
-    message.length,
-    { timeout: 15000 }
-  );
+  await fillMessageInput(page, message);
 
   const sendButton = page.getByRole('button', { name: /Send message/i });
   await sendButton.click();
@@ -295,7 +122,6 @@ function getMessageBubble(page: Page, messageText: string) {
 
 /**
  * Find the Edit button for a specific message by its text content.
- * Uses the message bubble's data-testid for reliable selection.
  */
 function getEditButtonForMessage(page: Page, messageText: string) {
   return getMessageBubble(page, messageText).getByRole('button', {
@@ -305,7 +131,6 @@ function getEditButtonForMessage(page: Page, messageText: string) {
 
 /**
  * Find the Delete button for a specific message by its text content.
- * Uses the message bubble's data-testid for reliable selection.
  */
 function getDeleteButtonForMessage(page: Page, messageText: string) {
   return getMessageBubble(page, messageText).getByRole('button', {
@@ -314,580 +139,631 @@ function getDeleteButtonForMessage(page: Page, messageText: string) {
 }
 
 test.describe('Message Editing', () => {
-  // Serial: tests share conversation state and Realtime subscriptions.
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  let fixture: IsolatedConversation | null = null;
 
-  test.beforeEach(async ({ page }) => {
-    // Forward browser console for CI diagnostics
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (
-        text.includes('ConversationView') ||
-        text.includes('sendMessage') ||
-        text.includes('EncryptionKeyGate') ||
-        msg.type() === 'error'
-      ) {
-        console.log(`[browser console.${msg.type()}] ${text}`);
-      }
-    });
-    // Sign in as User 1
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
+  });
+
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
   test('T115: should edit message within 15-minute window', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message (timestamp ensures only one match)
+      const timestamp = Date.now();
+      const originalMessage = `Original msg ${timestamp}`;
+      await sendMessage(viewer.page, originalMessage);
 
-    // Navigate to conversation
-    await navigateToConversation(page);
+      // Verify our message bubble exists with data-testid
+      const messageBubble = getMessageBubble(viewer.page, originalMessage);
+      await expect(messageBubble).toBeVisible({ timeout: 15000 });
 
-    // Send a unique message (timestamp ensures no conflicts with previous test runs)
-    const timestamp = Date.now();
-    const originalMessage = `Original msg ${timestamp}`;
-    await sendMessage(page, originalMessage);
+      // Edit button should be visible for own messages (within 15-min window).
+      // If this fails, either message.isOwn is false (wrong sender_id) or
+      // isWithinEditWindow returned false (message > 15 min old).
+      const editButton = getEditButtonForMessage(viewer.page, originalMessage);
+      await expect(editButton).toBeVisible({ timeout: 15000 });
 
-    // Verify our message bubble exists with data-testid
-    const messageBubble = getMessageBubble(page, originalMessage);
-    await expect(messageBubble).toBeVisible({ timeout: 15000 });
+      // Click Edit button
+      await editButton.click();
 
-    // Find the Edit button for our specific message
-    const editButton = getEditButtonForMessage(page, originalMessage);
+      // Edit mode should be active (textarea visible)
+      const editTextarea = viewer.page.getByRole('textbox', {
+        name: /Edit message content/i,
+      });
+      await expect(editTextarea).toBeVisible();
 
-    // Edit button should be visible for own messages (within 15-minute window)
-    // If this fails, it means either:
-    // 1. message.isOwn is false (wrong sender_id)
-    // 2. isWithinEditWindow returned false (message > 15 min old)
-    await expect(editButton).toBeVisible({ timeout: 15000 });
+      // Change the content with unique timestamp
+      const editedMessage = `Edited msg ${timestamp}`;
+      await editTextarea.clear();
+      await editTextarea.fill(editedMessage);
 
-    // Click Edit button
-    await editButton.click();
+      // Click Save
+      await viewer.page.getByRole('button', { name: /Save/i }).click();
 
-    // Edit mode should be active (textarea visible)
-    const editTextarea = page.getByRole('textbox', {
-      name: /Edit message content/i,
-    });
-    await expect(editTextarea).toBeVisible();
+      // Wait for save to complete (edit mode closes)
+      await expect(editTextarea).not.toBeVisible({ timeout: 15000 });
 
-    // Change the content with unique timestamp
-    const editedMessage = `Edited msg ${timestamp}`;
-    await editTextarea.clear();
-    await editTextarea.fill(editedMessage);
+      // Wait for UI to stabilize after save (state update + re-render)
+      await waitForUIStability(viewer.page);
 
-    // Click Save
-    await page.getByRole('button', { name: /Save/i }).click();
+      // Find the message bubble with edited content (updates in place)
+      const editedBubble = getMessageBubble(viewer.page, editedMessage);
+      await editedBubble.scrollIntoViewIfNeeded().catch(() => {});
+      await expect(editedBubble).toBeVisible({ timeout: 10000 });
 
-    // Wait for save to complete (edit mode closes)
-    await expect(editTextarea).not.toBeVisible({ timeout: 15000 });
-
-    // Wait for UI to stabilize after save (state update + re-render)
-    await waitForUIStability(page);
-
-    // Find the message bubble with edited content (it should update in place)
-    const editedBubble = getMessageBubble(page, editedMessage);
-
-    // Scroll to the edited message to ensure it's visible
-    await editedBubble.scrollIntoViewIfNeeded().catch(() => {});
-
-    // Verify edited content is displayed with longer timeout
-    await expect(editedBubble).toBeVisible({ timeout: 10000 });
-
-    // Verify original content is no longer visible (unique timestamp ensures only one match)
-    await expect(page.getByText(originalMessage)).not.toBeVisible({
-      timeout: 15000,
-    });
+      // Original content should no longer be visible (unique timestamp ensures
+      // only one match)
+      await expect(viewer.page.getByText(originalMessage)).not.toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      await viewer.close();
+    }
   });
 
-  test('should cancel edit without saving', async ({ page }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+  test('should cancel edit without saving', async ({ browser }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const originalMessage = `Cancel edit ${timestamp}`;
+      await sendMessage(viewer.page, originalMessage);
 
-    await navigateToConversation(page);
+      // Click Edit button for our specific message
+      const editButton = getEditButtonForMessage(viewer.page, originalMessage);
+      await editButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const originalMessage = `Cancel edit ${timestamp}`;
-    await sendMessage(page, originalMessage);
+      // Change content
+      const editTextarea = viewer.page.getByRole('textbox', {
+        name: /Edit message content/i,
+      });
+      await expect(editTextarea).toBeVisible();
+      await editTextarea.clear();
+      await editTextarea.fill('This will be cancelled');
 
-    // Click Edit button for our specific message
-    const editButton = getEditButtonForMessage(page, originalMessage);
-    await editButton.click();
+      // Click Cancel
+      await viewer.page.getByRole('button', { name: /Cancel/i }).click();
 
-    // Change content
-    const editTextarea = page.getByRole('textbox', {
-      name: /Edit message content/i,
-    });
-    await expect(editTextarea).toBeVisible();
-    await editTextarea.clear();
-    await editTextarea.fill('This will be cancelled');
+      // Edit mode should close
+      await expect(editTextarea).not.toBeVisible();
 
-    // Click Cancel
-    await page.getByRole('button', { name: /Cancel/i }).click();
-
-    // Edit mode should close
-    await expect(editTextarea).not.toBeVisible();
-
-    // Original content should still be visible
-    await expect(page.getByText(originalMessage)).toBeVisible();
+      // Original content should still be visible
+      await expect(viewer.page.getByText(originalMessage)).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 
   test('should disable Save button when content unchanged', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const originalMessage = `Unchanged ${timestamp}`;
+      await sendMessage(viewer.page, originalMessage);
 
-    await navigateToConversation(page);
+      // Click Edit button for our specific message
+      const editButton = getEditButtonForMessage(viewer.page, originalMessage);
+      await expect(editButton).toBeVisible({ timeout: 15000 });
+      await editButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const originalMessage = `Unchanged ${timestamp}`;
-    await sendMessage(page, originalMessage);
-
-    // Click Edit button for our specific message
-    const editButton = getEditButtonForMessage(page, originalMessage);
-    await expect(editButton).toBeVisible({ timeout: 15000 });
-    await editButton.click();
-
-    // Save button should be disabled (content hasn't changed)
-    const saveButton = page.getByRole('button', { name: /Save/i });
-    await expect(saveButton).toBeVisible({ timeout: 15000 });
-    await expect(saveButton).toBeDisabled();
+      // Save button should be disabled (content hasn't changed)
+      const saveButton = viewer.page.getByRole('button', { name: /Save/i });
+      await expect(saveButton).toBeVisible({ timeout: 15000 });
+      await expect(saveButton).toBeDisabled();
+    } finally {
+      await viewer.close();
+    }
   });
 
-  test('should not allow editing empty message', async ({ page }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+  test('should not allow editing empty message', async ({ browser }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const originalMessage = `Empty edit ${timestamp}`;
+      await sendMessage(viewer.page, originalMessage);
 
-    await navigateToConversation(page);
+      // Click Edit button for our specific message
+      const editButton = getEditButtonForMessage(viewer.page, originalMessage);
+      await editButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const originalMessage = `Empty edit ${timestamp}`;
-    await sendMessage(page, originalMessage);
+      // Clear content
+      const editTextarea = viewer.page.getByRole('textbox', {
+        name: /Edit message content/i,
+      });
+      await editTextarea.clear();
 
-    // Click Edit button for our specific message
-    const editButton = getEditButtonForMessage(page, originalMessage);
-    await editButton.click();
-
-    // Clear content
-    const editTextarea = page.getByRole('textbox', {
-      name: /Edit message content/i,
-    });
-    await editTextarea.clear();
-
-    // Save button should be disabled
-    const saveButton = page.getByRole('button', { name: /Save/i });
-    await expect(saveButton).toBeDisabled();
+      // Save button should be disabled
+      const saveButton = viewer.page.getByRole('button', { name: /Save/i });
+      await expect(saveButton).toBeDisabled();
+    } finally {
+      await viewer.close();
+    }
   });
 });
 
 test.describe('Message Deletion', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  let fixture: IsolatedConversation | null = null;
 
-  test.beforeEach(async ({ page }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (
-        text.includes('ConversationView') ||
-        text.includes('sendMessage') ||
-        msg.type() === 'error'
-      ) {
-        console.log(`[browser console.${msg.type()}] ${text}`);
-      }
-    });
-    // Sign in as User 1
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
+  });
+
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
   test('T116: should delete message within 15-minute window', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const messageToDelete = `Delete me ${timestamp}`;
+      await sendMessage(viewer.page, messageToDelete);
 
-    await navigateToConversation(page);
+      // Verify our message bubble exists
+      const messageBubble = getMessageBubble(viewer.page, messageToDelete);
+      await expect(messageBubble).toBeVisible({ timeout: 15000 });
 
-    // Send a unique message (timestamp ensures no conflicts with previous test runs)
-    const timestamp = Date.now();
-    const messageToDelete = `Delete me ${timestamp}`;
-    await sendMessage(page, messageToDelete);
+      // Delete button should be visible for own messages (within 15-min window)
+      const deleteButton = getDeleteButtonForMessage(
+        viewer.page,
+        messageToDelete
+      );
+      await expect(deleteButton).toBeVisible({ timeout: 15000 });
 
-    // Verify our message bubble exists
-    const messageBubble = getMessageBubble(page, messageToDelete);
-    await expect(messageBubble).toBeVisible({ timeout: 15000 });
+      // Click Delete
+      await deleteButton.click();
 
-    // Find the Delete button for our specific message
-    const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
+      // Confirmation modal should appear
+      const modal = viewer.page.getByRole('dialog', {
+        name: /Delete Message/i,
+      });
+      await expect(modal).toBeVisible();
 
-    // Delete button should be visible for own messages (within 15-minute window)
-    await expect(deleteButton).toBeVisible({ timeout: 15000 });
+      // Confirm deletion - actual aria-label is "Confirm deletion"
+      const confirmButton = modal.getByRole('button', {
+        name: /Confirm deletion/i,
+      });
+      await expect(confirmButton).toBeVisible();
+      await confirmButton.click();
 
-    // Click Delete
-    await deleteButton.click();
+      // Wait for modal to close first
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-    // Confirmation modal should appear
-    const modal = page.getByRole('dialog', { name: /Delete Message/i });
-    await expect(modal).toBeVisible();
+      // Wait for UI to stabilize after deletion
+      await waitForUIStability(viewer.page);
 
-    // Confirm deletion - use the actual aria-label "Confirm deletion"
-    const confirmButton = modal.getByRole('button', {
-      name: /Confirm deletion/i,
-    });
-    await expect(confirmButton).toBeVisible();
-    await confirmButton.click();
+      // Either the message is removed OR replaced with "[Message deleted]"
+      const messageGone = viewer.page.getByText(messageToDelete);
+      const deletedPlaceholder = viewer.page
+        .getByText('[Message deleted]')
+        .first();
 
-    // Wait for modal to close first
-    await expect(modal).not.toBeVisible({ timeout: 10000 });
-
-    // Wait for UI to stabilize after deletion
-    await waitForUIStability(page);
-
-    // Either the message is removed OR replaced with "[Message deleted]"
-    // Use Promise.race to detect whichever happens first
-    const messageGone = page.getByText(messageToDelete);
-    const deletedPlaceholder = page.getByText('[Message deleted]').first();
-
-    // Wait for deletion to be reflected in UI - message should either be gone or show placeholder
-    await Promise.race([
-      expect(messageGone).not.toBeVisible({ timeout: 10000 }),
-      expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
-    ]);
+      await Promise.race([
+        expect(messageGone).not.toBeVisible({ timeout: 10000 }),
+        expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
+      ]);
+    } finally {
+      await viewer.close();
+    }
   });
 
-  test('should cancel deletion from confirmation modal', async ({ page }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+  test('should cancel deletion from confirmation modal', async ({
+    browser,
+  }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const messageToKeep = `Keep me ${timestamp}`;
+      await sendMessage(viewer.page, messageToKeep);
 
-    await navigateToConversation(page);
+      // Click Delete button for our specific message
+      const deleteButton = getDeleteButtonForMessage(
+        viewer.page,
+        messageToKeep
+      );
+      await deleteButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const messageToKeep = `Keep me ${timestamp}`;
-    await sendMessage(page, messageToKeep);
+      // Modal appears
+      const modal = viewer.page.getByRole('dialog', {
+        name: /Delete Message/i,
+      });
+      await expect(modal).toBeVisible();
 
-    // Click Delete button for our specific message
-    const deleteButton = getDeleteButtonForMessage(page, messageToKeep);
-    await deleteButton.click();
+      // Click Cancel
+      const cancelButton = modal.getByRole('button', {
+        name: /Cancel deletion/i,
+      });
+      await cancelButton.click();
 
-    // Modal appears
-    const modal = page.getByRole('dialog', { name: /Delete Message/i });
-    await expect(modal).toBeVisible();
+      // Modal should close
+      await expect(modal).not.toBeVisible();
 
-    // Click Cancel
-    const cancelButton = modal.getByRole('button', {
-      name: /Cancel deletion/i,
-    });
-    await cancelButton.click();
-
-    // Modal should close
-    await expect(modal).not.toBeVisible();
-
-    // Message should still be intact
-    await expect(page.getByText(messageToKeep)).toBeVisible();
+      // Message should still be intact
+      await expect(viewer.page.getByText(messageToKeep)).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 
   test('should not show Edit/Delete buttons on deleted message', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send and delete a unique message
+      const timestamp = Date.now();
+      const messageToDelete = `To delete ${timestamp}`;
+      await sendMessage(viewer.page, messageToDelete);
 
-    await navigateToConversation(page);
+      // Click Delete button for our specific message
+      const deleteButton = getDeleteButtonForMessage(
+        viewer.page,
+        messageToDelete
+      );
+      await deleteButton.click();
 
-    // Send and delete a unique message (timestamp ensures no conflicts)
-    const timestamp = Date.now();
-    const messageToDelete = `To delete ${timestamp}`;
-    await sendMessage(page, messageToDelete);
+      // Confirmation modal should appear
+      const modal = viewer.page.getByRole('dialog', {
+        name: /Delete Message/i,
+      });
+      await expect(modal).toBeVisible();
 
-    // Click Delete button for our specific message
-    const deleteButton = getDeleteButtonForMessage(page, messageToDelete);
-    await deleteButton.click();
+      // Confirm deletion - actual aria-label is "Confirm deletion"
+      const confirmButton = modal.getByRole('button', {
+        name: /Confirm deletion/i,
+      });
+      await expect(confirmButton).toBeVisible();
+      await confirmButton.click();
 
-    // Confirmation modal should appear
-    const modal = page.getByRole('dialog', { name: /Delete Message/i });
-    await expect(modal).toBeVisible();
+      // Wait for modal to close first
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
 
-    // Confirm deletion - use the actual aria-label "Confirm deletion"
-    const confirmButton = modal.getByRole('button', {
-      name: /Confirm deletion/i,
-    });
-    await expect(confirmButton).toBeVisible();
-    await confirmButton.click();
+      // Wait for UI to stabilize after deletion
+      await waitForUIStability(viewer.page);
 
-    // Wait for modal to close first
-    await expect(modal).not.toBeVisible({ timeout: 10000 });
+      // Either the message is removed OR replaced with "[Message deleted]"
+      const messageGone = viewer.page.getByText(messageToDelete);
+      const deletedPlaceholder = viewer.page
+        .getByText('[Message deleted]')
+        .first();
 
-    // Wait for UI to stabilize after deletion
-    await waitForUIStability(page);
+      await Promise.race([
+        expect(messageGone).not.toBeVisible({ timeout: 10000 }),
+        expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
+      ]);
 
-    // Either the message is removed OR replaced with "[Message deleted]"
-    const messageGone = page.getByText(messageToDelete);
-    const deletedPlaceholder = page.getByText('[Message deleted]').first();
-
-    // Wait for deletion to be reflected in UI
-    await Promise.race([
-      expect(messageGone).not.toBeVisible({ timeout: 10000 }),
-      expect(deletedPlaceholder).toBeVisible({ timeout: 10000 }),
-    ]);
-
-    // Edit and Delete buttons should not be visible for deleted messages
-    // (message either removed or replaced with placeholder that has no buttons)
+      // Edit and Delete buttons should not be visible for deleted messages
+      // (message either removed or replaced with placeholder that has no buttons)
+    } finally {
+      await viewer.close();
+    }
   });
 });
 
 test.describe('Time Window Restrictions', () => {
-  test.describe.configure({ mode: 'serial', timeout: 180000 });
+  let fixture: IsolatedConversation | null = null;
 
-  test.beforeEach(async ({ page }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (
-        text.includes('ConversationView') ||
-        text.includes('sendMessage') ||
-        msg.type() === 'error'
-      ) {
-        console.log(`[browser console.${msg.type()}] ${text}`);
-      }
-    });
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
+  });
+
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
   test('should show Edit/Delete buttons only for own recent messages', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message (within window)
+      const timestamp = Date.now();
+      const recentMessage = `Recent msg ${timestamp}`;
+      await sendMessage(viewer.page, recentMessage);
 
-    await navigateToConversation(page);
+      // Recent own message should have Edit and Delete buttons
+      const editButton = getEditButtonForMessage(viewer.page, recentMessage);
+      const deleteButton = getDeleteButtonForMessage(
+        viewer.page,
+        recentMessage
+      );
 
-    // Send a unique message (within window)
-    const timestamp = Date.now();
-    const recentMessage = `Recent msg ${timestamp}`;
-    await sendMessage(page, recentMessage);
-
-    // Recent own message should have Edit and Delete buttons
-    const editButton = getEditButtonForMessage(page, recentMessage);
-    const deleteButton = getDeleteButtonForMessage(page, recentMessage);
-
-    // Wait for buttons with longer timeout (may need to scroll into view)
-    await expect(editButton).toBeVisible({ timeout: 10000 });
-    await expect(deleteButton).toBeVisible({ timeout: 10000 });
+      await expect(editButton).toBeVisible({ timeout: 10000 });
+      await expect(deleteButton).toBeVisible({ timeout: 10000 });
+    } finally {
+      await viewer.close();
+    }
   });
 
   test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
-
     const adminClient = getAdminClient();
-    if (!adminClient) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
+    test.skip(!adminClient, 'admin client not configured');
+
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Step 1: send a fresh message via the real encrypted UI path. This
+      // produces a proper encrypted row in the messages table that matches
+      // how real users send messages.
+      const timestamp = Date.now();
+      const testMessage = `T117 window ${timestamp}`;
+      await sendMessage(viewer.page, testMessage);
+
+      // Step 2: sanity-check the recent message shows Edit/Delete buttons.
+      // Without this baseline the test would be meaningless.
+      const editButtonBefore = getEditButtonForMessage(
+        viewer.page,
+        testMessage
+      );
+      await expect(editButtonBefore).toBeVisible({ timeout: 10000 });
+
+      // Step 3: find that message in the DB (scoped to THIS conversation) and
+      // backdate its created_at by 16 minutes. Messages are encrypted, so we
+      // match by sequence_number — the most recent message for this
+      // conversation is ours.
+      const { data: latest } = await adminClient!
+        .from('messages')
+        .select('id, sequence_number')
+        .eq('conversation_id', fixture!.conversationId)
+        .eq('deleted', false)
+        .order('sequence_number', { ascending: false })
+        .limit(1);
+
+      expect(latest?.length).toBe(1);
+      const messageId = latest![0].id;
+
+      const sixteenMinutesAgo = new Date(
+        Date.now() - 16 * 60 * 1000
+      ).toISOString();
+      const { error: updateError } = await adminClient!
+        .from('messages')
+        .update({ created_at: sixteenMinutesAgo })
+        .eq('id', messageId);
+      expect(updateError).toBeNull();
+
+      // Step 4: reload the conversation so the UI re-reads created_at from DB.
+      await viewer.page.reload({ waitUntil: 'domcontentloaded' });
+      await viewer.page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 60000,
+      });
+      await scrollThreadToBottom(viewer.page);
+
+      // Step 5: the same message should still be visible, but its Edit/Delete
+      // buttons should now be HIDDEN because the 15-minute window has elapsed.
+      await expect(viewer.page.getByText(testMessage)).toBeVisible({
+        timeout: 10000,
+      });
+      const editButtonAfter = getEditButtonForMessage(viewer.page, testMessage);
+      const deleteButtonAfter = getDeleteButtonForMessage(
+        viewer.page,
+        testMessage
+      );
+      await expect(editButtonAfter).not.toBeVisible();
+      await expect(deleteButtonAfter).not.toBeVisible();
+    } finally {
+      await viewer.close();
     }
-
-    await navigateToConversation(page);
-
-    // Step 1: send a fresh message via the real encrypted UI path. This
-    // produces a proper encrypted row in the messages table that matches
-    // how real users send messages.
-    const timestamp = Date.now();
-    const testMessage = `T117 window ${timestamp}`;
-    await sendMessage(page, testMessage);
-
-    // Step 2: sanity-check the recent message shows Edit/Delete buttons.
-    // If this fails, the test is meaningless because we never established
-    // the "buttons visible on recent messages" baseline.
-    const editButtonBefore = getEditButtonForMessage(page, testMessage);
-    await expect(editButtonBefore).toBeVisible({ timeout: 10000 });
-
-    // Step 3: find that message in the DB and backdate its created_at by
-    // 16 minutes. Messages are encrypted so we match by sequence_number —
-    // the most recent message for this conversation/sender is ours.
-    const { data: latest } = await adminClient
-      .from('messages')
-      .select('id, sequence_number')
-      .eq('conversation_id', conversationId)
-      .eq('deleted', false)
-      .order('sequence_number', { ascending: false })
-      .limit(1);
-
-    expect(latest?.length).toBe(1);
-    const messageId = latest![0].id;
-
-    const sixteenMinutesAgo = new Date(
-      Date.now() - 16 * 60 * 1000
-    ).toISOString();
-    const { error: updateError } = await adminClient
-      .from('messages')
-      .update({ created_at: sixteenMinutesAgo })
-      .eq('id', messageId);
-    expect(updateError).toBeNull();
-
-    // Step 4: reload the conversation so the UI re-reads created_at from DB.
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page);
-    await handleReAuthModal(page, TEST_USER_1.password);
-    await navigateToConversation(page);
-
-    // Step 5: the same message should still be visible, but its Edit/Delete
-    // buttons should now be HIDDEN because the 15-minute window has elapsed.
-    await expect(page.getByText(testMessage)).toBeVisible({ timeout: 10000 });
-    const editButtonAfter = getEditButtonForMessage(page, testMessage);
-    const deleteButtonAfter = getDeleteButtonForMessage(page, testMessage);
-    await expect(editButtonAfter).not.toBeVisible();
-    await expect(deleteButtonAfter).not.toBeVisible();
   });
 
   test('should not show Edit/Delete buttons on received messages', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    // Bidirectional: the partner sends a message so the viewer has a genuine
+    // RECEIVED bubble (chat-start). Open both contexts CONCURRENTLY — serial
+    // opens each pay a gate-load + Argon2id unlock and blow the per-test budget.
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
+    forwardConsole(viewer.page, 'viewer');
+    forwardConsole(partner.page, 'partner');
+    try {
+      // Partner sends a message; it arrives at the viewer as a received message.
+      const timestamp = Date.now();
+      const receivedMessage = `From partner ${timestamp}`;
+      await sendMessage(partner.page, receivedMessage);
 
-    // This test requires two users in the same conversation
-    // For now, we'll verify that the page loads and check for received messages
+      // Viewer should see the received message (poll with reloads to survive
+      // cloud read-after-write tail latency; the conversation is tiny).
+      const receivedLocator = viewer.page.getByText(receivedMessage);
+      for (let i = 0; i < 5; i++) {
+        await scrollThreadToBottom(viewer.page);
+        if (
+          await receivedLocator.isVisible({ timeout: 8000 }).catch(() => false)
+        ) {
+          break;
+        }
+        await viewer.page.reload({ waitUntil: 'domcontentloaded' });
+        await viewer.page.waitForSelector('[data-testid="message-thread"]', {
+          state: 'visible',
+          timeout: 30000,
+        });
+      }
+      await scrollThreadToBottom(viewer.page);
+      await expect(receivedLocator).toBeVisible({ timeout: 15000 });
 
-    await navigateToConversation(page);
-
-    // Get all chat bubbles on the left side (received messages use chat-start class)
-    const receivedMessages = page.locator('.chat-start');
-    const count = await receivedMessages.count();
-
-    // Check each received message bubble
-    for (let i = 0; i < Math.min(count, 5); i++) {
-      const bubble = receivedMessages.nth(i);
-
-      // Received messages should never have Edit/Delete buttons
+      // The received message bubble must NOT expose Edit/Delete buttons.
+      const receivedBubble = getMessageBubble(viewer.page, receivedMessage);
       await expect(
-        bubble.getByRole('button', { name: 'Edit message' })
+        receivedBubble.getByRole('button', { name: 'Edit message' })
       ).not.toBeVisible();
       await expect(
-        bubble.getByRole('button', { name: 'Delete message' })
+        receivedBubble.getByRole('button', { name: 'Delete message' })
       ).not.toBeVisible();
+
+      // Belt-and-suspenders: every chat-start (received) bubble on screen must
+      // likewise have no Edit/Delete buttons.
+      const receivedMessages = viewer.page.locator('.chat-start');
+      const count = await receivedMessages.count();
+      for (let i = 0; i < Math.min(count, 5); i++) {
+        const bubble = receivedMessages.nth(i);
+        await expect(
+          bubble.getByRole('button', { name: 'Edit message' })
+        ).not.toBeVisible();
+        await expect(
+          bubble.getByRole('button', { name: 'Delete message' })
+        ).not.toBeVisible();
+      }
+    } finally {
+      await viewer.close();
+      await partner.close();
     }
   });
 });
 
 test.describe('Accessibility', () => {
-  test.beforeEach(async ({ page }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (
-        text.includes('ConversationView') ||
-        text.includes('sendMessage') ||
-        msg.type() === 'error'
-      ) {
-        console.log(`[browser console.${msg.type()}] ${text}`);
-      }
-    });
-    await signIn(page, TEST_USER_1.email, TEST_USER_1.password);
+  let fixture: IsolatedConversation | null = null;
+
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
-  test('T130: edit mode should have proper ARIA labels', async ({ page }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
+  });
 
-    await navigateToConversation(page);
+  test('T130: edit mode should have proper ARIA labels', async ({
+    browser,
+  }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const message = `A11y test ${timestamp}`;
+      await sendMessage(viewer.page, message);
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const message = `A11y test ${timestamp}`;
-    await sendMessage(page, message);
+      // Enter edit mode using the helper to find our specific message's button
+      const editButton = getEditButtonForMessage(viewer.page, message);
+      await editButton.click();
 
-    // Enter edit mode using the helper to find our specific message's button
-    const editButton = getEditButtonForMessage(page, message);
-    await editButton.click();
+      // Check ARIA labels - use role-based selectors
+      const editTextarea = viewer.page.getByRole('textbox', {
+        name: /Edit message content/i,
+      });
+      await expect(editTextarea).toBeVisible();
 
-    // Check ARIA labels - use role-based selectors
-    const editTextarea = page.getByRole('textbox', {
-      name: /Edit message content/i,
-    });
-    await expect(editTextarea).toBeVisible();
+      const cancelButton = viewer.page.getByRole('button', { name: /Cancel/i });
+      await expect(cancelButton).toBeVisible();
 
-    const cancelButton = page.getByRole('button', { name: /Cancel/i });
-    await expect(cancelButton).toBeVisible();
-
-    const saveButton = page.getByRole('button', { name: /Save/i });
-    await expect(saveButton).toBeVisible();
+      const saveButton = viewer.page.getByRole('button', { name: /Save/i });
+      await expect(saveButton).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 
   test('delete confirmation modal should have proper ARIA labels', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const message = `Modal a11y ${timestamp}`;
+      await sendMessage(viewer.page, message);
 
-    await navigateToConversation(page);
+      // Open delete modal using helper to find our specific message's button
+      const deleteButton = getDeleteButtonForMessage(viewer.page, message);
+      await deleteButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const message = `Modal a11y ${timestamp}`;
-    await sendMessage(page, message);
+      // Check modal ARIA attributes
+      const modal = viewer.page.getByRole('dialog', {
+        name: /Delete Message/i,
+      });
+      await expect(modal).toBeVisible();
 
-    // Open delete modal using helper to find our specific message's button
-    const deleteButton = getDeleteButtonForMessage(page, message);
-    await deleteButton.click();
+      // Button accessible names are "Cancel deletion" and "Confirm deletion"
+      const cancelButton = modal.getByRole('button', {
+        name: /Cancel deletion/i,
+      });
+      await expect(cancelButton).toBeVisible();
 
-    // Check modal ARIA attributes
-    const modal = page.getByRole('dialog', { name: /Delete Message/i });
-    await expect(modal).toBeVisible();
-
-    // Check button labels within the modal
-    // Button accessible names are "Cancel deletion" and "Confirm deletion"
-    const cancelButton = modal.getByRole('button', {
-      name: /Cancel deletion/i,
-    });
-    await expect(cancelButton).toBeVisible();
-
-    const confirmButton = modal.getByRole('button', {
-      name: /Confirm deletion/i,
-    });
-    await expect(confirmButton).toBeVisible();
+      const confirmButton = modal.getByRole('button', {
+        name: /Confirm deletion/i,
+      });
+      await expect(confirmButton).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 
   test('delete confirmation modal should be keyboard navigable', async ({
-    page,
+    browser,
   }) => {
-    // Skip if setup failed
-    test.skip(!setupSucceeded, setupError);
+    const viewer = await openAsViewer(browser, fixture!);
+    forwardConsole(viewer.page, 'viewer');
+    try {
+      // Send a unique message
+      const timestamp = Date.now();
+      const message = `Keyboard nav ${timestamp}`;
+      await sendMessage(viewer.page, message);
 
-    await navigateToConversation(page);
+      // Open delete modal using helper to find our specific message's button
+      const deleteButton = getDeleteButtonForMessage(viewer.page, message);
+      await deleteButton.click();
 
-    // Send a unique message
-    const timestamp = Date.now();
-    const message = `Keyboard nav ${timestamp}`;
-    await sendMessage(page, message);
+      // Wait for modal to be fully visible and interactive
+      const modal = viewer.page.getByRole('dialog', {
+        name: /Delete Message/i,
+      });
+      await expect(modal).toBeVisible();
+      await waitForUIStability(viewer.page);
 
-    // Open delete modal using helper to find our specific message's button
-    const deleteButton = getDeleteButtonForMessage(page, message);
-    await deleteButton.click();
+      // Button accessible names are "Cancel deletion" and "Confirm deletion"
+      const cancelButton = modal.getByRole('button', {
+        name: /Cancel deletion/i,
+      });
+      const confirmButton = modal.getByRole('button', {
+        name: /Confirm deletion/i,
+      });
 
-    // Wait for modal to be fully visible and interactive
-    const modal = page.getByRole('dialog', { name: /Delete Message/i });
-    await expect(modal).toBeVisible();
-    await waitForUIStability(page);
+      await expect(cancelButton).toBeVisible();
+      await expect(confirmButton).toBeVisible();
 
-    // Check that focusable elements exist in the modal
-    // Button accessible names are "Cancel deletion" and "Confirm deletion"
-    const cancelButton = modal.getByRole('button', {
-      name: /Cancel deletion/i,
-    });
-    const confirmButton = modal.getByRole('button', {
-      name: /Confirm deletion/i,
-    });
+      // Focus the cancel button directly and verify it can receive focus
+      await cancelButton.focus();
+      await expect(cancelButton).toBeFocused();
 
-    await expect(cancelButton).toBeVisible();
-    await expect(confirmButton).toBeVisible();
-
-    // Focus the cancel button directly and verify it can receive focus
-    await cancelButton.focus();
-    await expect(cancelButton).toBeFocused();
-
-    // Tab to confirm button
-    await page.keyboard.press('Tab');
-    await expect(confirmButton).toBeFocused();
+      // Tab to confirm button
+      await viewer.page.keyboard.press('Tab');
+      await expect(confirmButton).toBeFocused();
+    } finally {
+      await viewer.close();
+    }
   });
 });
