@@ -35,6 +35,10 @@ yarn-error.log*
 .env.backup
 .env.local
 .env.*.local
+# .env.cloud holds your REAL cloud creds (backup made by `pnpm run use:local`).
+.env.cloud
+# NOTE: .env.local-supabase is intentionally TRACKED — it holds only safe demo
+# local values (no secrets) and is the source for `pnpm run use:local`.
 
 # vercel
 .vercel
