@@ -700,13 +700,21 @@ jobs:
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
+          # Per-job worker override (set only for the *-msg-iso slice). Empty
+          # elsewhere → config default (workers:1 on CI). Routed via env.
+          WORKERS: ${{ matrix.workers }}
         run: |
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry \
-            --no-deps
+            --no-deps \
+            $WORKERS_FLAG
       - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
@@ -850,13 +858,21 @@ jobs:
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
+          # Per-job worker override (set only for the *-msg-iso slice). Empty
+          # elsewhere → config default (workers:1 on CI). Routed via env.
+          WORKERS: ${{ matrix.workers }}
         run: |
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry \
-            --no-deps
+            --no-deps \
+            $WORKERS_FLAG
       - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
