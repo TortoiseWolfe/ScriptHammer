@@ -65,8 +65,11 @@ async function globalSetup(): Promise<void> {
     );
   }
 
-  // 2. Check Supabase connectivity
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  // 2. Check Supabase connectivity (in-container admin client — prefer the
+  // compose-internal URL for the local sandbox; falls back to the public URL
+  // for cloud/CI where SUPABASE_ADMIN_URL is unset). See #121.
+  const supabaseUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
   let adminClient;
@@ -121,8 +124,10 @@ async function globalSetup(): Promise<void> {
   if (errors.length === 0) {
     console.log('\n🔑 Verifying PRIMARY user credentials...');
 
+    // Runs in the Node test process (in-container), so use the admin URL for
+    // local-sandbox reachability; falls back to the public URL on cloud/CI (#121).
     const anonClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );

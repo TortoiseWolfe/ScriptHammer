@@ -19,7 +19,6 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import * as http from 'http';
 import { STALE_THRESHOLD_MS } from '../../../src/components/organisms/AdminConversationList/AdminConversationList';
 
 const ADMIN_EMAIL = 'test@example.com';
@@ -27,15 +26,14 @@ const ADMIN_PASSWORD = 'TestPassword123!';
 
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-// Same proxy harness as admin-user-pagination.spec.ts — Chromium resolves
-// the Docker hostname to 127.0.0.1 via --host-resolver-rules, and this
-// process proxies 127.0.0.1:8000 → the real Kong gateway.
-const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
-const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
+// Local-only spec (skipped in CI). The Node test process reaches local Kong via
+// SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
+// it via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). No proxy /
+// --host-resolver-rules hack needed — see #121.
+const SUPABASE_ADMIN_URL =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const PROXY_PORT = 8004;
 
 // Seed placed safely past the threshold. Using STALE_THRESHOLD_MS * 1.5
 // rather than a hardcoded "45 days" means raising the threshold in the
@@ -48,47 +46,19 @@ const STALE_LAST_MESSAGE = new Date(
 // = 4, variant nibble = a) in case anything downstream validates format.
 const STALE_CONV_ID = 'eeeeeeee-eeee-4eee-aeee-000000000e2e';
 
-test.use({
-  launchOptions: {
-    args: [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
-  },
-});
-
 test.describe('Admin Conversation List E2E', () => {
   test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
-  let proxyServer: http.Server;
   let serviceClient: SupabaseClient;
 
   test.beforeAll(async () => {
-    // HTTP proxy setup + Supabase seeding can exceed default 30s under CI load
+    // Supabase seeding can exceed the default 30s on a cold local stack.
     test.setTimeout(60000);
-    proxyServer = http.createServer((req, res) => {
-      const options: http.RequestOptions = {
-        hostname: SUPABASE_DOCKER_HOST,
-        port: 8000,
-        path: req.url,
-        method: req.method,
-        headers: { ...req.headers, host: `${SUPABASE_DOCKER_HOST}:8000` },
-      };
-      const proxyReq = http.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode!, proxyRes.headers);
-        proxyRes.pipe(res);
-      });
-      proxyReq.on('error', () => {
-        res.writeHead(502);
-        res.end();
-      });
-      req.pipe(proxyReq);
-    });
-    await new Promise<void>((resolve) =>
-      proxyServer.listen(PROXY_PORT, '127.0.0.1', resolve)
-    );
 
     // Seed the stale conversation. service_role bypasses RLS; conversations
     // RLS is participant-only and the test process is neither participant.
-    serviceClient = createClient(SUPABASE_DOCKER_URL, SUPABASE_SERVICE_KEY, {
+    serviceClient = createClient(SUPABASE_ADMIN_URL, SUPABASE_SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
@@ -138,11 +108,10 @@ test.describe('Admin Conversation List E2E', () => {
 
   test.afterAll(async () => {
     await serviceClient?.from('conversations').delete().eq('id', STALE_CONV_ID);
-    proxyServer?.close();
   });
 
   test.beforeEach(async ({ page }) => {
-    const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -159,7 +128,10 @@ test.describe('Admin Conversation List E2E', () => {
     await page.waitForLoadState('domcontentloaded');
 
     const session = data.session;
-    const supabaseHost = new URL(SUPABASE_DOCKER_URL).hostname.split('.')[0];
+    // Storage key must match the BROWSER app's, derived from the browser URL.
+    const browserUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
+    const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
     const storageKey = `sb-${supabaseHost}-auth-token`;
     await page.evaluate(
       ({ key, accessToken, refreshToken, expiresAt, user: u }) => {

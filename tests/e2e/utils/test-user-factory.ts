@@ -84,7 +84,13 @@ let adminClient: SupabaseClient | null = null;
 export function getAdminClient(): SupabaseClient | null {
   if (adminClient) return adminClient;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  // In-container admin client: prefer SUPABASE_ADMIN_URL (the compose-internal
+  // Kong hostname, e.g. supabase-kong:8000) when running against the local
+  // sandbox, since Node-in-container can't reach the host-published localhost
+  // port. Falls back to NEXT_PUBLIC_SUPABASE_URL — which is what cloud/CI use
+  // (SUPABASE_ADMIN_URL is unset there), so those paths are unchanged. See #121.
+  const supabaseUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {

@@ -46,6 +46,7 @@ paths = [
   '''tests/.*''',
   '''docker-compose\.yml''',       # Supabase demo JWT defaults (public, not real secrets)
   '''supabase/docker/.*''',        # Local Supabase stack config with demo defaults
+  '''\.env\.local-supabase''',     # Committed LOCAL override fragment — demo keys only
 ]
 # Supabase self-hosting demo keys — published verbatim at
 # https://supabase.com/docs/guides/self-hosting/docker. JWT payload is

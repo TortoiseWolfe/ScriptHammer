@@ -17,7 +17,6 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
-import * as http from 'http';
 
 const ADMIN_EMAIL = 'test@example.com';
 const ADMIN_PASSWORD = 'TestPassword123!';
@@ -25,61 +24,22 @@ const ADMIN_PASSWORD = 'TestPassword123!';
 // Next.js basePath — empty in local dev, '/ScriptHammer' in CI/prod
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-// Docker DNS — test process resolves Docker hostnames; browser cannot
-const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
-const SUPABASE_DOCKER_URL = `http://${SUPABASE_DOCKER_HOST}:8000`;
+// Local-only spec (skipped in CI). The Node test process reaches local Kong via
+// SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
+// it via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). No proxy /
+// --host-resolver-rules hack needed — see #121.
+const SUPABASE_ADMIN_URL =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Chromium needs --host-resolver-rules to map the Docker hostname to 127.0.0.1,
-// and a local HTTP proxy forwards those requests to the real Kong.
-const PROXY_PORT = 8003;
-
-test.use({
-  launchOptions: {
-    args: [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
-  },
-});
 
 test.describe('Admin User Pagination E2E', () => {
   test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
-  let proxyServer: http.Server;
-
-  test.beforeAll(async () => {
-    // Start a local HTTP proxy so Chromium (which resolves the Docker hostname
-    // to 127.0.0.1) can reach the real Supabase Kong gateway.
-    proxyServer = http.createServer((req, res) => {
-      const options: http.RequestOptions = {
-        hostname: SUPABASE_DOCKER_HOST,
-        port: 8000,
-        path: req.url,
-        method: req.method,
-        headers: { ...req.headers, host: `${SUPABASE_DOCKER_HOST}:8000` },
-      };
-      const proxyReq = http.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode!, proxyRes.headers);
-        proxyRes.pipe(res);
-      });
-      proxyReq.on('error', () => {
-        res.writeHead(502);
-        res.end();
-      });
-      req.pipe(proxyReq);
-    });
-    await new Promise<void>((resolve) =>
-      proxyServer.listen(PROXY_PORT, '127.0.0.1', resolve)
-    );
-  });
-
-  test.afterAll(async () => {
-    proxyServer?.close();
-  });
-
   test.beforeEach(async ({ page }) => {
-    // Sign in via Supabase API (test process CAN reach Docker hostnames)
-    const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+    // Sign in via the Supabase API from the Node test process (reaches Kong via
+    // the compose-internal admin URL locally; public URL on cloud/CI).
+    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -96,9 +56,12 @@ test.describe('Admin User Pagination E2E', () => {
     await page.goto(`${BP}/`);
     await page.waitForLoadState('domcontentloaded');
 
-    // Inject the Supabase session so AuthContext picks it up.
+    // Inject the Supabase session so AuthContext picks it up. The storage key
+    // must match the BROWSER app's, derived from the browser URL.
     const session = data.session;
-    const supabaseHost = new URL(SUPABASE_DOCKER_URL).hostname.split('.')[0];
+    const browserUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
+    const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
     const storageKey = `sb-${supabaseHost}-auth-token`;
     await page.evaluate(
       ({ key, accessToken, refreshToken, expiresAt, user: u }) => {

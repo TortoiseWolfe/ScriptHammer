@@ -6,11 +6,12 @@
  * 2. Bring the network back
  * 3. Verify the queued message shows up in the conversation
  *
- * Uses a local HTTP proxy + Chromium DNS override so the browser can
- * reach the Docker-hosted Supabase. Runs in the Docker E2E container
- * without external TEST_USER_* env vars.
+ * Runs in the Docker E2E container. Against the local sandbox the browser
+ * reaches Kong directly via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321)
+ * and the Node test process reaches it via SUPABASE_ADMIN_URL (supabase-kong:8000)
+ * — no proxy / DNS-override hack needed (see #121).
  *
- * Requires: local Supabase with seed-test-user.sql and seed-test-user-b.sql applied.
+ * Requires: local Supabase up (`pnpm run dev:local`) with test users seeded.
  *
  * Run from inside the Docker container:
  *   docker exec -e SKIP_WEBSERVER=1 -e BASE_URL=http://localhost:3000 \
@@ -19,7 +20,6 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
-import * as http from 'http';
 import {
   dismissCookieBanner,
   handleReAuthModal,
@@ -35,73 +35,29 @@ const USER_B_EMAIL = 'test-user-b@example.com';
 // Next.js basePath — empty in local dev, '/ScriptHammer' in CI/prod
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-// Docker DNS — test process resolves Docker hostnames; browser cannot
-const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
-// In CI, use the cloud Supabase URL. Locally, use the Docker URL.
-const SUPABASE_URL = process.env.CI
-  ? process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  : `http://${SUPABASE_DOCKER_HOST}:8000`;
-const SUPABASE_DOCKER_URL = SUPABASE_URL;
+// Admin client URL: prefer SUPABASE_ADMIN_URL (compose-internal Kong) for the
+// local sandbox; falls back to the public URL for cloud/CI. The old proxy +
+// Chromium --host-resolver-rules hack is gone — the browser reaches local Kong
+// directly via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). See #121.
+const SUPABASE_ADMIN_URL =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-// Chromium needs --host-resolver-rules to map the Docker hostname to 127.0.0.1,
-// and a local HTTP proxy on port 8000 forwards those requests to the real Kong.
-const PROXY_PORT = 8001;
-
-// --host-resolver-rules is Chromium-only (crashes WebKit/Firefox).
-// Only needed locally for Docker DNS; CI uses cloud Supabase.
-test.use({
-  launchOptions: {
-    args: process.env.CI
-      ? []
-      : [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
-  },
-});
-
 test.describe('Offline Queue Sync E2E', () => {
-  let proxyServer: http.Server;
   let setupSucceeded = false;
   let setupError = '';
 
   test.beforeAll(async () => {
-    // Start a local HTTP proxy so Chromium can reach the real Supabase Kong gateway.
-    proxyServer = http.createServer((req, res) => {
-      const options: http.RequestOptions = {
-        hostname: SUPABASE_DOCKER_HOST,
-        port: 8000,
-        path: req.url,
-        method: req.method,
-        headers: { ...req.headers, host: `${SUPABASE_DOCKER_HOST}:8000` },
-      };
-      const proxyReq = http.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode!, proxyRes.headers);
-        proxyRes.pipe(res);
-      });
-      proxyReq.on('error', () => {
-        res.writeHead(502);
-        res.end();
-      });
-      req.pipe(proxyReq);
-    });
-    await new Promise<void>((resolve) =>
-      proxyServer.listen(PROXY_PORT, '127.0.0.1', resolve)
-    );
-
     // Ensure a conversation exists between user A and user B
     if (!SUPABASE_SERVICE_KEY) {
       setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
       return;
     }
 
-    const adminClient = createClient(
-      SUPABASE_DOCKER_URL,
-      SUPABASE_SERVICE_KEY,
-      {
-        auth: { autoRefreshToken: false, persistSession: false },
-      }
-    );
+    const adminClient = createClient(SUPABASE_ADMIN_URL, SUPABASE_SERVICE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
     // Get user IDs
     const { data: usersData } = await adminClient.auth.admin.listUsers();
@@ -167,10 +123,6 @@ test.describe('Offline Queue Sync E2E', () => {
     await cleanupOldMessages(USER_A_EMAIL, USER_B_EMAIL);
   });
 
-  test.afterAll(async () => {
-    proxyServer?.close();
-  });
-
   test('should queue a message offline and sync when reconnected', async ({
     browser,
   }) => {
@@ -182,8 +134,9 @@ test.describe('Offline Queue Sync E2E', () => {
     const page = await context.newPage();
 
     try {
-      // Sign in via Supabase API (test process CAN reach Docker hostnames)
-      const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+      // Sign in via Supabase API from the Node test process (reaches Kong via
+      // the compose-internal admin URL locally; public URL on cloud/CI).
+      const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
         auth: { autoRefreshToken: false, persistSession: false },
       });
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -200,9 +153,13 @@ test.describe('Offline Queue Sync E2E', () => {
       await page.goto(`${BP}/`);
       await page.waitForLoadState('domcontentloaded');
 
-      // Inject the Supabase session so AuthContext picks it up.
+      // Inject the Supabase session so AuthContext picks it up. The storage key
+      // must match what the BROWSER app uses, which derives it from the browser
+      // URL (NEXT_PUBLIC_SUPABASE_URL), not the admin URL.
       const session = data.session;
-      const supabaseHost = new URL(SUPABASE_DOCKER_URL).hostname.split('.')[0];
+      const browserUrl =
+        process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
+      const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
       const sbStorageKey = `sb-${supabaseHost}-auth-token`;
       await page.evaluate(
         ({ key, accessToken, refreshToken, expiresAt, user: u }) => {

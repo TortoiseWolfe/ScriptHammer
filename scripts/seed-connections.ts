@@ -7,8 +7,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 
+// In-container admin client: prefer SUPABASE_ADMIN_URL (compose-internal Kong)
+// for the local sandbox; falls back to the public URL for cloud/CI (#121).
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 

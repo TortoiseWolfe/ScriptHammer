@@ -17,7 +17,6 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import * as http from 'http';
 import {
   dismissCookieBanner,
   handleReAuthModal,
@@ -36,27 +35,14 @@ const MESSAGING_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD!;
 
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-const SUPABASE_DOCKER_HOST =
-  process.env.SUPABASE_DOCKER_HOST || 'scripthammer-supabase-kong-1';
-// In CI, use the cloud Supabase URL. Locally, use the Docker URL.
-const SUPABASE_URL = process.env.CI
-  ? process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-  : `http://${SUPABASE_DOCKER_HOST}:8000`;
-const SUPABASE_DOCKER_URL = SUPABASE_URL;
+// Node test process reaches local Kong via SUPABASE_ADMIN_URL (compose-internal
+// supabase-kong:8000); the browser reaches it via NEXT_PUBLIC_SUPABASE_URL
+// (host.docker.internal:54321). Falls back to the public URL on cloud/CI. No
+// proxy / --host-resolver-rules hack needed — see #121.
+const SUPABASE_ADMIN_URL =
+  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-const PROXY_PORT = 8002;
-
-// --host-resolver-rules is Chromium-only (crashes WebKit/Firefox).
-// Only needed locally for Docker DNS; CI uses cloud Supabase.
-test.use({
-  launchOptions: {
-    args: process.env.CI
-      ? []
-      : [`--host-resolver-rules=MAP ${SUPABASE_DOCKER_HOST} 127.0.0.1`],
-  },
-});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -67,7 +53,7 @@ async function signInAndInjectSession(
   email: string,
   password: string
 ) {
-  const supabase = createClient(SUPABASE_DOCKER_URL, SUPABASE_ANON_KEY, {
+  const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -84,7 +70,9 @@ async function signInAndInjectSession(
   await page.waitForLoadState('domcontentloaded');
 
   const session = data.session;
-  const supabaseHost = new URL(SUPABASE_DOCKER_URL).hostname.split('.')[0];
+  // Storage key must match the BROWSER app's, derived from the browser URL.
+  const browserUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
+  const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
   const sbStorageKey = `sb-${supabaseHost}-auth-token`;
   await page.evaluate(
     ({ key, accessToken, refreshToken, expiresAt, user: u }) => {
@@ -215,49 +203,18 @@ async function typeAndSend(
 test.describe('Message Delete Placeholder E2E', () => {
   test.describe.configure({ mode: 'serial' });
 
-  let proxyServer: http.Server;
   let adminClient: SupabaseClient;
   let setupSucceeded = false;
   let setupError = '';
   let conversationId = '';
 
   test.beforeAll(async () => {
-    proxyServer = http.createServer((req, res) => {
-      const options: http.RequestOptions = {
-        hostname: SUPABASE_DOCKER_HOST,
-        port: 8000,
-        path: req.url,
-        method: req.method,
-        headers: { ...req.headers, host: `${SUPABASE_DOCKER_HOST}:8000` },
-      };
-      const proxyReq = http.request(options, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode!, proxyRes.headers);
-        proxyRes.pipe(res);
-      });
-      proxyReq.on('error', () => {
-        res.writeHead(502);
-        res.end();
-      });
-      req.pipe(proxyReq);
-    });
-    await new Promise<void>((resolve, reject) => {
-      proxyServer.once('error', (err: NodeJS.ErrnoException) => {
-        if (err.code === 'EADDRINUSE') {
-          proxyServer = undefined as unknown as http.Server;
-          resolve();
-        } else {
-          reject(err);
-        }
-      });
-      proxyServer.listen(PROXY_PORT, '127.0.0.1', resolve);
-    });
-
     if (!SUPABASE_SERVICE_KEY) {
       setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
       return;
     }
 
-    adminClient = createClient(SUPABASE_DOCKER_URL, SUPABASE_SERVICE_KEY, {
+    adminClient = createClient(SUPABASE_ADMIN_URL, SUPABASE_SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
@@ -332,10 +289,6 @@ test.describe('Message Delete Placeholder E2E', () => {
   test.beforeAll(async () => {
     if (!setupSucceeded) return;
     await cleanupOldMessages(USER_A_EMAIL, USER_B_EMAIL);
-  });
-
-  test.afterAll(async () => {
-    proxyServer?.close();
   });
 
   test('should show [Message deleted] placeholder and preserve adjacent messages', async ({
@@ -566,7 +519,10 @@ test.describe('Message Delete Placeholder E2E', () => {
         {
           msgId: middleMessageId,
           anonKey: SUPABASE_ANON_KEY,
-          supabaseUrl: SUPABASE_URL,
+          // This fetch runs IN THE BROWSER, so it needs the browser-reachable
+          // URL (host.docker.internal:54321 locally), not the admin URL.
+          supabaseUrl:
+            process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL,
         }
       );
 
