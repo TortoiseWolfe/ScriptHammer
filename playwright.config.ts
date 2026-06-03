@@ -25,6 +25,46 @@ function createDeviceConfig(viewport: TestViewport) {
 }
 
 /**
+ * #116 Phase 2 — messaging specs converted to per-test fixture isolation
+ * (seedIsolatedConversation / openAsViewer). These own their data, so they run
+ * in a parallel `*-msg-iso` project at workers>1 instead of the serial
+ * `*-msg` shard. Add a spec here as it is converted; the serial `*-msg` project
+ * `testIgnore`s this same list so nothing runs twice.
+ *
+ * NOTE: this is the SINGLE source of truth — `MSG_ISO_GLOBS` is used as the iso
+ * projects' `testMatch` AND the serial projects' `testIgnore`.
+ */
+const MSG_ISO_GLOBS = [
+  '**/messaging/encrypted-messaging.spec.ts',
+  '**/messaging/real-time-delivery.spec.ts',
+  '**/messaging/offline-queue.spec.ts',
+  '**/messaging/offline-queue-sync.spec.ts',
+  '**/messaging/cross-window-delivery.spec.ts',
+  '**/messaging/complete-user-workflow.spec.ts',
+  '**/messaging/message-delete-placeholder.spec.ts',
+  '**/messaging/message-editing.spec.ts',
+  '**/messaging/performance.spec.ts',
+  '**/messaging/oauth-setup-modal.spec.ts',
+  '**/messaging/gdpr-compliance.spec.ts',
+  '**/messaging/friend-requests.spec.ts',
+  '**/messaging/group-chat-multiuser.spec.ts',
+];
+
+/* Parallelism for the iso projects is driven by Playwright's `--workers` CLI
+ * flag passed per CI job (so only the iso shard runs workers>1; gen/serial msg
+ * stay at the global `workers:1`). Locally, `fullyParallel` on the iso project
+ * + the default worker pool gives parallelism for free. */
+
+/* Per-test budget for the iso messaging projects. A bidirectional test opens
+ * TWO browser contexts, each paying a gate-load (~11s) + Argon2id unlock (~3s,
+ * TIME_COST=3 — never lowered) before the first send. The Playwright default
+ * (30s) is exhausted by the two opens alone, so the test would time out and its
+ * afterEach would cascade-delete the partner's key mid-send → a spurious 406
+ * "needs to sign in". Size the budget to the work this slice actually does.
+ * Scoped to the iso projects so real hangs elsewhere still fail fast. */
+const MSG_ISO_TIMEOUT = 180_000;
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -40,11 +80,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* 1 worker on CI: with 6 shards × 3 browsers = 18 parallel jobs,
-   * intra-shard parallelism causes cross-file interference (e.g.
-   * friend-requests deletes connections while encrypted-messaging
-   * verifies they exist). Sequential execution within each shard
-   * is fast enough since load is spread across 18 jobs. */
+  /* Default to 1 worker on CI. The *-gen and serial *-msg projects share
+   * fixed test users, so intra-shard parallelism would cause cross-file
+   * interference. The per-test-isolated *-msg-iso projects override this to
+   * workers>1 via the CI job's --workers flag (#116 Phase 2) — each of their
+   * tests owns its own throwaway users, so there is no shared state to race. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -146,10 +186,27 @@ export default defineConfig({
     // Messaging tests isolated into their own project — sharded separately
     // in CI to prevent state contention (friend-requests deletes connections
     // that encrypted-messaging/group-chat/offline-queue need).
+    // Serial (workers:1): the UNconverted specs that still share PRIMARY/TERTIARY.
     {
       name: 'chromium-msg',
       testMatch: '**/messaging/**',
-      testIgnore: ['**/examples/**'],
+      testIgnore: ['**/examples/**', ...MSG_ISO_GLOBS],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+
+    // #116 Phase 2: messaging specs converted to per-test fixture isolation.
+    // These own their data, so they run fully parallel (workers>1 via the CI
+    // job's `--workers` flag). storageState is irrelevant — each test injects
+    // its own throwaway viewer session — but kept for parity.
+    {
+      name: 'chromium-msg-iso',
+      testMatch: MSG_ISO_GLOBS,
+      fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -178,7 +235,18 @@ export default defineConfig({
     {
       name: 'firefox-msg',
       testMatch: '**/messaging/**',
-      testIgnore: ['**/examples/**'],
+      testIgnore: ['**/examples/**', ...MSG_ISO_GLOBS],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Firefox'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+    {
+      name: 'firefox-msg-iso',
+      testMatch: MSG_ISO_GLOBS,
+      fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Firefox'],
@@ -205,7 +273,18 @@ export default defineConfig({
     {
       name: 'webkit-msg',
       testMatch: '**/messaging/**',
-      testIgnore: ['**/examples/**'],
+      testIgnore: ['**/examples/**', ...MSG_ISO_GLOBS],
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Safari'],
+        storageState: './tests/e2e/fixtures/storage-state-auth.json',
+      },
+    },
+    {
+      name: 'webkit-msg-iso',
+      testMatch: MSG_ISO_GLOBS,
+      fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Safari'],

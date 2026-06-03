@@ -27,20 +27,23 @@ echo ""
 echo "📦 Starting local Supabase services..."
 docker compose --profile supabase up -d
 
-# 3. Wait for Kong (the API gateway the app + scripts talk to) to be healthy.
+# 3. Wait for Kong (the API gateway the app + scripts talk to) to be ready.
+#    Kong returns HTTP 401 (not 2xx) on /auth/v1/health without an apikey — that
+#    still means it's up and routing, so accept ANY HTTP status (000 = not yet
+#    listening). Do NOT use `curl -f`, which treats 401 as a failure.
 echo ""
 echo "⏳ Waiting for Kong to be ready (http://localhost:54321)..."
 ATTEMPTS=0
-until curl -sf -o /dev/null "http://localhost:54321/auth/v1/health" 2>/dev/null; do
+until [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 "http://localhost:54321/auth/v1/health" 2>/dev/null)" != "000" ]; do
   ATTEMPTS=$((ATTEMPTS + 1))
   if [ "$ATTEMPTS" -ge 60 ]; then
-    echo "❌ Kong did not become healthy within ~2 minutes."
+    echo "❌ Kong did not respond within ~2 minutes."
     echo "   Check: docker compose --profile supabase ps"
     exit 1
   fi
   sleep 2
 done
-echo "✓ Kong is healthy."
+echo "✓ Kong is responding."
 
 # 4. Restart the app so the dev server rebuilds with the local NEXT_PUBLIC_SUPABASE_URL.
 echo ""

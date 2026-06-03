@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: '0 6 * * 1'  # Monday 6 AM UTC — full 3-browser run
+    - cron: '0 6 * * 1' # Monday 6 AM UTC — full 3-browser run
   workflow_dispatch:
 
 concurrency:
@@ -395,6 +395,17 @@ jobs:
           # messaging tests within ONE shard per browser eliminates the
           # cross-shard data race we spent 9 rounds patching piecemeal.
           - { project: chromium-msg, browser: chromium, shard: 1/1 }
+          # #116 Phase 2 — per-test fixture-isolation specs run as their OWN
+          # parallel slice at workers>1 (each test owns its data; no shared-user
+          # race). This is the CI validation gate: prove the cloud free-tier
+          # sustains parallel signups before converting the rest. workers:2 is
+          # conservative — raise only after this proves green & flake-free.
+          - {
+              project: chromium-msg-iso,
+              browser: chromium,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: chromium-gen, browser: chromium, shard: 1/6 }
           - { project: chromium-gen, browser: chromium, shard: 2/6 }
           - { project: chromium-gen, browser: chromium, shard: 3/6 }
@@ -524,18 +535,27 @@ jobs:
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
+          # Per-job worker override (only set for the *-msg-iso slice). Empty
+          # for every other job → Playwright uses the config default (workers:1
+          # on CI). Routed via env per workflow-injection guidance.
+          WORKERS: ${{ matrix.workers }}
         run: |
           # --no-deps: skip the 'setup' project dependency. The auth-setup
           # job already ran setup once (with chromium) and uploaded the
           # auth-state artifact, which we downloaded above. Without --no-deps,
           # Playwright tries to re-run setup with the matrix browser, which
           # fails because firefox/webkit shards don't install chromium.
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry \
-            --no-deps
+            --no-deps \
+            $WORKERS_FLAG
 
       - name: Upload blob report
         if: always()
@@ -562,6 +582,13 @@ jobs:
         include:
           # msg runs as a single shard (see chromium matrix note above).
           - { project: firefox-msg, browser: firefox, shard: 1/1 }
+          # #116 Phase 2 — per-test fixture-isolation slice at workers>1.
+          - {
+              project: firefox-msg-iso,
+              browser: firefox,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: firefox-gen, browser: firefox, shard: 1/6 }
           - { project: firefox-gen, browser: firefox, shard: 2/6 }
           - { project: firefox-gen, browser: firefox, shard: 3/6 }
@@ -673,13 +700,21 @@ jobs:
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
+          # Per-job worker override (set only for the *-msg-iso slice). Empty
+          # elsewhere → config default (workers:1 on CI). Routed via env.
+          WORKERS: ${{ matrix.workers }}
         run: |
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry \
-            --no-deps
+            --no-deps \
+            $WORKERS_FLAG
       - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
@@ -705,6 +740,13 @@ jobs:
         include:
           # msg runs as a single shard (see chromium matrix note above).
           - { project: webkit-msg, browser: webkit, shard: 1/1 }
+          # #116 Phase 2 — per-test fixture-isolation slice at workers>1.
+          - {
+              project: webkit-msg-iso,
+              browser: webkit,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: webkit-gen, browser: webkit, shard: 1/6 }
           - { project: webkit-gen, browser: webkit, shard: 2/6 }
           - { project: webkit-gen, browser: webkit, shard: 3/6 }
@@ -816,13 +858,21 @@ jobs:
           TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
           PROJECT: ${{ matrix.project }}
           SHARD: ${{ matrix.shard }}
+          # Per-job worker override (set only for the *-msg-iso slice). Empty
+          # elsewhere → config default (workers:1 on CI). Routed via env.
+          WORKERS: ${{ matrix.workers }}
         run: |
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
           pnpm exec playwright test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
             --trace=on-first-retry \
-            --no-deps
+            --no-deps \
+            $WORKERS_FLAG
       - name: Upload blob report
         if: always()
         uses: actions/upload-artifact@v4
