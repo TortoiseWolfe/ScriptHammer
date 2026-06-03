@@ -1,204 +1,82 @@
 /**
  * E2E Test for Encrypted Messaging Flow
- * Task: T044
+ * Task: T044 — #116 Phase 2: per-test fixture isolation (workers>1).
+ *
+ * Every test seeds its OWN throwaway viewer + partner + conversation via
+ * seedIsolatedConversation(), so nothing is shared between tests and the spec
+ * runs `fullyParallel` (no serial, no cleanupOldMessages, no shared
+ * PRIMARY/TERTIARY contention). See tests/e2e/utils/test-user-factory.ts and
+ * the #116 roadmap for the rationale.
  *
  * Tests:
- * 1. Send encrypted message from User A → User B
- * 2. User B receives and decrypts message correctly
- * 3. Verify database only stores ciphertext (zero-knowledge)
- * 4. Verify encryption keys never sent to server
- * 5. Test delivery status indicators
- * 6. Test pagination and message history
+ * 1. Send encrypted message from viewer → partner, partner replies, viewer sees it
+ * 2. Verify database only stores ciphertext (zero-knowledge)
+ * 3. Test delivery status indicators
+ * 4. Load message history with pagination
+ * 5. Verify private keys never sent to server
  */
 
 import { test, expect } from '@playwright/test';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
-  handleReAuthModal,
-  dismissCookieBanner,
+  seedIsolatedConversation,
+  deleteIsolatedConversation,
+  openAsViewer,
+  openAsPartner,
   fillMessageInput,
-  cleanupOldMessages,
   scrollThreadToBottom,
-  getAdminClient as getTestAdminClient,
-  getUserByEmail,
+  getAdminClient,
+  type IsolatedConversation,
 } from '../utils/test-user-factory';
 
-const BASE_URL = process.env.NEXT_PUBLIC_DEPLOY_URL || 'http://localhost:3000';
+// Per-test isolation removes the shared-user data race that forced serial mode.
+test.describe.configure({ mode: 'parallel' });
 
-// Test users - use PRIMARY and TERTIARY from standardized test fixtures (Feature 026)
-const USER_A = {
-  email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-};
-
-const USER_B = {
-  email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
-  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
-};
-
-// Supabase admin client for database verification
-const getAdminClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return null;
+/**
+ * Wait for `text` to render in a thread that updates via polling (~10s), with
+ * page reloads between attempts to survive cloud read-after-write tail latency.
+ * Each isolated conversation is tiny, so this converges fast — no 10×reload loop.
+ */
+async function waitForMessageWithReload(
+  page: import('@playwright/test').Page,
+  text: string,
+  reopenThread: () => Promise<unknown>,
+  attempts = 5
+): Promise<void> {
+  const locator = page.getByText(text);
+  for (let i = 0; i < attempts; i++) {
+    await scrollThreadToBottom(page);
+    if (await locator.isVisible({ timeout: 12000 }).catch(() => false)) return;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await reopenThread();
   }
-
-  return createClient(supabaseUrl, supabaseServiceKey);
-};
-
-// Shared across describe blocks — set in 'Encrypted Messaging Flow' beforeAll
-let testConversationId = '';
+  // Final assertion — surfaces a real failure if it never arrived.
+  await scrollThreadToBottom(page);
+  await expect(locator).toBeVisible({ timeout: 15000 });
+}
 
 test.describe('Encrypted Messaging Flow', () => {
-  // Serial: tests share auth state and Realtime subscriptions.
-  // Parallel execution causes subscription contention on Supabase Cloud free tier.
-  // Timeout 900000ms: "should send and receive encrypted message between
-  // two users" has a 10-retry × (10s isVisible + 5s wait + reload +
-  // handleReAuthModal ~20s + message-thread wait ~30s) reload loop to
-  // survive Supabase Cloud free-tier tail latency under 24-shard load.
-  // Worst-case budget ≈ 650s; 600s was just barely not enough on
-  // webkit-msg (test timed at final toBeVisible after all 10 retries).
-  // 900s = 15 min buys comfortable margin without being unreasonable.
-  test.describe.configure({ mode: 'serial', timeout: 900000 });
+  let fixture: IsolatedConversation | null = null;
 
-  // Track if setup succeeded - tests will skip if not
-  let setupSucceeded = false;
-  let setupError = '';
-
-  // Verify test data created by auth.setup.ts exists
-  test.beforeAll(async () => {
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      setupError = 'SUPABASE_SERVICE_ROLE_KEY not configured';
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-
-    if (
-      USER_A.email === 'test@example.com' ||
-      USER_B.email === 'test-user-b@example.com'
-    ) {
-      setupError =
-        'TEST_USER_PRIMARY_EMAIL or TEST_USER_TERTIARY_EMAIL not configured';
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-
-    const adminClient = getTestAdminClient();
-    if (!adminClient) {
-      setupError = 'Admin client unavailable';
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-
-    const userA = await getUserByEmail(USER_A.email);
-    const userB = await getUserByEmail(USER_B.email);
-
-    if (!userA || !userB) {
-      setupError = `Test users not found: ${!userA ? USER_A.email : ''} ${!userB ? USER_B.email : ''}`;
-      console.error(`❌ ${setupError}`);
-      return;
-    }
-
-    // Ensure connection exists (auth.setup.ts creates it, but self-heal
-    // in case friend-requests cleanup or Supabase contention deleted it)
-    const { data: existing } = await adminClient
-      .from('user_connections')
-      .select('id, status')
-      .or(
-        `and(requester_id.eq.${userA.id},addressee_id.eq.${userB.id}),and(requester_id.eq.${userB.id},addressee_id.eq.${userA.id})`
-      )
-      .maybeSingle();
-
-    if (!existing) {
-      const { error } = await adminClient.from('user_connections').insert({
-        requester_id: userA.id,
-        addressee_id: userB.id,
-        status: 'accepted',
-      });
-      if (error) {
-        setupError = `Failed to create connection: ${error.message}`;
-        console.error(`❌ ${setupError}`);
-        return;
-      }
-      console.log('✓ Connection created (self-heal)');
-    } else if (existing.status !== 'accepted') {
-      await adminClient
-        .from('user_connections')
-        .update({ status: 'accepted' })
-        .eq('id', existing.id);
-      console.log('✓ Connection updated to accepted');
-    } else {
-      console.log('✓ Connection already exists');
-    }
-
-    // Ensure conversation exists
-    const [p1, p2] =
-      userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-
-    const { data: existingConv } = await adminClient
-      .from('conversations')
-      .select('id')
-      .eq('participant_1_id', p1)
-      .eq('participant_2_id', p2)
-      .maybeSingle();
-
-    if (!existingConv) {
-      const { data: newConv, error: convError } = await adminClient
-        .from('conversations')
-        .insert({ participant_1_id: p1, participant_2_id: p2 })
-        .select('id')
-        .single();
-      if (convError || !newConv) {
-        setupError = `Failed to create conversation: ${convError?.message}`;
-        console.error(`❌ ${setupError}`);
-        return;
-      }
-      testConversationId = newConv.id;
-      console.log('✓ Conversation created (self-heal):', testConversationId);
-    } else {
-      testConversationId = existingConv.id;
-      console.log('✓ Conversation already exists:', testConversationId);
-    }
-
-    setupSucceeded = true;
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
-  // Clean up old messages from previous CI runs so the conversation
-  // starts with < 100 messages (virtual scrolling threshold).
-  test.beforeAll(async () => {
-    if (!setupSucceeded) return;
-    await cleanupOldMessages(USER_A.email, USER_B.email);
-  });
-
-  // Skip all tests if setup failed
-  test.beforeEach(async ({}, testInfo) => {
-    if (!setupSucceeded) {
-      testInfo.skip(true, `Test setup failed: ${setupError}`);
-    }
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
   });
 
   test('should send and receive encrypted message between two users', async ({
     browser,
   }) => {
-    // Both users come from pre-authenticated storage states seeded by
-    // auth.setup.ts. Live performSignIn across concurrent CI shards was
-    // cumulatively exceeding Supabase's 5-attempt brute-force lockout.
-    const contextA = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    const contextB = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
-    });
+    const viewer = await openAsViewer(browser, fixture!);
+    const partner = await openAsPartner(browser, fixture!);
 
-    const pageA = await contextA.newPage();
-    const pageB = await contextB.newPage();
-
-    // Forward browser console from BOTH pages for CI diagnostics
+    // Forward browser console from both pages for CI diagnostics.
     for (const [label, pg] of [
-      ['pageA', pageA],
-      ['pageB', pageB],
+      ['viewer', viewer.page],
+      ['partner', partner.page],
     ] as const) {
       pg.on('console', (msg) => {
         const text = msg.text();
@@ -206,9 +84,6 @@ test.describe('Encrypted Messaging Flow', () => {
           text.includes('sendMessage') ||
           text.includes('ConversationView') ||
           text.includes('getMessageHistory') ||
-          text.includes('getUserPublicKey') ||
-          text.includes('restoreKeysFromCache') ||
-          text.includes('deriveKeys') ||
           text.includes('DECRYPTION') ||
           msg.type() === 'error'
         ) {
@@ -218,138 +93,44 @@ test.describe('Encrypted Messaging Flow', () => {
     }
 
     try {
-      // ===== STEP 1: User A already authenticated via storage-state-auth =====
-      // ===== STEP 2: User B already authenticated via storage-state-auth-b =====
-      // Both pre-authenticated by auth.setup.ts; no live sign-in needed here.
+      // ===== Viewer sends an encrypted message =====
+      const testMessage = `Test encrypted message ${Date.now()}`;
+      await fillMessageInput(viewer.page, testMessage);
+      const sendButton = viewer.page.getByRole('button', { name: /send/i });
+      await sendButton.click();
+      await expect(sendButton).not.toContainText('Sending', { timeout: 60000 });
 
-      // ===== STEP 3: User A navigates directly to conversation =====
-      // Navigate via URL with conversation ID to bypass the slow conversation
-      // list query (3+ minutes on Supabase free tier with 18 concurrent CI jobs).
-      await pageA.goto(
-        `${BASE_URL}/messages?conversation=${testConversationId}`,
-        { waitUntil: 'domcontentloaded' }
-      );
-      await handleReAuthModal(pageA, USER_A.password);
-
-      // Wait for conversation view to mount (handleReAuthModal + Argon2id can take 30-45s on CI)
-      await pageA.waitForSelector('[data-testid="message-thread"]', {
-        state: 'visible',
+      await scrollThreadToBottom(viewer.page);
+      await expect(viewer.page.getByText(testMessage)).toBeVisible({
         timeout: 60000,
       });
 
-      // Wait for the Realtime subscription to actually be listening before
-      // sending. Without this, a send that fires between mount and SUBSCRIBE
-      // publishes to nobody and the receiver's reload-fallback has to do
-      // the heavy lifting — which under 24-shard Supabase free-tier load
-      // occasionally exceeds the 6x30s retry budget on the receiver side.
-      await pageA
-        .waitForSelector('body[data-messages-subscribed]', { timeout: 30000 })
-        .catch(() => {
-          // Readiness signal absent (feature flag off or hook not mounted) —
-          // proceed with best effort; the existing retry loop handles drops.
-        });
-
-      // ===== STEP 5: User A sends an encrypted message =====
-      // Capture ALL browser console for diagnostics
-      const consoleLogs: string[] = [];
-      pageA.on('console', (msg) => {
-        const text = msg.text();
-        consoleLogs.push(`[${msg.type()}] ${text}`);
-        if (
-          text.includes('ConversationView') ||
-          text.includes('sendMessage') ||
-          msg.type() === 'error'
-        ) {
-          console.log(`[pageA console.${msg.type()}] ${text}`);
-        }
-      });
-
-      const testMessage = `Test encrypted message ${Date.now()}`;
-      await fillMessageInput(pageA, testMessage);
-
-      const sendButton = pageA.getByRole('button', { name: /send/i });
-      await sendButton.click();
-
-      // Wait for sending state to complete (Supabase free tier: up to 15s)
-      await expect(sendButton).not.toContainText('Sending', { timeout: 60000 });
-
-      // ===== STEP 6: Verify message appears in User A's view =====
-      // WebKit + Supabase free tier: INSERT can take 30+ seconds.
-      await scrollThreadToBottom(pageA);
-      const messageA = pageA.getByText(testMessage);
-      try {
-        await expect(messageA).toBeVisible({ timeout: 60000 });
-      } catch (e) {
-        // Dump all captured console logs on failure
-        console.log('=== BROWSER CONSOLE DUMP (pageA) ===');
-        consoleLogs.forEach((l) => console.log(l));
-        console.log('=== END CONSOLE DUMP ===');
-        throw e;
-      }
-
-      // Brief delay for Supabase replication before User B reads
-      await pageA.waitForTimeout(2000);
-
-      // ===== STEP 7: User B navigates directly to conversation =====
-      await pageB.goto(
-        `${BASE_URL}/messages?conversation=${testConversationId}`,
-        { waitUntil: 'domcontentloaded' }
-      );
-      await handleReAuthModal(pageB, USER_B.password);
-      await pageB.waitForSelector('[data-testid="message-thread"]', {
-        state: 'visible',
-        timeout: 45000,
-      });
-
-      // ===== STEP 9: User B sees the decrypted message =====
-      // Supabase free tier read-after-write latency can be 30-60s under
-      // 6-shard load. Retry with page reloads up to 10 times with 5s waits.
-      // (Bumped from 6 to 10 because Supabase free-tier tail latency under
-      // 24-shard concurrent load occasionally exceeds 6×30s = 180s.)
-      await scrollThreadToBottom(pageB);
-      const messageB = pageB.getByText(testMessage);
-      for (let retry = 0; retry < 10; retry++) {
-        const visible = await messageB
-          .isVisible({ timeout: 10000 })
-          .catch(() => false);
-        if (visible) break;
-        const threadText = await pageB
-          .locator('[data-testid="message-thread"]')
-          .textContent()
-          .catch(() => '(not found)');
-        console.log(
-          `[encrypted-messaging] Attempt ${retry + 1}/10: ${threadText?.slice(0, 200)}`
-        );
-        await pageB.waitForTimeout(5000);
-        await pageB.reload({ waitUntil: 'domcontentloaded' });
-        await handleReAuthModal(pageB, USER_B.password);
-        await pageB.waitForSelector('[data-testid="message-thread"]', {
+      // ===== Partner receives the decrypted message =====
+      await waitForMessageWithReload(partner.page, testMessage, async () =>
+        partner.page.waitForSelector('[data-testid="message-thread"]', {
           state: 'visible',
           timeout: 30000,
-        });
-        await scrollThreadToBottom(pageB);
-      }
-      await expect(messageB).toBeVisible({ timeout: 30000 });
+        })
+      );
 
-      // ===== STEP 10: Verify User B can reply =====
-      const replyMessage = `Reply from User B ${Date.now()}`;
-      await fillMessageInput(pageB, replyMessage);
-      await pageB.getByRole('button', { name: /send/i }).click();
+      // ===== Partner replies; viewer sees it =====
+      const replyMessage = `Reply from partner ${Date.now()}`;
+      await fillMessageInput(partner.page, replyMessage);
+      await partner.page.getByRole('button', { name: /send/i }).click();
+      await scrollThreadToBottom(partner.page);
+      await expect(partner.page.getByText(replyMessage)).toBeVisible({
+        timeout: 30000,
+      });
 
-      // Verify reply appears in User B's view
-      await scrollThreadToBottom(pageB);
-      const replyB = pageB.getByText(replyMessage);
-      await expect(replyB).toBeVisible({ timeout: 30000 });
-
-      // ===== STEP 11: User A sees the reply =====
-      await pageA.reload({ waitUntil: 'domcontentloaded' });
-      await handleReAuthModal(pageA, USER_A.password);
-      await scrollThreadToBottom(pageA);
-      const replyA = pageA.getByText(replyMessage);
-      await expect(replyA).toBeVisible({ timeout: 30000 });
+      await waitForMessageWithReload(viewer.page, replyMessage, async () =>
+        viewer.page.waitForSelector('[data-testid="message-thread"]', {
+          state: 'visible',
+          timeout: 30000,
+        })
+      );
     } finally {
-      await contextA.close();
-      await contextB.close();
+      await viewer.close();
+      await partner.close();
     }
   });
 
@@ -357,199 +138,88 @@ test.describe('Encrypted Messaging Flow', () => {
     browser,
   }) => {
     const adminClient = getAdminClient();
+    test.skip(!adminClient, 'admin client not configured');
 
-    if (!adminClient) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
-    }
-
-    // User A gets pre-authenticated state
-    const contextA = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    const pageA = await contextA.newPage();
-
+    const viewer = await openAsViewer(browser, fixture!);
     try {
-      // User A already authenticated via storageState
-      // Navigate to messages
-      await pageA.goto(`${BASE_URL}/messages`, {
-        waitUntil: 'domcontentloaded',
-      });
-
-      // DIAGNOSTIC: Log auth state to understand 403 errors
-      const authDiag = await pageA.evaluate(() => {
-        const keys = Object.keys(localStorage).filter(
-          (k) =>
-            k.includes('auth') || k.includes('supabase') || k.includes('sb-')
-        );
-        const cookies = document.cookie;
-        return {
-          authKeys: keys,
-          hasAuthToken: keys.some((k) => k.includes('auth-token')),
-          cookieLength: cookies.length,
-          url: window.location.href,
-          supabaseUrl:
-            (window as any).__NEXT_DATA__?.props?.pageProps?.supabaseUrl ||
-            'unknown',
-        };
-      });
-      console.log(
-        '[DIAG:zero-knowledge] Auth state after goto:',
-        JSON.stringify(authDiag)
-      );
-
-      await handleReAuthModal(pageA, USER_A.password);
-
-      // DIAGNOSTIC: Check if conversation list loaded
-      const sidebarHTML = await pageA.evaluate(() => {
-        const sidebar = document.querySelector(
-          '[data-testid="unified-sidebar"]'
-        );
-        const convBtns = document.querySelectorAll(
-          'button[aria-label^="Conversation with"]'
-        );
-        return {
-          sidebarExists: !!sidebar,
-          sidebarVisible: sidebar?.checkVisibility?.() ?? false,
-          conversationCount: convBtns.length,
-          firstConvText: convBtns[0]?.textContent?.substring(0, 50) || 'none',
-        };
-      });
-      console.log(
-        '[DIAG:zero-knowledge] Sidebar state:',
-        JSON.stringify(sidebarHTML)
-      );
-
-      const conversationItem = pageA
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await conversationItem.click();
-      await pageA.waitForSelector('[data-testid="message-thread"]', {
-        state: 'visible',
-        timeout: 45000,
-      });
-
-      // Send a test message with known plaintext
       const secretMessage = `Secret message for zero-knowledge test ${Date.now()}`;
-      const messageInput = pageA.locator(
-        'textarea[aria-label="Message input"]'
-      );
-      await messageInput.fill(secretMessage);
-      await pageA.getByRole('button', { name: /send/i }).click();
+      await fillMessageInput(viewer.page, secretMessage);
+      await viewer.page.getByRole('button', { name: /send/i }).click();
 
-      // Wait for message to appear — encryption + Supabase INSERT + optimistic
-      // UI render can take 15-30s on CI under load
-      await expect(pageA.getByText(secretMessage)).toBeVisible({
+      await scrollThreadToBottom(viewer.page);
+      await expect(viewer.page.getByText(secretMessage)).toBeVisible({
         timeout: 30000,
       });
 
-      // ===== VERIFY DATABASE ENCRYPTION =====
-      // pageA's optimistic UI render can precede the actual Supabase INSERT
-      // commit by several seconds on free tier under shard load. A single
-      // waitForTimeout(2000) + admin query occasionally saw 0 rows back.
-      // Poll the admin query until the INSERT has actually landed.
+      // ===== Verify database stores only ciphertext =====
+      // The optimistic UI render can precede the Supabase INSERT commit; poll
+      // the admin query (scoped to THIS conversation) until the row lands.
       let messages:
         | { encrypted_content: string; initialization_vector: string }[]
         | null = null;
       let error: unknown = null;
       for (let attempt = 0; attempt < 15; attempt++) {
-        const result = await adminClient
+        const result = await adminClient!
           .from('messages')
           .select('encrypted_content, initialization_vector')
+          .eq('conversation_id', fixture!.conversationId)
           .order('created_at', { ascending: false })
           .limit(10);
         messages = result.data;
         error = result.error;
         if (messages && messages.length > 0) break;
-        await pageA.waitForTimeout(2000);
+        await viewer.page.waitForTimeout(2000);
       }
 
       expect(error).toBeNull();
       expect(messages).toBeTruthy();
       expect(messages!.length).toBeGreaterThan(0);
 
-      // Verify that the plaintext is NOT in the database
-      const foundPlaintext = messages!.some((msg) => {
-        const content = msg.encrypted_content;
-        // Check if encrypted_content contains the secret message (it shouldn't)
-        return content && content.includes(secretMessage);
-      });
+      // Plaintext must never appear in the database.
+      const foundPlaintext = messages!.some((msg) =>
+        msg.encrypted_content?.includes(secretMessage)
+      );
+      expect(foundPlaintext).toBe(false);
 
-      expect(foundPlaintext).toBe(false); // Plaintext should NEVER be in database
-
-      // Verify encrypted_content is base64 (ciphertext format)
+      // encrypted_content must be base64 ciphertext with an IV.
       const hasEncryptedData = messages!.every((msg) => {
-        const content = msg.encrypted_content;
-        const iv = msg.initialization_vector;
-
-        // Both should be base64 strings (not plaintext)
-        const isBase64 = /^[A-Za-z0-9+/]+=*$/.test(content);
-        const hasIV = typeof iv === 'string' && iv.length > 0;
-
+        const isBase64 = /^[A-Za-z0-9+/]+=*$/.test(msg.encrypted_content);
+        const hasIV =
+          typeof msg.initialization_vector === 'string' &&
+          msg.initialization_vector.length > 0;
         return isBase64 && hasIV;
       });
-
-      expect(hasEncryptedData).toBe(true); // All messages should be encrypted
+      expect(hasEncryptedData).toBe(true);
     } finally {
-      await contextA.close();
+      await viewer.close();
     }
   });
 
   test('should show delivery status indicators', async ({ browser }) => {
-    // Both users come from pre-authenticated storage states seeded by
-    // auth.setup.ts. Live performSignIn across concurrent CI shards was
-    // cumulatively exceeding Supabase's 5-attempt brute-force lockout.
-    const contextA = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth.json',
-    });
-    const contextB = await browser.newContext({
-      storageState: './tests/e2e/fixtures/storage-state-auth-b.json',
-    });
-
-    const pageA = await contextA.newPage();
-    const pageB = await contextB.newPage();
+    const viewer = await openAsViewer(browser, fixture!);
+    const partner = await openAsPartner(browser, fixture!);
 
     try {
-      // User A already authenticated via storageState, navigate to messages
-      await pageA.goto(`${BASE_URL}/messages`, {
-        waitUntil: 'domcontentloaded',
-      });
-      await handleReAuthModal(pageA, USER_A.password);
-      const conversationItem = pageA
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await conversationItem.click();
-      await pageA.waitForSelector('[data-testid="message-thread"]', {
-        state: 'visible',
-        timeout: 45000,
-      });
-
-      // Send a message
       const testMessage = `Delivery status test ${Date.now()}`;
-      await fillMessageInput(pageA, testMessage);
-      await pageA.getByRole('button', { name: /send/i }).click();
+      await fillMessageInput(viewer.page, testMessage);
+      await viewer.page.getByRole('button', { name: /send/i }).click();
 
-      // Wait for message to appear — encryption + Supabase INSERT + optimistic
-      // render can take 15-30s on CI under load
-      await expect(pageA.getByText(testMessage)).toBeVisible({
+      await scrollThreadToBottom(viewer.page);
+      await expect(viewer.page.getByText(testMessage)).toBeVisible({
         timeout: 30000,
       });
 
-      // ===== VERIFY "SENT" STATUS (✓) =====
-      // Message should show single checkmark initially
-      const messageBubble = pageA
+      // ===== "Sent" status (✓) =====
+      const messageBubble = viewer.page
         .locator('[data-testid="message-bubble"]')
         .filter({ hasText: testMessage });
       await expect(messageBubble).toBeVisible();
 
-      // Look for delivery status indicator
       const deliveryStatus = messageBubble.locator(
         '[data-testid="delivery-status"]'
       );
       await expect(deliveryStatus).toBeVisible();
 
-      // Should show "Delivered" status - ReadReceipt uses SVG icons with aria-label.
-      // Poll with 30s timeout — Supabase Realtime delivery can be slow under load.
       const readReceipt = deliveryStatus.locator(
         '[data-testid="read-receipt"]'
       );
@@ -559,143 +229,108 @@ test.describe('Encrypted Messaging Flow', () => {
         { timeout: 30000 }
       );
 
-      // ===== USER B READS THE MESSAGE =====
-      // User B is already authenticated via storage-state-auth-b (no live
-      // sign-in). Navigate directly to /messages.
-      await pageB.goto(`${BASE_URL}/messages`, {
-        waitUntil: 'domcontentloaded',
+      // ===== Partner reads the message =====
+      await waitForMessageWithReload(partner.page, testMessage, async () =>
+        partner.page.waitForSelector('[data-testid="message-thread"]', {
+          state: 'visible',
+          timeout: 30000,
+        })
+      );
+
+      // ===== "Delivered/Read" status after partner read =====
+      await viewer.page.reload({ waitUntil: 'domcontentloaded' });
+      await viewer.page.waitForSelector('[data-testid="message-thread"]', {
+        state: 'visible',
+        timeout: 30000,
       });
-      await handleReAuthModal(pageB, USER_B.password);
-      const conversationItemB = pageB
-        .getByRole('button', { name: /Conversation with/ })
-        .first();
-      await conversationItemB.click();
-      await pageB.waitForTimeout(1000);
+      await expect(viewer.page.getByText(testMessage)).toBeVisible();
 
-      // Verify User B sees the message. Supabase Cloud free-tier realtime
-      // delivery under 24-shard concurrent load can exceed a single 15s
-      // wait — use the same retry-with-reload pattern as the sibling test
-      // "should send and receive encrypted message between two users".
-      const messageOnB = pageB.getByText(testMessage);
-      for (let retry = 0; retry < 10; retry++) {
-        const visible = await messageOnB
-          .isVisible({ timeout: 10000 })
-          .catch(() => false);
-        if (visible) break;
-        await pageB.waitForTimeout(5000);
-        await pageB.reload({ waitUntil: 'domcontentloaded' });
-        await handleReAuthModal(pageB, USER_B.password);
-        const conversationRetry = pageB
-          .getByRole('button', { name: /Conversation with/ })
-          .first();
-        await conversationRetry.click({ timeout: 10000 }).catch(() => {});
-      }
-      await expect(messageOnB).toBeVisible({ timeout: 30000 });
-
-      // ===== VERIFY "READ" STATUS (✓✓ colored) =====
-      // Reload User A's page to see updated read status
-      await pageA.reload();
-      await handleReAuthModal(pageA, USER_A.password);
-      await expect(pageA.getByText(testMessage)).toBeVisible();
-
-      const updatedMessageBubble = pageA
+      const updatedReceipt = viewer.page
         .locator('[data-testid="message-bubble"]')
-        .filter({ hasText: testMessage });
-      const updatedStatus = updatedMessageBubble.locator(
-        '[data-testid="delivery-status"]'
-      );
-
-      // Should show status indicator - ReadReceipt uses SVG icons with aria-label
-      const updatedReceipt = updatedStatus.locator(
-        '[data-testid="read-receipt"]'
-      );
+        .filter({ hasText: testMessage })
+        .locator(
+          '[data-testid="delivery-status"] [data-testid="read-receipt"]'
+        );
       await expect(updatedReceipt).toHaveAttribute(
         'aria-label',
-        /Message (delivered|read)/i
+        /Message (sent|delivered|read)/i,
+        { timeout: 30000 }
       );
     } finally {
-      await contextA.close();
-      await contextB.close();
+      await viewer.close();
+      await partner.close();
     }
   });
 
-  test('should load message history with pagination', async ({ page }) => {
-    // Already authenticated via storageState
-    await page.goto(`${BASE_URL}/messages`, { waitUntil: 'domcontentloaded' });
-    await handleReAuthModal(page, USER_A.password);
-    const conversationItem = page
-      .getByRole('button', { name: /Conversation with/ })
-      .first();
-    await conversationItem.click();
-    await page.waitForTimeout(1000);
+  test('should load message history with pagination', async ({ browser }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+    try {
+      // Send a handful of messages; the thread should render them and cap the
+      // initial page at the default page size (50).
+      const messagesToSend = 10;
+      for (let i = 0; i < messagesToSend; i++) {
+        await fillMessageInput(viewer.page, `Pagination test message ${i + 1}`);
+        await viewer.page.getByRole('button', { name: /send/i }).click();
+        await viewer.page.waitForTimeout(500);
+      }
 
-    // ===== SEND MULTIPLE MESSAGES =====
-    const messageCount = 55; // More than default page size (50)
-    const messagesToSend = 10; // Send 10 new messages for this test
+      await scrollThreadToBottom(viewer.page);
+      await expect(
+        viewer.page
+          .getByText(`Pagination test message ${messagesToSend}`)
+          .first()
+      ).toBeVisible({ timeout: 15000 });
 
-    for (let i = 0; i < messagesToSend; i++) {
-      const messageInput = page.locator('textarea[aria-label="Message input"]');
-      await messageInput.fill(`Pagination test message ${i + 1}`);
-      await page.getByRole('button', { name: /send/i }).click();
+      const messageBubbles = viewer.page.locator(
+        '[data-testid="message-bubble"]'
+      );
+      const visibleCount = await messageBubbles.count();
+      expect(visibleCount).toBeGreaterThan(0);
+      expect(visibleCount).toBeLessThanOrEqual(50);
 
-      // Wait a bit between messages to ensure they have different sequence numbers
-      await page.waitForTimeout(500);
-    }
+      // ===== "Load More" (only present when history exceeds a page) =====
+      await viewer.page
+        .locator('[data-testid="message-thread"]')
+        .first()
+        .evaluate((el) => {
+          el.scrollTop = 0;
+          el.dispatchEvent(new Event('scroll', { bubbles: true }));
+        });
 
-    // Wait for last message to appear (use .first() in case duplicates from previous runs)
-    await expect(
-      page.getByText(`Pagination test message ${messagesToSend}`).first()
-    ).toBeVisible({ timeout: 15000 });
-
-    // ===== VERIFY PAGINATION =====
-    // Count visible messages (should be limited to page size)
-    const messageBubbles = page.locator('[data-testid="message-bubble"]');
-    const visibleCount = await messageBubbles.count();
-
-    // Should show up to 50 messages initially (default page size)
-    expect(visibleCount).toBeGreaterThan(0);
-    expect(visibleCount).toBeLessThanOrEqual(50);
-
-    // ===== TEST "LOAD MORE" FUNCTIONALITY =====
-    // Scroll to top of message thread
-    await page
-      .locator('[data-testid="message-thread"]')
-      .first()
-      .evaluate((el) => {
-        el.scrollTop = 0;
-        el.dispatchEvent(new Event('scroll', { bubbles: true }));
+      const loadMoreButton = viewer.page.getByRole('button', {
+        name: /load more|older messages/i,
       });
-
-    // Look for "Load More" button
-    const loadMoreButton = page.getByRole('button', {
-      name: /load more|older messages/i,
-    });
-
-    if (await loadMoreButton.isVisible()) {
-      const countBefore = await messageBubbles.count();
-
-      await loadMoreButton.click();
-
-      // Wait for more messages to load
-      await page.waitForTimeout(2000);
-
-      const countAfter = await messageBubbles.count();
-
-      // Should have loaded more messages
-      expect(countAfter).toBeGreaterThan(countBefore);
+      if (await loadMoreButton.isVisible().catch(() => false)) {
+        const countBefore = await messageBubbles.count();
+        await loadMoreButton.click();
+        await viewer.page.waitForTimeout(2000);
+        expect(await messageBubbles.count()).toBeGreaterThan(countBefore);
+      }
+    } finally {
+      await viewer.close();
     }
   });
 });
 
 test.describe('Encryption Key Security', () => {
-  test('should never send private keys to server', async ({
-    page,
-    context,
-  }) => {
-    // Monitor network requests to verify no private keys are sent
-    const networkRequests: any[] = [];
+  let fixture: IsolatedConversation | null = null;
 
-    page.on('request', (request) => {
+  test.beforeEach(async () => {
+    fixture = await seedIsolatedConversation();
+    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
+  });
+
+  test.afterEach(async () => {
+    await deleteIsolatedConversation(fixture);
+    fixture = null;
+  });
+
+  test('should never send private keys to server', async ({ browser }) => {
+    const viewer = await openAsViewer(browser, fixture!);
+
+    // Monitor network requests to verify no private keys are sent.
+    const networkRequests: { url: string; method: string; body: string }[] = [];
+    viewer.page.on('request', (request) => {
       const postData = request.postData();
       if (postData) {
         networkRequests.push({
@@ -706,44 +341,28 @@ test.describe('Encryption Key Security', () => {
       }
     });
 
-    // Navigate directly to conversation via URL to bypass slow sidebar query
-    if (!testConversationId) {
-      console.log('No conversation ID — skipping key security test');
-      test.skip(true, 'No conversation ID available');
-      return;
+    try {
+      await fillMessageInput(viewer.page, 'Key security test message');
+      await viewer.page.getByRole('button', { name: /send/i }).click();
+
+      await scrollThreadToBottom(viewer.page);
+      await expect(
+        viewer.page.getByText('Key security test message')
+      ).toBeVisible({ timeout: 30000 });
+
+      // ===== No private keys in any request body =====
+      const foundPrivateKey = networkRequests.some((req) => {
+        const body = req.body.toLowerCase();
+        return (
+          body.includes('"d":') || // JWK private key component
+          body.includes('"privatekey"') ||
+          body.includes('private_key') ||
+          body.includes('privatekey')
+        );
+      });
+      expect(foundPrivateKey).toBe(false);
+    } finally {
+      await viewer.close();
     }
-
-    await page.goto(`${BASE_URL}/messages?conversation=${testConversationId}`, {
-      waitUntil: 'domcontentloaded',
-    });
-    await handleReAuthModal(page, USER_A.password);
-    await page.waitForSelector('[data-testid="message-thread"]', {
-      state: 'visible',
-      timeout: 60000,
-    });
-
-    const messageInput = page.getByRole('textbox', { name: /Message input/i });
-    await expect(messageInput).toBeVisible({ timeout: 45000 });
-    await fillMessageInput(page, 'Key security test message');
-    await page.getByRole('button', { name: /send/i }).click();
-
-    await scrollThreadToBottom(page);
-    await expect(page.getByText('Key security test message')).toBeVisible({
-      timeout: 30000,
-    });
-
-    // ===== VERIFY NO PRIVATE KEYS IN NETWORK REQUESTS =====
-    const foundPrivateKey = networkRequests.some((req) => {
-      const body = req.body.toLowerCase();
-      // Check for common private key indicators
-      return (
-        body.includes('"d":') || // JWK private key component
-        body.includes('"privatekey"') ||
-        body.includes('private_key') ||
-        body.includes('privatekey')
-      );
-    });
-
-    expect(foundPrivateKey).toBe(false); // Private keys should NEVER be sent to server
   });
 });

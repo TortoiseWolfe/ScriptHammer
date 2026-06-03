@@ -11,7 +11,7 @@
  */
 
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Browser } from '@playwright/test';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 
 /**
@@ -1345,16 +1345,28 @@ export async function deleteScrollFixture(
  *
  * Spike for #116 Phase 2 (workers>1 messaging E2E).
  */
+/**
+ * A throwaway user's auth session, ready to inject into a browser via
+ * localStorage so the page authenticates as that user (see {@link openAsViewer}).
+ */
+export interface InjectableSession {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  user: object;
+}
+
 export interface IsolatedConversation {
   viewer: TestUser;
   partner: TestUser;
   conversationId: string;
-  viewerSession: {
-    access_token: string;
-    refresh_token: string;
-    expires_at: number;
-    user: object;
-  };
+  /** Inject into a browser to open the conversation AS the viewer. */
+  viewerSession: InjectableSession;
+  /**
+   * Inject into a SECOND browser context to open the conversation AS the
+   * partner — needed for bidirectional tests (A sends, B receives/replies).
+   */
+  partnerSession: InjectableSession;
 }
 
 /**
@@ -1411,8 +1423,8 @@ export async function seedIsolatedConversation(
     return null;
   }
 
-  // 2. The viewer's auth session, for browser localStorage injection. Uses the
-  //    anon key against the same admin-reachable URL.
+  // 2. Auth sessions for BOTH users, for browser localStorage injection. Uses
+  //    the anon key against the same admin-reachable URL.
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -1422,19 +1434,34 @@ export async function seedIsolatedConversation(
     await deleteTestUser(partner.id);
     return null;
   }
-  const anon = createClient(anonUrl, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-  const { data: signIn, error: signInError } =
-    await anon.auth.signInWithPassword({
-      email: viewer.email,
-      password: viewer.password,
+  const signInUser = async (
+    user: TestUser
+  ): Promise<InjectableSession | null> => {
+    const anon = createClient(anonUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
     });
-  if (signInError || !signIn.session) {
-    console.warn(
-      'seedIsolatedConversation: viewer sign-in failed:',
-      signInError?.message
-    );
+    const { data, error } = await anon.auth.signInWithPassword({
+      email: user.email,
+      password: user.password,
+    });
+    if (error || !data.session) {
+      console.warn(
+        `seedIsolatedConversation: sign-in failed for ${user.email}:`,
+        error?.message
+      );
+      return null;
+    }
+    return {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at ?? 0,
+      user: data.session.user,
+    };
+  };
+
+  const viewerSession = await signInUser(viewer);
+  const partnerSession = viewerSession ? await signInUser(partner) : null;
+  if (!viewerSession || !partnerSession) {
     await deleteTestUser(viewer.id);
     await deleteTestUser(partner.id);
     return null;
@@ -1489,7 +1516,6 @@ export async function seedIsolatedConversation(
       .eq('id', conversationId);
   }
 
-  const session = signIn.session;
   console.log(
     `✓ Isolated conversation ${conversationId} (viewer ${viewer.id}, partner ${partner.id}, ${messageCount} msgs)`
   );
@@ -1497,12 +1523,8 @@ export async function seedIsolatedConversation(
     viewer,
     partner,
     conversationId,
-    viewerSession: {
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_at: session.expires_at ?? 0,
-      user: session.user,
-    },
+    viewerSession,
+    partnerSession,
   };
 }
 
@@ -1518,6 +1540,119 @@ export async function deleteIsolatedConversation(
   await deleteTestUser(fixture.viewer.id);
   await deleteTestUser(fixture.partner.id);
   console.log('✓ Isolated conversation torn down');
+}
+
+/** A browser context opened as one participant of an isolated conversation. */
+export interface OpenedParticipant {
+  page: Page;
+  context: import('@playwright/test').BrowserContext;
+  close: () => Promise<void>;
+}
+
+/**
+ * Open a fresh browser context authenticated as the given throwaway `session`,
+ * landing on `conversationId` with encryption unlocked.
+ *
+ * This is the lower-level primitive behind {@link openAsViewer} /
+ * {@link openAsPartner}. Instead of relying on the shared `storageState` (the
+ * PRIMARY user every serial test races over), each test injects ITS OWN
+ * throwaway session into localStorage — that is what lets messaging specs run
+ * in parallel (workers>1) without contention.
+ *
+ * The Supabase auth-storage key derives from the BROWSER's Supabase URL
+ * (`NEXT_PUBLIC_SUPABASE_URL`), which on local Docker differs from the
+ * in-container admin URL — see {@link seedIsolatedConversation}.
+ *
+ * Always `await close()` in a `finally` (or close the context in `afterEach`)
+ * so parallel workers don't leak contexts.
+ */
+export async function openConversationAs(
+  browser: Browser,
+  session: InjectableSession,
+  conversationId: string
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  const page = await context.newPage();
+
+  // The browser talks to Supabase via NEXT_PUBLIC_SUPABASE_URL (in-container
+  // Chromium → host.docker.internal locally; the real cloud URL in CI). The
+  // localStorage auth key is `sb-<first-host-label>-auth-token`.
+  const browserUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_ADMIN_URL ||
+    '';
+  const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
+  const sbStorageKey = `sb-${supabaseHost}-auth-token`;
+
+  await page.goto(`${basePath}/`);
+  await page.waitForLoadState('domcontentloaded');
+  await page.evaluate(
+    ({ key, s }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          access_token: s.access_token,
+          refresh_token: s.refresh_token,
+          expires_at: s.expires_at,
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: s.user,
+        })
+      );
+    },
+    { key: sbStorageKey, s: session }
+  );
+  // Reload so Supabase picks up the injected session on init.
+  await page.reload();
+  await page.waitForLoadState('domcontentloaded');
+
+  // Navigate to the isolated conversation and unlock encryption keys. The
+  // ReAuthModal appears because IndexedDB has no cached CryptoKey for this fresh
+  // throwaway user; handleReAuthModal re-derives them (Argon2id, TIME_COST=3).
+  await page.goto(`${basePath}/messages?conversation=${conversationId}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(page);
+  await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
+  await page.waitForSelector('[data-testid="message-thread"]', {
+    state: 'visible',
+    timeout: 60000,
+  });
+
+  return { page, context, close: () => context.close() };
+}
+
+/**
+ * Open the isolated conversation AS the viewer. The single conversion primitive
+ * for #116 Phase 2 — see {@link openConversationAs}.
+ */
+export async function openAsViewer(
+  browser: Browser,
+  fixture: IsolatedConversation
+): Promise<OpenedParticipant> {
+  return openConversationAs(
+    browser,
+    fixture.viewerSession,
+    fixture.conversationId
+  );
+}
+
+/**
+ * Open the isolated conversation AS the partner (a second browser context), for
+ * bidirectional tests where the viewer sends and the partner receives/replies.
+ */
+export async function openAsPartner(
+  browser: Browser,
+  fixture: IsolatedConversation
+): Promise<OpenedParticipant> {
+  return openConversationAs(
+    browser,
+    fixture.partnerSession,
+    fixture.conversationId
+  );
 }
 
 /**

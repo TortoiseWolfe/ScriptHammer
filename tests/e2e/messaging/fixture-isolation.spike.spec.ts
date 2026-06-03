@@ -27,79 +27,18 @@
  *     --project=chromium-msg --workers=4 --reporter=list
  */
 
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import {
   seedIsolatedConversation,
   deleteIsolatedConversation,
-  handleReAuthModal,
-  dismissCookieBanner,
+  openAsViewer,
   fillMessageInput,
   scrollThreadToBottom,
-  DEFAULT_TEST_PASSWORD,
   type IsolatedConversation,
 } from '../utils/test-user-factory';
 
-const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
-
 // Parallelism is the whole point of this spike — NOT serial.
 test.describe.configure({ mode: 'parallel' });
-
-/**
- * Open a fresh browser context authenticated as the fixture's throwaway viewer
- * by injecting its session into localStorage (the post-#121 pattern). Returns a
- * page already on /messages for the isolated conversation.
- */
-async function openAsViewer(
-  browser: import('@playwright/test').Browser,
-  fx: IsolatedConversation
-): Promise<{ page: Page; close: () => Promise<void> }> {
-  const context = await browser.newContext({
-    storageState: { cookies: [], origins: [] },
-  });
-  const page = await context.newPage();
-
-  // Inject the viewer session. Storage key derives from the BROWSER URL.
-  const browserUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_ADMIN_URL ||
-    '';
-  const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
-  const sbStorageKey = `sb-${supabaseHost}-auth-token`;
-
-  await page.goto(`${BP}/`);
-  await page.waitForLoadState('domcontentloaded');
-  await page.evaluate(
-    ({ key, s }) => {
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          access_token: s.access_token,
-          refresh_token: s.refresh_token,
-          expires_at: s.expires_at,
-          expires_in: 3600,
-          token_type: 'bearer',
-          user: s.user,
-        })
-      );
-    },
-    { key: sbStorageKey, s: fx.viewerSession }
-  );
-  await page.reload();
-  await page.waitForLoadState('domcontentloaded');
-
-  // Navigate to the isolated conversation and unlock encryption keys.
-  await page.goto(`${BP}/messages?conversation=${fx.conversationId}`, {
-    waitUntil: 'domcontentloaded',
-  });
-  await dismissCookieBanner(page);
-  await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
-  await page.waitForSelector('[data-testid="message-thread"]', {
-    state: 'visible',
-    timeout: 60000,
-  });
-
-  return { page, close: () => context.close() };
-}
 
 test.describe('Fixture-isolation spike (workers>1)', () => {
   // Local-only: needs a local Docker Supabase (pnpm run dev:local). The
