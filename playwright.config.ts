@@ -46,6 +46,15 @@ const MSG_ISO_GLOBS = [
  * stay at the global `workers:1`). Locally, `fullyParallel` on the iso project
  * + the default worker pool gives parallelism for free. */
 
+/* Per-test budget for the iso messaging projects. A bidirectional test opens
+ * TWO browser contexts, each paying a gate-load (~11s) + Argon2id unlock (~3s,
+ * TIME_COST=3 — never lowered) before the first send. The Playwright default
+ * (30s) is exhausted by the two opens alone, so the test would time out and its
+ * afterEach would cascade-delete the partner's key mid-send → a spurious 406
+ * "needs to sign in". Size the budget to the work this slice actually does.
+ * Scoped to the iso projects so real hangs elsewhere still fail fast. */
+const MSG_ISO_TIMEOUT = 180_000;
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -188,6 +197,7 @@ export default defineConfig({
       name: 'chromium-msg-iso',
       testMatch: MSG_ISO_GLOBS,
       fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -227,6 +237,7 @@ export default defineConfig({
       name: 'firefox-msg-iso',
       testMatch: MSG_ISO_GLOBS,
       fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Firefox'],
@@ -264,6 +275,7 @@ export default defineConfig({
       name: 'webkit-msg-iso',
       testMatch: MSG_ISO_GLOBS,
       fullyParallel: true,
+      timeout: MSG_ISO_TIMEOUT,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Safari'],

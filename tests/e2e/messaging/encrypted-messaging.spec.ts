@@ -70,8 +70,12 @@ test.describe('Encrypted Messaging Flow', () => {
   test('should send and receive encrypted message between two users', async ({
     browser,
   }) => {
-    const viewer = await openAsViewer(browser, fixture!);
-    const partner = await openAsPartner(browser, fixture!);
+    // Open both contexts concurrently — each pays a gate-load + Argon2id unlock,
+    // and serializing them nearly exhausts the per-test budget before the send.
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
     // Forward browser console from both pages for CI diagnostics.
     for (const [label, pg] of [
@@ -196,8 +200,11 @@ test.describe('Encrypted Messaging Flow', () => {
   });
 
   test('should show delivery status indicators', async ({ browser }) => {
-    const viewer = await openAsViewer(browser, fixture!);
-    const partner = await openAsPartner(browser, fixture!);
+    // Open both contexts concurrently (see the send/receive test above).
+    const [viewer, partner] = await Promise.all([
+      openAsViewer(browser, fixture!),
+      openAsPartner(browser, fixture!),
+    ]);
 
     try {
       const testMessage = `Delivery status test ${Date.now()}`;
