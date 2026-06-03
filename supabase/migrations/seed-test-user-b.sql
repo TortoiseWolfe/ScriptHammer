@@ -1,3 +1,9 @@
+-- ⚠️ DEPRECATED (issue #121). The canonical, idempotent seeder is
+--   scripts/seed-test-users.ts  (run via `pnpm run seed:local` or `dev:local`),
+-- which creates this user (test-user-b@example.com) along with the others, their
+-- encryption keys, connections, and conversations. This SQL is NOT mounted into
+-- the local DB init and is kept only for reference. Prefer the TS seeder.
+--
 -- Seed Test User B (Tertiary) for E2E Messaging Tests (Feature 024)
 -- Creates: test-user-b@example.com / TestPassword456!
 -- Username: testuser-b
