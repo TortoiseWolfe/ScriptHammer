@@ -1332,6 +1332,195 @@ export async function deleteScrollFixture(
 }
 
 /**
+ * A FULLY isolated conversation: BOTH the viewer and the partner are throwaway
+ * users created just for this test (unique emails no cleanupOldMessages touches),
+ * plus a private conversation and an optional pre-seeded message history. Unlike
+ * {@link seedScrollFixture} — which isolates only the partner and reuses the
+ * shared PRIMARY viewer — this gives every test its own viewer identity, so
+ * tests can run in parallel (workers>1) without racing shared users/state.
+ *
+ * `viewerSession` is the viewer's auth session, ready to inject into the browser
+ * via localStorage (see the offline-queue-sync.spec.ts pattern) so the test
+ * authenticates as the throwaway viewer instead of the shared storageState.
+ *
+ * Spike for #116 Phase 2 (workers>1 messaging E2E).
+ */
+export interface IsolatedConversation {
+  viewer: TestUser;
+  partner: TestUser;
+  conversationId: string;
+  viewerSession: {
+    access_token: string;
+    refresh_token: string;
+    expires_at: number;
+    user: object;
+  };
+}
+
+/**
+ * Create a fully isolated viewer + partner + conversation for one test.
+ *
+ * @param messageCount  0 = empty conversation (test posts its own messages);
+ *                      >0 = pre-seed that many placeholder messages.
+ * @param opts.viewerPrefix / partnerPrefix  short email/username prefixes.
+ *
+ * Encryption keys are derived through the normal path (ensureEncryptionKeys →
+ * Argon2id at ARGON2_CONFIG.TIME_COST=3, UNCHANGED — never lower it, it breaks
+ * stored-key verification). Returns null if the admin client is unavailable.
+ */
+export async function seedIsolatedConversation(
+  messageCount = 0,
+  opts?: { viewerPrefix?: string; partnerPrefix?: string }
+): Promise<IsolatedConversation | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const viewerPrefix = opts?.viewerPrefix ?? 'iso-viewer';
+  const partnerPrefix = opts?.partnerPrefix ?? 'iso-partner';
+  const stamp = Date.now().toString().slice(-8);
+
+  // Helper: create a throwaway user + encryption keys. Username must satisfy
+  // user_profiles' CHECK (length 3..30), so pass a short explicit one.
+  const makeUser = async (
+    prefix: string,
+    userTag: string
+  ): Promise<TestUser | null> => {
+    const email = generateTestEmail(prefix);
+    const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
+      username: `${userTag}${stamp}`,
+    });
+    if (!user) {
+      console.warn(`seedIsolatedConversation: failed to create ${userTag}`);
+      return null;
+    }
+    const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+    if (!keysOk) {
+      console.warn(`seedIsolatedConversation: failed to key ${userTag}`);
+      await deleteTestUser(user.id);
+      return null;
+    }
+    return user;
+  };
+
+  // 1. Throwaway viewer + partner (both keyed at TIME_COST=3).
+  const viewer = await makeUser(viewerPrefix, 'isov');
+  if (!viewer) return null;
+  const partner = await makeUser(partnerPrefix, 'isop');
+  if (!partner) {
+    await deleteTestUser(viewer.id);
+    return null;
+  }
+
+  // 2. The viewer's auth session, for browser localStorage injection. Uses the
+  //    anon key against the same admin-reachable URL.
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) {
+    console.warn('seedIsolatedConversation: anon URL/key not configured');
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+  const anon = createClient(anonUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data: signIn, error: signInError } =
+    await anon.auth.signInWithPassword({
+      email: viewer.email,
+      password: viewer.password,
+    });
+  if (signInError || !signIn.session) {
+    console.warn(
+      'seedIsolatedConversation: viewer sign-in failed:',
+      signInError?.message
+    );
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+
+  // 3. Private conversation (canonical sorted participant order).
+  const [p1, p2] =
+    viewer.id < partner.id ? [viewer.id, partner.id] : [partner.id, viewer.id];
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({ participant_1_id: p1, participant_2_id: p2 })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedIsolatedConversation: conversation insert failed:',
+      convError?.message
+    );
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // 4. Optional pre-seeded history (placeholder content, alternating senders).
+  if (messageCount > 0) {
+    const senders = [viewer.id, partner.id];
+    const now = Date.now();
+    const rows = Array.from({ length: messageCount }, (_, i) => ({
+      conversation_id: conversationId,
+      sender_id: senders[i % 2],
+      encrypted_content: `iso-msg-${i + 1}`,
+      initialization_vector: `iv-${i + 1}`,
+      sequence_number: i + 1,
+      created_at: new Date(
+        now - (messageCount - 1 - i) * 5 * 60 * 1000
+      ).toISOString(),
+    }));
+    const { error: insertError } = await admin.from('messages').insert(rows);
+    if (insertError) {
+      console.warn(
+        'seedIsolatedConversation: message insert failed:',
+        insertError.message
+      );
+      await deleteTestUser(viewer.id);
+      await deleteTestUser(partner.id);
+      return null;
+    }
+    await admin
+      .from('conversations')
+      .update({ last_message_at: new Date(now).toISOString() })
+      .eq('id', conversationId);
+  }
+
+  const session = signIn.session;
+  console.log(
+    `✓ Isolated conversation ${conversationId} (viewer ${viewer.id}, partner ${partner.id}, ${messageCount} msgs)`
+  );
+  return {
+    viewer,
+    partner,
+    conversationId,
+    viewerSession: {
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+      expires_at: session.expires_at ?? 0,
+      user: session.user,
+    },
+  };
+}
+
+/**
+ * Tear down an isolated conversation. Deleting both throwaway users
+ * cascade-deletes the conversation + messages (FK ON DELETE CASCADE). Safe with
+ * null. See {@link seedIsolatedConversation}.
+ */
+export async function deleteIsolatedConversation(
+  fixture: IsolatedConversation | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.viewer.id);
+  await deleteTestUser(fixture.partner.id);
+  console.log('✓ Isolated conversation torn down');
+}
+
+/**
  * Scroll a message thread to the bottom so virtual-scrolled messages
  * at the end of the list are rendered in the DOM.
  */
