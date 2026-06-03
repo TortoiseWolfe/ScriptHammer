@@ -1656,6 +1656,281 @@ export async function openAsPartner(
 }
 
 /**
+ * Create a throwaway user (keyed at TIME_COST=3) and sign it in, returning the
+ * user + an InjectableSession for browser injection. Shared building block for
+ * the isolated-fixture seeders. Returns null on any failure (caller cleans up).
+ */
+async function createKeyedUserWithSession(
+  prefix: string,
+  userTag: string,
+  stamp: string
+): Promise<{ user: TestUser; session: InjectableSession } | null> {
+  const email = generateTestEmail(prefix);
+  const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
+    username: `${userTag}${stamp}`,
+  });
+  if (!user) {
+    console.warn(`createKeyedUserWithSession: failed to create ${userTag}`);
+    return null;
+  }
+  const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+  if (!keysOk) {
+    console.warn(`createKeyedUserWithSession: failed to key ${userTag}`);
+    await deleteTestUser(user.id);
+    return null;
+  }
+
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) {
+    console.warn('createKeyedUserWithSession: anon URL/key not configured');
+    await deleteTestUser(user.id);
+    return null;
+  }
+  const anon = createClient(anonUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await anon.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error || !data.session) {
+    console.warn(
+      `createKeyedUserWithSession: sign-in failed for ${user.email}:`,
+      error?.message
+    );
+    await deleteTestUser(user.id);
+    return null;
+  }
+  return {
+    user,
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at ?? 0,
+      user: data.session.user,
+    },
+  };
+}
+
+/**
+ * A fully isolated pair of throwaway users plus a {@link user_connections} row
+ * at a chosen status — for friend-request specs that mutate connection state.
+ * Both users are keyed at TIME_COST=3 and have sessions for browser injection.
+ */
+export interface IsolatedConnection {
+  requester: TestUser;
+  addressee: TestUser;
+  connectionId: string;
+  requesterSession: InjectableSession;
+  addresseeSession: InjectableSession;
+}
+
+/**
+ * Create a fully isolated requester + addressee + connection for one test.
+ *
+ * @param status  'pending' (default) so the test can accept/decline it, or
+ *                'accepted'/'blocked'/'declined' to start in that state.
+ * Returns null if the admin client / anon key is unavailable.
+ */
+export async function seedIsolatedConnection(
+  status: 'pending' | 'accepted' | 'blocked' | 'declined' = 'pending',
+  opts?: { requesterPrefix?: string; addresseePrefix?: string }
+): Promise<IsolatedConnection | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const requesterPrefix = opts?.requesterPrefix ?? 'iso-req';
+  const addresseePrefix = opts?.addresseePrefix ?? 'iso-add';
+
+  const requester = await createKeyedUserWithSession(
+    requesterPrefix,
+    'isor',
+    stamp
+  );
+  if (!requester) return null;
+  const addressee = await createKeyedUserWithSession(
+    addresseePrefix,
+    'isoa',
+    stamp
+  );
+  if (!addressee) {
+    await deleteTestUser(requester.user.id);
+    return null;
+  }
+
+  const { data: connection, error: connError } = await admin
+    .from('user_connections')
+    .insert({
+      requester_id: requester.user.id,
+      addressee_id: addressee.user.id,
+      status,
+    })
+    .select('id')
+    .single();
+  if (connError || !connection) {
+    console.warn(
+      'seedIsolatedConnection: connection insert failed:',
+      connError?.message
+    );
+    await deleteTestUser(requester.user.id);
+    await deleteTestUser(addressee.user.id);
+    return null;
+  }
+
+  console.log(
+    `✓ Isolated connection ${connection.id} (${status}; requester ${requester.user.id}, addressee ${addressee.user.id})`
+  );
+  return {
+    requester: requester.user,
+    addressee: addressee.user,
+    connectionId: connection.id as string,
+    requesterSession: requester.session,
+    addresseeSession: addressee.session,
+  };
+}
+
+/**
+ * Tear down an isolated connection. Deleting both throwaway users cascade-deletes
+ * the connection (FK ON DELETE CASCADE). Safe with null.
+ */
+export async function deleteIsolatedConnection(
+  fixture: IsolatedConnection | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.requester.id);
+  await deleteTestUser(fixture.addressee.id);
+  console.log('✓ Isolated connection torn down');
+}
+
+/** One participant of an isolated group conversation. */
+export interface IsolatedGroupParticipant {
+  user: TestUser;
+  session: InjectableSession;
+}
+
+/**
+ * A fully isolated group conversation: N throwaway users (all keyed at
+ * TIME_COST=3, with sessions) and one group conversation they all belong to.
+ */
+export interface IsolatedGroup {
+  participants: IsolatedGroupParticipant[];
+  conversationId: string;
+}
+
+/**
+ * Create a fully isolated group of `participantCount` throwaway users plus a
+ * group conversation containing all of them. For the group-chat spec.
+ *
+ * The conversation is created with is_group=true and the creator as
+ * participant_1; remaining members are added via conversation_participants
+ * (falls back gracefully if that table is absent on older schemas). Returns null
+ * if the admin client / anon key is unavailable or the conversation can't be made.
+ */
+export async function seedIsolatedGroup(
+  participantCount = 3,
+  opts?: { prefix?: string }
+): Promise<IsolatedGroup | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+  if (participantCount < 2) {
+    console.warn('seedIsolatedGroup: participantCount must be >= 2');
+    return null;
+  }
+
+  const stamp = Date.now().toString().slice(-8);
+  const prefix = opts?.prefix ?? 'iso-grp';
+  const participants: IsolatedGroupParticipant[] = [];
+
+  const cleanup = async () => {
+    for (const p of participants) await deleteTestUser(p.user.id);
+  };
+
+  for (let i = 0; i < participantCount; i++) {
+    const made = await createKeyedUserWithSession(
+      `${prefix}${i}`,
+      `isog${i}`,
+      stamp
+    );
+    if (!made) {
+      await cleanup();
+      return null;
+    }
+    participants.push({ user: made.user, session: made.session });
+  }
+
+  // Group conversation: per the CHK023 constraint, is_group=true REQUIRES
+  // participant_1_id/participant_2_id NULL and created_by NOT NULL. Membership
+  // lives in conversation_members (the creator is the 'owner').
+  const creatorId = participants[0].user.id;
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({
+      is_group: true,
+      participant_1_id: null,
+      participant_2_id: null,
+      created_by: creatorId,
+      group_name: `iso-group-${stamp}`,
+    })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedIsolatedGroup: conversation insert failed:',
+      convError?.message
+    );
+    await cleanup();
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // Register every member in conversation_members (creator = owner).
+  const memberRows = participants.map((p, i) => ({
+    conversation_id: conversationId,
+    user_id: p.user.id,
+    role: i === 0 ? 'owner' : 'member',
+  }));
+  const { error: memberError } = await admin
+    .from('conversation_members')
+    .insert(memberRows);
+  if (memberError) {
+    console.warn(
+      'seedIsolatedGroup: conversation_members insert failed:',
+      memberError.message
+    );
+    await admin.from('conversations').delete().eq('id', conversationId);
+    await cleanup();
+    return null;
+  }
+
+  console.log(
+    `✓ Isolated group ${conversationId} (${participantCount} members)`
+  );
+  return { participants, conversationId };
+}
+
+/**
+ * Tear down an isolated group. Unlike a 1:1 conversation (cascade-deleted via
+ * its participant FKs), a group's `conversations.created_by` is a plain
+ * reference with NO ON DELETE CASCADE, so deleting members alone orphans the
+ * conversation. Delete the conversation row explicitly FIRST (cascading
+ * conversation_members + messages + group_keys), then the users. Safe with null.
+ */
+export async function deleteIsolatedGroup(
+  fixture: IsolatedGroup | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    await admin.from('conversations').delete().eq('id', fixture.conversationId);
+  }
+  for (const p of fixture.participants) await deleteTestUser(p.user.id);
+  console.log('✓ Isolated group torn down');
+}
+
+/**
  * Scroll a message thread to the bottom so virtual-scrolled messages
  * at the end of the list are rendered in the DOM.
  */
