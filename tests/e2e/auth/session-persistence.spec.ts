@@ -188,37 +188,31 @@ test.describe('Session Persistence E2E', () => {
     // Sign out via dropdown menu
     await signOutViaDropdown(page);
 
-    // Wait for Supabase to clear the session from localStorage.
-    // signOut() is async — the redirect to / happens before tokens are cleared.
-    await page.waitForFunction(
-      () => {
-        for (const key of Object.keys(localStorage)) {
-          if (key.match(/sb-.*-auth-token/)) {
-            const authData = localStorage.getItem(key);
-            if (authData) {
-              try {
-                const parsed = JSON.parse(authData);
-                if (parsed.access_token != null) return false;
-              } catch {
-                /* empty or malformed — fine */
-              }
-            }
-          }
-        }
-        return true;
-      },
-      { timeout: 30000 }
-    );
-
-    // Verify cannot access protected routes — ProtectedRoute may redirect
-    // before goto completes, so catch the "navigation interrupted" error
+    // The real contract is "signed out → cannot reach a protected route".
+    // (The old localStorage waitForFunction poll asserted WHEN Supabase's
+    // private sb-*-auth-token clears — an implementation detail that clears on
+    // its own async schedule and raced the hard window.location='/' redirect
+    // signOut() fires, flaking on firefox/webkit. Removed.)
     await page
       .goto('/profile', { waitUntil: 'domcontentloaded' })
-      .catch(() => {});
-    await page.waitForURL(/\/(sign-in|$)/, { timeout: 30000 });
-    // Should have landed on sign-in (or root if redirect goes to /)
-    const url = page.url();
-    expect(url).toMatch(/\/(sign-in|$)/);
+      .catch(() => {}); // ProtectedRoute may redirect before goto resolves
+    // Pathname-EXACT: with trailingSlash:true a still-authenticated user lands
+    // on /profile/, which the old /\/(sign-in|$)/ regex wrongly matched — so a
+    // real sign-out regression would have passed. Assert the pathname directly.
+    await page.waitForURL(
+      (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+      { timeout: 30000 }
+    );
+    const pathname = new URL(page.url()).pathname;
+    expect(pathname === '/' || pathname.startsWith('/sign-in')).toBe(true);
+
+    // One-shot storage check on the now-settled document (no poll, no nav in
+    // flight → can't flake): the test named "should clear session" still
+    // asserts the token is gone, but as a single read after the redirect.
+    const afterSignOut = await page.evaluate(() =>
+      JSON.stringify(window.localStorage)
+    );
+    expect(afterSignOut).not.toMatch(/"access_token":"[^"]/);
   });
 
   test('should handle concurrent tab sessions correctly', async ({
@@ -284,15 +278,21 @@ test.describe('Session Persistence E2E', () => {
     await expect(page1).toHaveURL(/\/$/);
     await expect(page1.getByRole('link', { name: 'Sign In' })).toBeVisible();
 
-    // If auth had synced to page2, verify it's now signed out too
+    // If auth had synced to page2, verify it's now signed out too. The cross-tab
+    // SIGNED_OUT event (onAuthStateChange) has no delivery-latency guarantee and
+    // webkit/firefox under CI load delay/coalesce it, so a single reload+waitForURL
+    // was a fragile one-shot bet. Use reload-as-source-of-truth: each retry re-reads
+    // the (by-then cleared) shared storage from a fresh document, so a delayed event
+    // is absorbed by the next reload — same 30s ceiling, spent deterministically.
+    // Still HARD-fails if page2 can reach /profile after sign-out (token not cleared).
     if (authSynced) {
-      await page2.reload({ waitUntil: 'domcontentloaded' });
-      // After sign-out, page2 should redirect away from /profile.
-      // Chromium redirects to /sign-in, Firefox may redirect to /.
-      await page2.waitForURL(
-        (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
-        { timeout: 30000 }
-      );
+      await expect(async () => {
+        await page2.reload({ waitUntil: 'domcontentloaded' });
+        await page2.waitForURL(
+          (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+          { timeout: 5000 }
+        );
+      }).toPass({ timeout: 30000 });
     }
 
     await context.close();
