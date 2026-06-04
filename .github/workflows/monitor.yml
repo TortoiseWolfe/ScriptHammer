@@ -18,13 +18,13 @@ jobs:
     permissions:
       contents: write # Allow bot to commit lighthouse scores
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10.16.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -101,7 +101,7 @@ jobs:
       #     git push --no-verify
 
       - name: Upload Lighthouse Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: lighthouse-results-${{ github.run_number }}
           path: lighthouse-results.md
@@ -110,13 +110,13 @@ jobs:
   pwa-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: pnpm/action-setup@v4
         with:
           version: 10.16.1
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -194,7 +194,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Update Status Badge
         run: |
@@ -224,7 +224,7 @@ jobs:
           echo "- Smoke Test Pass Rate: 100%" >> status-report.md
 
       - name: Upload Status Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: status-report-${{ github.run_number }}
           path: |
