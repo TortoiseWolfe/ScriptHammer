@@ -88,15 +88,35 @@ async function sendMessage(page: Page, message: string) {
   // Scroll to bottom so virtual scrolling renders the new message
   await scrollThreadToBottom(page);
 
-  // Wait for message to appear in the DOM, or fail fast on error banner
+  // Wait for the message to appear, or fail fast on a REAL send-error banner.
+  //
+  // The send-error banner is the ConversationView one — the only [role="alert"]
+  // that carries a "Dismiss" button. We scope to it via `has:` so we do NOT
+  // trip on the MessageInput VALIDATION banner ([role="alert"] with no Dismiss,
+  // toggled null→set→null during handleSend). On webkit that validation banner
+  // can flicker visible mid-render; the old broad `[role="alert"]` race caught
+  // it and threw `Send failed with error banner:` with EMPTY text even though
+  // the send succeeded (retry-recovered). Only fail on a stable, NON-EMPTY error.
   const messageElement = page.getByText(message);
-  const errorBanner = page.locator('[role="alert"]');
+  const sendErrorBanner = page.locator('[role="alert"]', {
+    has: page.getByRole('button', { name: /dismiss/i }),
+  });
   await Promise.race([
     expect(messageElement).toBeVisible({ timeout: 30000 }),
-    errorBanner.waitFor({ state: 'visible', timeout: 30000 }).then(async () => {
-      const text = await errorBanner.textContent();
-      throw new Error(`Send failed with error banner: ${text}`);
-    }),
+    sendErrorBanner
+      .waitFor({ state: 'visible', timeout: 30000 })
+      .then(async () => {
+        // Confirm it's a real, settled error before failing — a transient
+        // banner that flickers empty/clears must NOT fail the send.
+        const text = (await sendErrorBanner.textContent())?.trim() ?? '';
+        if (!text) {
+          // Empty/transient banner: fall back to waiting for the message to
+          // render (the send almost certainly succeeded).
+          await expect(messageElement).toBeVisible({ timeout: 30000 });
+          return;
+        }
+        throw new Error(`Send failed with error banner: ${text}`);
+      }),
   ]);
 
   // Scroll the message into view (new messages appear at bottom)
