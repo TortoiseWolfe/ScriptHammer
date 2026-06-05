@@ -5,8 +5,26 @@
 
 import { paypalConfig } from '@/config/payment';
 import { createLogger } from '@/lib/logger';
+import { supabase } from '@/lib/supabase/client';
 
 const logger = createLogger('payments:paypal');
+
+/**
+ * Attach Authorization: Bearer <jwt> to Edge Function calls. The outbound
+ * PayPal functions (create-paypal-order, capture-paypal-order,
+ * create-paypal-subscription) do server-side ownership checks against
+ * payment_intents.template_user_id — the JWT is how they identify the caller.
+ * Mirrors getAuthHeader() in stripe.ts. (Previously these calls sent no auth
+ * header, so the functions had no caller identity to verify — #103/#104.)
+ */
+async function getAuthHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data?.session?.access_token;
+  if (!token) {
+    throw new Error('No active session — sign in required for payments');
+  }
+  return { Authorization: `Bearer ${token}` };
+}
 
 declare global {
   interface Window {
@@ -76,6 +94,7 @@ export async function createPayPalOrder(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({ payment_intent_id: paymentIntentId }),
     }
@@ -103,6 +122,7 @@ export async function approvePayPalOrder(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(await getAuthHeader()),
         },
         body: JSON.stringify({ order_id: orderId }),
       }
@@ -147,6 +167,7 @@ export async function createPayPalSubscription(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(await getAuthHeader()),
       },
       body: JSON.stringify({
         plan_id: planId,
