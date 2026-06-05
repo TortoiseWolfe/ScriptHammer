@@ -120,12 +120,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .select('*');
 
       expect(error).toBeNull();
-      // T032 above inserted one row via service role; the policy under test
-      // is "service role can SELECT all audit logs", so reading back ≥1 row
-      // proves the policy lets service role see what's there. The earlier
-      // assertion of ≥2 encoded an instrumentation contract (signup events
-      // auto-logged via trigger) that the schema does not implement.
-      expect(data!.length).toBeGreaterThanOrEqual(1);
+      // #49: the create_user_profile() trigger now auto-logs a 'sign_up' row for
+      // every auth.users INSERT, so the test users created in beforeAll() each
+      // produce one — plus the row T032 inserted via service role. Reading back
+      // ≥2 proves both that the policy lets service role SELECT all audit logs
+      // AND that the signup-instrumentation trigger is wired (the contract this
+      // assertion originally encoded; restored once the trigger landed).
+      expect(data!.length).toBeGreaterThanOrEqual(2);
     });
 
     // Additional test: Authenticated user only sees own audit logs
