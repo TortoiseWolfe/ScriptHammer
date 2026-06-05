@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.16.1
 
@@ -43,7 +43,7 @@ jobs:
 
       - name: Upload Pa11y screenshots
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: pa11y-screenshots
           path: .pa11y-screenshots/

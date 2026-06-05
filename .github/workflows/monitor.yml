@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.16.1
 
@@ -101,7 +101,7 @@ jobs:
       #     git push --no-verify
 
       - name: Upload Lighthouse Results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: lighthouse-results-${{ github.run_number }}
           path: lighthouse-results.md
@@ -112,7 +112,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.16.1
 
@@ -224,7 +224,7 @@ jobs:
           echo "- Smoke Test Pass Rate: 100%" >> status-report.md
 
       - name: Upload Status Report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: status-report-${{ github.run_number }}
           path: |
