@@ -30,6 +30,15 @@ export default function AccountPage() {
           </div>
 
           <AccountSettings />
+
+          <div className="divider" />
+
+          <Link
+            href="/account/audit"
+            className="btn btn-outline min-h-11 w-full"
+          >
+            View recent security activity
+          </Link>
         </div>
       </main>
     </ProtectedRoute>
