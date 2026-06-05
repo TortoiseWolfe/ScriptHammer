@@ -94,12 +94,7 @@ export default function UserAuditTrail({
         setEntries([]);
         return;
       }
-      // Cast via `unknown`: the generated src/lib/supabase/types.ts is stale —
-      // its `auth_audit_logs.Row` omits the `success` / `error_message` columns
-      // that exist in the live table + the monolithic migration, so the query
-      // builder mis-infers a SelectQueryError. The runtime row has `success`.
-      // (Regenerating the Supabase types is tracked separately, out of #23 scope.)
-      setEntries((data ?? []) as unknown as UserAuditEntry[]);
+      setEntries((data ?? []) as UserAuditEntry[]);
     }
 
     void load();
