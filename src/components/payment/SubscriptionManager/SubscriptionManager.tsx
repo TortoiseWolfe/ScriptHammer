@@ -82,13 +82,22 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     setActionLoading(subscriptionId);
 
     try {
-      // Call Edge Function to cancel subscription
+      // Call Edge Function to cancel subscription. The function does a
+      // server-side ownership check against subscriptions.template_user_id,
+      // so we must send the caller's JWT (#105).
+      const {
+        data: { session: cancelSession },
+      } = await supabase.auth.getSession();
+      if (!cancelSession?.access_token) {
+        throw new Error('No active session — sign in required');
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/cancel-subscription`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${cancelSession.access_token}`,
           },
           body: JSON.stringify({ subscription_id: subscriptionId }),
         }
@@ -121,13 +130,20 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     setActionLoading(subscriptionId);
 
     try {
-      // Call Edge Function to resume subscription
+      // Call Edge Function to resume subscription (JWT for ownership check, #105).
+      const {
+        data: { session: resumeSession },
+      } = await supabase.auth.getSession();
+      if (!resumeSession?.access_token) {
+        throw new Error('No active session — sign in required');
+      }
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resume-subscription`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${resumeSession.access_token}`,
           },
           body: JSON.stringify({ subscription_id: subscriptionId }),
         }

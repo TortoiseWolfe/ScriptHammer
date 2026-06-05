@@ -148,6 +148,25 @@ CREATE INDEX IF NOT EXISTS idx_provider_config_enabled ON payment_provider_confi
 
 COMMENT ON TABLE payment_provider_config IS 'Payment provider settings and failover';
 
+-- Edge-function idempotency keys (#106). Lets outbound payment functions
+-- dedupe retried operations (offline-queue replay, double-click, network
+-- retry) by returning the previously-stored result instead of re-calling the
+-- provider. Written/read only by service-role (the Edge Functions); not
+-- client-facing. See supabase/functions/_shared/idempotency.ts.
+CREATE TABLE IF NOT EXISTS edge_idempotency_keys (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  idempotency_key TEXT NOT NULL,
+  function_name TEXT NOT NULL,
+  result JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (idempotency_key, function_name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_edge_idempotency_lookup
+  ON edge_idempotency_keys(idempotency_key, function_name);
+
+COMMENT ON TABLE edge_idempotency_keys IS 'Idempotency cache for outbound payment Edge Functions (#106)';
+
 -- Webhook events (with retry fields from Feature 017)
 CREATE TABLE IF NOT EXISTS webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
