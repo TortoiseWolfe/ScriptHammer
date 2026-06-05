@@ -404,12 +404,15 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      # max-parallel: 3 — run at most 3 shards concurrently against Supabase.
-      # Prior default (unbounded) ran all 7 shards simultaneously, which
-      # overwhelmed free-tier rate limits on webkit ("Sign-in failed:
-      # Request rate limit reached"). Browsers are serialized via
-      # `needs:` chain, so this caps total concurrent Supabase load at 3.
-      max-parallel: 3
+      # Lever 1: the 3 browser jobs now run CONCURRENTLY (the firefox/webkit
+      # `needs:` chain was dropped — #116 per-test fixture isolation removed the
+      # cross-test data races the serialization protected against). max-parallel
+      # is 2 (not 3) so peak concurrent Supabase load is 2 shards × 3 browsers = 6,
+      # half the historically-dangerous 9 that overwhelmed the free tier
+      # ("Sign-in failed: Request rate limit reached" on webkit). Validated via
+      # workflow_dispatch before merge; if rate limits recur, restore one `needs:`
+      # (re-serialize webkit) rather than raising max-parallel.
+      max-parallel: 2
       matrix:
         include:
           # ===== CHROMIUM (7 shards) =====
@@ -590,12 +593,14 @@ jobs:
           retention-days: 1
 
   # ============================================
-  # STEP 5b: Firefox E2E (waits for chromium to release Supabase)
+  # STEP 5b: Firefox E2E (runs concurrently with chromium + webkit — Lever 1)
   # ============================================
   e2e-firefox:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs: e2e
+    # Lever 1: depends only on the build/auth artifacts (same as e2e/chromium),
+    # NOT on the chromium job — so all 3 browsers run in parallel.
+    needs: [smoke, rate-limiting, auth-setup]
     # Lever 2: chromium gates every PR; firefox + webkit run on push-to-main,
     # the weekly cron, and workflow_dispatch — keeping PR feedback fast. A PR
     # touching WebKit/Firefox-sensitive code can opt back in with the `full-e2e`
@@ -608,8 +613,9 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      # Cap concurrent shards to avoid Supabase free-tier rate limits.
-      max-parallel: 3
+      # Lever 1: max-parallel 2 (was 3) — browsers now run concurrently, so the
+      # per-browser cap is lower to keep peak Supabase load at 6 shards, not 9.
+      max-parallel: 2
       matrix:
         include:
           # msg runs as a single shard (see chromium matrix note above).
@@ -756,12 +762,13 @@ jobs:
           retention-days: 1
 
   # ============================================
-  # STEP 5c: WebKit E2E (waits for firefox to release Supabase)
+  # STEP 5c: WebKit E2E (runs concurrently with chromium + firefox — Lever 1)
   # ============================================
   e2e-webkit:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs: e2e-firefox
+    # Lever 1: depends only on build/auth artifacts, NOT firefox — all 3 parallel.
+    needs: [smoke, rate-limiting, auth-setup]
     # Lever 2: see e2e-firefox above — skipped on PRs (chromium gates those)
     # unless the PR carries the `full-e2e` label; runs on push-to-main + cron.
     if: >-
@@ -771,8 +778,9 @@ jobs:
     timeout-minutes: 60
     strategy:
       fail-fast: false
-      # Cap concurrent shards to avoid Supabase free-tier rate limits.
-      max-parallel: 3
+      # Lever 1: max-parallel 2 (was 3) — browsers now run concurrently, so the
+      # per-browser cap is lower to keep peak Supabase load at 6 shards, not 9.
+      max-parallel: 2
       matrix:
         include:
           # msg runs as a single shard (see chromium matrix note above).
