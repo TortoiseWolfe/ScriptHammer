@@ -329,78 +329,494 @@ export class GroupService {
   }
 
   /**
-   * Add members to an existing group
-   * @param input - Add members parameters
-   * @returns Result with added and pending members
-   * @throws MembershipError if validation fails
+   * Get the authenticated user or throw. Shared by the membership mutations.
+   */
+  private async requireUser(): Promise<{ id: string }> {
+    const {
+      data: { user },
+      error,
+    } = await this.supabase.auth.getUser();
+    if (error || !user) {
+      throw new AuthenticationError('You must be signed in');
+    }
+    return user;
+  }
+
+  /**
+   * Record a group system message (member_added / member_removed / member_left /
+   * ownership_transferred / group_renamed) for the audit trail. Best-effort: a
+   * failure here is logged but never aborts the membership change it describes.
+   */
+  private async recordSystemMessage(
+    conversationId: string,
+    actorId: string,
+    type: string,
+    extra?: Record<string, unknown>
+  ): Promise<void> {
+    try {
+      const msgClient = createMessagingClient(this.supabase);
+      await msgClient.from('messages').insert({
+        conversation_id: conversationId,
+        sender_id: actorId,
+        is_system_message: true,
+        system_message_type: type,
+        // System messages aren't E2E-encrypted; store a tiny JSON marker.
+        encrypted_content: JSON.stringify({ type, ...extra }),
+        initialization_vector: 'system',
+      });
+    } catch (error) {
+      logger.warn('Failed to record group system message', {
+        conversationId,
+        type,
+        error,
+      });
+    }
+  }
+
+  /**
+   * Add members to an existing group (#26). Owner or existing member may add.
+   * Distributes the current group key to the new members; members without a
+   * public key are returned as `pending` (retryable via the key service).
+   * @throws AuthenticationError / MembershipError / GroupError
    */
   async addMembers(input: AddMembersInput): Promise<AddMembersResult> {
-    throw new MembershipError('addMembers: not implemented');
+    const user = await this.requireUser();
+    const { conversation_id, member_ids } = input;
+
+    if (!member_ids || member_ids.length === 0) {
+      throw new ValidationError('No members provided', 'member_ids');
+    }
+    if (!(await this.isMember(conversation_id, user.id))) {
+      throw new MembershipError(
+        'Only a group member can add members',
+        'NOT_CONNECTED'
+      );
+    }
+
+    const msgClient = createMessagingClient(this.supabase);
+
+    // Read the group's current key version + capacity.
+    const { data: conversation, error: convError } = await msgClient
+      .from('conversations')
+      .select('id, is_group, current_key_version')
+      .eq('id', conversation_id)
+      .single();
+    if (convError || !conversation || !conversation.is_group) {
+      throw new GroupError('Group not found');
+    }
+
+    // Skip anyone already an active member; reject over-capacity.
+    const newIds: string[] = [];
+    for (const id of new Set(member_ids)) {
+      if (id === user.id) continue;
+      if (!(await this.isMember(conversation_id, id))) newIds.push(id);
+    }
+    if (newIds.length === 0) {
+      return {
+        added: [],
+        pending: [],
+        new_key_version: conversation.current_key_version,
+      };
+    }
+    const currentCount = await this.getMemberCount(conversation_id);
+    if (currentCount + newIds.length > GROUP_CONSTRAINTS.MAX_MEMBERS) {
+      throw new MembershipError(
+        `Group cannot exceed ${GROUP_CONSTRAINTS.MAX_MEMBERS} members`,
+        'AT_CAPACITY'
+      );
+    }
+
+    // New members must be connected to the actor and have messaging set up.
+    const connected = await this.getConnectedUserIds(user.id, newIds);
+    if (newIds.some((id) => !connected.has(id))) {
+      throw new MembershipError(
+        'All members must be connected to you',
+        'NOT_CONNECTED'
+      );
+    }
+    const keyCheck = await this.validateMembersHaveKeys(newIds);
+
+    const keyVersion = conversation.current_key_version;
+    const memberEntries = newIds.map((id) => ({
+      conversation_id,
+      user_id: id,
+      role: 'member' as const,
+      key_version_joined: keyVersion,
+      key_status: keyCheck.missingKeys.includes(id)
+        ? ('pending' as const)
+        : ('active' as const),
+    }));
+
+    const { error: insertError } = await msgClient
+      .from('conversation_members')
+      .insert(memberEntries);
+    if (insertError) {
+      throw new GroupError('Failed to add members', insertError);
+    }
+
+    // Distribute the CURRENT key to the new members (no rotation needed on add —
+    // new members legitimately may read history they now belong to).
+    const withKeys = newIds.filter((id) => !keyCheck.missingKeys.includes(id));
+    const memberRows: ConversationMember[] =
+      await this.getMembers(conversation_id);
+    const newMemberRows = memberRows.filter((m) =>
+      withKeys.includes(m.user_id)
+    );
+    let pending = [...keyCheck.missingKeys];
+    if (newMemberRows.length > 0) {
+      const result = await this.groupKeyService.distributeGroupKey(
+        conversation_id,
+        newMemberRows,
+        keyVersion
+      );
+      pending = [...pending, ...result.pending];
+    }
+
+    await this.recordSystemMessage(conversation_id, user.id, 'member_added', {
+      added: newIds,
+    });
+
+    return {
+      added: newIds,
+      pending: Array.from(new Set(pending)),
+      new_key_version: keyVersion,
+    };
   }
 
   /**
-   * Remove a member from a group (owner only)
-   * @param conversationId - Group ID
-   * @param userId - User to remove
-   * @throws MembershipError if not owner or user not found
+   * Remove a member from a group (owner only) (#26). Soft-deletes the membership
+   * then ROTATES the group key so the removed member loses access to future
+   * messages (forward secrecy).
+   * @throws AuthenticationError / MembershipError
    */
   async removeMember(conversationId: string, userId: string): Promise<void> {
-    throw new MembershipError('removeMember: not implemented');
+    const user = await this.requireUser();
+    if (!(await this.isOwner(conversationId, user.id))) {
+      throw new MembershipError(
+        'Only the group owner can remove members',
+        'NOT_CONNECTED'
+      );
+    }
+    if (userId === user.id) {
+      throw new MembershipError(
+        'Use leaveGroup to remove yourself',
+        'NOT_CONNECTED'
+      );
+    }
+    if (!(await this.isMember(conversationId, userId))) {
+      throw new MembershipError('User is not a member', 'NOT_CONNECTED');
+    }
+
+    const msgClient = createMessagingClient(this.supabase);
+    const { error } = await msgClient
+      .from('conversation_members')
+      .update({ left_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId)
+      .is('left_at', null);
+    if (error) {
+      throw new GroupError('Failed to remove member', error);
+    }
+
+    // Forward secrecy: rotate so the departed member can't read new messages.
+    await this.groupKeyService.rotateGroupKey(conversationId);
+    await this.recordSystemMessage(conversationId, user.id, 'member_removed', {
+      removed: userId,
+    });
   }
 
   /**
-   * Leave a group voluntarily
-   * @param conversationId - Group ID
-   * @throws MembershipError if owner without transfer
+   * Leave a group voluntarily (#26). An owner must transfer ownership first
+   * (unless they are the last member, in which case the group is deleted).
+   * Rotates the key on departure for forward secrecy.
+   * @throws AuthenticationError / MembershipError
    */
   async leaveGroup(conversationId: string): Promise<void> {
-    throw new MembershipError('leaveGroup: not implemented');
+    const user = await this.requireUser();
+    if (!(await this.isMember(conversationId, user.id))) {
+      throw new MembershipError('You are not a member', 'NOT_CONNECTED');
+    }
+
+    if (await this.isOwner(conversationId, user.id)) {
+      const count = await this.getMemberCount(conversationId);
+      if (count > 1) {
+        throw new MembershipError(
+          'Transfer ownership before leaving the group',
+          'NOT_CONNECTED'
+        );
+      }
+      // Sole owner + last member → deleting is the only sensible outcome.
+      await this.deleteGroup(conversationId);
+      return;
+    }
+
+    const msgClient = createMessagingClient(this.supabase);
+    const { error } = await msgClient
+      .from('conversation_members')
+      .update({ left_at: new Date().toISOString() })
+      .eq('conversation_id', conversationId)
+      .eq('user_id', user.id)
+      .is('left_at', null);
+    if (error) {
+      throw new GroupError('Failed to leave group', error);
+    }
+
+    await this.groupKeyService.rotateGroupKey(conversationId);
+    await this.recordSystemMessage(conversationId, user.id, 'member_left');
   }
 
   /**
-   * Transfer group ownership to another member
-   * @param input - Transfer parameters
-   * @throws MembershipError if not owner or target not member
+   * Transfer group ownership to another active member (owner only) (#26).
+   * Demotes the current owner to member and promotes the target.
+   * @throws AuthenticationError / MembershipError
    */
   async transferOwnership(input: TransferOwnershipInput): Promise<void> {
-    throw new MembershipError('transferOwnership: not implemented');
+    const user = await this.requireUser();
+    const { conversation_id, new_owner_id } = input;
+
+    if (!(await this.isOwner(conversation_id, user.id))) {
+      throw new MembershipError(
+        'Only the group owner can transfer ownership',
+        'NOT_CONNECTED'
+      );
+    }
+    if (new_owner_id === user.id) {
+      throw new ValidationError('You are already the owner', 'new_owner_id');
+    }
+    if (!(await this.isMember(conversation_id, new_owner_id))) {
+      throw new MembershipError(
+        'New owner must be an active member',
+        'NOT_CONNECTED'
+      );
+    }
+
+    const msgClient = createMessagingClient(this.supabase);
+    const { error: demoteError } = await msgClient
+      .from('conversation_members')
+      .update({ role: 'member' })
+      .eq('conversation_id', conversation_id)
+      .eq('user_id', user.id)
+      .is('left_at', null);
+    if (demoteError) {
+      throw new GroupError('Failed to transfer ownership', demoteError);
+    }
+    const { error: promoteError } = await msgClient
+      .from('conversation_members')
+      .update({ role: 'owner' })
+      .eq('conversation_id', conversation_id)
+      .eq('user_id', new_owner_id)
+      .is('left_at', null);
+    if (promoteError) {
+      // Best-effort rollback of the demotion to avoid an owner-less group.
+      await msgClient
+        .from('conversation_members')
+        .update({ role: 'owner' })
+        .eq('conversation_id', conversation_id)
+        .eq('user_id', user.id)
+        .is('left_at', null);
+      throw new GroupError('Failed to transfer ownership', promoteError);
+    }
+
+    await this.recordSystemMessage(
+      conversation_id,
+      user.id,
+      'ownership_transferred',
+      { new_owner: new_owner_id }
+    );
   }
 
   /**
-   * Upgrade a 1-to-1 conversation to a group
-   * @param input - Upgrade parameters
-   * @returns Upgraded group conversation
+   * Upgrade a 1-to-1 conversation to a group (#26). Converts the row to a group,
+   * creates member entries for both original participants + any new members, and
+   * distributes a fresh group key (version 1).
+   * @throws AuthenticationError / MembershipError / GroupError
    */
   async upgradeToGroup(input: UpgradeToGroupInput): Promise<GroupConversation> {
-    throw new GroupError('upgradeToGroup: not implemented');
+    const user = await this.requireUser();
+    const { conversation_id, name, member_ids } = input;
+
+    const msgClient = createMessagingClient(this.supabase);
+    const { data: conv, error: convError } = await msgClient
+      .from('conversations')
+      .select('id, is_group, participant_1_id, participant_2_id')
+      .eq('id', conversation_id)
+      .single();
+    if (convError || !conv) {
+      throw new GroupError('Conversation not found');
+    }
+    if (conv.is_group) {
+      throw new ValidationError(
+        'Conversation is already a group',
+        'conversation_id'
+      );
+    }
+    if (
+      conv.participant_1_id !== user.id &&
+      conv.participant_2_id !== user.id
+    ) {
+      throw new MembershipError(
+        'You are not a participant in this conversation',
+        'NOT_CONNECTED'
+      );
+    }
+    const otherParticipant =
+      conv.participant_1_id === user.id
+        ? conv.participant_2_id
+        : conv.participant_1_id;
+
+    const newIds = Array.from(new Set(member_ids ?? [])).filter(
+      (id) => id !== user.id && id !== otherParticipant
+    );
+    const connected = await this.getConnectedUserIds(user.id, newIds);
+    if (newIds.some((id) => !connected.has(id))) {
+      throw new MembershipError(
+        'All members must be connected to you',
+        'NOT_CONNECTED'
+      );
+    }
+
+    // Convert the conversation row to a group.
+    const { data: updated, error: updateError } = await msgClient
+      .from('conversations')
+      .update({
+        is_group: true,
+        group_name: name || null,
+        created_by: user.id,
+        current_key_version: 1,
+        participant_1_id: null,
+        participant_2_id: null,
+      })
+      .eq('id', conversation_id)
+      .select(
+        'id, is_group, group_name, created_by, current_key_version, created_at, last_message_at'
+      )
+      .single();
+    if (updateError || !updated) {
+      throw new GroupError('Failed to upgrade conversation', updateError);
+    }
+
+    // Member rows: actor=owner, the other participant + new members.
+    const entries = [
+      {
+        conversation_id,
+        user_id: user.id,
+        role: 'owner' as const,
+        key_version_joined: 1,
+        key_status: 'active' as const,
+      },
+      ...(otherParticipant
+        ? [
+            {
+              conversation_id,
+              user_id: otherParticipant,
+              role: 'member' as const,
+              key_version_joined: 1,
+              key_status: 'active' as const,
+            },
+          ]
+        : []),
+      ...newIds.map((id) => ({
+        conversation_id,
+        user_id: id,
+        role: 'member' as const,
+        key_version_joined: 1,
+        key_status: 'active' as const,
+      })),
+    ];
+    const { error: membersError } = await msgClient
+      .from('conversation_members')
+      .insert(entries);
+    if (membersError) {
+      throw new GroupError('Failed to add group members', membersError);
+    }
+
+    const memberRows = await this.getMembers(conversation_id);
+    await this.groupKeyService.distributeGroupKey(
+      conversation_id,
+      memberRows,
+      1
+    );
+    await this.recordSystemMessage(conversation_id, user.id, 'group_created');
+
+    return updated as GroupConversation;
   }
 
   /**
-   * Delete a group (owner only)
-   * @param conversationId - Group ID
-   * @throws MembershipError if not owner
+   * Delete a group (owner only) (#26). Relies on FK cascades to drop
+   * conversation_members, group_keys and messages.
+   * @throws AuthenticationError / MembershipError
    */
   async deleteGroup(conversationId: string): Promise<void> {
-    throw new GroupError('deleteGroup: not implemented');
+    const user = await this.requireUser();
+    if (!(await this.isOwner(conversationId, user.id))) {
+      throw new MembershipError(
+        'Only the group owner can delete the group',
+        'NOT_CONNECTED'
+      );
+    }
+    const msgClient = createMessagingClient(this.supabase);
+    const { error } = await msgClient
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId);
+    if (error) {
+      throw new GroupError('Failed to delete group', error);
+    }
   }
 
   /**
-   * Rename a group (owner only)
-   * @param conversationId - Group ID
-   * @param newName - New group name
-   * @throws MembershipError if not owner
+   * Rename a group (owner only) (#26).
+   * @throws AuthenticationError / MembershipError / ValidationError
    */
   async renameGroup(conversationId: string, newName: string): Promise<void> {
-    throw new GroupError('renameGroup: not implemented');
+    const user = await this.requireUser();
+    if (!(await this.isOwner(conversationId, user.id))) {
+      throw new MembershipError(
+        'Only the group owner can rename the group',
+        'NOT_CONNECTED'
+      );
+    }
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      throw new ValidationError('Group name cannot be empty', 'name');
+    }
+    if (trimmed.length > GROUP_CONSTRAINTS.MAX_NAME_LENGTH) {
+      throw new ValidationError(
+        `Group name cannot exceed ${GROUP_CONSTRAINTS.MAX_NAME_LENGTH} characters`,
+        'name'
+      );
+    }
+    const msgClient = createMessagingClient(this.supabase);
+    const { error } = await msgClient
+      .from('conversations')
+      .update({ group_name: trimmed })
+      .eq('id', conversationId);
+    if (error) {
+      throw new GroupError('Failed to rename group', error);
+    }
+    await this.recordSystemMessage(conversationId, user.id, 'group_renamed', {
+      name: trimmed,
+    });
   }
 
   /**
-   * Get group members
-   * @param conversationId - Group ID
-   * @returns List of members with profiles
+   * Get active group members with profiles (#26). RLS scopes visibility to
+   * conversations the caller belongs to.
    */
   async getMembers(conversationId: string): Promise<ConversationMember[]> {
-    throw new MembershipError('getMembers: not implemented');
+    const msgClient = createMessagingClient(this.supabase);
+    const { data, error } = await msgClient
+      .from('conversation_members')
+      .select(
+        'id, conversation_id, user_id, role, joined_at, left_at, key_version_joined, key_status, archived, muted'
+      )
+      .eq('conversation_id', conversationId)
+      .is('left_at', null)
+      .order('joined_at', { ascending: true });
+    if (error) {
+      throw new GroupError('Failed to load group members', error);
+    }
+    return (data ?? []) as ConversationMember[];
   }
 
   /**
