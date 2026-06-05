@@ -364,10 +364,31 @@ BEGIN
   INSERT INTO public.user_profiles (id, created_at, updated_at)
   VALUES (NEW.id, NOW(), NOW())
   ON CONFLICT (id) DO NOTHING;
+
+  -- #49: write the 'sign_up' audit event here, in the AFTER INSERT ON auth.users
+  -- trigger, so EVERY signup path is captured — email/password form, OAuth
+  -- redirect, AND admin-API auth.admin.createUser(). The application-level
+  -- logAuthEvent() in SignUpForm only fired on the form path, so OAuth/admin
+  -- signups were silently missing and admin_auth_stats().signups_this_month
+  -- under-reported. The trigger is now the single source of truth for SUCCESSFUL
+  -- signups; the form keeps logging only the FAILED-attempt row (no auth.users
+  -- INSERT happens on failure, so the trigger can't cover that case).
+  -- provider is best-effort from raw_app_meta_data (defaults to 'email').
+  INSERT INTO public.auth_audit_logs (user_id, event_type, success, event_data)
+  VALUES (
+    NEW.id,
+    'sign_up',
+    TRUE,
+    jsonb_build_object(
+      'email', NEW.email,
+      'provider', COALESCE(NEW.raw_app_meta_data->>'provider', 'email')
+    )
+  );
+
   RETURN NEW;
 EXCEPTION
   WHEN OTHERS THEN
-    RAISE WARNING 'Failed to create user profile for %: %', NEW.id, SQLERRM;
+    RAISE WARNING 'Failed to create user profile / audit log for %: %', NEW.id, SQLERRM;
     RETURN NEW;
 END;
 $$;
@@ -791,7 +812,7 @@ BEGIN
     SELECT json_build_object(
       'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE AND created_at > now() - interval '1 day'),
       'failed_this_week', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in_failed' AND created_at > now() - interval '7 days'),
-      'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND created_at > now() - interval '30 days'),
+      'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND success = TRUE AND created_at > now() - interval '30 days'),
       'rate_limited_users', (SELECT count(*) FROM rate_limit_attempts WHERE locked_until IS NOT NULL AND locked_until > now()),
       'top_failed_logins', (
         SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
