@@ -2,7 +2,20 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
-import { isDarkTheme } from '@/utils/theme-utils';
+import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
+import { getAccessibleEmbedColor } from '@/utils/embed-theme';
+
+// Disqus thread background (hardcoded RGB so Disqus's embed.js never sees an
+// OKLCH value it can't parse). Link text must stay legible against these.
+const DISQUS_BG_DARK = '#111827'; // rgb(17, 24, 39)
+const DISQUS_BG_LIGHT = '#ffffff'; // rgb(255, 255, 255)
+// Legible link fallbacks used when a theme's primary fails AA on the bg above
+// (issue #46 NFR-002 — many DaisyUI primaries are pale accents). Both clear
+// WCAG AA (4.5:1) on their respective bg: blue-300 9.84:1 on dark, blue-600
+// 5.17:1 on light. (The previous blue-500 #3b82f6 was only 3.68:1 — a latent
+// a11y gap this contrast work surfaced.)
+const DISQUS_LINK_FALLBACK_DARK = '#93c5fd'; // Tailwind blue-300
+const DISQUS_LINK_FALLBACK_LIGHT = '#2563eb'; // Tailwind blue-600
 
 interface DisqusCommentsProps {
   slug: string;
@@ -40,6 +53,19 @@ export default function DisqusComments({
   const containerRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Theme-aware link color + dark/light scheme (issue #46). The hook
+  // re-renders on data-theme change so the injected CSS + Disqus colorScheme
+  // re-apply across all 34 DaisyUI themes. The link color uses the theme
+  // primary only when it clears WCAG AA against the Disqus bg, else a legible
+  // fallback (NFR-002) — many DaisyUI primaries are pale accents that would be
+  // illegible as link text. Disqus's embed.js can't parse OKLCH, so this is hex.
+  const { isDark: dark } = useEmbedThemeColor('p');
+  const linkColor = getAccessibleEmbedColor(
+    dark ? DISQUS_BG_DARK : DISQUS_BG_LIGHT,
+    dark ? DISQUS_LINK_FALLBACK_DARK : DISQUS_LINK_FALLBACK_LIGHT,
+    'p'
+  );
+
   // Generate production URL - hardcoded for GitHub Actions compatibility
   const productionUrl = url?.startsWith('http')
     ? url
@@ -68,26 +94,29 @@ export default function DisqusComments({
     };
   }, [shortname]);
 
-  // Configure Disqus when visible
+  // Mark loaded so the script tag renders (one-shot gate).
   useEffect(() => {
     if (!isVisible || !shortname || isLoaded) return;
+    setIsLoaded(true);
+  }, [isVisible, shortname, isLoaded]);
 
-    // Set global Disqus configuration
+  // Build/refresh window.disqus_config and (re)initialize Disqus. `dark` is in
+  // the deps so a post-load theme switch rebuilds the config with the new
+  // colorScheme and calls DISQUS.reset to re-render the embed in that scheme
+  // (issue #46). The config builder must be rebuilt here — not behind the
+  // one-shot isLoaded gate above — or colorScheme would freeze at first load.
+  useEffect(() => {
+    if (!scriptReady || !isLoaded || !shortname) return;
+
     window.disqus_config = function (this: any) {
       this.page = this.page || {};
       this.page.url = productionUrl;
       this.page.identifier = slug;
       this.page.title = title;
+      // Follow the DaisyUI dark/light split (issue #46).
+      this.page.colorScheme = dark ? 'dark' : 'light';
     };
 
-    setIsLoaded(true);
-  }, [isVisible, shortname, slug, title, productionUrl, isLoaded]);
-
-  // Initialize or reset Disqus when script is ready
-  useEffect(() => {
-    if (!scriptReady || !isLoaded || !shortname) return;
-
-    // Check if DISQUS is available and reset it
     const initializeDisqus = () => {
       if (window.DISQUS) {
         try {
@@ -106,7 +135,7 @@ export default function DisqusComments({
     const timeout = setTimeout(initializeDisqus, 1000);
 
     return () => clearTimeout(timeout);
-  }, [scriptReady, isLoaded, shortname]);
+  }, [scriptReady, isLoaded, shortname, slug, title, productionUrl, dark]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -137,21 +166,18 @@ export default function DisqusComments({
   useEffect(() => {
     if (!isVisible) return;
 
-    // Get computed styles to determine if we're in a dark theme
-    const dark = isDarkTheme(
-      document.documentElement.getAttribute('data-theme')
-    );
-
     const style = document.createElement('style');
     style.textContent = `
       /* Minimal override for Disqus OKLCH compatibility
          Only set what's absolutely necessary to prevent conflicts */
 
       :root {
-        /* Override CSS variables with RGB fallbacks for Disqus */
+        /* Override CSS variables with RGB fallbacks for Disqus.
+           bg/text follow the dark/light split; link tracks the active
+           DaisyUI theme's primary color (hex — Disqus can't parse OKLCH). */
         --disqus-bg: ${dark ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)'};
         --disqus-text: ${dark ? 'rgb(243, 244, 246)' : 'rgb(31, 41, 55)'};
-        --disqus-link: ${dark ? 'rgb(147, 197, 253)' : 'rgb(59, 130, 246)'};
+        --disqus-link: ${linkColor};
       }
 
       #disqus_thread {
@@ -187,7 +213,7 @@ export default function DisqusComments({
         document.head.removeChild(styleToRemove);
       }
     };
-  }, [isVisible]);
+  }, [isVisible, dark, linkColor]);
 
   // Don't render if no shortname
   if (!shortname) {
