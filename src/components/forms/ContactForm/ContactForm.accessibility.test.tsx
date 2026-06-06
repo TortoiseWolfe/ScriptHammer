@@ -28,6 +28,7 @@ describe('ContactForm Accessibility', () => {
     successMessage: null,
     isOnline: true,
     wasQueuedOffline: false,
+    retryQueue: vi.fn(),
   };
 
   beforeEach(() => {

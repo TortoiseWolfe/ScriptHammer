@@ -144,6 +144,50 @@ export function isBackgroundSyncSupported(): boolean {
 }
 
 /**
+ * Fallback queue flush for browsers WITHOUT the Background Sync API
+ * (Firefox, Safari) — #32. The SyncManager path can't run there, so the queued
+ * form submissions would never drain on their own. Install foreground listeners
+ * that processQueue() when the browser comes back online or the tab is
+ * refocused. On SyncManager-capable browsers this is a no-op (the SW owns
+ * draining) so we don't double-process.
+ *
+ * Mirrors src/lib/payments/connection-listener.ts. Returns a cleanup function;
+ * call it on unmount.
+ */
+export function startFormQueueFallback(): () => void {
+  if (typeof window === 'undefined' || isBackgroundSyncSupported()) {
+    return () => {};
+  }
+
+  logger.debug('Starting foreground form-queue fallback (no SyncManager)');
+
+  const flush = () => {
+    void processQueue();
+  };
+
+  const handleOnline = () => {
+    logger.debug('online event — flushing form queue');
+    flush();
+  };
+  const handleVisibility = () => {
+    if (document.visibilityState === 'visible' && navigator.onLine) {
+      flush();
+    }
+  };
+
+  // Drain anything already queued from a previous offline session.
+  if (navigator.onLine) flush();
+
+  window.addEventListener('online', handleOnline);
+  document.addEventListener('visibilitychange', handleVisibility);
+
+  return () => {
+    window.removeEventListener('online', handleOnline);
+    document.removeEventListener('visibilitychange', handleVisibility);
+  };
+}
+
+/**
  * Get sync status for debugging
  */
 export async function getSyncStatus(): Promise<{
