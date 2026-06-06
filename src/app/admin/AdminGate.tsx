@@ -82,6 +82,9 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
         <Link href="/admin/messaging" className="tab">
           Messaging
         </Link>
+        <Link href="/admin/email" className="tab">
+          Email
+        </Link>
       </nav>
       {children}
     </div>
