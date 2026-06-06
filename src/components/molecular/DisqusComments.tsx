@@ -94,11 +94,20 @@ export default function DisqusComments({
     };
   }, [shortname]);
 
-  // Configure Disqus when visible
+  // Mark loaded so the script tag renders (one-shot gate).
   useEffect(() => {
     if (!isVisible || !shortname || isLoaded) return;
+    setIsLoaded(true);
+  }, [isVisible, shortname, isLoaded]);
 
-    // Set global Disqus configuration
+  // Build/refresh window.disqus_config and (re)initialize Disqus. `dark` is in
+  // the deps so a post-load theme switch rebuilds the config with the new
+  // colorScheme and calls DISQUS.reset to re-render the embed in that scheme
+  // (issue #46). The config builder must be rebuilt here — not behind the
+  // one-shot isLoaded gate above — or colorScheme would freeze at first load.
+  useEffect(() => {
+    if (!scriptReady || !isLoaded || !shortname) return;
+
     window.disqus_config = function (this: any) {
       this.page = this.page || {};
       this.page.url = productionUrl;
@@ -108,14 +117,6 @@ export default function DisqusComments({
       this.page.colorScheme = dark ? 'dark' : 'light';
     };
 
-    setIsLoaded(true);
-  }, [isVisible, shortname, slug, title, productionUrl, isLoaded, dark]);
-
-  // Initialize or reset Disqus when script is ready
-  useEffect(() => {
-    if (!scriptReady || !isLoaded || !shortname) return;
-
-    // Check if DISQUS is available and reset it
     const initializeDisqus = () => {
       if (window.DISQUS) {
         try {
@@ -134,7 +135,7 @@ export default function DisqusComments({
     const timeout = setTimeout(initializeDisqus, 1000);
 
     return () => clearTimeout(timeout);
-  }, [scriptReady, isLoaded, shortname]);
+  }, [scriptReady, isLoaded, shortname, slug, title, productionUrl, dark]);
 
   // Cleanup on unmount
   useEffect(() => {

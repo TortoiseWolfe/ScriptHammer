@@ -25,9 +25,15 @@ export interface EmbedThemeColor {
  * @param token  DaisyUI token without the `--` prefix (default `"p"` = primary).
  */
 export function useEmbedThemeColor(token: string = 'p'): EmbedThemeColor {
+  // Seed all three fields to their SSR-deterministic values (the #808080
+  // fallback `getEmbedColor` returns when `document` is undefined). Computing
+  // the real color in the initializer would diverge between the server render
+  // (gray) and the client's first render (real theme) → hydration mismatch,
+  // since these values reach embed props. The on-mount effect fills in the real
+  // values client-side as the single intended correction.
   const [color, setColor] = useState<EmbedThemeColor>({
-    hex: getEmbedColor(token),
-    hexWithHash: getEmbedColor(token, { hash: true }),
+    hex: '808080',
+    hexWithHash: '#808080',
     isDark: false,
   });
 

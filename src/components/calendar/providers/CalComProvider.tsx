@@ -49,8 +49,10 @@ export function CalComProvider({
     })();
   }, []);
 
-  // Theme-aware brand color (issue #39). brandColor tracks the active DaisyUI
-  // theme's --color-primary; the binary light/dark `theme` prop is unchanged.
+  // Theme-aware brand color (issue #39). brandColor is the active DaisyUI
+  // theme's --color-primary, applied to the embed on mount; the binary
+  // light/dark `theme` prop is unchanged. (The Cal.com iframe initializes once,
+  // so an already-rendered embed keeps its color until it re-initializes.)
   const { hexWithHash: brandColor, isDark } = useEmbedThemeColor('p');
 
   if (mode === 'popup') {

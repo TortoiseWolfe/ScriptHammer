@@ -43,9 +43,10 @@ export function CalendlyProvider({
     },
   });
 
-  // Theme-aware brand color (issue #39). The accent tracks the active DaisyUI
-  // theme's --color-primary; bg/text stay on the dark/light split. The hook
-  // re-renders on data-theme change so the embed re-mounts with the new color.
+  // Theme-aware brand color (issue #39). The accent is the active DaisyUI
+  // theme's --color-primary, applied to the widget on mount; bg/text stay on
+  // the dark/light split. (react-calendly builds the iframe once on mount, so
+  // an already-rendered widget keeps its color until it next re-initializes.)
   const { hex: primaryColor, isDark } = useEmbedThemeColor('p');
 
   const pageSettings = {
