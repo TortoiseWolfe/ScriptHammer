@@ -1,7 +1,7 @@
 import Cal, { getCalApi } from '@calcom/embed-react';
 import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';
-import { isDarkTheme } from '@/utils/theme-utils';
+import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
 
 interface CalComProviderProps {
   calLink: string;
@@ -49,12 +49,9 @@ export function CalComProvider({
     })();
   }, []);
 
-  // Auto-detect theme
-  const theme =
-    typeof window !== 'undefined'
-      ? document.documentElement.getAttribute('data-theme')
-      : 'light';
-  const isDark = isDarkTheme(theme);
+  // Theme-aware brand color (issue #39). brandColor tracks the active DaisyUI
+  // theme's --color-primary; the binary light/dark `theme` prop is unchanged.
+  const { hexWithHash: brandColor, isDark } = useEmbedThemeColor('p');
 
   if (mode === 'popup') {
     return (
@@ -85,7 +82,7 @@ export function CalComProvider({
         ...config,
         theme: isDark ? 'dark' : 'light',
         branding: {
-          brandColor: '#00a2ff',
+          brandColor,
         },
       }}
     />

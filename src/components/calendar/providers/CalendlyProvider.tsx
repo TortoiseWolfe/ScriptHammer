@@ -3,9 +3,8 @@ import {
   PopupWidget,
   useCalendlyEventListener,
 } from 'react-calendly';
-import { useEffect } from 'react';
 import { createLogger } from '@/lib/logger';
-import { isDarkTheme } from '@/utils/theme-utils';
+import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
 
 interface CalendlyProviderProps {
   url: string;
@@ -44,26 +43,16 @@ export function CalendlyProvider({
     },
   });
 
-  // Apply theme-aware styles
-  useEffect(() => {
-    const theme = document.documentElement.getAttribute('data-theme');
-    const isDark = isDarkTheme(theme);
-
-    // Theme will be applied through pageSettings below
-    logger.debug('Theme detected', { theme, isDark });
-  }, []);
-
-  const theme =
-    typeof window !== 'undefined'
-      ? document.documentElement.getAttribute('data-theme')
-      : 'light';
-  const isDark = isDarkTheme(theme);
+  // Theme-aware brand color (issue #39). The accent tracks the active DaisyUI
+  // theme's --color-primary; bg/text stay on the dark/light split. The hook
+  // re-renders on data-theme change so the embed re-mounts with the new color.
+  const { hex: primaryColor, isDark } = useEmbedThemeColor('p');
 
   const pageSettings = {
     backgroundColor: isDark ? '1a1a1a' : 'ffffff',
     hideEventTypeDetails: false,
     hideLandingPageDetails: false,
-    primaryColor: '00a2ff',
+    primaryColor,
     textColor: isDark ? 'ffffff' : '000000',
   };
 
