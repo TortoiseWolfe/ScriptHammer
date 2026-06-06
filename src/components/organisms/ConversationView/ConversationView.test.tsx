@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import ConversationView from './ConversationView';
+import ConversationView, { resolveParticipantName } from './ConversationView';
 
 // ConversationView is a state-owning wrapper around ChatWindow. We mock
 // the service layer and the ChatWindow organism so tests assert wiring,
@@ -147,5 +147,30 @@ describe('ConversationView', () => {
       hiddenSpy.mockRestore();
       vi.useRealTimers();
     }
+  });
+});
+
+describe('resolveParticipantName (#30 fix #5)', () => {
+  it('returns Unknown User on a query error (transient — do not mislabel)', () => {
+    expect(resolveParticipantName(null, true)).toBe('Unknown User');
+    expect(resolveParticipantName({ display_name: 'Ada' }, true)).toBe(
+      'Unknown User'
+    );
+  });
+
+  it('returns Deleted User when the profile row is null (no error)', () => {
+    expect(resolveParticipantName(null, false)).toBe('Deleted User');
+  });
+
+  it('prefers display_name, then username, for a present profile', () => {
+    expect(
+      resolveParticipantName({ display_name: 'Ada', username: 'ada99' }, false)
+    ).toBe('Ada');
+    expect(
+      resolveParticipantName({ display_name: null, username: 'ada99' }, false)
+    ).toBe('ada99');
+    expect(
+      resolveParticipantName({ display_name: '', username: '' }, false)
+    ).toBe('Unknown User');
   });
 });

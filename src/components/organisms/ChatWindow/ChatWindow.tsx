@@ -187,8 +187,10 @@ export default function ChatWindow({
         />
       </div>
 
-      {/* Row 3: Message Input (auto height) */}
-      <div className="border-base-300 bg-base-100 border-t px-4 pt-4 pb-6">
+      {/* Row 3: Message Input (auto height). pb keeps the 1.5rem base but
+          extends past the iOS home indicator via the safe-area inset (#30
+          fix #1; needs viewport-fit=cover, set in the root layout). */}
+      <div className="border-base-300 bg-base-100 border-t px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         <MessageInput
           onSend={onSendMessage}
           disabled={isBlocked}

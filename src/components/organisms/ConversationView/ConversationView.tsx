@@ -13,6 +13,22 @@ import type { DecryptedMessage } from '@/types/messaging';
 
 const logger = createLogger('organisms:ConversationView');
 
+/**
+ * Resolve the display name for the other 1-to-1 participant, distinguishing
+ * three cases (#30 fix #5):
+ *  - query failed (transient/RLS) → 'Unknown User' (neutral; don't mislabel)
+ *  - no profile row (null)        → 'Deleted User' (account genuinely gone)
+ *  - profile present              → display_name || username || 'Unknown User'
+ */
+export function resolveParticipantName(
+  profile: { username?: string | null; display_name?: string | null } | null,
+  hadError: boolean
+): string {
+  if (hadError) return 'Unknown User';
+  if (!profile) return 'Deleted User';
+  return profile.display_name || profile.username || 'Unknown User';
+}
+
 export interface ConversationViewProps {
   /** Conversation to display. The component owns all message state internally;
    *  changing this prop resets and reloads. */
@@ -121,13 +137,10 @@ export default function ConversationView({
 
       if (profileError) {
         logger.warn('Profile query error', { error: profileError.message });
-        setParticipantName('Unknown User');
-        return;
       }
-
-      setParticipantName(
-        profile?.display_name || profile?.username || 'Unknown User'
-      );
+      // Distinguish deleted account (null row) from a transient query error and
+      // from a present-but-unnamed profile (#30 fix #5).
+      setParticipantName(resolveParticipantName(profile, !!profileError));
     } catch (err) {
       logger.warn('Error loading participant info', { error: err });
       setParticipantName('Unknown User');

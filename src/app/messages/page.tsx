@@ -75,7 +75,7 @@ function MessagesLayout() {
         <SearchParamsReader onParams={handleParams} />
       </Suspense>
 
-      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-28 overflow-hidden">
+      <div className="bg-base-100 fixed inset-x-0 top-16 bottom-[calc(7rem+env(safe-area-inset-bottom))] overflow-hidden">
         <div className="drawer md:drawer-open h-full">
           <input
             id="sidebar-drawer"
