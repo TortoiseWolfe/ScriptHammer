@@ -33,12 +33,20 @@ export default function AccountPage() {
 
           <div className="divider" />
 
-          <Link
-            href="/account/audit"
-            className="btn btn-outline min-h-11 w-full"
-          >
-            View recent security activity
-          </Link>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/account/audit"
+              className="btn btn-outline min-h-11 w-full"
+            >
+              View recent security activity
+            </Link>
+            <Link
+              href="/payment/dashboard"
+              className="btn btn-outline min-h-11 w-full"
+            >
+              View payment dashboard
+            </Link>
+          </div>
         </div>
       </main>
     </ProtectedRoute>
