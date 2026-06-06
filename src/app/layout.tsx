@@ -60,6 +60,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // viewport-fit=cover lets the app draw into the iOS safe-area insets and makes
+  // env(safe-area-inset-*) non-zero, so safe-area padding (e.g. the messaging
+  // input row, #30 fix #1) actually clears the home indicator. Without this,
+  // env() resolves to 0 and the padding is a no-op.
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#f5f0eb' },
     { media: '(prefers-color-scheme: dark)', color: '#1a1a2e' },
