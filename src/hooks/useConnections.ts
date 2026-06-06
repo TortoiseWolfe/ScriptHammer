@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { connectionService } from '@/services/messaging/connection-service';
+import { createClient } from '@/lib/supabase/client';
+import { createLogger } from '@/lib/logger/logger';
 import type { ConnectionList } from '@/types/messaging';
+
+const logger = createLogger('hooks:useConnections');
 
 export function useConnections() {
   const [connections, setConnections] = useState<ConnectionList>({
@@ -91,6 +95,46 @@ export function useConnections() {
 
   useEffect(() => {
     fetchConnections();
+  }, []);
+
+  // Live-update the badge (#35): refetch on any user_connections change so the
+  // pending-connections count reflects accept/request/remove without a remount.
+  // user_connections is in the supabase_realtime publication with REPLICA
+  // IDENTITY FULL. Mirrors the debounced channel pattern in
+  // ConversationList/useConversationList.ts (1s debounce avoids re-render
+  // cascades from rapid-fire events); proper cleanup on unmount.
+  useEffect(() => {
+    const supabase = createClient();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedFetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchConnections(), 1000);
+    };
+
+    const channel = supabase
+      .channel('user-connections')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_connections' },
+        (payload) => {
+          logger.debug('Realtime: user_connections change', {
+            event: payload.eventType,
+          });
+          debouncedFetch();
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === 'CHANNEL_ERROR') {
+          logger.error('Realtime subscription failed', {
+            error: err?.message,
+          });
+        }
+      });
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
