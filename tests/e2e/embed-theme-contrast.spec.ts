@@ -19,6 +19,14 @@ import { test, expect } from '@playwright/test';
 // HONESTY GUARD below fails the test if a token resolves to a degenerate value,
 // so a future build that drops DaisyUI CSS can never make this pass vacuously.
 //
+// COLOR READBACK: each token is converted to concrete sRGB via a <canvas> 2d
+// context (fillStyle accepts any CSS color; getImageData returns sRGB bytes).
+// This is required because Chromium serializes OKLCH-authored custom properties
+// back as `oklch(...)` strings from getComputedStyle — a naive numeric regex
+// would read L/C/H as R/G/B and collapse the ratio toward 1:1 (verified: the
+// dark theme's real 4.13:1 mis-read as 1.03:1). The canvas does the real
+// OKLCH→sRGB conversion the browser uses to paint.
+//
 // Thresholds chosen from real measured ratios (see the PR description):
 //   - primary-content on primary: all 34 themes ≥ 3.64:1 → assert AA UI/large 3:1.
 //   - accessible Disqus link on disqus-bg: guaranteed ≥ 4.5:1 by the fallback.
@@ -88,10 +96,12 @@ const DISQUS_LINK_FALLBACK_LIGHT = '#2563eb'; // blue-600
 const AA_TEXT = 4.5; // normal text
 const AA_UI = 3; // UI components / large text
 
+type Rgb = [number, number, number];
+
 interface Measured {
-  primary: string; // computed rgb() of --color-primary
-  primaryContent: string; // computed rgb() of --color-primary-content
-  body: string; // computed rgb() of the body's inherited color
+  primary: Rgb; // sRGB of --color-primary
+  primaryContent: Rgb; // sRGB of --color-primary-content
+  body: Rgb; // sRGB of the body's inherited color
 }
 
 // Themes whose --color-primary is, by design, too pale to clear WCAG AA as link
@@ -120,35 +130,44 @@ test.describe('embed color contrast across all DaisyUI themes', () => {
       await page.goto('/themes/', { waitUntil: 'networkidle' });
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 
-      // Resolve the OKLCH custom properties to concrete sRGB by painting them
-      // onto a real element (getComputedStyle on the raw custom property would
-      // echo the OKLCH token string). We also capture the body's inherited
-      // color: a `var(--undefined-token)` is invalid-at-computed-value-time and
-      // `color` (inherited) then resolves to the body color — so an UNRESOLVED
-      // token is indistinguishable from "primary == body". The honesty guard
-      // below keys off exactly that.
+      // Resolve each DaisyUI OKLCH token to concrete 0-255 sRGB. We paint the
+      // token onto an element, read getComputedStyle().color, then push that
+      // through a <canvas> 2d context — fillStyle accepts ANY CSS color and
+      // getImageData always returns sRGB bytes. This is essential: modern
+      // Chromium serializes wide-gamut OKLCH custom properties back as
+      // `oklch(...)`/`color(srgb ...)` strings, NOT legacy `rgb()`, so a naive
+      // numeric regex would mis-read L/C/H as R/G/B and collapse the ratio
+      // toward 1:1 (the false-failure this replaces). The body color is
+      // captured the same way: an UNRESOLVED `var()` falls back to the inherited
+      // body color, so primary==body would signal tokens-didn't-apply.
       const m = await page.evaluate<Measured>(() => {
-        const probe = (prop: string): string => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true })!;
+        const toRgb = (cssColor: string): [number, number, number] => {
+          ctx.clearRect(0, 0, 1, 1);
+          ctx.fillStyle = '#000';
+          ctx.fillStyle = cssColor; // ignored if invalid → stays #000
+          ctx.fillRect(0, 0, 1, 1);
+          const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+          return [r, g, b];
+        };
+        const probe = (prop: string): [number, number, number] => {
           const el = document.createElement('div');
           el.style.color = `var(${prop})`;
           document.body.appendChild(el);
           const c = getComputedStyle(el).color;
           el.remove();
-          return c;
+          return toRgb(c);
         };
         return {
           primary: probe('--color-primary'),
           primaryContent: probe('--color-primary-content'),
-          body: getComputedStyle(document.body).color,
+          body: toRgb(getComputedStyle(document.body).color),
         };
       });
 
-      // Shared WCAG math (rgb() string → ratio), mirrored from the app helper.
-      const parseRgb = (s: string): [number, number, number] => {
-        const n = s.match(/-?[\d.]+/g);
-        if (!n || n.length < 3) return [-1, -1, -1];
-        return [Number(n[0]), Number(n[1]), Number(n[2])];
-      };
       const relLum = ([r, g, b]: number[]): number => {
         const lin = (c: number) => {
           const cs = c / 255;
@@ -166,30 +185,25 @@ test.describe('embed color contrast across all DaisyUI themes', () => {
         parseInt(h.slice(3, 5), 16),
         parseInt(h.slice(5, 7), 16),
       ];
+      const sameColor = (a: number[], b: number[]) =>
+        a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
 
-      const primary = parseRgb(m.primary);
-      const primaryContent = parseRgb(m.primaryContent);
+      const primary = m.primary;
+      const primaryContent = m.primaryContent;
 
-      // HONESTY GUARD — prove DaisyUI's tokens actually RESOLVED, not merely
-      // that they parsed. An unresolved `var(--color-primary)` is invalid at
-      // computed-value time and `color` (inherited) falls back to the body
-      // color — a valid rgb() — so a parseable-only check passes vacuously
-      // against gray/black-on-X. The robust signal: in a tokens-dropped build
-      // primary, primary-content, AND the body color all collapse to the SAME
-      // inherited color; in every real theme the content token is designed to
-      // contrast its primary, so these never collide (verified across all 34
-      // themes against the compiled CSS).
+      // HONESTY GUARD — prove DaisyUI's tokens actually RESOLVED. An unresolved
+      // `var(--color-primary)` is invalid-at-computed-value-time and `color`
+      // (inherited) falls back to the body color, so a value-exists check passes
+      // vacuously. The robust signal: in a tokens-dropped build primary,
+      // primary-content, AND the body color all collapse to the SAME inherited
+      // color; in every real theme the content token is designed to contrast its
+      // primary, so these never collide (verified across all 34 themes).
       expect(
-        primary[0] >= 0 && primaryContent[0] >= 0,
-        `Could not parse theme tokens for "${theme}" ` +
-          `(primary="${m.primary}", primary-content="${m.primaryContent}").`
-      ).toBe(true);
-      expect(
-        m.primary,
-        `"${theme}": --color-primary === --color-primary-content (${m.primary}) ` +
-          `and === body color (${m.body}) — tokens did not resolve. DaisyUI CSS ` +
-          `did not apply. This is a real failure, not a vacuous pass.`
-      ).not.toBe(m.primaryContent);
+        sameColor(primary, primaryContent),
+        `"${theme}": --color-primary (${primary}) === --color-primary-content ` +
+          `(${primaryContent}); body=${m.body}. Tokens did not resolve — DaisyUI ` +
+          `CSS did not apply. A real failure, not a vacuous pass.`
+      ).toBe(false);
 
       // (#39) Calendly/Cal.com paint buttons with the brand color; the label is
       // --color-primary-content on --color-primary. Assert AA UI/large (3:1).
