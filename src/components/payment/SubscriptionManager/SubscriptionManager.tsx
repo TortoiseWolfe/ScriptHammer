@@ -8,19 +8,24 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { formatPaymentAmount } from '@/lib/payments/payment-service';
-import type { Currency, PaymentInterval } from '@/types/payment';
 
+/**
+ * Mirrors the `subscriptions` table in the monolithic migration. The table has
+ * no `currency` column (amounts are formatted as USD) and tracks cancellation
+ * via `status`/`canceled_at` — there is no `cancel_at_period_end` column on our
+ * row (the cancel/resume edge functions set status='canceled'/'active').
+ */
 export interface Subscription {
   id: string;
   provider_subscription_id: string;
   provider: 'stripe' | 'paypal';
-  status: 'active' | 'canceled' | 'past_due' | 'paused';
-  amount: number;
-  currency: Currency;
-  interval: PaymentInterval;
-  current_period_start: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
+  status: 'active' | 'past_due' | 'grace_period' | 'canceled' | 'expired';
+  plan_amount: number;
+  plan_interval: 'month' | 'year';
+  current_period_start: string | null;
+  current_period_end: string | null;
+  grace_period_expires: string | null;
+  canceled_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -108,11 +113,15 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
         throw new Error(error.error || 'Failed to cancel subscription');
       }
 
-      // Update local state
+      // Update local state — the edge function marks our row canceled.
       setSubscriptions((prev) =>
         prev.map((sub) =>
           sub.id === subscriptionId
-            ? { ...sub, cancel_at_period_end: true }
+            ? {
+                ...sub,
+                status: 'canceled',
+                canceled_at: new Date().toISOString(),
+              }
             : sub
         )
       );
@@ -154,11 +163,11 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
         throw new Error(error.error || 'Failed to resume subscription');
       }
 
-      // Update local state
+      // Update local state — the edge function reactivates our row.
       setSubscriptions((prev) =>
         prev.map((sub) =>
           sub.id === subscriptionId
-            ? { ...sub, cancel_at_period_end: false }
+            ? { ...sub, status: 'active', canceled_at: null }
             : sub
         )
       );
@@ -173,15 +182,12 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
   // Get status badge
   const getStatusBadge = (subscription: Subscription) => {
-    if (subscription.cancel_at_period_end) {
-      return <span className="badge badge-warning">Canceling</span>;
-    }
-
-    const badges = {
+    const badges: Record<Subscription['status'], React.ReactElement> = {
       active: <span className="badge badge-success">Active</span>,
       canceled: <span className="badge badge-error">Canceled</span>,
       past_due: <span className="badge badge-warning">Past Due</span>,
-      paused: <span className="badge badge-info">Paused</span>,
+      grace_period: <span className="badge badge-warning">Grace Period</span>,
+      expired: <span className="badge badge-ghost">Expired</span>,
     };
 
     return (
@@ -192,14 +198,20 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   };
 
   // Format interval
-  const formatInterval = (interval: PaymentInterval) => {
-    const labels = {
+  const formatInterval = (interval: Subscription['plan_interval']) => {
+    const labels: Record<Subscription['plan_interval'], string> = {
       month: 'Monthly',
       year: 'Yearly',
-      week: 'Weekly',
-      day: 'Daily',
     };
     return labels[interval] || interval;
+  };
+
+  // Days remaining in the grace period (0 when expired/invalid).
+  const graceDaysLeft = (expires: string | null): number | null => {
+    if (!expires) return null;
+    const ms = new Date(expires).getTime();
+    if (Number.isNaN(ms)) return null;
+    return Math.max(0, Math.ceil((ms - Date.now()) / 86_400_000));
   };
 
   if (loading) {
@@ -285,12 +297,9 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
               <div className="flex items-start justify-between">
                 <div>
                   <h3 className="text-xl font-bold">
-                    {formatPaymentAmount(
-                      subscription.amount,
-                      subscription.currency
-                    )}
+                    {formatPaymentAmount(subscription.plan_amount, 'usd')}
                     <span className="text-base-content/85 ml-2 text-sm font-normal">
-                      / {formatInterval(subscription.interval)}
+                      / {formatInterval(subscription.plan_interval)}
                     </span>
                   </h3>
                   <p className="text-base-content/85 mt-1 capitalize">
@@ -302,115 +311,127 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
               {/* Details */}
               <div className="mt-4 space-y-2 border-t pt-4 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-semibold">Current Period:</span>
-                  <span>
-                    {new Date(
-                      subscription.current_period_start
-                    ).toLocaleDateString()}{' '}
-                    -{' '}
-                    {new Date(
-                      subscription.current_period_end
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
+                {subscription.current_period_start &&
+                  subscription.current_period_end && (
+                    <div className="flex justify-between">
+                      <span className="font-semibold">Current Period:</span>
+                      <span>
+                        {new Date(
+                          subscription.current_period_start
+                        ).toLocaleDateString()}{' '}
+                        -{' '}
+                        {new Date(
+                          subscription.current_period_end
+                        ).toLocaleDateString()}
+                      </span>
+                    </div>
+                  )}
 
-                <div className="flex justify-between">
-                  <span className="font-semibold">Next Billing:</span>
-                  <span>
-                    {new Date(
-                      subscription.current_period_end
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
-
-                {subscription.cancel_at_period_end && (
-                  <div className="alert alert-warning p-2 text-xs">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 shrink-0 stroke-current"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                    <span>Will cancel at period end</span>
+                {subscription.current_period_end && (
+                  <div className="flex justify-between">
+                    <span className="font-semibold">Next Billing:</span>
+                    <span>
+                      {new Date(
+                        subscription.current_period_end
+                      ).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
 
-                {subscription.status === 'past_due' && (
-                  <div className="alert alert-error p-2 text-xs">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 shrink-0 stroke-current"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>Payment failed. Please update payment method.</span>
-                  </div>
-                )}
+                {(subscription.status === 'grace_period' ||
+                  subscription.status === 'past_due') &&
+                  (() => {
+                    const daysLeft = graceDaysLeft(
+                      subscription.grace_period_expires
+                    );
+                    return (
+                      <div
+                        className="alert alert-warning p-2 text-xs"
+                        role="alert"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 shrink-0 stroke-current"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          />
+                        </svg>
+                        <span>
+                          Payment failed — update your payment method
+                          {daysLeft !== null && (
+                            <>
+                              {' '}
+                              to keep your subscription.{' '}
+                              <strong>
+                                Grace period: {daysLeft} day
+                                {daysLeft === 1 ? '' : 's'} remaining.
+                              </strong>
+                            </>
+                          )}
+                          {daysLeft === null && '.'}
+                        </span>
+                      </div>
+                    );
+                  })()}
               </div>
 
-              {/* Actions */}
-              {subscription.status === 'active' && (
+              {/* Actions — cancel a live subscription, or resume a canceled one. */}
+              {subscription.status === 'canceled' && (
                 <div className="card-actions mt-4 justify-end">
-                  {subscription.cancel_at_period_end ? (
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm min-h-11"
-                      onClick={() => handleResume(subscription.id)}
-                      disabled={actionLoading === subscription.id}
-                      aria-label="Resume subscription"
-                    >
-                      {actionLoading === subscription.id ? (
-                        <>
-                          <span className="loading loading-spinner loading-xs"></span>
-                          Resuming...
-                        </>
-                      ) : (
-                        'Resume'
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="btn btn-error btn-sm min-h-11"
-                      onClick={() => {
-                        if (
-                          confirm(
-                            'Are you sure you want to cancel this subscription? It will remain active until the end of the current billing period.'
-                          )
-                        ) {
-                          handleCancel(subscription.id);
-                        }
-                      }}
-                      disabled={actionLoading === subscription.id}
-                      aria-label="Cancel subscription"
-                    >
-                      {actionLoading === subscription.id ? (
-                        <>
-                          <span className="loading loading-spinner loading-xs"></span>
-                          Canceling...
-                        </>
-                      ) : (
-                        'Cancel'
-                      )}
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm min-h-11"
+                    onClick={() => handleResume(subscription.id)}
+                    disabled={actionLoading === subscription.id}
+                    aria-label="Resume subscription"
+                  >
+                    {actionLoading === subscription.id ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Resuming...
+                      </>
+                    ) : (
+                      'Resume'
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {(subscription.status === 'active' ||
+                subscription.status === 'past_due' ||
+                subscription.status === 'grace_period') && (
+                <div className="card-actions mt-4 justify-end">
+                  <button
+                    type="button"
+                    className="btn btn-error btn-sm min-h-11"
+                    onClick={() => {
+                      if (
+                        confirm(
+                          'Are you sure you want to cancel this subscription? It will remain active until the end of the current billing period.'
+                        )
+                      ) {
+                        handleCancel(subscription.id);
+                      }
+                    }}
+                    disabled={actionLoading === subscription.id}
+                    aria-label="Cancel subscription"
+                  >
+                    {actionLoading === subscription.id ? (
+                      <>
+                        <span className="loading loading-spinner loading-xs"></span>
+                        Canceling...
+                      </>
+                    ) : (
+                      'Cancel'
+                    )}
+                  </button>
                 </div>
               )}
             </div>

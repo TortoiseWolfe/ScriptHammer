@@ -128,6 +128,14 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_customer_email ON subscriptions(cus
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_next_billing_date ON subscriptions(next_billing_date) WHERE status = 'active';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_provider_id ON subscriptions(provider, provider_subscription_id);
+-- Duplicate-subscription guard (#5): a user may hold at most ONE live
+-- subscription at a time. Server-side root-cause enforcement — the webhook
+-- upsert that would create a second live row hits this and is rejected (23505),
+-- which the handlers catch and acknowledge gracefully. No trigger / SECURITY
+-- DEFINER needed.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_one_live_per_user
+  ON subscriptions(template_user_id)
+  WHERE status IN ('active', 'grace_period', 'past_due');
 
 COMMENT ON TABLE subscriptions IS 'Recurring payment subscriptions';
 

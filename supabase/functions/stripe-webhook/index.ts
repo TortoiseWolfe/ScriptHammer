@@ -16,6 +16,11 @@ const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
+// Days a past-due subscription stays usable before expiring. Mirrors
+// subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
+// manually — Deno can't import that browser-oriented module).
+const GRACE_PERIOD_DAYS = 7;
+
 serve(async (req) => {
   try {
     // Get signature and body
@@ -347,6 +352,16 @@ async function handleSubscriptionEvent(
     .single();
 
   if (error) {
+    // idx_subscriptions_one_live_per_user (partial unique index) rejects a
+    // SECOND live subscription for a user who already has one. Don't 500 — the
+    // provider would retry forever; acknowledge and report the reason instead.
+    if (error.code === '23505') {
+      console.warn(
+        'Duplicate live subscription rejected by unique index:',
+        error.message
+      );
+      return { handled: false, reason: 'duplicate_live_subscription' };
+    }
     console.error('Failed to upsert subscription:', error);
     throw error;
   }
@@ -403,13 +418,41 @@ async function handleInvoicePaymentFailed(
     return { handled: false };
   }
 
+  const providerSubId = invoice.subscription as string;
+
+  // Read the current row so we can increment the failure count safely. The
+  // supabase-js client has no SQL-expression template tag, so the previous
+  // `supabase.sql\`failed_payment_count + 1\`` never incremented — it must be a
+  // plain read-then-write. Webhook events for one subscription are delivered
+  // serially, so this is not racy in practice.
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('id, failed_payment_count')
+    .eq('provider_subscription_id', providerSubId)
+    .single();
+
+  if (!existing) {
+    return { handled: false };
+  }
+
+  // Start the grace clock now (the canonical YYYY-MM-DD TEXT date format used
+  // elsewhere in this file). GRACE_PERIOD_DAYS mirrors
+  // subscriptionConfig.gracePeriodDays in src/config/payment.ts (Deno can't
+  // import that browser module, so the value is duplicated here).
+  const gracePeriodExpires = new Date(
+    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .split('T')[0];
+
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
-      status: 'past_due',
-      failed_payment_count: supabase.sql`failed_payment_count + 1`,
+      status: 'grace_period',
+      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
+      grace_period_expires: gracePeriodExpires,
     })
-    .eq('provider_subscription_id', invoice.subscription as string)
+    .eq('provider_subscription_id', providerSubId)
     .select()
     .single();
 
