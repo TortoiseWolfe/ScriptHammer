@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { PaymentHistory } from '@/components/payment/PaymentHistory';
+import { PaymentQueuePanel } from '@/components/payment/PaymentQueuePanel';
 import { featureFlags } from '@/config/payment';
 
 /**
@@ -41,6 +42,18 @@ export function PaymentDashboardContent() {
             </p>
           </div>
         </div>
+      )}
+
+      {/* Offline payment queue management (#4). Shown when a provider is
+          configured — the queue itself works offline regardless, but the panel
+          is only meaningful where payments can actually be made. */}
+      {!noProvidersConfigured && (
+        <section aria-labelledby="payment-queue-heading">
+          <h2 id="payment-queue-heading" className="sr-only">
+            Offline payment queue
+          </h2>
+          <PaymentQueuePanel />
+        </section>
       )}
 
       <section aria-labelledby="payment-history-heading">
