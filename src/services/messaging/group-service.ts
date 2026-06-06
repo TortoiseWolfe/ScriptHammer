@@ -363,6 +363,10 @@ export class GroupService {
         // System messages aren't E2E-encrypted; store a tiny JSON marker.
         encrypted_content: JSON.stringify({ type, ...extra }),
         initialization_vector: 'system',
+        // Placeholder — the assign_sequence_number() trigger overwrites this on
+        // insert (matches the offline path in message-service.ts:335/516). The
+        // column is NOT NULL so a value must be supplied client-side.
+        sequence_number: 0,
       });
     } catch (error) {
       logger.warn('Failed to record group system message', {
