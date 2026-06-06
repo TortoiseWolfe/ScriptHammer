@@ -44,6 +44,17 @@ vi.mock('leaflet', () => ({
   },
 }));
 
+// Mock the theme-color hook so the accuracy circle gets a deterministic,
+// theme-derived color (issue #37) without needing real DaisyUI CSS in jsdom.
+const THEME_COLOR = '#aabbcc';
+vi.mock('@/hooks/useEmbedThemeColor', () => ({
+  useEmbedThemeColor: () => ({
+    hex: 'aabbcc',
+    hexWithHash: THEME_COLOR,
+    isDark: false,
+  }),
+}));
+
 describe('LocationMarker', () => {
   const defaultProps: LocationMarkerProps = {
     position: [51.505, -0.09],
@@ -80,6 +91,18 @@ describe('LocationMarker', () => {
       JSON.stringify([51.505, -0.09])
     );
     expect(circle).toHaveAttribute('data-radius', '10');
+  });
+
+  it('colors the accuracy circle with the theme primary, not a hardcoded blue (#37)', () => {
+    render(<LocationMarker {...defaultProps} showAccuracy />);
+
+    const circle = screen.getByTestId('accuracy-circle');
+    const options = JSON.parse(circle.getAttribute('data-options') || '{}');
+    expect(options.color).toBe(THEME_COLOR);
+    expect(options.fillColor).toBe(THEME_COLOR);
+    // Guard against regressing to the old hardcoded values.
+    expect(options.color).not.toBe('blue');
+    expect(options.fillColor).not.toBe('lightblue');
   });
 
   it('should not render accuracy circle when showAccuracy is false', () => {
