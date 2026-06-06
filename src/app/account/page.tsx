@@ -46,6 +46,12 @@ export default function AccountPage() {
             >
               View payment dashboard
             </Link>
+            <Link
+              href="/account/subscriptions"
+              className="btn btn-outline min-h-11 w-full"
+            >
+              Manage subscriptions
+            </Link>
           </div>
         </div>
       </main>

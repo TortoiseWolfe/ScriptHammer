@@ -13,6 +13,11 @@ const paypalClientId = Deno.env.get('NEXT_PUBLIC_PAYPAL_CLIENT_ID')!;
 const paypalClientSecret = Deno.env.get('PAYPAL_CLIENT_SECRET')!;
 const paypalWebhookId = Deno.env.get('PAYPAL_WEBHOOK_ID')!;
 
+// Days a past-due subscription stays usable before expiring. Mirrors
+// subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
+// manually — Deno can't import that browser-oriented module).
+const GRACE_PERIOD_DAYS = 7;
+
 serve(async (req) => {
   try {
     const transmissionId = req.headers.get('paypal-transmission-id');
@@ -115,6 +120,13 @@ serve(async (req) => {
         break;
       case 'BILLING.SUBSCRIPTION.CANCELLED':
         processResult = await handleSubscriptionCancelled(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
+        processResult = await handleSubscriptionPaymentFailed(
           supabase,
           event,
           webhookEvent.id
@@ -280,7 +292,19 @@ async function handleSubscriptionEvent(
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    // idx_subscriptions_one_live_per_user rejects a second live subscription
+    // for a user who already has one. Acknowledge (don't 500 → no provider
+    // retry storm) and report the reason.
+    if (error.code === '23505') {
+      console.warn(
+        'Duplicate live subscription rejected by unique index:',
+        error.message
+      );
+      return { handled: false, reason: 'duplicate_live_subscription' };
+    }
+    throw error;
+  }
   return { handled: true, related_subscription_id: sub.id };
 }
 
@@ -298,6 +322,52 @@ async function handleSubscriptionCancelled(
       cancellation_reason: resource.status_update_time || null,
     })
     .eq('provider_subscription_id', resource.id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return { handled: true, related_subscription_id: sub.id };
+}
+
+/**
+ * Handle a failed subscription payment (BILLING.SUBSCRIPTION.PAYMENT.FAILED).
+ * Mirrors the Stripe invoice.payment_failed handler: flip to grace_period,
+ * increment the failure count, and start the grace clock. The supabase-js
+ * client has no SQL-expression template tag, so the increment is a read-then-
+ * write (PayPal delivers events for one subscription serially).
+ */
+async function handleSubscriptionPaymentFailed(
+  supabase: any,
+  event: any,
+  _webhookEventId: string
+) {
+  const resource = event.resource;
+  const providerSubId = resource.id;
+
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('id, failed_payment_count')
+    .eq('provider_subscription_id', providerSubId)
+    .single();
+
+  if (!existing) {
+    return { handled: false };
+  }
+
+  const gracePeriodExpires = new Date(
+    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .split('T')[0];
+
+  const { data: sub, error } = await supabase
+    .from('subscriptions')
+    .update({
+      status: 'grace_period',
+      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
+      grace_period_expires: gracePeriodExpires,
+    })
+    .eq('provider_subscription_id', providerSubId)
     .select()
     .single();
 
