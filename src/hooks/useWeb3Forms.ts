@@ -12,7 +12,11 @@ import {
 } from '@/schemas/contact.schema';
 import { useOfflineQueue } from './useOfflineQueue';
 import { addToQueue, getQueueSize } from '@/utils/offline-queue';
-import { registerBackgroundSync } from '@/utils/background-sync';
+import {
+  registerBackgroundSync,
+  processQueue,
+  startFormQueueFallback,
+} from '@/utils/background-sync';
 
 const logger = createLogger('hooks:web3Forms');
 
@@ -42,6 +46,8 @@ export interface UseWeb3FormsReturn {
   isOnline: boolean;
   queueCount: number;
   wasQueuedOffline: boolean;
+  /** Manually flush the offline form queue (#32 — for a retry affordance). */
+  retryQueue: () => Promise<void>;
 }
 
 /**
@@ -81,7 +87,23 @@ export const useWeb3Forms = (
     loadQueueSize();
   }, []);
 
+  // #32: on browsers without the Background Sync API (Firefox/Safari), drain the
+  // form queue via foreground online/visibility listeners — otherwise queued
+  // submissions never auto-send there. No-op where SyncManager is available.
+  useEffect(() => {
+    const stop = startFormQueueFallback();
+    return stop;
+  }, []);
+
   const queueCount = formsQueueCount + messagingQueueCount;
+
+  // Manual retry affordance (#32): flush the queue on demand, then refresh the
+  // count so the UI reflects what drained.
+  const retryQueue = useCallback(async () => {
+    await processQueue();
+    const newSize = await getQueueSize();
+    setFormsQueueCount(newSize);
+  }, []);
 
   const addToOfflineQueue = useCallback(
     async (data: ContactFormData): Promise<{ id: string; queued: boolean }> => {
@@ -283,5 +305,6 @@ export const useWeb3Forms = (
     isOnline,
     queueCount,
     wasQueuedOffline,
+    retryQueue,
   };
 };

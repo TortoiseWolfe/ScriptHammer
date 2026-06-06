@@ -34,6 +34,7 @@ vi.mock('@/utils/offline-queue', () => ({
 vi.mock('@/utils/background-sync', () => ({
   registerBackgroundSync: vi.fn().mockResolvedValue(true),
   processQueue: vi.fn().mockResolvedValue(undefined),
+  startFormQueueFallback: vi.fn(() => () => {}),
   getSyncStatus: vi.fn().mockResolvedValue({
     supported: false,
     registered: false,

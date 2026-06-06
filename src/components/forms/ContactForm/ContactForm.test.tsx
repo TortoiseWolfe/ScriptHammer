@@ -26,6 +26,7 @@ describe('ContactForm', () => {
     successMessage: null,
     isOnline: true,
     wasQueuedOffline: false,
+    retryQueue: vi.fn(),
   };
 
   beforeEach(() => {
