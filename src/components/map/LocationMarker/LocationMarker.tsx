@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { Marker, Circle, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { LatLngTuple } from 'leaflet';
+import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
 
 export interface LocationMarkerProps {
   position: LatLngTuple;
@@ -42,6 +43,11 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
 }) => {
   const map = useMap();
 
+  // Accuracy circle tracks the active DaisyUI theme's primary color (issue #37),
+  // matching the marker dot (which uses the `bg-primary` class). The hook
+  // re-renders on theme switch so the circle recolors live.
+  const { hexWithHash: themeColor } = useEmbedThemeColor('p');
+
   useEffect(() => {
     // Pan to user location when marker updates
     map.setView(position, map.getZoom());
@@ -62,8 +68,8 @@ export const LocationMarker: React.FC<LocationMarkerProps> = ({
           center={position}
           radius={accuracy}
           pathOptions={{
-            color: 'blue',
-            fillColor: 'lightblue',
+            color: themeColor,
+            fillColor: themeColor,
             fillOpacity: 0.2,
             weight: 1,
           }}
