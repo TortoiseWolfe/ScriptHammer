@@ -8,7 +8,14 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  dismissCookieBanner,
+  getAdminClient,
+  seedIsolatedSubscription,
+  deleteIsolatedSubscription,
+  openSubscriptionsAs,
+  type IsolatedSubscription,
+} from '../utils/test-user-factory';
 
 test.describe('PayPal Subscription Creation Flow', () => {
   test.describe.configure({ timeout: 60000 });
@@ -100,34 +107,92 @@ test.describe('PayPal Subscription Creation Flow', () => {
     ).toBeVisible();
   });
 
-  // The flows below assert behavior against a SEEDED subscription row (cancel,
-  // grace-period countdown, duplicate-prevention). They need the per-test
-  // subscription-seeding fixture (service-role insert + cleanup) which isn't
-  // wired yet — the route + grace UI + 23505 guard themselves are covered by
-  // SubscriptionManager.test.tsx and the migration. Un-skip once seeding lands.
+  // The grace-period + duplicate-prevention flows below run against a SEEDED
+  // subscription row via the per-test fixture (seedIsolatedSubscription —
+  // service-role insert + cleanup, no provider creds). Cancel + failed-retry
+  // remain skipped: cancel drives the cancel-subscription edge function and
+  // failed-retry needs PayPal sandbox keys.
+
   test.skip('should allow subscription cancellation', async ({ page }) => {
-    test.skip(
-      true,
-      'Needs a seeded subscription row (per-test fixture) to drive cancel'
-    );
+    // Fixture exists (seedIsolatedSubscription) but cancel drives the
+    // cancel-subscription Edge Function end-to-end; un-skip once that flow is
+    // exercised against a deployed function with provider config.
+    test.skip(true, 'Cancel drives the cancel-subscription Edge Function');
   });
 
   test.skip('should handle failed payment retry logic', async ({ page }) => {
     test.skip(true, 'Needs a seeded past_due/grace row + PayPal sandbox keys');
   });
 
-  test.skip('should show grace period warning', async ({ page }) => {
-    // Covered as a component test in SubscriptionManager.test.tsx; an E2E here
-    // needs a seeded grace_period row.
-    test.skip(true, 'Needs a seeded grace_period subscription row');
+  test('should show grace period warning', async ({ browser }) => {
+    // Seed a grace_period subscription (expires in 5 days) for a throwaway user,
+    // open /account/subscriptions AS that user, and assert the countdown + badge
+    // render — driven by a real row through real RLS (no provider creds needed).
+    let fixture: IsolatedSubscription | null = null;
+    let opened: Awaited<ReturnType<typeof openSubscriptionsAs>> | null = null;
+    try {
+      fixture = await seedIsolatedSubscription('grace_period', {
+        provider: 'stripe',
+        graceDays: 5,
+      });
+      // No admin client / anon key (unconfigured env) → skip rather than fail.
+      test.skip(!fixture, 'Admin client unavailable to seed subscription');
+      if (!fixture) return;
+
+      opened = await openSubscriptionsAs(browser, fixture);
+      const { page } = opened;
+
+      await expect(
+        page.getByRole('heading', { name: 'Subscriptions', level: 1 })
+      ).toBeVisible({ timeout: 30000 });
+
+      // Grace-period alert with the day countdown (graceDays=5).
+      await expect(
+        page.getByText(/Grace period: 5 days remaining/i)
+      ).toBeVisible({ timeout: 30000 });
+      // The status badge.
+      await expect(page.getByText(/Grace Period/i).first()).toBeVisible();
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedSubscription(fixture);
+    }
   });
 
-  test.skip('should prevent duplicate subscriptions', async ({ page }) => {
-    // The DB-level guard (idx_subscriptions_one_live_per_user) + webhook 23505
-    // catch enforce this server-side; a browser E2E needs a seeded live row.
-    test.skip(
-      true,
-      'Needs a seeded live subscription row to trigger the guard'
-    );
+  test('should prevent duplicate subscriptions', async () => {
+    // The one-live-per-user guard (idx_subscriptions_one_live_per_user) is
+    // enforced server-side. Seed one live (active) row, then attempt a SECOND
+    // live row for the same user via the service-role client and assert it is
+    // rejected with Postgres unique_violation (23505) — the same rejection the
+    // webhook upsert catches in prod. No provider creds needed.
+    let fixture: IsolatedSubscription | null = null;
+    try {
+      fixture = await seedIsolatedSubscription('active', {
+        provider: 'stripe',
+      });
+      const admin = getAdminClient();
+      test.skip(
+        !fixture || !admin,
+        'Admin client unavailable to seed subscription'
+      );
+      if (!fixture || !admin) return;
+
+      const { error } = await admin.from('subscriptions').insert({
+        template_user_id: fixture.user.id,
+        provider: 'paypal',
+        provider_subscription_id: `iso_dup_${Date.now()}`,
+        customer_email: fixture.user.email,
+        plan_amount: 999,
+        plan_interval: 'month',
+        status: 'active', // second LIVE row for the same user → must be rejected
+        failed_payment_count: 0,
+      });
+
+      expect(error).not.toBeNull();
+      // Postgres unique_violation, on the one-live-per-user partial index.
+      expect(error?.code).toBe('23505');
+      expect(error?.message).toMatch(/idx_subscriptions_one_live_per_user/i);
+    } finally {
+      await deleteIsolatedSubscription(fixture);
+    }
   });
 });
