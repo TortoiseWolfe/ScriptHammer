@@ -182,6 +182,9 @@ These customize the site appearance but aren't required for builds:
 | `NEXT_PUBLIC_DISQUS_SHORTNAME`  | Disqus comments integration         |
 | `NEXT_PUBLIC_PAGESPEED_API_KEY` | Google PageSpeed API key            |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics measurement ID     |
+| `NEXT_PUBLIC_SENTRY_DSN`        | Sentry error-monitoring client DSN  |
+
+Sentry monitoring is **disabled until `NEXT_PUBLIC_SENTRY_DSN` is set** (empty = no-op) and only sends events **after the user grants analytics consent**. Get the DSN from sentry.io → your project → **Client Keys (DSN)**. All events are PII-scrubbed (emails, tokens, message bodies) before leaving the browser; session replay and tracing are disabled.
 
 ### 📝 Optional - Supabase Admin (for migrations)
 

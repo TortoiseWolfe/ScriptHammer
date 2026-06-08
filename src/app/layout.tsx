@@ -10,6 +10,7 @@ import { ConsentProvider } from '@/contexts/ConsentContext';
 import { CookieConsent } from '@/components/privacy/CookieConsent';
 import { ConsentModal } from '@/components/privacy/ConsentModal';
 import GoogleAnalytics from '@/lib/analytics/GoogleAnalytics';
+import SentryMonitor from '@/lib/monitoring/SentryMonitor';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { projectConfig } from '@/config/project.config';
@@ -101,7 +102,7 @@ export const metadata: Metadata = {
       "style-src 'self' 'unsafe-inline' https://unpkg.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",
-      "connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://api.web3forms.com",
+      "connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://api.web3forms.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
       "frame-src 'self' https://www.google.com",
       "object-src 'none'",
       "base-uri 'self'",
@@ -127,6 +128,7 @@ export default function RootLayout({
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />
+          <SentryMonitor />
           <AuthProvider>
             <AccessibilityProvider>
               <GlobalNav />
