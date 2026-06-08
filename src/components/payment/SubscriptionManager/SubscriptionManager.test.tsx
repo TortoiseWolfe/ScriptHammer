@@ -50,6 +50,7 @@ vi.mock('@/lib/payments/payment-service', () => ({
 describe('SubscriptionManager', () => {
   const defaultProps = {
     userId: 'user-123',
+    realtime: false, // unit tests don't open a live channel
   };
 
   beforeEach(() => {

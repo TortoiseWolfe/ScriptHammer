@@ -5,9 +5,11 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { formatPaymentAmount } from '@/lib/payments/payment-service';
+import { useSubscriptionsRealtime } from '@/hooks/useSubscriptionsRealtime';
+import type { RealtimeStatus } from '@/hooks/usePaymentResultsRealtime';
 
 /**
  * Mirrors the `subscriptions` table in the monolithic migration. The table has
@@ -33,7 +35,16 @@ export interface Subscription {
 export interface SubscriptionManagerProps {
   userId: string;
   className?: string;
+  /** Live-update on subscriptions changes via Supabase Realtime (default true).
+   * Tests/stories pass false to avoid opening a channel. */
+  realtime?: boolean;
 }
+
+const REALTIME_BADGE: Record<RealtimeStatus, { cls: string; label: string }> = {
+  live: { cls: 'badge-success', label: 'Live' },
+  connecting: { cls: 'badge-ghost', label: 'Connecting' },
+  error: { cls: 'badge-warning', label: 'Realtime offline' },
+};
 
 /**
  * Manage user subscriptions
@@ -48,39 +59,42 @@ export interface SubscriptionManagerProps {
 export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
   userId,
   className = '',
+  realtime = true,
 }) => {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Fetch subscriptions
-  useEffect(() => {
-    const fetchSubscriptions = async () => {
-      setLoading(true);
-      setError(null);
+  // Fetch subscriptions. Extracted as a stable callback so the realtime hook can
+  // re-run it on a subscriptions change (status flip, grace-period update).
+  const refetch = useCallback(async () => {
+    setError(null);
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('template_user_id', userId)
+        .order('created_at', { ascending: false });
 
-      try {
-        const { data, error: fetchError } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('template_user_id', userId)
-          .order('created_at', { ascending: false });
+      if (fetchError) throw fetchError;
 
-        if (fetchError) throw fetchError;
-
-        setSubscriptions((data as unknown as Subscription[]) || []);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error('Failed to load subscriptions')
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSubscriptions();
+      setSubscriptions((data as unknown as Subscription[]) || []);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err : new Error('Failed to load subscriptions')
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
+
+  useEffect(() => {
+    setLoading(true);
+    refetch();
+  }, [refetch]);
+
+  const realtimeStatus = useSubscriptionsRealtime(refetch, realtime);
 
   // Cancel subscription
   const handleCancel = async (subscriptionId: string) => {
@@ -283,8 +297,18 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <h2 className="text-2xl font-bold">Subscriptions</h2>
-        <div className="badge badge-outline">
-          {subscriptions.length} subscription(s)
+        <div className="flex items-center gap-2">
+          {realtime && (
+            <span
+              className={`badge ${REALTIME_BADGE[realtimeStatus].cls}`}
+              data-testid="subscription-realtime-status"
+            >
+              {REALTIME_BADGE[realtimeStatus].label}
+            </span>
+          )}
+          <div className="badge badge-outline">
+            {subscriptions.length} subscription(s)
+          </div>
         </div>
       </div>
 

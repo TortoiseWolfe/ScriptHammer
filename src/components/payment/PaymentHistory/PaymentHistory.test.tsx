@@ -45,12 +45,12 @@ describe('PaymentHistory', () => {
   });
 
   it('should render loading state initially', () => {
-    render(<PaymentHistory />);
+    render(<PaymentHistory realtime={false} />);
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   it('should render payment history after loading', async () => {
-    render(<PaymentHistory />);
+    render(<PaymentHistory realtime={false} />);
 
     await waitFor(() => {
       expect(screen.getByText('Payment History')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should display filters when showFilters is true', async () => {
-    render(<PaymentHistory showFilters={true} />);
+    render(<PaymentHistory showFilters={true} realtime={false} />);
 
     await waitFor(() => {
       expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should not display filters when showFilters is false', async () => {
-    render(<PaymentHistory showFilters={false} />);
+    render(<PaymentHistory showFilters={false} realtime={false} />);
 
     await waitFor(() => {
       expect(screen.queryByLabelText(/status/i)).not.toBeInTheDocument();
@@ -75,7 +75,7 @@ describe('PaymentHistory', () => {
   });
 
   it('should display payment count badge', async () => {
-    render(<PaymentHistory />);
+    render(<PaymentHistory realtime={false} />);
 
     await waitFor(() => {
       expect(screen.getByText(/total payments/i)).toBeInTheDocument();

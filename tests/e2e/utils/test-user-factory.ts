@@ -2105,8 +2105,139 @@ export async function deleteIsolatedSubscription(
 }
 
 /**
+ * A throwaway user plus one seeded payment (`payment_intents` + `payment_results`)
+ * with a session — for realtime-dashboard specs that assert the PaymentHistory
+ * list/counter updates live. Exposes `addResult()` to insert a SECOND payment
+ * after the page is open (drives the realtime path).
+ */
+export interface IsolatedPayment {
+  user: TestUser;
+  session: InjectableSession;
+  intentId: string;
+  resultId: string;
+  /** Insert another succeeded payment_results row for this user (live update). */
+  addResult: () => Promise<void>;
+}
+
+/**
+ * Seed a throwaway user with one succeeded payment. No provider involved — the
+ * rows are inserted with the service-role key, so this needs NO creds. Tear down
+ * with {@link deleteIsolatedPayment}.
+ */
+export async function seedIsolatedPayment(opts?: {
+  prefix?: string;
+}): Promise<IsolatedPayment | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const prefix = opts?.prefix ?? 'iso-pay';
+  const created = await createKeyedUserWithSession(prefix, 'isop', stamp);
+  if (!created) return null;
+
+  // Parent intent (payment_results.intent_id → payment_intents, ON DELETE CASCADE).
+  const insertIntent = async () => {
+    const { data, error } = await admin
+      .from('payment_intents')
+      .insert({
+        template_user_id: created.user.id,
+        amount: 1999,
+        currency: 'usd',
+        type: 'one_time',
+        customer_email: created.user.email,
+      })
+      .select('id')
+      .single();
+    if (error || !data)
+      throw new Error(`intent insert failed: ${error?.message}`);
+    return data.id as string;
+  };
+
+  const insertResult = async (intentId: string) => {
+    const { data, error } = await admin
+      .from('payment_results')
+      .insert({
+        intent_id: intentId,
+        provider: 'stripe',
+        transaction_id: `iso_txn_${stamp}_${Math.floor(performance.now())}`,
+        status: 'succeeded',
+        charged_amount: 1999,
+        charged_currency: 'usd',
+        webhook_verified: true,
+        verification_method: 'webhook',
+      })
+      .select('id')
+      .single();
+    if (error || !data)
+      throw new Error(`result insert failed: ${error?.message}`);
+    return data.id as string;
+  };
+
+  let intentId: string;
+  let resultId: string;
+  try {
+    intentId = await insertIntent();
+    resultId = await insertResult(intentId);
+  } catch (e) {
+    console.warn('seedIsolatedPayment:', (e as Error).message);
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+
+  console.log(`✓ Isolated payment ${resultId} (user ${created.user.id})`);
+  return {
+    user: created.user,
+    session: created.session,
+    intentId,
+    resultId,
+    addResult: async () => {
+      const id = await insertIntent();
+      await insertResult(id);
+    },
+  };
+}
+
+/**
+ * Tear down an isolated payment. Deletes the user's payment_intents (cascades to
+ * payment_results) before the user. Safe with null.
+ */
+export async function deleteIsolatedPayment(
+  fixture: IsolatedPayment | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    // payment_results cascades from payment_intents; delete intents by user.
+    await admin
+      .from('payment_intents')
+      .delete()
+      .eq('template_user_id', fixture.user.id);
+  }
+  await deleteTestUser(fixture.user.id);
+  console.log('✓ Isolated payment torn down');
+}
+
+/**
+ * Open a fresh browser context authenticated as the isolated payment's user,
+ * landing on the payment hub Overview tab (`/payment`). Mirrors openSubscriptionsAs.
+ */
+export async function openPaymentHubAs(
+  browser: Browser,
+  session: InjectableSession
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const opened = await openAuthedPage(browser, session);
+  await opened.page.goto(`${basePath}/payment`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(opened.page);
+  return opened;
+}
+
+/**
  * Open a fresh browser context authenticated as the isolated subscription's
- * user, landing on `/account/subscriptions`. Mirrors {@link openAsViewer}.
+ * user, landing on the payment hub's Subscriptions tab
+ * (`/payment?tab=subscriptions`). Mirrors {@link openAsViewer}.
  */
 export async function openSubscriptionsAs(
   browser: Browser,
@@ -2114,7 +2245,7 @@ export async function openSubscriptionsAs(
 ): Promise<OpenedParticipant> {
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const opened = await openAuthedPage(browser, fixture.session);
-  await opened.page.goto(`${basePath}/account/subscriptions`, {
+  await opened.page.goto(`${basePath}/payment?tab=subscriptions`, {
     waitUntil: 'domcontentloaded',
   });
   await dismissCookieBanner(opened.page);
