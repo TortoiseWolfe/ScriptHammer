@@ -1982,6 +1982,145 @@ export async function deleteIsolatedGroup(
   console.log('✓ Isolated group torn down');
 }
 
+/** A live subscription status the dup-guard treats as occupying the one slot. */
+export type LiveSubscriptionStatus = 'active' | 'past_due' | 'grace_period';
+export type SubscriptionStatus =
+  | LiveSubscriptionStatus
+  | 'canceled'
+  | 'expired';
+
+/**
+ * A throwaway user plus one seeded `subscriptions` row, with a session for
+ * browser injection — for subscription specs that assert UI driven by a real
+ * row (grace-period countdown, cancel, the one-live-per-user guard). Mirrors
+ * {@link IsolatedConnection}.
+ */
+export interface IsolatedSubscription {
+  user: TestUser;
+  session: InjectableSession;
+  subscriptionId: string;
+  /** The row's `grace_period_expires` (YYYY-MM-DD) when status is grace_period. */
+  gracePeriodExpires?: string;
+}
+
+/**
+ * Create a fully isolated throwaway user plus one `subscriptions` row at the
+ * given status. No payment provider is involved — the row is inserted directly
+ * with the service-role key (the same path the #5 webhooks use), so this needs
+ * NO Stripe/PayPal credentials.
+ *
+ * @param status            subscription status to seed (default 'grace_period').
+ * @param opts.provider     'stripe' (default) | 'paypal'.
+ * @param opts.graceDays    days from today for `grace_period_expires` when the
+ *                          status is grace_period/past_due (default 5).
+ *
+ * Returns null if the admin client / anon key is unavailable. Tear down with
+ * {@link deleteIsolatedSubscription} — the subscriptions FK is NO ACTION (not
+ * cascade) and deleteTestUser does not touch subscriptions, so the row MUST be
+ * deleted before the user or the auth-user delete fails on the FK.
+ */
+export async function seedIsolatedSubscription(
+  status: SubscriptionStatus = 'grace_period',
+  opts?: {
+    provider?: 'stripe' | 'paypal';
+    graceDays?: number;
+    prefix?: string;
+  }
+): Promise<IsolatedSubscription | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const provider = opts?.provider ?? 'stripe';
+  const prefix = opts?.prefix ?? 'iso-sub';
+
+  const created = await createKeyedUserWithSession(prefix, 'isos', stamp);
+  if (!created) return null;
+
+  // grace_period_expires is a TEXT YYYY-MM-DD; only meaningful for the
+  // grace_period / past_due states the UI renders a countdown for.
+  const needsGrace = status === 'grace_period' || status === 'past_due';
+  const graceDays = opts?.graceDays ?? 5;
+  const gracePeriodExpires = needsGrace
+    ? new Date(Date.now() + graceDays * 86_400_000).toISOString().split('T')[0]
+    : undefined;
+
+  const { data: row, error } = await admin
+    .from('subscriptions')
+    .insert({
+      template_user_id: created.user.id,
+      provider,
+      // Unique per row (subscriptions.provider_subscription_id is UNIQUE).
+      provider_subscription_id: `iso_sub_${provider}_${stamp}`,
+      customer_email: created.user.email,
+      plan_amount: 999, // $9.99, satisfies CHECK (>= 100)
+      plan_interval: 'month',
+      status,
+      failed_payment_count: needsGrace ? 1 : 0,
+      ...(gracePeriodExpires
+        ? { grace_period_expires: gracePeriodExpires }
+        : {}),
+    })
+    .select('id')
+    .single();
+
+  if (error || !row) {
+    console.warn(
+      'seedIsolatedSubscription: subscription insert failed:',
+      error?.message
+    );
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+
+  console.log(
+    `✓ Isolated subscription ${row.id} (${status}; user ${created.user.id})`
+  );
+  return {
+    user: created.user,
+    session: created.session,
+    subscriptionId: row.id as string,
+    gracePeriodExpires: gracePeriodExpires,
+  };
+}
+
+/**
+ * Tear down an isolated subscription. Deletes ALL of the user's subscription
+ * rows first (the FK is NO ACTION, so the auth-user delete would otherwise fail)
+ * then the throwaway user. Safe with null.
+ */
+export async function deleteIsolatedSubscription(
+  fixture: IsolatedSubscription | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    await admin
+      .from('subscriptions')
+      .delete()
+      .eq('template_user_id', fixture.user.id);
+  }
+  await deleteTestUser(fixture.user.id);
+  console.log('✓ Isolated subscription torn down');
+}
+
+/**
+ * Open a fresh browser context authenticated as the isolated subscription's
+ * user, landing on `/account/subscriptions`. Mirrors {@link openAsViewer}.
+ */
+export async function openSubscriptionsAs(
+  browser: Browser,
+  fixture: IsolatedSubscription
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const opened = await openAuthedPage(browser, fixture.session);
+  await opened.page.goto(`${basePath}/account/subscriptions`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(opened.page);
+  return opened;
+}
+
 /**
  * Scroll a message thread to the bottom so virtual-scrolled messages
  * at the end of the list are rendered in the DOM.
