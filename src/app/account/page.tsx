@@ -40,14 +40,11 @@ export default function AccountPage() {
             >
               View recent security activity
             </Link>
-            <Link
-              href="/payment/dashboard"
-              className="btn btn-outline min-h-11 w-full"
-            >
-              View payment dashboard
+            <Link href="/payment" className="btn btn-outline min-h-11 w-full">
+              View payments
             </Link>
             <Link
-              href="/account/subscriptions"
+              href="/payment?tab=subscriptions"
               className="btn btn-outline min-h-11 w-full"
             >
               Manage subscriptions

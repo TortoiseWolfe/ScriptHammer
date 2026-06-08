@@ -32,6 +32,7 @@ vi.mock('@/lib/payments/payment-service', () => ({
 describe('SubscriptionManager Accessibility', () => {
   const defaultProps = {
     userId: 'user-123',
+    realtime: false,
   };
 
   it('should have no accessibility violations', async () => {

@@ -9,7 +9,18 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  dismissCookieBanner,
+  getAdminClient,
+  seedIsolatedPayment,
+  deleteIsolatedPayment,
+  openPaymentHubAs,
+  seedIsolatedSubscription,
+  deleteIsolatedSubscription,
+  openSubscriptionsAs,
+  type IsolatedPayment,
+  type IsolatedSubscription,
+} from '../utils/test-user-factory';
 
 test.describe('Payment Dashboard Real-Time Updates', () => {
   test.describe.configure({ timeout: 60000 });
@@ -77,12 +88,30 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     );
   });
 
-  test.skip('should update payment list when new payment added', async ({
-    page,
-    context,
+  test('should update payment list when new payment added', async ({
+    browser,
   }) => {
-    // Skip: Requires actual payment processing
-    test.skip(true, 'Payment list updates require actual Stripe integration');
+    // Seed a throwaway user with one payment, open the hub Overview tab AS them,
+    // then service-role insert a SECOND payment and assert the list grows live
+    // (realtime → 1s debounce → refetch). No provider/creds needed.
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const { page } = opened;
+      const count = page.getByTestId('transaction-count');
+      await expect(count).toContainText('1 total', { timeout: 30000 });
+
+      await fixture.addResult(); // live insert
+      await expect(count).toContainText('2 total', { timeout: 15000 });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
   test.skip('should update webhook verification status in real-time', async ({
@@ -92,24 +121,92 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     test.skip(true, 'Webhook verification requires actual Stripe webhooks');
   });
 
-  test.skip('should handle subscription status changes in real-time', async ({
-    page,
+  test('should handle subscription status changes in real-time', async ({
+    browser,
   }) => {
-    // Skip: /payment/subscriptions route doesn't exist
-    test.skip(true, 'Subscription management page not yet implemented');
+    // Seed an active subscription, open the hub Subscriptions tab AS that user,
+    // then service-role UPDATE the row to grace_period and assert the badge
+    // flips live (useSubscriptionsRealtime → refetch).
+    let fixture: IsolatedSubscription | null = null;
+    let opened: Awaited<ReturnType<typeof openSubscriptionsAs>> | null = null;
+    try {
+      fixture = await seedIsolatedSubscription('active', {
+        provider: 'stripe',
+      });
+      const admin = getAdminClient();
+      test.skip(!fixture || !admin, 'Admin client unavailable to seed');
+      if (!fixture || !admin) return;
+
+      opened = await openSubscriptionsAs(browser, fixture);
+      const { page } = opened;
+      await expect(page.getByText(/Active/i).first()).toBeVisible({
+        timeout: 30000,
+      });
+
+      // Flip status server-side; the realtime subscription should refetch.
+      const graceExpires = fixture.gracePeriodExpires ?? '2099-01-01';
+      await admin
+        .from('subscriptions')
+        .update({ status: 'grace_period', grace_period_expires: graceExpires })
+        .eq('id', fixture.subscriptionId);
+
+      await expect(page.getByText(/Grace Period/i).first()).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedSubscription(fixture);
+    }
   });
 
-  test.skip('should show live transaction counter', async ({ page }) => {
-    // Skip: Transaction counter not implemented
-    test.skip(true, 'Transaction counter not yet implemented');
+  test('should show live transaction counter', async ({ browser }) => {
+    // The hub's PaymentHistory shows a `transaction-count` badge + a
+    // `realtime-status` indicator. Seed a payment, open the hub, assert the
+    // counter reads 1 and the realtime status reaches "Live".
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const { page } = opened;
+      await expect(page.getByTestId('transaction-count')).toContainText(
+        '1 total',
+        { timeout: 30000 }
+      );
+      await expect(page.getByTestId('realtime-status')).toHaveText(/Live/i, {
+        timeout: 30000,
+      });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
-  test.skip('should handle connection loss gracefully', async ({
-    page,
-    context,
+  test('should show a realtime connection-status indicator', async ({
+    browser,
   }) => {
-    // Skip: Offline status indicator not implemented
-    test.skip(true, 'Offline status indicator not yet implemented');
+    // The hub surfaces the channel connection state via a `realtime-status`
+    // badge. Assert it renders and reaches "Live" on a healthy connection.
+    // (Simulating a true mid-session channel drop is out of scope; the badge is
+    // the affordance a reconnection/offline UI would build on.)
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const status = opened.page.getByTestId('realtime-status');
+      await expect(status).toBeVisible({ timeout: 30000 });
+      await expect(status).toHaveText(/Live/i, { timeout: 30000 });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
   test.skip('should automatically reconnect after disconnect', async ({

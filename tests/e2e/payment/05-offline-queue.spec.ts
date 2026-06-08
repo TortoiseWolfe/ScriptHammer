@@ -62,17 +62,17 @@ test.describe('Offline Payment Queue', () => {
     });
   });
 
-  test('queue management UI renders on the payment dashboard (#4)', async ({
+  test('queue management UI renders on the payment hub (#4)', async ({
     page,
   }) => {
-    // The offline-queue management UI now exists (#4): PaymentQueuePanel on
-    // /payment/dashboard. With an empty queue the test user sees the empty
-    // state + disabled controls; this asserts the panel + its affordances are
-    // wired (no payment provider/creds needed — the queue is client-side).
-    await page.goto('/payment/dashboard', { waitUntil: 'networkidle' });
+    // The offline-queue management UI now exists (#4): PaymentQueuePanel on the
+    // payment hub's Overview tab (/payment). With an empty queue the test user
+    // sees the empty state + disabled controls; this asserts the panel + its
+    // affordances are wired (no payment provider/creds needed — queue is client-side).
+    await page.goto('/payment', { waitUntil: 'networkidle' });
     if (page.url().includes('/sign-in')) {
       await page.waitForTimeout(3000);
-      await page.goto('/payment/dashboard', { waitUntil: 'networkidle' });
+      await page.goto('/payment', { waitUntil: 'networkidle' });
     }
     await dismissCookieBanner(page);
 
@@ -87,7 +87,7 @@ test.describe('Offline Payment Queue', () => {
       await expect(page.getByTestId('queue-clear')).toBeDisabled();
     } else {
       await expect(
-        page.getByRole('heading', { name: 'Payment Dashboard', level: 1 })
+        page.getByRole('heading', { name: 'Payments', level: 1 })
       ).toBeVisible({ timeout: 30000 });
     }
   });

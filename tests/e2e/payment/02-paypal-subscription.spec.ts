@@ -88,13 +88,16 @@ test.describe('PayPal Subscription Creation Flow', () => {
   test('subscription management route renders for an authed user (#5)', async ({
     page,
   }) => {
-    // The /account/subscriptions route now exists (#5). With no seeded
-    // subscription the test user sees the empty-state; this asserts the route
-    // is wired (ProtectedRoute → SubscriptionManager) and reachable.
-    await page.goto('/account/subscriptions', { waitUntil: 'networkidle' });
+    // The payment hub's Subscriptions tab (/payment?tab=subscriptions) renders
+    // the SubscriptionManager. With no seeded subscription the test user sees the
+    // empty-state; this asserts the route is wired (ProtectedRoute → hub tab →
+    // SubscriptionManager) and reachable.
+    await page.goto('/payment?tab=subscriptions', { waitUntil: 'networkidle' });
     if (page.url().includes('/sign-in')) {
       await page.waitForTimeout(3000);
-      await page.goto('/account/subscriptions', { waitUntil: 'networkidle' });
+      await page.goto('/payment?tab=subscriptions', {
+        waitUntil: 'networkidle',
+      });
     }
     await dismissCookieBanner(page);
 
@@ -126,8 +129,8 @@ test.describe('PayPal Subscription Creation Flow', () => {
 
   test('should show grace period warning', async ({ browser }) => {
     // Seed a grace_period subscription (expires in 5 days) for a throwaway user,
-    // open /account/subscriptions AS that user, and assert the countdown + badge
-    // render — driven by a real row through real RLS (no provider creds needed).
+    // open the payment hub's Subscriptions tab AS that user, and assert the
+    // countdown + badge render — a real row through real RLS (no creds needed).
     let fixture: IsolatedSubscription | null = null;
     let opened: Awaited<ReturnType<typeof openSubscriptionsAs>> | null = null;
     try {

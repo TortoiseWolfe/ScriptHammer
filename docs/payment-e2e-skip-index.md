@@ -1,61 +1,64 @@
 # Payment E2E `test.skip` Index (#53)
 
-**Regenerated 2026-06-08.** Indexes every skipped test in `tests/e2e/payment/` by
-its **blocker**, so it's clear what must ship before each can be un-skipped — and
-that none are skipped without a tracked reason. Line numbers and reasons below are
-the ground truth in the specs as of this date (verified by grepping
-`test.skip(true, ...)`), not a hand-maintained guess.
+**Regenerated 2026-06-08 (payment-hub refactor).** Indexes every skipped test in
+`tests/e2e/payment/` by its **blocker**, so it's clear what must ship before each
+can be un-skipped — and that none are skipped without a tracked reason. Line
+numbers + reasons are the ground truth in the specs (verified by grepping
+`test.skip(true, ...)`), not hand-maintained guesses.
 
 ## Summary
 
-`tests/e2e/payment/` contains **27 skipped tests** (each via
-`test.skip(true, '<reason>')`), across 7 spec files. They fall into these blocker
-buckets:
+`tests/e2e/payment/` contains **23 skipped tests** across 7 spec files. They fall
+into these blocker buckets:
 
 | Blocker                             | Count | Unblocked by                                                        |
 | ----------------------------------- | ----- | ------------------------------------------------------------------- |
-| Unimplemented dashboard/realtime UI | 11    | small UI surfaces on `/payment/dashboard` + realtime widgets (#6)   |
-| Live provider keys / webhooks       | 6     | Stripe/PayPal **sandbox credentials** set on the deployed functions |
-| Offline-queue seed fixture          | 4     | an in-page Dexie queue-seed fixture (autonomous; see note below)    |
-| Unimplemented route/page            | 3     | `/payment/subscriptions`, `/payment/history` routes                 |
-| Won't-fix in E2E                    | 2     | FPS measurement + script-bundling (covered elsewhere / unreliable)  |
+| Live provider keys / webhooks       | 5     | Stripe/PayPal **sandbox credentials** set on the deployed functions |
+| Unimplemented route/page (perf)     | 4     | seeded-volume perf testing on `/payment` (history/dashboard perf)   |
+| Offline-queue seed fixture          | 4     | an in-page Dexie queue-seed fixture (autonomous; see note)          |
+| Unimplemented dashboard/realtime UI | 4     | reconnection UI, batch-update UI, error toast, payment chart        |
+| Won't-fix in E2E                    | 2     | FPS measurement + script-bundling (unreliable / covered elsewhere)  |
 | Edge-function flow                  | 1     | exercising the `cancel-subscription` Edge Function end-to-end       |
+| Feature not built                   | 2     | offline-queue feature (#1 result), consent-reset feature            |
+| Subscription-mgmt page (legacy ref) | 1     | retarget to the `/payment?tab=subscriptions` hub (legacy comment)   |
 
-**Just un-skipped (2026-06-08, no creds):** the **grace-period countdown** and
-**duplicate-prevention (23505)** tests in `02-paypal-subscription.spec.ts` now run
-against a seeded subscription row via the new `seedIsolatedSubscription` fixture
-(`tests/e2e/utils/test-user-factory.ts`). They needed a fixture, not credentials.
+**Just un-skipped (2026-06-08, payment-hub refactor, no creds):**
 
-**Key takeaways for un-skipping:**
+- `02` **grace-period countdown** + **duplicate-prevention (23505)** — via the
+  `seedIsolatedSubscription` fixture (prior session), now on the hub.
+- `06` **live transaction counter**, **payment-list live update**, **subscription
+  status change in real-time**, and a **realtime connection-status indicator** —
+  enabled by the new `/payment` hub + the `usePaymentResultsRealtime` /
+  `useSubscriptionsRealtime` hooks. They seed a throwaway user + payment/sub row
+  via `seedIsolatedPayment` / `seedIsolatedSubscription`, assert the live update,
+  and tear down. Guarded with `test.skip(!getAdminClient())`.
 
-- **6 tests need live sandbox credentials** (full Stripe/PayPal redirect + webhook
-  flows). With the Edge Functions now deployed to prod, the only remaining gate is
-  setting the provider secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-  `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`) via the Management API `/secrets`
-  endpoint. These stay skipped in CI by design.
-- **4 offline-queue tests need a Dexie seed fixture.** These are empty stubs whose
-  bodies must also be written; the queue is client-side (`PaymentQueueV2` /
-  `queuedOperations` Dexie store, via `@/lib/offline-queue/payment-adapter`), so the
-  fixture must seed IndexedDB in-page (call the app's own `paymentQueue` API), not
-  the server `payment_intents` table. Autonomous but non-trivial — deferred.
-- **The remaining ~16** are genuinely unimplemented UI surfaces or routes
-  (realtime widgets, `/payment/subscriptions`, `/payment/history`) and 2
-  won't-fix-in-E2E perf cases. They are NOT credential-blocked.
+**Key takeaways for un-skipping the remaining 23:**
 
-> Note: the Edge Functions these flows call (Stripe checkout/subscription/verify,
-> PayPal order/capture/subscription, cancel/resume, the webhooks) are all DEPLOYED
-> to prod as of 2026-06-08 (via the Supabase Management API). So the remaining
-> payment blockers are **sandbox creds** + **a few front-end surfaces**, not the
-> backend code.
+- **5 need live sandbox credentials.** The Edge Functions are deployed; the only
+  gate is setting provider secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`) via the Management API `/secrets`.
+- **4 offline-queue tests need a Dexie seed fixture** (client-side
+  `PaymentQueueV2`/`queuedOperations` store; must seed IndexedDB in-page via the
+  app's `paymentQueue` API). Autonomous but non-trivial — deferred.
+- **4 dashboard/realtime UI tests** are genuinely unbuilt widgets (reconnection
+  button, batch-update grouping, error toast, payment chart) — deliberately out
+  of scope for the template (no clear user need; a chart adds a dependency).
+- **4 perf tests** assert load behaviour with large seeded volumes on the
+  (now-existing) `/payment` surfaces — separate perf concern, not creds.
+- **2 won't-fix** (FPS unreliable in E2E, bundling needs Stripe).
+
+> Note: the payment Edge Functions are all DEPLOYED to prod (Supabase Management
+> API). Remaining payment blockers are **sandbox creds** + a few **unbuilt
+> widgets**, not backend code.
 
 ## Full index by blocker
 
-### Live provider keys / webhooks (sandbox creds) — 6 skipped
+### Live provider keys / webhooks (sandbox creds) — 5 skipped
 
 - `02-paypal-subscription.spec.ts:56` — PayPal API keys not configured - skipping flow test
-- `02-paypal-subscription.spec.ts:124` — Needs a seeded past_due/grace row + PayPal sandbox keys
-- `06-realtime-dashboard.spec.ts:85` — Payment list updates require actual Stripe integration
-- `06-realtime-dashboard.spec.ts:92` — Webhook verification requires actual Stripe webhooks
+- `02-paypal-subscription.spec.ts:127` — Needs a seeded past_due/grace row + PayPal sandbox keys
+- `06-realtime-dashboard.spec.ts:121` — Webhook verification requires actual Stripe webhooks
 - `07-performance.spec.ts:19` — Stripe API keys not configured - use k6 for load testing
 - `07-performance.spec.ts:116` — Script bundling test requires Stripe integration
 
@@ -66,29 +69,32 @@ against a seeded subscription row via the new `seedIsolatedSubscription` fixture
 - `05-offline-queue.spec.ts:118` — Needs a queue-seed fixture to enqueue multiple items
 - `05-offline-queue.spec.ts:137` — Needs a seeded failed item to exercise backoff/retry UI
 
-### Edge-function flow — 1 skipped
+### Unimplemented dashboard / realtime widgets (out of scope) — 4 skipped
 
-- `02-paypal-subscription.spec.ts:120` — Cancel drives the cancel-subscription Edge Function
+- `06-realtime-dashboard.spec.ts:215` — Reconnection UI not yet implemented
+- `06-realtime-dashboard.spec.ts:220` — Batch update UI not yet implemented
+- `06-realtime-dashboard.spec.ts:225` — Real-time error notifications not yet implemented
+- `06-realtime-dashboard.spec.ts:230` — Payment chart not yet implemented
 
-### Unimplemented route/page — 3 skipped
+### Perf with seeded volume (separate concern) — 4 skipped
 
-- `03-failed-payment-retry.spec.ts:136` — Subscription management page not yet implemented
-- `06-realtime-dashboard.spec.ts:99` — Subscription management page not yet implemented
-- `07-performance.spec.ts:40` — Payment history page not yet implemented
+- `07-performance.spec.ts:26` — Payment dashboard page perf (now /payment Overview)
+- `07-performance.spec.ts:33` — Payment dashboard page perf (now /payment Overview)
+- `07-performance.spec.ts:40` — Payment history page perf (now /payment Overview history)
+- `07-performance.spec.ts:48` — Offline queue sync UI perf
 
-### Unimplemented dashboard / realtime UI — 11 skipped
+### Feature not built — 2 skipped
 
 - `01-stripe-onetime.spec.ts:149` — Offline queue feature not yet implemented
 - `04-gdpr-consent.spec.ts:232` — Consent reset feature not yet implemented
-- `06-realtime-dashboard.spec.ts:104` — Transaction counter not yet implemented
-- `06-realtime-dashboard.spec.ts:112` — Offline status indicator not yet implemented
-- `06-realtime-dashboard.spec.ts:120` — Reconnection UI not yet implemented
-- `06-realtime-dashboard.spec.ts:125` — Batch update UI not yet implemented
-- `06-realtime-dashboard.spec.ts:130` — Real-time error notifications not yet implemented
-- `06-realtime-dashboard.spec.ts:135` — Payment chart not yet implemented
-- `07-performance.spec.ts:26` — Payment dashboard page not yet implemented
-- `07-performance.spec.ts:33` — Payment dashboard page not yet implemented
-- `07-performance.spec.ts:48` — Offline queue sync UI not yet implemented
+
+### Edge-function flow — 1 skipped
+
+- `02-paypal-subscription.spec.ts:123` — Cancel drives the cancel-subscription Edge Function
+
+### Legacy subscription-mgmt-page reference — 1 skipped
+
+- `03-failed-payment-retry.spec.ts:136` — Subscription management page (retarget to /payment?tab=subscriptions)
 
 ### Won't-fix in E2E — 2 skipped
 

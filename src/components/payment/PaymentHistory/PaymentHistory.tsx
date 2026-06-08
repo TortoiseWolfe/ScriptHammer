@@ -5,18 +5,31 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   getPaymentHistory,
   formatPaymentAmount,
 } from '@/lib/payments/payment-service';
+import { usePaymentResultsRealtime } from '@/hooks/usePaymentResultsRealtime';
 import type { PaymentActivity, Currency, PaymentStatus } from '@/types/payment';
 
 export interface PaymentHistoryProps {
   initialLimit?: number;
   showFilters?: boolean;
   className?: string;
+  /** Live-update the list via Supabase Realtime (default true). Tests/stories
+   * pass false to avoid opening a channel. */
+  realtime?: boolean;
 }
+
+const REALTIME_BADGE: Record<
+  ReturnType<typeof usePaymentResultsRealtime>,
+  { cls: string; label: string }
+> = {
+  live: { cls: 'badge-success', label: 'Live' },
+  connecting: { cls: 'badge-ghost', label: 'Connecting' },
+  error: { cls: 'badge-warning', label: 'Realtime offline' },
+};
 
 type StatusFilter = 'all' | 'paid' | 'failed' | 'refunded' | 'pending';
 
@@ -40,6 +53,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   initialLimit = 20,
   showFilters = true,
   className = '',
+  realtime = true,
 }) => {
   const [payments, setPayments] = useState<PaymentActivity[]>([]);
   const [filteredPayments, setFilteredPayments] = useState<PaymentActivity[]>(
@@ -54,30 +68,33 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch payment history (uses authenticated user)
-  useEffect(() => {
-    const fetchHistory = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // getPaymentHistory now uses authenticated user automatically (REQ-SEC-001)
-        const history = await getPaymentHistory(initialLimit);
-        setPayments(history);
-        setFilteredPayments(history);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err
-            : new Error('Failed to load payment history')
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHistory();
+  // Fetch payment history (uses authenticated user). Extracted as a stable
+  // callback so the realtime hook can re-run it on a payment_results change.
+  const refetch = useCallback(async () => {
+    setError(null);
+    try {
+      // getPaymentHistory uses the authenticated user automatically (REQ-SEC-001)
+      const history = await getPaymentHistory(initialLimit);
+      setPayments(history);
+      setFilteredPayments(history);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err : new Error('Failed to load payment history')
+      );
+    } finally {
+      setLoading(false);
+    }
   }, [initialLimit]);
+
+  useEffect(() => {
+    setLoading(true);
+    refetch();
+  }, [refetch]);
+
+  // Live-update on payment_results changes (debounced inside the hook). The
+  // returned status drives the connection indicator badge. When realtime is
+  // off the hook is fully inert (no channel opened).
+  const realtimeStatus = usePaymentResultsRealtime(refetch, realtime);
 
   // Apply filters
   useEffect(() => {
@@ -156,29 +173,48 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     );
   }
 
+  const realtimeBadge = REALTIME_BADGE[realtimeStatus];
+
   if (payments.length === 0) {
     return (
-      <div className={`card bg-base-100 shadow-xl ${className}`}>
-        <div className="card-body items-center text-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-base-content h-16 w-16"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-            />
-          </svg>
-          <h3 className="mt-4 text-xl font-bold">No payment history</h3>
-          <p className="text-base-content/85">
-            You haven&apos;t made any payments yet.
-          </p>
+      <div className={`flex flex-col gap-4 ${className}`}>
+        {/* Keep the count + realtime indicator visible in the empty state so a
+            live INSERT flips it from 0 without a structural remount. */}
+        <div className="flex items-center justify-end gap-2">
+          {realtime && (
+            <span
+              className={`badge ${realtimeBadge.cls}`}
+              data-testid="realtime-status"
+            >
+              {realtimeBadge.label}
+            </span>
+          )}
+          <span className="badge badge-outline" data-testid="transaction-count">
+            {payments.length} total payments
+          </span>
+        </div>
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body items-center text-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-base-content h-16 w-16"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              />
+            </svg>
+            <h3 className="mt-4 text-xl font-bold">No payment history</h3>
+            <p className="text-base-content/85">
+              You haven&apos;t made any payments yet.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -189,8 +225,18 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <h2 className="text-2xl font-bold">Payment History</h2>
-        <div className="badge badge-outline">
-          {payments.length} total payments
+        <div className="flex items-center gap-2">
+          {realtime && (
+            <span
+              className={`badge ${realtimeBadge.cls}`}
+              data-testid="realtime-status"
+            >
+              {realtimeBadge.label}
+            </span>
+          )}
+          <span className="badge badge-outline" data-testid="transaction-count">
+            {payments.length} total payments
+          </span>
         </div>
       </div>
 
