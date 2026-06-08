@@ -4,6 +4,7 @@
  */
 
 import { trackError } from '@/utils/analytics';
+import { captureAppError } from '@/lib/monitoring/sentry';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('utils:errorHandler');
@@ -232,6 +233,16 @@ class ErrorHandler {
 
     // Track to analytics
     trackError(errorMessage, isFatal);
+
+    // Capture to Sentry (no-op unless initialized — i.e. analytics consent +
+    // a configured DSN). This is the single capture chokepoint; every handled
+    // error (including those routed here by ErrorBoundary) reports exactly
+    // once. Prefer the original Error for a meaningful stack/fingerprint.
+    captureAppError(error.originalError ?? error, {
+      category: error.category,
+      severity: error.severity,
+      ...error.context,
+    });
 
     if (this.config.isDevelopment) {
       logger.debug('Error tracked to analytics', {
