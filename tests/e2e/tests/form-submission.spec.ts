@@ -51,9 +51,13 @@ test.describe('Form Submission', () => {
   });
 
   test('required fields show indicators', async ({ page }) => {
-    // The contact form uses <span class="label-text-alt text-error">*</span> for required indicators
-    // Check that asterisks are visible next to required field labels
-    const requiredIndicators = page.locator('.label-text-alt.text-error');
+    // Each required field's label carries an asterisk: <span class="text-error">*</span>
+    // inside <label class="label">. Match by the asterisk text within field labels so
+    // the selector isn't coupled to DaisyUI class names (error-message spans also use
+    // .text-error but contain the message text, not "*").
+    const requiredIndicators = page
+      .locator('label.label span.text-error')
+      .filter({ hasText: '*' });
 
     // Contact form has 4 required fields: name, email, subject, message
     await expect(requiredIndicators).toHaveCount(4);

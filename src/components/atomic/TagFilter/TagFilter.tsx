@@ -91,13 +91,13 @@ export default function TagFilter({
     <div className={`space-y-3 ${className}`} data-testid="tag-filter">
       {/* Search Input */}
       {showSearch && (
-        <div className="form-control">
+        <div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={searchPlaceholder}
-            className="input input-bordered input-sm w-full"
+            className="input input-sm w-full"
             aria-label="Search tags"
           />
         </div>

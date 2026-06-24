@@ -134,10 +134,10 @@ function NewGroupContent() {
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-lg p-4">
           {/* Group Name Input */}
-          <div className="form-control mb-6">
+          <div className="mb-6">
             <label htmlFor="group-name" className="label">
-              <span className="label-text font-medium">Group Name</span>
-              <span className="label-text-alt text-base-content/80">
+              <span className="font-medium">Group Name</span>
+              <span className="text-base-content/80">
                 {groupName.length}/{GROUP_CONSTRAINTS.MAX_NAME_LENGTH}
               </span>
             </label>
@@ -145,7 +145,7 @@ function NewGroupContent() {
               id="group-name"
               type="text"
               placeholder="Enter group name (optional)"
-              className="input input-bordered min-h-12 w-full"
+              className="input min-h-12 w-full"
               value={groupName}
               onChange={(e) =>
                 setGroupName(
@@ -154,9 +154,7 @@ function NewGroupContent() {
               }
               disabled={isCreating}
             />
-            <p className="label-text-alt text-base-content/80 mt-2">
-              {autoNamePreview}
-            </p>
+            <p className="text-base-content/80 mt-2">{autoNamePreview}</p>
           </div>
 
           {/* Selected Members Section */}
@@ -251,10 +249,10 @@ function NewGroupContent() {
           )}
 
           {/* Search Input */}
-          <div className="form-control mb-4">
+          <div className="mb-4">
             <label htmlFor="member-search" className="label">
-              <span className="label-text font-medium">Add Members</span>
-              <span className="label-text-alt">
+              <span className="font-medium">Add Members</span>
+              <span>
                 {selectedMembers.length}/{GROUP_CONSTRAINTS.MAX_MEMBERS - 1}{' '}
                 selected
               </span>
@@ -265,7 +263,7 @@ function NewGroupContent() {
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search your connections..."
-                className="input input-bordered min-h-12 w-full pl-10"
+                className="input min-h-12 w-full pl-10"
                 value={searchQuery}
                 onChange={handleSearchChange}
                 disabled={isCreating || isAtCapacity}
@@ -286,9 +284,7 @@ function NewGroupContent() {
               </svg>
             </div>
             {isAtCapacity && (
-              <p className="label-text-alt text-warning mt-1">
-                Maximum members reached
-              </p>
+              <p className="text-warning mt-1">Maximum members reached</p>
             )}
           </div>
 

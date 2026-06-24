@@ -283,7 +283,7 @@ const MessageBubble = memo(
                 ref={textareaRef}
                 value={editContent}
                 onChange={(e) => setEditContent(e.target.value)}
-                className="textarea textarea-bordered min-h-11 w-full resize-none"
+                className="textarea min-h-11 w-full resize-none"
                 disabled={isSubmitting}
                 aria-label="Edit message content"
                 maxLength={10000}

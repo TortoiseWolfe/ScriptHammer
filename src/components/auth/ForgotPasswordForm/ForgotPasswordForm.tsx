@@ -107,16 +107,16 @@ export default function ForgotPasswordForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="email">
-          <span className="label-text">Email</span>
+          <span>Email</span>
         </label>
         <input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="you@example.com"
           required
           disabled={loading}

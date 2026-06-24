@@ -62,32 +62,32 @@ export default function ResetPasswordForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="password">
-          <span className="label-text">New Password</span>
+          <span>New Password</span>
         </label>
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="••••••••"
           required
           disabled={loading}
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="confirm-password">
-          <span className="label-text">Confirm Password</span>
+          <span>Confirm Password</span>
         </label>
         <input
           id="confirm-password"
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="••••••••"
           required
           disabled={loading}

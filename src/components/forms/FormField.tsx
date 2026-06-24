@@ -65,9 +65,9 @@ export const FormField: React.FC<FormFieldProps> = ({
   const helpId = `${name}-help`;
 
   return (
-    <div className={`form-control ${className}`}>
+    <div className={`${className}`}>
       <label htmlFor={name} className={`label ${hideLabel ? 'sr-only' : ''}`}>
-        <span className="label-text">
+        <span>
           {label}
           {required && (
             <span className="text-error ml-1" aria-label="required">
@@ -82,7 +82,7 @@ export const FormField: React.FC<FormFieldProps> = ({
 
       {/* Help text */}
       {helpText && !error && (
-        <div id={helpId} className="label-text-alt text-base-content/85 mt-1">
+        <div id={helpId} className="text-base-content/85 mt-1">
           {helpText}
         </div>
       )}

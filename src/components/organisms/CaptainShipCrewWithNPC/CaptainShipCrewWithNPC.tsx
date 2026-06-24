@@ -617,7 +617,7 @@ export default function CaptainShipCrewWithNPC({
                   }}
                   schema={playerNameSchema}
                   error={validationErrors[index]}
-                  className="input-bordered input-sm w-full sm:flex-1"
+                  className="input-sm w-full sm:flex-1"
                   placeholder="Player name"
                   size="sm"
                   validateOnChange
@@ -634,7 +634,7 @@ export default function CaptainShipCrewWithNPC({
                         e.target.value === 'npc' ? 'medium' : undefined,
                     })
                   }
-                  className="select select-bordered select-sm w-full sm:w-auto"
+                  className="select select-sm w-full sm:w-auto"
                 >
                   <option value="human">👤 Human</option>
                   <option value="npc">🤖 NPC</option>
@@ -648,7 +648,7 @@ export default function CaptainShipCrewWithNPC({
                         difficulty: e.target.value as NPCDifficulty,
                       })
                     }
-                    className="select select-bordered select-sm w-full sm:w-auto"
+                    className="select select-sm w-full sm:w-auto"
                   >
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>

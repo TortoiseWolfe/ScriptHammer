@@ -77,7 +77,7 @@ export const FontSwitcher: React.FC<FontSwitcherProps> = ({
       </button>
       <div
         tabIndex={0}
-        className="dropdown-content menu card card-compact bg-base-100 z-[100] mt-2 w-80 p-4 shadow-xl"
+        className="dropdown-content menu card card-sm bg-base-100 z-[100] mt-2 w-80 p-4 shadow-xl"
       >
         <div className="card-body">
           <h3 className="mb-2 text-lg font-bold">Font Selection</h3>

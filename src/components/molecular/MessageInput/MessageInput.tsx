@@ -158,7 +158,7 @@ export default function MessageInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled || sending}
-            className="textarea textarea-bordered w-full resize-none"
+            className="textarea w-full resize-none"
             rows={1}
             aria-label="Message input"
             aria-describedby="char-count"

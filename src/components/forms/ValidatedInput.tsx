@@ -162,7 +162,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
 
     // Build className
     const inputClassName = `
-      input input-bordered
+      input
       ${sizeClasses[size]}
       ${stateClasses}
       ${loading || isValidating ? 'opacity-75' : ''}

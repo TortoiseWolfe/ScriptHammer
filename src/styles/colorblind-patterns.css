@@ -292,7 +292,7 @@
   }
 
   /* Cards and Containers */
-  .card-bordered {
+  .card-border {
     border-style: solid;
     border-width: 2px;
   }

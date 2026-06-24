@@ -58,28 +58,28 @@ export default function DateRangeFilter({
       className={`flex flex-wrap items-end gap-4${className ? ` ${className}` : ''}`}
       data-testid={testId}
     >
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="date-range-start">
-          <span className="label-text">Start date</span>
+          <span>Start date</span>
         </label>
         <input
           id="date-range-start"
           type="date"
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           value={start}
           max={end || undefined}
           onChange={(e) => onChange({ start: e.target.value, end })}
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="date-range-end">
-          <span className="label-text">End date</span>
+          <span>End date</span>
         </label>
         <input
           id="date-range-end"
           type="date"
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           value={end}
           min={start || undefined}
           onChange={(e) => onChange({ start, end: e.target.value })}

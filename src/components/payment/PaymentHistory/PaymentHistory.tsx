@@ -243,13 +243,13 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       {/* Filters */}
       {showFilters && (
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-4">
-          <div className="form-control">
+          <div>
             <label htmlFor="status-filter" className="label">
-              <span className="label-text">Status</span>
+              <span>Status</span>
             </label>
             <select
               id="status-filter"
-              className="select select-bordered min-h-11 w-full sm:w-auto"
+              className="select min-h-11 w-full sm:w-auto"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             >
@@ -261,13 +261,13 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             </select>
           </div>
 
-          <div className="form-control">
+          <div>
             <label htmlFor="provider-filter" className="label">
-              <span className="label-text">Provider</span>
+              <span>Provider</span>
             </label>
             <select
               id="provider-filter"
-              className="select select-bordered min-h-11 w-full sm:w-auto"
+              className="select min-h-11 w-full sm:w-auto"
               value={providerFilter}
               onChange={(e) =>
                 setProviderFilter(e.target.value as typeof providerFilter)

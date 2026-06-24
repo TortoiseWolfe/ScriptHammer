@@ -305,7 +305,7 @@ export function ConsentModal({
                           )}
                         </div>
 
-                        <div className="form-control">
+                        <div>
                           <label className="label cursor-pointer">
                             <input
                               type="checkbox"

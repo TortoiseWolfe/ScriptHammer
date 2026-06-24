@@ -164,32 +164,32 @@ export default function SignUpForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="email">
-          <span className="label-text">Email</span>
+          <span>Email</span>
         </label>
         <input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="you@example.com"
           required
           disabled={loading}
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="password">
-          <span className="label-text">Password</span>
+          <span>Password</span>
         </label>
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="••••••••"
           required
           disabled={loading}
@@ -200,23 +200,23 @@ export default function SignUpForm({
         </div>
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="confirm-password">
-          <span className="label-text">Confirm Password</span>
+          <span>Confirm Password</span>
         </label>
         <input
           id="confirm-password"
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="••••••••"
           required
           disabled={loading}
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label cursor-pointer justify-start gap-2">
           <input
             type="checkbox"
@@ -225,7 +225,7 @@ export default function SignUpForm({
             className="checkbox min-h-11 min-w-11"
             disabled={loading}
           />
-          <span className="label-text">Remember me</span>
+          <span>Remember me</span>
         </label>
       </div>
 

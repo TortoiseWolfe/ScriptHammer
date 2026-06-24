@@ -202,17 +202,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         )}
 
         {/* Name Field */}
-        <div className="form-control">
+        <div>
           <label htmlFor="name" className="label">
-            <span className="label-text">Full Name</span>
-            <span className="label-text-alt text-error">*</span>
+            <span>Full Name</span>
+            <span className="text-error">*</span>
           </label>
           <input
             {...register('name')}
             id="name"
             type="text"
             placeholder="John Doe"
-            className={`input input-bordered ${errors.name ? 'input-error' : ''}`}
+            className={`input ${errors.name ? 'input-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.name}
             aria-describedby={errors.name ? 'name-error' : undefined}
@@ -222,11 +222,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           />
           {errors.name && (
             <label className="label" id="name-error">
-              <span
-                className="label-text-alt text-error"
-                role="alert"
-                aria-live="polite"
-              >
+              <span className="text-error" role="alert" aria-live="polite">
                 {errors.name.message}
               </span>
             </label>
@@ -234,17 +230,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         </div>
 
         {/* Email Field */}
-        <div className="form-control">
+        <div>
           <label htmlFor="email" className="label">
-            <span className="label-text">Email Address</span>
-            <span className="label-text-alt text-error">*</span>
+            <span>Email Address</span>
+            <span className="text-error">*</span>
           </label>
           <input
             {...register('email')}
             id="email"
             type="email"
             placeholder="john@example.com"
-            className={`input input-bordered ${errors.email ? 'input-error' : ''}`}
+            className={`input ${errors.email ? 'input-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? 'email-error' : undefined}
@@ -254,11 +250,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           />
           {errors.email && (
             <label className="label" id="email-error">
-              <span
-                className="label-text-alt text-error"
-                role="alert"
-                aria-live="polite"
-              >
+              <span className="text-error" role="alert" aria-live="polite">
                 {errors.email.message}
               </span>
             </label>
@@ -266,17 +258,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         </div>
 
         {/* Subject Field */}
-        <div className="form-control">
+        <div>
           <label htmlFor="subject" className="label">
-            <span className="label-text">Subject</span>
-            <span className="label-text-alt text-error">*</span>
+            <span>Subject</span>
+            <span className="text-error">*</span>
           </label>
           <input
             {...register('subject')}
             id="subject"
             type="text"
             placeholder="How can we help you?"
-            className={`input input-bordered ${errors.subject ? 'input-error' : ''}`}
+            className={`input ${errors.subject ? 'input-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.subject}
             aria-describedby={errors.subject ? 'subject-error' : undefined}
@@ -285,11 +277,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           />
           {errors.subject && (
             <label className="label" id="subject-error">
-              <span
-                className="label-text-alt text-error"
-                role="alert"
-                aria-live="polite"
-              >
+              <span className="text-error" role="alert" aria-live="polite">
                 {errors.subject.message}
               </span>
             </label>
@@ -297,17 +285,17 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         </div>
 
         {/* Message Field */}
-        <div className="form-control">
+        <div>
           <label htmlFor="message" className="label">
-            <span className="label-text">Message</span>
-            <span className="label-text-alt text-error">*</span>
+            <span>Message</span>
+            <span className="text-error">*</span>
           </label>
           <textarea
             {...register('message')}
             id="message"
             rows={6}
             placeholder="Tell us more about your inquiry..."
-            className={`textarea textarea-bordered ${errors.message ? 'textarea-error' : ''}`}
+            className={`textarea ${errors.message ? 'textarea-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.message}
             aria-describedby={errors.message ? 'message-error' : undefined}
@@ -316,11 +304,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           />
           {errors.message && (
             <label className="label" id="message-error">
-              <span
-                className="label-text-alt text-error"
-                role="alert"
-                aria-live="polite"
-              >
+              <span className="text-error" role="alert" aria-live="polite">
                 {errors.message.message}
               </span>
             </label>
@@ -350,7 +334,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         )}
 
         {/* Submit Button */}
-        <div className="form-control mt-6">
+        <div className="mt-6">
           <button
             type="submit"
             className={`btn btn-primary ${isSubmitting ? 'loading' : ''} ${!isOnline ? 'btn-warning' : ''}`}

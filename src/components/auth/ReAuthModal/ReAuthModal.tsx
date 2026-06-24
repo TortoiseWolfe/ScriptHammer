@@ -329,9 +329,9 @@ export function ReAuthModal({
             />
 
             {/* Email field for password manager compatibility - shown for all users */}
-            <div className="form-control mb-4">
+            <div className="mb-4">
               <label className="label" htmlFor="reauth-email">
-                <span className="label-text">Account</span>
+                <span>Account</span>
               </label>
               <input
                 id="reauth-email"
@@ -339,14 +339,14 @@ export function ReAuthModal({
                 name="email"
                 value={user?.email || ''}
                 readOnly
-                className="input input-bordered bg-base-200 min-h-11 w-full"
+                className="input bg-base-200 min-h-11 w-full"
                 autoComplete="username"
               />
             </div>
 
-            <div className="form-control">
+            <div>
               <label className="label" htmlFor="reauth-password">
-                <span className="label-text">
+                <span>
                   {mode === 'setup' || oauthUser
                     ? 'Messaging Password'
                     : 'Password'}
@@ -360,7 +360,7 @@ export function ReAuthModal({
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input input-bordered min-h-11 w-full pr-12"
+                  className="input min-h-11 w-full pr-12"
                   placeholder={
                     mode === 'setup'
                       ? 'Create a messaging password'
@@ -424,9 +424,9 @@ export function ReAuthModal({
                 setup is the primary path for OAuth users from /messages
                 (FR-021, Feature 013). */}
             {mode === 'setup' && (
-              <div className="form-control mt-4">
+              <div className="mt-4">
                 <label className="label" htmlFor="reauth-confirm-password">
-                  <span className="label-text">Confirm Password</span>
+                  <span>Confirm Password</span>
                 </label>
                 <input
                   id="reauth-confirm-password"
@@ -434,7 +434,7 @@ export function ReAuthModal({
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input input-bordered min-h-11 w-full"
+                  className="input min-h-11 w-full"
                   placeholder="Confirm your password"
                   autoComplete="new-password"
                   disabled={loading}
