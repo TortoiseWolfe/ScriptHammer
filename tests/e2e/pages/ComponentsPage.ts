@@ -33,10 +33,12 @@ export class ComponentsPage extends BasePage {
     modalClose: '.modal button:has-text("Close"), .modal button:has-text("×")',
 
     // Form elements
-    formControl: '.form-control',
+    // DaisyUI v5 removed .form-control / .label-text-alt; field wrappers are now
+    // plain elements and help text is keyed on its `-help` id.
+    formControl: 'label.label, fieldset.fieldset',
     formLabel: 'label',
     formError: '.text-error, [role="alert"]',
-    formHelp: '.label-text-alt, [id$="-help"]',
+    formHelp: '[id$="-help"]',
     submitButton: 'button[type="submit"]',
     resetButton: 'button[type="reset"]',
 

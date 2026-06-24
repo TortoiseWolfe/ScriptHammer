@@ -62,8 +62,10 @@ test.describe('Mobile Form Inputs', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
+    // DaisyUI v5 dropped .form-control; field wrappers are now fieldsets or the
+    // div/label groups around an input. Match those plus any legacy input-group.
     const formGroups = await page
-      .locator('[class*="form-control"], [class*="input-group"]')
+      .locator('fieldset.fieldset, label.label, [class*="input-group"]')
       .all();
 
     for (const group of formGroups) {
