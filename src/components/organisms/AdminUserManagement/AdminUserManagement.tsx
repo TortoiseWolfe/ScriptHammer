@@ -182,10 +182,7 @@ export function AdminUserManagement({
               User List
             </h2>
             {total !== undefined && (
-              <p
-                className="text-base-content text-sm"
-                data-testid="user-count"
-              >
+              <p className="text-base-content text-sm" data-testid="user-count">
                 {onPageChange
                   ? `Showing ${total === 0 ? 0 : currentPage * pageSize + 1}\u2013${Math.min((currentPage + 1) * pageSize, total)} of ${total}`
                   : `Showing ${users.length} of ${total}`}
@@ -199,7 +196,7 @@ export function AdminUserManagement({
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search username or display name"
               aria-label="Search users"
-              className="input input-bordered input-sm w-full max-w-xs"
+              className="input input-sm w-full max-w-xs"
               data-testid="user-search"
             />
           )}

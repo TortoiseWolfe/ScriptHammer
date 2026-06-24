@@ -139,10 +139,10 @@ export function CreateGroupModal({
         </h3>
 
         {/* Group Name Input */}
-        <div className="form-control mb-4">
+        <div className="mb-4">
           <label htmlFor="group-name" className="label">
-            <span className="label-text">Group Name</span>
-            <span className="label-text-alt text-base-content/80">
+            <span>Group Name</span>
+            <span className="text-base-content/80">
               {groupName.length}/{GROUP_CONSTRAINTS.MAX_NAME_LENGTH}
             </span>
           </label>
@@ -150,7 +150,7 @@ export function CreateGroupModal({
             id="group-name"
             type="text"
             placeholder={autoNamePreview}
-            className="input input-bordered w-full"
+            className="input w-full"
             value={groupName}
             onChange={(e) =>
               setGroupName(
@@ -160,19 +160,16 @@ export function CreateGroupModal({
             disabled={isCreating}
             aria-describedby="group-name-hint"
           />
-          <p
-            id="group-name-hint"
-            className="label-text-alt text-base-content/80 mt-1"
-          >
+          <p id="group-name-hint" className="text-base-content/80 mt-1">
             Leave empty to auto-generate from member names
           </p>
         </div>
 
         {/* Member Search */}
-        <div className="form-control mb-4">
+        <div className="mb-4">
           <label htmlFor="member-search" className="label">
-            <span className="label-text">Add Members</span>
-            <span className="label-text-alt">
+            <span>Add Members</span>
+            <span>
               {selectedMembers.length}/{GROUP_CONSTRAINTS.MAX_MEMBERS - 1}{' '}
               selected
             </span>
@@ -182,14 +179,14 @@ export function CreateGroupModal({
             ref={searchInputRef}
             type="text"
             placeholder="Search connections..."
-            className="input input-bordered w-full"
+            className="input w-full"
             value={searchQuery}
             onChange={handleSearchChange}
             disabled={isCreating || isAtCapacity}
             aria-describedby="search-hint"
           />
           {isAtCapacity && (
-            <p id="search-hint" className="label-text-alt text-warning mt-1">
+            <p id="search-hint" className="text-warning mt-1">
               Maximum members reached
             </p>
           )}

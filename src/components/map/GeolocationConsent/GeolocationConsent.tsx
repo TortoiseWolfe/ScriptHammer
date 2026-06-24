@@ -105,16 +105,16 @@ export const GeolocationConsent: React.FC<GeolocationConsentProps> = ({
           {description}
         </p>
 
-        <div className="form-control">
+        <div>
           <label className="label">
-            <span className="label-text font-semibold">
+            <span className="font-semibold">
               We would like to use your location to:
             </span>
           </label>
 
           {purposes.map((purpose) => (
             <label key={purpose} className="label cursor-pointer">
-              <span className="label-text">{purposeLabels[purpose]}</span>
+              <span>{purposeLabels[purpose]}</span>
               <input
                 type="checkbox"
                 className="checkbox checkbox-primary"

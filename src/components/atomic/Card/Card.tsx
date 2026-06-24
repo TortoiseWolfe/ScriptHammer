@@ -37,10 +37,10 @@ export const Card: React.FC<CardProps> = ({
   // side layout only on tablet+ (stacks on mobile)
   const classes = [
     baseClasses,
-    compact && 'card-compact',
+    compact && 'card-sm',
     side && 'md:card-side',
     glass && 'glass',
-    bordered && 'card-bordered',
+    bordered && 'card-border',
     className,
   ]
     .filter(Boolean)

@@ -125,9 +125,9 @@ export default function AccountDeletionModal({
             <li>All encryption keys</li>
           </ul>
 
-          <div className="form-control">
+          <div>
             <label htmlFor="confirmation-input" className="label">
-              <span className="label-text font-semibold">
+              <span className="font-semibold">
                 Type <span className="text-error font-mono">DELETE</span> to
                 confirm:
               </span>
@@ -138,7 +138,7 @@ export default function AccountDeletionModal({
               value={confirmationText}
               onChange={(e) => setConfirmationText(e.target.value)}
               disabled={isDeleting}
-              className="input input-bordered min-h-11"
+              className="input min-h-11"
               placeholder="DELETE"
               autoComplete="off"
               aria-required="true"
@@ -151,7 +151,7 @@ export default function AccountDeletionModal({
             />
             {confirmationText.length > 0 && !isConfirmed && (
               <label id="confirmation-error" className="label">
-                <span className="label-text-alt text-error">
+                <span className="text-error">
                   Please type DELETE exactly (case-sensitive)
                 </span>
               </label>

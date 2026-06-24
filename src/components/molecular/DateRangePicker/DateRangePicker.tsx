@@ -73,12 +73,12 @@ export function DateRangePicker({
       className={`flex flex-wrap items-end gap-3${className ? ` ${className}` : ''}`}
       data-testid={testId}
     >
-      <label className="form-control">
-        <span className="label-text mb-1 text-xs">From</span>
+      <label>
+        <span className="mb-1 text-xs">From</span>
         <input
           type="date"
           aria-label="From date"
-          className="input input-bordered input-sm min-h-11"
+          className="input input-sm min-h-11"
           value={toDateInputValue(value.from)}
           onChange={(e) =>
             onChange({ ...value, from: fromDateInputValue(e.target.value) })
@@ -86,12 +86,12 @@ export function DateRangePicker({
         />
       </label>
 
-      <label className="form-control">
-        <span className="label-text mb-1 text-xs">To</span>
+      <label>
+        <span className="mb-1 text-xs">To</span>
         <input
           type="date"
           aria-label="To date"
-          className="input input-bordered input-sm min-h-11"
+          className="input input-sm min-h-11"
           value={toDateInputValue(value.to)}
           onChange={(e) =>
             onChange({ ...value, to: fromDateInputValue(e.target.value) })

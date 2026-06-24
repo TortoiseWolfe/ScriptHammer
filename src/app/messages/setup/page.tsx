@@ -223,9 +223,9 @@ export default function MessagingSetupPage() {
             />
 
             {/* Visible email field */}
-            <div className="form-control">
+            <div>
               <label className="label" htmlFor="setup-email">
-                <span className="label-text">Account</span>
+                <span>Account</span>
               </label>
               <input
                 id="setup-email"
@@ -233,16 +233,16 @@ export default function MessagingSetupPage() {
                 name="email"
                 value={user?.email || ''}
                 readOnly
-                className="input input-bordered bg-base-200 min-h-11 w-full"
+                className="input bg-base-200 min-h-11 w-full"
                 autoComplete="username email"
               />
             </div>
 
             {/* Password field */}
-            <div className="form-control">
+            <div>
               <label className="label" htmlFor="setup-password">
-                <span className="label-text">Messaging Password</span>
-                <span className="label-text-alt text-warning">Save this!</span>
+                <span>Messaging Password</span>
+                <span className="text-warning">Save this!</span>
               </label>
               <div className="relative">
                 <input
@@ -251,7 +251,7 @@ export default function MessagingSetupPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input input-bordered min-h-11 w-full pr-12"
+                  className="input min-h-11 w-full pr-12"
                   placeholder="Create a messaging password"
                   autoComplete="new-password"
                   disabled={loading}
@@ -270,9 +270,9 @@ export default function MessagingSetupPage() {
             </div>
 
             {/* Confirm password */}
-            <div className="form-control">
+            <div>
               <label className="label" htmlFor="setup-confirm">
-                <span className="label-text">Confirm Password</span>
+                <span>Confirm Password</span>
               </label>
               <input
                 id="setup-confirm"
@@ -280,14 +280,14 @@ export default function MessagingSetupPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="input input-bordered min-h-11 w-full"
+                className="input min-h-11 w-full"
                 placeholder="Confirm your password"
                 autoComplete="new-password"
                 disabled={loading}
                 required
               />
               <label className="label">
-                <span className="label-text-alt text-warning">
+                <span className="text-warning">
                   Your password manager should prompt to save this password
                 </span>
               </label>

@@ -248,42 +248,40 @@ export default function AccountSettings({
           <h3 className="card-title">Profile Settings</h3>
 
           {/* Display Name Field */}
-          <div className="form-control">
+          <div>
             <label htmlFor="displayname-input" className="label">
-              <span className="label-text">Display Name</span>
+              <span>Display Name</span>
             </label>
             <input
               id="displayname-input"
               type="text"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="input input-bordered min-h-11"
+              className="input min-h-11"
               placeholder="e.g., John Doe"
               disabled={loading || isUpdatingProfile}
             />
             <label className="label">
-              <span className="label-text-alt">
-                Your friendly name shown to other users
-              </span>
+              <span>Your friendly name shown to other users</span>
             </label>
           </div>
 
           {/* Bio Field */}
-          <div className="form-control">
+          <div>
             <label htmlFor="bio-textarea" className="label">
-              <span className="label-text">Bio</span>
+              <span>Bio</span>
             </label>
             <textarea
               id="bio-textarea"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="textarea textarea-bordered"
+              className="textarea"
               rows={3}
               placeholder="Tell us about yourself..."
               disabled={loading || isUpdatingProfile}
             />
             <label className="label">
-              <span className="label-text-alt">Maximum 500 characters</span>
+              <span>Maximum 500 characters</span>
             </label>
           </div>
 
@@ -370,29 +368,29 @@ export default function AccountSettings({
       <form onSubmit={handleChangePassword} className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Change Password</h3>
-          <div className="form-control">
+          <div>
             <label htmlFor="new-password-input" className="label">
-              <span className="label-text">New Password</span>
+              <span>New Password</span>
             </label>
             <input
               id="new-password-input"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input input-bordered min-h-11"
+              className="input min-h-11"
               disabled={loading || isUpdatingProfile}
             />
           </div>
-          <div className="form-control">
+          <div>
             <label htmlFor="confirm-password-input" className="label">
-              <span className="label-text">Confirm Password</span>
+              <span>Confirm Password</span>
             </label>
             <input
               id="confirm-password-input"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input input-bordered min-h-11"
+              className="input min-h-11"
               disabled={loading || isUpdatingProfile}
             />
           </div>

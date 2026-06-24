@@ -241,7 +241,7 @@ export default function A11yDevOverlay({
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by rule id…"
           aria-label="Search violations by rule id"
-          className="input input-bordered input-xs w-full"
+          className="input input-xs w-full"
         />
       </div>
 

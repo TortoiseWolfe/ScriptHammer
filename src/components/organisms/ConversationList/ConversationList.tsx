@@ -125,13 +125,13 @@ export default function ConversationList({
         <h1 className="mb-4 text-2xl font-bold">Messages</h1>
 
         {/* Search */}
-        <div className="form-control">
+        <div>
           <div className="input-group">
             <input
               ref={searchInputRef}
               type="text"
               placeholder="Search conversations..."
-              className="input input-bordered min-h-11 w-full"
+              className="input min-h-11 w-full"
               value={searchInput}
               onChange={(e) => handleSearchChange(e.target.value)}
               aria-label="Search conversations"
@@ -188,12 +188,12 @@ export default function ConversationList({
         </div>
 
         {/* Sort dropdown */}
-        <div className="form-control mt-3">
+        <div className="mt-3">
           <label className="label">
-            <span className="label-text">Sort by</span>
+            <span>Sort by</span>
           </label>
           <select
-            className="select select-bordered min-h-11 w-full"
+            className="select min-h-11 w-full"
             value={sortType}
             onChange={(e) => setSortType(e.target.value as SortType)}
             aria-label="Sort conversations"

@@ -335,10 +335,7 @@ export function AdminAuditTrail({
               })}
             </div>
           ) : (
-            <p
-              className="text-base-content text-sm"
-              data-testid="burst-empty"
-            >
+            <p className="text-base-content text-sm" data-testid="burst-empty">
               No bursts detected in this range.
             </p>
           )}
@@ -360,7 +357,7 @@ export function AdminAuditTrail({
             </label>
             <select
               id="event-type-filter"
-              className="select select-bordered select-sm"
+              className="select select-sm"
               value={eventTypeFilter}
               onChange={(e) => onEventTypeChange(e.target.value)}
               data-testid="event-type-filter"

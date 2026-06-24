@@ -48,7 +48,7 @@ describe('Card', () => {
 
   it('applies compact class when compact prop is true', () => {
     const { container } = render(<Card compact>Content</Card>);
-    expect(container.firstChild).toHaveClass('card-compact');
+    expect(container.firstChild).toHaveClass('card-sm');
   });
 
   it('applies side class when side prop is true (mobile-first: md:card-side)', () => {
@@ -63,7 +63,7 @@ describe('Card', () => {
 
   it('applies bordered class when bordered prop is true', () => {
     const { container } = render(<Card bordered>Content</Card>);
-    expect(container.firstChild).toHaveClass('card-bordered');
+    expect(container.firstChild).toHaveClass('card-border');
   });
 
   it('applies custom className', () => {
@@ -81,9 +81,9 @@ describe('Card', () => {
     const card = container.firstChild;
     expect(card).toHaveClass('card');
     expect(card).toHaveClass('bg-base-100');
-    expect(card).toHaveClass('card-compact');
+    expect(card).toHaveClass('card-sm');
     expect(card).toHaveClass('glass');
-    expect(card).toHaveClass('card-bordered');
+    expect(card).toHaveClass('card-border');
     expect(card).toHaveClass('custom');
   });
 

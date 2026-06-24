@@ -117,17 +117,17 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
 
       <div
         tabIndex={0}
-        className="dropdown-content card card-compact bg-base-100 z-50 w-64 max-w-[calc(100vw-2rem)] p-4 shadow sm:w-80"
+        className="dropdown-content card card-sm bg-base-100 z-50 w-64 max-w-[calc(100vw-2rem)] p-4 shadow sm:w-80"
       >
         <div className="card-body">
           <h3 className="text-lg font-bold">Color Vision Assistance</h3>
 
-          <div className="form-control">
+          <div>
             <label className="label">
-              <span className="label-text">Assistance Mode</span>
+              <span>Assistance Mode</span>
             </label>
             <select
-              className="select select-bordered w-full"
+              className="select w-full"
               value={mode}
               onChange={handleModeChange}
               aria-label="Select assistance mode"
@@ -141,9 +141,9 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
           </div>
 
           {mode !== ColorblindType.NONE && (
-            <div className="form-control mt-4">
+            <div className="mt-4">
               <label className="label cursor-pointer">
-                <span className="label-text">Enable Patterns</span>
+                <span>Enable Patterns</span>
                 <input
                   type="checkbox"
                   className="toggle toggle-primary"
@@ -152,9 +152,7 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
                   aria-label="Toggle pattern overlays"
                 />
               </label>
-              <span className="label-text-alt">
-                Adds patterns to help distinguish colors
-              </span>
+              <span>Adds patterns to help distinguish colors</span>
             </div>
           )}
 

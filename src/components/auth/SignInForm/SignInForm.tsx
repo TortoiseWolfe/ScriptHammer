@@ -252,16 +252,16 @@ export default function SignInForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="email">
-          <span className="label-text">Email</span>
+          <span>Email</span>
         </label>
         <input
           id="email"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="you@example.com"
           autoComplete="email"
           required
@@ -269,16 +269,16 @@ export default function SignInForm({
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label className="label" htmlFor="password">
-          <span className="label-text">Password</span>
+          <span>Password</span>
         </label>
         <input
           id="password"
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input input-bordered min-h-11"
+          className="input min-h-11"
           placeholder="••••••••"
           autoComplete="current-password"
           required
@@ -286,7 +286,7 @@ export default function SignInForm({
         />
       </div>
 
-      <div className="form-control">
+      <div>
         <label
           htmlFor="remember-me"
           className="label cursor-pointer justify-start gap-3"
@@ -300,7 +300,7 @@ export default function SignInForm({
             disabled={loading}
             aria-label="Remember Me"
           />
-          <span className="label-text">Remember Me</span>
+          <span>Remember Me</span>
         </label>
       </div>
 
