@@ -1,27 +1,32 @@
-# ScriptHammer - Modern Next.js Template with PWA
+# ScriptHammer — Accessible web platform with auth, payments, and encrypted messaging
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-blue)](https://github.com/TortoiseWolfe/ScriptHammer)
-[![Use Template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge)](https://github.com/TortoiseWolfe/ScriptHammer/generate)
+[![Live App](https://img.shields.io/badge/Live-scripthammer.com-2ea44f)](https://www.scripthammer.com/)
 [![Stars](https://img.shields.io/github/stars/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer)
 
-A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, component gallery, and extensive testing infrastructure.
+A production Next.js 15 / React 19 / Supabase platform running live at [scripthammer.com](https://www.scripthammer.com/): OAuth and email auth, Stripe and PayPal payments through Supabase Edge Functions, end-to-end encrypted messaging with ECDH key exchange, an admin and moderation surface, and a WCAG-AA-accessible installable PWA — built on a strict atomic component pattern with Vitest, Playwright, and Pa11y test suites. It's also a template: fork it and rebrand in five minutes to ship your own app (see [Forking](#-forking-scripthammer-to-build-your-own)).
 
-## 🚀 Live Demos
+## 🚀 See it live
 
-- **Main App**: [https://www.scripthammer.com/](https://www.scripthammer.com/)
-- **Storybook**: [https://www.scripthammer.com/storybook/](https://www.scripthammer.com/storybook/)
-- **Status Dashboard**: [https://www.scripthammer.com/status](https://www.scripthammer.com/status)
+- **Main app**: [https://www.scripthammer.com/](https://www.scripthammer.com/) — the deployed product
+- **Component library (Storybook)**: [https://www.scripthammer.com/storybook/](https://www.scripthammer.com/storybook/)
+- **Status dashboard**: [https://www.scripthammer.com/status](https://www.scripthammer.com/status)
 
-## ✨ Key Features
+A real product, not a scaffold — see [docs/POSITIONING.md](./docs/POSITIONING.md) for what's deployed and how forking fits in.
 
-- 🎨 **32 DaisyUI Themes** - Light/dark variants with persistent selection
-- 📱 **Progressive Web App** - Installable with offline support
-- 🧩 **Component Library** - Atomic design with Storybook documentation
-- ♿ **Accessibility** - WCAG AA compliant, colorblind assistance
-- 🔒 **Privacy Compliance** - GDPR-ready cookie consent system
-- 🧪 **Testing Suite** - Comprehensive unit tests with 58% coverage, E2E test suite, accessibility testing
-- 📊 **Real-time Monitoring** - Web Vitals, Lighthouse scores, health checks
-- 🚀 **CI/CD Pipeline** - GitHub Actions with automated deployment
+## ✨ What it does
+
+- 🔐 **Authentication** - Email/password plus GitHub and Google OAuth via Supabase, protected routes, session management
+- 💳 **Payments** - Stripe one-time and PayPal subscriptions through Supabase Edge Functions, with GDPR consent and webhook handling
+- 🔒 **Encrypted messaging** - End-to-end encrypted direct and group chat with ECDH key exchange, real-time over Supabase
+- 🛡️ **Admin surface** - Admin dashboard, moderation queue, and a security audit trail
+- 📱 **Offline-capable PWA** - Installable, service-worker offline support, background sync
+- ♿ **Accessibility** - WCAG AA compliant, colorblind assistance, font switching
+- 🔏 **Privacy compliance** - GDPR cookie consent gating analytics and tracking
+- 🎨 **32 themes** - DaisyUI light/dark variants with persistent selection
+- 🧩 **Component library** - Atomic design, Storybook-documented, generator-scaffolded
+- 🧪 **Tested** - Vitest unit tests, Playwright E2E across browsers, Pa11y accessibility, run in CI
+- 📊 **Monitored** - Web Vitals, Lighthouse scoring, consent-gated error monitoring
 
 ## 🛠️ Tech Stack
 
@@ -32,7 +37,7 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 
 ## 🚀 Quick Start
 
-> 💡 **New to ScriptHammer?** Start at [`docs/FORK-CHECKLIST.md`](./docs/FORK-CHECKLIST.md) for the complete service-setup matrix — which env vars to set, which services are required vs. optional, where to sign up for each, and the suggested setup order. The Quick Start below is just the bare minimum to boot the dev server.
+> 💡 **Running it locally or forking?** The Quick Start below is the bare minimum to boot the dev server. To wire up the full product (auth, payments, messaging) or to fork and rebrand, start at [`docs/FORK-CHECKLIST.md`](./docs/FORK-CHECKLIST.md) for the complete service-setup matrix — which env vars to set, which services are required vs. optional, where to sign up for each, and the suggested setup order.
 
 ### Prerequisites
 
@@ -44,8 +49,8 @@ A comprehensive Next.js starter kit featuring 32 themes, PWA capabilities, compo
 This project **REQUIRES Docker** for development to ensure consistency across all environments.
 
 ```bash
-# 1. Use this template on GitHub (your project name is auto-detected!)
-# 2. Clone YOUR new repository
+# 1. Clone the repo (or fork it first to start your own — see Forking below)
+# 2. Clone YOUR repository
 git clone https://github.com/YOUR_USERNAME/YOUR_PROJECT_NAME.git
 cd YOUR_PROJECT_NAME
 
@@ -242,9 +247,9 @@ ssh -T git@github.com
 - **API access only** - Token reads issues, creates issues, checks CI
 - **No accidental pushes** - All pushes require explicit user action
 
-## 🍴 Forking This Template
+## 🍴 Forking ScriptHammer to build your own
 
-The quickest way to create your own project from ScriptHammer:
+Beyond running the product as-is, ScriptHammer is built to fork. Rebrand it in five minutes and ship your own app on the same foundation:
 
 ### 5-Minute Setup
 
