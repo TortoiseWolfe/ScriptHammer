@@ -6,6 +6,7 @@ import errorHandler, {
   ErrorSeverity,
   ErrorCategory,
 } from '@/utils/error-handler';
+import { getInternalUrl } from '@/config/project.config';
 
 interface Props {
   children: ReactNode;
@@ -280,7 +281,7 @@ class ErrorBoundary extends Component<Props, State> {
                 </button>
                 {level === 'page' && (
                   <button
-                    onClick={() => (window.location.href = '/')}
+                    onClick={() => (window.location.href = getInternalUrl('/'))}
                     className="btn btn-ghost btn-sm"
                   >
                     Go Home

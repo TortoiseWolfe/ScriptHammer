@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { createLogger } from '@/lib/logger/logger';
+import { getRedirectUrl } from '@/config/project.config';
 
 const logger = createLogger('components:auth:OAuthButtons');
 
@@ -30,7 +31,7 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
       await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: getRedirectUrl('/auth/callback'),
         },
       });
     } catch (error) {

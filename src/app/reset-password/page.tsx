@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ResetPasswordForm from '@/components/auth/ResetPasswordForm';
+import { getInternalUrl } from '@/config/project.config';
 
 export default function ResetPasswordPage() {
   return (
@@ -12,7 +13,7 @@ export default function ResetPasswordPage() {
         </h1>
 
         <ResetPasswordForm
-          onSuccess={() => (window.location.href = '/sign-in')}
+          onSuccess={() => (window.location.href = getInternalUrl('/sign-in'))}
         />
       </div>
     </main>

@@ -50,6 +50,10 @@ const nextConfig: NextConfig = {
   cleanDistDir: true,
   env: {
     NEXT_PUBLIC_PAGESPEED_API_KEY: process.env.NEXT_PUBLIC_PAGESPEED_API_KEY,
+    // Deploy workflows omit NEXT_PUBLIC_BASE_PATH and rely on detect-project.js,
+    // so the resolved basePath must be injected here or client code that builds
+    // URLs (auth redirects) sees '' in production (issue #154).
+    NEXT_PUBLIC_BASE_PATH: basePath,
   },
   webpack: (config, { isServer }) => {
     // Optimize code splitting for better performance
