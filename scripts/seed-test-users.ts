@@ -79,21 +79,25 @@ interface TestUser {
   displayName: string;
 }
 
+// Emails are env-driven (like the passwords above) so the seeded users match
+// what the E2E specs read via TEST_USER_*_EMAIL. Fall back to the historical
+// @example.com defaults when the vars are unset, so nothing breaks for setups
+// that relied on the old hardcoded addresses.
 const TEST_USERS: TestUser[] = [
   {
-    email: 'test@example.com',
+    email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
     password: PRIMARY_PASSWORD,
     username: 'testuser',
     displayName: 'Test User',
   },
   {
-    email: 'test-user-b@example.com',
+    email: process.env.TEST_USER_SECONDARY_EMAIL || 'test-user-b@example.com',
     password: SECONDARY_PASSWORD,
     username: 'testuser-b',
     displayName: 'Test User B',
   },
   {
-    email: 'test-user-c@example.com',
+    email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-c@example.com',
     password: TERTIARY_PASSWORD,
     username: 'testuser-c',
     displayName: 'Test User C',

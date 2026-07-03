@@ -95,9 +95,17 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     && apt-get install -y gh \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright browsers (requires root for system dirs)
+# Install Playwright browsers (requires root for system dirs).
+# Install to a FIXED shared path, not a per-user $HOME cache: this RUN executes
+# as root (the `USER node` switch is below), so a default install lands in
+# /root/.cache/ms-playwright — unreadable/absent for the `node` user the
+# container actually runs as, giving "Executable doesn't exist" at test time.
+# PLAYWRIGHT_BROWSERS_PATH pins install + runtime to the same location for every
+# user; chmod makes the browsers world-readable/traversable for node.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 COPY --from=deps /app/node_modules ./node_modules
-RUN npx playwright install chromium firefox webkit
+RUN npx playwright install chromium firefox webkit \
+    && chmod -R a+rX /ms-playwright
 
 # Pre-create directories that mount as named volumes so they inherit
 # node:node ownership rather than Docker's default root:root. Without
