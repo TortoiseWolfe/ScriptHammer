@@ -2,9 +2,10 @@
  * Integration Test: One-Time Payment (Stripe) - T055
  * Tests Stripe payment UI and consent flow
  *
- * NOTE: Tests that require actual Stripe Checkout redirect are skipped
- * because CI does not have NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY configured.
- * These tests should be run locally with Stripe test keys for full coverage.
+ * NOTE: The full Stripe Checkout redirect test runs locally when
+ * NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set (via .env). It auto-skips in CI,
+ * whose test-run env does not carry that var (isStripeConfigured is false).
+ * The remaining cancellation / declined-card cases are still stubs.
  */
 
 import { test, expect } from '@playwright/test';
@@ -45,12 +46,10 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .waitFor({ state: 'visible', timeout: 15000 });
   });
 
-  // Skip tests that require actual Stripe integration
-  test.skip('should complete one-time payment successfully', async ({
-    page,
-  }) => {
-    // This test requires actual Stripe Checkout redirect
-    // Run locally with NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY configured
+  // Runs locally when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set (see .env);
+  // auto-skips in CI, where that var is absent from the test-run env so
+  // isStripeConfigured is false. Drives a real Stripe Checkout redirect.
+  test('should complete one-time payment successfully', async ({ page }) => {
     test.skip(
       !isStripeConfigured,
       'Stripe API keys not configured - run locally for full payment flow tests'
@@ -62,10 +61,17 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .getByRole('heading', { name: /Step 2/i })
       .waitFor({ timeout: 5000 });
 
-    await page.getByRole('tab', { name: /stripe/i }).click();
-    await page.getByRole('button', { name: /pay/i }).click();
+    // /payment-demo renders THREE PaymentButton instances (one-time $20,
+    // subscribe $9.99/mo, PayPal $15), each with its own Stripe/PayPal tablist,
+    // so bare role locators are strict-mode violations. The one-time instance
+    // renders first; its pay button's accessible name is unique.
+    await page
+      .getByRole('tab', { name: /stripe/i })
+      .first()
+      .click();
+    await page.getByRole('button', { name: 'Pay $20.00 (One-Time)' }).click();
 
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 10000 });
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 });
   });
 
   test.skip('should handle payment cancellation gracefully', async ({
