@@ -70,19 +70,38 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   // Fetch payment history (uses authenticated user). Extracted as a stable
   // callback so the realtime hook can re-run it on a payment_results change.
+  //
+  // Retries transient failures before surfacing the error alert. The query
+  // runs right after auth/session hydration; under load (e.g. Supabase
+  // Realtime/RLS returning a transient 401/406 during a session refresh) the
+  // FIRST attempt can throw even though a retry a moment later succeeds.
+  // Without this, a momentary blip stranded the user on "Error loading
+  // payment history" — a real UX regression, and the cause of the flaky
+  // payment-isolation E2E under concurrent-backend load.
   const refetch = useCallback(async () => {
     setError(null);
-    try {
-      // getPaymentHistory uses the authenticated user automatically (REQ-SEC-001)
-      const history = await getPaymentHistory(initialLimit);
-      setPayments(history);
-      setFilteredPayments(history);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error('Failed to load payment history')
-      );
-    } finally {
-      setLoading(false);
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        // getPaymentHistory uses the authenticated user automatically (REQ-SEC-001)
+        const history = await getPaymentHistory(initialLimit);
+        setPayments(history);
+        setFilteredPayments(history);
+        setLoading(false);
+        return;
+      } catch (err) {
+        if (attempt === maxAttempts) {
+          setError(
+            err instanceof Error
+              ? err
+              : new Error('Failed to load payment history')
+          );
+          setLoading(false);
+          return;
+        }
+        // Linear backoff (300ms, 600ms) before the next attempt.
+        await new Promise((r) => setTimeout(r, attempt * 300));
+      }
     }
   }, [initialLimit]);
 

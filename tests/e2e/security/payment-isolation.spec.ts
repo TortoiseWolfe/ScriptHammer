@@ -141,20 +141,29 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
       timeout: 10000,
     });
 
-    // Payment history should be scoped to the current user
-    // The "No payment history" heading or payment list should be visible
+    // Payment history should be scoped to the current user: the empty-state
+    // heading OR at least one payment item must be visible. The component
+    // retries a transient fetch error (Realtime/RLS blip during session
+    // hydration under concurrent-backend load) before it surfaces an error,
+    // so poll for a STABLE terminal state rather than asserting on the first
+    // post-loading frame — otherwise we'd race the retry window.
     const noPaymentsHeading = page.getByRole('heading', {
       name: /No payment history/i,
     });
     const paymentList = page.locator('[data-payment-item]');
 
-    // Either empty state or payment list should be visible
-    const hasNoPayments = await noPaymentsHeading
-      .isVisible()
-      .catch(() => false);
-    const hasPayments = (await paymentList.count()) > 0;
-
-    expect(hasNoPayments || hasPayments).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const hasNoPayments = await noPaymentsHeading
+            .isVisible()
+            .catch(() => false);
+          const hasPayments = (await paymentList.count()) > 0;
+          return hasNoPayments || hasPayments;
+        },
+        { timeout: 15000 }
+      )
+      .toBe(true);
 
     await context.close();
   });
