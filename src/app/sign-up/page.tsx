@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import SignUpForm from '@/components/auth/SignUpForm';
 import OAuthButtons from '@/components/auth/OAuthButtons';
 import Link from 'next/link';
+import { getInternalUrl } from '@/config/project.config';
 
 function isSafeRedirectUrl(url: string): boolean {
   if (!url || !url.startsWith('/')) return false;
@@ -36,7 +37,9 @@ export default function SignUpPage() {
         </h1>
 
         <SignUpForm
-          onSuccess={() => (window.location.href = '/verify-email')}
+          onSuccess={() =>
+            (window.location.href = getInternalUrl('/verify-email'))
+          }
         />
 
         <div className="divider my-6">OR</div>

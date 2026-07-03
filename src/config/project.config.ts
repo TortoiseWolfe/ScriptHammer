@@ -88,6 +88,39 @@ export function getAssetUrl(path: string): string {
   return `${config.basePath}${cleanPath}`;
 }
 
+/**
+ * Normalize a page path: leading slash always; trailing slash unless the
+ * path carries a query/hash (trailingSlash: true exports emit
+ * `route/index.html`, so the canonical page URL ends in `/` — hitting the
+ * slashless form costs a GitHub Pages 301 that Supabase's exact-match
+ * redirect allow-list won't recognize).
+ */
+function normalizePagePath(path: string): string {
+  const withLeading = path.startsWith('/') ? path : `/${path}`;
+  if (/[?#]/.test(withLeading)) return withLeading;
+  return withLeading.endsWith('/') ? withLeading : `${withLeading}/`;
+}
+
+/**
+ * basePath-prefixed path for hard navigations (window.location.href).
+ * next/navigation's router prepends basePath automatically; raw
+ * window.location assignments do not — on a GitHub Pages project site a
+ * bare '/' escapes the app to the domain root (issue #154).
+ */
+export function getInternalUrl(path: string): string {
+  const config = getProjectConfig();
+  return `${config.basePath}${normalizePagePath(path)}`;
+}
+
+/**
+ * Absolute URL for Supabase redirect params (emailRedirectTo, redirectTo).
+ * Client-only: composes the runtime origin with the build-time basePath,
+ * which is self-consistent for the bundle actually being served.
+ */
+export function getRedirectUrl(path: string): string {
+  return `${window.location.origin}${getInternalUrl(path)}`;
+}
+
 // Helper function for dynamic manifest generation
 export function generateManifest() {
   const config = getProjectConfig();

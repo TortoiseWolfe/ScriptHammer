@@ -9,6 +9,7 @@ import {
 } from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import { getRedirectUrl } from '@/config/project.config';
 
 export interface ForgotPasswordFormProps {
   /** Callback on success */
@@ -63,7 +64,7 @@ export default function ForgotPasswordForm({
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
       {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getRedirectUrl('/reset-password'),
       }
     );
 

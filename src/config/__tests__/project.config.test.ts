@@ -3,6 +3,8 @@ import {
   getProjectConfig,
   isGitHubPages,
   getAssetUrl,
+  getInternalUrl,
+  getRedirectUrl,
   generateManifest,
   projectConfig,
 } from '../project.config';
@@ -175,6 +177,52 @@ describe('Project Configuration', () => {
 
       expect(getAssetUrl('/asset.js')).toBe('/asset.js');
       expect(getAssetUrl('asset.js')).toBe('/asset.js');
+    });
+  });
+
+  describe('getInternalUrl / getRedirectUrl (issue #154)', () => {
+    it('prefixes basePath and canonicalizes the trailing slash', () => {
+      process.env.NEXT_PUBLIC_BASE_PATH = '/RescueDogs';
+
+      expect(getInternalUrl('/')).toBe('/RescueDogs/');
+      expect(getInternalUrl('/auth/callback')).toBe(
+        '/RescueDogs/auth/callback/'
+      );
+      expect(getInternalUrl('/auth/callback/')).toBe(
+        '/RescueDogs/auth/callback/'
+      );
+      expect(getInternalUrl('auth/callback')).toBe(
+        '/RescueDogs/auth/callback/'
+      );
+    });
+
+    it('degrades to the bare path when basePath is unset', () => {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+
+      expect(getInternalUrl('/')).toBe('/');
+      expect(getInternalUrl('/verify-email')).toBe('/verify-email/');
+    });
+
+    it('leaves paths with a query or hash unsuffixed', () => {
+      process.env.NEXT_PUBLIC_BASE_PATH = '/RescueDogs';
+
+      expect(getInternalUrl('/sign-in?error=auth_callback_failed')).toBe(
+        '/RescueDogs/sign-in?error=auth_callback_failed'
+      );
+      expect(getInternalUrl('/page#section')).toBe('/RescueDogs/page#section');
+    });
+
+    it('builds absolute Supabase redirect URLs from the runtime origin plus basePath', () => {
+      process.env.NEXT_PUBLIC_BASE_PATH = '/RescueDogs';
+
+      expect(getRedirectUrl('/auth/callback')).toBe(
+        'http://localhost:3000/RescueDogs/auth/callback/'
+      );
+
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+      expect(getRedirectUrl('/auth/callback')).toBe(
+        'http://localhost:3000/auth/callback/'
+      );
     });
   });
 

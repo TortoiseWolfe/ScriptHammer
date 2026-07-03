@@ -16,6 +16,7 @@ import React, {
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, setAllowAuthTokenRemoval } from '@/lib/supabase/client';
+import { getInternalUrl, getRedirectUrl } from '@/config/project.config';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { retryWithBackoff } from '@/lib/auth/retry-utils';
 import { createLogger } from '@/lib/logger';
@@ -233,8 +234,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // sign-out AND the auth-token is gone/expired (we cleared it in
       // another tab, or the refresh token was revoked server-side).
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
-        logger.info('Cross-tab sign-out detected, redirecting to home');
-        window.location.href = '/';
+        // Never hijack the confirmation/OAuth landing page: during email
+        // confirmation no auth-token exists yet, so a transient SIGNED_OUT
+        // passes the validity guard above — and the callback page owns its
+        // own error/redirect handling (issue #154).
+        if (!window.location.pathname.includes('/auth/callback')) {
+          logger.info('Cross-tab sign-out detected, redirecting to home');
+          window.location.href = getInternalUrl('/');
+        }
         return;
       }
 
@@ -267,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: getRedirectUrl('/auth/callback'),
         },
       });
       return { error };
@@ -313,7 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // FR-005: Force page reload to clear any stale React state
-    window.location.href = '/';
+    window.location.href = getInternalUrl('/');
   }, []);
 
   const refreshSession = useCallback(async () => {

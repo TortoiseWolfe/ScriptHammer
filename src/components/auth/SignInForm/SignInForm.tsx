@@ -9,6 +9,7 @@ import {
 } from '@/lib/auth/rate-limit-check';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import { getInternalUrl } from '@/config/project.config';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:auth:SignInForm');
@@ -91,7 +92,7 @@ export default function SignInForm({
     if (signInError) {
       // Check if email needs verification
       if (signInError.message.toLowerCase().includes('email not confirmed')) {
-        window.location.href = '/verify-email';
+        window.location.href = getInternalUrl('/verify-email');
         return;
       }
 
