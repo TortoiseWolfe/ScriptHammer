@@ -11,7 +11,7 @@
  *   Body: { payment_intent_id: string }
  *
  * RESPONSE
- *   200 OK: { sessionId: string }
+ *   200 OK: { sessionId: string, url: string }
  *   400 Bad Request: { error: string } (validation / missing body fields)
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the intent)
@@ -148,7 +148,10 @@ serve(async (req) => {
       client_reference_id: intent.id,
     });
 
-    return jsonResponse(req, { sessionId: session.id });
+    // Return the hosted Checkout URL alongside the id: Stripe.js removed
+    // redirectToCheckout (changelog 2025-09-30 "clover"), so the client
+    // navigates to session.url directly.
+    return jsonResponse(req, { sessionId: session.id, url: session.url });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return jsonResponse(req, { error: err.message }, 401);
