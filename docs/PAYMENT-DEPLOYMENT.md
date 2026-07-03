@@ -90,15 +90,30 @@ NEXT_PUBLIC_PAYPAL_CLIENT_ID=your-paypal-client-id
 
 This template deploys to GitHub Pages (static export). **There is no Next.js server runtime that can read non-NEXT*PUBLIC* vars at request time.** Server-side logic runs in Supabase Edge Functions, which read secrets via `Deno.env.get(...)` after they're set in Supabase Vault.
 
+**Recommended — CLI-free, via the Management API** (this repo forbids installing the Supabase CLI locally; see the root `CLAUDE.md`):
+
 ```bash
-supabase secrets set STRIPE_SECRET_KEY=sk_test_your_actual_key
-supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_your_actual_secret
-supabase secrets set PAYPAL_CLIENT_SECRET=your_paypal_secret
-supabase secrets set PAYPAL_WEBHOOK_ID=your_paypal_webhook_id
-supabase secrets set SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+# 1. Copy the placeholder (the filled copy is gitignored) and fill in real values:
+cp scripts/supabase/edge-function-secrets.example.json \
+   scripts/supabase/edge-function-secrets.json
+
+# 2. Dry-run (name-level diff; values never printed), then apply:
+docker compose exec scripthammer pnpm supabase:secrets
+docker compose exec scripthammer pnpm supabase:secrets --apply
 ```
 
-Verify with `supabase secrets list` — you should see 5 entries (the values are masked).
+This uses the `SUPABASE_ACCESS_TOKEN` + project ref already in `.env` to call `POST /v1/projects/{ref}/secrets`. It sets the four provider secrets:
+
+```
+STRIPE_SECRET_KEY        sk_test_…
+STRIPE_WEBHOOK_SECRET    whsec_…
+PAYPAL_CLIENT_SECRET     …
+PAYPAL_WEBHOOK_ID        …
+```
+
+> **Do NOT set `SUPABASE_SERVICE_ROLE_KEY` (or any `SUPABASE_*` var) as an Edge Function secret.** The platform auto-injects them, and the Management API rejects any secret name starting with `SUPABASE_`. The functions read the service-role key from the injected env.
+
+**Alternatives:** `supabase secrets set NAME=value` (CLI) or the Supabase dashboard → Project Settings → Edge Functions → Secrets.
 
 ### 3.3 Quick verification
 
@@ -112,7 +127,14 @@ It reads your `.env`, queries `supabase secrets list`, and reports which of the 
 
 ## Step 4 — Deploy Edge Functions
 
-### 4.1 Inbound webhooks (currently shipped)
+> **All 11 functions are already deployed to this project's prod** (via the
+> Management API `POST /v1/projects/{ref}/functions/deploy`, CLI-free — the same
+> token used for secrets in §3.2). The `supabase functions deploy` commands below
+> are the CLI equivalent, kept for forkers deploying to a fresh project. Verify
+> what's live with the dashboard → Edge Functions, or
+> `GET /v1/projects/{ref}/functions`.
+
+### 4.1 Inbound webhooks
 
 ```bash
 supabase functions deploy stripe-webhook
@@ -122,34 +144,29 @@ supabase functions deploy send-payment-email
 
 Each command prints the deployed URL (form: `https://<project-ref>.supabase.co/functions/v1/<name>`). Save these — they go into the provider dashboards in Step 5.
 
-### 4.2 Outbound checkout creators
-
-Phase 0a + 0b ✅ shipped (Stripe one-off + subscription):
+### 4.2 Outbound checkout / subscription functions
 
 ```bash
+# Stripe one-off + subscription
 supabase functions deploy create-stripe-checkout
 supabase functions deploy verify-stripe-session
 supabase functions deploy create-stripe-subscription
-```
 
-Remaining (tracked in [#100](https://github.com/TortoiseWolfe/ScriptHammer/issues/100)):
-
-```bash
-# Phase 0c (#103) — PayPal one-off
+# PayPal one-off (#103)
 supabase functions deploy create-paypal-order
 supabase functions deploy capture-paypal-order
 
-# Phase 0d (#104) — PayPal subscription
+# PayPal subscription (#104)
 supabase functions deploy create-paypal-subscription
 
-# Phase 0e (#105) — Subscription lifecycle
+# Subscription lifecycle (#105)
 supabase functions deploy cancel-subscription
 supabase functions deploy resume-subscription
 ```
 
 **Subscription operator note:** Phase 0b assumes you've created a recurring `Price` object in the Stripe dashboard ahead of time. The `price_id` (e.g. `price_1AbCdEf...`) gets passed to `create-stripe-subscription` by the browser. The `subscriptions` table row is **inserted by the existing `stripe-webhook` handler** when `customer.subscription.created` fires — not by `create-stripe-subscription` itself. The two are paired: the subscription session sets `subscription_data.metadata.template_user_id` so the webhook can satisfy the table's NOT NULL constraint. Re-deploy `stripe-webhook` after Phase 0b lands (the handler logic was updated in the same PR).
 
-Until all 8 ship, browser code that calls a non-shipped function will fail at the fetch step with a 404. **Phase 0a alone unlocks the one-off Stripe checkout flow** — `/payment-demo` Stripe tab works end-to-end once sandbox keys are configured.
+All functions above are deployed to this project's prod (see the Step 4 note). On a fresh fork, browser code that calls a not-yet-deployed function fails at the fetch step with a 404, so deploy the full set before driving the UI. Once they're deployed **and** sandbox keys are set (§3.2), `/payment` works end-to-end.
 
 ## Step 5 — Register webhooks in provider dashboards
 
