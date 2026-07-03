@@ -5,7 +5,7 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import {
   usePaymentButton,
   UsePaymentButtonOptions,
@@ -52,10 +52,32 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
     consentReady,
     selectProvider,
     initiatePayment,
+    mountPayPalButtons,
     clearError,
   } = usePaymentButton(options);
 
   const formattedAmount = formatPaymentAmount(options.amount, options.currency);
+
+  // PayPal renders its own SDK Buttons (approval happens in PayPal's popup),
+  // so when the PayPal tab is active + consent is granted, mount them into a
+  // stable per-instance container instead of showing the generic pay button.
+  const rawId = useId();
+  const paypalContainerId = `paypal-buttons-${rawId.replace(/[:]/g, '')}`;
+  const paypalMounted = useRef(false);
+  const showPayPalButtons =
+    selectedProvider === 'paypal' && consentReady && hasConsent;
+
+  useEffect(() => {
+    if (showPayPalButtons && !paypalMounted.current) {
+      paypalMounted.current = true;
+      void mountPayPalButtons(paypalContainerId);
+    }
+    if (!showPayPalButtons) {
+      paypalMounted.current = false;
+    }
+    // mountPayPalButtons is stable per render cycle; container id is stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPayPalButtons, paypalContainerId]);
 
   // Feature-flag gate: if no providers are configured (neither
   // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY nor NEXT_PUBLIC_PAYPAL_CLIENT_ID is
@@ -226,31 +248,42 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
         </div>
       )}
 
-      {/* Payment Button */}
-      <button
-        type="button"
-        className={`btn btn-primary ${sizeClasses[size]} ${isProcessing ? 'loading' : ''}`}
-        onClick={initiatePayment}
-        disabled={!selectedProvider || isProcessing || !hasConsent}
-        aria-label={buttonText || `Pay ${formattedAmount}`}
-        aria-busy={isProcessing}
-      >
-        {isProcessing ? (
-          <>
-            <span className="loading loading-spinner"></span>
-            Processing...
-          </>
-        ) : (
-          buttonText || `Pay ${formattedAmount}`
-        )}
-      </button>
+      {/* PayPal renders its own SDK Buttons here; Stripe uses the generic
+          button below. Container is always in the DOM so the SDK has a mount
+          point, but only visible when PayPal is the active provider. */}
+      <div
+        id={paypalContainerId}
+        data-testid="paypal-buttons"
+        className={showPayPalButtons ? '' : 'hidden'}
+      />
+
+      {/* Payment Button (Stripe / generic redirect flow) */}
+      {!showPayPalButtons && (
+        <button
+          type="button"
+          className={`btn btn-primary ${sizeClasses[size]} ${isProcessing ? 'loading' : ''}`}
+          onClick={initiatePayment}
+          disabled={!selectedProvider || isProcessing || !hasConsent}
+          aria-label={buttonText || `Pay ${formattedAmount}`}
+          aria-busy={isProcessing}
+        >
+          {isProcessing ? (
+            <>
+              <span className="loading loading-spinner"></span>
+              Processing...
+            </>
+          ) : (
+            buttonText || `Pay ${formattedAmount}`
+          )}
+        </button>
+      )}
 
       {/* Provider Info */}
       {selectedProvider && (
         <p className="text-base-content/85 text-center text-sm">
-          You will be redirected to{' '}
-          {selectedProvider === 'stripe' ? 'Stripe' : 'PayPal'} to complete your
-          payment securely.
+          {selectedProvider === 'stripe'
+            ? 'You will be redirected to Stripe to complete your payment securely.'
+            : 'Complete your payment securely in the PayPal window.'}
         </p>
       )}
     </div>

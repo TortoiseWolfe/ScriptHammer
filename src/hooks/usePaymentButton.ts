@@ -5,11 +5,15 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePaymentConsent } from './usePaymentConsent';
 import { createPaymentIntent } from '@/lib/payments/payment-service';
 import { createCheckoutSession as createStripeCheckout } from '@/lib/payments/stripe';
-import { createPayPalOrder } from '@/lib/payments/paypal';
+import {
+  createPayPalOrder,
+  approvePayPalOrder,
+  renderPayPalButtons,
+} from '@/lib/payments/paypal';
 import { getPendingCount } from '@/lib/payments/offline-queue';
 import type { Currency, PaymentType, PaymentProvider } from '@/types/payment';
 
@@ -41,6 +45,13 @@ export interface UsePaymentButtonReturn {
   consentReady: boolean;
   selectProvider: (provider: PaymentProvider) => void;
   initiatePayment: () => Promise<void>;
+  /**
+   * Mount PayPal's SDK Buttons into `containerId`. Unlike Stripe (a redirect),
+   * PayPal one-time payments approve inside PayPal's own popup driven by the
+   * SDK: createOrder → user approves → onApprove → capture. Call this instead
+   * of initiatePayment when the PayPal provider is selected.
+   */
+  mountPayPalButtons: (containerId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -78,6 +89,9 @@ export function usePaymentButton(
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
+  // The PayPal SDK's onApprove only hands us order data, so we stash the
+  // intent id created in createOrder to report it back via onSuccess.
+  const pendingIntentId = useRef<string | null>(null);
 
   const { hasConsent, ready: consentReady } = usePaymentConsent();
 
@@ -104,12 +118,35 @@ export function usePaymentButton(
     setError(null);
   };
 
+  // Shared: create the Supabase payment_intent that both providers build on.
+  const newIntent = () =>
+    createPaymentIntent(
+      options.amount,
+      options.currency,
+      options.type,
+      options.customerEmail,
+      {
+        description: options.description,
+        metadata: options.metadata,
+        parent_intent_id: options.parentIntentId,
+      }
+    );
+
+  // Stripe path: create intent → redirect to hosted Checkout. (PayPal does
+  // NOT go through here — its approval happens in the SDK Buttons popup,
+  // see mountPayPalButtons.)
   const initiatePayment = async () => {
     if (!selectedProvider) {
       setError(new Error('Please select a payment provider'));
       return;
     }
-
+    if (selectedProvider === 'paypal') {
+      // PayPal is driven by the SDK Buttons, not this click handler.
+      setError(
+        new Error('Use the PayPal button to approve payment in PayPal.')
+      );
+      return;
+    }
     if (!hasConsent) {
       setError(
         new Error('Payment consent required. Please accept the consent modal.')
@@ -121,40 +158,64 @@ export function usePaymentButton(
     setError(null);
 
     try {
-      // Step 1: Create payment intent in Supabase
-      const intent = await createPaymentIntent(
-        options.amount,
-        options.currency,
-        options.type,
-        options.customerEmail,
-        {
-          description: options.description,
-          metadata: options.metadata,
-          parent_intent_id: options.parentIntentId,
-        }
-      );
-
-      // Step 2: Redirect to provider checkout
-      if (selectedProvider === 'stripe') {
-        await createStripeCheckout(intent.id);
-      } else if (selectedProvider === 'paypal') {
-        await createPayPalOrder(intent.id);
-      }
-
-      // Success callback
-      if (options.onSuccess) {
-        options.onSuccess(intent.id);
-      }
+      const intent = await newIntent();
+      await createStripeCheckout(intent.id); // navigates away on success
+      options.onSuccess?.(intent.id);
     } catch (err) {
       const errorObj = err instanceof Error ? err : new Error('Payment failed');
       setError(errorObj);
-
-      // Error callback
-      if (options.onError) {
-        options.onError(errorObj);
-      }
+      options.onError?.(errorObj);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // PayPal path: render the SDK Buttons. createOrder creates our intent +
+  // the PayPal order; onApprove captures it via the capture Edge Function.
+  const mountPayPalButtons = async (containerId: string) => {
+    if (!hasConsent) {
+      setError(
+        new Error('Payment consent required. Please accept the consent modal.')
+      );
+      return;
+    }
+    setError(null);
+    try {
+      await renderPayPalButtons(containerId, {
+        createOrder: async () => {
+          const intent = await newIntent();
+          // Stash for onApprove's success callback (SDK only hands us order data).
+          pendingIntentId.current = intent.id;
+          return await createPayPalOrder(intent.id);
+        },
+        onApprove: async (data: { orderID?: string }) => {
+          setIsProcessing(true);
+          try {
+            const orderId = data?.orderID;
+            if (!orderId) throw new Error('PayPal approval missing orderID');
+            const result = await approvePayPalOrder(orderId);
+            if (!result.success) {
+              throw new Error(result.error || 'PayPal capture failed');
+            }
+            options.onSuccess?.(pendingIntentId.current || orderId);
+          } catch (err) {
+            const e = err instanceof Error ? err : new Error('Capture failed');
+            setError(e);
+            options.onError?.(e);
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        onError: (err: unknown) => {
+          const e = err instanceof Error ? err : new Error('PayPal error');
+          setError(e);
+          options.onError?.(e);
+        },
+      });
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error('Failed to load PayPal');
+      setError(e);
+      options.onError?.(e);
     }
   };
 
@@ -169,6 +230,7 @@ export function usePaymentButton(
     consentReady,
     selectProvider,
     initiatePayment,
+    mountPayPalButtons,
     clearError,
   };
 }

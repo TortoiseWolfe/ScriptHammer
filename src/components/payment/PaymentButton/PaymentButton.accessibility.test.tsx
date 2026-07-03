@@ -20,6 +20,7 @@ vi.mock('@/hooks/usePaymentButton', () => ({
     consentReady: true,
     selectProvider: vi.fn(),
     initiatePayment: vi.fn(),
+    mountPayPalButtons: vi.fn(),
     clearError: vi.fn(),
   })),
 }));
@@ -65,6 +66,7 @@ describe('PaymentButton Accessibility', () => {
       consentReady: true,
       selectProvider: vi.fn(),
       initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
       clearError: vi.fn(),
     });
 
@@ -84,6 +86,7 @@ describe('PaymentButton Accessibility', () => {
       consentReady: true,
       selectProvider: vi.fn(),
       initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
       clearError: vi.fn(),
     });
 
@@ -103,6 +106,7 @@ describe('PaymentButton Accessibility', () => {
       consentReady: true,
       selectProvider: vi.fn(),
       initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
       clearError: vi.fn(),
     });
 
@@ -122,6 +126,7 @@ describe('PaymentButton Accessibility', () => {
       consentReady: true,
       selectProvider: vi.fn(),
       initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
       clearError: vi.fn(),
     });
 
@@ -141,6 +146,7 @@ describe('PaymentButton Accessibility', () => {
       consentReady: true,
       selectProvider: vi.fn(),
       initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
       clearError: vi.fn(),
     });
 
