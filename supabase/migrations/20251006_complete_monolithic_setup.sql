@@ -2180,6 +2180,29 @@ AS $$
   );
 $$;
 
+-- SECURITY (#34): check whether a user CREATED a conversation, reading
+-- conversations.created_by directly. SECURITY DEFINER because the
+-- conversations SELECT policy only exposes 1-to-1 participant rows, so a
+-- group's creator cannot see their own group row through RLS — an inline
+-- EXISTS sub-select against conversations returns nothing for a group and
+-- would wrongly reject the creator. This helper is the creator-scoped
+-- counterpart to is_conversation_member(), and unlike is_conversation_owner()
+-- it does not depend on a membership row existing yet, so it also authorizes
+-- the very first owner-row insert during group creation.
+CREATE OR REPLACE FUNCTION is_conversation_creator(conv_id UUID, check_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM conversations
+    WHERE id = conv_id
+      AND created_by = check_user_id
+  );
+$$;
+
 -- SELECT: Members can see other members of their conversations
 DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_members;
 CREATE POLICY "Members can view conversation members" ON conversation_members
@@ -2187,12 +2210,21 @@ CREATE POLICY "Members can view conversation members" ON conversation_members
     is_conversation_member(conversation_id)
   );
 
--- INSERT: Any member can add (connection validation in service layer)
+-- INSERT: existing members can add others (connection validation in the
+-- service layer), and the conversation's CREATOR can seat the initial roster.
+--
+-- SECURITY (#34): the self-join branch was `user_id = auth.uid()`, which let
+-- ANY authenticated user insert a membership row for themselves into ANY
+-- group — a privilege escalation, since conversation_members / group_keys /
+-- messages all gate reads through is_conversation_member(). Scoping the
+-- second branch to the conversation's creator closes that: only the creator
+-- can seed a group (covers createGroup's owner + member batch insert), while
+-- an outsider self-insert now fails both branches.
 DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
 CREATE POLICY "Members can add to their conversations" ON conversation_members
   FOR INSERT WITH CHECK (
     is_conversation_member(conversation_id)
-    OR user_id = auth.uid()  -- Self-join on creation
+    OR is_conversation_creator(conversation_id)
   );
 
 -- UPDATE: Members can update own preferences, owners can update others
