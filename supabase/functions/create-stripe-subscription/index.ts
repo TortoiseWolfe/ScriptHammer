@@ -14,7 +14,7 @@
  *   Body: { price_id: string, customer_email: string }
  *
  * RESPONSE
- *   200 OK: { sessionId: string }
+ *   200 OK: { sessionId: string, url: string }
  *   400 Bad Request: { error: string } (validation)
  *   401 Unauthorized: { error: string }
  *   500 Internal Server Error: { error: string }
@@ -118,7 +118,10 @@ serve(async (req) => {
       // No client_reference_id — there's no pre-existing intent to link to.
     });
 
-    return jsonResponse(req, { sessionId: session.id });
+    // Return the hosted Checkout URL alongside the id: Stripe.js removed
+    // redirectToCheckout (changelog 2025-09-30 "clover"), so the client
+    // navigates to session.url directly.
+    return jsonResponse(req, { sessionId: session.id, url: session.url });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
       return jsonResponse(req, { error: err.message }, 401);

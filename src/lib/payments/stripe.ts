@@ -27,11 +27,11 @@ async function getAuthHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Get Stripe instance (lazy loaded)
- * Requires payment consent before loading
+ * Throw unless the user has granted payment consent (GDPR gate).
+ * Shared by the checkout flows — they no longer load Stripe.js (see
+ * createCheckoutSession), but the consent requirement stands.
  */
-export async function getStripe(): Promise<Stripe | null> {
-  // Check consent before loading external script
+function assertPaymentConsent(): void {
   const hasConsent =
     typeof window !== 'undefined' &&
     localStorage.getItem('payment_consent') === 'granted';
@@ -41,6 +41,15 @@ export async function getStripe(): Promise<Stripe | null> {
       'Payment consent required. Please accept the payment consent modal to use Stripe.'
     );
   }
+}
+
+/**
+ * Get Stripe instance (lazy loaded)
+ * Requires payment consent before loading
+ */
+export async function getStripe(): Promise<Stripe | null> {
+  // Check consent before loading external script
+  assertPaymentConsent();
 
   // Lazy load Stripe.js (only once)
   if (!stripePromise) {
@@ -57,13 +66,10 @@ export async function getStripe(): Promise<Stripe | null> {
 export async function createCheckoutSession(
   paymentIntentId: string
 ): Promise<void> {
-  const stripe = await getStripe();
-  if (!stripe) {
-    throw new Error('Stripe failed to load');
-  }
+  // Consent gate (no Stripe.js load needed — see redirect note below)
+  assertPaymentConsent();
 
   // Call Edge Function to create checkout session
-  // (Edge Function will be created in Phase 5)
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-stripe-checkout`,
     {
@@ -81,16 +87,16 @@ export async function createCheckoutSession(
     throw new Error(error.error || 'Failed to create checkout session');
   }
 
-  const { sessionId } = await response.json();
-
-  // Redirect to Stripe Checkout
-  // Note: redirectToCheckout is deprecated in newer Stripe.js versions
-  // Using type assertion to handle deprecated API
-  const { error } = await (stripe as any).redirectToCheckout({ sessionId });
-
-  if (error) {
-    throw new Error(error.message || 'Failed to redirect to Stripe Checkout');
+  // Navigate to the hosted Checkout URL from the Edge Function response.
+  // Stripe.js REMOVED redirectToCheckout (changelog 2025-09-30 "clover");
+  // session.url is the supported redirect mechanism.
+  const { url } = await response.json();
+  if (!url) {
+    throw new Error(
+      'Checkout session response missing url — redeploy create-stripe-checkout'
+    );
   }
+  window.location.assign(url);
 }
 
 /**
@@ -146,10 +152,8 @@ export async function createSubscriptionCheckout(
   priceId: string,
   customerEmail: string
 ): Promise<void> {
-  const stripe = await getStripe();
-  if (!stripe) {
-    throw new Error('Stripe failed to load');
-  }
+  // Consent gate (no Stripe.js load needed — see redirect note below)
+  assertPaymentConsent();
 
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-stripe-subscription`,
@@ -171,11 +175,13 @@ export async function createSubscriptionCheckout(
     throw new Error(error.error || 'Failed to create subscription checkout');
   }
 
-  const { sessionId } = await response.json();
-
-  const { error } = await (stripe as any).redirectToCheckout({ sessionId });
-
-  if (error) {
-    throw new Error(error.message || 'Failed to redirect to Stripe Checkout');
+  // Navigate to the hosted Checkout URL (redirectToCheckout was removed
+  // from Stripe.js — changelog 2025-09-30 "clover").
+  const { url } = await response.json();
+  if (!url) {
+    throw new Error(
+      'Subscription checkout response missing url — redeploy create-stripe-subscription'
+    );
   }
+  window.location.assign(url);
 }
