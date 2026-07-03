@@ -296,7 +296,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           </thead>
           <tbody>
             {paginatedPayments.map((payment) => (
-              <tr key={payment.id} className="hover">
+              <tr key={payment.id} className="hover" data-payment-item>
                 <td>{new Date(payment.created_at).toLocaleDateString()}</td>
                 <td className="font-semibold">
                   {formatPaymentAmount(
@@ -355,7 +355,11 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       {/* Cards - Mobile */}
       <div className="flex flex-col gap-3 sm:hidden">
         {paginatedPayments.map((payment) => (
-          <div key={payment.id} className="card bg-base-100 shadow">
+          <div
+            key={payment.id}
+            className="card bg-base-100 shadow"
+            data-payment-item
+          >
             <div className="card-body p-4">
               <div className="flex items-center justify-between">
                 <span className="text-base-content/85 text-sm">
