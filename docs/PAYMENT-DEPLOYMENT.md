@@ -83,8 +83,25 @@ These get exposed in the browser bundle and are safe to be public. Set in your `
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxxxxxxxxxxxxxx
+NEXT_PUBLIC_STRIPE_PRICE_ID=price_xxxxxxxxxxxxxxxxxxxxxxxx
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=your-paypal-client-id
 ```
+
+**`NEXT_PUBLIC_STRIPE_PRICE_ID`** powers the recurring Subscribe flow: the plan
+amount and interval live on an operator-created Stripe **Price** object, not in
+code. Create it in the Stripe dashboard (test mode → Product catalog → add a
+recurring price), or via the API with an idempotent lookup key:
+
+```bash
+curl -u "sk_test_…:" https://api.stripe.com/v1/prices \
+  -d "unit_amount=999" -d "currency=usd" -d "recurring[interval]=month" \
+  -d "product_data[name]=My Subscription" -d "lookup_key=my_monthly"
+```
+
+Also add these `NEXT_PUBLIC_*` values as **GitHub Actions secrets** — the
+deploy workflow (`.github/workflows/deploy.yml`) bakes them into the
+production build; without them, the deployed site renders payments as "not
+configured".
 
 ### 3.2 Secrets → Supabase Vault (NEVER in `.env`)
 
@@ -102,14 +119,22 @@ docker compose exec scripthammer pnpm supabase:secrets
 docker compose exec scripthammer pnpm supabase:secrets --apply
 ```
 
-This uses the `SUPABASE_ACCESS_TOKEN` + project ref already in `.env` to call `POST /v1/projects/{ref}/secrets`. It sets the four provider secrets:
+This uses the `SUPABASE_ACCESS_TOKEN` + project ref already in `.env` to call `POST /v1/projects/{ref}/secrets`. It sets the provider secrets plus the function-side site URL:
 
 ```
 STRIPE_SECRET_KEY        sk_test_…
 STRIPE_WEBHOOK_SECRET    whsec_…
 PAYPAL_CLIENT_SECRET     …
 PAYPAL_WEBHOOK_ID        …
+NEXT_PUBLIC_SITE_URL     https://yourdomain.com
 ```
+
+> **`NEXT_PUBLIC_SITE_URL` (as a FUNCTION secret) is required before live
+> traffic.** The checkout functions build `success_url`/`cancel_url` from it
+> (unset ⇒ they default to `http://localhost:3000`), and `_shared/cors.ts`
+> derives the allowed browser origin from it. It may carry a basePath for
+> GitHub Pages project sites (e.g. `https://user.github.io/MyFork`) — CORS
+> compares origins only, so the path is safe.
 
 > **Do NOT set `SUPABASE_SERVICE_ROLE_KEY` (or any `SUPABASE_*` var) as an Edge Function secret.** The platform auto-injects them, and the Management API rejects any secret name starting with `SUPABASE_`. The functions read the service-role key from the injected env.
 

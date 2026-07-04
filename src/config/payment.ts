@@ -69,6 +69,9 @@ export function validateSupabaseConfig(): void {
 
 export const stripeConfig = {
   publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
+  // Recurring checkout requires an operator-created Price (Stripe Dashboard
+  // or API) — the plan amount + interval live on the Price object, not here.
+  subscriptionPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || '',
   secretKey: process.env.STRIPE_SECRET_KEY || '', // Server-side only
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '', // Server-side only
 } as const;

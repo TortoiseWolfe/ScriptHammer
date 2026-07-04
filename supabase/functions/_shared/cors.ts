@@ -34,14 +34,25 @@ export function corsHeaders(req: Request): HeadersInit {
   const requestOrigin = req.headers.get('origin') ?? '';
   const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') ?? '';
 
+  // NEXT_PUBLIC_SITE_URL may carry a basePath (GitHub Pages project site,
+  // e.g. https://user.github.io/ScriptHammer) because the checkout functions
+  // build success_url from it — but a browser Origin header is always
+  // scheme://host[:port], so compare against the URL's origin only.
+  let siteOrigin = '';
+  try {
+    siteOrigin = siteUrl ? new URL(siteUrl).origin : '';
+  } catch {
+    siteOrigin = '';
+  }
+
   // Allow the configured site, plus localhost dev (3000/3001) for ScriptHammer.
   const allowed = [
-    siteUrl,
+    siteOrigin,
     'http://localhost:3000',
     'http://localhost:3001',
   ].filter(Boolean);
 
-  const origin = allowed.includes(requestOrigin) ? requestOrigin : siteUrl;
+  const origin = allowed.includes(requestOrigin) ? requestOrigin : siteOrigin;
 
   return {
     'Access-Control-Allow-Origin': origin,
