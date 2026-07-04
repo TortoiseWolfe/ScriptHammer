@@ -9,8 +9,13 @@ on:
   workflow_dispatch: # Allow manual triggering
 
 env:
-  # Dynamic site URL for GitHub Pages deployment
-  SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+  # Live site URL. Prefer the repo's configured custom domain
+  # (vars.NEXT_PUBLIC_SITE_URL — the same var deploy.yml builds with); fall
+  # back to the GitHub Pages project-site URL for forks without a custom
+  # domain. The project-site fallback 301-redirects to the custom domain when
+  # one is set, which broke Lighthouse `collect` (it can't cleanly audit a
+  # redirect chain) — hence deriving the real origin here.
+  SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
 
 jobs:
   lighthouse:
@@ -46,16 +51,21 @@ jobs:
             sleep 10
           done
 
-      # Run Lighthouse CI
+      # Run Lighthouse CI. NOT continue-on-error: a collect failure (site
+      # unreachable / audit can't run) should FAIL the job loudly — silently
+      # swallowing it is how this monitor went dead for weeks (#168). The
+      # lighthouserc score assertions are `warn`-level, so low scores stay
+      # informational; only genuine collect errors fail here.
+      # URLs use trailing slashes (trailingSlash: true) so they resolve 200
+      # without a redirect; only routes that actually exist are audited.
       - name: Run Lighthouse CI
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
-        continue-on-error: true
         with:
           urls: |
-            ${{ env.SITE_URL }}
-            ${{ env.SITE_URL }}/status
-            ${{ env.SITE_URL }}/components
+            ${{ env.SITE_URL }}/
+            ${{ env.SITE_URL }}/status/
+            ${{ env.SITE_URL }}/payment/
           uploadArtifacts: true
           temporaryPublicStorage: true
           runs: 3
