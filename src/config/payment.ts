@@ -103,6 +103,11 @@ export function validateStripeConfig(serverSide = false): void {
 
 export const paypalConfig = {
   clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
+  // Recurring billing Plan (operator-created in the PayPal dashboard / API);
+  // the plan amount + interval live on the Plan object, mirroring Stripe's
+  // subscriptionPriceId. Empty → the recurring PayPal path shows a clear
+  // "not configured" error instead of silently creating a one-time order.
+  subscriptionPlanId: process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID || '',
   clientSecret: process.env.PAYPAL_CLIENT_SECRET || '', // Server-side only
   webhookId: process.env.PAYPAL_WEBHOOK_ID || '', // Server-side only
 } as const;

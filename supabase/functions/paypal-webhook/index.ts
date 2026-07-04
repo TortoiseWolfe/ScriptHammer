@@ -261,9 +261,25 @@ async function handleSubscriptionEvent(
   webhookEventId: string
 ) {
   const resource = event.resource;
+
+  // create-paypal-subscription stamps the caller's user_id into the PayPal
+  // subscription's custom_id so we can attribute the row here. Without it the
+  // NOT NULL template_user_id constraint fails — mirrors the Stripe webhook's
+  // metadata.template_user_id guard.
+  const templateUserId = resource.custom_id;
+  if (!templateUserId) {
+    console.error(
+      `PayPal subscription event missing custom_id (template_user_id); ` +
+        `subscription_id=${resource.id}. Ensure the subscription was created ` +
+        `via create-paypal-subscription, which sets custom_id.`
+    );
+    return { handled: false, reason: 'missing_custom_id' };
+  }
+
   const subscriptionData = {
     provider: 'paypal',
     provider_subscription_id: resource.id,
+    template_user_id: templateUserId,
     customer_email: resource.subscriber?.email_address || '',
     plan_amount: Math.round(
       parseFloat(resource.billing_info?.last_payment?.amount?.value || '0') *

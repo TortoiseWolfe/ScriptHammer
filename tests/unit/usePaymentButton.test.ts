@@ -7,6 +7,7 @@ import {
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
 import { renderPayPalButtons } from '@/lib/payments/paypal';
+import { createPayPalSubscription } from '@/lib/payments/paypal';
 
 // Mock dependencies
 vi.mock('@/hooks/usePaymentConsent', () => ({
@@ -29,6 +30,7 @@ vi.mock('@/lib/payments/stripe', () => ({
 vi.mock('@/lib/payments/paypal', () => ({
   createPayPalOrder: vi.fn(() => Promise.resolve('paypal-order-id')),
   approvePayPalOrder: vi.fn(() => Promise.resolve({ success: true })),
+  createPayPalSubscription: vi.fn(() => Promise.resolve('paypal-sub-id')),
   renderPayPalButtons: vi.fn(() => Promise.resolve()),
 }));
 
@@ -36,13 +38,17 @@ vi.mock('@/lib/payments/offline-queue', () => ({
   getPendingCount: vi.fn(() => Promise.resolve(0)),
 }));
 
-// Mutable so individual tests can unset the price ID (vi.mock factories are
-// hoisted, so the shared object must be hoisted too).
+// Mutable so individual tests can unset the price/plan ids (vi.mock factories
+// are hoisted, so the shared objects must be hoisted too).
 const mockStripeConfig = vi.hoisted(() => ({
   subscriptionPriceId: 'price_test_123',
 }));
+const mockPaypalConfig = vi.hoisted(() => ({
+  subscriptionPlanId: 'P-test-plan-123',
+}));
 vi.mock('@/config/payment', () => ({
   stripeConfig: mockStripeConfig,
+  paypalConfig: mockPaypalConfig,
 }));
 
 describe('usePaymentButton', () => {
@@ -62,6 +68,7 @@ describe('usePaymentButton', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStripeConfig.subscriptionPriceId = 'price_test_123';
+    mockPaypalConfig.subscriptionPlanId = 'P-test-plan-123';
   });
 
   it('should initialize with default state', () => {
@@ -153,7 +160,36 @@ describe('usePaymentButton', () => {
     expect(onError).toHaveBeenCalled();
   });
 
-  it('refuses to mount PayPal buttons for recurring payments (#104 not wired)', async () => {
+  it('mounts PayPal subscription buttons for recurring payments (#104)', async () => {
+    const { result } = renderHook(() => usePaymentButton(recurringOptions));
+
+    await act(async () => {
+      await result.current.mountPayPalButtons('container-id');
+    });
+
+    // Subscription mode uses createSubscription (not createOrder), driving
+    // the configured Plan; no one-time order is created.
+    expect(renderPayPalButtons).toHaveBeenCalledWith(
+      'container-id',
+      expect.objectContaining({
+        createSubscription: expect.any(Function),
+        onApprove: expect.any(Function),
+        onError: expect.any(Function),
+      })
+    );
+    const call = (renderPayPalButtons as ReturnType<typeof vi.fn>).mock
+      .calls[0][1];
+    expect(call.createOrder).toBeUndefined();
+    await call.createSubscription();
+    expect(createPayPalSubscription).toHaveBeenCalledWith(
+      'P-test-plan-123',
+      'test@example.com'
+    );
+    expect(result.current.error).toBeNull();
+  });
+
+  it('errors clearly for recurring PayPal without a configured plan id', async () => {
+    mockPaypalConfig.subscriptionPlanId = '';
     const { result } = renderHook(() => usePaymentButton(recurringOptions));
 
     await act(async () => {
@@ -161,9 +197,7 @@ describe('usePaymentButton', () => {
     });
 
     expect(renderPayPalButtons).not.toHaveBeenCalled();
-    expect(result.current.error?.message).toMatch(
-      /PayPal subscriptions are not yet supported/
-    );
+    expect(result.current.error?.message).toMatch(/NEXT_PUBLIC_PAYPAL_PLAN_ID/);
   });
 
   it('still mounts PayPal buttons for one_time payments', async () => {
