@@ -41,7 +41,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface RequestBody {

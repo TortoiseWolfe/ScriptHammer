@@ -20,7 +20,7 @@
  *   500 Internal Server Error: { error: string }
  *
  * SECURITY MODEL
- *   - JWT verified via NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback)
  *   - The caller's user_id flows into Stripe's subscription metadata
  *     (template_user_id) so the webhook can attribute the new
  *     subscriptions row to the right user. Without this, the NOT NULL

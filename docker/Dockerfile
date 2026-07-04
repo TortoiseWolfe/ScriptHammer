@@ -115,8 +115,8 @@ RUN npx playwright install chromium firefox webkit \
 # Mirrors the ce0e64d fix that originally landed for .next.
 # See: docs/interoffice/audits/2026-05-02-supabase-banner-audit.md (#69)
 RUN chown -R node:node /app/node_modules \
-    && mkdir -p /app/.next \
-    && chown -R node:node /app/.next
+    && mkdir -p /app/.next /app/.next-acceptance \
+    && chown -R node:node /app/.next /app/.next-acceptance
 
 # Entrypoint needs root for chmod, copy before USER switch
 COPY docker/docker-entrypoint.sh /usr/local/bin/

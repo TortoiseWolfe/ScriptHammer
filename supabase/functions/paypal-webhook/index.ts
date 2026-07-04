@@ -7,11 +7,19 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encode as base64Encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const paypalClientId = Deno.env.get('NEXT_PUBLIC_PAYPAL_CLIENT_ID')!;
+const paypalClientId =
+  Deno.env.get('PAYPAL_CLIENT_ID') ??
+  Deno.env.get('NEXT_PUBLIC_PAYPAL_CLIENT_ID')!;
 const paypalClientSecret = Deno.env.get('PAYPAL_CLIENT_SECRET')!;
 const paypalWebhookId = Deno.env.get('PAYPAL_WEBHOOK_ID')!;
+// Same base + sandbox default as the outbound PayPal fns. Hardcoding the
+// LIVE host here meant sandbox creds could never verify a single sandbox
+// webhook event (401 at oauth → every delivery rejected).
+const PAYPAL_API =
+  Deno.env.get('PAYPAL_API_BASE') ?? 'https://api-m.sandbox.paypal.com';
 
 // Days a past-due subscription stays usable before expiring. Mirrors
 // subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
@@ -169,23 +177,20 @@ async function verifyPayPalSignature(params: any): Promise<boolean> {
       new TextEncoder().encode(paypalClientId + ':' + paypalClientSecret)
     );
 
-    const authResponse = await fetch(
-      'https://api-m.paypal.com/v1/oauth2/token',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: 'Basic ' + credentials,
-        },
-        body: 'grant_type=client_credentials',
-      }
-    );
+    const authResponse = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: 'Basic ' + credentials,
+      },
+      body: 'grant_type=client_credentials',
+    });
 
     const authData = await authResponse.json();
     const accessToken = authData.access_token;
 
     const verifyResponse = await fetch(
-      'https://api-m.paypal.com/v1/notifications/verify-webhook-signature',
+      `${PAYPAL_API}/v1/notifications/verify-webhook-signature`,
       {
         method: 'POST',
         headers: {

@@ -347,7 +347,44 @@ Before committing:
 
 ### Overview
 
-End-to-end tests use Playwright to test complete user workflows in real browsers. E2E tests are local-only (not run in CI) due to requiring authenticated sessions.
+End-to-end tests use Playwright to test complete user workflows in real browsers. E2E tests run in CI (chromium on PRs; firefox/webkit on push-to-main + cron, sharded) against a dummy-keyed static build. Tests that need REAL provider credentials auto-skip in CI and run locally instead — see "Live-acceptance E2E" below.
+
+### Live-acceptance E2E (real Stripe/PayPal sandbox)
+
+CI's build bakes dummy payment keys, so every spec gated on
+`isStripeConfigured` / `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PRICE_ID`
+skips there. The live legs (Stripe one-time + subscription redirects, the
+cancel/resume lifecycle in `08-subscription-lifecycle.spec.ts`) only ever run
+locally, against the sandbox creds in your gitignored `.env`:
+
+```bash
+# whole payment suite (chromium), from the HOST:
+pnpm run test:e2e:live
+
+# or a single spec / different args:
+./scripts/e2e-live-acceptance.sh tests/e2e/payment/08-subscription-lifecycle.spec.ts --project=chromium-gen
+```
+
+The script encodes three gotchas that each fail with misleading symptoms:
+
+1. **Root-path build** — CI has no `.env`, so its build has no basePath; the
+   script builds with `NEXT_PUBLIC_BASE_PATH=` (empty). A basePath build under
+   plain `serve` 404s every chunk → blank page, sign-in silently dead.
+2. **Serve on :3001** — the edge functions' CORS allowlists only the
+   configured site URL plus `localhost:3000/3001`; any other port →
+   `Failed to fetch` (which can also mask a function 500).
+3. **`NEXT_PUBLIC_BASE_PATH=` on the test run too** — Playwright's dotenv
+   loads `/ScriptHammer` from `.env`, and the authed fixture helpers
+   (`openAuthedPage`, `openSubscriptionsAs`, …) prepend it to navigations →
+   app-styled 404s on a root-path build, while non-fixture specs still pass.
+
+Prereqs: seeded test users (`pnpm exec tsx scripts/seed-test-users.ts`), and
+in `.env`: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_PRICE_ID`,
+`NEXT_PUBLIC_PAYPAL_CLIENT_ID`, plus TEST-MODE `STRIPE_SECRET_KEY` (used only
+by the live-subscription fixture to provision real sandbox subscriptions).
+
+Read the per-test `list` output honestly: a live test that SKIPPED means a
+cred is missing — it did not pass.
 
 ### Test Users Setup
 

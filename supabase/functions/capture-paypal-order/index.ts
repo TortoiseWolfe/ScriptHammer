@@ -22,7 +22,7 @@
  *   500 Internal Server Error: { error: string } (PayPal call failed)
  *
  * SECURITY MODEL
- *   - JWT verified via NEXT_PUBLIC_SUPABASE_ANON_KEY (getAuthenticatedUserId)
+ *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (getAuthenticatedUserId)
  *   - service-role client used for the payment_results lookup (bypasses RLS so
  *     we can read the row regardless of policy state) — but we DO check
  *     `payment_intents.template_user_id === caller_user_id` manually before
@@ -40,7 +40,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // PayPal REST API base. Defaults to sandbox; override PAYPAL_API_BASE in the
