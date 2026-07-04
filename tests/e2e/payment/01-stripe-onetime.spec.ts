@@ -2,10 +2,13 @@
  * Integration Test: One-Time Payment (Stripe) - T055
  * Tests Stripe payment UI and consent flow
  *
- * NOTE: The full Stripe Checkout redirect test runs locally when
- * NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set (via .env). It auto-skips in CI,
- * whose test-run env does not carry that var (isStripeConfigured is false).
- * The remaining cancellation / declined-card cases are still stubs.
+ * NOTE: The full Stripe Checkout redirect tests (one-time AND subscription
+ * mode) run locally when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (+
+ * NEXT_PUBLIC_STRIPE_PRICE_ID for the subscription leg) are set via .env.
+ * They auto-skip in CI, whose test-run env does not carry those vars
+ * (isStripeConfigured is false). The remaining cancellation / declined-card
+ * cases are still stubs. Cancel/resume lifecycle lives in
+ * 08-subscription-lifecycle.spec.ts.
  */
 
 import { test, expect } from '@playwright/test';
@@ -70,6 +73,38 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .first()
       .click();
     await page.getByRole('button', { name: 'Pay $20.00 (One-Time)' }).click();
+
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 });
+  });
+
+  // Subscription leg (#105): usePaymentButton routes type="recurring" through
+  // createSubscriptionCheckout → create-stripe-subscription (mode=subscription)
+  // on the operator-created Price. Same local-run / CI-skip pattern as above.
+  test('should redirect to subscription-mode Stripe Checkout', async ({
+    page,
+  }) => {
+    test.skip(
+      !isStripeConfigured || !process.env.NEXT_PUBLIC_STRIPE_PRICE_ID,
+      'Stripe key / NEXT_PUBLIC_STRIPE_PRICE_ID not configured - run locally for the subscription flow test'
+    );
+
+    // Grant consent
+    await page.getByRole('button', { name: /Accept/i }).click();
+    await page
+      .getByRole('heading', { name: /Step 2/i })
+      .waitFor({ timeout: 5000 });
+
+    // Scope to the Subscribe PaymentButton instance — three instances render
+    // their own Stripe tabs (see the strict-mode note in the one-time test).
+    const subscribeButton = page.getByRole('button', {
+      name: 'Subscribe $9.99/month',
+    });
+    const container = page
+      .locator('div.flex.flex-col.gap-4')
+      .filter({ has: subscribeButton })
+      .last();
+    await container.getByRole('tab', { name: /stripe/i }).click();
+    await subscribeButton.click();
 
     await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 });
   });

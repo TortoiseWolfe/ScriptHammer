@@ -11,16 +11,31 @@ numbers + reasons are the ground truth in the specs (verified by grepping
 `tests/e2e/payment/` contains **23 skipped tests** across 7 spec files. They fall
 into these blocker buckets:
 
-| Blocker                             | Count | Unblocked by                                                        |
-| ----------------------------------- | ----- | ------------------------------------------------------------------- |
-| Live provider keys / webhooks       | 5     | Stripe/PayPal **sandbox credentials** set on the deployed functions |
-| Unimplemented route/page (perf)     | 4     | seeded-volume perf testing on `/payment` (history/dashboard perf)   |
-| Offline-queue seed fixture          | 4     | an in-page Dexie queue-seed fixture (autonomous; see note)          |
-| Unimplemented dashboard/realtime UI | 4     | reconnection UI, batch-update UI, error toast, payment chart        |
-| Won't-fix in E2E                    | 2     | FPS measurement + script-bundling (unreliable / covered elsewhere)  |
-| Edge-function flow                  | 1     | exercising the `cancel-subscription` Edge Function end-to-end       |
-| Feature not built                   | 2     | offline-queue feature (#1 result), consent-reset feature            |
-| Subscription-mgmt page (legacy ref) | 1     | retarget to the `/payment?tab=subscriptions` hub (legacy comment)   |
+| Blocker                             | Count | Unblocked by                                                                                                            |
+| ----------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------- |
+| Live provider keys / webhooks       | 5     | Stripe/PayPal **sandbox credentials** set on the deployed functions                                                     |
+| Unimplemented route/page (perf)     | 4     | seeded-volume perf testing on `/payment` (history/dashboard perf)                                                       |
+| Offline-queue seed fixture          | 4     | an in-page Dexie queue-seed fixture (autonomous; see note)                                                              |
+| Unimplemented dashboard/realtime UI | 4     | reconnection UI, batch-update UI, error toast, payment chart                                                            |
+| Won't-fix in E2E                    | 2     | FPS measurement + script-bundling (unreliable / covered elsewhere)                                                      |
+| Edge-function flow                  | 1     | PayPal cancel only — the Stripe cancel/resume round-trip is covered by `08-subscription-lifecycle.spec.ts` (2026-07-04) |
+| Feature not built                   | 2     | offline-queue feature (#1 result), consent-reset feature                                                                |
+| Subscription-mgmt page (legacy ref) | 1     | retarget to the `/payment?tab=subscriptions` hub (legacy comment)                                                       |
+
+**Newly covered (2026-07-04, subscription-lifecycle session, #105):**
+
+- **Subscription checkout redirect** — `01-stripe-onetime.spec.ts` gained
+  `should redirect to subscription-mode Stripe Checkout` (local-run when
+  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` + `NEXT_PUBLIC_STRIPE_PRICE_ID` are set;
+  CI auto-skip).
+- **Cancel/resume lifecycle** — NEW `08-subscription-lifecycle.spec.ts` drives
+  the deployed `cancel-subscription` / `resume-subscription` Edge Functions
+  against a REAL test-mode Stripe subscription via the
+  `seedLiveStripeSubscription` fixture (provisions customer + `pm_card_visa` +
+  subscription over plain-fetch Stripe API), asserting provider-side
+  `cancel_at_period_end` both ways. Local-only (`STRIPE_SECRET_KEY` +
+  `NEXT_PUBLIC_STRIPE_PRICE_ID` + admin client); CI auto-skips. The `02:123`
+  cancel stub therefore re-scopes to the PayPal branch (#104).
 
 **Just un-skipped (2026-06-08, payment-hub refactor, no creds):**
 
@@ -91,6 +106,8 @@ into these blocker buckets:
 ### Edge-function flow — 1 skipped
 
 - `02-paypal-subscription.spec.ts:123` — Cancel drives the cancel-subscription Edge Function
+  — **PayPal branch only as of 2026-07-04** (#104): the Stripe branch is covered
+  end-to-end by `08-subscription-lifecycle.spec.ts`.
 
 ### Legacy subscription-mgmt-page reference — 1 skipped
 

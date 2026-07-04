@@ -2105,6 +2105,159 @@ export async function deleteIsolatedSubscription(
 }
 
 /**
+ * Minimal Stripe REST helper for the live-subscription fixture. Plain fetch
+ * (no SDK dependency) against the TEST-MODE API using the local
+ * STRIPE_SECRET_KEY — never available in CI, so callers must guard.
+ */
+async function stripeApi(
+  method: 'GET' | 'POST' | 'DELETE',
+  path: string,
+  params?: Record<string, string>
+): Promise<Record<string, unknown>> {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY not set');
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params ? new URLSearchParams(params).toString() : undefined,
+  });
+  const body = (await res.json()) as Record<string, unknown> & {
+    error?: { message?: string };
+  };
+  if (!res.ok) {
+    throw new Error(
+      `Stripe ${method} ${path} failed: ${body?.error?.message ?? res.status}`
+    );
+  }
+  return body;
+}
+
+/** Fetch a Stripe subscription (test mode) — for asserting provider state. */
+export async function getStripeSubscription(
+  id: string
+): Promise<{ status: string; cancel_at_period_end: boolean }> {
+  return stripeApi('GET', `/subscriptions/${id}`) as Promise<{
+    status: string;
+    cancel_at_period_end: boolean;
+  }>;
+}
+
+/**
+ * An {@link IsolatedSubscription} whose `provider_subscription_id` is a REAL
+ * test-mode Stripe subscription — the only kind the cancel-subscription /
+ * resume-subscription Edge Functions can act on (a fake id 404s at Stripe).
+ */
+export interface LiveStripeSubscription extends IsolatedSubscription {
+  /** Real test-mode Stripe subscription id (sub_…). */
+  stripeSubscriptionId: string;
+}
+
+/**
+ * Seed a throwaway user with a REAL test-mode Stripe subscription (customer +
+ * pm_card_visa + subscription on the NEXT_PUBLIC_STRIPE_PRICE_ID Price) and a
+ * matching `subscriptions` row, so the cancel/resume Edge Functions can be
+ * driven end-to-end (#105).
+ *
+ * The Stripe subscription is created WITHOUT template_user_id metadata on
+ * purpose: the prod stripe-webhook ignores metadata-less subscription events
+ * (`handled:false`), so its echoes never race this fixture's row.
+ *
+ * Returns null when STRIPE_SECRET_KEY / NEXT_PUBLIC_STRIPE_PRICE_ID / the
+ * admin client are unavailable (i.e. always in CI). Tear down with
+ * {@link deleteLiveStripeSubscription}.
+ */
+export async function seedLiveStripeSubscription(): Promise<LiveStripeSubscription | null> {
+  const admin = getAdminClient();
+  const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+  if (!admin || !process.env.STRIPE_SECRET_KEY || !priceId) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const created = await createKeyedUserWithSession('live-sub', 'lsub', stamp);
+  if (!created) return null;
+
+  let stripeSubId: string | undefined;
+  try {
+    const customer = await stripeApi('POST', '/customers', {
+      email: created.user.email,
+    });
+    const pm = await stripeApi('POST', '/payment_methods/pm_card_visa/attach', {
+      customer: customer.id as string,
+    });
+    const sub = await stripeApi('POST', '/subscriptions', {
+      customer: customer.id as string,
+      'items[0][price]': priceId,
+      default_payment_method: pm.id as string,
+    });
+    stripeSubId = sub.id as string;
+    if (sub.status !== 'active') {
+      throw new Error(`expected active subscription, got ${sub.status}`);
+    }
+
+    const { data: row, error } = await admin
+      .from('subscriptions')
+      .insert({
+        template_user_id: created.user.id,
+        provider: 'stripe',
+        provider_subscription_id: stripeSubId,
+        customer_email: created.user.email,
+        plan_amount: 999,
+        plan_interval: 'month',
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (error || !row) {
+      throw new Error(`subscriptions insert failed: ${error?.message}`);
+    }
+
+    console.log(
+      `✓ Live Stripe subscription ${stripeSubId} (row ${row.id}; user ${created.user.id})`
+    );
+    return {
+      user: created.user,
+      session: created.session,
+      subscriptionId: row.id as string,
+      stripeSubscriptionId: stripeSubId,
+    };
+  } catch (err) {
+    console.warn(
+      'seedLiveStripeSubscription failed:',
+      err instanceof Error ? err.message : err
+    );
+    if (stripeSubId) {
+      await stripeApi('DELETE', `/subscriptions/${stripeSubId}`).catch(
+        () => {}
+      );
+    }
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+}
+
+/**
+ * Tear down a live Stripe subscription fixture: cancel the real Stripe
+ * subscription immediately, then the DB row + throwaway user.
+ */
+export async function deleteLiveStripeSubscription(
+  fixture: LiveStripeSubscription | null
+): Promise<void> {
+  if (!fixture) return;
+  await stripeApi(
+    'DELETE',
+    `/subscriptions/${fixture.stripeSubscriptionId}`
+  ).catch((err) =>
+    console.warn(
+      'deleteLiveStripeSubscription: Stripe cancel failed (may already be canceled):',
+      err instanceof Error ? err.message : err
+    )
+  );
+  await deleteIsolatedSubscription(fixture);
+}
+
+/**
  * A throwaway user plus one seeded payment (`payment_intents` + `payment_results`)
  * with a session — for realtime-dashboard specs that assert the PaymentHistory
  * list/counter updates live. Exposes `addResult()` to insert a SECOND payment

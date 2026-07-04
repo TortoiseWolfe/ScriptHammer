@@ -34,10 +34,16 @@ serve(async (req) => {
 
     const body = await req.text();
 
-    // Verify webhook signature
+    // Verify webhook signature. Must be the async variant: Deno's
+    // SubtleCryptoProvider refuses synchronous use, so constructEvent()
+    // throws on EVERY delivery (all events 400 before reaching handlers).
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret
+      );
     } catch (err) {
       console.error('Signature verification failed:', err.message);
       return new Response(
@@ -319,27 +325,67 @@ async function handleSubscriptionEvent(
     return { handled: false };
   }
 
+  // Pre-payment states never become rows: the table models real (paid)
+  // subscriptions and its status CHECK has no 'pending'. Checkout fires
+  // customer.subscription.created with status=incomplete BEFORE the card is
+  // confirmed; the paid state arrives seconds later as .updated (active).
+  if (subscription.status === 'incomplete') {
+    return { handled: true, reason: 'incomplete_not_persisted' };
+  }
+  if (subscription.status === 'incomplete_expired') {
+    // Abandoned checkout — only relevant if an earlier state made a row.
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('provider_subscription_id', subscription.id);
+    return { handled: true, reason: 'incomplete_expired' };
+  }
+
+  // Stripe API 2025-03-31+ moved current_period_start/end from the
+  // subscription onto its items; the payload shape follows the WEBHOOK
+  // ENDPOINT's API version (2025+), not this SDK's pin. Read the item first,
+  // fall back to the legacy top-level fields, and never throw on absence.
+  const firstItem = subscription.items.data[0] as
+    | (Stripe.SubscriptionItem & {
+        current_period_start?: number;
+        current_period_end?: number;
+      })
+    | undefined;
+  const periodStartSecs =
+    firstItem?.current_period_start ?? subscription.current_period_start;
+  const periodEndSecs =
+    firstItem?.current_period_end ?? subscription.current_period_end;
+  const toDateString = (secs: number | undefined | null) =>
+    secs ? new Date(secs * 1000).toISOString().split('T')[0] : null;
+
+  // Local model: status 'canceled' = user canceled (access until period end).
+  // Stripe represents that as status=active + cancel_at_period_end=true and
+  // fires .updated for it — without this mapping that event would clobber the
+  // 'canceled' status cancel-subscription just wrote (and make resume 400).
+  const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
+  const localStatus =
+    subscription.cancel_at_period_end && mappedStatus === 'active'
+      ? 'canceled'
+      : mappedStatus;
+
   const subscriptionData = {
     provider: 'stripe',
     provider_subscription_id: subscription.id,
     template_user_id: templateUserId,
     customer_email: customerEmail || '',
-    plan_amount: subscription.items.data[0]?.price.unit_amount || 0,
-    plan_interval:
-      subscription.items.data[0]?.price.recurring?.interval || 'month',
-    status: mapStripeSubscriptionStatus(subscription.status),
-    current_period_start: new Date(subscription.current_period_start * 1000)
-      .toISOString()
-      .split('T')[0],
-    current_period_end: new Date(subscription.current_period_end * 1000)
-      .toISOString()
-      .split('T')[0],
+    plan_amount: firstItem?.price.unit_amount || 0,
+    plan_interval: firstItem?.price.recurring?.interval || 'month',
+    status: localStatus,
+    current_period_start: toDateString(periodStartSecs),
+    current_period_end: toDateString(periodEndSecs),
     next_billing_date:
-      subscription.status === 'active'
-        ? new Date(subscription.current_period_end * 1000)
-            .toISOString()
-            .split('T')[0]
-        : null,
+      localStatus === 'active' ? toDateString(periodEndSecs) : null,
+    // Reconcile cancellation fields both ways: a Stripe-side cancel carries
+    // canceled_at; a resume (cancel_at_period_end back to false) clears it.
+    canceled_at: subscription.canceled_at
+      ? new Date(subscription.canceled_at * 1000).toISOString()
+      : null,
+    cancellation_reason: subscription.cancellation_details?.reason ?? null,
   };
 
   // Upsert subscription (create or update)

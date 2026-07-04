@@ -8,7 +8,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePaymentConsent } from './usePaymentConsent';
 import { createPaymentIntent } from '@/lib/payments/payment-service';
-import { createCheckoutSession as createStripeCheckout } from '@/lib/payments/stripe';
+import {
+  createCheckoutSession as createStripeCheckout,
+  createSubscriptionCheckout,
+} from '@/lib/payments/stripe';
+import { stripeConfig } from '@/config/payment';
 import {
   createPayPalOrder,
   approvePayPalOrder,
@@ -132,9 +136,10 @@ export function usePaymentButton(
       }
     );
 
-  // Stripe path: create intent → redirect to hosted Checkout. (PayPal does
-  // NOT go through here — its approval happens in the SDK Buttons popup,
-  // see mountPayPalButtons.)
+  // Stripe path: one_time creates an intent then redirects to hosted
+  // Checkout; recurring goes straight to subscription-mode Checkout on the
+  // configured Price. (PayPal does NOT go through here — its approval
+  // happens in the SDK Buttons popup, see mountPayPalButtons.)
   const initiatePayment = async () => {
     if (!selectedProvider) {
       setError(new Error('Please select a payment provider'));
@@ -158,6 +163,21 @@ export function usePaymentButton(
     setError(null);
 
     try {
+      if (options.type === 'recurring') {
+        // Subscription checkout: the plan amount/interval live on an
+        // operator-created Stripe Price, and the webhook owns the
+        // subscriptions row — so no payment_intent is created here and
+        // navigation to hosted Checkout IS the success signal.
+        const priceId = stripeConfig.subscriptionPriceId;
+        if (!priceId) {
+          throw new Error(
+            'Subscription price not configured. Set NEXT_PUBLIC_STRIPE_PRICE_ID ' +
+              'to a recurring Stripe Price ID (see docs/PAYMENT-DEPLOYMENT.md).'
+          );
+        }
+        await createSubscriptionCheckout(priceId, options.customerEmail);
+        return;
+      }
       const intent = await newIntent();
       await createStripeCheckout(intent.id); // navigates away on success
       options.onSuccess?.(intent.id);
@@ -173,6 +193,16 @@ export function usePaymentButton(
   // PayPal path: render the SDK Buttons. createOrder creates our intent +
   // the PayPal order; onApprove captures it via the capture Edge Function.
   const mountPayPalButtons = async (containerId: string) => {
+    if (options.type === 'recurring') {
+      // PayPal subscriptions aren't wired yet (#104) — without this guard
+      // the SDK Buttons would silently create a ONE-TIME PayPal order.
+      setError(
+        new Error(
+          'PayPal subscriptions are not yet supported. Use Stripe for recurring payments.'
+        )
+      );
+      return;
+    }
     if (!hasConsent) {
       setError(
         new Error('Payment consent required. Please accept the consent modal.')
