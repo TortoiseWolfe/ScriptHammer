@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export interface DiceProps {
   sides?: 6 | 20;
@@ -10,6 +10,17 @@ export interface DiceProps {
 export default function Dice({ sides = 6, className = '' }: DiceProps) {
   const [value, setValue] = useState<number | null>(null);
   const [isRolling, setIsRolling] = useState(false);
+  // Track the rolling interval so it can be cleared on unmount — otherwise a
+  // roll started right before unmount keeps firing setState for up to 1s on a
+  // dead component (a React "update on unmounted component" leak that crashed
+  // test teardown; see #168 CI flake).
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const roll = () => {
     setIsRolling(true);
@@ -20,16 +31,21 @@ export default function Dice({ sides = 6, className = '' }: DiceProps) {
     const rollInterval = 100;
     let elapsed = 0;
 
+    // Clear any in-flight roll before starting a new one.
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
     const interval = setInterval(() => {
       elapsed += rollInterval;
       setValue(Math.floor(Math.random() * sides) + 1);
 
       if (elapsed >= rollDuration) {
         clearInterval(interval);
+        intervalRef.current = null;
         setIsRolling(false);
         setValue(Math.floor(Math.random() * sides) + 1);
       }
     }, rollInterval);
+    intervalRef.current = interval;
   };
 
   const getDiceIcon = () => {
