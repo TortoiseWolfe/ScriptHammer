@@ -187,7 +187,13 @@ export async function createPayPalSubscription(
 
 /**
  * Render PayPal Buttons
- * Use this in a React component with a container ref
+ * Use this in a React component with a container ref.
+ *
+ * Provide EITHER `createOrder` (one-time payment; onApprove gets `orderID`)
+ * OR `createSubscription` (recurring; onApprove gets `subscriptionID`). The
+ * PayPal SDK exposes both entry points on Buttons; wiring only the one that's
+ * supplied keeps a subscription button from silently falling back to a
+ * one-time order.
  */
 export async function renderPayPalButtons(
   containerId: string,
@@ -195,7 +201,8 @@ export async function renderPayPalButtons(
     onApprove: (data: any) => void;
     onError?: (error: any) => void;
     onCancel?: () => void;
-    createOrder: () => Promise<string>;
+    createOrder?: () => Promise<string>;
+    createSubscription?: () => Promise<string>;
   }
 ): Promise<void> {
   await loadPayPalSDK();
@@ -204,22 +211,32 @@ export async function renderPayPalButtons(
     throw new Error('PayPal SDK not loaded');
   }
 
-  window.paypal
-    .Buttons({
-      createOrder: async () => {
-        return await options.createOrder();
-      },
-      onApprove: async (data: any) => {
-        options.onApprove(data);
-      },
-      onError: (error: any) => {
-        logger.error('PayPal button error', { error });
-        options.onError?.(error);
-      },
-      onCancel: () => {
-        logger.info('PayPal checkout cancelled');
-        options.onCancel?.();
-      },
-    })
-    .render(`#${containerId}`);
+  if (!options.createOrder && !options.createSubscription) {
+    throw new Error(
+      'renderPayPalButtons requires createOrder or createSubscription'
+    );
+  }
+
+  const buttonConfig: Record<string, unknown> = {
+    onApprove: async (data: any) => {
+      options.onApprove(data);
+    },
+    onError: (error: any) => {
+      logger.error('PayPal button error', { error });
+      options.onError?.(error);
+    },
+    onCancel: () => {
+      logger.info('PayPal checkout cancelled');
+      options.onCancel?.();
+    },
+  };
+
+  if (options.createSubscription) {
+    buttonConfig.createSubscription = async () =>
+      await options.createSubscription!();
+  } else {
+    buttonConfig.createOrder = async () => await options.createOrder!();
+  }
+
+  window.paypal.Buttons(buttonConfig).render(`#${containerId}`);
 }

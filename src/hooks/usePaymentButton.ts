@@ -12,10 +12,11 @@ import {
   createCheckoutSession as createStripeCheckout,
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
-import { stripeConfig } from '@/config/payment';
+import { stripeConfig, paypalConfig } from '@/config/payment';
 import {
   createPayPalOrder,
   approvePayPalOrder,
+  createPayPalSubscription,
   renderPayPalButtons,
 } from '@/lib/payments/paypal';
 import { getPendingCount } from '@/lib/payments/offline-queue';
@@ -193,22 +194,53 @@ export function usePaymentButton(
   // PayPal path: render the SDK Buttons. createOrder creates our intent +
   // the PayPal order; onApprove captures it via the capture Edge Function.
   const mountPayPalButtons = async (containerId: string) => {
-    if (options.type === 'recurring') {
-      // PayPal subscriptions aren't wired yet (#104) — without this guard
-      // the SDK Buttons would silently create a ONE-TIME PayPal order.
-      setError(
-        new Error(
-          'PayPal subscriptions are not yet supported. Use Stripe for recurring payments.'
-        )
-      );
-      return;
-    }
     if (!hasConsent) {
       setError(
         new Error('Payment consent required. Please accept the consent modal.')
       );
       return;
     }
+
+    // Recurring: PayPal subscription flow (createSubscription → user approves
+    // → onApprove gets subscriptionID). No capture step — paypal-webhook owns
+    // the subscriptions row on BILLING.SUBSCRIPTION.ACTIVATED, mirroring the
+    // Stripe subscription path (#104).
+    if (options.type === 'recurring') {
+      const planId = paypalConfig.subscriptionPlanId;
+      if (!planId) {
+        setError(
+          new Error(
+            'PayPal subscription plan not configured. Set NEXT_PUBLIC_PAYPAL_PLAN_ID ' +
+              'to a PayPal billing Plan ID (see docs/PAYMENT-DEPLOYMENT.md).'
+          )
+        );
+        return;
+      }
+      setError(null);
+      try {
+        await renderPayPalButtons(containerId, {
+          createSubscription: async () =>
+            await createPayPalSubscription(planId, options.customerEmail),
+          onApprove: (data: { subscriptionID?: string }) => {
+            // The subscription is created + attributed to the user by the
+            // webhook; the SDK hands us the subscription id as the receipt.
+            options.onSuccess?.(data?.subscriptionID || '');
+          },
+          onError: (err: unknown) => {
+            const e = err instanceof Error ? err : new Error('PayPal error');
+            setError(e);
+            options.onError?.(e);
+          },
+        });
+      } catch (err) {
+        const e =
+          err instanceof Error ? err : new Error('Failed to load PayPal');
+        setError(e);
+        options.onError?.(e);
+      }
+      return;
+    }
+
     setError(null);
     try {
       await renderPayPalButtons(containerId, {
