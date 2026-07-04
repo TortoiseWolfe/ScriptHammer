@@ -39,11 +39,19 @@ export async function getAuthenticatedUserId(req: Request): Promise<string> {
     throw new UnauthorizedError('Empty Authorization token');
   }
 
-  const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
-  const anonKey = Deno.env.get('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  // The platform auto-injects SUPABASE_URL / SUPABASE_ANON_KEY into every
+  // Edge Function; the NEXT_PUBLIC_-prefixed names are a fallback for envs
+  // (Deno tests, legacy Vault secrets) that only carry the browser names.
+  // Preferring the injected names means forks need NO manual URL/anon-key
+  // function secrets.
+  const supabaseUrl =
+    Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
+  const anonKey =
+    Deno.env.get('SUPABASE_ANON_KEY') ??
+    Deno.env.get('NEXT_PUBLIC_SUPABASE_ANON_KEY');
   if (!supabaseUrl || !anonKey) {
     throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY missing in function env'
+      'SUPABASE_URL / SUPABASE_ANON_KEY missing in function env (auto-injected in production; set NEXT_PUBLIC_-prefixed equivalents for local test runs)'
     );
   }
 

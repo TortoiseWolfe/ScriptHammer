@@ -20,7 +20,7 @@
  *   500 Internal Server Error: { error: string } (Stripe call failed)
  *
  * SECURITY MODEL
- *   - JWT verified via NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback)
  *   - service-role client used for the intent lookup (bypasses RLS so we can
  *     read the intent regardless of policy state) — but we DO check
  *     `template_user_id === caller_user_id` manually before proceeding
@@ -40,7 +40,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000';
 

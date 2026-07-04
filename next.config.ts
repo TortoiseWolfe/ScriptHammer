@@ -47,6 +47,13 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // Overridable so production builds can run WHILE the dev server owns .next —
+  // `next dev` and `next build` sharing one distDir race during "Collecting
+  // page data" (spurious PageNotFoundError). scripts/e2e-live-acceptance.sh
+  // sets NEXT_DIST_DIR=.next-acceptance/build for exactly this reason (a
+  // subdir of a named volume: container-local FS, but not a mount point —
+  // export-mode builds rmdir the distDir root at the end).
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   cleanDistDir: true,
   env: {
     NEXT_PUBLIC_PAGESPEED_API_KEY: process.env.NEXT_PUBLIC_PAGESPEED_API_KEY,

@@ -22,7 +22,7 @@
  *   500 Internal Server Error: { error: string }
  *
  * SECURITY MODEL
- *   - JWT verified via NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback)
  *   - The caller's user_id flows into PayPal's subscription `custom_id` so the
  *     webhook can attribute the new subscriptions row to the right user. The
  *     `paypal-webhook` reads `resource.custom_id` to set
@@ -126,7 +126,7 @@ serve(async (req) => {
     // row here — the row is created by `paypal-webhook` on
     // BILLING.SUBSCRIPTION.ACTIVATED (mirroring create-stripe-subscription).
     createClient(
-      Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 

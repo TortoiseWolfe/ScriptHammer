@@ -22,7 +22,7 @@
  *   500 Internal Server Error: { error: string } (provider call failed)
  *
  * SECURITY MODEL
- *   - JWT verified via NEXT_PUBLIC_SUPABASE_ANON_KEY (see _shared/auth.ts)
+ *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (see _shared/auth.ts)
  *   - service-role client used for the subscription lookup + update (bypasses
  *     RLS so we can read/write the row regardless of policy state) — but we
  *     DO check `template_user_id === caller_user_id` manually before acting,
@@ -45,7 +45,8 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   httpClient: Stripe.createFetchHttpClient(),
 });
 
-const supabaseUrl = Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // PayPal base URL: sandbox by default, overridable for live via env.
