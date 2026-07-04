@@ -76,7 +76,15 @@ jobs:
       - name: Build application
         run: pnpm build
         env:
-          GITHUB_ACTIONS: false
+          # The E2E suite serves this build from the ROOT (`serve out -l 3000`).
+          # DISABLE_BASE_PATH forces a basePath-less build so /_next/*.js assets
+          # resolve at /. If the build baked in the GitHub Pages basePath
+          # (/ScriptHammer), every /ScriptHammer/_next/*.js would 404 under
+          # serve-at-root, React would never hydrate, and the whole suite fails.
+          # A step-level `GITHUB_ACTIONS: false` is NOT reliable here — the
+          # runner re-injects GITHUB_ACTIONS=true into the child processes
+          # `pnpm build` spawns (scripts/detect-project.js / next.config execSync).
+          DISABLE_BASE_PATH: 'true'
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY }}
           NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ vars.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
           NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: ${{ vars.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID }}
