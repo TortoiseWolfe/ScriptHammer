@@ -56,6 +56,12 @@ DROP TABLE IF EXISTS user_connections CASCADE;
 DROP TABLE IF EXISTS auth_audit_logs CASCADE;
 DROP TABLE IF EXISTS user_profiles CASCADE;
 
+-- Pre-#49 legacy leftovers (#170) — no-ops on a clean DB, dropped here so a
+-- full teardown clears them too if run against an older database.
+DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles;
+DROP TABLE IF EXISTS audit_logs CASCADE;
+DROP TABLE IF EXISTS profiles CASCADE;
+
 -- Drop trigger on auth.users if exists
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
@@ -70,6 +76,9 @@ DROP FUNCTION IF EXISTS check_rate_limit(TEXT, TEXT, INET) CASCADE;
 DROP FUNCTION IF EXISTS record_failed_attempt(TEXT, TEXT, INET) CASCADE;
 DROP FUNCTION IF EXISTS update_conversation_timestamp() CASCADE;
 DROP FUNCTION IF EXISTS assign_sequence_number() CASCADE;
+-- Pre-#49 legacy signup-trigger functions (#170)
+DROP FUNCTION IF EXISTS handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS handle_updated_at() CASCADE;
 
 -- =========================================
 -- CLEANUP COMPLETE
