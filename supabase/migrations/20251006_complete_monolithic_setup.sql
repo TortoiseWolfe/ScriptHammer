@@ -2505,5 +2505,29 @@ BEGIN
   END IF;
 END $$;
 
+-- ============================================================================
+-- PART 11: LEGACY CLEANUP (#49 / #170)
+-- ============================================================================
+-- Pre-#49 leftovers from an old conflicting `00000000000000_rls_foundation.sql`
+-- migration (since deleted): the legacy `profiles` / `audit_logs` tables and
+-- the old `handle_new_user()` signup trigger function that fed them (plus its
+-- `handle_updated_at()` helper + `profiles_updated_at` trigger). The canonical
+-- schema uses `user_profiles` / `auth_audit_logs` written by
+-- `create_user_profile()` (see PART 8 + the on_auth_user_created trigger).
+--
+-- A fresh install from this file never creates these objects, so this block is
+-- ONLY to converge existing databases (prod) with a clean install. Verified
+-- safe on prod 2026-07-04 by the schema-drift audit (#170): both tables held
+-- ZERO real-user rows (audit_logs = 8263 legacy `user.signup` events, all
+-- null/E2E; profiles = 16 E2E throwaways), no view/FK/canonical-function
+-- referenced them, and handle_new_user was orphaned (no trigger fired it).
+-- Dropping handle_new_user/handle_updated_at also clears their
+-- function_search_path_mutable security-advisor flags.
+DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles;
+DROP TABLE IF EXISTS public.audit_logs CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
+
 -- Commit the transaction - everything succeeded
 COMMIT;
