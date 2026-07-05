@@ -2190,6 +2190,12 @@ DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_me
 CREATE POLICY "Members can view conversation members" ON conversation_members
   FOR SELECT USING (
     is_conversation_member(conversation_id)
+    -- The creator must also read member rows they're inserting during
+    -- createGroup(): the INSERT ... RETURNING on conversation_members runs
+    -- while membership is still being established, so a membership-only check
+    -- races (is_conversation_member can't see the just-inserted rows yet) and
+    -- the returning read intermittently 403s → "Failed to add group members".
+    OR is_conversation_creator(conversation_id)
   );
 
 -- INSERT: existing members can add others (connection validation in the
