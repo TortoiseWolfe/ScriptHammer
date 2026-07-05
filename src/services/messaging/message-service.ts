@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
+import { groupKeyService } from './group-key-service';
 import { offlineQueueService } from './offline-queue-service';
 import { cacheService } from '@/lib/messaging/cache';
 import { createLogger } from '@/lib/logger';
@@ -73,7 +74,12 @@ async function getSessionWithRetry(
 // the first successful fetch. Keyed by conversation_id.
 const conversationCache = new Map<
   string,
-  { participant_1_id: string; participant_2_id: string; is_group: boolean }
+  {
+    participant_1_id: string;
+    participant_2_id: string;
+    is_group: boolean;
+    current_key_version?: number;
+  }
 >();
 
 // Cache derived shared secrets so sendMessage can encrypt offline.
@@ -98,6 +104,7 @@ export async function cacheConversationData(
     participant_1_id: string;
     participant_2_id: string;
     is_group: boolean;
+    current_key_version?: number;
   }
 ): Promise<void> {
   conversationCache.set(conversationId, data);
@@ -225,7 +232,9 @@ export class MessageService {
       if (!conversation) {
         const { data, error: convError } = await msgClient
           .from('conversations')
-          .select('participant_1_id, participant_2_id, is_group')
+          .select(
+            'participant_1_id, participant_2_id, is_group, current_key_version'
+          )
           .eq('id', input.conversation_id)
           .maybeSingle();
 
@@ -239,79 +248,91 @@ export class MessageService {
           participant_1_id: data.participant_1_id ?? '',
           participant_2_id: data.participant_2_id ?? '',
           is_group: data.is_group,
+          current_key_version: data.current_key_version ?? 1,
         };
         conversation = cached;
         conversationCache.set(input.conversation_id, cached);
       }
 
-      // For 1-to-1 conversations, determine recipient ID
-      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      // Encrypt the message content. Both paths produce the same
+      // { ciphertext, iv } and a key_version to stamp on the row:
+      //   - Group conversations use the shared symmetric group key
+      //     (already distributed per-member on join) keyed by
+      //     current_key_version.
+      //   - 1-to-1 conversations derive a per-pair ECDH shared secret.
+      let encrypted: Awaited<
+        ReturnType<typeof encryptionService.encryptMessage>
+      >;
+      let keyVersion = 1;
+
       if (conversation.is_group) {
-        throw new ValidationError(
-          'Group message encryption not yet implemented',
-          'conversation_id'
+        keyVersion = conversation.current_key_version ?? 1;
+        const groupKey = await groupKeyService.getGroupKeyForConversation(
+          input.conversation_id,
+          keyVersion
         );
-      }
+        encrypted = await encryptionService.encryptMessage(content, groupKey);
+      } else {
+        const recipientId =
+          conversation.participant_1_id === user.id
+            ? conversation.participant_2_id
+            : conversation.participant_1_id;
 
-      const recipientId =
-        conversation.participant_1_id === user.id
-          ? conversation.participant_2_id
-          : conversation.participant_1_id;
-
-      if (!recipientId) {
-        throw new ValidationError(
-          'Invalid conversation: no recipient found',
-          'conversation_id'
-        );
-      }
-
-      // Invalidate shared secret cache if sender's keys changed
-      // (e.g. after resetEncryptionKeys + ReAuthModal re-derivation).
-      if (cachedSenderPrivateKey !== senderKeys.privateKey) {
-        sharedSecretCache.clear();
-        cachedSenderPrivateKey = senderKeys.privateKey;
-      }
-
-      // Get or derive shared secret for this recipient
-      let sharedSecret = sharedSecretCache.get(recipientId) ?? null;
-      const sharedSecretSource = sharedSecret ? 'cache' : 'derive';
-      if (!sharedSecret) {
-        const recipientPublicKey =
-          await keyManagementService.getUserPublicKey(recipientId);
-
-        if (!recipientPublicKey) {
+        if (!recipientId) {
           throw new ValidationError(
-            "This person needs to sign in before you can message them. Messages cannot be delivered until they've logged in at least once to set up encryption.",
+            'Invalid conversation: no recipient found',
             'conversation_id'
           );
         }
 
-        const recipientPublicKeyCrypto = await crypto.subtle.importKey(
-          'jwk',
-          recipientPublicKey,
-          { name: 'ECDH', namedCurve: 'P-256' },
-          false,
-          []
-        );
+        // Invalidate shared secret cache if sender's keys changed
+        // (e.g. after resetEncryptionKeys + ReAuthModal re-derivation).
+        if (cachedSenderPrivateKey !== senderKeys.privateKey) {
+          sharedSecretCache.clear();
+          cachedSenderPrivateKey = senderKeys.privateKey;
+        }
 
-        sharedSecret = await encryptionService.deriveSharedSecret(
-          senderKeys.privateKey,
-          recipientPublicKeyCrypto
+        // Get or derive shared secret for this recipient
+        let sharedSecret = sharedSecretCache.get(recipientId) ?? null;
+        const sharedSecretSource = sharedSecret ? 'cache' : 'derive';
+        if (!sharedSecret) {
+          const recipientPublicKey =
+            await keyManagementService.getUserPublicKey(recipientId);
+
+          if (!recipientPublicKey) {
+            throw new ValidationError(
+              "This person needs to sign in before you can message them. Messages cannot be delivered until they've logged in at least once to set up encryption.",
+              'conversation_id'
+            );
+          }
+
+          const recipientPublicKeyCrypto = await crypto.subtle.importKey(
+            'jwk',
+            recipientPublicKey,
+            { name: 'ECDH', namedCurve: 'P-256' },
+            false,
+            []
+          );
+
+          sharedSecret = await encryptionService.deriveSharedSecret(
+            senderKeys.privateKey,
+            recipientPublicKeyCrypto
+          );
+          sharedSecretCache.set(recipientId, sharedSecret);
+        }
+
+        logger.debug('sendMessage sharedSecret', {
+          source: sharedSecretSource,
+          recipientIdPrefix: recipientId.slice(0, 8),
+          online: navigator.onLine,
+        });
+
+        // Encrypt message content
+        encrypted = await encryptionService.encryptMessage(
+          content,
+          sharedSecret
         );
-        sharedSecretCache.set(recipientId, sharedSecret);
       }
-
-      logger.debug('sendMessage sharedSecret', {
-        source: sharedSecretSource,
-        recipientIdPrefix: recipientId.slice(0, 8),
-        online: navigator.onLine,
-      });
-
-      // Encrypt message content
-      const encrypted = await encryptionService.encryptMessage(
-        content,
-        sharedSecret
-      );
 
       // Check if online - if offline, queue immediately
       if (!navigator.onLine) {
@@ -323,6 +344,7 @@ export class MessageService {
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
           content,
+          key_version: keyVersion,
         });
 
         // Return a placeholder message object
@@ -339,7 +361,7 @@ export class MessageService {
           delivered_at: null,
           read_at: null,
           created_at: new Date().toISOString(),
-          key_version: 1,
+          key_version: keyVersion,
           is_system_message: false,
           system_message_type: null,
         };
@@ -404,6 +426,7 @@ export class MessageService {
                 encrypted_content: encrypted.ciphertext,
                 initialization_vector: encrypted.iv,
                 sequence_number: nextSequenceNumber,
+                key_version: keyVersion,
                 deleted: false,
                 edited: false,
               })
@@ -504,6 +527,7 @@ export class MessageService {
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
           content,
+          key_version: keyVersion,
         });
 
         // Return a placeholder message object
@@ -520,7 +544,7 @@ export class MessageService {
           delivered_at: null,
           read_at: null,
           created_at: new Date().toISOString(),
-          key_version: 1,
+          key_version: keyVersion,
           is_system_message: false,
           system_message_type: null,
         };
@@ -679,7 +703,9 @@ export class MessageService {
       // Get conversation details for decryption
       const { data: conversation } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id, is_group')
+        .select(
+          'participant_1_id, participant_2_id, is_group, current_key_version'
+        )
         .eq('id', conversationId)
         .single();
 
@@ -687,12 +713,17 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      // Group conversations use symmetric encryption: each message is decrypted
+      // with the group key at that message's key_version (so messages sent
+      // before a key rotation still decrypt). Resolve keys lazily + cache by
+      // version to avoid re-deriving per message.
       if (conversation.is_group) {
-        throw new ValidationError(
-          'Group message decryption not yet implemented',
-          'conversationId'
-        );
+        return await this.getGroupMessageHistory({
+          conversationId,
+          userId: user.id,
+          messagesToDecrypt,
+          hasMore,
+        });
       }
 
       // Determine other participant (1-to-1 only)
@@ -907,6 +938,107 @@ export class MessageService {
   }
 
   /**
+   * Decrypt a page of GROUP-conversation messages.
+   *
+   * Unlike 1:1 (one ECDH shared secret for the whole page), each group message
+   * is decrypted with the symmetric group key at its own `key_version` — so
+   * messages sent before a key rotation still decrypt. Group keys are resolved
+   * lazily and cached per version (groupKeyService also caches internally).
+   * Decryption failures degrade to a placeholder, matching the 1:1 path.
+   */
+  private async getGroupMessageHistory(params: {
+    conversationId: string;
+    userId: string;
+    messagesToDecrypt: Message[];
+    hasMore: boolean;
+  }): Promise<MessageHistory> {
+    const { conversationId, userId, messagesToDecrypt, hasMore } = params;
+    const msgClient = createMessagingClient(createClient());
+
+    if (messagesToDecrypt.length === 0) {
+      return { messages: [], has_more: false, cursor: null };
+    }
+
+    // Fetch display profiles for every distinct sender in this page.
+    const senderIds = [...new Set(messagesToDecrypt.map((m) => m.sender_id))];
+    const { data: profiles } = await msgClient
+      .from('user_profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', senderIds);
+    const profileMap = new Map<string, UserProfile>();
+    profiles?.forEach((p) => profileMap.set(p.id, p as UserProfile));
+
+    // Resolve (and memoize) the group key for a given key_version.
+    const keyByVersion = new Map<number, Promise<CryptoKey>>();
+    const groupKeyFor = (version: number): Promise<CryptoKey> => {
+      let keyPromise = keyByVersion.get(version);
+      if (!keyPromise) {
+        keyPromise = groupKeyService.getGroupKeyForConversation(
+          conversationId,
+          version
+        );
+        keyByVersion.set(version, keyPromise);
+      }
+      return keyPromise;
+    };
+
+    const decryptedMessages: DecryptedMessage[] = await Promise.all(
+      messagesToDecrypt.map(async (msg) => {
+        const senderProfile = profileMap.get(msg.sender_id);
+        const base = {
+          id: msg.id,
+          conversation_id: msg.conversation_id,
+          sender_id: msg.sender_id,
+          sequence_number: msg.sequence_number,
+          deleted: msg.deleted,
+          edited: msg.edited,
+          edited_at: msg.edited_at,
+          delivered_at: msg.delivered_at,
+          read_at: msg.read_at,
+          created_at: msg.created_at,
+          isOwn: msg.sender_id === userId,
+          senderName:
+            senderProfile?.display_name || senderProfile?.username || 'Unknown',
+        };
+        try {
+          const groupKey = await groupKeyFor(msg.key_version ?? 1);
+          const content = await encryptionService.decryptMessage(
+            msg.encrypted_content,
+            msg.initialization_vector,
+            groupKey
+          );
+          return { ...base, content };
+        } catch (decryptError) {
+          const err = decryptError as Error;
+          logger.error('Group message decryption FAILED', {
+            messageId: msg.id,
+            keyVersion: msg.key_version,
+            errorName: String(err.name || 'unknown'),
+            errorMessage: String(err.message || 'no message'),
+          });
+          return {
+            ...base,
+            content: 'Encrypted with previous keys',
+            decryptionError: true,
+          };
+        }
+      })
+    );
+
+    // Chronological order (oldest first), matching the 1:1 path.
+    decryptedMessages.reverse();
+
+    return {
+      messages: decryptedMessages,
+      has_more: hasMore,
+      cursor:
+        decryptedMessages.length > 0
+          ? decryptedMessages[0].sequence_number
+          : null,
+    };
+  }
+
+  /**
    * Mark messages as read by updating their read_at timestamp
    * Task: T063
    *
@@ -1106,7 +1238,9 @@ export class MessageService {
       // Get conversation details for encryption
       const { data: conversation, error: convError } = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id, is_group')
+        .select(
+          'participant_1_id, participant_2_id, is_group, current_key_version'
+        )
         .eq('id', message.conversation_id)
         .single();
 
@@ -1114,69 +1248,78 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversation_id');
       }
 
-      // Group conversations use symmetric encryption (handled separately in Phase 4)
+      // Re-encrypt the edited content. Groups use the current group key
+      // (a rotation may have happened since the original send, so re-key to
+      // the latest version); 1:1 derives the per-pair ECDH shared secret.
+      let encrypted: Awaited<
+        ReturnType<typeof encryptionService.encryptMessage>
+      >;
+      let keyVersion = 1;
+
       if (conversation.is_group) {
-        throw new ValidationError(
-          'Group message editing not yet implemented',
-          'conversation_id'
+        keyVersion = conversation.current_key_version ?? 1;
+        const groupKey = await groupKeyService.getGroupKeyForConversation(
+          message.conversation_id,
+          keyVersion
+        );
+        encrypted = await encryptionService.encryptMessage(content, groupKey);
+      } else {
+        // Determine recipient ID (1-to-1 only)
+        const recipientId =
+          conversation.participant_1_id === user.id
+            ? conversation.participant_2_id
+            : conversation.participant_1_id;
+
+        if (!recipientId) {
+          throw new ValidationError(
+            'Invalid conversation: no recipient found',
+            'conversation_id'
+          );
+        }
+
+        // Get sender's derived keys from memory (with cache restore fallback)
+        let senderKeys = keyManagementService.getCurrentKeys();
+        if (!senderKeys) {
+          await keyManagementService.restoreKeysFromCache(user.id);
+          senderKeys = keyManagementService.getCurrentKeys();
+        }
+        if (!senderKeys) {
+          throw new EncryptionLockedError(
+            'Your encryption keys are not available. Please sign in again to edit messages.'
+          );
+        }
+
+        // Get recipient's public key
+        const recipientPublicKey =
+          await keyManagementService.getUserPublicKey(recipientId);
+
+        if (!recipientPublicKey) {
+          throw new EncryptionError(
+            'Cannot edit message: recipient encryption keys not available'
+          );
+        }
+
+        // Import recipient's public key
+        const recipientPublicKeyCrypto = await crypto.subtle.importKey(
+          'jwk',
+          recipientPublicKey,
+          { name: 'ECDH', namedCurve: 'P-256' },
+          false,
+          []
+        );
+
+        // Derive shared secret using sender's derived private key
+        const sharedSecret = await encryptionService.deriveSharedSecret(
+          senderKeys.privateKey,
+          recipientPublicKeyCrypto
+        );
+
+        // Encrypt new content
+        encrypted = await encryptionService.encryptMessage(
+          content,
+          sharedSecret
         );
       }
-
-      // Determine recipient ID (1-to-1 only)
-      const recipientId =
-        conversation.participant_1_id === user.id
-          ? conversation.participant_2_id
-          : conversation.participant_1_id;
-
-      if (!recipientId) {
-        throw new ValidationError(
-          'Invalid conversation: no recipient found',
-          'conversation_id'
-        );
-      }
-
-      // Get sender's derived keys from memory (with cache restore fallback)
-      let senderKeys = keyManagementService.getCurrentKeys();
-      if (!senderKeys) {
-        await keyManagementService.restoreKeysFromCache(user.id);
-        senderKeys = keyManagementService.getCurrentKeys();
-      }
-      if (!senderKeys) {
-        throw new EncryptionLockedError(
-          'Your encryption keys are not available. Please sign in again to edit messages.'
-        );
-      }
-
-      // Get recipient's public key
-      const recipientPublicKey =
-        await keyManagementService.getUserPublicKey(recipientId);
-
-      if (!recipientPublicKey) {
-        throw new EncryptionError(
-          'Cannot edit message: recipient encryption keys not available'
-        );
-      }
-
-      // Import recipient's public key
-      const recipientPublicKeyCrypto = await crypto.subtle.importKey(
-        'jwk',
-        recipientPublicKey,
-        { name: 'ECDH', namedCurve: 'P-256' },
-        false,
-        []
-      );
-
-      // Derive shared secret using sender's derived private key
-      const sharedSecret = await encryptionService.deriveSharedSecret(
-        senderKeys.privateKey,
-        recipientPublicKeyCrypto
-      );
-
-      // Encrypt new content
-      const encrypted = await encryptionService.encryptMessage(
-        content,
-        sharedSecret
-      );
 
       // Update message in database
       const { error: updateError } = await msgClient
@@ -1184,6 +1327,7 @@ export class MessageService {
         .update({
           encrypted_content: encrypted.ciphertext,
           initialization_vector: encrypted.iv,
+          key_version: keyVersion,
           edited: true,
           edited_at: new Date().toISOString(),
         })
@@ -1330,12 +1474,32 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Group conversations use conversation_members.archived field
+      // Group conversations archive per-member via conversation_members.archived
+      // (1:1 uses the conversation-level archived_by_participant_N columns below).
       if (conversation.is_group) {
-        throw new ValidationError(
-          'Group conversation archiving not yet implemented',
-          'conversationId'
-        );
+        const { error: memberError, data: memberData } = await msgClient
+          .from('conversation_members')
+          .update({ archived: true })
+          .eq('conversation_id', conversationId)
+          .eq('user_id', user.id)
+          .is('left_at', null)
+          .select();
+
+        if (memberError) {
+          throw new ConnectionError(
+            'Failed to archive group conversation: ' + memberError.message
+          );
+        }
+        if (!memberData || memberData.length === 0) {
+          throw new ValidationError(
+            'You are not a member of this conversation',
+            'conversationId'
+          );
+        }
+        logger.debug('archiveConversation (group) success', {
+          conversationId,
+        });
+        return;
       }
 
       // Determine which column to update based on user's participant role (1-to-1 only)
@@ -1416,12 +1580,32 @@ export class MessageService {
         throw new ValidationError('Conversation not found', 'conversationId');
       }
 
-      // Group conversations use conversation_members.archived field
+      // Group conversations unarchive per-member via conversation_members.archived
+      // (1:1 uses the conversation-level archived_by_participant_N columns below).
       if (conversation.is_group) {
-        throw new ValidationError(
-          'Group conversation unarchiving not yet implemented',
-          'conversationId'
-        );
+        const { error: memberError, data: memberData } = await msgClient
+          .from('conversation_members')
+          .update({ archived: false })
+          .eq('conversation_id', conversationId)
+          .eq('user_id', user.id)
+          .is('left_at', null)
+          .select();
+
+        if (memberError) {
+          throw new ConnectionError(
+            'Failed to unarchive group conversation: ' + memberError.message
+          );
+        }
+        if (!memberData || memberData.length === 0) {
+          throw new ValidationError(
+            'You are not a member of this conversation',
+            'conversationId'
+          );
+        }
+        logger.debug('unarchiveConversation (group) success', {
+          conversationId,
+        });
+        return;
       }
 
       // Determine which column to update based on user's participant role (1-to-1 only)

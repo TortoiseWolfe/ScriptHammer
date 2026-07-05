@@ -18,6 +18,7 @@ import {
   openAuthedPage,
   handleReAuthModal,
   dismissCookieBanner,
+  fillMessageInput,
   DEFAULT_TEST_PASSWORD,
   type IsolatedConnection,
 } from '../utils/test-user-factory';
@@ -178,6 +179,84 @@ test.describe('Group Chat E2E', () => {
           waitUntil: 'domcontentloaded',
         });
       }
+    } finally {
+      await viewer.close();
+    }
+  });
+
+  test('sends and reads an encrypted message in a UI-created group (#182)', async ({
+    browser,
+  }) => {
+    // Creating the group through the UI runs createGroup() in-browser, which
+    // generates + distributes the group AES key (group_keys). Then sending +
+    // re-opening the group exercises the real group-message encrypt/decrypt
+    // paths — which used to throw "not yet implemented".
+    const viewer = await openMessagesAsViewer(browser, fixture!);
+    try {
+      const sidebar = viewer.page.locator('[data-testid="unified-sidebar"]');
+      await expect(sidebar).toBeVisible({ timeout: 30000 });
+      await sidebar.locator('a:has-text("New Group")').first().click();
+      await viewer.page.waitForURL(/.*\/messages\/new-group/, {
+        timeout: 10000,
+      });
+
+      await viewer.page.locator('#group-name').fill(`Grp ${Date.now()}`);
+      const firstConnection = viewer.page
+        .locator('button[role="option"]')
+        .first();
+      await expect(firstConnection).toBeVisible({ timeout: 30000 });
+      await firstConnection.click();
+
+      const createButton = viewer.page.locator(
+        'button:has-text("Create Group")'
+      );
+      await expect(createButton).toBeEnabled({ timeout: 15000 });
+
+      // Capture browser console so a createGroup failure is visible in logs.
+      viewer.page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+          console.log(`[browser error] ${msg.text()}`);
+        }
+      });
+
+      await createButton.click();
+
+      // createGroup runs in-browser: generate + ECDH-distribute the group key
+      // to every member, then insert. That can take a while (Argon2/ECDH), and
+      // re-deriving the private key may surface the ReAuth modal — handle it
+      // while we wait for the navigation to /messages?conversation=<id>.
+      await handleReAuthModal(viewer.page, DEFAULT_TEST_PASSWORD);
+
+      // Fail fast + informatively if creation errored instead of navigating.
+      const errorAlert = viewer.page.locator('.alert-error');
+      await Promise.race([
+        viewer.page.waitForURL(/.*\/messages\?conversation=/, {
+          timeout: 60000,
+        }),
+        errorAlert
+          .waitFor({ state: 'visible', timeout: 60000 })
+          .then(async () => {
+            const msg = await errorAlert.innerText().catch(() => '');
+            throw new Error(`Group creation surfaced an error: ${msg}`);
+          }),
+      ]);
+
+      await handleReAuthModal(viewer.page, DEFAULT_TEST_PASSWORD);
+
+      // No "not yet implemented" / decryption error surfaced on open.
+      await expect(
+        viewer.page.locator('text=/not yet implemented/i')
+      ).toHaveCount(0);
+
+      // Send a message into the group (encrypt path).
+      const body = `group hello ${Date.now()}`;
+      await fillMessageInput(viewer.page, body);
+      await viewer.page.getByRole('button', { name: /Send message/i }).click();
+
+      // The sent message renders (own message decrypts + displays).
+      await expect(viewer.page.getByText(body)).toBeVisible({
+        timeout: 20000,
+      });
     } finally {
       await viewer.close();
     }
