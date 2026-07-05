@@ -6,6 +6,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { usePaymentConsent } from '@/hooks/usePaymentConsent';
 
 export interface PaymentConsentModalProps {
@@ -192,13 +193,13 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
           By accepting, you agree to our payment processing terms.
           <br />
           Read our{' '}
-          <a
+          <Link
             href="/privacy"
             className="link-hover link"
             aria-label="Read privacy policy"
           >
             Privacy Policy
-          </a>{' '}
+          </Link>{' '}
           for more details.
         </p>
       </div>

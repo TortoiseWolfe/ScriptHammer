@@ -2,7 +2,7 @@
  * PaymentStatusDisplay Component Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PaymentStatusDisplay } from './PaymentStatusDisplay';
@@ -424,11 +424,24 @@ describe('PaymentStatusDisplay', () => {
 
   describe('US3+US4 — switch provider + recovery disclosure (#43)', () => {
     // Stub SwitchProviderPanel to a sentinel so we can assert wiring without
-    // re-mounting the whole sub-tree (it has its own dedicated tests).
+    // re-mounting the whole sub-tree (it has its own dedicated tests). The
+    // "fire switch success" button lets tests drive onSwitchSuccess so the
+    // parent's navigation (window.location.href) is exercised (#159).
     vi.mock('@/components/payment/SwitchProviderPanel', () => ({
       SwitchProviderPanel: (props: Record<string, unknown>) => (
         <div data-testid="switch-provider-panel">
           switch panel for {String(props.parentIntentId)}
+          <button
+            type="button"
+            data-testid="fire-switch-success"
+            onClick={() =>
+              (props.onSwitchSuccess as (id: string) => void)?.(
+                'new-intent-999'
+              )
+            }
+          >
+            fire switch success
+          </button>
         </div>
       ),
     }));
@@ -584,6 +597,87 @@ describe('PaymentStatusDisplay', () => {
       // Retry step is struck through; support link is bold
       const retryStep = screen.getByText(/try again — payment failures/i);
       expect(retryStep).toHaveClass('line-through');
+    });
+  });
+
+  describe('basePath-aware navigation (issue #159)', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      // Vitest doesn't load .env.local, but Docker injects .env into the
+      // container's process.env — so set the base path explicitly per case
+      // rather than relying on the ambient value.
+      process.env = { ...originalEnv };
+    });
+
+    afterEach(() => {
+      process.env = originalEnv;
+    });
+
+    function setupRecoverable() {
+      const failed = createMockResult('failed');
+      failed.error_code = 'card_declined';
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+    }
+
+    /** jsdom location stub that records href assignments instead of navigating. */
+    function stubLocation(): { href: string } {
+      const loc = { href: '' } as { href: string };
+      Object.defineProperty(window, 'location', {
+        value: loc,
+        writable: true,
+        configurable: true,
+      });
+      return loc;
+    }
+
+    async function openSwitchPanelAndFire() {
+      const user = userEvent.setup();
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      await user.click(
+        screen.getByRole('button', {
+          name: /use a different payment method/i,
+        })
+      );
+      await user.click(screen.getByTestId('fire-switch-success'));
+    }
+
+    it('prefixes the retry-success navigation with the base path', async () => {
+      process.env.NEXT_PUBLIC_BASE_PATH = '/ScriptHammer';
+      setupRecoverable();
+      const loc = stubLocation();
+      await openSwitchPanelAndFire();
+      expect(loc.href).toBe('/ScriptHammer/payment-result?id=new-intent-999');
+    });
+
+    it('navigates to the unprefixed path when no base path is set', async () => {
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+      setupRecoverable();
+      const loc = stubLocation();
+      await openSwitchPanelAndFire();
+      expect(loc.href).toBe('/payment-result?id=new-intent-999');
+    });
+
+    it('routes the support link through next/link so it inherits the base path', () => {
+      const failed = createMockResult('failed');
+      failed.error_code = 'expired_card'; // non-recoverable → button-style link
+      vi.mocked(usePaymentRealtime).mockReturnValue({
+        paymentResult: failed,
+        loading: false,
+        error: null,
+      });
+      render(<PaymentStatusDisplay paymentResultId="test-id" />);
+      const link = screen.getByRole('link', { name: /contact support/i });
+      // next/link renders an <a href="/contact">; it prepends the runtime
+      // basePath (__NEXT_ROUTER_BASEPATH) in the real app, which jsdom doesn't
+      // populate — so we assert the anchor points at the app-relative route.
+      // The prefixed form is pinned end-to-end by the basePath E2E project (#157).
+      expect(link.tagName).toBe('A');
+      expect(link).toHaveAttribute('href', '/contact');
     });
   });
 });
