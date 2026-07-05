@@ -63,6 +63,7 @@ export class OfflineQueueService {
       | 'encrypted_content'
       | 'initialization_vector'
       | 'content'
+      | 'key_version'
     >
   ): Promise<QueuedMessage> {
     const queuedMessage: QueuedMessage = {
@@ -215,6 +216,11 @@ export class OfflineQueueService {
               encrypted_content: queuedMsg.encrypted_content,
               initialization_vector: queuedMsg.initialization_vector,
               sequence_number: nextSequenceNumber,
+              // Preserve the group-key version the content was encrypted under
+              // (undefined for 1:1 → the column defaults to 1).
+              ...(queuedMsg.key_version != null
+                ? { key_version: queuedMsg.key_version }
+                : {}),
               deleted: false,
               edited: false,
             })

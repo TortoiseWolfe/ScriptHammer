@@ -98,6 +98,13 @@ vi.mock('../offline-queue-service', () => ({
   },
 }));
 
+// Mock group-key service (used for group message encrypt/decrypt)
+vi.mock('../group-key-service', () => ({
+  groupKeyService: {
+    getGroupKeyForConversation: vi.fn(),
+  },
+}));
+
 // Mock message cache
 vi.mock('@/lib/messaging/cache', () => ({
   cacheService: {
@@ -111,6 +118,7 @@ let encryptionService: any;
 let keyManagementService: any;
 let offlineQueueService: any;
 let cacheService: any;
+let groupKeyService: any;
 
 // The service exports under test, re-imported per test after resetModules()
 let MessageService: any;
@@ -175,6 +183,7 @@ beforeEach(async () => {
   ({ keyManagementService } = await import('../key-service'));
   ({ offlineQueueService } = await import('../offline-queue-service'));
   ({ cacheService } = await import('@/lib/messaging/cache'));
+  ({ groupKeyService } = await import('../group-key-service'));
 
   // Sensible defaults
   setOnline(true);
@@ -382,20 +391,74 @@ describe('MessageService', () => {
       ).rejects.toThrow('encryption keys are not available');
     });
 
-    it('throws ValidationError for group conversations', async () => {
+    it('encrypts a group message with the group key and inserts with key_version', async () => {
+      setOnline(true);
+      keyManagementService.getCurrentKeys.mockReturnValue({
+        privateKey: {} as CryptoKey,
+        publicKey: {} as CryptoKey,
+      });
+      const groupKey = { type: 'group-key' } as unknown as CryptoKey;
+      groupKeyService.getGroupKeyForConversation.mockResolvedValue(groupKey);
+      encryptionService.encryptMessage.mockResolvedValue({
+        ciphertext: 'group-cipher',
+        iv: 'group-iv',
+      });
+
+      const insertSpy = vi.fn().mockReturnThis();
       mockMsgFrom.mockImplementation((table: string) => {
         if (table === 'conversations') {
-          return createMockQueryBuilder({ ...baseConv, is_group: true }, null);
+          return createMockQueryBuilder(
+            { ...baseConv, is_group: true, current_key_version: 3 },
+            null
+          );
+        }
+        if (table === 'messages') {
+          // last-sequence lookup returns null → nextSequenceNumber = 1;
+          // insert resolves a row.
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: (payload: any) => {
+              insertSpy(payload);
+              return {
+                select: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({
+                  data: { id: MESSAGE_ID, ...payload },
+                  error: null,
+                }),
+              };
+            },
+            update: vi.fn().mockReturnThis(),
+          };
         }
         return createMockQueryBuilder(null, null);
       });
 
-      await expect(
-        messageService.sendMessage({
-          conversation_id: CONVERSATION_ID,
-          content: 'group msg',
+      await messageService.sendMessage({
+        conversation_id: CONVERSATION_ID,
+        content: 'group msg',
+      });
+
+      // Encrypted with the group key at the conversation's current_key_version…
+      expect(groupKeyService.getGroupKeyForConversation).toHaveBeenCalledWith(
+        CONVERSATION_ID,
+        3
+      );
+      expect(encryptionService.encryptMessage).toHaveBeenCalledWith(
+        'group msg',
+        groupKey
+      );
+      // …and the row is stamped with that key_version.
+      expect(insertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encrypted_content: 'group-cipher',
+          initialization_vector: 'group-iv',
+          key_version: 3,
         })
-      ).rejects.toThrow('Group message encryption not yet implemented');
+      );
     });
   });
 
@@ -465,6 +528,71 @@ describe('MessageService', () => {
       const result = await messageService.getMessageHistory(CONVERSATION_ID);
 
       expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].decryptionError).toBe(true);
+      expect(result.messages[0].content).toBe('Encrypted with previous keys');
+    });
+
+    it('decrypts group messages with the group key at each message key_version', async () => {
+      const groupMsg = { ...messageRow, key_version: 2 };
+      const groupKey = { type: 'group-key' } as unknown as CryptoKey;
+      groupKeyService.getGroupKeyForConversation.mockResolvedValue(groupKey);
+      encryptionService.decryptMessage.mockResolvedValue('group hello');
+
+      mockMsgFrom.mockImplementation((table: string) => {
+        if (table === 'messages') {
+          return createMockQueryBuilder([groupMsg], null);
+        }
+        if (table === 'conversations') {
+          return createMockQueryBuilder(
+            { ...conv, is_group: true, current_key_version: 2 },
+            null
+          );
+        }
+        if (table === 'user_profiles') {
+          return createMockQueryBuilder(
+            [{ id: OTHER_USER_ID, username: 'them', display_name: 'Them' }],
+            null
+          );
+        }
+        return createMockQueryBuilder(null, null);
+      });
+
+      const result = await messageService.getMessageHistory(CONVERSATION_ID);
+
+      // Resolved the group key by the MESSAGE's key_version (not the conv's).
+      expect(groupKeyService.getGroupKeyForConversation).toHaveBeenCalledWith(
+        CONVERSATION_ID,
+        2
+      );
+      expect(encryptionService.decryptMessage).toHaveBeenCalledWith(
+        'enc',
+        'iv',
+        groupKey
+      );
+      expect(result.messages).toHaveLength(1);
+      expect(result.messages[0].content).toBe('group hello');
+    });
+
+    it('shows the placeholder when a group message fails to decrypt', async () => {
+      const groupMsg = { ...messageRow, key_version: 5 };
+      groupKeyService.getGroupKeyForConversation.mockRejectedValue(
+        new Error('no key for version 5')
+      );
+      mockMsgFrom.mockImplementation((table: string) => {
+        if (table === 'messages') {
+          return createMockQueryBuilder([groupMsg], null);
+        }
+        if (table === 'conversations') {
+          return createMockQueryBuilder({ ...conv, is_group: true }, null);
+        }
+        if (table === 'user_profiles') {
+          return createMockQueryBuilder([], null);
+        }
+        return createMockQueryBuilder(null, null);
+      });
+
+      const result = await messageService.getMessageHistory(CONVERSATION_ID);
+
       expect(result.messages[0].decryptionError).toBe(true);
       expect(result.messages[0].content).toBe('Encrypted with previous keys');
     });
@@ -801,6 +929,30 @@ describe('MessageService', () => {
         messageService.archiveConversation(CONVERSATION_ID)
       ).rejects.toThrow('Conversation not found');
     });
+
+    it('archives a group via conversation_members.archived', async () => {
+      const membersBuilder = createMockQueryBuilder(null, null);
+      membersBuilder.then = vi.fn((resolve) =>
+        resolve({ data: [{ archived: true }], error: null })
+      );
+      mockMsgFrom.mockImplementation((table: string) => {
+        if (table === 'conversations') {
+          return createMockQueryBuilder(
+            {
+              participant_1_id: OTHER_USER_ID,
+              participant_2_id: THIRD_USER_ID,
+              is_group: true,
+            },
+            null
+          );
+        }
+        return membersBuilder; // conversation_members
+      });
+
+      await messageService.archiveConversation(CONVERSATION_ID);
+
+      expect(membersBuilder.update).toHaveBeenCalledWith({ archived: true });
+    });
   });
 
   // -----------------------------------------------------------------------
@@ -845,16 +997,29 @@ describe('MessageService', () => {
       ).rejects.toThrow('Failed to unarchive conversation: nope');
     });
 
-    it('throws for group conversations', async () => {
-      wireUnarchive({
-        participant_1_id: CURRENT_USER_ID,
-        participant_2_id: OTHER_USER_ID,
-        is_group: true,
+    it('unarchives a group via conversation_members.archived', async () => {
+      // conversations fetch → is_group; conversation_members update → one row.
+      const membersBuilder = createMockQueryBuilder(null, null);
+      membersBuilder.then = vi.fn((resolve) =>
+        resolve({ data: [{ archived: false }], error: null })
+      );
+      mockMsgFrom.mockImplementation((table: string) => {
+        if (table === 'conversations') {
+          return createMockQueryBuilder(
+            {
+              participant_1_id: OTHER_USER_ID,
+              participant_2_id: THIRD_USER_ID,
+              is_group: true,
+            },
+            null
+          );
+        }
+        return membersBuilder; // conversation_members
       });
 
-      await expect(
-        messageService.unarchiveConversation(CONVERSATION_ID)
-      ).rejects.toThrow('Group conversation unarchiving not yet implemented');
+      await messageService.unarchiveConversation(CONVERSATION_ID);
+
+      expect(membersBuilder.update).toHaveBeenCalledWith({ archived: false });
     });
   });
 

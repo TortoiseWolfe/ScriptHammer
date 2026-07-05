@@ -1665,6 +1665,19 @@ DROP POLICY IF EXISTS "Users can view own conversations" ON conversations;
 CREATE POLICY "Users can view own conversations" ON conversations
   FOR SELECT USING (auth.uid() = participant_1_id OR auth.uid() = participant_2_id);
 
+-- Users can view GROUP conversations they belong to (Feature 010 / #182).
+-- Groups have participant_1_id/participant_2_id NULL, so the 1:1 policy above
+-- never matches them. Access = the creator OR any member. The `created_by`
+-- clause is load-bearing for createGroup(): its INSERT ... RETURNING reads the
+-- new row back BEFORE the creator is added to conversation_members, so a
+-- membership-only check would 403 the returning select and break creation.
+DROP POLICY IF EXISTS "Members can view group conversations" ON conversations;
+CREATE POLICY "Members can view group conversations" ON conversations
+  FOR SELECT USING (
+    is_group = true
+    AND (created_by = auth.uid() OR is_conversation_member(id))
+  );
+
 DROP POLICY IF EXISTS "Users can create conversations with connections" ON conversations;
 CREATE POLICY "Users can create conversations with connections" ON conversations
   FOR INSERT WITH CHECK (
@@ -1676,6 +1689,19 @@ CREATE POLICY "Users can create conversations with connections" ON conversations
         (requester_id = participant_2_id AND addressee_id = participant_1_id)
       )
     )
+  );
+
+-- Users can create GROUP conversations they own (Feature 010 / #182).
+-- Groups have participant_1_id/participant_2_id NULL (CHK023), so the 1:1
+-- "auth.uid() = participant_N" policies above can never authorize a group
+-- INSERT — without this policy, createGroup()'s conversation insert 403s for
+-- every non-admin user and group messaging is unreachable. The creator must
+-- be the owner (created_by); per-member access is enforced by the
+-- conversation_members policies.
+DROP POLICY IF EXISTS "Users can create group conversations" ON conversations;
+CREATE POLICY "Users can create group conversations" ON conversations
+  FOR INSERT WITH CHECK (
+    is_group = true AND created_by = auth.uid()
   );
 
 -- Admin can create conversations with any user (Feature 002 - welcome messages)
@@ -2164,6 +2190,12 @@ DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_me
 CREATE POLICY "Members can view conversation members" ON conversation_members
   FOR SELECT USING (
     is_conversation_member(conversation_id)
+    -- The creator must also read member rows they're inserting during
+    -- createGroup(): the INSERT ... RETURNING on conversation_members runs
+    -- while membership is still being established, so a membership-only check
+    -- races (is_conversation_member can't see the just-inserted rows yet) and
+    -- the returning read intermittently 403s → "Failed to add group members".
+    OR is_conversation_creator(conversation_id)
   );
 
 -- INSERT: existing members can add others (connection validation in the

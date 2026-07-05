@@ -111,6 +111,13 @@ export interface QueuedMessage {
   retries: number;
   created_at: number; // Unix timestamp
   sequence_number?: number; // Optional sequence number after successful send
+  /**
+   * Group-key version the content was encrypted under. Only set for group
+   * conversations; 1:1 messages leave it undefined (the messages table
+   * defaults key_version to 1). Preserved so a message queued offline under
+   * one group-key version still decrypts after a later rotation.
+   */
+  key_version?: number;
 }
 
 /**
