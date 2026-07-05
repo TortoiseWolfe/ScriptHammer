@@ -16,7 +16,11 @@
 # next.js
 /.next/
 /.next-acceptance/
+/.next-basepath/
 /out/
+# basePath E2E (#157): prefixed export + symlink wrapper dir
+/out-basepath/
+/serve-root/
 
 # production
 /build
