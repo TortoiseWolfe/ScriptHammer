@@ -14,6 +14,7 @@ import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/PaymentStatusDisplay';
 import { OfflineRetryBanner } from '@/components/payment/OfflineRetryBanner';
 import { featureFlags } from '@/config/payment';
+import { getInternalUrl } from '@/config/project.config';
 import { getPaymentStatus } from '@/lib/payments/payment-service';
 
 type ResultState =
@@ -253,8 +254,12 @@ function PaymentResultContent() {
           paymentResultId={state.resultId}
           showDetails
           onRetrySuccess={(newIntentId) => {
-            // Navigate to the new intent's result page
-            window.location.href = `/payment-result?id=${newIntentId}`;
+            // Navigate to the new intent's result page. Raw window.location does
+            // NOT get the basePath prefixed (unlike next/link), so wrap it in
+            // getInternalUrl or a project-site fork escapes to the domain root (#159).
+            window.location.href = getInternalUrl(
+              `/payment-result?id=${newIntentId}`
+            );
           }}
         />
       </div>

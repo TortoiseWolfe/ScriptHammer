@@ -223,4 +223,15 @@ describe('PaymentConsentModal', () => {
       expect(acceptButton).toHaveFocus();
     });
   });
+
+  it('routes the privacy-policy link through next/link so it inherits the base path (#159)', () => {
+    render(<PaymentConsentModal />);
+
+    const link = screen.getByRole('link', { name: /read privacy policy/i });
+    // next/link renders an <a href="/privacy"> and prepends the runtime
+    // basePath in the real app (jsdom doesn't populate it). Was a raw <a>,
+    // which would have escaped to the domain root on a project-site fork.
+    expect(link.tagName).toBe('A');
+    expect(link).toHaveAttribute('href', '/privacy');
+  });
 });

@@ -6,6 +6,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { usePaymentRealtime } from '@/hooks/usePaymentRealtime';
 import { usePaymentRetryStatus } from '@/hooks/usePaymentRetryStatus';
 import {
@@ -17,6 +18,7 @@ import {
 } from '@/lib/payments/payment-service';
 import { categorizePaymentError } from '@/lib/payments/error-categorization';
 import { SwitchProviderPanel } from '@/components/payment/SwitchProviderPanel';
+import { getInternalUrl } from '@/config/project.config';
 import type { Currency } from '@/types/payment';
 
 export interface PaymentStatusDisplayProps {
@@ -433,7 +435,11 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                         <SwitchProviderPanel
                           parentIntentId={paymentResult.intent_id}
                           onSwitchSuccess={(newIntentId) => {
-                            window.location.href = `/payment-result?id=${newIntentId}`;
+                            // Raw window.location isn't basePath-prefixed; wrap
+                            // it so a project-site fork stays in-app (#159).
+                            window.location.href = getInternalUrl(
+                              `/payment-result?id=${newIntentId}`
+                            );
                           }}
                         />
                       </div>
@@ -474,9 +480,9 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                                 : ''
                             }
                           >
-                            <a href="/contact" className="link">
+                            <Link href="/contact" className="link">
                               Contact support
-                            </a>{' '}
+                            </Link>{' '}
                             with the transaction reference above.
                           </li>
                         </ol>
@@ -485,13 +491,13 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                   </>
                 ) : (
                   <div className="card-actions mt-4 justify-end">
-                    <a
+                    <Link
                       href="/contact"
                       className="btn btn-outline min-h-11"
                       aria-label="Contact support about this payment"
                     >
                       Contact Support
-                    </a>
+                    </Link>
                   </div>
                 )}
               </>
