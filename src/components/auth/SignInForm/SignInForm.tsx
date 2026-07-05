@@ -52,24 +52,13 @@ export default function SignInForm({
       return;
     }
 
-    // Check server-side rate limit (REQ-SEC-003)
-    // Fail-open: if rate limit check fails, allow sign-in attempt
-    let rateLimit: {
-      allowed: boolean;
-      remaining: number;
-      locked_until?: string | null;
-    } = {
-      allowed: true,
-      remaining: 5,
-    };
-    try {
-      rateLimit = await checkRateLimit(email, 'sign_in');
-    } catch (rateLimitError) {
-      logger.warn('Rate limit check failed, allowing sign-in attempt', {
-        error: rateLimitError,
-      });
-      // Continue with sign-in (fail-open for UX)
-    }
+    // Check server-side rate limit (REQ-SEC-003). checkRateLimit is
+    // fail-CLOSED by design (it returns allowed:false if the rate-limit
+    // infrastructure is down, to prevent brute force) — matching SignUpForm
+    // and ForgotPasswordForm, which also call it directly. Do NOT wrap it in a
+    // fail-open catch: that would silently disable brute-force protection on a
+    // backend outage, contradicting the wrapper's documented policy.
+    const rateLimit = await checkRateLimit(email, 'sign_in');
 
     if (!rateLimit.allowed) {
       const timeUntilReset = rateLimit.locked_until

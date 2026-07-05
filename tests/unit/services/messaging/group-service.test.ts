@@ -5,12 +5,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { GROUP_CONSTRAINTS, MembershipError } from '@/types/messaging';
+import {
+  GROUP_CONSTRAINTS,
+  MembershipError,
+  ValidationError,
+} from '@/types/messaging';
 
 // Use vi.hoisted to define mocks that can be referenced in vi.mock
 const { mockGetUser, mockFrom, mockMsgFrom } = vi.hoisted(() => ({
   mockGetUser: vi.fn(() => ({
-    data: { user: { id: 'current-user-id' } },
+    data: { user: { id: '11111111-1111-4111-8111-111111111111' } },
     error: null,
   })),
   mockFrom: vi.fn(),
@@ -40,7 +44,10 @@ vi.mock('@/services/messaging/group-key-service', () => ({
     ),
     distributeGroupKey: vi.fn(() =>
       Promise.resolve({
-        successful: ['current-user-id', 'member-1'],
+        successful: [
+          '11111111-1111-4111-8111-111111111111',
+          '22222222-2222-4222-8222-222222222222',
+        ],
         pending: [],
       })
     ),
@@ -85,8 +92,8 @@ describe('GroupService', () => {
               eq: vi.fn(() => ({
                 data: [
                   {
-                    requester_id: 'current-user-id',
-                    addressee_id: 'member-1',
+                    requester_id: '11111111-1111-4111-8111-111111111111',
+                    addressee_id: '22222222-2222-4222-8222-222222222222',
                     status: 'accepted',
                   },
                 ],
@@ -100,7 +107,7 @@ describe('GroupService', () => {
         return {
           select: vi.fn(() => ({
             in: vi.fn(() => ({
-              data: [{ user_id: 'member-1' }],
+              data: [{ user_id: '22222222-2222-4222-8222-222222222222' }],
               error: null,
             })),
           })),
@@ -121,7 +128,7 @@ describe('GroupService', () => {
                   id: 'new-conv-id',
                   is_group: true,
                   group_name: 'Test Group',
-                  created_by: 'current-user-id',
+                  created_by: '11111111-1111-4111-8111-111111111111',
                   current_key_version: 1,
                   created_at: new Date().toISOString(),
                   last_message_at: null,
@@ -144,7 +151,7 @@ describe('GroupService', () => {
                 {
                   id: 'm1',
                   conversation_id: 'new-conv-id',
-                  user_id: 'current-user-id',
+                  user_id: '11111111-1111-4111-8111-111111111111',
                   role: 'owner',
                   key_version_joined: 1,
                   key_status: 'active',
@@ -156,7 +163,7 @@ describe('GroupService', () => {
                 {
                   id: 'm2',
                   conversation_id: 'new-conv-id',
-                  user_id: 'member-1',
+                  user_id: '22222222-2222-4222-8222-222222222222',
                   role: 'member',
                   key_version_joined: 1,
                   key_status: 'active',
@@ -214,7 +221,9 @@ describe('GroupService', () => {
         });
 
         await expect(
-          service.createGroup({ member_ids: ['user-1'] })
+          service.createGroup({
+            member_ids: ['33333333-3333-4333-8333-333333333333'],
+          })
         ).rejects.toThrow();
       });
 
@@ -238,7 +247,9 @@ describe('GroupService', () => {
         });
 
         await expect(
-          service.createGroup({ member_ids: ['unconnected-user'] })
+          service.createGroup({
+            member_ids: ['44444444-4444-4444-8444-444444444444'],
+          })
         ).rejects.toThrow(MembershipError);
       });
     });
@@ -247,18 +258,18 @@ describe('GroupService', () => {
       it('should set creator as owner', async () => {
         const result = await service.createGroup({
           name: 'Test',
-          member_ids: ['member-1'],
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
         });
 
         const owner = result.members.find((m) => m.role === 'owner');
         expect(owner).toBeDefined();
-        expect(owner?.user_id).toBe('current-user-id');
+        expect(owner?.user_id).toBe('11111111-1111-4111-8111-111111111111');
       });
 
       it('should initialize key_version_joined to 1', async () => {
         const result = await service.createGroup({
           name: 'Test',
-          member_ids: ['member-1'],
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
         });
 
         result.members.forEach((m) => {
@@ -271,7 +282,7 @@ describe('GroupService', () => {
       it('should set is_group to true', async () => {
         const result = await service.createGroup({
           name: 'Test',
-          member_ids: ['member-1'],
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
         });
 
         expect(result.conversation.is_group).toBe(true);
@@ -280,16 +291,18 @@ describe('GroupService', () => {
       it('should set created_by to current user', async () => {
         const result = await service.createGroup({
           name: 'Test',
-          member_ids: ['member-1'],
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
         });
 
-        expect(result.conversation.created_by).toBe('current-user-id');
+        expect(result.conversation.created_by).toBe(
+          '11111111-1111-4111-8111-111111111111'
+        );
       });
 
       it('should set current_key_version to 1', async () => {
         const result = await service.createGroup({
           name: 'Test',
-          member_ids: ['member-1'],
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
         });
 
         expect(result.conversation.current_key_version).toBe(1);
@@ -300,7 +313,10 @@ describe('GroupService', () => {
       it('should prevent duplicate member IDs', async () => {
         await expect(
           service.createGroup({
-            member_ids: ['member-1', 'member-1'],
+            member_ids: [
+              '22222222-2222-4222-8222-222222222222',
+              '22222222-2222-4222-8222-222222222222',
+            ],
           })
         ).rejects.toThrow();
       });
@@ -308,7 +324,7 @@ describe('GroupService', () => {
       it('should prevent adding self as member', async () => {
         await expect(
           service.createGroup({
-            member_ids: ['current-user-id'],
+            member_ids: ['11111111-1111-4111-8111-111111111111'],
           })
         ).rejects.toThrow();
       });
@@ -317,8 +333,21 @@ describe('GroupService', () => {
         const longName = 'A'.repeat(101);
 
         await expect(
-          service.createGroup({ name: longName, member_ids: ['member-1'] })
+          service.createGroup({
+            name: longName,
+            member_ids: ['22222222-2222-4222-8222-222222222222'],
+          })
         ).rejects.toThrow();
+      });
+
+      it('should reject a malformed (non-UUID) member id before it reaches any query', async () => {
+        // Guards against PostgREST filter injection via getConnectedUserIds's
+        // .or(...) interpolation — a crafted member id must never reach the DB.
+        await expect(
+          service.createGroup({
+            member_ids: ['not-a-uuid,requester_id.eq.injected'],
+          })
+        ).rejects.toThrow(ValidationError);
       });
     });
   });

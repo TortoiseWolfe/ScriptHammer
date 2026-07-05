@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { createMessagingClient } from '@/lib/supabase/messaging-client';
 import { GroupKeyService } from '@/services/messaging/group-key-service';
 import { keyManagementService } from '@/services/messaging/key-service';
+import { validateUUID } from '@/lib/messaging/validation';
 import { createLogger } from '@/lib/logger';
 import type {
   CreateGroupInput,
@@ -102,6 +103,16 @@ export class GroupService {
         'Cannot add yourself as a member',
         'member_ids'
       );
+    }
+
+    // Validation: every member id must be a well-formed UUID BEFORE it is
+    // interpolated into the PostgREST `.or(...)` filter in getConnectedUserIds
+    // (a crafted non-UUID string could otherwise inject filter syntax). Mirrors
+    // the validateUUID guard used across connection-service / gdpr-service.
+    // Runs after the cheap structural checks so their specific errors surface
+    // first; still guaranteed before the id reaches any query.
+    for (const id of member_ids) {
+      validateUUID(id, 'member_ids');
     }
 
     // Validation: Check name length if provided
