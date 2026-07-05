@@ -109,17 +109,29 @@ function generateConfig() {
   // Determine if we're in GitHub Actions CI/CD
   const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
 
+  // Explicit opt-out for jobs that serve the static export from the ROOT
+  // (e.g. the E2E workflow's `serve out -l 3000`). Without this, the build
+  // bakes in the GitHub Pages basePath (/RepoName) and every
+  // /RepoName/_next/*.js asset 404s when served at /, so React never hydrates
+  // and the whole E2E suite fails. A step-level `GITHUB_ACTIONS: false` is NOT
+  // reliable — the runner re-injects GITHUB_ACTIONS=true into the child
+  // processes spawned by `pnpm build` / next.config's execSync — so we need an
+  // unambiguous, dedicated signal that survives that.
+  const basePathDisabled = process.env.DISABLE_BASE_PATH === 'true';
+
   // Check if using custom domain (CNAME file exists)
   const cnameExists = fs.existsSync(
     path.join(__dirname, '..', 'public', 'CNAME')
   );
 
-  // Base path: prefer explicit env var, fall back to auto-detection in GitHub Actions
-  const basePath =
-    process.env.NEXT_PUBLIC_BASE_PATH ||
-    (isGitHubActions && info.isGitHub && !cnameExists
-      ? `/${info.projectName}`
-      : '');
+  // Base path: explicit disable wins; then explicit env var; then
+  // auto-detection for the GitHub Pages deploy build.
+  const basePath = basePathDisabled
+    ? ''
+    : process.env.NEXT_PUBLIC_BASE_PATH ||
+      (isGitHubActions && info.isGitHub && !cnameExists
+        ? `/${info.projectName}`
+        : '');
 
   const config = {
     projectName: info.projectName,

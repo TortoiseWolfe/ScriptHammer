@@ -338,6 +338,107 @@ export type DetectedConfig = typeof detectedConfig;
       assert.strictEqual(config.projectOwner, 'EnvOwner');
     });
 
+    // Mirrors the basePath resolution in detect-project.js:
+    //   basePathDisabled ? '' : NEXT_PUBLIC_BASE_PATH || (isGitHubActions && isGitHub && !cnameExists ? `/${name}` : '')
+    const resolveBasePath = ({
+      disableBasePath,
+      envBasePath,
+      isGitHubActions,
+      isGitHub,
+      cnameExists,
+      projectName,
+    }) =>
+      disableBasePath
+        ? ''
+        : envBasePath ||
+          (isGitHubActions && isGitHub && !cnameExists
+            ? `/${projectName}`
+            : '');
+
+    test('DISABLE_BASE_PATH forces an empty base path even in GitHub Actions', () => {
+      // Without the disable flag, a project-site build (GHA, GitHub repo, no
+      // CNAME) would auto-detect the /RepoName prefix.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: false,
+          envBasePath: '',
+          isGitHubActions: true,
+          isGitHub: true,
+          cnameExists: false,
+          projectName: 'ScriptHammer',
+        }),
+        '/ScriptHammer'
+      );
+
+      // DISABLE_BASE_PATH=true wins over the auto-detection so the E2E build
+      // serves from the root.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: true,
+          envBasePath: '',
+          isGitHubActions: true,
+          isGitHub: true,
+          cnameExists: false,
+          projectName: 'ScriptHammer',
+        }),
+        ''
+      );
+
+      // The disable flag even overrides an explicit NEXT_PUBLIC_BASE_PATH.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: true,
+          envBasePath: '/ScriptHammer',
+          isGitHubActions: true,
+          isGitHub: true,
+          cnameExists: false,
+          projectName: 'ScriptHammer',
+        }),
+        ''
+      );
+    });
+
+    test('base path resolution is unchanged when DISABLE_BASE_PATH is unset', () => {
+      // A custom-domain deploy (CNAME present) resolves to '' — the template case.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: false,
+          envBasePath: '',
+          isGitHubActions: true,
+          isGitHub: true,
+          cnameExists: true,
+          projectName: 'ScriptHammer',
+        }),
+        ''
+      );
+
+      // An explicit env var still wins over auto-detection.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: false,
+          envBasePath: '/custom',
+          isGitHubActions: true,
+          isGitHub: true,
+          cnameExists: false,
+          projectName: 'ScriptHammer',
+        }),
+        '/custom'
+      );
+
+      // Outside GitHub Actions there is no base path.
+      assert.strictEqual(
+        resolveBasePath({
+          disableBasePath: false,
+          envBasePath: '',
+          isGitHubActions: false,
+          isGitHub: true,
+          cnameExists: false,
+          projectName: 'ScriptHammer',
+        }),
+        ''
+      );
+    });
+
     test('should handle concurrent file writes', () => {
       // This tests that file writes won't interfere with each other
       const paths = ['/tmp/test1.json', '/tmp/test2.json', '/tmp/test3.json'];
