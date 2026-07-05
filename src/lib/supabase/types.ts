@@ -403,45 +403,6 @@ export type Database = {
           },
         ];
       };
-      oauth_states: {
-        Row: {
-          created_at: string;
-          expires_at: string;
-          id: string;
-          ip_address: unknown;
-          provider: string;
-          return_url: string | null;
-          session_id: string | null;
-          state_token: string;
-          used: boolean;
-          user_agent: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          expires_at?: string;
-          id?: string;
-          ip_address?: unknown;
-          provider: string;
-          return_url?: string | null;
-          session_id?: string | null;
-          state_token: string;
-          used?: boolean;
-          user_agent?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          expires_at?: string;
-          id?: string;
-          ip_address?: unknown;
-          provider?: string;
-          return_url?: string | null;
-          session_id?: string | null;
-          state_token?: string;
-          used?: boolean;
-          user_agent?: string | null;
-        };
-        Relationships: [];
-      };
       payment_intents: {
         Row: {
           amount: number;

@@ -39,6 +39,8 @@ DROP TABLE IF EXISTS payment_provider_config CASCADE;
 
 -- Security tables (Feature 017)
 DROP TABLE IF EXISTS rate_limit_attempts CASCADE;
+-- oauth_states removed (#183) — kept here as an idempotent no-op so a teardown
+-- run against an OLDER database still clears the dropped table.
 DROP TABLE IF EXISTS oauth_states CASCADE;
 
 -- Messaging tables (PRP-023) - depend on auth.users via foreign keys

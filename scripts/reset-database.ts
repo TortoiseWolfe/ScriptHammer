@@ -271,7 +271,6 @@ async function main() {
     console.log('Step 3/5: Deleting user data...');
     await deleteAllFromTable('auth_audit_logs', 'audit logs');
     await deleteAllFromTable('rate_limit_attempts', 'rate limit attempts');
-    await deleteAllFromTable('oauth_states', 'OAuth states');
 
     // Delete user profiles except admin
     console.log('  🗑️  Deleting user profiles (except admin)...');

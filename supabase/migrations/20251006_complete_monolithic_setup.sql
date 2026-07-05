@@ -313,55 +313,11 @@ CREATE POLICY "Service role only access" ON rate_limit_attempts
 COMMENT ON POLICY "Service role only access" ON rate_limit_attempts IS
   'Rate limiting data is system-managed. Only service role can access.';
 
--- OAuth state tracking (CSRF protection)
-CREATE TABLE IF NOT EXISTS oauth_states (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  state_token TEXT NOT NULL UNIQUE,
-  provider TEXT NOT NULL CHECK (provider IN ('github', 'google')),
-  session_id TEXT,
-  return_url TEXT,
-  ip_address INET,
-  user_agent TEXT,
-  used BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '5 minutes')
-);
-
-CREATE INDEX IF NOT EXISTS idx_oauth_states_token ON oauth_states(state_token) WHERE used = FALSE;
-CREATE INDEX IF NOT EXISTS idx_oauth_states_expires ON oauth_states(expires_at) WHERE used = FALSE;
-CREATE INDEX IF NOT EXISTS idx_oauth_states_session ON oauth_states(session_id);
-
-COMMENT ON TABLE oauth_states IS 'OAuth state tokens - prevents session hijacking';
-
--- Enable RLS on oauth_states (CSRF protection tokens)
-ALTER TABLE oauth_states ENABLE ROW LEVEL SECURITY;
-
--- Allow anyone to insert state tokens (for OAuth flow initiation)
-DROP POLICY IF EXISTS "Anyone can create state tokens" ON oauth_states;
-CREATE POLICY "Anyone can create state tokens" ON oauth_states
-  FOR INSERT
-  WITH CHECK (true);
-
--- Allow anyone to read state tokens (for validation during OAuth callback)
-DROP POLICY IF EXISTS "Anyone can read state tokens" ON oauth_states;
-CREATE POLICY "Anyone can read state tokens" ON oauth_states
-  FOR SELECT
-  USING (true);
-
--- Allow anyone to update state tokens (for marking as used)
-DROP POLICY IF EXISTS "Anyone can update state tokens" ON oauth_states;
-CREATE POLICY "Anyone can update state tokens" ON oauth_states
-  FOR UPDATE
-  USING (true);
-
--- Allow anyone to delete expired state tokens (for cleanup)
-DROP POLICY IF EXISTS "Anyone can delete expired states" ON oauth_states;
-CREATE POLICY "Anyone can delete expired states" ON oauth_states
-  FOR DELETE
-  USING (expires_at < NOW());
-
-COMMENT ON TABLE oauth_states IS
-  'OAuth state tokens are random UUIDs with 5-minute expiration. Safe to allow public access.';
+-- NOTE: the custom `oauth_states` CSRF table + `src/lib/auth/oauth-state.ts`
+-- were removed (#183). They had zero production callers — the real OAuth CSRF
+-- defense is Supabase's built-in PKCE `state` (see OAuthButtons.tsx /
+-- auth/callback). The table also carried fully-public INSERT/SELECT/UPDATE RLS,
+-- so it was unused attack surface. Dropped from prod via the Management API.
 
 -- ============================================================================
 -- PART 4: FUNCTIONS
@@ -2321,7 +2277,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 -- Created:
 --   ✅ Payment tables: payment_intents, payment_results, subscriptions, webhook_events, payment_provider_config
 --   ✅ Auth tables: user_profiles, auth_audit_logs
---   ✅ Security tables: rate_limit_attempts, oauth_states
+--   ✅ Security tables: rate_limit_attempts
 --   ✅ Messaging tables: user_connections, conversations, messages, user_encryption_keys, conversation_keys, typing_indicators
 --   ✅ Group chat tables: conversation_members, group_keys (Feature 010)
 --   ✅ Storage buckets: avatars (5MB limit, public read)

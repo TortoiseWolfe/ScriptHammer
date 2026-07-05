@@ -54,7 +54,7 @@ Here's what ships in our authentication system:
 ### 🛡️ Security Hardening
 
 - 🚦 **Server-Side Rate Limiting**: 5 failed attempts per 15-minute window, enforced in PostgreSQL (client can't bypass)
-- 🔒 **OAuth CSRF Protection**: State token validation prevents session hijacking
+- 🔒 **OAuth CSRF Protection**: Supabase's built-in OAuth2 `state` parameter prevents session hijacking
 - 📝 **Audit Logging**: Every authentication event logged to database with Internet Protocol (IP) address and user agent
 - 🗄️ **Row-Level Security**: Database policies ensure users only see their own data
 
@@ -265,130 +265,27 @@ This callback handles both email verification and OAuth redirects (which we'll c
 
 Password fatigue is real. Users reuse passwords across sites, creating security nightmares. OAuth lets users authenticate with providers they already trust (GitHub, Google) without creating another password.
 
-### OAuth Flow with CSRF Protection
+### 🔒 OAuth Flow with CSRF Protection
 
 OAuth has a critical vulnerability: Cross-Site Request Forgery (CSRF) attacks. An attacker can initiate an OAuth flow and trick a victim into completing it, linking the attacker's GitHub account to the victim's app account.
 
-We prevent this with **state tokens**:
-
-```typescript
-// src/lib/auth/oauth-state.ts
-import { supabase } from '@/lib/supabase/client';
-
-// Generate UUID v4 using crypto API (available in modern browsers and Node 16+)
-function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  // Fallback for older environments
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-/**
- * Get or create a session ID for CSRF validation
- * Uses sessionStorage to track the browser session
- */
-function getSessionId(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  const SESSION_KEY = 'oauth_session_id';
-  let sessionId = sessionStorage.getItem(SESSION_KEY);
-
-  if (!sessionId) {
-    sessionId = generateUUID();
-    sessionStorage.setItem(SESSION_KEY, sessionId);
-  }
-
-  return sessionId;
-}
-
-/**
- * Generate a cryptographically random state token for OAuth flow
- * Stored in database with 5-minute expiration
- */
-export async function generateOAuthState(
-  provider: 'github' | 'google'
-): Promise<string> {
-  const stateToken = generateUUID(); // Cryptographically random UUID
-  const sessionId = getSessionId(); // Get or create browser session ID
-
-  // Store in database
-  const { error } = await supabase.from('oauth_states').insert({
-    state_token: stateToken,
-    provider,
-    session_id: sessionId, // Tie to browser session
-    expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
-  });
-
-  if (error) {
-    throw new Error('Failed to generate OAuth state');
-  }
-
-  return stateToken;
-}
-
-/**
- * Validate state token from OAuth callback
- * Ensures the request originated from the same browser session
- */
-export async function validateOAuthState(stateToken: string) {
-  const { data, error } = await supabase
-    .from('oauth_states')
-    .select('*')
-    .eq('state_token', stateToken)
-    .eq('used', false) // Prevent replay attacks
-    .single();
-
-  if (error || !data) {
-    return { valid: false, error: 'invalid_state' };
-  }
-
-  // Check expiration
-  if (new Date(data.expires_at) < new Date()) {
-    return { valid: false, error: 'state_expired' };
-  }
-
-  // Mark as used (single-use tokens)
-  await supabase
-    .from('oauth_states')
-    .update({ used: true })
-    .eq('state_token', stateToken);
-
-  return { valid: true, provider: data.provider };
-}
-```
-
-### OAuth Button Component
-
-Here's how we initiate OAuth flows with state token protection:
+💡 **The good news**: with Supabase you don't hand-roll CSRF protection. The Supabase client automatically generates a cryptographically random OAuth2 `state` parameter, ties it to the browser, and verifies it when the provider redirects back — rejecting any mismatch. That is the standard, provider-recommended OAuth CSRF defense, so a self-managed `state`-token table only duplicates (more weakly) what Supabase already does. So the entire OAuth entry point is just:
 
 ```tsx
 // src/components/auth/OAuthButtons/OAuthButtons.tsx
 import { supabase } from '@/lib/supabase/client';
-import { generateOAuthState } from '@/lib/auth/oauth-state';
 
 export function OAuthButtons() {
   const handleOAuth = async (provider: 'github' | 'google') => {
     try {
-      // Generate CSRF protection state token
-      const stateToken = await generateOAuthState(provider);
-
-      // Initiate OAuth flow with state parameter
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // Supabase handles CSRF protection via its built-in OAuth2 state
+      // parameter — no need to manually manage state tokens.
+      const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
           scopes:
             provider === 'github' ? 'read:user user:email' : 'email profile',
-          queryParams: {
-            state: stateToken, // Include state for CSRF protection
-          },
         },
       });
 
@@ -417,45 +314,38 @@ export function OAuthButtons() {
 }
 ```
 
+⚠️ **Gotcha**: because ScriptHammer is a **static export** (no server to run a code exchange), the client is configured with `flowType: 'implicit'` (see `src/lib/supabase/client.ts`) — the provider returns the session token in the URL fragment and supabase-js picks it up on the callback. The `state` CSRF check is automatic either way; just register your callback URL in the Supabase dashboard's redirect allow-list. (A server-rendered app would instead use `flowType: 'pkce'` + `exchangeCodeForSession`.)
+
 ### OAuth Callback Handling
 
-When the user authorizes on GitHub/Google, they're redirected back to our callback with an authorization code. We validate the state token before exchanging the code for a session:
+When the user authorizes on GitHub/Google, they're redirected back to our callback. Under the implicit flow, supabase-js reads the session token from the URL fragment and validates the `state` parameter internally — so the callback doesn't hand-check anything; it just waits for the client to reflect the authenticated session:
 
 ```tsx
-// src/app/auth/callback/page.tsx (extended)
-import { validateOAuthState } from '@/lib/auth/oauth-state';
+// src/app/auth/callback/page.tsx (simplified)
+'use client';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 
-export default async function AuthCallbackPage({
-  searchParams,
-}: {
-  searchParams: { code?: string; state?: string };
-}) {
-  const supabase = await createClient();
+export default function AuthCallbackPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (searchParams.code) {
-    // Validate OAuth state token (CSRF protection)
-    if (searchParams.state) {
-      const stateValidation = await validateOAuthState(searchParams.state);
+  useEffect(() => {
+    if (isLoading) return;
 
-      if (!stateValidation.valid) {
-        return redirect('/sign-in?error=oauth_security_error');
-      }
+    // Supabase handles state validation internally — no manual check needed.
+    // supabase-js parses the token from the URL fragment and fires the auth
+    // state change; we just redirect once the session is present.
+    if (user) {
+      // ...populate the OAuth profile (non-blocking), then:
+      router.replace('/profile');
+    } else {
+      router.replace('/sign-in?error=oauth_failed');
     }
+  }, [user, isLoading, router]);
 
-    // Exchange authorization code for session
-    const { error } = await supabase.auth.exchangeCodeForSession(
-      searchParams.code
-    );
-
-    if (error) {
-      return redirect('/sign-in?error=oauth_failed');
-    }
-
-    // Authenticated - redirect to dashboard
-    return redirect('/profile');
-  }
-
-  return redirect('/sign-in');
+  return <p>Completing sign-in…</p>;
 }
 ```
 
@@ -922,12 +812,6 @@ beforeEach(async () => {
     .from('rate_limit_attempts')
     .delete()
     .eq('identifier', testEmail);
-
-  // Clean up OAuth states
-  await supabase
-    .from('oauth_states')
-    .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000');
 });
 ```
 
