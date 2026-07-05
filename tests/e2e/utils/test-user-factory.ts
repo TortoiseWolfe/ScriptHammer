@@ -13,6 +13,12 @@
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { expect, type Page, type Browser } from '@playwright/test';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
+// Static import so Playwright's TS loader transpiles it: a dynamic import() of
+// this raw .ts module fails under the Playwright node runtime ("Cannot use
+// import statement outside a module"). new GroupKeyService() is Node-safe
+// (createClient() returns an inert {} when window is undefined), and the
+// transitive messaging Dexie instance constructs without indexedDB.
+import { GroupKeyService } from '@/services/messaging/group-key-service';
 
 /**
  * Email domain for test users.
@@ -1873,17 +1879,148 @@ export interface IsolatedGroup {
 }
 
 /**
+ * Distribute a group encryption key to every member, server-side (Node), so a
+ * seeded group is send/decrypt-ready without the in-browser createGroup() flow.
+ *
+ * Reuses the PRODUCTION wrap (`GroupKeyService.encryptGroupKeyForMember`) — no
+ * duplicated crypto, so the seeded `group_keys` rows are byte-identical in shape
+ * to what the app writes. That method is pure (crypto.subtle + ECDH only, no
+ * auth/DB), and `new GroupKeyService()` is Node-safe because `createClient()`
+ * returns an inert object when `window` is undefined.
+ *
+ * Because member keypairs are DETERMINISTIC (Argon2id over password + stored
+ * salt), we re-derive the creator's private key in Node from
+ * DEFAULT_TEST_PASSWORD + the creator's stored `encryption_salt`, then wrap the
+ * one group key for each member using `ECDH(creatorPriv, memberPub)`. Members'
+ * PUBLIC keys are read straight from `user_encryption_keys` (no per-member
+ * private-key derivation needed). `created_by` is the creator for every row, so
+ * each member unwraps with `ECDH(memberPriv, creatorPub)` at runtime.
+ *
+ * @returns true on success, false if any salt/public key is missing or a step
+ *          throws (caller rolls back the conversation).
+ */
+async function distributeGroupKeysForFixture(
+  admin: SupabaseClient,
+  conversationId: string,
+  memberIds: string[],
+  creatorId: string
+): Promise<boolean> {
+  try {
+    // Pull every member's stored public key + salt in one query.
+    const { data: keyRows, error: keyErr } = await admin
+      .from('user_encryption_keys')
+      .select('user_id, public_key, encryption_salt')
+      .in('user_id', memberIds)
+      .eq('revoked', false);
+    if (keyErr || !keyRows) {
+      console.warn(
+        'distributeGroupKeysForFixture: could not read user_encryption_keys:',
+        keyErr?.message
+      );
+      return false;
+    }
+    const keyByUser = new Map(keyRows.map((r) => [r.user_id, r]));
+
+    const creatorRow = keyByUser.get(creatorId);
+    if (!creatorRow?.encryption_salt || !creatorRow.public_key) {
+      console.warn('distributeGroupKeysForFixture: creator has no keys/salt');
+      return false;
+    }
+
+    // Re-derive the creator's keypair in Node (deterministic: same password +
+    // salt ⇒ same keys the browser derives). The stored salt is base64.
+    const kds = new KeyDerivationService();
+    const creatorKeys = await kds.deriveKeyPair({
+      password: DEFAULT_TEST_PASSWORD,
+      salt: new Uint8Array(Buffer.from(creatorRow.encryption_salt, 'base64')),
+    });
+    // Cheap sanity guard: the re-derived public key must match what's stored,
+    // else the ECDH counterparty members fetch at runtime won't line up.
+    if (
+      !kds.verifyPublicKey(
+        creatorKeys.publicKeyJwk,
+        creatorRow.public_key as JsonWebKey
+      )
+    ) {
+      console.warn(
+        'distributeGroupKeysForFixture: re-derived creator key mismatch'
+      );
+      return false;
+    }
+
+    // One AES-GCM-256 group key, wrapped per member with the real prod code.
+    const gks = new GroupKeyService();
+    const groupKey = await gks.generateGroupKey();
+
+    const rows: Array<{
+      conversation_id: string;
+      user_id: string;
+      key_version: number;
+      encrypted_key: string;
+      created_by: string;
+    }> = [];
+    for (const memberId of memberIds) {
+      const memberRow = keyByUser.get(memberId);
+      if (!memberRow?.public_key) {
+        console.warn(
+          `distributeGroupKeysForFixture: member ${memberId} has no public key`
+        );
+        return false;
+      }
+      const encrypted_key = await gks.encryptGroupKeyForMember(
+        groupKey,
+        memberRow.public_key as JsonWebKey,
+        creatorKeys.privateKey
+      );
+      rows.push({
+        conversation_id: conversationId,
+        user_id: memberId,
+        key_version: 1,
+        encrypted_key,
+        created_by: creatorId,
+      });
+    }
+
+    const { error: insertErr } = await admin.from('group_keys').insert(rows);
+    if (insertErr) {
+      console.warn(
+        'distributeGroupKeysForFixture: group_keys insert failed:',
+        insertErr.message
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn(
+      'distributeGroupKeysForFixture: unexpected error:',
+      (err as Error).message
+    );
+    return false;
+  }
+}
+
+/**
  * Create a fully isolated group of `participantCount` throwaway users plus a
  * group conversation containing all of them. For the group-chat spec.
  *
- * The conversation is created with is_group=true and the creator as
- * participant_1; remaining members are added via conversation_participants
- * (falls back gracefully if that table is absent on older schemas). Returns null
- * if the admin client / anon key is unavailable or the conversation can't be made.
+ * The conversation is created with is_group=true (participant_1/2 NULL per the
+ * CHK023 constraint); membership lives in conversation_members (creator = owner).
+ *
+ * When `opts.withKeys` is set, the fixture ALSO distributes the group encryption
+ * key server-side: it generates one AES-GCM-256 group key and inserts a
+ * `group_keys` row per member, each ECDH-wrapped for that member using the
+ * creator's re-derived private key — exactly what the in-browser
+ * createGroup()/distributeGroupKey path produces, but off the slow UI critical
+ * path. This is what makes a DETERMINISTIC (non-skipping) group send/decrypt E2E
+ * possible: opening the group in a member's browser can then unwrap the key and
+ * decrypt, without driving the >90s in-browser group-creation flow. Without it
+ * (default), opening the group in a browser fails with "Group key not found".
+ *
+ * Returns null if the admin client / anon key is unavailable or seeding fails.
  */
 export async function seedIsolatedGroup(
   participantCount = 3,
-  opts?: { prefix?: string }
+  opts?: { prefix?: string; withKeys?: boolean }
 ): Promise<IsolatedGroup | null> {
   const admin = getAdminClient();
   if (!admin) return null;
@@ -1957,8 +2094,28 @@ export async function seedIsolatedGroup(
     return null;
   }
 
+  // Optionally distribute the group key server-side so the group is
+  // send/decrypt-ready without the in-browser createGroup() flow.
+  if (opts?.withKeys) {
+    const memberIds = participants.map((p) => p.user.id);
+    const distributed = await distributeGroupKeysForFixture(
+      admin,
+      conversationId,
+      memberIds,
+      creatorId
+    );
+    if (!distributed) {
+      console.warn('seedIsolatedGroup: group-key distribution failed');
+      await admin.from('conversations').delete().eq('id', conversationId);
+      await cleanup();
+      return null;
+    }
+  }
+
   console.log(
-    `✓ Isolated group ${conversationId} (${participantCount} members)`
+    `✓ Isolated group ${conversationId} (${participantCount} members${
+      opts?.withKeys ? ', keyed' : ''
+    })`
   );
   return { participants, conversationId };
 }

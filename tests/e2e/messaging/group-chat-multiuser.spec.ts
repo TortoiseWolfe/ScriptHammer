@@ -15,12 +15,17 @@ import { test, expect } from '@playwright/test';
 import {
   seedIsolatedConnection,
   deleteIsolatedConnection,
+  seedIsolatedGroup,
+  deleteIsolatedGroup,
   openAuthedPage,
+  openConversationAs,
   handleReAuthModal,
   dismissCookieBanner,
   fillMessageInput,
+  scrollThreadToBottom,
   DEFAULT_TEST_PASSWORD,
   type IsolatedConnection,
+  type IsolatedGroup,
 } from '../utils/test-user-factory';
 
 test.describe.configure({ mode: 'parallel' });
@@ -314,4 +319,113 @@ test('contract - isolated connection helper is usable', async () => {
   expect(fixture, 'seedIsolatedConnection returned a fixture').toBeTruthy();
   expect(fixture!.requesterDisplayName).toMatch(/.+/);
   await deleteIsolatedConnection(fixture);
+});
+
+/**
+ * DETERMINISTIC group send/decrypt (#182 follow-up).
+ *
+ * Unlike the UI-created-group test above — which drives createGroup() in-browser
+ * (Argon2 + in-browser ECDH key distribution, routinely >90s, so it skips on
+ * slow runners and never reliably proves send/decrypt) — this seeds the group
+ * AND distributes the group key SERVER-SIDE via seedIsolatedGroup(withKeys), so
+ * the group is send/decrypt-ready with NO UI creation. Each browser still pays
+ * one Argon2 key-unlock (via the ReAuth modal, same as every 1:1 iso test), but
+ * the compounding UI-creation cost is gone → the test is deterministic and does
+ * NOT skip. It's the authoritative cross-member group-encryption round-trip:
+ * member A sends, member B (a second browser context) decrypts.
+ */
+test.describe('Group Chat E2E — deterministic encrypted round-trip (#182)', () => {
+  let group: IsolatedGroup | null = null;
+
+  test.beforeEach(async () => {
+    // 2 keyed members + a group conversation WITH the group key distributed.
+    group = await seedIsolatedGroup(2, { withKeys: true });
+    test.skip(!group, 'group seed/keying failed (no admin client / anon key?)');
+  });
+
+  test.afterEach(async () => {
+    await deleteIsolatedGroup(group);
+    group = null;
+  });
+
+  test('member A sends an encrypted group message and member B decrypts it', async ({
+    browser,
+  }) => {
+    const [a, b] = group!.participants;
+    const convId = group!.conversationId;
+
+    // Open both members concurrently — serializing the two Argon2 ReAuth
+    // unlocks nearly exhausts the per-test budget before the send.
+    // openConversationAs does goto + dismiss + ReAuth + wait-for-thread.
+    const [A, B] = await Promise.all([
+      openConversationAs(browser, a.session, convId),
+      openConversationAs(browser, b.session, convId),
+    ]);
+
+    // Forward browser console for CI diagnostics.
+    for (const [label, pg] of [
+      ['A', A.page],
+      ['B', B.page],
+    ] as const) {
+      pg.on('console', (msg) => {
+        if (
+          msg.type() === 'error' ||
+          msg.text().includes('DECRYPTION') ||
+          msg.text().includes('group')
+        ) {
+          console.log(`[${label} console.${msg.type()}] ${msg.text()}`);
+        }
+      });
+    }
+
+    try {
+      // Opening a group must NOT throw the #182 "not yet implemented" — the
+      // regression this whole feature guards against.
+      await expect(A.page.locator('text=/not yet implemented/i')).toHaveCount(
+        0
+      );
+
+      // A sends into the group (real group encrypt path: getGroupKeyForConversation
+      // at current_key_version → encryptMessage → messages.key_version stamped).
+      const body = `deterministic group hello ${Date.now()}`;
+      await fillMessageInput(A.page, body);
+      const sendButton = A.page.getByRole('button', { name: /Send message/i });
+      await sendButton.click();
+      await expect(sendButton).not.toContainText('Sending', { timeout: 60000 });
+
+      // A sees its OWN message decrypt + render (own bubble goes through the
+      // full group-key decrypt path, not an isOwn shortcut).
+      await scrollThreadToBottom(A.page);
+      await expect(A.page.getByText(body)).toBeVisible({ timeout: 30000 });
+
+      // B (a DIFFERENT member, second context) decrypts + sees it — this is the
+      // cross-member proof. B unwraps the group key with B's re-derived private
+      // key + the creator's public key, then decrypts A's message. The thread
+      // updates via ~10s polling; reload between attempts to survive cloud
+      // read-after-write tail latency.
+      const bText = B.page.getByText(body);
+      for (let i = 0; i < 5; i++) {
+        await scrollThreadToBottom(B.page);
+        if (await bText.isVisible({ timeout: 12000 }).catch(() => false)) break;
+        await B.page.reload({ waitUntil: 'domcontentloaded' });
+        await handleReAuthModal(B.page, DEFAULT_TEST_PASSWORD).catch(() => {});
+        await B.page.waitForSelector('[data-testid="message-thread"]', {
+          state: 'visible',
+          timeout: 30000,
+        });
+      }
+      await scrollThreadToBottom(B.page);
+      await expect(bText).toBeVisible({ timeout: 15000 });
+
+      // Neither member shows a decryption placeholder / "not yet implemented".
+      await expect(B.page.locator('text=/not yet implemented/i')).toHaveCount(
+        0
+      );
+      await expect(
+        B.page.getByText('Encrypted with previous keys')
+      ).toHaveCount(0);
+    } finally {
+      await Promise.all([A.close(), B.close()]);
+    }
+  });
 });
