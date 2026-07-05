@@ -75,22 +75,3 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   useParams: () => ({}),
 }));
-
-// MSW server setup (uncomment when handlers are created)
-// import { server } from './mocks/server'
-//
-// beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
-// afterEach(() => server.resetHandlers())
-// afterAll(() => server.close())
-
-// Suppress console errors during tests (optional, comment out for debugging)
-// const originalError = console.error
-// beforeAll(() => {
-//   console.error = (...args: unknown[]) => {
-//     if (typeof args[0] === 'string' && args[0].includes('Warning:')) return
-//     originalError.call(console, ...args)
-//   }
-// })
-// afterAll(() => {
-//   console.error = originalError
-// })

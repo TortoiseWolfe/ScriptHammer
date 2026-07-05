@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: vi.fn(() => ({
     auth: {
       getUser: vi.fn(() => ({
-        data: { user: { id: 'owner-user-id' } },
+        data: { user: { id: '77777777-7777-4777-8777-777777777777' } },
         error: null,
       })),
     },
@@ -26,7 +26,7 @@ vi.mock('@/lib/supabase/client', () => ({
         id: 'new-group-id',
         is_group: true,
         group_name: 'Test Group',
-        created_by: 'owner-user-id',
+        created_by: '77777777-7777-4777-8777-777777777777',
         current_key_version: 1,
         created_at: new Date().toISOString(),
       };
@@ -35,7 +35,7 @@ vi.mock('@/lib/supabase/client', () => ({
         {
           id: 'member-1',
           conversation_id: 'new-group-id',
-          user_id: 'owner-user-id',
+          user_id: '77777777-7777-4777-8777-777777777777',
           role: 'owner',
           key_version_joined: 1,
           key_status: 'active',
@@ -43,7 +43,7 @@ vi.mock('@/lib/supabase/client', () => ({
         {
           id: 'member-2',
           conversation_id: 'new-group-id',
-          user_id: 'member-a-id',
+          user_id: '55555555-5555-4555-8555-555555555555',
           role: 'member',
           key_version_joined: 1,
           key_status: 'active',
@@ -51,7 +51,7 @@ vi.mock('@/lib/supabase/client', () => ({
         {
           id: 'member-3',
           conversation_id: 'new-group-id',
-          user_id: 'member-b-id',
+          user_id: '66666666-6666-4666-8666-666666666666',
           role: 'member',
           key_version_joined: 1,
           key_status: 'active',
@@ -106,14 +106,14 @@ vi.mock('@/lib/supabase/client', () => ({
                 data: [
                   {
                     id: 'conn-1',
-                    requester_id: 'owner-user-id',
-                    addressee_id: 'member-a-id',
+                    requester_id: '77777777-7777-4777-8777-777777777777',
+                    addressee_id: '55555555-5555-4555-8555-555555555555',
                     status: 'accepted',
                   },
                   {
                     id: 'conn-2',
-                    requester_id: 'owner-user-id',
-                    addressee_id: 'member-b-id',
+                    requester_id: '77777777-7777-4777-8777-777777777777',
+                    addressee_id: '66666666-6666-4666-8666-666666666666',
                     status: 'accepted',
                   },
                 ],
@@ -134,7 +134,10 @@ vi.mock('@/lib/supabase/client', () => ({
         return {
           select: vi.fn(() => ({
             in: vi.fn(() => ({
-              data: [{ user_id: 'member-a-id' }, { user_id: 'member-b-id' }],
+              data: [
+                { user_id: '55555555-5555-4555-8555-555555555555' },
+                { user_id: '66666666-6666-4666-8666-666666666666' },
+              ],
               error: null,
             })),
           })),
@@ -161,7 +164,7 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
         id: 'new-group-id',
         is_group: true,
         group_name: 'Test Group',
-        created_by: 'owner-user-id',
+        created_by: '77777777-7777-4777-8777-777777777777',
         current_key_version: 1,
         created_at: new Date().toISOString(),
         last_message_at: null,
@@ -171,7 +174,7 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
         {
           id: 'member-1',
           conversation_id: 'new-group-id',
-          user_id: 'owner-user-id',
+          user_id: '77777777-7777-4777-8777-777777777777',
           role: 'owner',
           joined_at: new Date().toISOString(),
           left_at: null,
@@ -183,7 +186,7 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
         {
           id: 'member-2',
           conversation_id: 'new-group-id',
-          user_id: 'member-a-id',
+          user_id: '55555555-5555-4555-8555-555555555555',
           role: 'member',
           joined_at: new Date().toISOString(),
           left_at: null,
@@ -195,7 +198,7 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
         {
           id: 'member-3',
           conversation_id: 'new-group-id',
-          user_id: 'member-b-id',
+          user_id: '66666666-6666-4666-8666-666666666666',
           role: 'member',
           joined_at: new Date().toISOString(),
           left_at: null,
@@ -246,7 +249,10 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
         return {
           select: vi.fn(() => ({
             in: vi.fn(() => ({
-              data: [{ user_id: 'member-a-id' }, { user_id: 'member-b-id' }],
+              data: [
+                { user_id: '55555555-5555-4555-8555-555555555555' },
+                { user_id: '66666666-6666-4666-8666-666666666666' },
+              ],
               error: null,
             })),
           })),
@@ -277,7 +283,11 @@ vi.mock('@/services/messaging/group-key-service', () => ({
     ),
     distributeGroupKey: vi.fn(() =>
       Promise.resolve({
-        successful: ['owner-user-id', 'member-a-id', 'member-b-id'],
+        successful: [
+          '77777777-7777-4777-8777-777777777777',
+          '55555555-5555-4555-8555-555555555555',
+          '66666666-6666-4666-8666-666666666666',
+        ],
         pending: [],
       })
     ),
@@ -332,7 +342,10 @@ describe('Group Creation Integration', () => {
     it('should create a group with valid members', async () => {
       const input = {
         name: 'Test Group',
-        member_ids: ['member-a-id', 'member-b-id'],
+        member_ids: [
+          '55555555-5555-4555-8555-555555555555',
+          '66666666-6666-4666-8666-666666666666',
+        ],
       };
 
       const result = await groupService.createGroup(input);
@@ -369,7 +382,7 @@ describe('Group Creation Integration', () => {
     it('should set creator as owner role', async () => {
       const input = {
         name: 'Owner Test',
-        member_ids: ['member-a-id'],
+        member_ids: ['55555555-5555-4555-8555-555555555555'],
       };
 
       const result = await groupService.createGroup(input);
@@ -381,7 +394,7 @@ describe('Group Creation Integration', () => {
     it('should initialize key_version_joined to 1 for all members', async () => {
       const input = {
         name: 'Key Version Test',
-        member_ids: ['member-a-id'],
+        member_ids: ['55555555-5555-4555-8555-555555555555'],
       };
 
       const result = await groupService.createGroup(input);
@@ -400,7 +413,10 @@ describe('Group Creation Integration', () => {
     it('should set key_status to active for all members on success', async () => {
       const input = {
         name: 'Key Distribution Test',
-        member_ids: ['member-a-id', 'member-b-id'],
+        member_ids: [
+          '55555555-5555-4555-8555-555555555555',
+          '66666666-6666-4666-8666-666666666666',
+        ],
       };
 
       const result = await groupService.createGroup(input);
@@ -413,7 +429,7 @@ describe('Group Creation Integration', () => {
     it('should set conversation.current_key_version to 1', async () => {
       const input = {
         name: 'Initial Key Version',
-        member_ids: ['member-a-id'],
+        member_ids: ['55555555-5555-4555-8555-555555555555'],
       };
 
       const result = await groupService.createGroup(input);

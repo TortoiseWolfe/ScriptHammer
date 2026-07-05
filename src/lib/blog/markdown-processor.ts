@@ -39,6 +39,42 @@ export class MarkdownProcessor {
     return trimmed;
   }
 
+  /**
+   * Neutralize dangerous raw HTML in markdown prose without stripping the
+   * benign structural tags the blog authors rely on (<div>, <span>,
+   * <details>, <summary>, <br>, etc.). This is a targeted denylist, not a
+   * full sanitizer — the blog content is author-controlled at build time, so
+   * the goal is defense-in-depth so a fork that renders untrusted markdown
+   * is not immediately XSS-vulnerable. Removes:
+   *   - <script>/<style>/<iframe>/<object>/<embed>/<form>/<link>/<meta> tags
+   *     (opening, closing, and their contents where they wrap a payload);
+   *   - inline event-handler attributes (onclick=, onerror=, onload=, ...);
+   *   - javascript:/vbscript:/data: URIs inside href/src attributes.
+   */
+  private stripDangerousHtml(input: string): string {
+    let out = input;
+
+    // Drop entire dangerous elements including their contents.
+    out = out.replace(
+      /<(script|style|iframe|object|embed|form|link|meta|base)\b[\s\S]*?<\/\1\s*>/gi,
+      ''
+    );
+    // Drop any leftover self-closing / unclosed dangerous opening tags.
+    out = out.replace(
+      /<\/?(script|style|iframe|object|embed|form|link|meta|base)\b[^>]*>/gi,
+      ''
+    );
+    // Strip inline event-handler attributes (on*=), quoted or unquoted.
+    out = out.replace(/\s+on[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '');
+    // Neutralize dangerous URIs in href/src attributes.
+    out = out.replace(
+      /\b(href|src|xlink:href)\s*=\s*("|')?\s*(javascript|vbscript|data)\s*:[^"'>\s]*/gi,
+      '$1="#"'
+    );
+
+    return out;
+  }
+
   constructor(options: MarkdownProcessorOptions = {}) {
     this.options = {
       enableToc: true,
@@ -339,6 +375,15 @@ export class MarkdownProcessor {
         return `${CODE_PLACEHOLDER}${index}`;
       }
     );
+
+    // Neutralize dangerous RAW HTML in the markdown body. Code blocks are
+    // already extracted to placeholders above, so this only touches prose.
+    // The blog intentionally allows benign structural tags (<div>, <span>,
+    // <details>, <summary>, <br>) authored in .md, so we do NOT strip all
+    // HTML — only the script/style/iframe/etc. sinks, event-handler
+    // attributes, and javascript: URIs. This makes a fork that later renders
+    // untrusted markdown safe by default (XSS defense-in-depth).
+    html = this.stripDangerousHtml(html);
 
     // Convert headers (after code blocks to avoid converting # in code)
     // Add IDs to headers for TOC navigation

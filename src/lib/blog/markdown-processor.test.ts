@@ -276,6 +276,55 @@ describe('MarkdownProcessor code block extraction', () => {
   });
 });
 
+describe('MarkdownProcessor raw-HTML XSS hardening', () => {
+  it('strips <script> tags and their contents', () => {
+    const { html } = process('hello <script>alert(1)</script> world');
+    expect(html).not.toContain('<script');
+    expect(html).not.toContain('alert(1)');
+  });
+
+  it('strips <iframe>, <style>, <object> and <form> sinks', () => {
+    const { html } = process(
+      '<iframe src="evil"></iframe><style>x{}</style><object></object><form></form>'
+    );
+    expect(html).not.toMatch(/<(iframe|style|object|form)\b/i);
+  });
+
+  it('removes inline event-handler attributes', () => {
+    const { html } = process('<img src="x" onerror="alert(1)"> text');
+    expect(html.toLowerCase()).not.toContain('onerror');
+    expect(html).not.toContain('alert(1)');
+  });
+
+  it('neutralizes javascript: URIs in raw href/src', () => {
+    const { html } = process('<a href="javascript:alert(1)">x</a>');
+    expect(html.toLowerCase()).not.toContain('javascript:');
+  });
+
+  it('does NOT strip the benign structural tags the blog authors use', () => {
+    const md =
+      '<div class="note"><span>hi</span></div>\n<details><summary>more</summary>body</details>\nline<br>break';
+    const { html } = process(md);
+    expect(html).toContain('<div');
+    expect(html).toContain('<span>');
+    expect(html).toContain('<details>');
+    expect(html).toContain('<summary>');
+    expect(html).toContain('<br');
+  });
+
+  it('does not corrupt code blocks that contain a literal <script> sample', () => {
+    const { html } = process('```html\n<script>console.log(1)</script>\n```');
+    // A <script> written inside a fenced code block is rendered as an escaped,
+    // syntax-highlighted code sample (protected by the code-block placeholder)
+    // — never as executable HTML. Prism wraps the escaped `&lt;` in token
+    // spans, so assert the invariants that matter: no live <script> leaked,
+    // and the opening bracket was HTML-escaped.
+    expect(html).not.toContain('<script>console.log');
+    expect(html).toContain('&lt;');
+    expect(html).toContain('language-html');
+  });
+});
+
 describe('MarkdownProcessor word count and reading time', () => {
   it('excludes code block contents from word count', () => {
     const noCode = process('one two three four five').metadata.wordCount;

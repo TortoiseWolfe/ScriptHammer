@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import type { BlogPost } from '@/types/blog';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 
@@ -26,7 +26,9 @@ export default function SEOAnalysisPanel({
   onToggle,
 }: SEOAnalysisPanelProps) {
   const [copied, setCopied] = useState(false);
-  const analysis = seoAnalyzer.analyze(post);
+  // analyze() runs regex/split over the full post body — memoize so it doesn't
+  // re-run on unrelated re-renders (e.g. the copied-toggle).
+  const analysis = useMemo(() => seoAnalyzer.analyze(post), [post]);
   const { score, suggestions, strengths, weaknesses } = analysis;
 
   const copyFeedback = () => {
