@@ -206,6 +206,103 @@ jobs:
         run: echo "## Smoke Tests Complete" >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================
+  # STEP 2b: basePath project-site smoke (#157)
+  # A GitHub Pages project-site fork needs a /RepoName basePath; the class of
+  # bug where auth redirects / hand-built URLs escape that prefix is invisible
+  # to the root-anchored suite. This job builds a DEDICATED basePath-prefixed
+  # export and serves it under /ScriptHammer, then runs the `basepath` project
+  # (tests/e2e/basepath/**) against it. Self-contained: builds its own artifact
+  # (the shared build-output is root-path), chromium-only, one fast spec.
+  # ============================================
+  basepath:
+    name: basePath Project-Site Smoke
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium only)
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Build basePath-prefixed export
+        run: bash scripts/serve-basepath.sh build
+        env:
+          BASE_PATH: /ScriptHammer
+          # The prefixed build must NOT be zeroed by the CNAME/DISABLE_BASE_PATH
+          # path — NEXT_PUBLIC_BASE_PATH (set by the script) wins in next.config.
+          NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.EMAILJS_PUBLIC_KEY }}
+          NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ vars.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
+          NEXT_PUBLIC_EMAILJS_TEMPLATE_ID: ${{ vars.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID }}
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
+          NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+
+      - name: Start server (symlink under /ScriptHammer)
+        run: |
+          set -euo pipefail
+          BASE_PATH=/ScriptHammer bash scripts/serve-basepath.sh serve 3000 > serve.log 2>&1 &
+          SERVE_PID=$!
+          echo "serve started, PID=$SERVE_PID"
+          sleep 2
+          if ! kill -0 "$SERVE_PID" 2>/dev/null; then
+            echo "::error::serve exited immediately after launch"
+            cat serve.log || true
+            exit 1
+          fi
+          if ! npx wait-on http://localhost:3000/ScriptHammer/sign-up/ --timeout 60000 --verbose; then
+            echo "::error::wait-on timed out — prefixed serve never bound within 60s"
+            cat serve.log || true
+            ss -tlnp 2>/dev/null || true
+            exit 1
+          fi
+          echo "serve is responding on http://localhost:3000/ScriptHammer/"
+
+      - name: Run basePath project
+        run: |
+          pnpm exec playwright test \
+            --project=basepath \
+            --no-deps \
+            --reporter=list \
+            --timeout=30000
+        env:
+          CI: true
+          SKIP_WEBSERVER: true
+          BASE_URL: http://localhost:3000/ScriptHammer
+          # The smoke spec intercepts the signup POST (no real user/email), but
+          # the shared globalSetup hard-requires these to validate prerequisites
+          # before ANY project runs — so supply the same set the smoke job uses.
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+          TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
+          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
+
+      - name: basePath summary
+        if: always()
+        run: echo "## basePath Project-Site Smoke Complete" >> "$GITHUB_STEP_SUMMARY"
+
+  # ============================================
   # STEP 3: Rate-limiting tests (ordered, clean IP)
   # ============================================
   rate-limiting:

@@ -178,6 +178,20 @@ export default defineConfig({
       },
     },
 
+    // basePath project (#157): runs ONLY against a dedicated
+    // NEXT_PUBLIC_BASE_PATH=/ScriptHammer build served under a /ScriptHammer
+    // prefix (see .github/workflows/e2e.yml). It inherits the prefixed
+    // baseURL from BASE_URL (global `use.baseURL`), needs no auth/setup
+    // (the smoke intercepts the signup POST), and is EXCLUDED from every
+    // root-anchored project below via `**/basepath/**` in their testIgnore.
+    {
+      name: 'basepath',
+      testMatch: '**/basepath/**',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+
     // ============================================================
     // PARALLEL PROJECTS: Pre-authenticated via storageState
     // These exclude rate-limiting, brute-force, and sign-up tests
@@ -223,6 +237,7 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        '**/basepath/**', // basePath project only (root-anchored build here)
       ],
       dependencies: ['setup'],
       use: {
@@ -261,6 +276,7 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        '**/basepath/**', // basePath project only (root-anchored build here)
       ],
       dependencies: ['setup'],
       use: {
@@ -299,6 +315,7 @@ export default defineConfig({
         '**/rate-limiting.spec.ts',
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
+        '**/basepath/**', // basePath project only (root-anchored build here)
       ],
       dependencies: ['setup'],
       use: {
@@ -316,6 +333,7 @@ export default defineConfig({
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
+          '**/basepath/**', // basePath project only (root-anchored build here)
         ],
         dependencies: ['setup'],
         use: {
@@ -334,6 +352,7 @@ export default defineConfig({
           '**/rate-limiting.spec.ts',
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
+          '**/basepath/**', // basePath project only (root-anchored build here)
         ],
         dependencies: ['setup'],
         use: {
