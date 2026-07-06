@@ -11,6 +11,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import {
+  createTestUser,
+  ensureEncryptionKeys,
+} from './utils/test-user-factory';
 
 interface PrerequisiteError {
   category: string;
@@ -97,26 +101,73 @@ async function globalSetup(): Promise<void> {
     });
   }
 
-  // 3. Check test users exist
+  // 3. Ensure the shared test users exist.
+  //
+  // ROOT CAUSE of the #197 "test user not found" flake: the old check called
+  // adminClient.auth.admin.listUsers() with NO pagination, which returns only
+  // the first page (50 users). Once the project accumulates >50 users (throwaway
+  // E2E users pile up between cleanups), the shared PRIMARY/TERTIARY users land
+  // on page 2+ and the unpaginated check reports them "not found" — failing the
+  // whole run even though they exist. It looked like a race because it depended
+  // on how many throwaway users existed at check time.
+  //
+  // Fix: page through ALL users to find them. As a belt-and-suspenders self-heal
+  // (covers a genuine mid-run deletion / a --failed rerun that skipped
+  // auth-setup), recreate a user that is truly absent, with its encryption keys
+  // (ensureEncryptionKeys is idempotent, preserving existing keys → no salt
+  // mismatch).
   if (adminClient && errors.length === 0) {
     const testUsers = [
-      { email: process.env.TEST_USER_PRIMARY_EMAIL!, name: 'PRIMARY' },
-      { email: process.env.TEST_USER_TERTIARY_EMAIL, name: 'TERTIARY' },
-    ].filter((u) => u.email); // Only check users that are configured
+      {
+        email: process.env.TEST_USER_PRIMARY_EMAIL!,
+        password: process.env.TEST_USER_PRIMARY_PASSWORD!,
+        name: 'PRIMARY',
+      },
+      {
+        email: process.env.TEST_USER_TERTIARY_EMAIL,
+        password: process.env.TEST_USER_TERTIARY_PASSWORD,
+        name: 'TERTIARY',
+      },
+    ].filter((u) => u.email && u.password) as Array<{
+      email: string;
+      password: string;
+      name: string;
+    }>;
 
-    const { data: users } = await adminClient.auth.admin.listUsers();
+    // Page through every user (perPage max 1000) so users past page 1 are seen.
+    const allEmails = new Set<string>();
+    for (let page = 1; page <= 50; page++) {
+      const { data, error } = await adminClient.auth.admin.listUsers({
+        page,
+        perPage: 1000,
+      });
+      if (error) break;
+      const batch = data?.users ?? [];
+      for (const u of batch) if (u.email) allEmails.add(u.email.toLowerCase());
+      if (batch.length < 1000) break; // last page
+    }
 
-    for (const { email, name } of testUsers) {
-      const exists = users?.users?.some((u) => u.email === email);
-      if (exists) {
+    for (const { email, password, name } of testUsers) {
+      if (allEmails.has(email.toLowerCase())) {
         console.log(`✓ Test user ${name} exists: ${email}`);
-      } else {
+        continue;
+      }
+
+      // Genuinely absent (deleted mid-run / rerun without auth-setup) — recreate.
+      console.log(`↻ Test user ${name} missing — recreating: ${email}`);
+      const created = await createTestUser(email, password, {
+        createProfile: true,
+      });
+      if (!created) {
         errors.push({
           category: 'Test User',
-          message: `${name} test user not found: ${email}`,
-          fix: `Create user ${email} in Supabase Auth dashboard or via admin API`,
+          message: `${name} test user not found and could not be recreated: ${email}`,
+          fix: `Check SUPABASE_SERVICE_ROLE_KEY can create users, or create ${email} manually.`,
         });
+        continue;
       }
+      await ensureEncryptionKeys(email, password); // idempotent
+      console.log(`✓ Recreated test user ${name}: ${email}`);
     }
   }
 
