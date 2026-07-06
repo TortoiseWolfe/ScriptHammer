@@ -45,46 +45,9 @@ test.describe('Homepage Navigation (with Page Objects)', () => {
     // Navigation and URL check is handled in the page object
   });
 
-  // Skip: Progress badge not present on current homepage design
-  test.skip('progress badge displays correctly', async () => {
-    const progressText = await homePage.getProgressBadgeText();
-    expect(progressText).toMatch(/\d+% Complete/);
-  });
-
-  // Skip: Game demo section not present on current homepage design
-  test.skip('game demo section is present', async () => {
-    const isVisible = await homePage.isGameDemoVisible();
-    expect(isVisible).toBe(true);
-
-    // Try to play the game (may need to start it first)
-    await homePage.playDiceGame(1);
-
-    // Game should be interactive (either started or dice shown)
-    // We just verify the game section exists and is interactive
-    const gameSection = await homePage.isGameDemoVisible();
-    expect(gameSection).toBe(true);
-  });
-
-  // Skip: Status/Accessibility footer links not present on current design
-  test.skip('navigation links in footer work', async ({ page }) => {
-    // Test Status Dashboard link
-    await homePage.navigateToStatus();
-    await page.goBack();
-
-    // Test Accessibility link
-    await homePage.navigateToAccessibility();
-    await page.goBack();
-  });
-
   test('GitHub repository link opens in new tab', async () => {
     const newPage = await homePage.openGitHubRepo();
     expect(newPage.url()).toContain('github.com');
     await newPage.close();
-  });
-
-  // Skip: Skip link to game demo not present on current design
-  test.skip('skip to game demo link works', async () => {
-    const skipWorked = await homePage.testSkipLink();
-    expect(skipWorked).toBe(true);
   });
 });

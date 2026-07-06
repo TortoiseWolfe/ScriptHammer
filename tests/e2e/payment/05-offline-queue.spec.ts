@@ -1,14 +1,24 @@
 /**
  * Integration Test: Offline Queue - T059
- * Tests payment queuing when offline and automatic sync when reconnected
+ * Tests payment queuing when offline and automatic sync when reconnected.
  *
- * NOTE: Most tests are skipped because offline queue UI is not fully implemented.
- * The backend supports offline queuing but the UI doesn't expose queue counts
- * or status messages as expected by these tests.
+ * The offline-queue UI (PaymentQueuePanel on the /payment hub) is shipped, and
+ * the queue is a client-side Dexie store we can seed directly via
+ * seedPaymentQueue() — so the populated-queue flows below drive real queue rows
+ * and assert the panel's rendered state (count, per-item retry badge,
+ * online/offline, clear). No payment provider / creds needed. The panel only
+ * mounts when a provider is configured; CI sets dummy Stripe/PayPal keys so it
+ * renders (see e2e.yml), locally it may be hidden — every test guards on
+ * panel.count() the way the "#4" render test does.
  */
 
 import { test, expect } from '@playwright/test';
-import { dismissCookieBanner } from '../utils/test-user-factory';
+import type { Page } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  seedPaymentQueue,
+  clearPaymentQueue,
+} from '../utils/test-user-factory';
 
 test.describe('Offline Payment Queue', () => {
   test.describe.configure({ timeout: 60000 });
@@ -92,86 +102,187 @@ test.describe('Offline Payment Queue', () => {
     }
   });
 
-  // The flows below drive a POPULATED queue (offline-enqueue, sync, retry,
-  // max-retry, overflow, clear). The UI now exists (PaymentQueuePanel on
-  // /payment/dashboard) — the remaining blocker is SEEDING the queue, which
-  // needs either a real payment attempt (provider creds) or a direct Dexie
-  // IndexedDB fixture. Un-skip once a queue-seed fixture lands. (Was
-  // "UI not yet implemented" — that part is done.)
-  test.skip('should queue payment when offline', async ({ page, context }) => {
-    test.skip(true, 'Needs a queue-seed fixture or provider creds to enqueue');
-  });
+  // ── Populated-queue flows ────────────────────────────────────────────────
+  // Open the /payment hub and return the PaymentQueuePanel locator, or null when
+  // the panel isn't rendered (no provider configured — the queue is client-side
+  // and seedable regardless, but the panel is what these tests assert against).
+  async function openHubPanel(page: Page) {
+    await page.goto('/payment', { waitUntil: 'networkidle' });
+    if (page.url().includes('/sign-in')) {
+      await page.waitForTimeout(3000);
+      await page.goto('/payment', { waitUntil: 'networkidle' });
+    }
+    await dismissCookieBanner(page);
+    const panel = page.getByTestId('payment-queue-panel');
+    return (await panel.count()) ? panel : null;
+  }
 
-  test.skip('should automatically sync queue when coming online', async ({
+  test('should show queued items and the Offline badge when offline', async ({
     page,
     context,
   }) => {
-    // Skip: Queue sync status not displayed in current UI
-    test.skip(true, 'Needs a queue-seed fixture or provider creds to enqueue');
+    const panel = await openHubPanel(page);
+    test.skip(
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
+    );
+
+    // Seed + render the queue while ONLINE (reloading offline errors with
+    // ERR_INTERNET_DISCONNECTED). IndexedDB rows persist across the offline
+    // toggle, and the panel polls getQueue() every 5s, so once we go offline
+    // the panel shows the queued item AND flips the badge to "Offline".
+    await seedPaymentQueue(page, [{ type: 'payment_intent' }]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+    await expect(page.getByTestId('queue-count')).toContainText('1 pending', {
+      timeout: 15000,
+    });
+
+    await context.setOffline(true);
+    await expect(page.getByTestId('queue-conn-state')).toHaveText(/Offline/i, {
+      timeout: 15000,
+    });
+    // The queued item remains listed while offline.
+    await expect(page.getByTestId('queue-items').locator('li')).toHaveCount(1);
+
+    await context.setOffline(false);
+    await clearPaymentQueue(page);
   });
 
-  test.skip('should handle multiple queued payments', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Queue count not displayed in current UI
-    test.skip(true, 'Needs a queue-seed fixture to enqueue multiple items');
+  test('should handle multiple queued payments', async ({ page }) => {
+    const panel = await openHubPanel(page);
+    test.skip(
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
+    );
+
+    await seedPaymentQueue(page, [
+      { type: 'payment_intent' },
+      { type: 'payment_intent' },
+      { type: 'subscription_update' },
+    ]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    await expect(page.getByTestId('queue-count')).toContainText('3 pending', {
+      timeout: 15000,
+    });
+    await expect(page.getByTestId('queue-items').locator('li')).toHaveCount(3);
+    await clearPaymentQueue(page);
   });
 
-  test.skip('should persist queue across page reloads', async ({
+  test('should persist queue across page reloads', async ({ page }) => {
+    const panel = await openHubPanel(page);
+    test.skip(
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
+    );
+
+    await seedPaymentQueue(page, [
+      { type: 'payment_intent' },
+      { type: 'payment_intent' },
+    ]);
+    // IndexedDB survives navigation by nature; the panel re-reads it on mount.
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    await expect(page.getByTestId('queue-items').locator('li')).toHaveCount(2, {
+      timeout: 15000,
+    });
+    await clearPaymentQueue(page);
+  });
+
+  test('should show retry count on queued items', async ({ page }) => {
+    const panel = await openHubPanel(page);
+    test.skip(
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
+    );
+
+    // A pending item that has already failed twice renders "Attempt 2/5". We
+    // assert the DISPLAYED retry count/error, not wall-clock backoff timing
+    // (which is flaky in E2E — the backoff logic itself is unit-tested).
+    await seedPaymentQueue(page, [
+      { type: 'payment_intent', retries: 2, lastError: 'network error' },
+    ]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    const item = page.getByTestId('queue-items').locator('li').first();
+    await expect(item).toContainText('Attempt 2/5', { timeout: 15000 });
+    await expect(item).toContainText('network error');
+    await clearPaymentQueue(page);
+  });
+
+  test('should show Max-retries badge after max attempts', async ({ page }) => {
+    const panel = await openHubPanel(page);
+    test.skip(
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
+    );
+
+    // retries >= maxRetries(5) → the panel shows a "Max retries" badge-error.
+    await seedPaymentQueue(page, [
+      { type: 'payment_intent', status: 'failed', retries: 5 },
+    ]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    const badge = page.getByTestId('queue-items').locator('li .badge').first();
+    await expect(badge).toHaveText(/Max retries/i, { timeout: 15000 });
+    await expect(badge).toHaveClass(/badge-error/);
+    await clearPaymentQueue(page);
+  });
+
+  // KEEP-AS-MARKER: draining the queue via "Retry now" runs the REAL sync
+  // (paymentQueue.sync → provider charge → Supabase upsert). Against the dummy
+  // provider keys CI uses, the charge can't complete, so the item stays pending
+  // — the panel only empties with a live provider/backend. Asserting the drain
+  // needs real Stripe/PayPal sandbox creds, so this stays a documented skip.
+  // (The retry button's presence/enablement is covered by the "#4" render test;
+  // the sync/backoff LOGIC is covered by base-queue unit tests.)
+  test.skip('should drain the queue on Retry (needs live provider)', async ({
     page,
-    context,
   }) => {
-    // Skip: Queue persistence status not displayed
     test.skip(
       true,
-      'Needs a queue-seed fixture (Dexie) to populate before reload'
+      'Retry runs a real provider charge — needs live Stripe/PayPal sandbox creds'
     );
   });
 
-  test.skip('should retry failed queue items with exponential backoff', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Retry status not displayed
-    test.skip(true, 'Needs a seeded failed item to exercise backoff/retry UI');
-  });
-
-  test.skip('should remove queued items after max retry attempts', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Retry status not displayed
+  test('should clear the queue manually', async ({ page }) => {
+    const panel = await openHubPanel(page);
     test.skip(
-      true,
-      'Needs a seeded item at maxRetries to assert the Max-retries badge'
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
     );
-  });
 
-  test.skip('should show queue status in payment history', async ({
-    page,
-    context,
-  }) => {
-    // Skip: /payment/history route doesn't exist
-    test.skip(
-      true,
-      'Separate /payment/history surface; queue status lives on /payment/dashboard now'
+    await seedPaymentQueue(page, [
+      { type: 'payment_intent' },
+      { type: 'payment_intent' },
+    ]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+    await expect(page.getByTestId('queue-items').locator('li')).toHaveCount(2, {
+      timeout: 15000,
+    });
+
+    await page.getByTestId('queue-clear').click();
+    await page.getByTestId('queue-clear-confirm-yes').click();
+    await expect(page.getByTestId('queue-count')).toContainText(
+      'No queued payments',
+      { timeout: 15000 }
     );
+    await clearPaymentQueue(page);
   });
 
-  test.skip('should handle queue overflow gracefully', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Queue overflow alert not implemented
-    test.skip(true, 'Overflow/storage-warning handling not in scope for #4');
-  });
-
-  test.skip('should clear queue manually', async ({ page, context }) => {
-    // Skip: Clear queue button not implemented
+  // KEEP-AS-MARKER: genuinely blocked. The PaymentQueuePanel renders no
+  // overflow / storage-quota warning affordance, so there is nothing to assert.
+  // Un-skip when a quota-exceeded UI element (wired to storage-quota.ts) ships.
+  test.skip('should handle queue overflow gracefully', async ({ page }) => {
     test.skip(
       true,
-      'Clear button EXISTS (PaymentQueuePanel); needs a queue-seed fixture to assert the clear flow end-to-end'
+      'PaymentQueuePanel has no overflow/storage-quota warning UI yet (unbuilt feature)'
     );
   });
 });

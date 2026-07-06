@@ -35,28 +35,13 @@
  *   US-3 (P3) — Email user lands on /messages, sees the unchanged
  *               unlock modal (regression-only).
  *
- * What runs in CI vs. what doesn't:
- *
- *   US-3 — runs in CI against an isolated throwaway email viewer (see above).
- *
- *   US-1 / US-2 — skipped in CI. Triggering the OAuth-user code paths
- *                 requires `isOAuthUser(user)` to return true, which
- *                 means the user must have
- *                 `app_metadata.provider !== 'email'` set. The repo
- *                 does NOT yet have a dedicated OAuth test fixture
- *                 (no Google/GitHub test app credentials in CI), so
- *                 the unit tests in
- *                 src/components/auth/ReAuthModal/ReAuthModal.test.tsx
- *                 carry the behavioral coverage for OAuth detection,
- *                 mode-switching, badge rendering, and submit
- *                 branching. Manual smoke at T018 in tasks.md exercises
- *                 the real OAuth flow end-to-end.
- *
- *                 Promoting these to running tests is a follow-up:
- *                 either flip a throwaway user's app_metadata via the
- *                 Supabase admin API (mutating fixture, needs careful
- *                 teardown), or add a dedicated OAuth fixture user.
- *                 Out of scope for #28.
+ * All three run in CI. US-1 / US-2 exercise the OAuth code paths without any
+ * Google/GitHub app or live handshake: `isOAuthUser(user)` only checks
+ * `app_metadata.provider !== 'email'`, so promoteToOAuthAndReSignIn() flips a
+ * throwaway user's app_metadata via the Supabase admin API and re-signs-in to
+ * get a session whose embedded user carries the provider. US-1 also deletes the
+ * user's encryption keys (→ setup mode); US-2 keeps them (→ unlock mode). The
+ * throwaway user + its keys are torn down in afterEach (deleteIsolatedConversation).
  */
 
 import { test, expect } from '@playwright/test';
@@ -65,6 +50,8 @@ import {
   deleteIsolatedConversation,
   dismissCookieBanner,
   handleReAuthModal,
+  promoteToOAuthAndReSignIn,
+  deleteUserEncryptionKeys,
   DEFAULT_TEST_PASSWORD,
   type IsolatedConversation,
   type InjectableSession,
@@ -205,31 +192,86 @@ test.describe('Feature 013 — OAuth Messaging Password', () => {
     }
   });
 
-  // US-1 — OAuth user no-keys → modal in setup mode.
-  // See block comment at top of file for why this is skipped in CI.
-  test.skip('US-1: OAuth user with no keys sees setup mode', async () => {
-    // Future implementation:
-    //   1. Promote a throwaway user to OAuth via
-    //      supabase.auth.admin.updateUserById(...) with
-    //      app_metadata: { provider: 'google' }.
-    //   2. Delete any existing user_encryption_keys row for this user.
-    //   3. Inject session, navigate to /messages.
-    //   4. Assert dialog title is "Create a Messaging Password".
-    //   5. Assert confirm-password field renders.
-    //   6. Assert provider badge "Signed in via Google".
-    //   7. Submit matching passwords; assert keys initialize and modal closes.
-    //   8. Teardown: delete the throwaway user (cascades keys).
+  // US-1 — OAuth user with NO keys → modal in SETUP mode.
+  // The throwaway viewer is promoted to an OAuth identity (app_metadata.provider
+  // = google) and its encryption keys are deleted, so isOAuthUser(user) is true
+  // AND hasKeys() is false → ReAuthModal resolves to setup mode. No live OAuth
+  // handshake is needed: the app reads app_metadata off the injected session.
+  test('US-1: OAuth user with no keys sees setup mode', async ({ browser }) => {
+    // Delete the viewer's keys → no-keys user → setup mode.
+    await deleteUserEncryptionKeys(fixture!.viewer.id);
+    const oauthSession = await promoteToOAuthAndReSignIn(
+      fixture!.viewer,
+      'google'
+    );
+    test.skip(!oauthSession, 'OAuth promotion failed (no admin client?)');
+
+    const viewer = await openMessagesWithoutUnlock(
+      browser,
+      oauthSession!,
+      fixture!.conversationId
+    );
+    try {
+      const dialog = viewer.page.getByRole('dialog', {
+        name: /re-authentication required/i,
+      });
+      await expect(dialog).toBeVisible({ timeout: 30000 });
+
+      // Setup-mode copy (FR-006): "Create a Messaging Password", a
+      // confirm-password field, and the OAuth provider badge.
+      await expect(
+        dialog.getByRole('heading', { name: /create a messaging password/i })
+      ).toBeVisible();
+      await expect(dialog.locator('#reauth-confirm-password')).toBeVisible();
+      await expect(dialog.getByTestId('oauth-provider-badge')).toHaveText(
+        /Signed in via Google/i
+      );
+      await expect(
+        dialog.getByRole('button', { name: /create messaging password/i })
+      ).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 
-  // US-2 — OAuth user with keys → modal unlock mode with badge + subtext.
-  test.skip('US-2: returning OAuth user sees unlock mode with provider badge', async () => {
-    // Future implementation:
-    //   1. Same OAuth-promotion trick as US-1.
-    //   2. Pre-seed user_encryption_keys for this user.
-    //   3. Inject session, navigate to /messages.
-    //   4. Assert dialog title is "Enter Your Messaging Password".
-    //   5. Assert provider badge "Signed in via Google" renders.
-    //   6. Assert subtext contains "separate from your Google login".
-    //   7. Submit with the (seeded) messaging password; assert unlock succeeds.
+  // US-2 — returning OAuth user WITH keys (but no cached CryptoKey in this fresh
+  // context) → modal in UNLOCK mode, with the provider badge + "separate from
+  // your Google login" subtext. Keys already exist in the DB
+  // (seedIsolatedConversation seeded them); only the promotion is added.
+  test('US-2: returning OAuth user sees unlock mode with provider badge', async ({
+    browser,
+  }) => {
+    const oauthSession = await promoteToOAuthAndReSignIn(
+      fixture!.viewer,
+      'google'
+    );
+    test.skip(!oauthSession, 'OAuth promotion failed (no admin client?)');
+
+    const viewer = await openMessagesWithoutUnlock(
+      browser,
+      oauthSession!,
+      fixture!.conversationId
+    );
+    try {
+      const dialog = viewer.page.getByRole('dialog', {
+        name: /re-authentication required/i,
+      });
+      await expect(dialog).toBeVisible({ timeout: 30000 });
+
+      // Unlock-mode copy for an OAuth user: "Enter Your Messaging Password",
+      // the provider badge, and the "separate from your Google login" subtext.
+      await expect(
+        dialog.getByRole('heading', { name: /enter your messaging password/i })
+      ).toBeVisible();
+      await expect(dialog.getByTestId('oauth-provider-badge')).toHaveText(
+        /Signed in via Google/i
+      );
+      await expect(dialog).toContainText(/separate from your Google login/i);
+      await expect(
+        dialog.getByRole('button', { name: /unlock messages/i })
+      ).toBeVisible();
+    } finally {
+      await viewer.close();
+    }
   });
 });

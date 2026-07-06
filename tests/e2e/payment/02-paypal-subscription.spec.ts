@@ -124,7 +124,10 @@ test.describe('PayPal Subscription Creation Flow', () => {
   });
 
   test.skip('should handle failed payment retry logic', async ({ page }) => {
-    test.skip(true, 'Needs a seeded past_due/grace row + PayPal sandbox keys');
+    // The past_due/grace row can now be seeded (seedIsolatedSubscription), but
+    // the retry itself re-charges through the provider, which needs live PayPal
+    // sandbox creds CI can't have. That provider leg is the remaining blocker.
+    test.skip(true, 'Retry re-charges via PayPal — needs live sandbox creds');
   });
 
   test('should show grace period warning', async ({ browser }) => {

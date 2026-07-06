@@ -2695,3 +2695,198 @@ export async function resetEncryptionKeys(
   await page.reload({ waitUntil: 'domcontentloaded' });
   console.log(`[resetEncryptionKeys] Reset keys for ${email}`);
 }
+
+/**
+ * Promote a throwaway user to an OAuth identity and return a FRESH
+ * InjectableSession that carries the new `app_metadata.provider`.
+ *
+ * `isOAuthUser` / `getOAuthProvider` (src/lib/auth/oauth-utils.ts) read
+ * `user.app_metadata.provider`, and the app resolves the current user from the
+ * INJECTED session's `user` object (AuthContext reads `getSession().user`, not a
+ * fresh server `getUser()`). So flipping the metadata via the admin API is not
+ * enough on its own — we must re-sign-in AFTER the update so the new session's
+ * embedded user reflects `provider: <provider>`. That is exactly what a real
+ * OAuth login produces, without any Google/GitHub app or live handshake.
+ *
+ * @returns the fresh session, or null if the admin client / re-sign-in fails.
+ */
+export async function promoteToOAuthAndReSignIn(
+  user: TestUser,
+  provider: 'google' | 'github' = 'google'
+): Promise<InjectableSession | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  // Merge provider into app_metadata (updateUserById merges into
+  // raw_app_meta_data — same call scripts/seed-test-users.ts uses for is_admin).
+  const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: { provider, providers: [provider] },
+  });
+  if (updateErr) {
+    console.warn(
+      `promoteToOAuthAndReSignIn: updateUserById failed for ${user.email}:`,
+      updateErr.message
+    );
+    return null;
+  }
+
+  // Re-sign-in so the new session's JWT + embedded user carry the updated
+  // app_metadata (the pre-promotion session still says provider: 'email').
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) return null;
+  const anon = createClient(anonUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await anon.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error || !data.session) {
+    console.warn(
+      `promoteToOAuthAndReSignIn: re-sign-in failed for ${user.email}:`,
+      error?.message
+    );
+    return null;
+  }
+  return {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_at: data.session.expires_at ?? 0,
+    user: data.session.user,
+  };
+}
+
+/**
+ * Delete a user's `user_encryption_keys` rows so the messaging key gate treats
+ * them as a NO-KEYS user (ReAuthModal opens in SETUP mode instead of unlock).
+ * For the OAuth setup-mode test. Safe if the user has no keys.
+ */
+export async function deleteUserEncryptionKeys(userId: string): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+  await admin.from('user_encryption_keys').delete().eq('user_id', userId);
+}
+
+/**
+ * A payment-queue row to seed, as consumed by the PaymentQueuePanel UI. Mirrors
+ * `PaymentQueueItem` (src/lib/offline-queue/types.ts) minus the auto-`id`.
+ */
+export interface SeedPaymentQueueItem {
+  type: 'payment_intent' | 'subscription_update';
+  data?: Record<string, unknown>;
+  status?: 'pending' | 'processing' | 'failed' | 'completed';
+  retries?: number;
+  lastError?: string;
+  userId?: string;
+}
+
+/**
+ * Seed the offline PAYMENT queue directly in the browser's IndexedDB so tests
+ * can exercise a POPULATED PaymentQueuePanel without a real payment attempt or
+ * provider creds. The queue is a plain client-side Dexie store — DB
+ * `PaymentQueueV2`, object store `queuedOperations`, key `++id` (see
+ * src/lib/offline-queue/payment-adapter.ts) — so a readwrite `add()` per row is
+ * all it takes. No server round-trip, no encryption.
+ *
+ * The app instantiates `paymentQueue` (creating the DB + store) on first load,
+ * so call this AFTER the payment hub / demo page has mounted. The panel polls
+ * `getQueue()` every 5s; reload or wait one interval after seeding to see it.
+ *
+ * @returns the number of rows written (0 if the store didn't exist yet).
+ */
+export async function seedPaymentQueue(
+  page: Page,
+  items: SeedPaymentQueueItem[]
+): Promise<number> {
+  return page.evaluate(async (rows) => {
+    return new Promise<number>((resolve) => {
+      try {
+        const open = indexedDB.open('PaymentQueueV2');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('queuedOperations')) {
+            // App hasn't created the store yet — nothing we can seed.
+            db.close();
+            resolve(0);
+            return;
+          }
+          const tx = db.transaction('queuedOperations', 'readwrite');
+          const store = tx.objectStore('queuedOperations');
+          let written = 0;
+          for (const r of rows) {
+            // Dexie auto-assigns id (++id); omit it. createdAt/status/retries
+            // default to a sensible pending row when not supplied.
+            store.add({
+              type: r.type,
+              data: r.data ?? {},
+              status: r.status ?? 'pending',
+              retries: r.retries ?? 0,
+              createdAt: Date.now(),
+              ...(r.lastError ? { lastError: r.lastError } : {}),
+              ...(r.userId ? { userId: r.userId } : {}),
+            });
+            written++;
+          }
+          tx.oncomplete = () => {
+            db.close();
+            resolve(written);
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve(0);
+          };
+        };
+        open.onerror = () => resolve(0);
+        // If the DB doesn't exist yet, abort the upgrade so we don't create a
+        // store-less DB the app then can't upgrade. Signals "not ready".
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve(0);
+        };
+      } catch {
+        resolve(0);
+      }
+    });
+  }, items);
+}
+
+/**
+ * Empty the offline payment queue in the browser's IndexedDB (teardown for
+ * {@link seedPaymentQueue}). Safe if the store doesn't exist.
+ */
+export async function clearPaymentQueue(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      try {
+        const open = indexedDB.open('PaymentQueueV2');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('queuedOperations')) {
+            db.close();
+            resolve();
+            return;
+          }
+          const tx = db.transaction('queuedOperations', 'readwrite');
+          tx.objectStore('queuedOperations').clear();
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve();
+          };
+        };
+        open.onerror = () => resolve();
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve();
+        };
+      } catch {
+        resolve();
+      }
+    });
+  });
+}
