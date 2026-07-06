@@ -139,6 +139,15 @@ test.describe('Offline Payment Queue', () => {
     });
 
     await context.setOffline(true);
+    // setOffline() drops the network at the CDP layer but does NOT reliably
+    // flip navigator.onLine / fire the `offline` DOM event in Firefox/WebKit
+    // (only Chromium honors it for the JS API). useOfflineStatus listens for
+    // the `offline` window event, so dispatch it explicitly for cross-browser
+    // determinism (same rationale as the WebKit scroll-event dispatch in
+    // CLAUDE.md).
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event('offline', { bubbles: true }))
+    );
     await expect(page.getByTestId('queue-conn-state')).toHaveText(/Offline/i, {
       timeout: 15000,
     });
@@ -146,6 +155,9 @@ test.describe('Offline Payment Queue', () => {
     await expect(page.getByTestId('queue-items').locator('li')).toHaveCount(1);
 
     await context.setOffline(false);
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event('online', { bubbles: true }))
+    );
     await clearPaymentQueue(page);
   });
 
