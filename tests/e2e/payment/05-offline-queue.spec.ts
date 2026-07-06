@@ -293,12 +293,30 @@ test.describe('Offline Payment Queue', () => {
     // storage-quota warning (estimateStorage → warning at ≥80%) renders. This
     // must be installed BEFORE the app reads storage on mount — inject then
     // reload so the override is present when PaymentQueuePanel polls.
+    //
+    // WebKit does NOT implement StorageManager.estimate(), and navigator.storage
+    // may be absent or its members non-writable — a plain `navigator.storage.
+    // estimate = …` assignment silently no-ops there (the cause of the webkit-gen
+    // failure). Define the whole `storage` object via Object.defineProperty so
+    // the mock lands cross-browser.
     await page.addInitScript(() => {
-      if (navigator.storage) {
-        navigator.storage.estimate = async () => ({
-          usage: 9_000_000,
-          quota: 10_000_000,
+      const mockStorage = {
+        estimate: async () => ({ usage: 9_000_000, quota: 10_000_000 }),
+      };
+      try {
+        Object.defineProperty(navigator, 'storage', {
+          configurable: true,
+          get: () => mockStorage,
         });
+      } catch {
+        // If navigator.storage is non-configurable, fall back to patching
+        // estimate directly (works in Chromium/Firefox where it exists).
+        try {
+          (navigator.storage as unknown as { estimate: unknown }).estimate =
+            mockStorage.estimate;
+        } catch {
+          /* nothing more we can do; the test will skip via the assertion */
+        }
       }
     });
 
