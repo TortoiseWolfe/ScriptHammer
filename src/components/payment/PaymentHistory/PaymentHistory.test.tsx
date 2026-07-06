@@ -39,16 +39,24 @@ vi.mock('@/lib/payments/payment-service', () => ({
   }),
 }));
 
-// Mock the realtime hook so a test can drive its onBatch callback (the burst
-// indicator) without opening a channel. Captures the latest onBatch.
+// Mock the realtime hook so a test can drive its onBatch / onEvent callbacks
+// without opening a channel. Captures the latest callbacks.
 let capturedOnBatch: ((count: number) => void) | undefined;
+let capturedOnEvent:
+  | ((payload: { eventType: string; new?: { status?: string } | null }) => void)
+  | undefined;
 vi.mock('@/hooks/usePaymentResultsRealtime', () => ({
   usePaymentResultsRealtime: (
     _onChange: () => void,
     _enabled?: boolean,
-    onBatch?: (count: number) => void
+    onBatch?: (count: number) => void,
+    onEvent?: (payload: {
+      eventType: string;
+      new?: { status?: string } | null;
+    }) => void
   ) => {
     capturedOnBatch = onBatch;
+    capturedOnEvent = onEvent;
     return 'live';
   },
 }));
@@ -57,6 +65,7 @@ describe('PaymentHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     capturedOnBatch = undefined;
+    capturedOnEvent = undefined;
   });
 
   it('should render loading state initially', () => {
@@ -120,5 +129,33 @@ describe('PaymentHistory', () => {
 
     act(() => capturedOnBatch?.(1));
     expect(screen.queryByTestId('batch-update-count')).not.toBeInTheDocument();
+  });
+
+  it('shows an error alert when a realtime event reports a failed payment', async () => {
+    render(<PaymentHistory />);
+    await waitFor(() => {
+      expect(screen.getByText(/total payments/i)).toBeInTheDocument();
+    });
+
+    act(() =>
+      capturedOnEvent?.({ eventType: 'INSERT', new: { status: 'failed' } })
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId('realtime-error-alert')).toBeInTheDocument();
+    });
+  });
+
+  it('does NOT show the error alert for a succeeded payment event', async () => {
+    render(<PaymentHistory />);
+    await waitFor(() => {
+      expect(screen.getByText(/total payments/i)).toBeInTheDocument();
+    });
+
+    act(() =>
+      capturedOnEvent?.({ eventType: 'INSERT', new: { status: 'succeeded' } })
+    );
+    expect(
+      screen.queryByTestId('realtime-error-alert')
+    ).not.toBeInTheDocument();
   });
 });
