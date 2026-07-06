@@ -102,6 +102,29 @@ describe('usePaymentResultsRealtime', () => {
     vi.useRealTimers();
   });
 
+  it('reports the coalesced count via onBatch after a burst', () => {
+    const onChange = vi.fn();
+    const onBatch = vi.fn();
+    renderHook(() => usePaymentResultsRealtime(onChange, true, onBatch));
+    act(() => {
+      changeHandler?.({ eventType: 'INSERT' });
+      changeHandler?.({ eventType: 'INSERT' });
+      changeHandler?.({ eventType: 'UPDATE' });
+    });
+    act(() => vi.advanceTimersByTime(1000));
+    // One refetch, and onBatch reports all 3 coalesced events.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onBatch).toHaveBeenCalledTimes(1);
+    expect(onBatch).toHaveBeenCalledWith(3);
+
+    // A subsequent single change reports a batch of 1 (count resets per flush).
+    onBatch.mockClear();
+    act(() => changeHandler?.({ eventType: 'INSERT' }));
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onBatch).toHaveBeenCalledWith(1);
+    vi.useRealTimers();
+  });
+
   it('removes the channel on unmount', () => {
     const { unmount } = renderHook(() => usePaymentResultsRealtime(vi.fn()));
     unmount();

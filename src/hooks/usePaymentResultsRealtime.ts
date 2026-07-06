@@ -23,17 +23,25 @@ export type RealtimeStatus = 'connecting' | 'live' | 'reconnecting' | 'error';
  * `onChange` is read through a ref so passing a fresh callback each render does
  * NOT tear down and re-create the subscription.
  *
+ * `onBatch(count)` (optional) fires each time the debounce flushes, with the
+ * number of realtime events coalesced into that single refetch. A burst of N
+ * rapid changes → one onChange + one onBatch(N), so the UI can surface "N
+ * updates" instead of silently folding them.
+ *
  * Pass `enabled: false` to skip the subscription entirely (e.g. in tests or
  * stories that must not open a live channel) — the hook then stays 'connecting'
  * and never touches the Supabase client.
  */
 export function usePaymentResultsRealtime(
   onChange: () => void,
-  enabled = true
+  enabled = true,
+  onBatch?: (count: number) => void
 ): RealtimeStatus {
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onBatchRef = useRef(onBatch);
+  onBatchRef.current = onBatch;
   // Tracks whether the channel has ever reached SUBSCRIBED, so a later drop is
   // classified as 'reconnecting' (transient) rather than 'error' (terminal).
   const hasBeenLiveRef = useRef(false);
@@ -42,9 +50,18 @@ export function usePaymentResultsRealtime(
     if (!enabled) return;
     const supabase = createClient();
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    // Count events coalesced into the pending debounce so onBatch can report
+    // how many changes a single refetch represents.
+    let pendingCount = 0;
     const debouncedChange = () => {
+      pendingCount += 1;
       if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => onChangeRef.current(), 1000);
+      debounceTimer = setTimeout(() => {
+        const count = pendingCount;
+        pendingCount = 0;
+        onChangeRef.current();
+        onBatchRef.current?.(count);
+      }, 1000);
     };
 
     const channel = supabase

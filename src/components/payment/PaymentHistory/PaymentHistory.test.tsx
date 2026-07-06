@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PaymentHistory } from './PaymentHistory';
 
@@ -39,9 +39,24 @@ vi.mock('@/lib/payments/payment-service', () => ({
   }),
 }));
 
+// Mock the realtime hook so a test can drive its onBatch callback (the burst
+// indicator) without opening a channel. Captures the latest onBatch.
+let capturedOnBatch: ((count: number) => void) | undefined;
+vi.mock('@/hooks/usePaymentResultsRealtime', () => ({
+  usePaymentResultsRealtime: (
+    _onChange: () => void,
+    _enabled?: boolean,
+    onBatch?: (count: number) => void
+  ) => {
+    capturedOnBatch = onBatch;
+    return 'live';
+  },
+}));
+
 describe('PaymentHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    capturedOnBatch = undefined;
   });
 
   it('should render loading state initially', () => {
@@ -80,5 +95,30 @@ describe('PaymentHistory', () => {
     await waitFor(() => {
       expect(screen.getByText(/total payments/i)).toBeInTheDocument();
     });
+  });
+
+  it('shows an "N updates" pill when a burst of realtime updates is coalesced', async () => {
+    render(<PaymentHistory />);
+    await waitFor(() => {
+      expect(screen.getByText(/total payments/i)).toBeInTheDocument();
+    });
+
+    // A batch of >1 coalesced events → the pill appears with the count.
+    act(() => capturedOnBatch?.(3));
+    await waitFor(() => {
+      expect(screen.getByTestId('batch-update-count')).toHaveTextContent(
+        '3 updates'
+      );
+    });
+  });
+
+  it('does NOT show the batch pill for a single update', async () => {
+    render(<PaymentHistory />);
+    await waitFor(() => {
+      expect(screen.getByText(/total payments/i)).toBeInTheDocument();
+    });
+
+    act(() => capturedOnBatch?.(1));
+    expect(screen.queryByTestId('batch-update-count')).not.toBeInTheDocument();
   });
 });
