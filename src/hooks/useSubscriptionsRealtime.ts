@@ -17,6 +17,7 @@ export function useSubscriptionsRealtime(
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const hasBeenLiveRef = useRef(false);
 
   useEffect(() => {
     if (!enabled) return;
@@ -41,9 +42,16 @@ export function useSubscriptionsRealtime(
       )
       .subscribe((subStatus: string, err?: { message?: string }) => {
         if (subStatus === 'SUBSCRIBED') {
-          setStatus('live');
+          setStatus((prev) => {
+            // Recovered after a drop → refetch missed events.
+            if (prev === 'reconnecting') debouncedChange();
+            return 'live';
+          });
+          hasBeenLiveRef.current = true;
         } else if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
-          setStatus('error');
+          // Transient after a prior connect → 'reconnecting'; genuine failure
+          // before ever connecting → 'error'.
+          setStatus(hasBeenLiveRef.current ? 'reconnecting' : 'error');
           logger.error('Realtime subscription failed', {
             error: err?.message,
           });

@@ -58,13 +58,33 @@ describe('usePaymentResultsRealtime', () => {
     vi.useRealTimers();
   });
 
-  it('returns "live" once SUBSCRIBED and "error" on CHANNEL_ERROR', () => {
+  it('returns "error" on CHANNEL_ERROR before ever connecting', () => {
     const { result } = renderHook(() => usePaymentResultsRealtime(vi.fn()));
     expect(result.current).toBe('connecting');
-    act(() => statusCb?.('SUBSCRIBED'));
-    expect(result.current).toBe('live');
+    // Never reached SUBSCRIBED → a failure is a genuine 'error'.
     act(() => statusCb?.('CHANNEL_ERROR', { message: 'boom' }));
     expect(result.current).toBe('error');
+    vi.useRealTimers();
+  });
+
+  it('goes live → reconnecting → live on a drop+recover, and refetches on recovery', () => {
+    const onChange = vi.fn();
+    const { result } = renderHook(() => usePaymentResultsRealtime(onChange));
+
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(result.current).toBe('live');
+
+    // Drop AFTER being live → transient 'reconnecting', not terminal 'error'.
+    act(() => statusCb?.('CHANNEL_ERROR', { message: 'dropped' }));
+    expect(result.current).toBe('reconnecting');
+
+    // Recover → back to 'live' AND onChange fires (debounced) to refetch events
+    // missed while the channel was down.
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(result.current).toBe('live');
+    expect(onChange).not.toHaveBeenCalled(); // still in the debounce window
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onChange).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
 

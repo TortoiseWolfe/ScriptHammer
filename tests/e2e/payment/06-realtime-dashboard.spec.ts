@@ -209,12 +209,21 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     }
   });
 
-  test.skip('should automatically reconnect after disconnect', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Reconnection UI not implemented
-    test.skip(true, 'Reconnection UI not yet implemented');
+  // The reconnection state machine (live → 'reconnecting' on a drop AFTER being
+  // live → 'live' + refetch on recovery) is DETERMINISTICALLY unit-tested in
+  // src/hooks/usePaymentResultsRealtime.test.ts and useSubscriptionsRealtime.test.ts
+  // (drives the exact SUBSCRIBED / CHANNEL_ERROR / SUBSCRIBED callback sequence).
+  // We intentionally do NOT drive it via E2E: `context.setOffline(true)` does not
+  // deterministically make Supabase's realtime WebSocket emit CHANNEL_ERROR/
+  // TIMED_OUT within a test-friendly window (it depends on the phoenix-socket
+  // heartbeat timeout, which is long and variable) — an E2E assertion here flakes.
+  // The "Live" indicator itself is covered by the connection-status test above;
+  // the transient "Reconnecting…" badge is the same badge map, exercised in unit.
+  test.skip('should show "Reconnecting…" on a channel drop (unit-covered)', async () => {
+    test.skip(
+      true,
+      'Reconnect state machine is deterministically unit-tested; a real WS drop is not deterministic in E2E'
+    );
   });
 
   test.skip('should batch multiple rapid updates', async ({ page }) => {

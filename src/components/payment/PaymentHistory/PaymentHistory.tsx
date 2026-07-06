@@ -28,6 +28,7 @@ const REALTIME_BADGE: Record<
 > = {
   live: { cls: 'badge-success', label: 'Live' },
   connecting: { cls: 'badge-ghost', label: 'Connecting' },
+  reconnecting: { cls: 'badge-info', label: 'Reconnecting…' },
   error: { cls: 'badge-warning', label: 'Realtime offline' },
 };
 
