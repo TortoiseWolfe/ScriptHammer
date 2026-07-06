@@ -18,7 +18,8 @@ import { featureFlags } from '@/config/payment';
 
 function PaymentDemoContent() {
   const { user } = useAuth();
-  const { hasConsent, grantConsent } = usePaymentConsent();
+  const { hasConsent, consentDate, grantConsent, resetConsent } =
+    usePaymentConsent();
   const [showConsent, setShowConsent] = useState(true);
   const [paymentResultId, setPaymentResultId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<Error | null>(null);
@@ -40,6 +41,17 @@ function PaymentDemoContent() {
   const handlePaymentError = (error: Error) => {
     setPaymentError(error);
     setPaymentResultId(null);
+  };
+
+  // GDPR right to withdraw consent: clear the stored payment consent and return
+  // to Step 1. resetConsent() clears localStorage + the hook's hasConsent, but
+  // the sync effect above only drives showConsent → false on grant, so flip it
+  // back to true here to re-show the consent step immediately.
+  const handleWithdrawConsent = () => {
+    resetConsent();
+    setShowConsent(true);
+    setPaymentResultId(null);
+    setPaymentError(null);
   };
 
   const noProvidersConfigured =
@@ -212,6 +224,27 @@ function PaymentDemoContent() {
                   onError={handlePaymentError}
                   className="btn-accent"
                 />
+              </div>
+
+              {/* GDPR: withdraw payment consent (right to withdraw). Returns to
+                  Step 1 and clears the stored consent. */}
+              <div className="border-base-300 mt-6 border-t pt-4">
+                <p className="text-base-content/70 mb-2 text-sm">
+                  You granted payment consent
+                  {consentDate
+                    ? ` on ${new Date(consentDate).toLocaleDateString()}`
+                    : ''}
+                  . You can withdraw it at any time.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-ghost text-error min-h-11"
+                  onClick={handleWithdrawConsent}
+                  data-testid="withdraw-payment-consent"
+                  aria-label="Withdraw payment consent"
+                >
+                  Withdraw payment consent
+                </button>
               </div>
             </div>
           </div>
