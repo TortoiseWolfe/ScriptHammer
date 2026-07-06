@@ -111,10 +111,24 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     refetch();
   }, [refetch]);
 
+  // Transient "N updates" indicator: when a burst of realtime events is
+  // coalesced into one refetch, show how many were batched, then auto-dismiss.
+  const [batchCount, setBatchCount] = useState(0);
+  const handleBatch = useCallback((count: number) => {
+    if (count > 1) {
+      setBatchCount(count);
+      window.setTimeout(() => setBatchCount(0), 4000);
+    }
+  }, []);
+
   // Live-update on payment_results changes (debounced inside the hook). The
-  // returned status drives the connection indicator badge. When realtime is
-  // off the hook is fully inert (no channel opened).
-  const realtimeStatus = usePaymentResultsRealtime(refetch, realtime);
+  // returned status drives the connection indicator badge; onBatch surfaces the
+  // coalesced-burst count. When realtime is off the hook is fully inert.
+  const realtimeStatus = usePaymentResultsRealtime(
+    refetch,
+    realtime,
+    handleBatch
+  );
 
   // Apply filters
   useEffect(() => {
@@ -195,6 +209,19 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   const realtimeBadge = REALTIME_BADGE[realtimeStatus];
 
+  // Transient pill shown when a burst of realtime updates was coalesced.
+  const batchPill =
+    batchCount > 1 ? (
+      <span
+        className="badge badge-info gap-1"
+        data-testid="batch-update-count"
+        role="status"
+        aria-live="polite"
+      >
+        {batchCount} updates
+      </span>
+    ) : null;
+
   if (payments.length === 0) {
     return (
       <div className={`flex flex-col gap-4 ${className}`}>
@@ -209,6 +236,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
               {realtimeBadge.label}
             </span>
           )}
+          {batchPill}
           <span className="badge badge-outline" data-testid="transaction-count">
             {payments.length} total payments
           </span>
@@ -254,6 +282,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
               {realtimeBadge.label}
             </span>
           )}
+          {batchPill}
           <span className="badge badge-outline" data-testid="transaction-count">
             {payments.length} total payments
           </span>

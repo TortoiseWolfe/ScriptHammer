@@ -226,9 +226,48 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     );
   });
 
-  test.skip('should batch multiple rapid updates', async ({ page }) => {
-    // Skip: Batch update UI not implemented
-    test.skip(true, 'Batch update UI not yet implemented');
+  test('should coalesce a burst of updates into an "N updates" indicator', async ({
+    browser,
+  }) => {
+    // Insert several payment_results rows near-simultaneously; the realtime
+    // channel fires a burst of events that the hook coalesces (1s debounce) into
+    // ONE refetch + a "N updates" pill. No provider/creds needed.
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const { page } = opened;
+      await expect(page.getByTestId('transaction-count')).toContainText(
+        '1 total',
+        { timeout: 30000 }
+      );
+
+      // Burst: 3 inserts within the debounce window → one coalesced batch.
+      await Promise.all([
+        fixture.addResult(),
+        fixture.addResult(),
+        fixture.addResult(),
+      ]);
+
+      // The batch pill shows a count > 1 (exact number depends on how many of
+      // the burst land in one debounce window — assert the pill with a
+      // multi-update count, and that the list grew).
+      await expect(page.getByTestId('batch-update-count')).toContainText(
+        /\d+ updates/,
+        { timeout: 15000 }
+      );
+      await expect(page.getByTestId('transaction-count')).toContainText(
+        '4 total',
+        { timeout: 15000 }
+      );
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
   test.skip('should show real-time error notifications', async ({ page }) => {
