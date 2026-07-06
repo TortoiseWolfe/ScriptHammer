@@ -227,8 +227,36 @@ test.describe('GDPR Payment Consent Flow', () => {
     await expect(step2).toBeVisible({ timeout: 15000 });
   });
 
-  test.skip('should allow consent reset', async ({ page }) => {
-    // Skip: Consent reset feature may not be implemented in /account
-    test.skip(true, 'Consent reset feature not yet implemented');
+  test('should allow withdrawing payment consent (GDPR right to withdraw)', async ({
+    page,
+  }) => {
+    // Grant consent → reach Step 2.
+    await page.getByRole('button', { name: /Accept/i }).click();
+    await expect(page.getByRole('heading', { name: /Step 2/i })).toBeVisible({
+      timeout: 30000,
+    });
+    expect(
+      await page.evaluate(
+        () => localStorage.getItem('payment_consent') === 'granted'
+      )
+    ).toBe(true);
+
+    // Withdraw consent → returns to Step 1 and clears the stored consent.
+    await page.getByTestId('withdraw-payment-consent').click();
+
+    await expect(
+      page.getByRole('heading', { name: /GDPR Consent/i })
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole('heading', { name: /Step 2/i })
+    ).not.toBeVisible();
+
+    // localStorage consent keys are cleared (the withdraw is persisted).
+    const cleared = await page.evaluate(
+      () =>
+        localStorage.getItem('payment_consent') === null &&
+        localStorage.getItem('payment_consent_date') === null
+    );
+    expect(cleared).toBe(true);
   });
 });
