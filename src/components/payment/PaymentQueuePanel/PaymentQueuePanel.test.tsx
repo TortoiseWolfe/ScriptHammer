@@ -24,6 +24,18 @@ vi.mock('@/hooks/useOfflineStatus', () => ({
   useOfflineStatus: () => ({ isOffline: offline }),
 }));
 
+let storageEstimate = {
+  usage: 0,
+  quota: 0,
+  ratio: 0,
+  warning: false,
+  supported: false,
+};
+vi.mock('@/lib/offline-queue/storage-quota', () => ({
+  estimateStorage: () => Promise.resolve(storageEstimate),
+  formatStorageUsage: () => '9 MB of 10 MB',
+}));
+
 function makeItem(over: Partial<PaymentQueueItem> = {}): PaymentQueueItem {
   return {
     id: 1,
@@ -40,6 +52,13 @@ describe('PaymentQueuePanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     offline = false;
+    storageEstimate = {
+      usage: 0,
+      quota: 0,
+      ratio: 0,
+      warning: false,
+      supported: false,
+    };
     mockQueue.getQueue.mockResolvedValue([]);
     mockQueue.retryFailed.mockResolvedValue(0);
     mockQueue.sync.mockResolvedValue({
@@ -122,5 +141,38 @@ describe('PaymentQueuePanel', () => {
 
     fireEvent.click(screen.getByTestId('queue-clear-confirm-yes'));
     await waitFor(() => expect(mockQueue.clear).toHaveBeenCalledTimes(1));
+  });
+
+  it('shows a storage-quota warning when storage is near quota', async () => {
+    storageEstimate = {
+      usage: 9_000_000,
+      quota: 10_000_000,
+      ratio: 0.9,
+      warning: true,
+      supported: true,
+    };
+    render(<PaymentQueuePanel pollIntervalMs={999999} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('queue-storage-warning')).toBeInTheDocument()
+    );
+    expect(screen.getByTestId('queue-storage-warning')).toHaveTextContent(
+      /storage is almost full/i
+    );
+  });
+
+  it('hides the storage-quota warning when storage is not near quota', async () => {
+    storageEstimate = {
+      usage: 1_000_000,
+      quota: 10_000_000,
+      ratio: 0.1,
+      warning: false,
+      supported: true,
+    };
+    render(<PaymentQueuePanel pollIntervalMs={999999} />);
+    // Let the poll/estimate settle, then assert the warning is absent.
+    await waitFor(() => expect(mockQueue.getQueue).toHaveBeenCalled());
+    expect(
+      screen.queryByTestId('queue-storage-warning')
+    ).not.toBeInTheDocument();
   });
 });

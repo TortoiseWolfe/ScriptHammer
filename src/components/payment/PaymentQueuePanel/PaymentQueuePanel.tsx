@@ -18,6 +18,11 @@ import { useOfflineStatus } from '@/hooks/useOfflineStatus';
 import { paymentQueue } from '@/lib/offline-queue/payment-adapter';
 import { DEFAULT_QUEUE_CONFIG } from '@/lib/offline-queue/types';
 import type { PaymentQueueItem } from '@/lib/offline-queue/types';
+import {
+  estimateStorage,
+  formatStorageUsage,
+  type StorageEstimateResult,
+} from '@/lib/offline-queue/storage-quota';
 
 export interface PaymentQueuePanelProps {
   /** Override the queue-poll interval (ms). */
@@ -41,6 +46,7 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
   const [syncing, setSyncing] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [storage, setStorage] = useState<StorageEstimateResult | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -48,6 +54,14 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
       setItems(queue);
     } catch {
       // Non-critical; leave the last-known list.
+    }
+    // Re-estimate origin storage on each poll so the near-quota warning stays
+    // current as the offline queue grows. Origin-wide (StorageManager API),
+    // degrades to no-warning where unavailable. Never throws.
+    try {
+      setStorage(await estimateStorage());
+    } catch {
+      // storage-quota already degrades gracefully; ignore.
     }
   }, []);
 
@@ -139,6 +153,26 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
               (failedCount > 0 ? `, ${failedCount} failed` : '') +
               ` (${items.length} total)`}
         </p>
+
+        {/* Storage-quota warning: when origin IndexedDB usage is at/over 80%,
+            queued payments may fail to persist. Origin-wide estimate; renders
+            nothing where the StorageManager API is unavailable. */}
+        {storage?.warning && (
+          <div
+            role="alert"
+            className="alert alert-warning p-2 text-xs"
+            aria-live="polite"
+            data-testid="queue-storage-warning"
+          >
+            <span>
+              Device storage is almost full
+              {formatStorageUsage(storage.usage, storage.quota)
+                ? ` (${formatStorageUsage(storage.usage, storage.quota)})`
+                : ''}
+              . Queued payments may not be saved until you free up space.
+            </span>
+          </div>
+        )}
 
         {actionError && (
           <div className="alert alert-error p-2 text-xs" role="alert">

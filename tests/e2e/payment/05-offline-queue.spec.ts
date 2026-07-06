@@ -276,13 +276,38 @@ test.describe('Offline Payment Queue', () => {
     await clearPaymentQueue(page);
   });
 
-  // KEEP-AS-MARKER: genuinely blocked. The PaymentQueuePanel renders no
-  // overflow / storage-quota warning affordance, so there is nothing to assert.
-  // Un-skip when a quota-exceeded UI element (wired to storage-quota.ts) ships.
-  test.skip('should handle queue overflow gracefully', async ({ page }) => {
+  test('should warn when device storage is near quota', async ({ page }) => {
+    // Force navigator.storage.estimate() to report 90% usage so the panel's
+    // storage-quota warning (estimateStorage → warning at ≥80%) renders. This
+    // must be installed BEFORE the app reads storage on mount — inject then
+    // reload so the override is present when PaymentQueuePanel polls.
+    await page.addInitScript(() => {
+      if (navigator.storage) {
+        navigator.storage.estimate = async () => ({
+          usage: 9_000_000,
+          quota: 10_000_000,
+        });
+      }
+    });
+
+    const panel = await openHubPanel(page);
     test.skip(
-      true,
-      'PaymentQueuePanel has no overflow/storage-quota warning UI yet (unbuilt feature)'
+      !panel,
+      'PaymentQueuePanel not rendered (no provider configured)'
     );
+
+    // Seed an item so the queue is non-empty (realistic near-full scenario).
+    await seedPaymentQueue(page, [{ type: 'payment_intent' }]);
+    await page.reload({ waitUntil: 'networkidle' });
+    await dismissCookieBanner(page);
+
+    // The near-quota warning appears (panel re-estimates on each 5s poll).
+    await expect(page.getByTestId('queue-storage-warning')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByTestId('queue-storage-warning')).toContainText(
+      /storage is almost full/i
+    );
+    await clearPaymentQueue(page);
   });
 });
