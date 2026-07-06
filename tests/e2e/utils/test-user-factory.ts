@@ -145,9 +145,10 @@ export async function createTestUser(
     return null;
   }
 
-  // Check if user already exists
-  const { data: existingUsers } = await client.auth.admin.listUsers();
-  const existingUser = existingUsers?.users?.find((u) => u.email === email);
+  // Check if user already exists (paginated — see getUserByEmail; an
+  // unpaginated listUsers() misses users past page 1 and would then try to
+  // re-create an existing user, failing with "already registered").
+  const existingUser = await getUserByEmail(email);
 
   if (existingUser) {
     console.log(`createTestUser: User ${email} already exists, deleting first`);
@@ -290,8 +291,10 @@ export async function deleteTestUserByEmail(email: string): Promise<boolean> {
   const client = getAdminClient();
   if (!client) return false;
 
-  const { data: users } = await client.auth.admin.listUsers();
-  const user = users?.users?.find((u) => u.email === email);
+  // Paginated lookup — an unpaginated listUsers() misses users past page 1, so
+  // throwaway users would never get deleted and pile up past 50, which is what
+  // pushed the shared test users off page 1 and triggered #197 in the first place.
+  const user = await getUserByEmail(email);
 
   if (!user) {
     console.log(`deleteTestUserByEmail: User ${email} not found`);
@@ -302,14 +305,30 @@ export async function deleteTestUserByEmail(email: string): Promise<boolean> {
 }
 
 /**
- * Get user by email address
+ * Get user by email address.
+ *
+ * Pages through ALL users — `listUsers()` returns only the first 50 by default,
+ * so once the project holds >50 users the target can be on a later page and an
+ * unpaginated lookup returns null (the root cause of the #197 "test user not
+ * found" flake). Search is case-insensitive.
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
   const client = getAdminClient();
   if (!client) return null;
 
-  const { data: users } = await client.auth.admin.listUsers();
-  return users?.users?.find((u) => u.email === email) || null;
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await client.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) return null;
+    const batch = data?.users ?? [];
+    const found = batch.find((u) => u.email?.toLowerCase() === target);
+    if (found) return found;
+    if (batch.length < 1000) break; // last page reached
+  }
+  return null;
 }
 
 /**
