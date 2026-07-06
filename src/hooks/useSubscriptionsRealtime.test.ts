@@ -63,6 +63,20 @@ describe('useSubscriptionsRealtime', () => {
     vi.useRealTimers();
   });
 
+  it('goes live → reconnecting → live on drop+recover and refetches on recovery', () => {
+    const onChange = vi.fn();
+    const { result } = renderHook(() => useSubscriptionsRealtime(onChange));
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(result.current).toBe('live');
+    act(() => statusCb?.('CHANNEL_ERROR', { message: 'dropped' }));
+    expect(result.current).toBe('reconnecting');
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(result.current).toBe('live');
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it('opens NO channel when disabled (enabled=false)', () => {
     renderHook(() => useSubscriptionsRealtime(vi.fn(), false));
     expect(channel).not.toHaveBeenCalled();
