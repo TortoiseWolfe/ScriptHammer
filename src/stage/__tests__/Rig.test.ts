@@ -57,4 +57,17 @@ describe('Rig', () => {
       expect(() => rig.update(0.016)).not.toThrow();
     }
   });
+
+  it('WASD pans the orbit focus across the ground (#216)', () => {
+    // #216 — orbit used to have a fixed pivot, so you couldn't reach the far end.
+    rig.setMode('orbit');
+    rig.focus.set(0, 0, 0);
+    const z0 = rig.focus.z;
+    rig.handleKey('KeyW', true); // hold "forward"
+    // several frames of pan
+    for (let i = 0; i < 30; i++) rig.update(0.05);
+    // the pivot must have translated in the ground plane (not stayed fixed)
+    const moved = Math.abs(rig.focus.z - z0) > 1 || Math.abs(rig.focus.x) > 1;
+    expect(moved).toBe(true);
+  });
 });

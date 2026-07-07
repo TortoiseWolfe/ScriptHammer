@@ -52,14 +52,21 @@ function SceneInner({
       {
         minR: 200,
         maxR: 5000,
-        moveSpeed: 120,
+        moveSpeed: 900, // WASD-pan speed across the ~5.8km corridor in orbit
+        // Clamp WASD-pan to the corridor extent (buildings span x[-842,807],
+        // z[-2912,2908]) with a little margin, so you can reach both the north
+        // (downtown/river) and south (Choo Choo) ends but not fly off into void.
+        panMinX: -1000,
+        panMaxX: 1000,
+        panMinZ: -3100,
+        panMaxZ: 3100,
       }
     );
     // Aim BEFORE first paint (not in a post-paint effect) so the tour is
     // pointed at the city from frame 0 — no empty-void first frames.
     r.setWaypoints(RIVERFRONT_TOUR as RigWaypoint[]);
-    // Orbit/Miniature mode centers on the city centroid (z ≈ -2000), not the
-    // origin, and starts pulled back to frame the whole corridor.
+    // Miniature mode starts framed on the downtown/riverfront (north) end but
+    // WASD pans the pivot the full length of the corridor to the Choo Choo (south).
     r.focus.set(-100, 0, -2000);
     r.radius = 2600;
     r.tRadius = 2600;

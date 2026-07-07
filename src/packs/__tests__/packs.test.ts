@@ -18,14 +18,23 @@ describe('packs', () => {
 });
 
 describe('riverfront tour', () => {
-  it('visits the four riverfront landmarks with captions', () => {
-    expect(RIVERFRONT_TOUR).toHaveLength(4);
-    expect(RIVERFRONT_TOUR.map((w) => w.name)).toEqual([
+  it('starts at the riverfront and ends at the Choo Choo, every stop captioned', () => {
+    // North riverfront cluster first, then south down the spine to the Choo Choo.
+    const names = RIVERFRONT_TOUR.map((w) => w.name);
+    expect(names.slice(0, 4)).toEqual([
       "Ross's Landing",
       'Tennessee Aquarium',
       'Walnut Street Bridge',
       'Coolidge Park',
     ]);
+    expect(names).toContain('Chattanooga Choo Choo');
     for (const w of RIVERFRONT_TOUR) expect(w.blurb.length).toBeGreaterThan(0);
+  });
+
+  it('traverses the whole corridor: has both north (z<0) and south (z>0) stops', () => {
+    // #216 — the tour used to cluster entirely at the north end; it must now
+    // reach the Choo Choo at the south (positive z).
+    expect(RIVERFRONT_TOUR.some((w) => w.look[2] < -2000)).toBe(true); // north
+    expect(RIVERFRONT_TOUR.some((w) => w.look[2] > 2000)).toBe(true); // south
   });
 });

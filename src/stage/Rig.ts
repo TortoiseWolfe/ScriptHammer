@@ -62,6 +62,11 @@ export interface RigOptions {
   idleDrift?: number;
   minR?: number;
   maxR?: number;
+  // Bounds for WASD focus-panning in orbit mode (ground-plane clamp).
+  panMinX?: number;
+  panMaxX?: number;
+  panMinZ?: number;
+  panMaxZ?: number;
 }
 
 type RigDom = EventTarget & {
@@ -143,6 +148,12 @@ export class Rig {
         idleDrift: 5.5,
         minR: 14,
         maxR: 240,
+        // Generous default pan bounds; the composition root overrides these to
+        // the actual corridor extent.
+        panMinX: -100000,
+        panMaxX: 100000,
+        panMinZ: -100000,
+        panMaxZ: 100000,
       },
       opts || {}
     );
@@ -520,6 +531,34 @@ export class Rig {
   }
 
   _orbit(dt: number): void {
+    // WASD pans the pivot across the ground plane (camera-relative), so the user
+    // can slide the whole diorama and reach both ends of the corridor — not just
+    // orbit a fixed point. Reuses the forward/right basis from _driveAvatar.
+    const panF = new Vector3(Math.sin(this.theta), 0, Math.cos(this.theta));
+    panF.multiplyScalar(-1); // camera looks down -theta; "up-screen" = -forward
+    const panR = new Vector3(panF.z, 0, -panF.x);
+    const wish = new Vector3();
+    if (this.down('KeyW')) wish.add(panF);
+    if (this.down('KeyS')) wish.sub(panF);
+    if (this.down('KeyD')) wish.add(panR);
+    if (this.down('KeyA')) wish.sub(panR);
+    if (wish.lengthSq() > 0) {
+      // Pan speed scales with zoom (radius) so it feels consistent close & far.
+      const panSpeed = this.o.moveSpeed * (this.radius / 600);
+      wish.normalize().multiplyScalar(panSpeed * dt);
+      this.focus.x = clamp(
+        this.focus.x + wish.x,
+        this.o.panMinX,
+        this.o.panMaxX
+      );
+      this.focus.z = clamp(
+        this.focus.z + wish.z,
+        this.o.panMinZ,
+        this.o.panMaxZ
+      );
+      this.idle = 0; // suppress idle-drift while the user is actively panning
+    }
+
     if (this.idle > 3.0) this.tTheta += this.o.idleDrift * 0.002 * dt * 60; // gentle drift
     this.theta = damp(this.theta, this.tTheta, 6, dt);
     this.phi = damp(this.phi, this.tPhi, 6, dt);

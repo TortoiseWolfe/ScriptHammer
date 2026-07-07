@@ -40,4 +40,29 @@ export const RIVERFRONT_TOUR: Waypoint[] = [
     blurb:
       'North Shore park with a 1894 Dentzel carousel and a climbable fountain.',
   },
+  // --- turn south, down the Broad/Market spine toward the Choo Choo ---
+  {
+    pos: [-320, 120, -1500],
+    look: [-382, 20, -1614],
+    dwell: 5,
+    name: 'Republic Centre',
+    blurb:
+      "At 300 ft / 21 floors, Chattanooga's tallest building — the downtown skyline's anchor.",
+  },
+  {
+    pos: [80, 90, -200],
+    look: [40, 6, -600],
+    dwell: 4.5,
+    name: 'Downtown Core',
+    blurb:
+      'The Broad & Market Street grid — the dense heart of downtown, laid out in 1839.',
+  },
+  {
+    pos: [-40, 80, 2200],
+    look: [-55, 6, 2720],
+    dwell: 6,
+    name: 'Chattanooga Choo Choo',
+    blurb:
+      'Historic Terminal Station (1909), immortalized by the 1941 Glenn Miller hit. Now a hotel + gardens on the Southside.',
+  },
 ];
