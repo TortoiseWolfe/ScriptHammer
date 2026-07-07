@@ -1,0 +1,86 @@
+import { Vector2 } from 'three';
+
+export const TILT_SHIFT_VERT = `
+varying vec2 vUv;
+void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
+
+// Directional 9-tap gaussian keyed to a horizontal focus band (Scheimpflug tilt).
+// Ported verbatim from cm-shaders.js TiltShiftBlur; tDiffuse -> inputBuffer.
+export const TILT_SHIFT_FRAG = `
+varying vec2 vUv;
+uniform sampler2D inputBuffer;
+uniform vec2 texel;
+uniform vec2 direction;
+uniform float focus, band, gradient, tilt, maxBlur;
+void main(){
+  float focusY = focus + tilt * (vUv.x - 0.5);
+  float d = abs(vUv.y - focusY);
+  float amt = smoothstep(band, band + gradient, d);
+  amt = amt * amt;
+  float r = amt * maxBlur;
+  vec2 dir = direction * texel * r;
+  vec4 c = texture2D(inputBuffer, vUv) * 0.1964825501511404;
+  c += texture2D(inputBuffer, vUv + dir * 1.0) * 0.2969069646728344 * 0.5;
+  c += texture2D(inputBuffer, vUv - dir * 1.0) * 0.2969069646728344 * 0.5;
+  c += texture2D(inputBuffer, vUv + dir * 2.0) * 0.09447039785044732;
+  c += texture2D(inputBuffer, vUv - dir * 2.0) * 0.09447039785044732;
+  c += texture2D(inputBuffer, vUv + dir * 3.0) * 0.010381362401148057;
+  c += texture2D(inputBuffer, vUv - dir * 3.0) * 0.010381362401148057;
+  c += texture2D(inputBuffer, vUv + dir * 4.0) * 0.002214997443481223;
+  c += texture2D(inputBuffer, vUv - dir * 4.0) * 0.002214997443481223;
+  gl_FragColor = c;
+}`;
+
+// Grade: ported from cm-shaders.js Grade, with ACES folded in before lin2srgb
+// (the renderer no longer tonemaps — Grade is the sole color owner).
+export const GRADE_FRAG = `
+varying vec2 vUv;
+uniform sampler2D inputBuffer;
+uniform float saturation, contrast, exposure, vignette, warmth, lift, grain, time;
+float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+vec3 aces(vec3 x){ // Narkowicz ACES filmic approximation
+  const float a=2.51, b=0.03, c=2.43, d=0.59, e=0.14;
+  return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 1.0);
+}
+vec3 lin2srgb(vec3 c){ return mix(1.055*pow(max(c,0.0),vec3(1.0/2.4))-0.055, c*12.92, step(c,vec3(0.0031308))); }
+void main(){
+  vec3 c = texture2D(inputBuffer, vUv).rgb;
+  c *= exposure;
+  c = max(c + lift * (1.0 - c), 0.0);
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  c = mix(vec3(l), c, saturation);
+  c = (c - 0.5) * contrast + 0.5;
+  c += vec3(warmth, warmth * 0.1, -warmth) * 0.6;
+  float dv = distance(vUv, vec2(0.5)) * 1.414;
+  c *= 1.0 - vignette * smoothstep(0.55, 1.05, dv);
+  c = aces(c);            // ACES tonemap (moved off the renderer)
+  c = lin2srgb(c);        // <- the ONLY sRGB encode in the whole chain
+  c += (hash(vUv * vec2(1920.0,1080.0) + time) - 0.5) * grain;
+  gl_FragColor = vec4(c, 1.0);
+}`;
+
+export function makeTiltShiftUniforms() {
+  return {
+    inputBuffer: { value: null },
+    texel: { value: new Vector2(1 / 1024, 1 / 1024) },
+    direction: { value: new Vector2(1, 0) },
+    focus: { value: 0.52 },
+    band: { value: 0.1 },
+    gradient: { value: 0.34 },
+    tilt: { value: 0.06 },
+    maxBlur: { value: 3.2 },
+  };
+}
+export function makeGradeUniforms() {
+  return {
+    inputBuffer: { value: null },
+    saturation: { value: 1.34 },
+    contrast: { value: 1.07 },
+    exposure: { value: 1.03 },
+    vignette: { value: 0.34 },
+    warmth: { value: 0.05 },
+    lift: { value: 0.0 },
+    grain: { value: 0.025 },
+    time: { value: 0 },
+  };
+}
