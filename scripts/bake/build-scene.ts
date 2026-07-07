@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { lonLatToEnu, enuGroundSize, M_PER_DEG_LON } from './enu';
 import { BOX } from './box';
 import { resolveHeight } from './height';
+import { drapePixelSize } from './fetch-drape';
 
 export function ringAreaM2(ring: [number, number][]): number {
   let a = 0;
@@ -300,8 +301,13 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
     cosLat: M_PER_DEG_LON / 111320,
     drape: {
       path: 'chatt/drape.jpg',
-      width: Math.round(widthM / mpp),
-      height: Math.round(depthM / mpp),
+      // Actual fetched image dimensions (degree-aspect height, not metre-derived)
+      // so the manifest matches the real drape.jpg and stays honest about what
+      // was baked. Registration uses groundWm/groundHm, not these pixel counts.
+      ...(() => {
+        const { width, height } = drapePixelSize(mpp);
+        return { width, height };
+      })(),
       mpp,
     },
     provenance: '© OpenStreetMap · USGS 3DEP · USGS NAIP',

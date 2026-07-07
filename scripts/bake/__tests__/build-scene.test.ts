@@ -3,7 +3,13 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { ringAreaM2, polygonCentroid, buildScene } from '../build-scene';
+import {
+  ringAreaM2,
+  polygonCentroid,
+  buildScene,
+  HERO_WAY_IDS,
+} from '../build-scene';
+import { lonLatToEnu } from '../enu';
 
 describe('build-scene geometry', () => {
   it('computes ring area via the shoelace formula', () => {
@@ -120,6 +126,53 @@ describe.skipIf(!hasRaw)(
           }
         }
         expect(escaped).toBe(0);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    });
+
+    it('registers each way-based hero on its true OSM footprint centroid (≤5 m)', () => {
+      // Ground-truth registration: a hero backed by a real OSM way (aquarium,
+      // courthouse, republic_centre, walnut_st_bridge) MUST be emitted at that
+      // way's own footprint centroid, projected through the same ENU the whole
+      // scene uses. If a hero drifts from its real footprint, it renders beside
+      // the landmark (e.g. the aquarium marker landing on riverbank grass).
+      // This is objective — computed straight from _raw/osm.json — so it catches
+      // a stale/approximate anchor that a "contained in the box" check cannot.
+      const osm = JSON.parse(
+        readFileSync(join(rawDir, 'osm.json'), 'utf8')
+      ) as {
+        elements: {
+          id: number;
+          geometry?: { lat: number; lon: number }[];
+        }[];
+      };
+      const byId = new Map(osm.elements.map((e) => [e.id, e]));
+
+      const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
+      try {
+        buildScene(rawDir, outDir);
+        const heroes = JSON.parse(
+          readFileSync(join(outDir, 'heroes.json'), 'utf8')
+        ) as { swap: string; x: number; z: number }[];
+
+        for (const [id, swap] of Object.entries(HERO_WAY_IDS)) {
+          const el = byId.get(Number(id));
+          expect(el?.geometry, `raw way ${id} (${swap}) missing`).toBeTruthy();
+          const ring = el!.geometry!.map((g) => lonLatToEnu(g.lon, g.lat)) as [
+            number,
+            number,
+          ][];
+          const [tx, tz] = polygonCentroid(ring);
+
+          const hero = heroes.find((h) => h.swap === swap);
+          expect(hero, `hero ${swap} not emitted`).toBeTruthy();
+          const dist = Math.hypot(hero!.x - tx, hero!.z - tz);
+          expect(
+            dist,
+            `${swap} is ${dist.toFixed(1)} m from its true OSM footprint centroid`
+          ).toBeLessThanOrEqual(5);
+        }
       } finally {
         rmSync(outDir, { recursive: true, force: true });
       }
