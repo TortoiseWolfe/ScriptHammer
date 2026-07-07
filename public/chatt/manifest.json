@@ -15,11 +15,11 @@
     "mpp": 2
   },
   "provenance": "© OpenStreetMap · USGS 3DEP · USGS NAIP",
-  "fetchedAt": "2026-07-07T03:31:27.325Z",
+  "fetchedAt": "2026-07-07T13:57:10.495Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 116,
     "override": 0,
-    "fallback": 1332
+    "fallback": 1298
   }
 }

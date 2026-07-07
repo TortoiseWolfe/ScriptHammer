@@ -112,6 +112,96 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
   // which OSM tag shape they use.
   const heroWaysEmitted = new Set<number>();
 
+  // Box half-extents in ENU metres. Overpass returns any way that has ANY node
+  // in the bbox, and `out geom;` returns that way's FULL geometry — including
+  // the parts that extend outside the box. Left unclipped, boundary-straddling
+  // streets/buildings render far beyond the aerial drape (which covers only the
+  // box), so the map reads as misaligned. We clip everything to the box.
+  const ground = enuGroundSize();
+  const halfW = ground.widthM / 2;
+  const halfH = ground.depthM / 2;
+  const inBox = (x: number, z: number) =>
+    x >= -halfW && x <= halfW && z >= -halfH && z <= halfH;
+
+  // Clip a polyline (flat [x,z,x,z,...] ENU) to the box rectangle, returning
+  // one or more in-box sub-polylines. Segments crossing an edge are cut at the
+  // edge (Liang–Barsky parametric clip per segment).
+  function clipPolyline(pts: number[]): number[][] {
+    const out: number[][] = [];
+    let cur: number[] = [];
+    const push = (x: number, z: number) => {
+      cur.push(x, z);
+    };
+    const flush = () => {
+      if (cur.length >= 4) out.push(cur);
+      cur = [];
+    };
+    for (let i = 0; i + 3 < pts.length; i += 2) {
+      const seg = clipSegment(pts[i], pts[i + 1], pts[i + 2], pts[i + 3]);
+      if (!seg) {
+        flush();
+        continue;
+      }
+      if (cur.length === 0) push(seg.x0, seg.z0);
+      else if (
+        cur[cur.length - 2] !== seg.x0 ||
+        cur[cur.length - 1] !== seg.z0
+      ) {
+        // segment start was clipped inward → break the run
+        flush();
+        push(seg.x0, seg.z0);
+      }
+      push(seg.x1, seg.z1);
+      if (seg.exitClipped) flush();
+    }
+    flush();
+    return out;
+  }
+
+  // Clip one segment to the box; returns the (possibly shortened) endpoints, or
+  // null if it lies entirely outside. `exitClipped` marks that the segment's
+  // end hit an edge (so the polyline run must break there).
+  function clipSegment(
+    x0: number,
+    z0: number,
+    x1: number,
+    z1: number
+  ): {
+    x0: number;
+    z0: number;
+    x1: number;
+    z1: number;
+    exitClipped: boolean;
+  } | null {
+    let t0 = 0;
+    let t1 = 1;
+    const dx = x1 - x0;
+    const dz = z1 - z0;
+    const p = [-dx, dx, -dz, dz];
+    const q2 = [x0 + halfW, halfW - x0, z0 + halfH, halfH - z0];
+    for (let k = 0; k < 4; k++) {
+      if (p[k] === 0) {
+        if (q2[k] < 0) return null; // parallel & outside
+      } else {
+        const r = q2[k] / p[k];
+        if (p[k] < 0) {
+          if (r > t1) return null;
+          if (r > t0) t0 = r;
+        } else {
+          if (r < t0) return null;
+          if (r < t1) t1 = r;
+        }
+      }
+    }
+    return {
+      x0: x0 + t0 * dx,
+      z0: z0 + t0 * dz,
+      x1: x0 + t1 * dx,
+      z1: z0 + t1 * dz,
+      exitClipped: t1 < 1,
+    };
+  }
+
   for (const el of osm.elements) {
     const tags = el.tags || {};
     if (
@@ -125,18 +215,22 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
         number,
       ][];
       const area = ringAreaM2(ringEnu);
+      const [cX, cZ] = polygonCentroid(ringEnu);
+      // Drop buildings whose footprint centroid falls outside the box — these
+      // are boundary-straddlers Overpass returned in full; they'd render off the
+      // drape. (A hero way is never dropped: its swap tag pins a landmark.)
+      const swap = HERO_WAY_IDS[el.id];
+      if (!swap && !inBox(cX, cZ)) continue;
       const { meters, rule } = resolveHeight(tags, area);
       ruleHistogram[rule]++;
-      const swap = HERO_WAY_IDS[el.id];
       const flat: number[] = [];
       for (const [x, z] of ringEnu) flat.push(q(x), q(z));
       buildings.push({ id: el.id, ring: flat, height: q(meters), rule, swap });
       if (swap) {
-        const [cx, cz] = polygonCentroid(ringEnu);
         heroes.push({
           swap,
-          x: q(cx),
-          z: q(cz),
+          x: q(cX),
+          z: q(cZ),
           name: tags.name ?? swap,
         });
         heroWaysEmitted.add(el.id);
@@ -147,12 +241,17 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
       el.geometry &&
       el.geometry.length >= 2
     ) {
-      const flat: number[] = [];
+      // Project then clip the polyline to the box (a straddling street would
+      // otherwise trail far outside the drape). One OSM way may yield several
+      // in-box sub-polylines.
+      const projected: number[] = [];
       for (const g of el.geometry) {
         const [x, z] = lonLatToEnu(g.lon, g.lat);
-        flat.push(q(x), q(z));
+        projected.push(x, z);
       }
-      streets.push({ pts: flat });
+      for (const sub of clipPolyline(projected)) {
+        streets.push({ pts: sub.map((v) => q(v)) });
+      }
     }
 
     // Fallback: a hero-tagged way that isn't a `building` footprint (e.g. the
@@ -184,7 +283,7 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
     heroes.push({ swap: anchor.swap, x: q(x), z: q(z), name: anchor.swap });
   }
 
-  const { widthM, depthM } = enuGroundSize();
+  const { widthM, depthM } = ground;
   const drapePath = join(outDir, 'drape.jpg');
   if (existsSync(join(rawDir, 'drape.jpg')))
     copyFileSync(join(rawDir, 'drape.jpg'), drapePath);
