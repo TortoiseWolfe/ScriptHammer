@@ -90,6 +90,11 @@ function SceneInner({
       grade={grade}
       registerHandle={registerHandle}
     >
+      {/* Sky background + atmospheric fog (computeDay computes these; they were
+          previously unused, so distance faded to pure black). Fog range scaled
+          for the 5772m corridor so it adds depth without hiding the city. */}
+      <color attach="background" args={[d.skyColor]} />
+      <fog attach="fog" args={[d.fogColor, 1500, 9000]} />
       <ambientLight intensity={d.ambient} />
       <hemisphereLight args={[d.hemiSky, d.hemiGround, d.hemiIntensity]} />
       <directionalLight
