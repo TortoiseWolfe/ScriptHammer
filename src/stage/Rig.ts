@@ -217,6 +217,13 @@ export class Rig {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       this.handleKey(e.code, false);
+      // Match cm-rig.js _key(): preventDefault runs for both keydown AND keyup.
+      if (
+        ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft'].indexOf(
+          e.code
+        ) >= 0
+      )
+        e.preventDefault();
     };
     this._mm = (e: MouseEvent) => {
       this._move(e);
