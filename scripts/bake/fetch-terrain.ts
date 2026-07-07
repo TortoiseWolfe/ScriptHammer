@@ -50,7 +50,10 @@ async function fetchBatch(
   throw new Error('OpenTopoData 429 backoff exhausted');
 }
 
-export async function fetchTerrain(outDir: string, cols = 40, rows = 40) {
+// Grid defaults tuned for the Choo-Choo corridor box (1.46km E-W x 5.77km N-S).
+// 25x60 = 1500 pts (15 batches) → ~61m E-W, ~98m N-S spacing. Asymmetric to
+// match the ~4:1 corridor without wasting requests on redundant E-W density.
+export async function fetchTerrain(outDir: string, cols = 25, rows = 60) {
   mkdirSync(outDir, { recursive: true });
   const grid = buildGrid(cols, rows);
   const heights: number[] = [];
