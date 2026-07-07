@@ -1,13 +1,8 @@
-// Chattanooga Mini — tilt-shift diorama route.
-// The <Canvas> host is dynamically imported ssr:false: R3F/WebGL needs a
-// real browser (no window/WebGL context during SSG), and the composer +
-// Rig attach DOM listeners that must not run server-side.
-import dynamic from 'next/dynamic';
-
-const ChattCanvas = dynamic(() => import('./ChattCanvas.client'), {
-  ssr: false,
-});
+// Chattanooga Mini — tilt-shift diorama route (server component).
+// The ssr:false dynamic import lives in the ChattCanvasHost CLIENT component
+// (Next.js 15 disallows ssr:false dynamic in Server Components).
+import ChattCanvasHost from './ChattCanvasHost';
 
 export default function ChattPage() {
-  return <ChattCanvas />;
+  return <ChattCanvasHost />;
 }
