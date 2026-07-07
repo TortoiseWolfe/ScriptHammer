@@ -134,4 +134,49 @@ describe('SubscriptionManager', () => {
       screen.queryByRole('button', { name: /cancel subscription/i })
     ).not.toBeInTheDocument();
   });
+
+  it('offers "Retry payment now" for a past_due subscription (dunning)', async () => {
+    mockRows = [
+      {
+        ...activeRow,
+        status: 'past_due',
+        grace_period_expires: '2099-01-01',
+      },
+    ];
+    render(<SubscriptionManager {...defaultProps} />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /retry payment now/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('offers "Retry payment now" for a grace_period subscription', async () => {
+    mockRows = [
+      {
+        ...activeRow,
+        status: 'grace_period',
+        grace_period_expires: '2099-01-01',
+      },
+    ];
+    render(<SubscriptionManager {...defaultProps} />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /retry payment now/i })
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('does NOT offer "Retry payment now" for an active subscription', async () => {
+    mockRows = [{ ...activeRow }];
+    render(<SubscriptionManager {...defaultProps} />);
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /cancel subscription/i })
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.queryByRole('button', { name: /retry payment now/i })
+    ).not.toBeInTheDocument();
+  });
 });
