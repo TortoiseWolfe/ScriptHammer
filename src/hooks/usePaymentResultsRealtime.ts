@@ -28,20 +28,34 @@ export type RealtimeStatus = 'connecting' | 'live' | 'reconnecting' | 'error';
  * rapid changes → one onChange + one onBatch(N), so the UI can surface "N
  * updates" instead of silently folding them.
  *
+ * `onEvent(payload)` (optional) fires immediately (NOT debounced) for each
+ * individual change, with the event type and the new/old row. Lets the UI react
+ * to *what* changed — e.g. surface an error notification when a payment_results
+ * row arrives with status 'failed'.
+ *
  * Pass `enabled: false` to skip the subscription entirely (e.g. in tests or
  * stories that must not open a live channel) — the hook then stays 'connecting'
  * and never touches the Supabase client.
  */
+export interface PaymentResultsChange {
+  eventType: string;
+  new?: { status?: string; [k: string]: unknown } | null;
+  old?: { status?: string; [k: string]: unknown } | null;
+}
+
 export function usePaymentResultsRealtime(
   onChange: () => void,
   enabled = true,
-  onBatch?: (count: number) => void
+  onBatch?: (count: number) => void,
+  onEvent?: (payload: PaymentResultsChange) => void
 ): RealtimeStatus {
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const onBatchRef = useRef(onBatch);
   onBatchRef.current = onBatch;
+  const onEventRef = useRef(onEvent);
+  onEventRef.current = onEvent;
   // Tracks whether the channel has ever reached SUBSCRIBED, so a later drop is
   // classified as 'reconnecting' (transient) rather than 'error' (terminal).
   const hasBeenLiveRef = useRef(false);
@@ -69,10 +83,13 @@ export function usePaymentResultsRealtime(
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'payment_results' },
-        (payload: { eventType: string }) => {
+        (payload: PaymentResultsChange) => {
           logger.debug('Realtime: payment_results change', {
             event: payload.eventType,
           });
+          // Per-event callback (immediate) so the UI can react to WHAT changed
+          // (e.g. a failed payment); the list refetch stays debounced.
+          onEventRef.current?.(payload);
           debouncedChange();
         }
       )

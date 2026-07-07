@@ -17,7 +17,9 @@ vi.mock('@/lib/logger/logger', () => ({
 
 // Capture the postgres_changes handler + the subscribe status callback so the
 // test can drive both the data-change path and the connection-status path.
-let changeHandler: ((payload: { eventType: string }) => void) | null = null;
+let changeHandler:
+  | ((payload: { eventType: string; new?: { status?: string } | null }) => void)
+  | null = null;
 let statusCb: ((status: string, err?: { message?: string }) => void) | null =
   null;
 const removeChannel = vi.fn();
@@ -122,6 +124,19 @@ describe('usePaymentResultsRealtime', () => {
     act(() => changeHandler?.({ eventType: 'INSERT' }));
     act(() => vi.advanceTimersByTime(1000));
     expect(onBatch).toHaveBeenCalledWith(1);
+    vi.useRealTimers();
+  });
+
+  it('fires onEvent immediately (not debounced) with the changed row', () => {
+    const onEvent = vi.fn();
+    renderHook(() =>
+      usePaymentResultsRealtime(vi.fn(), true, undefined, onEvent)
+    );
+    const payload = { eventType: 'INSERT', new: { status: 'failed' } };
+    act(() => changeHandler?.(payload));
+    // onEvent fires synchronously per event (no debounce wait needed).
+    expect(onEvent).toHaveBeenCalledTimes(1);
+    expect(onEvent).toHaveBeenCalledWith(payload);
     vi.useRealTimers();
   });
 

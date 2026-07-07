@@ -270,9 +270,35 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     }
   });
 
-  test.skip('should show real-time error notifications', async ({ page }) => {
-    // Skip: Error notification for real-time events not implemented
-    test.skip(true, 'Real-time error notifications not yet implemented');
+  test('should surface an error alert when a realtime payment fails', async ({
+    browser,
+  }) => {
+    // Seed a payment, open the hub, then service-role insert a FAILED
+    // payment_results row. The realtime onEvent handler sees status='failed' and
+    // PaymentHistory shows a transient error alert. Deterministic — no creds.
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const { page } = opened;
+      await expect(page.getByTestId('transaction-count')).toContainText(
+        '1 total',
+        { timeout: 30000 }
+      );
+
+      await fixture.addResult('failed'); // live insert of a failed payment
+
+      await expect(page.getByTestId('realtime-error-alert')).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
   test.skip('should update chart/graphs in real-time', async ({ page }) => {

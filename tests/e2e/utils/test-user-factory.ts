@@ -2444,8 +2444,11 @@ export interface IsolatedPayment {
   session: InjectableSession;
   intentId: string;
   resultId: string;
-  /** Insert another succeeded payment_results row for this user (live update). */
-  addResult: () => Promise<void>;
+  /** Insert another payment_results row for this user (live update). Defaults to
+   * a succeeded row; pass a status to seed e.g. a 'failed' payment. */
+  addResult: (
+    status?: 'succeeded' | 'failed' | 'refunded' | 'pending'
+  ) => Promise<void>;
 }
 
 /**
@@ -2482,14 +2485,17 @@ export async function seedIsolatedPayment(opts?: {
     return data.id as string;
   };
 
-  const insertResult = async (intentId: string) => {
+  const insertResult = async (
+    intentId: string,
+    status: 'succeeded' | 'failed' | 'refunded' | 'pending' = 'succeeded'
+  ) => {
     const { data, error } = await admin
       .from('payment_results')
       .insert({
         intent_id: intentId,
         provider: 'stripe',
         transaction_id: `iso_txn_${stamp}_${Math.floor(performance.now())}`,
-        status: 'succeeded',
+        status,
         charged_amount: 1999,
         charged_currency: 'usd',
         webhook_verified: true,
@@ -2519,9 +2525,11 @@ export async function seedIsolatedPayment(opts?: {
     session: created.session,
     intentId,
     resultId,
-    addResult: async () => {
+    addResult: async (
+      status: 'succeeded' | 'failed' | 'refunded' | 'pending' = 'succeeded'
+    ) => {
       const id = await insertIntent();
-      await insertResult(id);
+      await insertResult(id, status);
     },
   };
 }

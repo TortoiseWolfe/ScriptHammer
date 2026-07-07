@@ -10,7 +10,10 @@ import {
   getPaymentHistory,
   formatPaymentAmount,
 } from '@/lib/payments/payment-service';
-import { usePaymentResultsRealtime } from '@/hooks/usePaymentResultsRealtime';
+import {
+  usePaymentResultsRealtime,
+  type PaymentResultsChange,
+} from '@/hooks/usePaymentResultsRealtime';
 import type { PaymentActivity, Currency, PaymentStatus } from '@/types/payment';
 
 export interface PaymentHistoryProps {
@@ -121,13 +124,26 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     }
   }, []);
 
+  // Transient error notification: when a realtime payment_results event carries
+  // a failed status, surface it immediately (not waiting for the debounced
+  // refetch), then auto-dismiss.
+  const [realtimeError, setRealtimeError] = useState<string | null>(null);
+  const handleEvent = useCallback((payload: PaymentResultsChange) => {
+    if (payload.new?.status === 'failed') {
+      setRealtimeError('A payment just failed.');
+      window.setTimeout(() => setRealtimeError(null), 6000);
+    }
+  }, []);
+
   // Live-update on payment_results changes (debounced inside the hook). The
   // returned status drives the connection indicator badge; onBatch surfaces the
-  // coalesced-burst count. When realtime is off the hook is fully inert.
+  // coalesced-burst count; onEvent surfaces per-event failures. When realtime is
+  // off the hook is fully inert.
   const realtimeStatus = usePaymentResultsRealtime(
     refetch,
     realtime,
-    handleBatch
+    handleBatch,
+    handleEvent
   );
 
   // Apply filters
@@ -222,9 +238,23 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       </span>
     ) : null;
 
+  // Transient error banner surfaced when a realtime event reports a failed
+  // payment. Auto-dismisses; assertive so it's announced promptly.
+  const realtimeErrorAlert = realtimeError ? (
+    <div
+      className="alert alert-error p-2 text-sm"
+      role="alert"
+      aria-live="assertive"
+      data-testid="realtime-error-alert"
+    >
+      <span>{realtimeError}</span>
+    </div>
+  ) : null;
+
   if (payments.length === 0) {
     return (
       <div className={`flex flex-col gap-4 ${className}`}>
+        {realtimeErrorAlert}
         {/* Keep the count + realtime indicator visible in the empty state so a
             live INSERT flips it from 0 without a structural remount. */}
         <div className="flex items-center justify-end gap-2">
@@ -270,6 +300,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   return (
     <div className={`flex flex-col gap-4 ${className}`}>
+      {realtimeErrorAlert}
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <h2 className="text-2xl font-bold">Payment History</h2>
