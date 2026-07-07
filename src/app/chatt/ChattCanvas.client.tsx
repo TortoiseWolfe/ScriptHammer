@@ -41,16 +41,28 @@ function SceneInner({
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const rig = useMemo(() => {
+    // Orbit/walk ranges scaled for the 5772m Chattanooga corridor. The Rig's
+    // defaults (maxR 240, moveSpeed 12) came from a tiny procedural city; the
+    // real box is ~24x longer, so miniature-orbit needs to pull back to a few
+    // thousand metres and walk needs to move faster. Set here (not Rig.ts) to
+    // keep the Rig generic/liftable.
     const r = new Rig(
       camera as import('three').PerspectiveCamera,
-      gl.domElement
+      gl.domElement,
+      {
+        minR: 200,
+        maxR: 5000,
+        moveSpeed: 120,
+      }
     );
     // Aim BEFORE first paint (not in a post-paint effect) so the tour is
     // pointed at the city from frame 0 — no empty-void first frames.
     r.setWaypoints(RIVERFRONT_TOUR as RigWaypoint[]);
     // Orbit/Miniature mode centers on the city centroid (z ≈ -2000), not the
-    // origin. Set from here (not Rig.ts) to keep the Rig generic/liftable.
+    // origin, and starts pulled back to frame the whole corridor.
     r.focus.set(-100, 0, -2000);
+    r.radius = 2600;
+    r.tRadius = 2600;
     return r;
   }, [camera, gl]);
 
