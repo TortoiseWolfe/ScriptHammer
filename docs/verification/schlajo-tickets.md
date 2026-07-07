@@ -2,6 +2,22 @@
 
 Independent verification pass for two open issues. Each section has a **Cursor prompt** you can paste straight into Cursor's chat (Agent mode) to drive the checks, plus manual steps where a human eye or a screenshot is the real signal.
 
+> ### ⏳ PENDING ASSIGNMENT — action needed after invite acceptance
+>
+> `schlajo` was invited to the repo (**Read** access, invite id `324802601`, sent 2026-07-07) but **has not accepted yet**. GitHub blocks assigning an issue to a non-collaborator, so **#188 and #212 are NOT yet assigned to him.**
+>
+> **Once schlajo accepts the invite, run:**
+>
+> ```bash
+> gh issue edit 188 --repo TortoiseWolfe/ScriptHammer --add-assignee schlajo
+> gh issue edit 212 --repo TortoiseWolfe/ScriptHammer --add-assignee schlajo
+> ```
+>
+> Verify acceptance first with: `gh api repos/TortoiseWolfe/ScriptHammer/collaborators/schlajo` (200 = accepted).
+> The Cursor prompts are already posted as comments on both issues, so he can start immediately; this step just sets the formal assignee.
+>
+> _(Triage was the intended access level but is org-only — this is a personal repo, so Read was used.)_
+
 **Setup (once):**
 
 ```bash
