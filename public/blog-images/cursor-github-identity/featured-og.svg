@@ -1,0 +1,59 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A Token Is an Identity — letting Cursor commit as themselves">
+  <defs>
+    <linearGradient id="cgi-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="cgi-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="cgi-accent2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#cgi-bg)"/>
+
+  <!-- subtle grid texture -->
+  <g opacity="0.06" stroke="#a78bfa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <!-- accent bar -->
+  <rect x="90" y="120" width="72" height="8" rx="4" fill="url(#cgi-accent)"/>
+
+  <!-- Key / identity motif, top-right -->
+  <g transform="translate(880 150)" opacity="0.95">
+    <!-- key bow (the round head) -->
+    <circle cx="60" cy="60" r="52" fill="none" stroke="url(#cgi-accent)" stroke-width="16"/>
+    <circle cx="60" cy="60" r="18" fill="#18181b" stroke="url(#cgi-accent)" stroke-width="10"/>
+    <!-- key shaft -->
+    <rect x="104" y="50" width="150" height="20" rx="6" fill="url(#cgi-accent)"/>
+    <!-- key teeth -->
+    <rect x="214" y="70" width="16" height="26" rx="3" fill="url(#cgi-accent)"/>
+    <rect x="240" y="70" width="14" height="38" rx="3" fill="url(#cgi-accent)"/>
+    <!-- verified check, echoing "it's really them" -->
+    <g transform="translate(150 -70)">
+      <circle cx="26" cy="26" r="26" fill="url(#cgi-accent2)"/>
+      <path d="M14 27 l8 8 l16 -18" fill="none" stroke="#0b1220" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="250" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="#fafafa">A Token Is</text>
+  <text x="90" y="348" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="url(#cgi-accent)">an Identity</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="418" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">Let a collaborator's AI agent commit</text>
+  <text x="94" y="462" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">as <tspan font-style="italic" fill="#a78bfa">themselves</tspan> — Cursor + GitHub, done right</text>
+
+  <!-- Footer brand + tags -->
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#a78bfa">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">fine-grained tokens · least privilege · attribution</text>
+  </g>
+</svg>
