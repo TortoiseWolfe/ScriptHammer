@@ -16,15 +16,21 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
+      # Install pnpm BEFORE setup-node — this is the order pnpm/action-setup
+      # requires so its shim lands on PATH and setup-node's `cache: 'pnpm'` can
+      # resolve pnpm. The previous (setup-node → pnpm) order left pnpm off PATH
+      # for the later `pnpm run prime` step under the v10→v11 PNPM_HOME layout
+      # migration. Mirrors the working "Install pnpm" step in e2e.yml.
+      - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
           version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
