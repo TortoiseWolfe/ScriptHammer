@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   getPaymentHistory,
   formatPaymentAmount,
@@ -15,6 +15,8 @@ import {
   type PaymentResultsChange,
 } from '@/hooks/usePaymentResultsRealtime';
 import type { PaymentActivity, Currency, PaymentStatus } from '@/types/payment';
+import PaymentTrendChart from '@/components/molecular/PaymentTrendChart';
+import { aggregateDailyPayments } from '@/lib/payments/aggregate-daily';
 
 export interface PaymentHistoryProps {
   initialLimit?: number;
@@ -144,6 +146,13 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
     realtime,
     handleBatch,
     handleEvent
+  );
+
+  // Daily series for the trend chart, aggregated from the user's own payments
+  // (the admin chart's RPC is all-users and not callable here).
+  const trendSeries = useMemo(
+    () => aggregateDailyPayments(payments),
+    [payments]
   );
 
   // Apply filters
@@ -319,6 +328,11 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Payment trend chart (user-scoped daily succeeded/failed series). */}
+      {trendSeries.length > 0 && (
+        <PaymentTrendChart data={trendSeries} testId="payment-trend-chart" />
+      )}
 
       {/* Filters */}
       {showFilters && (
