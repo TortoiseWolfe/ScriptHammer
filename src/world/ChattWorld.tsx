@@ -64,9 +64,22 @@ export default function ChattWorld({
         drape={data.drape}
         manifest={data.manifest}
       />
-      <Buildings buildings={data.buildings} palette={palette} />
-      <Streets streets={data.streets} />
-      <Heroes heroes={data.heroes} />
+      <Buildings
+        buildings={data.buildings}
+        palette={palette}
+        grid={data.terrain}
+        manifest={data.manifest}
+      />
+      <Streets
+        streets={data.streets}
+        grid={data.terrain}
+        manifest={data.manifest}
+      />
+      <Heroes
+        heroes={data.heroes}
+        grid={data.terrain}
+        manifest={data.manifest}
+      />
     </>
   );
 }

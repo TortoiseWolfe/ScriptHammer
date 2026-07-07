@@ -8,14 +8,20 @@ import {
   Color,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import type { Building } from '@/lib/manifest';
+import type { Building, TerrainGrid, Manifest } from '@/lib/manifest';
 import { ringToShape } from './geometry';
+import { elevationAt, minElevation } from './terrainSample';
 
 export interface BuildingPalette {
   bricks: number[];
 }
 
-function extrude(b: Building): BufferGeometry {
+function extrude(
+  b: Building,
+  grid: TerrainGrid,
+  manifest: Manifest,
+  minE: number
+): BufferGeometry {
   const { center, localRing } = ringToShape(b.ring);
   const shape = new Shape();
   localRing.forEach(([x, z], i) =>
@@ -29,21 +35,29 @@ function extrude(b: Building): BufferGeometry {
     bevelEnabled: false,
   });
   geo.rotateX(-Math.PI / 2); // shape's Y -> world Z; extrude depth -> world +Y
-  geo.translate(center[0], 0, center[1]);
+  // Seat the building base on the terrain at its own centroid (normalized to the
+  // same Y=0 floor the Terrain mesh uses), so it sits ON the topology, not below it.
+  const groundY = elevationAt(grid, manifest, center[0], center[1]) - minE;
+  geo.translate(center[0], groundY, center[1]);
   return geo;
 }
 
 export default function Buildings({
   buildings,
   palette,
+  grid,
+  manifest,
 }: {
   buildings: Building[];
   palette: BuildingPalette;
+  grid: TerrainGrid;
+  manifest: Manifest;
 }) {
   const { geometry } = useMemo(() => {
+    const minE = minElevation(grid);
     const nonHero = buildings.filter((b) => !b.swap);
     const geos = nonHero.map((b) => {
-      const g = extrude(b);
+      const g = extrude(b, grid, manifest, minE);
       const c = new Color(palette.bricks[b.id % palette.bricks.length]);
       const count = g.attributes.position.count;
       const colors = new Float32Array(count * 3);
@@ -60,7 +74,7 @@ export default function Buildings({
         ? mergeGeometries(geos, false)
         : new BufferGeometry(),
     };
-  }, [buildings, palette]);
+  }, [buildings, palette, grid, manifest]);
 
   return (
     <mesh geometry={geometry} castShadow receiveShadow>

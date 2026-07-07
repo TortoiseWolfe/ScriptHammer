@@ -16,6 +16,36 @@ export function bilinear(grid: TerrainGrid, u: number, v: number): number {
   return top * (1 - fz) + bot * fz;
 }
 
+/** Minimum elevation (metres) across the whole grid — used to normalize the
+ *  diorama so the lowest ground sits at Y=0 instead of ~194m. */
+export function minElevation(grid: TerrainGrid): number {
+  let m = Infinity;
+  for (const h of grid.heights) if (h < m) m = h;
+  return m;
+}
+
+/**
+ * Terrain elevation (metres) at an ENU (x, z) point — the inverse of the
+ * mapping `Terrain.tsx` uses to build the plane. This is the single
+ * authoritative x,z→height sampler so buildings/heroes/streets sit on the
+ * same surface the terrain mesh renders.
+ *
+ * Axis note: `Terrain.tsx` builds a PlaneGeometry (x spans −w/2..+w/2, plane-Y
+ * spans −h/2..+h/2) with `u = x/w + 0.5` (W→E), `v = planeY/h + 0.5` (S→N),
+ * then `rotateX(-π/2)`, which sends plane-Y → −worldZ. So a world-Z maps back
+ * to `v = 0.5 − z/groundHm` (NOT `z/h + 0.5`, which would mirror N↔S).
+ */
+export function elevationAt(
+  grid: TerrainGrid,
+  manifest: Manifest,
+  x: number,
+  z: number
+): number {
+  const u = x / manifest.groundWm + 0.5;
+  const v = 0.5 - z / manifest.groundHm;
+  return bilinear(grid, u, v);
+}
+
 export function assertExtent(
   manifest: Manifest,
   quadWm: number,

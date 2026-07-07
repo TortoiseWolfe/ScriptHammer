@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import { PlaneGeometry, Texture } from 'three';
 import type { TerrainGrid, Manifest } from '@/lib/manifest';
-import { bilinear, assertExtent } from './terrainSample';
+import { bilinear, assertExtent, minElevation } from './terrainSample';
 import { materialKit } from '@/stage/materialKit';
 
 export default function Terrain({
@@ -20,10 +20,13 @@ export default function Terrain({
     assertExtent(manifest, w, h); // fail loud if the box/mpp changed under us
     const g = new PlaneGeometry(w, h, grid.cols - 1, grid.rows - 1);
     const pos = g.attributes.position;
+    // Normalize so the lowest ground sits at Y=0 (raw elevations are ~194-249m;
+    // buildings/heroes/streets subtract the SAME minE so everything is coupled).
+    const minE = minElevation(grid);
     for (let i = 0; i < pos.count; i++) {
       const u = pos.getX(i) / w + 0.5; // W->E
       const v = pos.getY(i) / h + 0.5; // S->N (plane Y before rotate)
-      pos.setZ(i, bilinear(grid, u, v)); // displace along plane normal
+      pos.setZ(i, bilinear(grid, u, v) - minE); // displace, normalized to Y=0 floor
     }
     g.rotateX(-Math.PI / 2);
     g.computeVertexNormals();
