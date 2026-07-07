@@ -1,0 +1,56 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Send It Back Without Taking It Over — rejecting an AI agent's pull request while preserving authorship">
+  <defs>
+    <linearGradient id="rj-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="rj-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="rj-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#rj-bg)"/>
+
+  <g opacity="0.06" stroke="#a78bfa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <rect x="90" y="118" width="72" height="8" rx="4" fill="url(#rj-accent)"/>
+
+  <!-- PR branch + return-arrow motif, top-right -->
+  <g transform="translate(852 150)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- git branch dots -->
+    <circle cx="24" cy="18" r="13" fill="#1e1b2e" stroke="url(#rj-accent)" stroke-width="7"/>
+    <circle cx="24" cy="120" r="13" fill="#1e1b2e" stroke="url(#rj-accent)" stroke-width="7"/>
+    <circle cx="150" cy="69" r="13" fill="#1e1b2e" stroke="url(#rj-accent)" stroke-width="7"/>
+    <path d="M24 31 V107" stroke="url(#rj-accent)" stroke-width="7" fill="none"/>
+    <path d="M24 60 q0 9 9 9 h96 q9 0 9 -0" stroke="url(#rj-accent)" stroke-width="7" fill="none"/>
+    <!-- return arrow (send back, amber = changes requested) -->
+    <path d="M150 92 q0 40 -50 40 h-60" stroke="url(#rj-amber)" stroke-width="7" fill="none"/>
+    <path d="M52 118 l-14 14 l14 14" stroke="url(#rj-amber)" stroke-width="7" fill="none"/>
+    <!-- name tag preserved -->
+    <g transform="translate(96 -8)">
+      <rect x="0" y="0" width="86" height="30" rx="6" fill="none" stroke="#34d399" stroke-width="4"/>
+      <text x="43" y="21" font-family="'Segoe UI', system-ui, sans-serif" font-size="17" font-weight="700" fill="#34d399" text-anchor="middle">their name</text>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="252" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="#fafafa">Send It Back —</text>
+  <text x="90" y="344" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="#fafafa">Don't <tspan fill="url(#rj-accent)">Take It Over</tspan></text>
+
+  <!-- Subtitle -->
+  <text x="94" y="416" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">Reject an AI agent's pull request without</text>
+  <text x="94" y="458" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">erasing whose name is on it</text>
+
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#a78bfa">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">the assembly line for AI-written code · 3</text>
+  </g>
+</svg>
