@@ -1,5 +1,6 @@
 'use client';
 import { useThree, useFrame } from '@react-three/fiber';
+import type { PerspectiveCamera } from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import { buildComposer } from '@/post/tiltShift';
 
@@ -70,12 +71,22 @@ export default function StageCore({
     timeRef.current += dt;
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+    // ?topdown: dev diagnostic — force a straight-down view over the corridor to
+    // check drape (aerial) vs vector (streets/buildings) georegistration.
+    if (search.includes('topdown')) {
+      const cam = camera as PerspectiveCamera;
+      cam.position.set(-100, 5000, 0);
+      cam.up.set(0, 0, -1); // -Z (north) toward top of screen
+      cam.lookAt(-100, 0, 0);
+      cam.fov = 62;
+      cam.updateProjectionMatrix();
+      gl.render(scene, camera);
+      return;
+    }
     // ?nofx bypasses the composer to render the raw scene directly (dev diagnostic
     // for isolating post-processing vs scene issues).
-    if (
-      typeof window !== 'undefined' &&
-      window.location.search.includes('nofx')
-    ) {
+    if (search.includes('nofx')) {
       gl.render(scene, camera);
     } else {
       rig.composer.render(dt);

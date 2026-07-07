@@ -83,7 +83,7 @@ describe.skipIf(!hasRaw)(
       }
     });
 
-    it('produces ~1544 buildings for the extended corridor box', async () => {
+    it('produces ~1500 buildings for the extended corridor box', async () => {
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
         const manifest = await buildScene(rawDir, outDir);
@@ -92,6 +92,34 @@ describe.skipIf(!hasRaw)(
         ) as unknown[];
         expect(buildings.length).toBeGreaterThan(1000);
         expect(manifest.groundHm).toBeGreaterThan(5000);
+      } finally {
+        rmSync(outDir, { recursive: true, force: true });
+      }
+    });
+
+    it('clips streets to the box — no vertex escapes the drape extent', async () => {
+      // Overpass returns boundary-straddling ways in full; unclipped they trail
+      // ~1km past the drape and read as misaligned. Every street vertex must be
+      // within the box half-extents (small epsilon for quantization).
+      const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
+      try {
+        const manifest = await buildScene(rawDir, outDir);
+        const streets = JSON.parse(
+          readFileSync(join(outDir, 'streets.json'), 'utf8')
+        ) as { pts: number[] }[];
+        const halfW = manifest.groundWm / 2;
+        const halfH = manifest.groundHm / 2;
+        let escaped = 0;
+        for (const s of streets) {
+          for (let i = 0; i < s.pts.length; i += 2) {
+            if (
+              Math.abs(s.pts[i]) > halfW + 2 ||
+              Math.abs(s.pts[i + 1]) > halfH + 2
+            )
+              escaped++;
+          }
+        }
+        expect(escaped).toBe(0);
       } finally {
         rmSync(outDir, { recursive: true, force: true });
       }
