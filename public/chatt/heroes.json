@@ -1,0 +1,35 @@
+[
+  {
+    "swap": "republic_centre",
+    "x": -382.3,
+    "z": -1614.1,
+    "name": "Republic Centre"
+  },
+  {
+    "swap": "courthouse",
+    "x": 100.3,
+    "z": -1697.9,
+    "name": "Hamilton County Courthouse"
+  },
+  {
+    "swap": "walnut_st_bridge",
+    "x": 67.7,
+    "z": -2726.1,
+    "name": "Walnut Street"
+  },
+  { "swap": "aquarium", "x": -273.5, "z": -2424, "name": "Tennessee Aquarium" },
+  {
+    "swap": "hunter_museum",
+    "x": 162.7,
+    "z": -2426.2,
+    "name": "hunter_museum"
+  },
+  { "swap": "tivoli", "x": 18.2, "z": -1282.7, "name": "tivoli" },
+  {
+    "swap": "dome_building",
+    "x": -54.7,
+    "z": -1404.3,
+    "name": "dome_building"
+  },
+  { "swap": "choo_choo", "x": -54.7, "z": 2720.1, "name": "choo_choo" }
+]

@@ -1,0 +1,25 @@
+{
+  "box": {
+    "swLat": 35.0078,
+    "swLon": -85.316,
+    "neLat": 35.06,
+    "neLon": -85.3
+  },
+  "groundWm": 1458.4,
+  "groundHm": 5772,
+  "cosLat": 0.8188125348994125,
+  "drape": {
+    "path": "chatt/drape.jpg",
+    "width": 729,
+    "height": 2886,
+    "mpp": 2
+  },
+  "provenance": "© OpenStreetMap · USGS 3DEP · USGS NAIP",
+  "fetchedAt": "2026-07-07T03:31:27.325Z",
+  "ruleHistogram": {
+    "height": 96,
+    "levels": 116,
+    "override": 0,
+    "fallback": 1332
+  }
+}

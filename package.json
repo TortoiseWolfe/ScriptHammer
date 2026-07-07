@@ -87,7 +87,8 @@
     "cleanup:intents": "tsx scripts/cleanup-expired-intents.ts",
     "retry:webhooks": "tsx scripts/retry-failed-webhooks.ts",
     "gitleaks": "gitleaks detect --source . --config .gitleaks.toml",
-    "gitleaks:staged": "gitleaks protect --staged --config .gitleaks.toml"
+    "gitleaks:staged": "gitleaks protect --staged --config .gitleaks.toml",
+    "bake": "tsx scripts/bake/run.ts"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
@@ -136,7 +137,8 @@
     "to-vfile": "^8.0.0",
     "unified": "^11.0.5",
     "web-vitals": "^5.1.0",
-    "zod": "^4.1.8"
+    "zod": "^4.1.8",
+    "postprocessing": "^6.39.2"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",

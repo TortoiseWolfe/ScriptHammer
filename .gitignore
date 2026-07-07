@@ -144,3 +144,8 @@ scripts/__tests__/fixtures/*
 .speckit-tools/
 .speckit-cache/
 .lighthouseci/
+
+# Chattanooga Mini bake: commit DERIVED artifacts (buildings/streets/terrain/heroes/manifest + drape),
+# but the raw upstream cache is large and local-only (regenerable via `pnpm bake`).
+/public/chatt/_raw/
+/public/chatt/_tmp/
